@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+rofi_command="rofi -dmenu -theme $HOME/.config/bspwm/scripts/RiceSelect/RiceSelector.rasi"
+
+options=( "yoru" "z0mbi3")
+
+selected=$(printf "%s\n" "${options[@]}" | $rofi_command)
+
+if [[ -n "$selected" ]]; then
+	echo "$selected" > "$HOME"/.config/bspwm/.rice
+	bspc wm -r
+fi

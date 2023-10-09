@@ -1,0 +1,3 @@
+.cursors-layer .cursor {
+  background-image: linear-gradient(245deg, var(--gradient-primary)) !important;
+}

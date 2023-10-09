@@ -1,0 +1,26 @@
+.tabs-container > .tab.active.tab-border-top > .tab-border-top-container {
+  height: 1.5px !important;
+  background-image: linear-gradient(
+      90deg,
+      rgba(25, 26, 46, 1) 0%,
+      rgba(25, 26, 46, 0.12) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(229, 71, 255, 0) 36.27%,
+      rgb(255, 71, 149) 71.37%,
+      rgb(255, 204, 71) 92.98%
+    ) !important;
+  animation: animate 3.5s linear infinite forwards !important;
+}
+.tabs-container > .tab {
+  overflow: hidden !important;
+}
+@keyframes animate {
+  from {
+    transform: translateX(-300px) translateZ(0px);
+  }
+  to {
+    transform: translateX(300px) translateZ(0px);
+  }
+}

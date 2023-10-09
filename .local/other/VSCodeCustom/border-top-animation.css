@@ -1,0 +1,27 @@
+.tabs-container > .tab.active.tab-border-top > .tab-border-top-container {
+  background-size: 400% 400% !important;
+  background-image: linear-gradient(
+    -45deg,
+    #fc6c8f,
+    #ff2ced,
+    #ffb86c,
+    #2cccff,
+    #20e3b2,
+    #ffcc70,
+    #c850c0,
+    #4158d0
+  ) !important;
+  animation: gradient 5s ease alternate infinite !important;
+  height: 3px !important;
+}
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

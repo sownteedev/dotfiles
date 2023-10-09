@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Import Current Theme
+DIR="$HOME/.config/bspwm"
+RASI="$DIR/scripts/Runner/Runner.rasi"
+
+# Run
+rofi \
+    -show run \
+	-theme ${RASI}

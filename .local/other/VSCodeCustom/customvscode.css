@@ -1,0 +1,43 @@
+.tab.tab-actions-right.active > .tab-border-top-container {
+  position: absolute !important;
+  left: 0;
+  width: 100%;
+  display: block !important;
+  background-size: 400% 400%;
+  background-image: linear-gradient(
+    -45deg,
+    #fc6c8f,
+    #ff2ced,
+    #ffb86c,
+    #2cccff,
+    #20e3b2,
+    #ffcc70,
+    #c850c0,
+    #4158d0
+  );
+  border-radius: 10%;
+  animation: gradient 5s ease infinite;
+  height: 3px;
+}
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.monaco-editor .cursors-layer .cursor {
+  background-image: linear-gradient(
+    to bottom,
+    #fc6c8f,
+    #ff2ced,
+    #ffb86c,
+    #c850c0,
+    #4158d0
+  );
+}

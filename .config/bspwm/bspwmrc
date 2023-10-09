@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+#  ╔╗ ╔═╗╔═╗╦ ╦╔╦╗
+#  ╠╩╗╚═╗╠═╝║║║║║║
+#  ╚═╝╚═╝╩  ╚╩╝╩ ╩
+
+#  ┬┌┬┐┌─┐┌─┐┬─┐┌┬┐┌─┐┌┐┌┌┬┐  ┬  ┬┌─┐┬─┐┬┌─┐┌┐ ┬  ┌─┐┌─┐
+#  ││││├─┘│ │├┬┘ │ ├─┤│││ │   └┐┌┘├─┤├┬┘│├─┤├┴┐│  ├┤ └─┐
+#  ┴┴ ┴┴  └─┘┴└─ ┴ ┴ ┴┘└┘ ┴    └┘ ┴ ┴┴└─┴┴ ┴└─┘┴─┘└─┘└─┘
+
+export RICETHEME=$(<$HOME/.config/bspwm/.rice)
+PATH="$HOME/.config/bspwm/scripts:$PATH"
+PATH="$HOME/.config/bspwm/scripts/RiceSelect:$PATH"
+
+#  ┌─┐┬ ┬┌┐┌┌─┐┌┬┐┬┌─┐┌┐┌┌─┐
+#  ├┤ │ │││││   │ ││ ││││└─┐
+#  └  └─┘┘└┘└─┘ ┴ ┴└─┘┘└┘└─┘
+
+function get_values() {
+    DEFNETWORK=$(ip route | grep '^default' | awk '{print $5}' | head -n1)
+    CARD=$(ls -1 /sys/class/backlight/)
+    power_supply_files=$(ls /sys/class/power_supply/)
+
+    for file in $power_supply_files
+        do
+        if [ -e "/sys/class/power_supply/$file/capacity" ]; then
+            battery_file=$file
+        fi
+
+        if [ -e "/sys/class/power_supply/$file/online" ]; then
+            adapter_file=$file
+        fi
+    done
+
+    BATTERY="$battery_file"
+    ADAPTER="$adapter_file"
+}
+
+set_values() {
+    if [[ "$DEFNETWORK" ]]; then
+    	sed -i -e "s/sys_network_interface = .*/sys_network_interface = $DEFNETWORK/g" $HOME/.config/bspwm/scripts/system.ini
+    fi
+    if [[ "$ADAPTER" ]]; then
+    	sed -i -e "s/sys_adapter = .*/sys_adapter = $ADAPTER/g" $HOME/.config/bspwm/scripts/system.ini
+    fi
+    if [[ "$BATTERY" ]]; then
+    	sed -i -e "s/sys_battery = .*/sys_battery = $BATTERY/g" $HOME/.config/bspwm/scripts/system.ini
+    fi
+    if [[ "$CARD" ]]; then
+    	sed -i -e "s/sys_graphics_card = .*/sys_graphics_card = $CARD/g" $HOME/.config/bspwm/scripts/system.ini
+    fi
+}
+
+#  ┬ ┬┌─┐┬─┐┬┌─┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐
+#  ││││ │├┬┘├┴┐└─┐├─┘├─┤│  ├┤ └─┐
+#  └┴┘└─┘┴└─┴ ┴└─┘┴  ┴ ┴└─┘└─┘└─┘
+
+workspaces() {
+    name=1
+    for monitor in `bspc query -M`; 
+    	do
+    	bspc monitor ${monitor} -n "$name" -d '' '' '' '' '' '' '' ''
+    	let name++
+    done
+}
+
+workspaces
+
+bspc rule -a kitty desktop=^1 follow=on state=floating
+
+bspc rule -a Google-chrome desktop=^2 state=floating follow=on
+bspc rule -a Microsoft-edge desktop=^2 state=floating
+
+bspc rule -a Code desktop=^3 state=floating
+bspc rule -a jetbrains-idea desktop=^3 state=floating
+bspc rule -a webstorm desktop=^3 state=floating
+bspc rule -a neovide desktop=^3 state=floating follow=on
+
+bspc rule -a discord desktop=^4 follow=off state=floating
+bspc rule -a Telegram desktop=^4 state=floating
+bspc rule -a Spotify desktop=^5 state=floating follow=off
+bspc rule -a vlc desktop=^6 state=floating
+bspc rule -a Thunar desktop=^7 state=floating follow=on
+bspc rule -a TeamViewer desktop=^8 follow=off state=floating
+
+#  ┌┐ ┌─┐┌─┐┬ ┬┌┬┐  ┌─┐┌─┐┌┐┌┌─┐┬┌─┐
+#  ├┴┐└─┐├─┘││││││  │  │ ││││├┤ ││ ┬
+#  └─┘└─┘┴  └┴┘┴ ┴  └─┘└─┘┘└┘└  ┴└─┘
+
+# bspc config split_ratio                   0
+# bspc config single_monocle                true
+# bspc config borderless_monocle            false
+# bspc config gapless_monocle               false
+#
+# bspc config focus_follows_pointer         true
+# bspc config pointer_follows_focus         false
+# bspc config pointer_motion_interval       5
+bspc config pointer_modifier              mod4
+bspc config pointer_action1               move
+bspc config pointer_action2               resize_side
+bspc config pointer_action3               resize_corner
+
+# bspc wm --adopt-orphans
+
+#  ┬  ┌─┐┬ ┬┌┐┌┌─┐┬ ┬  ┌─┐┌─┐─┐ ┬┬ ┬  ┬─┐┬┌─┐┌─┐┌─┐
+#  │  ├─┤│ │││││  ├─┤  └─┐├┤ ┌┴┬┘└┬┘  ├┬┘││  ├┤ └─┐
+#  ┴─┘┴ ┴└─┘┘└┘└─┘┴ ┴  └─┘└─┘┴ └─ ┴   ┴└─┴└─┘└─┘└─┘
+
+# Terminate already running polybar, eww, picom, sxhkd and dunst instances
+processes=("picom" "polybar" "eww" "sxhkd" "dunst")
+
+for process in "${processes[@]}"; do
+    if pidof -q "$process"; then
+        pkill -x "$process" > /dev/null; sleep 0.1
+    fi
+done
+
+# Launch picom
+picom --config "$HOME"/.config/bspwm/rices/"$RICETHEME"/picom.conf &
+
+# Load colors, dunst, bars and/or eww widgets
+. "$HOME"/.config/bspwm/rices/"$RICETHEME"/Theme.sh
+
+# Set random wallpaper for actual rice
+feh -z --no-fehbg --bg-fill "$HOME"/.config/bspwm/rices/"$RICETHEME"/walls
+
+# Bindkeys
+sxhkd -c "$HOME"/.config/bspwm/sxhkdrc &
+
+xss-lock --betterlockscreen -l dimblur &
+
+xrdb -merge ~/.Xresources

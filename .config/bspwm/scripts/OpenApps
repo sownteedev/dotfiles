@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#  ╔═╗╔═╗╔═╗╔═╗  ╦  ╔═╗╦ ╦╔╗╔╔═╗╦ ╦╔═╗╦═╗
+#  ╠═╣╠═╝╠═╝╚═╗  ║  ╠═╣║ ║║║║║  ╠═╣║╣ ╠╦╝
+#  ╩ ╩╩  ╩  ╚═╝  ╩═╝╩ ╩╚═╝╝╚╝╚═╝╩ ╩╚═╝╩╚═
+
+case "$1" in
+  --menu)
+    rofi -show drun \
+    -theme $HOME/.config/bspwm/rices/$RICETHEME/launcher.rasi & disown;;
+  --terminal)
+    kitty & disown;;
+  --update)
+    kitty --hold --class FloaTerm,kitty -e Updates --update-system & disown;;
+  --checkupdates)
+    kitty --hold --class Updating,kitty -e Updates --print-updates & disown;;
+  --ranger)
+    kitty --class Ranger,kitty -e ranger & disown;;
+  --nvim)
+    kitty -e nvim & disown;;
+  --music)
+    kitty --class MusicPlayer,kitty -e ncmpcpp & disown;;
+  #Apps
+  --filemanager)
+    thunar & disown;;
+  --browser)
+    google-chrome-stable & disown;;
+  --editor)
+    nvim & disown;;
+  --telegram)
+    telegram-desktop & disown;;
+  --soundcontrol)
+    pavucontrol & disown;;
+  *)
+esac
