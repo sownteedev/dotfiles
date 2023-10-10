@@ -27,7 +27,6 @@
 - Spotify (Spicetify)
 - Chrome
 - EDGE
-
   ```
     yay -S google-chrome microsoft-edge-stable-bin spotify spicetify-cli
   ```
@@ -74,7 +73,7 @@
 
 #### Other
 
-    sudo pacman -S gnome-keyring libsecret libgnome-keyring seahorse xf86-input-libinput pacman-contrib thefuck btop fontconfig ibus lsd jq polkit-gnome libwebp webp-pixbuf-loader physlock xss-lock betterlockscreen lightdm lightdm-webkit2-greeter && yay -S lightdm-webkit2-theme-glorious
+    sudo pacman -S gnome-keyring libsecret libgnome-keyring seahorse auto-cpufreq xf86-input-libinput pacman-contrib thefuck btop fontconfig ibus lsd jq github-cli polkit-gnome libwebp webp-pixbuf-loader physlock xss-lock betterlockscreen lightdm lightdm-webkit2-greeter && yay -S lightdm-webkit2-theme-glorious
 
 </blockquote></details>
 
