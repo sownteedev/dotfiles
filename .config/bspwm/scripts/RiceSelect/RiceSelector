@@ -2,7 +2,7 @@
 
 rofi_command="rofi -dmenu -theme $HOME/.config/bspwm/scripts/RiceSelect/RiceSelector.rasi"
 
-options=( "yoru" "z0mbi3")
+options=( "yoru" )
 
 selected=$(printf "%s\n" "${options[@]}" | $rofi_command)
 

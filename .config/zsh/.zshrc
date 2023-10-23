@@ -52,4 +52,7 @@ export QT_IM_MODULE=ibus
 export XMODIFIERS=@im=ibus
 ibus-daemon -drx
 
+export VISUAL=nvim;
+export EDITOR=nvim;
+
 # vim:ft=zsh:nowrap

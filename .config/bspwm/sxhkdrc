@@ -22,7 +22,7 @@ alt + b
 
 # Lockscreen
 super + l
-    betterlockscreen -l dim
+    betterlockscreen -l dimblur
 
 # Screenshot and Record
 Print
@@ -87,7 +87,7 @@ super + g
     bspc node -s biggest
 
 # set the window state
-super + {shift + f,shift + t,shift + @space,f}
+super + {shift + @space,shift + t,shift + f,f}
     bspc node -t {tiled,pseudo_tiled,floating,fullscreen}
 
 # set the node flags

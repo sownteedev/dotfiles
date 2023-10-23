@@ -1,11 +1,5 @@
 /*****----- Configuration -----*****/
 configuration {
-    modi:                       "drun,run,filebrowser,window";
-    show-icons:                 false;
-    display-drun:               "";
-    display-run:                "";
-    display-filebrowser:        "";
-    display-window:             "";
     drun-display-format:        "{name}";
     window-format:              "{c} · {t}";
 }
@@ -70,16 +64,7 @@ window {
     border-radius:               0px;
     border-color:                #25292E;
     cursor:                      "default";
-    /* Backgroud Colors */
     background-color:            @background-colour;
-    /* Backgroud Image */
-    //background-image:          url("/path/to/image.png", none);
-    /* Simple Linear Gradient */
-    //background-image:          linear-gradient(red, orange, pink, purple);
-    /* Directional Linear Gradient */
-    //background-image:          linear-gradient(to bottom, pink, yellow, magenta);
-    /* Angle Linear Gradient */
-    //background-image:          linear-gradient(45, cyan, purple, indigo);
 }
 
 /*****----- Main Box -----*****/
@@ -119,7 +104,7 @@ textbox-prompt-colon {
     padding:                     8px 19px;
     border-radius:               0px;
     expand:                      false;
-    str:                         "";
+    str:                         "";
     background-color:            #25292E;
     text-color:                  @foreground;
 }

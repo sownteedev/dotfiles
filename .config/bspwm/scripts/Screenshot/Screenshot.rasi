@@ -1,7 +1,3 @@
-/**
- * Copyright (C) 2020-2023 Aditya Shakya <adi1090x@gmail.com>
- **/
-
 /*****----- Configuration -----*****/
 configuration {
     show-icons:                 false;

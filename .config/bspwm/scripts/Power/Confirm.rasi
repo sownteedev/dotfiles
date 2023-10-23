@@ -6,10 +6,11 @@ configuration {
 /*****----- Global Properties -----*****/
 * {
     font:                        "Liga SFMono Nerd Font Bold 10";
-    background:                  #14171c;
-    background-alt:              #14171cE0;
-    foreground:                  #b8bfe5;
-    selected:                    #81ae5f;
+    background:                  #0C0E0F;
+    background-alt:              #0C0E0FE0;
+    foreground:                  #A1A1A1;
+    selected:                    #25292E;
+	unselected:					 #edeff0;							 
 }
 
 /*
@@ -29,7 +30,7 @@ window {
     padding:                     0px;
     border:                      45px 2px 2px 2px solid;
     border-radius:               0px;
-    border-color:                @background;
+    border-color:                @selected;
     cursor:                      "default";
     background-color:            @background;
 }
@@ -42,36 +43,6 @@ mainbox {
     padding:                     20px;
     background-color:            transparent;
     children:                    [ "message", "listview" ];
-}
-
-/*****----- Inputbar -----*****/
-inputbar {
-    enabled:                     true;
-    spacing:                     10px;
-    padding:                     0px;
-    border:                      0px;
-    border-radius:               0px;
-    border-color:                @selected;
-    background-color:            transparent;
-    text-color:                  @foreground;
-    children:                    [ "textbox-prompt-colon", "prompt"];
-}
-
-textbox-prompt-colon {
-    enabled:                     true;
-    expand:                      false;
-    str:                         "";
-    padding:                     6px 10px;
-    border-radius:               0px;
-    background-color:            @background;
-    text-color:                  @foreground;
-}
-prompt {
-    enabled:                     true;
-    padding:                     6px 10px;
-    border-radius:               0px;
-    background-color:            @selected;
-    text-color:                  @foreground;
 }
 
 /*****----- Message -----*****/
@@ -118,7 +89,7 @@ element {
     cursor:                      pointer;
 }
 element-text {
-    font:                        "Feather 11";
+    font:                        "Liga SFMono Nerd Font 15";
     background-color:            transparent;
     text-color:                  inherit;
     cursor:                      inherit;
@@ -140,11 +111,11 @@ element selected.active {
 element normal.active,
 element alternate.active,
 element selected.urgent {
-    background-color:            var(background-alt);
+    background-color:            var(selected);
     text-color:                  var(foreground);
 }
 element selected.normal {
     background-color:            var(background-alt);
-    text-color:                  var(foreground);
+    text-color:                  var(unselected);
     border-color:                @background;
 }

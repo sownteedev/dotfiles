@@ -26,14 +26,8 @@ else
 	option_5="󰍃"
 	option_6=""
 fi
-cnflayout=`cat ${CNFR} | grep 'USE_ICON' | cut -d'=' -f2`
-if [[ "$cnflayout" == 'NO' ]]; then
-	yes=' Yes'
-	no=' No'
-else
-	yes=''
-	no=''
-fi
+yes=''
+no=''
 
 # Rofi CMD
 rofi_cmd() {
@@ -52,8 +46,7 @@ run_rofi() {
 # Confirmation CMD
 confirm_cmd() {
 	rofi -dmenu \
-		-p 'Confirmation' \
-		-mesg 'Are you Sure?' \
+		-mesg 'Confirmation' \
 		-theme ${CNFR}
 }
 
@@ -85,7 +78,7 @@ run_cmd() {
 	elif [[ "$1" == '--opt5' ]]; then
 		confirm_run 'bspc quit'
 	elif [[ "$1" == '--opt6' ]]; then
-		betterlockscreen --lock
+		betterlockscreen -l dimblur
 	fi
 }
 
