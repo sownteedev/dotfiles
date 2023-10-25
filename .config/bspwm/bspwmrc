@@ -82,4 +82,6 @@ feh -z --no-fehbg --bg-fill "$HOME"/.config/bspwm/rices/"$RICETHEME"/walls
 # Bindkeys
 sxhkd -c "$HOME"/.config/bspwm/sxhkdrc &
 
+xsetroot -cursor_name left_ptr
+
 xss-lock -- betterlockscreen -l dimblur &
