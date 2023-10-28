@@ -7,10 +7,13 @@
 #  ││││├─┘│ │├┬┘ │ ├─┤│││ │   └┐┌┘├─┤├┬┘│├─┤├┴┐│  ├┤ └─┐
 #  ┴┴ ┴┴  └─┘┴└─ ┴ ┴ ┴┘└┘ ┴    └┘ ┴ ┴┴└─┴┴ ┴└─┘┴─┘└─┘└─┘
 
+
 export RICETHEME=$(<$HOME/.config/bspwm/.rice)
 PATH="$HOME/.config/bspwm/scripts:$PATH"
 PATH="$HOME/.config/bspwm/scripts/RiceSelect:$PATH"
 PATH="$HOME/.config/bspwm/config:$PATH"
+
+export _JAVA_AWT_WM_NONREPARENTING=1
 
 #  ┬ ┬┌─┐┬─┐┬┌─┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐
 #  ││││ │├┬┘├┴┐└─┐├─┘├─┤│  ├┤ └─┐
@@ -35,7 +38,7 @@ bspc rule -a neovide desktop=^3 follow=on
 bspc rule -a discord desktop=^4 follow=off
 bspc rule -a Telegram desktop=^4
 bspc rule -a Spotify desktop=^5 follow=off
-bspc rule -a vlc desktop=^6
+bspc rule -a vlc desktop=^7 follow=on
 bspc rule -a Thunar desktop=^7 follow=on
 bspc rule -a TeamViewer desktop=^8 follow=off
 
@@ -76,8 +79,8 @@ dunst -config "$HOME"/.config/bspwm/config/dunstrc &
 # Load theme
 . "$HOME"/.config/bspwm/rices/"$RICETHEME"/Theme.sh
 
-# Set random wallpaper for actual rice
-feh -z --no-fehbg --bg-fill "$HOME"/.config/bspwm/rices/"$RICETHEME"/walls
+# Set random wallpaper
+feh -z --no-fehbg --bg-fill "$HOME"/.walls
 
 # Bindkeys
 sxhkd -c "$HOME"/.config/bspwm/sxhkdrc &

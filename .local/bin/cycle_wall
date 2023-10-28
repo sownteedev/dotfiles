@@ -1,0 +1,15 @@
+#!/bin/bash
+folder_path="$HOME/.walls"
+list=($(ls $folder_path | shuf))
+out="$HOME/.config/awesome/theme/wall.jpg"
+#palette="everblush"
+lut="$HOME/.config/awesome/other/mountain.png"
+for image in "${list[@]}"
+do
+
+#lutgen apply -p $palette $folder_path/$image -o $out
+$HOME/.local/bin/lutgen apply --hald-clut $lut $folder_path/$image -o $out
+feh --no-fehbg --bg-fill $out
+
+sleep $1
+done

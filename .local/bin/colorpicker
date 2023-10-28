@@ -1,0 +1,6 @@
+#!/bin/sh
+hex="$(gpick -pso --no-newline | tr '[:upper:]' '[:lower:]')"
+[ "$hex" ] && (
+convert -size 50x50 xc:$hex /tmp/xcolor.png
+echo "$hex" | xclip -r -sel clipboard && notify-send -i "/tmp/xcolor.png" "Picker" "$hex"
+)

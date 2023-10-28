@@ -8,7 +8,7 @@ case "$1" in
     rofi -show drun \
     -theme $HOME/.config/bspwm/config/launcher.rasi & disown;;
   --terminal)
-    alacritty & disown;;
+    kitty & disown;;
   --update)
     kitty --hold --class FloaTerm,kitty -e Updates --update-system & disown;;
   --checkupdates)
