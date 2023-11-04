@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+rofi_command="rofi -dmenu -theme $HOME/.config/scripts/RiceSelect/RiceSelector.rasi"
+
+options=( "yoru" "decaydark" )
+
+selected=$(printf "%s\n" "${options[@]}" | $rofi_command)
+sed -i -e "s/vim.cmd 'colorscheme .*'/vim.cmd 'colorscheme $1'/" $config/nvim/init.lua
+wm=$(wmctrl -m | grep "Name:" | awk '{print $2}')
+
+if [[ -n "$selected" ]]; then
+	if [[ $selected == "yoru" ]]; then
+		sed -i -e "s/include .*/include yoru.conf/" "$HOME"/.config/kitty/kitty.conf
+		spicetify config color_scheme yoru && spicetify apply
+		echo "$selected" > "$HOME"/.theme
+	elif [[ $selected == "decaydark" ]]; then
+		sed -i -e "s/include .*/include decaydark.conf/" "$HOME"/.config/kitty/kitty.conf
+		spicetify config color_scheme decaydark && spicetify apply
+		echo "$selected" > "$HOME"/.theme
+	fi
+
+
+	if [[ $wm == "bspwm" ]]; then
+		bspc wm -r
+	elif [[ $wm == "awesome" ]]; then
+		awesome-client "awesome.restart()"
+	fi
+fi

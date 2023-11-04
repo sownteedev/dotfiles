@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+
+# Import Current Theme
+DIR="$HOME/.config/scripts"
+RASI="$DIR/Power/PowerMenu.rasi"
+CNFR="$DIR/Power/Confirm.rasi"
+
+# Theme Elements
+prompt="`users`@`hostnamectl --static`"
+mesg="Uptime : `uptime -p | sed -e 's/up //g'`"
+
+# Options
+layout=`cat ${RASI} | grep 'USE_ICON' | cut -d'=' -f2`
+if [[ "$layout" == 'NO' ]]; then
+	option_1="󰐥 Shutdown"
+	option_2=" Reboot"
+	option_3=" Suspend"
+	option_4=" Hibernate"
+	option_5="󰍃 Logout"
+	option_6=" Lock"
+else
+	option_1="󰐥"
+	option_2=""
+	option_3=""
+	option_4=""
+	option_5="󰍃"
+	option_6=""
+fi
+yes=''
+no=''
+
+# Rofi CMD
+rofi_cmd() {
+	rofi -dmenu \
+		-p "$prompt" \
+		-mesg "$mesg" \
+		-markup-rows \
+		-theme ${RASI}
+}
+
+# Pass variables to rofi dmenu
+run_rofi() {
+	echo -e "$option_1\n$option_2\n$option_3\n$option_4\n$option_5\n$option_6" | rofi_cmd
+}
+
+# Confirmation CMD
+confirm_cmd() {
+	rofi -dmenu \
+		-mesg 'Confirmation' \
+		-theme ${CNFR}
+}
+
+# Ask for confirmation
+confirm_exit() {
+	echo -e "$yes\n$no" | confirm_cmd
+}
+
+# Confirm and execute
+confirm_run () {	
+	selected="$(confirm_exit)"
+	if [[ "$selected" == "$yes" ]]; then
+        ${1} && ${2} && ${3}
+    else
+        exit
+    fi	
+}
+
+# Execute Command
+run_cmd() {
+	if [[ "$1" == '--opt1' ]]; then
+		confirm_run 'systemctl poweroff'
+	elif [[ "$1" == '--opt2' ]]; then
+		confirm_run 'systemctl reboot'
+	elif [[ "$1" == '--opt3' ]]; then
+		confirm_run 'systemctl suspend'
+	elif [[ "$1" == '--opt4' ]]; then
+		confirm_run 'systemctl hibernate'
+	elif [[ "$1" == '--opt5' ]]; then
+		confirm_run 'bspc quit'
+	elif [[ "$1" == '--opt6' ]]; then
+		betterlockscreen -l dimblur
+	fi
+}
+
+# Actions
+chosen="$(run_rofi)"
+case ${chosen} in
+    $option_1)
+		run_cmd --opt1
+        ;;
+    $option_2)
+		run_cmd --opt2
+        ;;
+    $option_3)
+		run_cmd --opt3
+        ;;
+    $option_4)
+		run_cmd --opt4
+        ;;
+    $option_5)
+		run_cmd --opt5
+        ;;
+    $option_6)
+		run_cmd --opt6
+        ;;
+esac

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+DIR="$HOME/.config"
+RASI="$DIR/scripts/Windows/Windows.rasi"
+
+# Run
+rofi \
+    -show window \
+    -theme ${RASI}
