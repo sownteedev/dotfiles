@@ -8,7 +8,7 @@ super + d
 
 # PowerMenu
 alt + F4
-    ~/.config/bspwm/scripts/Power/PowerMenu
+    ~/.config/scripts/Power/PowerMenu
 
 # Thunar
 super + e
@@ -16,9 +16,9 @@ super + e
 
 # Bluetooth & Wifi
 alt + w
-    ~/.config/bspwm/scripts/Network/Network
+    ~/.config/scripts/Network/Network
 alt + b
-    ~/.config/bspwm/scripts/Bluetooth/Bluetooth
+    ~/.config/scripts/Bluetooth/Bluetooth
 
 # Lockscreen
 super + l
@@ -26,33 +26,37 @@ super + l
 
 # Screenshot and Record
 Print
-    ~/.config/bspwm/scripts/Screenshot/Screenshot
+    ~/.config/scripts/Screenshot/Screenshot
 super + Print
 	flameshot gui
 # Show windows
 super + Tab
-    ~/.config/bspwm/scripts/Windows/Windows
+    ~/.config/scripts/Windows/Windows
 
 # Manage brightness
 XF86MonBrightnessUp
-    ~/.config/bspwm/scripts/Volume_Brightness brightness_up
+    ~/.config/scripts/Volume_Brightness brightness_up
 XF86MonBrightnessDown
-    ~/.config/bspwm/scripts/Volume_Brightness brightness_down
+    ~/.config/scripts/Volume_Brightness brightness_down
 
 # Volume control
 XF86AudioRaiseVolume
-    ~/.config/bspwm/scripts/Volume_Brightness volume_up
+    ~/.config/scripts/Volume_Brightness volume_up
 XF86AudioLowerVolume
-    ~/.config/bspwm/scripts/Volume_Brightness volume_down
+    ~/.config/scripts/Volume_Brightness volume_down
 XF86AudioMute
-    ~/.config/bspwm/scripts/Volume_Brightness volume_mute
+    ~/.config/scripts/Volume_Brightness volume_mute
 # Next Pause Previous
 XF86Audio{Play,Next,Prev}
     playerctl {play-pause,next,previous}
 
 # Theme Selector
 alt + @space
-    RiceSelector
+    ~/.config/scripts/RiceSelect/RiceSelector
+
+# Opacity
+super + ctrl + {Up,Down}
+	OpenApps {--opacity,--noopacity}
 
 # Poweroff, Reboot, Logout, Lockscreen, Kill
 ctrl + super + alt + {p,r,q,l,k}

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+~/.config/configs/picom/toggle --no-opacity &
+dunst -config ~/.config/configs/dunstrc &
+feh -z --no-fehbg --bg-fill ~/.walls
+xss-lock -- betterlockscreen -l dimblur &

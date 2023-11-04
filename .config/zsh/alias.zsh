@@ -11,7 +11,7 @@ fi
 eval "$(thefuck --alias)"
 
 alias rec='ffmpeg -framerate 60 -f x11grab -i $DISPLAY -pix_fmt yuv420p $HOME/Videos/rec.mp4'
-alias rec_high='ffmpeg -framerate 60 -f x11grab -i $DISPLAY -c:v libx264rgb -crf 0 -preset ultrafast $HOME/Videos/rec.mp4'
+alias rec_mic='ffmpeg -framerate 60 -f x11grab -i $DISPLAY -f pulse -i default -pix_fmt yuv420p $HOME/Videos/rec.mp4'
 
 alias cls="clear"
 alias nvide="neovide"

@@ -1,31 +1,21 @@
 local awful = require("awful")
-local hotkeys_popup = require("awful.hotkeys_popup")
 require("awful.hotkeys_popup.keys")
 local xrandr = require("config.xrandr")
 
-mod = "Mod4"
-alt = "Mod1"
-ctrl = "Control"
-shift = "Shift"
+local mod = "Mod4"
+local alt = "Mod1"
+local ctrl = "Control"
+local shift = "Shift"
 
 awful.keyboard.append_global_keybindings({
 	-- Apps
-	awful.key({ mod }, "d", function()
-		awful.spawn("rofi -show drun \
-    -theme .config/bspwm/config/launcher.rasi")
-	end),
+	awful.key({ mod }, "d", function() awful.spawn("rofi -show drun -theme .config/configs/launcher.rasi") end),
 	awful.key({ mod }, "e", function() awful.spawn("thunar") end),
 
-	-- Scripts
-	awful.key({}, "XF86AudioPlay", function()
-		awful.spawn.with_shell("playerctl play-pause")
-	end),
-	awful.key({}, "XF86AudioPrev", function()
-		awful.spawn.with_shell("playerctl previous")
-	end),
-	awful.key({}, "XF86AudioNext", function()
-		awful.spawn.with_shell("playerctl next")
-	end),
+	-- Volume and Brightness
+	awful.key({}, "XF86AudioPlay", function() awful.spawn.with_shell("playerctl play-pause") end),
+	awful.key({}, "XF86AudioPrev", function() awful.spawn.with_shell("playerctl previous") end),
+	awful.key({}, "XF86AudioNext", function() awful.spawn.with_shell("playerctl next") end),
 	awful.key({}, "XF86AudioRaiseVolume", function()
 		awful.spawn.with_shell("pactl set-sink-volume @DEFAULT_SINK@ +2%")
 		update_value_of_volume()
@@ -51,64 +41,45 @@ awful.keyboard.append_global_keybindings({
 		update_value_of_bright()
 		awesome.emit_signal("summon::osd")
 	end),
-	awful.key({}, "Print", function()
-		awful.spawn.with_shell("~/.config/bspwm/scripts/Screenshot/Screenshot")
-	end),
-	awful.key({ alt, }, "w", function()
-		awful.spawn.with_shell("~/.config/bspwm/scripts/Network/Network")
-	end),
-	awful.key({ alt, }, "b", function()
-		awful.spawn.with_shell("~/.config/bspwm/scripts/Bluetooth/Bluetooth")
-	end),
-	awful.key({ mod, }, "Tab", function()
-		awful.spawn.with_shell("~/.config/bspwm/scripts/Windows/Windows")
-	end),
-	awful.key({ mod, alt }, "w", function()
-		awful.spawn.with_shell("feh -z --no-fehbg --bg-fill ~/.walls")
-	end),
-	awful.key({ mod, }, "l", function()
-		awful.spawn.with_shell("betterlockscreen -l dimblur")
-	end),
-	awful.key({ alt, }, "F4", function()
-		awful.spawn.with_shell("~/.config/bspwm/scripts/Power/PowerMenu")
-	end),
+
+	-- Scripts
+	awful.key({ mod, ctrl }, "p", function() awful.spawn.with_shell("~/.local/bin/colorpicker", false) end),
+	awful.key({}, "Print", function() awful.spawn.with_shell("~/.config/scripts/Screenshot/Screenshot") end),
+	awful.key({ alt, }, "w", function() awful.spawn.with_shell("~/.config/scripts/Network/Network") end),
+	awful.key({ alt, }, "b", function() awful.spawn.with_shell("~/.config/scripts/Bluetooth/Bluetooth") end),
+	awful.key({ mod, }, "Tab", function() awful.spawn.with_shell("~/.config/scripts/Windows/Windows") end),
+	awful.key({ alt, }, "F4", function() awful.spawn.with_shell("~/.config/scripts/Power/PowerMenu") end),
+	awful.key({ alt, }, "space", function() awful.spawn.with_shell("~/.config/scripts/RiceSelect/RiceSelector") end),
+	awful.key({ mod, alt }, "w", function() awful.spawn.with_shell("feh -z --no-fehbg --bg-fill ~/.walls") end),
+	awful.key({ mod, }, "l", function() awful.spawn.with_shell("betterlockscreen -l dimblur") end),
 	awful.key({ mod, ctrl }, "p", function() xrandr.xrandr() end),
 	awful.key({ mod, shift }, "b", function() awesome.emit_signal("hide::bar") end),
-	awful.key({ mod, }, "s", hotkeys_popup.show_help,
-		{ description = "show help", group = "awesome" }),
-	awful.key({ mod, alt }, "r", awesome.restart,
-		{ description = "reload awesome", group = "awesome" }),
-	awful.key({ mod, alt }, "q", awesome.quit,
-		{ description = "quit awesome", group = "awesome" }),
-	awful.key({ mod, }, "Return", function() awful.spawn(terminal) end,
-		{ description = "open a terminal", group = "launcher" }),
+	awful.key({ mod, alt }, "r", awesome.restart),
+	awful.key({ mod, alt }, "q", awesome.quit),
+	awful.key({ mod, }, "Return", function() awful.spawn("kitty") end)
 })
 
 -- Switch between windows
 awful.keyboard.append_global_keybindings({
-	awful.key({ mod, }, "Left", awful.tag.viewprev,
-		{ description = "view previous", group = "tag" }),
-	awful.key({ mod, }, "Right", awful.tag.viewnext,
+	awful.key({ alt, shift }, "Tab", awful.tag.viewnext,
 		{ description = "view next", group = "tag" }),
-	awful.key({ mod, }, "Escape", awful.tag.history.restore,
+	awful.key({ alt, ctrl }, "Tab", awful.tag.viewprev,
+		{ description = "view previous", group = "tag" }),
+	awful.key({ alt }, "Tab", awful.tag.history.restore,
 		{ description = "go back", group = "tag" }),
 })
 
 -- Focus related keybindings
 awful.keyboard.append_global_keybindings({
 	awful.key({ mod, }, "j",
-		function()
-			awful.client.focus.byidx(1)
-		end,
+		function() awful.client.focus.byidx(1) end,
 		{ description = "focus next by index", group = "client" }
 	),
 	awful.key({ mod, }, "k",
-		function()
-			awful.client.focus.byidx(-1)
-		end,
+		function() awful.client.focus.byidx(-1) end,
 		{ description = "focus previous by index", group = "client" }
 	),
-	awful.key({ alt, }, "Tab",
+	awful.key({ alt, }, "Escape",
 		function()
 			awful.client.focus.history.previous()
 			if client.focus then
@@ -123,7 +94,6 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod, ctrl }, "n",
 		function()
 			local c = awful.client.restore()
-			-- Focus restored client
 			if c then
 				c:activate { raise = true, context = "key.unminimize" }
 			end
@@ -151,7 +121,7 @@ awful.keyboard.append_global_keybindings({
 		{ description = "increase the number of columns", group = "layout" }),
 	awful.key({ mod, ctrl }, "l", function() awful.tag.incncol(-1, nil, true) end,
 		{ description = "decrease the number of columns", group = "layout" }),
-	awful.key({ mod, }, "space", function() awful.layout.inc(1) end,
+	awful.key({ mod, }, "space", function() awful.layoutinc(1) end,
 		{ description = "select next", group = "layout" }),
 	awful.key({ mod, shift }, "space", function() awful.layout.inc(-1) end,
 		{ description = "select previous", group = "layout" }),
@@ -172,59 +142,59 @@ awful.keyboard.append_global_keybindings({
 			end
 		end,
 	},
-	awful.key {
-		modifiers   = { mod, ctrl },
-		keygroup    = "numrow",
-		description = "toggle tag",
-		group       = "tag",
-		on_press    = function(index)
-			local screen = awful.screen.focused()
-			local tag = screen.tags[index]
-			if tag then
-				awful.tag.viewtoggle(tag)
-			end
-		end,
-	},
-	awful.key {
-		modifiers   = { mod, shift },
-		keygroup    = "numrow",
-		description = "move focused client to tag",
-		group       = "tag",
-		on_press    = function(index)
-			if client.focus then
-				local tag = client.focus.screen.tags[index]
-				if tag then
-					client.focus:move_to_tag(tag)
-				end
-			end
-		end,
-	},
-	awful.key {
-		modifiers   = { mod, ctrl, shift },
-		keygroup    = "numrow",
-		description = "toggle focused client on tag",
-		group       = "tag",
-		on_press    = function(index)
-			if client.focus then
-				local tag = client.focus.screen.tags[index]
-				if tag then
-					client.focus:toggle_tag(tag)
-				end
-			end
-		end,
-	},
-	awful.key {
-		modifiers   = { mod },
-		keygroup    = "numpad",
-		description = "select layout directly",
-		group       = "layout",
-		on_press    = function(index)
-			local t = awful.screen.focused().selected_tag
-			if t then
-				t.layout = t.layouts[index] or t.layout
-			end
-		end,
-	}
+	-- 	awful.key {
+	-- 		modifiers   = { mod, ctrl },
+	-- 		keygroup    = "numrow",
+	-- 		description = "toggle tag",
+	-- 		group       = "tag",
+	-- 		on_press    = function(index)
+	-- 			local screen = awful.screen.focused()
+	-- 			local tag = screen.tags[index]
+	-- 			if tag then
+	-- 				awful.tag.viewtoggle(tag)
+	-- 			end
+	-- 		end,
+	-- 	},
+	-- 	awful.key {
+	-- 		modifiers   = { mod, shift },
+	-- 		keygroup    = "numrow",
+	-- 		description = "move focused client to tag",
+	-- 		group       = "tag",
+	-- 		on_press    = function(index)
+	-- 			if client.focus then
+	-- 				local tag = client.focus.screen.tags[index]
+	-- 				if tag then
+	-- 					client.focus:move_to_tag(tag)
+	-- 				end
+	-- 			end
+	-- 		end,
+	-- 	},
+	-- 	awful.key {
+	-- 		modifiers   = { mod, ctrl, shift },
+	-- 		keygroup    = "numrow",
+	-- 		description = "toggle focused client on tag",
+	-- 		group       = "tag",
+	-- 		on_press    = function(index)
+	-- 			if client.focus then
+	-- 				local tag = client.focus.screen.tags[index]
+	-- 				if tag then
+	-- 					client.focus:toggle_tag(tag)
+	-- 				end
+	-- 			end
+	-- 		end,
+	-- 	},
+	-- 	awful.key {
+	-- 		modifiers   = { mod },
+	-- 		keygroup    = "numpad",
+	-- 		description = "select layout directly",
+	-- 		group       = "layout",
+	-- 		on_press    = function(index)
+	-- 			local t = awful.screen.focused().selected_tag
+	-- 			if t then
+	-- 				t.layout = t.layouts[index] or t.layout
+	-- 			end
+	-- 		end,
+	-- 	}
 })
 
 client.connect_signal("request::default_keybindings", function()
@@ -234,11 +204,11 @@ client.connect_signal("request::default_keybindings", function()
 				c.fullscreen = not c.fullscreen
 				c:raise()
 			end,
-			{ description = "close", group = "client" }),
+			{ description = "toggle fullscreen", group = "client" }),
 		awful.key({ mod, shift }, "f", awful.client.floating.toggle,
 			{ description = "toggle fullscreen", group = "client" }),
 		awful.key({ mod, shift }, "q", function(c) c:kill() end,
-			{ description = "toggle floating", group = "client" }),
+			{ description = "quit", group = "client" }),
 		awful.key({ mod, ctrl }, "Return", function(c) c:swap(awful.client.getmaster()) end,
 			{ description = "move to master", group = "client" }),
 		awful.key({ mod, }, "o", function(c) c:move_to_screen() end,
@@ -246,9 +216,7 @@ client.connect_signal("request::default_keybindings", function()
 		awful.key({ mod, }, "t", function(c) c.ontop = not c.ontop end,
 			{ description = "toggle keep on top", group = "client" }),
 		awful.key({ mod, }, "n",
-			function(c)
-				c.minimized = true
-			end,
+			function(c) c.minimized = true end,
 			{ description = "minimize", group = "client" }),
 		awful.key({ mod, }, "m",
 			function(c)

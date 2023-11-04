@@ -7,11 +7,9 @@
 #  ││││├─┘│ │├┬┘ │ ├─┤│││ │   └┐┌┘├─┤├┬┘│├─┤├┴┐│  ├┤ └─┐
 #  ┴┴ ┴┴  └─┘┴└─ ┴ ┴ ┴┘└┘ ┴    └┘ ┴ ┴┴└─┴┴ ┴└─┘┴─┘└─┘└─┘
 
-
-export RICETHEME=$(<$HOME/.config/bspwm/.rice)
+export RICETHEME=$(<$HOME/.theme)
 PATH="$HOME/.config/bspwm/scripts:$PATH"
-PATH="$HOME/.config/bspwm/scripts/RiceSelect:$PATH"
-PATH="$HOME/.config/bspwm/config:$PATH"
+PATH="$HOME/.config/scripts/RiceSelect:$PATH"
 
 export _JAVA_AWT_WM_NONREPARENTING=1
 
@@ -72,17 +70,14 @@ for process in "${processes[@]}"; do
     fi
 done
 
-# Launch Picom and Dunst
-picom --config "$HOME"/.config/bspwm/config/picom.conf &
-dunst -config "$HOME"/.config/bspwm/config/dunstrc &
+picom --config "$HOME"/.config/configs/picom/picom.conf &
 
-# Load theme
+dunst -config "$HOME"/.config/configs/dunstrc &
+
 . "$HOME"/.config/bspwm/rices/"$RICETHEME"/Theme.sh
 
-# Set random wallpaper
 feh -z --no-fehbg --bg-fill "$HOME"/.walls
 
-# Bindkeys
 sxhkd -c "$HOME"/.config/bspwm/sxhkdrc &
 
 xsetroot -cursor_name left_ptr

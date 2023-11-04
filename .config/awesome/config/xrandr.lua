@@ -24,15 +24,9 @@ local function outputs()
 end
 
 local function arrange(out)
-	-- We need to enumerate all permutations of horizontal outputs.
-
 	local choices  = {}
 	local previous = { {} }
 	for i = 1, #out do
-		-- Find all permutation of length `i`: we take the permutation
-		-- of length `i-1` and for each of them, we create new
-		-- permutations by adding each output at the end of it if it is
-		-- not already present.
 		local new = {}
 		for _, p in pairs(previous) do
 			for _, o in pairs(out) do

@@ -26,19 +26,19 @@ ruled.client.connect_signal("request::rules", function()
 	}
 	ruled.client.append_rule {
 		rule       = { class = "kitty" },
-		properties = { screen = 1, tag = "1" }
+		properties = { tag = "1", switch_to_tags = true }
 	}
 	ruled.client.append_rule {
 		rule       = { class = "Google-chrome" },
-		properties = { screen = 1, tag = "2" }
+		properties = { tag = "2", switch_to_tags = true }
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "Code", "jetbrains-idea", "neovide" } },
-		properties = { screen = 1, tag = "3" }
+		properties = { tag = "3" }
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "discord", "Telegram" } },
-		properties = { screen = 1, tag = "4" }
+		properties = { tag = "4" }
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "Spotify" } },
@@ -46,18 +46,7 @@ ruled.client.connect_signal("request::rules", function()
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "Thunar", "vlc" } },
-		properties = { tag = "7" }
-	}
-end)
-
-ruled.notification.connect_signal('request::rules', function()
-	-- All notifications will match this rule.
-	ruled.notification.append_rule {
-		rule       = {},
-		properties = {
-			screen           = awful.screen.preferred,
-			implicit_timeout = 5,
-		}
+		properties = { tag = "7", switch_to_tags = true }
 	}
 end)
 

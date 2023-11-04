@@ -12,13 +12,12 @@ local rubato = require("modules.rubato")
 
 screen.connect_signal("request::desktop_decoration", function(s)
 	-- arccharts --
-
 	local create_arcchart_widget = function(widget, signal, bg, fg, thickness, text, icon)
 		local widget = wibox.widget {
 			widget = wibox.container.background,
 			bg = beautiful.background_alt,
-			forced_width = 154,
-			forced_height = 180,
+			forced_width = 130,
+			forced_height = 150,
 			{
 				widget = wibox.container.margin,
 				margins = 10,
@@ -39,7 +38,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 						{
 							widget = wibox.widget.textbox,
 							id = "icon",
-							font = beautiful.font .. " 20",
+							font = beautiful.font .. " 25",
 							text = icon,
 							halign = "center",
 							valign = "center",
@@ -76,20 +75,18 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			anim.target = value
 			widget:get_children_by_id("text")[1].text = value .. "%"
 		end)
-
 		return widget
 	end
 
 	local resourses = wibox.widget {
 		layout = wibox.layout.fixed.horizontal,
 		spacing = 10,
-		create_arcchart_widget(cpu, "signal::cpu", beautiful.background_urgent, beautiful.red, 15, "CPU:", ""),
+		create_arcchart_widget(cpu, "signal::cpu", beautiful.background_urgent, beautiful.red, 15, "CPU:", "󰻠"),
 		create_arcchart_widget(ram, "signal::ram", beautiful.background_urgent, beautiful.yellow, 15, "RAM:", ""),
 		create_arcchart_widget(disk, "disk::value", beautiful.background_urgent, beautiful.blue, 15, "DISK:", ""),
 	}
 
 	-- progressbars --
-
 	local create_progressbar_widget = function(color, width, icon)
 		return wibox.widget {
 			widget = wibox.container.background,
@@ -127,8 +124,8 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		}
 	end
 
-
-	local volume = create_progressbar_widget(beautiful.orange, 370, "")
+	-- Volume
+	local volume = create_progressbar_widget(beautiful.orange, 200, "")
 
 	volume:buttons {
 		awful.button({}, 1, function()
@@ -153,14 +150,14 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		end
 	}
 
-
 	awesome.connect_signal("volume::value", function(value, icon)
 		anim_volume.target = value
 		volume:get_children_by_id("text")[1].text = value
 		volume:get_children_by_id("icon")[1].text = icon
 	end)
 
-	local bright = create_progressbar_widget(beautiful.violet, 370, "")
+	-- Brightness
+	local bright = create_progressbar_widget(beautiful.violet, 200, "󰃠 ")
 
 	local anim_bright = rubato.timed {
 		duration = 0.3,
@@ -203,7 +200,6 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	}
 
 	-- profile --
-
 	local create_fetch_comp = function(icon, text)
 		return wibox.widget {
 			layout = wibox.layout.flex.horizontal,
@@ -221,26 +217,24 @@ screen.connect_signal("request::desktop_decoration", function(s)
 
 	local fetch = wibox.widget {
 		layout = wibox.layout.flex.vertical,
-		forced_width = 322,
-		spacing = 10,
-		create_fetch_comp("",
-			io.popen([[distro | grep "Name:" | awk '{sub(/^Name: /, ""); print}' | awk '{print $1 " " $2}']]):read(
-				"*all")),
+		forced_width = 260,
+		spacing = 5,
+		create_fetch_comp("", "Arch Linux"),
 		create_fetch_comp("", io.popen([[uname -r]]):read("*all")),
-		create_fetch_comp("", io.popen([[xbps-query -l | wc -l]]):read("*all")),
+		create_fetch_comp("", io.popen([[pacman -Q | wc -l]]):read("*all")),
 		create_fetch_comp("", "Awesome WM"),
 	}
 
 	local profile_image = wibox.widget {
 		widget = wibox.widget.imagebox,
-		forced_width = 90,
+		forced_width = 80,
 		forced_height = 90,
 		image = beautiful.profile_image,
 	}
 
 	local profile_name = wibox.widget {
 		widget = wibox.widget.textbox,
-		text = "@" .. io.popen([[whoami | sed 's/.*/\u&/']]):read("*all")
+		text = "@sownteedev"
 	}
 
 	local line = wibox.widget {
@@ -252,7 +246,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	local profile = wibox.widget {
 		widget = wibox.container.background,
 		bg = beautiful.background_alt,
-		forced_height = 140,
+		forced_height = 120,
 		{
 			widget = wibox.container.margin,
 			margins = 10,
@@ -261,7 +255,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 				spacing = 20,
 				{
 					layout = wibox.layout.fixed.vertical,
-					spacing = 10,
+					spacing = 0,
 					profile_image,
 					profile_name,
 				},
@@ -293,7 +287,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			},
 			{
 				widget = wibox.container.margin,
-				top = 15,
+				top = 10,
 				{
 					layout = wibox.layout.fixed.vertical,
 					spacing = 8,
@@ -311,12 +305,11 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	}
 
 	-- toggles --
-
 	local create_toggle_widget = function(bg, fg, icon, name, value, arroy_visible)
 		return wibox.widget {
 			widget = wibox.container.background,
-			forced_width = 236,
-			forced_height = 80,
+			forced_width = 200,
+			forced_height = 60,
 			bg = beautiful.background_alt,
 			{
 				layout = wibox.layout.fixed.horizontal,
@@ -339,7 +332,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 									widget = wibox.widget.textbox,
 									id = "icon",
 									text = icon,
-									font = beautiful.font .. " 20",
+									font = beautiful.font .. " 15",
 									halign = "center"
 								}
 							}
@@ -389,7 +382,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		end
 	end
 
-	local wifi = create_toggle_widget(beautiful.accent, beautiful.background, "", "Wifi", "On", true)
+	local wifi = create_toggle_widget(beautiful.accent, beautiful.background, " ", "Wifi", "On", true)
 
 	awesome.connect_signal("wifi::value", function(value)
 		if value == "disabled" then
@@ -418,7 +411,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		end)
 	}
 
-	local micro = create_toggle_widget(beautiful.accent, beautiful.background, "", "Microphone", "On", false)
+	local micro = create_toggle_widget(beautiful.accent, beautiful.background, " ", "Microphone", "On", false)
 
 	awesome.connect_signal("capture_muted::value", function(value)
 		if value == "no" then
@@ -448,37 +441,37 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	}
 
 	local float = create_toggle_widget(beautiful.accent, beautiful.background, "", "Floating", "On", false)
-	toggle_change("off", float)
 
 	float:get_children_by_id("icon_container")[1]:buttons {
 		awful.button({}, 1, function()
 			vars.float_value_default = not vars.float_value_default
 			local tags = awful.screen.focused().tags
-			if not vars.float_value_default then
-				toggle_change("off", float)
-				for _, tag in ipairs(tags) do
-					awful.layout.set(awful.layout.suit.tile, tag)
-				end
-			else
+			if vars.float_value_default then
 				toggle_change("on", float)
 				for _, tag in ipairs(tags) do
 					awful.layout.set(awful.layout.suit.floating, tag)
+				end
+			else
+				toggle_change("off", float)
+				for _, tag in ipairs(tags) do
+					awful.layout.set(awful.layout.suit.tile, tag)
 				end
 			end
 		end),
 	}
 
-	local opacity = create_toggle_widget(beautiful.accent, beautiful.background, "", "Opacity", "On", false)
+	local opacity = create_toggle_widget(beautiful.background_urgent, beautiful.foreground, "󱡔 ", "Opacity", "Off",
+		false)
 
 	opacity:get_children_by_id("icon_container")[1]:buttons {
 		awful.button({}, 1, function()
 			vars.opacity_value_default = not vars.opacity_value_default
 			if not vars.opacity_value_default then
 				toggle_change("off", opacity)
-				awful.spawn.with_shell("$HOME/.config/awesome/other/picom/launch.sh --no-opacity")
+				awful.spawn.with_shell("$HOME/.config/configs/picom/toggle --no-opacity")
 			else
 				toggle_change("on", opacity)
-				awful.spawn.with_shell("$HOME/.config/awesome/other/picom/launch.sh --opacity")
+				awful.spawn.with_shell("$HOME/.config/configs/picom/toggle --opacity")
 			end
 		end),
 	}
@@ -495,65 +488,64 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	}
 
 	-- music player --
+	local art = wibox.widget {
+		image = "/home/sowntee/.config/awesome/assets/music.jpg",
+		valign = "right",
+		forced_height = 140,
+		horizontal_fit_policy = "fit",
+		vertical_fit_policy = "fit",
+		forced_width = 220,
+		widget = wibox.widget.imagebox
+	}
 
-	-- local art = wibox.widget {
-	-- 	image = "default_image.png",
-	-- 	valign = "right",
-	-- 	forced_height = 140,
-	-- 	horizontal_fit_policy = "fit",
-	-- 	vertical_fit_policy = "fit",
-	-- 	forced_width = 220,
-	-- 	widget = wibox.widget.imagebox
-	-- }
-	--
-	-- local title_widget = wibox.widget {
-	-- 	markup = "Nothing Playing",
-	-- 	align = "left",
-	-- 	widget = wibox.widget.textbox
-	-- }
-	--
-	-- local artist_widget = wibox.widget {
-	-- 	align = "left",
-	-- 	widget = wibox.widget.textbox
-	-- }
-	--
-	-- local create_music_button = function(text)
-	-- 	return wibox.widget {
-	-- 		widget = wibox.container.background,
-	-- 		bg = beautiful.background_urgent,
-	-- 		{
-	-- 			widget = wibox.container.margin,
-	-- 			margins = 5,
-	-- 			{
-	-- 				widget = wibox.widget.textbox,
-	-- 				text = text,
-	-- 				font = beautiful.font .. " 16",
-	-- 			}
-	-- 		}
-	-- 	}
-	-- end
-	--
-	-- local next = create_music_button("")
-	-- next:buttons {
-	-- 	awful.button({}, 1, function()
-	-- 		playerctl:next()
-	-- 	end)
-	-- }
-	--
-	-- local prev = create_music_button("")
-	-- prev:buttons {
-	-- 	awful.button({}, 1, function()
-	-- 		playerctl:previous()
-	-- 	end)
-	-- }
-	--
-	-- local music_button = create_music_button("")
-	-- music_button:buttons {
-	-- 	awful.button({}, 1, function()
-	-- 		playerctl:play_pause()
-	-- 	end)
-	-- }
-	--
+	local title_widget = wibox.widget {
+		markup = "Nothing Playing",
+		align = "left",
+		widget = wibox.widget.textbox
+	}
+
+	local artist_widget = wibox.widget {
+		align = "left",
+		widget = wibox.widget.textbox
+	}
+
+	local create_music_button = function(text)
+		return wibox.widget {
+			widget = wibox.container.background,
+			bg = beautiful.background_urgent,
+			{
+				widget = wibox.container.margin,
+				margins = 5,
+				{
+					widget = wibox.widget.textbox,
+					text = text,
+					font = beautiful.font .. " 16",
+				}
+			}
+		}
+	end
+
+	local next = create_music_button("󰙡 ")
+	next:buttons {
+		awful.button({}, 1, function()
+			awful.spawn("playerctl next")
+		end)
+	}
+
+	local prev = create_music_button("󰙣 ")
+	prev:buttons {
+		awful.button({}, 1, function()
+			awful.spawn("playerctl previous")
+		end)
+	}
+
+	local music_button = create_music_button(" ")
+	music_button:buttons {
+		awful.button({}, 1, function()
+			awful.spawn("playerctl play-pause")
+		end)
+	}
+
 	-- local media_slider = wibox.widget({
 	-- 	widget = wibox.widget.slider,
 	-- 	bar_color = beautiful.background_urgent,
@@ -571,17 +563,17 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	-- 		media_slider.value = h
 	-- 	end
 	-- }
-	--
+
 	-- local previous_value = 0
 	-- local internal_update = false
-	--
+
 	-- media_slider:connect_signal("property::value", function(_, new_value)
 	-- 	if internal_update and new_value ~= previous_value then
 	-- 		playerctl:set_position(new_value)
 	-- 		previous_value = new_value
 	-- 	end
 	-- end)
-	--
+
 	-- playerctl:connect_signal(
 	-- 	"position", function(_, interval_sec, length_sec)
 	-- 		internal_update = true
@@ -589,7 +581,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	-- 		anim_media_slider.target = interval_sec
 	-- 	end
 	-- )
-	--
+
 	-- awful.spawn.with_line_callback("playerctl -F metadata -f '{{mpris:length}}'", {
 	-- 	stdout = function(line)
 	-- 		if line == " " then
@@ -603,83 +595,82 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	-- 		end
 	-- 	end
 	-- })
-	--
-	-- playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	-- 	art:set_image(gears.surface.load_uncached(album_path))
-	-- 	title_widget:set_markup_silently(title)
-	-- 	artist_widget:set_markup_silently(artist)
-	-- end)
-	--
-	-- local music = wibox.widget {
-	-- 	layout = wibox.container.background,
-	-- 	bg = beautiful.background_alt,
-	-- 	{
-	-- 		layout = wibox.layout.stack,
-	-- 		{
-	-- 			widget = wibox.container.place,
-	-- 			halign = "right",
-	-- 			art,
-	-- 		},
-	-- 		{
-	-- 			widget = wibox.container.background,
-	-- 			bg = {
-	-- 				type = "linear",
-	-- 				from = { 0, 0 },
-	-- 				to = { 460, 0 },
-	-- 				stops = { { 0, beautiful.background_alt .. "00" }, { 1, beautiful.background_alt } }
-	-- 			},
-	-- 		},
-	-- 		{
-	-- 			widget = wibox.container.margin,
-	-- 			margins = 10,
-	-- 			{
-	-- 				layout = wibox.layout.fixed.horizontal,
-	-- 				spacing = 20,
-	-- 				{
-	-- 					widget = wibox.container.rotate,
-	-- 					direction = "east",
-	-- 					{
-	-- 						widget = wibox.container.background,
-	-- 						forced_width = 10,
-	-- 						forced_height = 6,
-	-- 						media_slider,
-	-- 					},
-	-- 				},
-	-- 				{
-	-- 					layout = wibox.layout.flex.vertical,
-	-- 					{
-	-- 						layout = wibox.layout.fixed.vertical,
-	-- 						spacing = 10,
-	-- 						forced_width = 200,
-	-- 						forced_height = 100,
-	-- 						{
-	-- 							widget = wibox.container.scroll.horizontal,
-	-- 							step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
-	-- 							speed = 50,
-	-- 							title_widget,
-	-- 						},
-	-- 						artist_widget,
-	-- 					},
-	-- 					{
-	-- 						widget = wibox.container.place,
-	-- 						valign = "bottom",
-	-- 						halign = "left",
-	-- 						{
-	-- 							layout = wibox.layout.fixed.horizontal,
-	-- 							spacing = 15,
-	-- 							prev,
-	-- 							music_button,
-	-- 							next,
-	-- 						}
-	-- 					}
-	-- 				}
-	-- 			}
-	-- 		}
-	-- 	}
-	-- }
+
+	playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
+		art:set_image(gears.surface.load_uncached(album_path))
+		title_widget:set_markup_silently(title)
+		artist_widget:set_markup_silently(artist)
+	end)
+
+	local music = wibox.widget {
+		layout = wibox.container.background,
+		bg = beautiful.background_alt,
+		{
+			layout = wibox.layout.stack,
+			{
+				widget = wibox.container.place,
+				halign = "right",
+				art,
+			},
+			{
+				widget = wibox.container.background,
+				bg = {
+					type = "linear",
+					from = { 0, 0 },
+					to = { 460, 0 },
+					stops = { { 0, beautiful.background_alt .. "00" }, { 1, beautiful.background_alt } }
+				},
+			},
+			{
+				widget = wibox.container.margin,
+				margins = 10,
+				{
+					layout = wibox.layout.fixed.horizontal,
+					spacing = 20,
+					-- {
+					-- 	widget = wibox.container.rotate,
+					-- 	direction = "east",
+					-- 	{
+					-- 		widget = wibox.container.background,
+					-- 		forced_width = 10,
+					-- 		forced_height = 6,
+					-- 		-- media_slider,
+					-- 	},
+					-- },
+					{
+						layout = wibox.layout.flex.vertical,
+						{
+							layout = wibox.layout.fixed.vertical,
+							spacing = 10,
+							forced_width = 200,
+							forced_height = 100,
+							{
+								widget = wibox.container.scroll.horizontal,
+								step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
+								speed = 50,
+								title_widget,
+							},
+							artist_widget,
+						},
+						{
+							widget = wibox.container.place,
+							valign = "bottom",
+							halign = "left",
+							{
+								layout = wibox.layout.fixed.horizontal,
+								spacing = 20,
+								prev,
+								music_button,
+								next,
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	-- main window --
-
 	local main = wibox.widget {
 		widget = wibox.container.background,
 		bg = beautiful.background,
@@ -691,11 +682,11 @@ screen.connect_signal("request::desktop_decoration", function(s)
 				spacing = 10,
 				time,
 				profile,
-				-- music,
+				music,
 				toggles,
 				info,
 				resourses,
-				weather,
+				-- weather,
 			}
 		}
 	}
@@ -707,7 +698,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		border_width = beautiful.border_width,
 		border_color = beautiful.border_color_normal,
 		minimum_height = s.geometry.height,
-		minimum_width = 490,
+		minimum_width = 200,
 		placement = function(d)
 			awful.placement.bottom_right(d,
 				{

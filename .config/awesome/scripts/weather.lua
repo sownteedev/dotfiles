@@ -1,5 +1,4 @@
 local awful = require("awful")
-local gears = require("gears")
 local json = require("modules.json")
 
 local GET_FORECAST_CMD = [[bash -c "curl -s --show-error -X GET '%s'"]]
@@ -25,27 +24,26 @@ local icon_map = {
 	["50n"] = ""
 }
 
-local api_key = require("config.key").openweatherapi
+local api_key = "8b05d62206f459e1d298cbe5844d7d87"
 local coordinates = { "53.9", "27.566667" }
 
-local show_hourly_forecast = true
-local show_daily_forecast = true
+local show_hourly_forecast = false
+local show_daily_forecast = false
 local units = "metric"
 
 local url = (
--- "https://api.openweathermap.org/data/2.5/weather?q=hanoi"
--- .. "?lat="
--- .. coordinates[1]
--- .. "&lon="
--- .. coordinates[2]
--- .. "&appid="
--- .. api_key
--- .. "&units="
--- .. units
--- .. "&exclude=minutely"
--- .. (show_hourly_forecast == false and ",hourly" or "")
--- .. (show_daily_forecast == false and ",daily" or "")
-	"https://api.openweathermap.org/data/2.5/weather?q=hanoi&appid=0875523089f8f8d639f8e995c63d9252&units=metric&exclude=minutely,hourly,daily"
+	"https://api.openweathermap.org/data/2.5/onecall"
+	.. "?lat="
+	.. coordinates[1]
+	.. "&lon="
+	.. coordinates[2]
+	.. "&appid="
+	.. api_key
+	.. "&units="
+	.. units
+	.. "&exclude=minutely"
+	.. (show_hourly_forecast == false and ",hourly" or "")
+	.. (show_daily_forecast == false and ",daily" or "")
 )
 
 awful.widget.watch(string.format(GET_FORECAST_CMD, url), 900, function(_, stdout, stderr)

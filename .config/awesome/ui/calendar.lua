@@ -1,7 +1,5 @@
-local gears     = require("gears")
 local awful     = require("awful")
 local wibox     = require("wibox")
-local naughty   = require("naughty")
 local beautiful = require("beautiful")
 
 local styles    = {}
@@ -61,7 +59,6 @@ local function decorate_cell(widget, flag, date)
 	end
 
 	-- Change bg color for weekends --
-
 	local d = { year = date.year, month = (date.month or 1), day = (date.day or 1) }
 	local weekday = tonumber(os.date("%w", os.time(d)))
 	local default_bg = (weekday == 0 or weekday == 6) and beautiful.background_urgent or beautiful.background_alt
@@ -74,7 +71,7 @@ local function decorate_cell(widget, flag, date)
 		bg = props.bg_color or default_bg,
 		widget = wibox.container.background
 			{
-				margins = { left = 6, right = 6, top = 4, bottom = 4 },
+				margins = { left = 5, right = 5, top = 0, bottom = 0 },
 				widget  = wibox.container.margin,
 				widget,
 			},
@@ -111,13 +108,12 @@ button_next:buttons {
 }
 
 -- main window --
-
 local main = wibox.widget {
 	widget = wibox.container.background,
 	bg = beautiful.background,
 	{
 		widget = wibox.container.margin,
-		margins = 20,
+		margins = 10,
 		{
 			layout = wibox.layout.fixed.vertical,
 			fill_space = true,
@@ -132,10 +128,10 @@ local calendar_widget = awful.popup {
 	ontop = true,
 	border_width = beautiful.border_width,
 	border_color = beautiful.border_color_normal,
-	minimum_height = 330,
-	maximum_height = 330,
-	minimum_width = 310,
-	maximum_width = 310,
+	minimum_height = 250,
+	maximum_height = 300,
+	minimum_width = 200,
+	maximum_width = 380,
 	placement = function(d)
 		awful.placement.top_left(d, { honor_workarea = true, margins = 20 + beautiful.border_width * 2 })
 	end,
@@ -143,14 +139,12 @@ local calendar_widget = awful.popup {
 }
 
 -- summon functions --
-
 awesome.connect_signal("summon::calendar_widget", function()
 	calendar:set_date(os.date("*t"))
 	calendar_widget.visible = not calendar_widget.visible
 end)
 
 -- hide on click --
-
 client.connect_signal("button::press", function()
 	if calendar_widget.visible == true then
 		awesome.emit_signal("time::calendar")

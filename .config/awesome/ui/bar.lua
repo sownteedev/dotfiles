@@ -1,4 +1,3 @@
-local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
@@ -9,7 +8,6 @@ local rubato = require("modules.rubato")
 
 screen.connect_signal("request::desktop_decoration", function(s)
 	-- profile --
-
 	local profile = wibox.widget {
 		layout = wibox.layout.fixed.vertical,
 		{
@@ -38,15 +36,56 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			awesome.emit_signal("summon::control")
 		end
 	end)
+	awesome.connect_signal("launcher::control", function()
+		awful.spawn("rofi -show drun -theme .config/configs/launcher.rasi")
+	end)
 
 	profile:buttons {
 		awful.button({}, 1, function()
 			awesome.emit_signal("profile::control")
-		end)
+		end),
+		awful.button({}, 3, function()
+			awesome.emit_signal("launcher::control")
+		end),
+	}
+
+	-- Switch theme --
+	local themes = wibox.widget {
+		layout = wibox.layout.fixed.vertical,
+		{
+			widget = wibox.container.background,
+			id = "theme",
+			bg = beautiful.background_alt,
+			{
+				widget = wibox.container.margin,
+				margins = { bottom = 8, top = 8, left = 3 },
+				{
+					widget = wibox.widget.textbox,
+					text = " ",
+					halign = "center"
+				}
+			}
+		}
+	}
+
+	awesome.connect_signal("launcher::theme", function()
+		vars.theme_default = not vars.theme_default
+		if not vars.theme_default then
+			themes:get_children_by_id("theme")[1]:set_bg(beautiful.background_alt)
+			awful.spawn.with_shell("~/.config/scripts/RiceSelect/RiceSelector")
+		else
+			themes:get_children_by_id("theme")[1]:set_bg(beautiful.background_urgent)
+			awful.spawn.with_shell("~/.config/scripts/RiceSelect/RiceSelector")
+		end
+	end)
+
+	themes:buttons {
+		awful.button({}, 1, function()
+			awesome.emit_signal("launcher::theme")
+		end),
 	}
 
 	-- tasklist --
-
 	local tasklist = awful.widget.tasklist {
 		screen = s,
 		filter = awful.widget.tasklist.filter.currenttags,
@@ -54,7 +93,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			awful.button({}, 1, function(c)
 				c:activate { context = "tasklist", action = "toggle_minimization" }
 			end),
-			awful.button({}, 2, function(c)
+			awful.button({}, 3, function(c)
 				c:kill { context = "tasklist", action = "close client" }
 			end),
 		},
@@ -65,7 +104,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		widget_template = {
 			id = "background_role",
 			widget = wibox.container.background,
-			forced_height = 24,
+			forced_height = 20,
 			create_callback = function(self, c, index, objects)
 				local tooltip = awful.tooltip({
 					objects = { self },
@@ -88,7 +127,6 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	}
 
 	-- keyboard layout --
-
 	local mykeyboard = awful.widget.keyboardlayout()
 	mykeyboard.widget.text = string.upper(mykeyboard.widget.text)
 	mykeyboard.widget:connect_signal("widget::redraw_needed",
@@ -119,7 +157,6 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	}
 
 	-- tray --
-
 	local tray = wibox.widget {
 		widget = wibox.container.background,
 		bg = beautiful.background_alt,
@@ -156,7 +193,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 
 	awesome.connect_signal("show::tray", function()
 		if not tray:get_children_by_id("tray")[1].visible then
-			tray:get_children_by_id("button")[1].text = ""
+			tray:get_children_by_id("button")[1].text = ""
 			tray:get_children_by_id("tray")[1].visible = true
 		else
 			tray:get_children_by_id("button")[1].text = ""
@@ -164,12 +201,9 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		end
 	end)
 
-	tray:buttons {
-		awful.button({}, 1, function() awesome.emit_signal("show::tray") end)
-	}
+	tray:buttons { awful.button({}, 1, function() awesome.emit_signal("show::tray") end) }
 
 	-- clock --
-
 	local time = wibox.widget {
 		layout = wibox.layout.fixed.vertical,
 		{
@@ -211,7 +245,6 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	}
 
 	-- taglist --
-
 	local taglist = awful.widget.taglist {
 		screen = s,
 		filter = awful.widget.taglist.filter.noempty,
@@ -226,8 +259,6 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		},
 		widget_template = {
 			id              = "background_role",
-			forced_height   = 20,
-			forced_width    = 20,
 			widget          = wibox.container.background,
 			create_callback = function(self, tag)
 				self.animate = rubato.timed {
@@ -239,9 +270,9 @@ screen.connect_signal("request::desktop_decoration", function(s)
 				}
 				self.update = function()
 					if tag.selected then
-						self.animate.target = 28
+						self.animate.target = 30
 					elseif #tag:clients() > 0 then
-						self.animate.target = 18
+						self.animate.target = 20
 					end
 				end
 				self.update()
@@ -261,8 +292,8 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			taglist
 		}
 	}
-	-- battery --
 
+	-- battery --
 	local bat = wibox.widget {
 		widget = wibox.container.background,
 		bg = beautiful.background_alt,
@@ -312,7 +343,6 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	end)
 
 	-- dnd --
-
 	local dnd_button = wibox.widget {
 		widget = wibox.container.background,
 		id = "dnd",
@@ -320,7 +350,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		fg = beautiful.foregraund,
 		{
 			widget = wibox.container.margin,
-			margins = { top = 8, bottom = 8 },
+			margins = { top = 8, bottom = 8, left = 3 },
 			{
 				widget = wibox.widget.textbox,
 				id = "icon",
@@ -329,7 +359,6 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			}
 		}
 	}
-
 
 	awesome.connect_signal("signal::dnd", function()
 		vars.dnd = not vars.dnd
@@ -361,8 +390,8 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			awesome.emit_signal("signal::dnd")
 		end),
 	}
-	-- bar --
 
+	-- bar --
 	bar = awful.wibar {
 		screen = s,
 		position = "left",
@@ -421,6 +450,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 						tray,
 						bat,
 						keyboard,
+						themes,
 						dnd_button,
 					}
 				}

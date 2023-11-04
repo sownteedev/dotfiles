@@ -236,7 +236,7 @@ local widget = wibox.widget {
 				align = "center",
 				{
 					layout = require("modules.overflow").horizontal,
-					forced_width = 450,
+					forced_width = 200,
 					step = 70,
 					id = "hours",
 					visible = true,
@@ -256,7 +256,7 @@ local widget = wibox.widget {
 			},
 			{
 				layout = require("modules.overflow").horizontal,
-				forced_width = 450,
+				forced_width = 200,
 				step = 50,
 				scrollbar_enabled = false,
 				id = "days",

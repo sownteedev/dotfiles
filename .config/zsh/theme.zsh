@@ -79,16 +79,11 @@ fi
 
 # FZF bases
 export FZF_DEFAULT_OPTS="
-  --color bg:#0b0d0e
-  --color fg:$base
-  --color border:#0b0d0e
-  --color gutter:#0c0e0f
-  --color info:$base05
-  --color header:$base08
+  --color border:$base
+  --color gutter:$base
   --prompt '  '
   --pointer ' '
-  --layout=reverse
-  --border horizontal
+  --border none
   --height 40"
 
 # vim:filetype=zsh

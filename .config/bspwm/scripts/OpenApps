@@ -5,8 +5,7 @@
 
 case "$1" in
   --menu)
-    rofi -show drun \
-    -theme $HOME/.config/bspwm/config/launcher.rasi & disown;;
+    rofi -show drun -theme $HOME/.config/configs/launcher.rasi & disown;;
   --terminal)
     kitty & disown;;
   --update)
@@ -19,6 +18,11 @@ case "$1" in
     kitty -e nvim & disown;;
   --music)
     kitty --class MusicPlayer,kitty -e ncmpcpp & disown;;
+  --opacity)
+	$HOME/.config/configs/picom/toggle --opacity & disown;;
+  --noopacity)
+	$HOME/.config/configs/picom/toggle --no-opacity & disown;;
+
   #Apps
   --filemanager)
     thunar & disown;;
