@@ -69,7 +69,7 @@
 
 #### Monitor and Theme
 
-    sudo pacman -S feh flameshot maim lxappearance neofetch && yay -S papirus-icon-theme imagemagick
+    sudo pacman -S feh flameshot maim viewnior lxappearance neofetch && yay -S papirus-icon-theme imagemagick
 
 #### Other
 

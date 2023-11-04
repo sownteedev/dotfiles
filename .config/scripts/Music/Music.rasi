@@ -1,4 +1,4 @@
-@import "/home/sowntee/.config/scripts/.theme"
+@import "../.theme_rofi.rasi"
 
 /*****----- Configuration -----*****/
 configuration {

@@ -9,7 +9,6 @@
 
 export RICETHEME=$(<$HOME/.theme)
 PATH="$HOME/.config/bspwm/scripts:$PATH"
-PATH="$HOME/.config/scripts/RiceSelect:$PATH"
 
 export _JAVA_AWT_WM_NONREPARENTING=1
 
@@ -70,11 +69,11 @@ for process in "${processes[@]}"; do
     fi
 done
 
-picom --config "$HOME"/.config/configs/picom/picom.conf &
+picom --config "$HOME"/.config/configs/picom/picom_no_opacity &
 
 dunst -config "$HOME"/.config/configs/dunstrc &
 
-. "$HOME"/.config/bspwm/rices/"$RICETHEME"/Theme.sh
+. "$HOME"/.config/bspwm/rices/"$RICETHEME"/Load
 
 feh -z --no-fehbg --bg-fill "$HOME"/.walls
 

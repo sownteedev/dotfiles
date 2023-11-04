@@ -1,25 +1,16 @@
+@import "../scripts/.theme_rofi.rasi"
+
 /*****----- Configuration -----*****/
 configuration {
     modi:                       "drun";
     show-icons:                 true;
-    drun-display-format:        "  {name}";
+    drun-display-format:        "    {name}";
 }
 
 /*****----- Global Properties -----*****/
 
 * {
     font: "Liga SFMono Nerd Font 10";
-    background:     #0C0E0F;
-    background-alt: #161719;
-    border-color:   #25292E;
-    foreground:     #D8D8D8;
-    selected:       #FFFFFF;
-    active:         #6791C9;
-    active-text:    #6791C9;
-    urgent:         #DF5B61;
-}
-
-* {
     border-colour:               var(selected);
     handle-colour:               var(selected);
     background-colour:           var(background);

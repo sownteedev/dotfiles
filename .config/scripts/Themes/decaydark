@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+bg="#061115"
+fg="#d9d7d6"
+bgd="#050e0f"
+bgl="#0d181c"
+bgl2="#131e22"
+bgl3="#1c272b"
+red="#df5b61"
+green="#78b892"
+blue="#6791c9"

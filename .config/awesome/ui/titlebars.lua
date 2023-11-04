@@ -24,13 +24,13 @@ local create_button = function(color, func)
 		subscribed = function(h)
 			widget.forced_width = h
 		end }
-	widget_anim.target = 30
+	widget_anim.target = 25
 
 	widget:connect_signal("mouse::enter", function()
 		widget_anim.target = 50
 	end)
 	widget:connect_signal("mouse::leave", function()
-		widget_anim.target = 30
+		widget_anim.target = 25
 	end)
 
 	return widget
@@ -77,27 +77,27 @@ client.connect_signal("request::titlebars", function(c)
 	}):setup {
 		layout = wibox.layout.align.horizontal,
 		{
+			widget = wibox.container.background,
+			buttons = buttons,
+		},
+		{
+			widget = wibox.container.background,
+			buttons = buttons,
+		},
+		{
 			widget = wibox.container.place,
 			valign = "top",
 			{
 				widget = wibox.container.margin,
-				margins = { right = 10, left = 10, top = 10, bottom = 10 },
+				margins = { right = 30, top = 10, bottom = 10 },
 				{
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 8,
-					close,
-					minimize,
+					spacing = 10,
 					maximize,
+					minimize,
+					close,
 				}
 			}
-		},
-		{
-			widget = wibox.container.background,
-			buttons = buttons,
-		},
-		{
-			widget = wibox.container.background,
-			buttons = buttons,
 		},
 	}
 end)

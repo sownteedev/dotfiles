@@ -50,7 +50,6 @@ XF86AudioMute
 XF86Audio{Play,Next,Prev}
     playerctl {play-pause,next,previous}
 
-# Theme Selector
 alt + @space
     ~/.config/scripts/RiceSelect/RiceSelector
 

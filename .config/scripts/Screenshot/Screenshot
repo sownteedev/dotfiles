@@ -10,19 +10,11 @@ mesg="Directory :: `xdg-user-dir PICTURES`/Screenshots"
 
 # Options
 layout=`cat ${RASI} | grep 'USE_ICON' | cut -d'=' -f2`
-if [[ "$layout" == 'NO' ]]; then
-	option_1="  Capture Desktop"
-	option_2="󰹑  Capture Area"
-	option_3="󰔚 Capture in 5s"
-	option_4="󰻂 Record Screen"
-	option_5="󰙦 Stop Recording"
-else
-	option_1=" "
-	option_2="󰹑 "
-	option_3="󰔚 "
-	option_4="󰻂 "
-	option_5="󰙦 "
-fi
+option_1=" "
+option_2="󰹑 "
+option_3="󰔚 "
+option_4="󰻂 "
+option_5="󰙦 "
 
 # Rofi CMD
 rofi_cmd() {
@@ -33,7 +25,6 @@ rofi_cmd() {
 		-theme ${RASI}
 }
 
-# Pass variables to rofi dmenu
 run_rofi() {
 	echo -e "$option_1\n$option_2\n$option_3\n$option_4\n$option_5" | rofi_cmd
 }
@@ -44,15 +35,12 @@ geometry=`xrandr | grep 'current' | head -n1 | cut -d',' -f2 | tr -d '[:blank:],
 dir="`xdg-user-dir PICTURES`/Screenshots"
 file="Screenshot_${time}_${geometry}.png"
 
-# Directory
 if [[ ! -d "$dir" ]]; then
 	mkdir -p "$dir"
 fi
 
-# notify and view screenshot
 notify_view() {
-	notify_cmd_shot='dunstify -u low -h string:x-dunst-stack-tag:obscreenshot -i /usr/share/icons/Papirus/48x48/apps/'
-	${notify_cmd_shot} "Copied to clipboard."
+	notify_cmd_shot='notify-send -t 5000 -i ~/Pictures/Screenshots/'"$file"
 	paplay /usr/share/sounds/freedesktop/stereo/screen-capture.oga &>/dev/null &
 	viewnior ${dir}/"$file"
 	if [[ -e "$dir/$file" ]]; then

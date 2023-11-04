@@ -56,14 +56,14 @@ mouse_right_click = close_all
 [urgency_low]
 timeout = 3
 background = "#0c0e0f"
-foreground = "#EEEEEE"
+foreground = "#edeff0"
 
 [urgency_normal]
 timeout = 6
 background = "#0c0e0f"
-foreground = "#EEEEEE"
+foreground = "#edeff0"
 
 [urgency_critical]
 timeout = 0
 background = "#0c0e0f"
-foreground = "#EEEEEE"
+foreground = "#edeff0"

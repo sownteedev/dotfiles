@@ -1,28 +1,71 @@
 #!/usr/bin/env bash
 
+color_dir="$HOME/.config/scripts/Themes"
 rofi_command="rofi -dmenu -theme $HOME/.config/scripts/RiceSelect/RiceSelector.rasi"
-
-options=( "yoru" "decaydark" )
-
-selected=$(printf "%s\n" "${options[@]}" | $rofi_command)
-sed -i -e "s/vim.cmd 'colorscheme .*'/vim.cmd 'colorscheme $1'/" $config/nvim/init.lua
 wm=$(wmctrl -m | grep "Name:" | awk '{print $2}')
 
-if [[ -n "$selected" ]]; then
-	if [[ $selected == "yoru" ]]; then
-		sed -i -e "s/include .*/include yoru.conf/" "$HOME"/.config/kitty/kitty.conf
-		spicetify config color_scheme yoru && spicetify apply
-		echo "$selected" > "$HOME"/.theme
-	elif [[ $selected == "decaydark" ]]; then
-		sed -i -e "s/include .*/include decaydark.conf/" "$HOME"/.config/kitty/kitty.conf
-		spicetify config color_scheme decaydark && spicetify apply
-		echo "$selected" > "$HOME"/.theme
-	fi
+options=()
+for file in "$color_dir"/*; do
+	options+=("$(basename "$file")")
+done
 
+color=$(printf "%s\n" "${options[@]}" | $rofi_command)
 
+source ~/.config/scripts/Themes/$color
+
+term() {
+	sed -i -e "s/include .*/include $color.conf/" "$HOME"/.config/kitty/kitty.conf
+}
+
+gtk() {
+    sed -i -e "s/gtk-theme-name=.*/gtk-theme-name=$color/" ~/.config/gtk-3.0/settings.ini
+}
+
+dunst() {
+	sed -i -e "s/background = .*/background = \"$bg\"/g"\
+		   -e "s/foreground = .*/foreground = \"$fg\"/g" ~/.config/configs/dunstrc
+	killall dunst && dunst -conf "$HOME"/.config/configs/dunstrc
+}
+
+spotify() {
+	spicetify config color_scheme $color && spicetify apply
+}
+
+rofi(){
+	echo '* { background: '$bgd'; background-alt: '$bgl2'; border-color: '$bgl3'; foreground: '$fg'; selected: '$fg'; }' > ~/.config/scripts/.theme_rofi.rasi
+}
+
+write() {
+	echo "$color" > "$HOME"/.theme
+}
+
+nvim() {
+	RICETHEME=$(cat $HOME/.theme)
+    reload="python $HOME/.config/scripts/reload_nvim.py"
+    reload_cmd="$reload 'lua require(\"themes.switch\").settheme(\"$RICETHEME\")'"
+    eval "$reload_cmd"
+	new_line="vim.g.currentTheme = \"$RICETHEME\""
+	sed -i "s/vim.g.currentTheme = .*/$new_line/" "$HOME/.config/nvim/lua/user/options.lua"
+}
+
+restart() {
 	if [[ $wm == "bspwm" ]]; then
 		bspc wm -r
 	elif [[ $wm == "awesome" ]]; then
 		awesome-client "awesome.restart()"
 	fi
+}
+
+if [[ -n "$color" ]]; then
+	write
+	term
+	gtk
+	dunst
+	spotify
+	rofi
+	nvim
+	restart
 fi
+
+
+exit 0

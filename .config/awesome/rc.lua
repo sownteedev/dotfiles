@@ -8,4 +8,3 @@ beautiful.init("~/.config/awesome/themes/init.lua")
 
 require("config")
 require("ui")
-require("themes.reload-theme")
