@@ -27,6 +27,10 @@ dunst() {
 	killall dunst && dunst -conf "$HOME"/.config/configs/dunstrc
 }
 
+discord() {
+	cat ~/.config/BetterDiscord/data/stable/themes/$color.css > ~/.config/BetterDiscord/data/stable/custom.css
+}
+
 spotify() {
 	spicetify config color_scheme $color && spicetify apply
 }
@@ -62,6 +66,7 @@ if [[ -n "$color" ]]; then
 	gtk
 	dunst
 	spotify
+	discord
 	rofi
 	nvim
 	restart

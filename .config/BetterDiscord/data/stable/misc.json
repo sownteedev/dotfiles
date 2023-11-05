@@ -1,0 +1,9 @@
+{
+    "version": "1.9.5",
+    "drawerStates": {
+        "settings": {
+            "developer": false,
+            "window": true
+        }
+    }
+}
