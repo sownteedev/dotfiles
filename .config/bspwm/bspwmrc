@@ -69,7 +69,7 @@ for process in "${processes[@]}"; do
     fi
 done
 
-picom --config "$HOME"/.config/configs/picom/picom_no_opacity &
+picom --config "$HOME"/.config/configs/picom/picom_no_opacity.conf &
 
 dunst -config "$HOME"/.config/configs/dunstrc &
 
