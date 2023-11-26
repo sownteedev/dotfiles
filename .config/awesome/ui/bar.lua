@@ -122,7 +122,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	themes:buttons {
 		awful.button({}, 1, function()
 			awesome.emit_signal("launcher::theme")
-		end),
+		end)
 	}
 
 	-- tasklist --
