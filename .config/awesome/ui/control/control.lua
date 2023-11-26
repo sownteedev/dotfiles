@@ -4,10 +4,8 @@ local wibox = require("wibox")
 local beautiful = require("beautiful")
 local bling = require("modules.bling")
 local playerctl = bling.signal.playerctl.lib()
-local helpers = require("helpers")
 local vars = require("ui.vars")
 require("scripts.init")
-local weather = require("ui.control.weather")
 local rubato = require("modules.rubato")
 
 screen.connect_signal("request::desktop_decoration", function(s)
@@ -131,6 +129,9 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		awful.button({}, 1, function()
 			awful.spawn.with_shell("pactl set-sink-mute @DEFAULT_SINK@ toggle")
 			update_value_of_volume()
+		end),
+		awful.button({}, 3, function()
+			awful.spawn.with_shell("pavucontrol")
 		end),
 		awful.button({}, 4, function()
 			awful.spawn.with_shell("pactl set-sink-volume @DEFAULT_SINK@ +2%")
@@ -407,7 +408,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	wifi:get_children_by_id("icon_container")[1]:buttons {
 		awful.button({}, 1, function()
 			wifi_button()
-			update_value_of_wifi()
+			-- update_value_of_wifi()
 		end)
 	}
 
@@ -441,20 +442,21 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	}
 
 	local float = create_toggle_widget(beautiful.accent, beautiful.background, "", "Floating", "On", false)
+	toggle_change("off", float)
 
 	float:get_children_by_id("icon_container")[1]:buttons {
 		awful.button({}, 1, function()
 			vars.float_value_default = not vars.float_value_default
 			local tags = awful.screen.focused().tags
-			if vars.float_value_default then
-				toggle_change("on", float)
-				for _, tag in ipairs(tags) do
-					awful.layout.set(awful.layout.suit.floating, tag)
-				end
-			else
+			if not vars.float_value_default then
 				toggle_change("off", float)
 				for _, tag in ipairs(tags) do
 					awful.layout.set(awful.layout.suit.tile, tag)
+				end
+			else
+				toggle_change("on", float)
+				for _, tag in ipairs(tags) do
+					awful.layout.set(awful.layout.suit.floating, tag)
 				end
 			end
 		end),
@@ -489,7 +491,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 
 	-- music player --
 	local art = wibox.widget {
-		image = "/home/sowntee/.config/awesome/assets/music.jpg",
+		image = "/home/sowntee/.config/awesome/themes/icons/music.jpg",
 		valign = "right",
 		forced_height = 140,
 		horizontal_fit_policy = "fit",
@@ -673,7 +675,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	-- main window --
 	local main = wibox.widget {
 		widget = wibox.container.background,
-		bg = beautiful.background,
+		bg = beautiful.background_dark,
 		{
 			widget = wibox.container.margin,
 			margins = 10,
@@ -686,7 +688,6 @@ screen.connect_signal("request::desktop_decoration", function(s)
 				toggles,
 				info,
 				resourses,
-				-- weather,
 			}
 		}
 	}

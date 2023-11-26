@@ -14,7 +14,7 @@ offset = 10x92
 indicate_hidden = yes
 shrink = yes
 
-transparency = 1
+transparency = 0
 separator_height = 4
 text_icon_padding = 20
 padding = 20
@@ -27,7 +27,7 @@ font = Liga SFMono Nerd Font Medium 9
 
 line_height = 1
 markup = full
-format = "<span size='x-large' font_desc='Liga SFMono Nerd Font 8' weight='bold' foreground='#79E6F3'>%s</span>\n\n%b"
+format = "<span size='x-large' font_desc='Liga SFMono Nerd Font 7' weight='bold' foreground='#79E6F3'>%s</span>\n\n%b"
 alignment = center
 
 idle_threshold = 120
@@ -55,15 +55,15 @@ mouse_right_click = close_all
 
 [urgency_low]
 timeout = 3
-background = "#0c0e0f"
+background = "#0a0b0c"
 foreground = "#edeff0"
 
 [urgency_normal]
 timeout = 6
-background = "#0c0e0f"
+background = "#0a0b0c"
 foreground = "#edeff0"
 
 [urgency_critical]
 timeout = 0
-background = "#0c0e0f"
+background = "#0a0b0c"
 foreground = "#edeff0"

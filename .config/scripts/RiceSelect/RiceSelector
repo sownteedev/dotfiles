@@ -13,16 +13,30 @@ color=$(printf "%s\n" "${options[@]}" | $rofi_command)
 
 source ~/.config/scripts/Themes/$color
 
+write() {
+	echo "$color" > "$HOME"/.theme
+}
+
 term() {
 	sed -i -e "s/include .*/include $color.conf/" "$HOME"/.config/kitty/kitty.conf
+    sed -i -e "s/colors: .*/colors: *$color/" ~/.config/alacritty/colors.yml
 }
 
 gtk() {
-    sed -i -e "s/gtk-theme-name=.*/gtk-theme-name=$color/" ~/.config/gtk-3.0/settings.ini
+	sed -i -e "s/background:.*/background:$bg/"\
+		   -e "s/background_alt:.*/background_alt:$bgl3/"\
+		   -e "s/foreground:.*/foreground:$fg/"\
+		   -e "s/accent:.*/accent:$accent/" ~/.themes/tethemes/gtk-2.0/gtkrc
+
+	sed -i -e "s/background .*/background $bg;/"\
+		   -e "s/background_alt .*/background_alt $bgl3;/"\
+		   -e "s/background_urgent .*/background_urgent $bgl4;/"\
+		   -e "s/foreground .*/foreground $fg;/"\
+		   -e "s/accent .*/accent $accent;/" ~/.themes/tethemes/gtk-3.0/colors.css
 }
 
 dunst() {
-	sed -i -e "s/background = .*/background = \"$bg\"/g"\
+	sed -i -e "s/background = .*/background = \"$bgd\"/g"\
 		   -e "s/foreground = .*/foreground = \"$fg\"/g" ~/.config/configs/dunstrc
 	killall dunst && dunst -conf "$HOME"/.config/configs/dunstrc
 }
@@ -36,11 +50,7 @@ spotify() {
 }
 
 rofi(){
-	echo '* { background: '$bgd'; background-alt: '$bgl2'; border-color: '$bgl3'; foreground: '$fg'; selected: '$fg'; }' > ~/.config/scripts/.theme_rofi.rasi
-}
-
-write() {
-	echo "$color" > "$HOME"/.theme
+	echo '* { background: '$bgd'; background-alt: '$bgl'; border-color: '$bgl3'; foreground: '$fg'; }' > ~/.config/scripts/.theme_rofi.rasi
 }
 
 nvim() {

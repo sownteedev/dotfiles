@@ -9,14 +9,12 @@ local bat_script_1 = [[
 ]]
 
 awful.widget.watch(bat_script, update_interval, function(widget, stdout)
-	local value =  string.gsub(stdout, '^%s*(.-)%s*$', '%1')
+	local value = string.gsub(stdout, '^%s*(.-)%s*$', '%1')
 	value = tonumber(value)
 	awesome.emit_signal("bat::value", value)
 end)
 
 awful.widget.watch(bat_script_1, update_interval, function(widget, stdout)
-	local value =  string.gsub(stdout, '^%s*(.-)%s*$', '%1')
+	local value = string.gsub(stdout, '^%s*(.-)%s*$', '%1')
 	awesome.emit_signal("bat::state", value)
 end)
-
-

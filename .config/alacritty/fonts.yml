@@ -1,0 +1,22 @@
+font:
+  offset:
+    x: 0
+    y: 3
+  glyph_offset:
+    x: 0
+    y: 2
+
+  normal:
+    family: "Liga SFMono Nerd Font"
+    style: Medium
+
+  bold:
+    style: Bold
+
+  italic:
+    style: Italic
+
+  bold_italic:
+    style: Bold Italic
+
+  size: 9.5

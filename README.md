@@ -2,38 +2,27 @@
 
 <details><summary>Package and Applications</summary><blockquote>
 
+#### Apps
+
+    sudo pacman -S dunst rofi alacritty && yay -S picom-ftlabs-git
+
 #### Font
 
-    yay -S ttf-iosevka-nerd ttf-font-awesome ttf-jetbrains-mono-nerd noto-fonts noto-fonts-cjk ttf-jetbrains-mono ttf-terminus-nerd ttf-inconsolata ttf-joypixels
+    yay -S ttf-font-awesome noto-fonts noto-fonts-cjk ttf-terminus-nerd ttf-inconsolata ttf-joypixels
 
 #### Apps for Code
 
-- Visual Studio Code
-- Intelij IDea Ultimate Edition
-- Webstorm
-- NeoVim
-  ```
     yay -S visual-studio-code-bin intellij-idea-ultimate-edition webstorm neovim-nightly-bin
-  ```
 
 #### Other Apps
 
-- Telegram
-- Discord (BetterDiscord)
-- VLC
-  ```
     sudo pacman -S discord betterdiscord-installer vlc telegram-desktop
-  ```
-- Spotify (Spicetify)
-- Chrome
-- EDGE
-  ```
-    yay -S google-chrome microsoft-edge-stable-bin spotify spicetify-cli
-  ```
+
+    yay -S google-chrome spotify spicetify-cli spotifyd spotify-tui
 
 #### Library Support
 
-    sudo pacman -S nodejs npm yarn python python-pip clang jdk-openjdk rustup
+    sudo pacman -S nodejs npm yarn python python-pip clang jdk-openjdk rustup cargo
 
 #### Network
 
@@ -73,7 +62,7 @@
 
 #### Other
 
-    sudo pacman -S gnome-keyring libsecret libgnome-keyring seahorse auto-cpufreq xf86-input-libinput pacman-contrib thefuck btop fontconfig ibus lsd jq github-cli polkit-gnome libwebp webp-pixbuf-loader physlock xss-lock betterlockscreen lightdm lightdm-webkit2-greeter && yay -S lightdm-webkit2-theme-glorious
+    sudo pacman -S gnome-keyring libsecret libgnome-keyring seahorse auto-cpufreq xf86-input-libinput pacman-contrib thefuck wget arandr gpick btop fontconfig ibus lsd jq github-cli polkit-gnome libwebp webp-pixbuf-loader physlock xss-lock betterlockscreen lightdm lightdm-webkit2-greeter && yay -S lightdm-webkit2-theme-glorious
 
 </blockquote></details>
 

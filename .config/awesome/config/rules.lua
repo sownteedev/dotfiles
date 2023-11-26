@@ -1,31 +1,44 @@
 local awful = require("awful")
 local ruled = require("ruled")
+local helpers = require("helpers")
+
+awful.layout.layouts = {
+	awful.layout.suit.floating,
+}
+
+--- Get screen geometry
+local screen_width = awful.screen.focused().geometry.width
+local screen_height = awful.screen.focused().geometry.height
 
 ruled.client.connect_signal("request::rules", function()
 	ruled.client.append_rule {
 		id = "global",
 		rule = {},
 		properties = {
-			focus = awful.client.focus.filter,
 			raise = true,
 			size_hints_honor = false,
-			screen = awful.screen.preferred,
-			placement = function(c)
-				awful.placement.centered(c, c.transient_for)
-				awful.placement.no_overlap(c)
-				awful.placement.no_offscreen(c)
-			end,
+			honor_workarea = true,
+			honor_padding = true,
+			screen = awful.screen.focused,
+			focus = awful.client.focus.filter,
+			placement = awful.placement.no_overlap + awful.placement.no_offscreen,
 		}
 	}
 
-	-- Add titlebars to normal clients and dialogs
+	--- Centered
+	ruled.client.append_rule({
+		id = "centered",
+		rule = {},
+		properties = { placement = helpers.client.centered_client_placement },
+	})
+
 	ruled.client.append_rule {
 		id         = "titlebars",
 		rule_any   = { type = { "normal", "dialog" } },
 		properties = { titlebars_enabled = true }
 	}
 	ruled.client.append_rule {
-		rule       = { class = "kitty" },
+		rule       = { class = "Alacritty" },
 		properties = { tag = "1", switch_to_tags = true }
 	}
 	ruled.client.append_rule {
@@ -42,7 +55,11 @@ ruled.client.connect_signal("request::rules", function()
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "Spotify" } },
-		properties = { screen = 1, tag = "5" }
+		properties = { tag = "5" }
+	}
+	ruled.client.append_rule {
+		rule_any   = { class = { "Steam" } },
+		properties = { tag = "6" }
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "Thunar", "vlc" } },

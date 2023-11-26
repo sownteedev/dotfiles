@@ -1,9 +1,20 @@
 {
-    "version": "1.9.5",
+    "version": "1.9.6",
     "drawerStates": {
         "settings": {
-            "developer": false,
-            "window": true
+            "developer": true,
+            "window": true,
+            "addons": false,
+            "customcss": true,
+            "editor": true
+        }
+    },
+    "addonlistControls": {
+        "plugin": {
+            "view": "list"
+        },
+        "theme": {
+            "view": "grid"
         }
     }
 }

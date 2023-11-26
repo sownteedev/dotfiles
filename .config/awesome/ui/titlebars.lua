@@ -93,8 +93,8 @@ client.connect_signal("request::titlebars", function(c)
 				{
 					layout = wibox.layout.fixed.horizontal,
 					spacing = 10,
-					maximize,
 					minimize,
+					maximize,
 					close,
 				}
 			}

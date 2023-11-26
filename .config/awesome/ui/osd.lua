@@ -104,3 +104,4 @@ end
 awesome.connect_signal("summon::osd", function()
 	osd_toggle()
 end)
+

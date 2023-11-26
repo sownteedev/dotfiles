@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 
-# Import Current Theme
 DIR="$HOME/.config"
 RASI="$DIR/scripts/Screenshot/Screenshot.rasi"
-
-# Theme Elements
 prompt='Screenshot'
 mesg="Directory :: `xdg-user-dir PICTURES`/Screenshots"
 
 # Options
 layout=`cat ${RASI} | grep 'USE_ICON' | cut -d'=' -f2`
 option_1=" "
-option_2="󰹑 "
+option_2="󰆞 "
 option_3="󰔚 "
-option_4="󰻂 "
+option_4="󰑋"
 option_5="󰙦 "
 
 # Rofi CMD
@@ -80,7 +77,7 @@ shot5 () {
 }
 
 record() {
-	sleep 0.5 && ffmpeg -framerate 60 -f x11grab -i $DISPLAY -pix_fmt yuv420p $HOME/Videos/${time}.mp4
+	sleep 0.5 && ffmpeg -framerate 60 -f x11grab -i $DISPLAY -f pulse -i alsa_output.pci-0000_00_1b.0.analog-stereo.monitor -pix_fmt yuv420p $HOME/Videos/${time}.mp4
 }
 
 stoprecord() {
