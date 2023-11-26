@@ -1,0 +1,16 @@
+gtk-color-scheme = "background:#0c0e0f
+gtk-color-scheme = "background_alt:#1f2122
+gtk-color-scheme = "foreground:#edeff0
+gtk-color-scheme = "accent:#a9b1d6
+
+include "widgets/default"
+include "widgets/buttons"
+include "widgets/menu"
+include "widgets/entry"
+include "widgets/notebook"
+include "widgets/range"
+include "widgets/scrollbar"
+include "widgets/toolbar"
+include "widgets/progressbar"
+include "widgets/misc"
+include "widgets/styles"

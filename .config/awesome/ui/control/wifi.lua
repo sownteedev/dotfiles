@@ -193,7 +193,8 @@ local function get_wifi()
 	local wifi_list = {}
 	local nmcli = "nmcli -t -f 'SSID, BSSID, SECURITY, ACTIVE' device wifi list"
 	wifi_widget_container:add(massage_container)
-	massage_container.widget.markup = helpers.ui.colorizeText("Please wait\nor refresh one more time", beautiful.background_urgent)
+	massage_container.widget.markup = helpers.ui.colorizeText("Please wait\nor refresh one more time",
+		beautiful.background_urgent)
 	-- It could be done much easier with io.popen()
 	-- but since nmcli sometimes recieves data for very long time it freeze wm
 	-- so as marked in doc you should use awful.spawn.with_line_callback() for asynchrony
@@ -225,6 +226,7 @@ function update_wifi_status()
 		end
 	end)
 end
+
 update_wifi_status()
 
 local function wifi_toggle()
@@ -238,6 +240,15 @@ local function wifi_toggle()
 		end)
 	end
 end
+
+local function update_value_of_wifi()
+	awful.spawn.easy_async_with_shell("nmcli radio wifi", function(stdout)
+		local value = string.gsub(stdout, '^%s*(.-)%s*$', '%1')
+		awesome.emit_signal("wifi::value", value)
+	end)
+end
+
+update_value_of_wifi()
 
 awesome.connect_signal("wifi::toggle", function()
 	wifi_toggle()
@@ -300,7 +311,7 @@ client.connect_signal("button::press", function()
 end)
 
 awful.mouse.append_global_mousebinding(
-	awful.button({ }, 1, function()
+	awful.button({}, 1, function()
 		wifi_popup.visible = false
 	end)
 )

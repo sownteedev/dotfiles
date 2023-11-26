@@ -1,31 +1,24 @@
--------------------------------------------
--- @author https://github.com/Kasper24
--- @copyright 2021-2022 Kasper24
--------------------------------------------
 ---------------------------------------------------------------------------
 -- A layout that allows its children to take more space than what's available
 -- in the surrounding container. If the content does exceed the available
 -- size, a scrollbar is added and scrolling behavior enabled.
 --
--- @DOC_wibox_layout_defaults_overflow_EXAMPLE@
+--@DOC_wibox_layout_defaults_overflow_EXAMPLE@
 -- @author Lucas Schwiderski
 -- @copyright 2021 Lucas Schwiderski
 -- @layoutmod wibox.layout.overflow
 -- @supermodule wibox.layout.fixed
 ---------------------------------------------------------------------------
+
 local base = require('wibox.widget.base')
 local fixed = require('wibox.layout.fixed')
 local separator = require('wibox.widget.separator')
 local gtable = require('gears.table')
 local gshape = require('gears.shape')
 local gobject = require('gears.object')
-local beautiful = require('beautiful')
-local dpi = beautiful.xresources.apply_dpi
 local mousegrabber = mousegrabber
 
-local overflow = {
-    mt = {}
-}
+local overflow = { mt = {} }
 
 -- Determine the required space to draw the layout's children and, if necessary,
 -- the scrollbar.
@@ -121,7 +114,7 @@ function overflow:layout(context, orig_width, orig_height)
         end
     end
 
-    used_in_dir = used_in_dir + self._private.spacing * (#widgets - 1)
+    used_in_dir = used_in_dir + self._private.spacing * (#widgets-1)
 
     -- Save size for scrolling behavior
     self._private.avail_in_dir = avail_in_dir
@@ -171,8 +164,13 @@ function overflow:layout(context, orig_width, orig_height)
             height = height - bar_h
         end
 
-        table.insert(result, base.place_widget_at(scrollbar_widget, math.floor(bar_x), math.floor(bar_y),
-            math.floor(bar_w), math.floor(bar_h)))
+        table.insert(result, base.place_widget_at(
+            scrollbar_widget,
+            math.floor(bar_x),
+            math.floor(bar_y),
+            math.floor(bar_w),
+            math.floor(bar_h)
+        ))
     end
 
     local pos, spacing = 0, self._private.spacing
@@ -190,8 +188,7 @@ function overflow:layout(context, orig_width, orig_height)
 
     for i, w in ipairs(widgets) do
         local content_x, content_y
-        local content_w, content_h = base.fit_widget(self, context, w,
-            need_scrollbar and width - self._private.scrollbar_spacing or width, height)
+        local content_w, content_h = base.fit_widget(self, context, w, width, height)
 
         -- When scrolling down, the content itself moves up -> substract
         local scrolled_pos = pos - (scroll_position * interval)
@@ -217,27 +214,37 @@ function overflow:layout(context, orig_width, orig_height)
             end
         end
 
-        local is_in_view = is_y and (scrolled_pos + content_h > 0) or (scrolled_pos + content_w > 0)
+        local is_in_view = is_y
+                           and (scrolled_pos + content_h > 0)
+                           or (scrolled_pos + content_w > 0)
 
         if is_in_view then
             -- Add the spacing widget, but not before the first widget
             if i > 1 and spacing_widget then
-                table.insert(result,
-                    base.place_widget_at(spacing_widget, -- The way how spacing is added for regular widgets
-                        -- and the `spacing_widget` is disconnected:
-                        -- The offset for regular widgets is added to `pos` one
-                        -- iteration _before_ the one where the widget is actually
-                        -- placed.
-                        -- Because of that, the placement for the spacing widget
-                        -- needs to substract that offset to be placed right after
-                        -- the previous regular widget.
-                        math.floor(is_y and content_x or (content_x - spacing)),
-                        math.floor(is_y and (content_y - spacing) or content_y),
-                        math.floor(is_y and content_w or spacing), math.floor(is_y and spacing or content_h)))
+                table.insert(result, base.place_widget_at(
+                    spacing_widget,
+                    -- The way how spacing is added for regular widgets
+                    -- and the `spacing_widget` is disconnected:
+                    -- The offset for regular widgets is added to `pos` one
+                    -- iteration _before_ the one where the widget is actually
+                    -- placed.
+                    -- Because of that, the placement for the spacing widget
+                    -- needs to substract that offset to be placed right after
+                    -- the previous regular widget.
+                    math.floor(is_y and content_x or (content_x - spacing)),
+                    math.floor(is_y and (content_y - spacing) or content_y),
+                    math.floor(is_y and content_w or spacing),
+                    math.floor(is_y and spacing or content_h)
+                ))
             end
-            table.insert(result, base.place_widget_at(w, math.floor(content_x), math.floor(content_y),
-                math.floor(need_scrollbar and content_w - self._private.scrollbar_spacing or content_w),
-                math.floor(content_h)))
+
+            table.insert(result, base.place_widget_at(
+                w,
+                math.floor(content_x),
+                math.floor(content_y),
+                math.floor(content_w),
+                math.floor(content_h)
+            ))
         end
     end
 
@@ -249,6 +256,7 @@ function overflow:before_draw_children(_, cr, width, height)
     cr:rectangle(0, 0, width, height)
     cr:clip()
 end
+
 
 --- The amount of units to advance per scroll event.
 --
@@ -263,6 +271,7 @@ function overflow:set_step(step)
     -- We don't need to emit enything here, since changing step only really
     -- takes effect the next time the user scrolls
 end
+
 
 --- Scroll the layout's content by `amount * step`.
 --
@@ -288,6 +297,7 @@ function overflow:scroll(amount)
     self:set_scroll_factor(factor)
 end
 
+
 --- The scroll factor.
 --
 -- The scroll factor represents how far the layout's content is currently
@@ -301,10 +311,13 @@ end
 function overflow:set_scroll_factor(factor)
     local current = self._private.scroll_factor
     local interval = self._private.used_in_dir - self._private.avail_in_dir
-    if current == factor -- the content takes less space than what is available, i.e. everything
+    if current == factor
+        -- the content takes less space than what is available, i.e. everything
         -- is already visible
-        or interval <= 0 -- the scroll factor is out of range
-        or (current <= 0 and factor < 0) or (current >= 1 and factor > 1) then
+        or interval <= 0
+        -- the scroll factor is out of range
+        or (current <= 0 and factor < 0)
+        or (current >= 1 and factor > 1) then
         return
     end
 
@@ -318,13 +331,14 @@ function overflow:get_scroll_factor()
     return self._private.scroll_factor
 end
 
+
 --- The scrollbar width.
 --
 -- For horizontal scrollbars, this is the scrollbar height
 --
 -- The default is `5`.
 --
--- @DOC_wibox_layout_overflow_scrollbar_width_EXAMPLE@
+--@DOC_wibox_layout_overflow_scrollbar_width_EXAMPLE@
 --
 -- @property scrollbar_width
 -- @tparam number scrollbar_width The scrollbar width.
@@ -341,13 +355,14 @@ function overflow:set_scrollbar_width(width)
     self:emit_signal("property::scrollbar_width", width)
 end
 
+
 --- The scrollbar position.
 --
 -- For horizontal scrollbars, this can be `"top"` or `"bottom"`,
 -- for vertical scrollbars this can be `"left"` or `"right"`.
 -- The default is `"right"`/`"bottom"`.
 --
--- @DOC_wibox_layout_overflow_scrollbar_position_EXAMPLE@
+--@DOC_wibox_layout_overflow_scrollbar_position_EXAMPLE@
 --
 -- @property scrollbar_position
 -- @tparam string scrollbar_position The scrollbar position.
@@ -367,6 +382,7 @@ end
 function overflow:get_scrollbar_position()
     return self._private.scrollbar_position
 end
+
 
 --- The scrollbar visibility.
 --
@@ -408,7 +424,7 @@ local function build_grabber(container, initial_x, initial_y, geo)
     -- transformed by something like `wibox.container.rotate`.
     local matrix_from_device = geo.hierarchy:get_matrix_from_device()
     local wgeo = geo.drawable.drawable:geometry()
-    local matrix = matrix_from_device:translate( -wgeo.x, -wgeo.y)
+    local matrix = matrix_from_device:translate(-wgeo.x, -wgeo.y)
 
     return function(mouse)
         if not mouse.buttons[1] then
@@ -416,7 +432,7 @@ local function build_grabber(container, initial_x, initial_y, geo)
         end
 
         local x, y = matrix:transform_point(mouse.x, mouse.y)
-        local pos = is_y and y or x
+        local pos = is_y and x and y
         container:set_scroll_factor((start_pos + (pos - start)) / bar_interval)
 
         return true
@@ -433,12 +449,13 @@ local function apply_scrollbar_mouse_signal(container, w)
     end)
 end
 
+
 --- The scrollbar widget.
 -- This widget is rendered as the scrollbar element.
 --
 -- The default is `wibox.widget.separator{ shape = gears.shape.rectangle }`.
 --
--- @DOC_wibox_layout_overflow_scrollbar_widget_EXAMPLE@
+--@DOC_wibox_layout_overflow_scrollbar_widget_EXAMPLE@
 --
 -- @property scrollbar_widget
 -- @tparam widget scrollbar_widget The scrollbar widget.
@@ -457,17 +474,6 @@ end
 
 function overflow:get_scrollbar_widget()
     return self._private.scrollbar_widget
-end
-
-function overflow:set_scrollbar_spacing(spacing)
-    self._private.scrollbar_spacing = spacing
-
-    self:emit_signal("widget::layout_changed")
-    self:emit_signal("property::scrollbar_spacing", spacing)
-end
-
-function overflow:get_scrollbar_spacing()
-    return self._private.scrollbar_spacing
 end
 
 local function new(dir, ...)
@@ -489,17 +495,14 @@ local function new(dir, ...)
     ret._private.scrollbar_width = 5
     ret._private.scrollbar_enabled = true
     ret._private.scrollbar_position = dir == "vertical" and "right" or "bottom"
-    ret._private.scrollbar_spacing = dpi(15)
 
-    local scrollbar_widget = separator({
-        shape = gshape.rectangle
-    })
+    local scrollbar_widget = separator({ shape = gshape.rectangle })
     apply_scrollbar_mouse_signal(ret, scrollbar_widget)
     ret._private.scrollbar_widget = scrollbar_widget
 
     ret:connect_signal('button::press', function(self, _, _, button)
         if button == 4 then
-            self:scroll( -1)
+            self:scroll(-1)
         elseif button == 5 then
             self:scroll(1)
         end
@@ -507,6 +510,7 @@ local function new(dir, ...)
 
     return ret
 end
+
 
 --- Returns a new horizontal overflow layout.
 -- Child widgets are placed similar to `wibox.layout.fixed`, except that
@@ -518,6 +522,7 @@ end
 function overflow.horizontal(...)
     return new("horizontal", ...)
 end
+
 
 --- Returns a new vertical overflow layout.
 -- Child widgets are placed similar to `wibox.layout.fixed`, except that
@@ -531,4 +536,3 @@ function overflow.vertical(...)
 end
 
 return setmetatable(overflow, overflow.mt)
-

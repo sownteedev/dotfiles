@@ -2,9 +2,49 @@ local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local naughty = require("naughty")
+local gears = require("gears")
 local vars = require("ui.vars")
 require("scripts.init")
 local rubato = require("modules.rubato")
+local bling = require("modules.bling")
+
+bling.widget.tag_preview.enable {
+	show_client_content = true,
+	x = 10,
+	y = 10,
+	scale = 0.25,
+	honor_padding = false,
+	honor_workarea = false,
+	placement_fn = function(c)
+		awful.placement.top_left(c, {
+			margins = {
+				top = 60,
+				left = 70
+			}
+		})
+	end,
+	background_widget = wibox.widget {
+		image                 = beautiful.wallpaper,
+		horizontal_fit_policy = "fit",
+		vertical_fit_policy   = "fit",
+		widget                = wibox.widget.imagebox
+	}
+}
+
+bling.widget.task_preview.enable {
+	x = 20,
+	y = 20,
+	height = 300,
+	width = 300,
+	placement_fn = function(c)
+		awful.placement.bottom(c, {
+			margins = {
+				bottom = 280,
+				right = 930
+			}
+		})
+	end
+}
 
 screen.connect_signal("request::desktop_decoration", function(s)
 	-- profile --
@@ -102,21 +142,33 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			layout = wibox.layout.fixed.vertical,
 		},
 		widget_template = {
-			id = "background_role",
-			widget = wibox.container.background,
-			forced_height = 20,
-			create_callback = function(self, c, index, objects)
-				local tooltip = awful.tooltip({
-					objects = { self },
-					timer_function = function()
-						return c.name
-					end,
-				})
-				tooltip.mode = "outside"
-				tooltip.gaps = beautiful.useless_gap
-				tooltip.margins_leftright = 10
-				tooltip.margins_topbottom = 10
-			end
+			{
+				wibox.widget.base.make_widget(),
+				forced_height = 2,
+				id            = 'background_role',
+				widget        = wibox.container.background,
+			},
+			{
+				{
+					id     = 'clienticon',
+					widget = awful.widget.clienticon,
+				},
+				margins = 2,
+				widget = wibox.container.margin
+			},
+			nil,
+			create_callback = function(self, c)
+				self:get_children_by_id('clienticon')[1].client = c
+				self:connect_signal('mouse::enter', function()
+					awesome.emit_signal("bling::task_preview::visibility", s,
+						true, c)
+				end)
+				self:connect_signal('mouse::leave', function()
+					awesome.emit_signal("bling::task_preview::visibility", s,
+						false, c)
+				end)
+			end,
+			layout = wibox.layout.align.vertical,
 		}
 	}
 
@@ -246,39 +298,81 @@ screen.connect_signal("request::desktop_decoration", function(s)
 
 	-- taglist --
 	local taglist = awful.widget.taglist {
-		screen = s,
-		filter = awful.widget.taglist.filter.noempty,
-		buttons = {
+		screen          = s,
+		filter          = awful.widget.taglist.filter.noempty,
+		buttons         = {
 			awful.button({}, 1, function(t) t:view_only() end),
 			awful.button({}, 4, function(t) awful.tag.viewprev(t.screen) end),
 			awful.button({}, 5, function(t) awful.tag.viewnext(t.screen) end),
 		},
-		layout = {
+		layout          = {
 			spacing = 10,
-			layout = wibox.layout.fixed.vertical
+			layout  = wibox.layout.fixed.vertical,
 		},
 		widget_template = {
-			id              = "background_role",
+			{
+				{
+					{
+						{
+							{
+								id     = 'index_role',
+								widget = wibox.widget.textbox,
+							},
+							margins = 6,
+							widget  = wibox.container.margin,
+						},
+						shape  = gears.shape.circle,
+						widget = wibox.container.background,
+					},
+					{
+						{
+							id     = 'icon_role',
+							widget = wibox.widget.imagebox,
+						},
+						margins = 6,
+						widget  = wibox.container.margin,
+					},
+					{
+						id     = 'text_role',
+						widget = wibox.widget.textbox,
+					},
+					layout = wibox.layout.fixed.vertical,
+				},
+				left   = 18,
+				right  = 18,
+				widget = wibox.container.margin
+			},
+			id              = 'background_role',
 			widget          = wibox.container.background,
-			create_callback = function(self, tag)
+			create_callback = function(self, c3, index, objects)
 				self.animate = rubato.timed {
 					duration = 0.3,
 					easing = rubato.easing.linear,
 					subscribed = function(h)
-						self:get_children_by_id("background_role")[1].forced_height = h
+						self:get_children_by_id("index_role")[1].forced_height = h
 					end
 				}
-				self.update = function()
-					if tag.selected then
-						self.animate.target = 30
-					elseif #tag:clients() > 0 then
-						self.animate.target = 20
+				self:get_children_by_id('index_role')[1].markup = '<b> ' .. index .. ' </b>'
+				self:connect_signal('mouse::enter', function()
+					if #c3:clients() > 0 then
+						awesome.emit_signal("bling::tag_preview::update", c3)
+						awesome.emit_signal("bling::tag_preview::visibility", s, true)
+						self.bg = beautiful.taglist_bg_occupied
 					end
-				end
-				self.update()
+					if self.bg ~= beautiful.taglist_bg_occupied then
+						self.backup     = self.bg
+						self.has_backup = true
+					end
+					self.bg = beautiful.taglist_bg_urgent
+				end)
+				self:connect_signal('mouse::leave', function()
+					awesome.emit_signal("bling::tag_preview::visibility", s, false)
+					if self.has_backup then self.bg = self.backup end
+					if c3.selected then self.bg = beautiful.taglist_bg_focus end
+				end)
 			end,
-			update_callback = function(self)
-				self.update()
+			update_callback = function(self, c3, index, objects)
+				self:get_children_by_id('index_role')[1].markup = '<b> ' .. index .. ' </b>'
 			end,
 		},
 	}
@@ -395,15 +489,15 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	bar = awful.wibar {
 		screen = s,
 		position = "left",
-		height = s.geometry.height + beautiful.border_width * 2,
+		height = s.geometry.height - 40,
 		width = 50,
-		bg = beautiful.background,
+		bg = beautiful.background_dark,
 		border_width = beautiful.border_width,
 		border_color = beautiful.border_color_normal,
 		margins = {
 			top = -beautiful.border_width,
 			bottom = -beautiful.border_width,
-			left = -beautiful.border_width,
+			left = -beautiful.border_width + 10,
 		},
 		ontop = false,
 		widget = {

@@ -7,21 +7,21 @@ case "$1" in
   --menu)
     rofi -show drun -theme $HOME/.config/configs/launcher.rasi & disown;;
   --terminal)
-    kitty & disown;;
+    alacritty & disown;;
   --update)
-    kitty --hold --class FloaTerm,kitty -e Updates --update-system & disown;;
+    alacritty --hold --class FloaTerm,alacritty -e Updates --update-system & disown;;
   --checkupdates)
-    kitty --hold --class Updating,kitty -e Updates --print-updates & disown;;
+    alacritty --hold --class Updating,alacritty -e Updates --print-updates & disown;;
   --ranger)
-    kitty --class Ranger,kitty -e ranger & disown;;
+    alacritty --class Ranger,alacritty -e ranger & disown;;
   --nvim)
-    kitty -e nvim & disown;;
+    alacritty -e nvim & disown;;
   --music)
-    kitty --class MusicPlayer,kitty -e ncmpcpp & disown;;
+    alacritty --class MusicPlayer,alacritty -e ncmpcpp & disown;;
   --opacity)
-	$HOME/.config/configs/picom/toggle --opacity & disown;;
+	~/.config/configs/picom/toggle --opacity & disown;;
   --noopacity)
-	$HOME/.config/configs/picom/toggle --no-opacity & disown;;
+	~/.config/configs/picom/toggle --no-opacity & disown;;
 
   #Apps
   --filemanager)
