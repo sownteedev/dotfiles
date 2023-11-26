@@ -4,38 +4,22 @@ local wibox = require('wibox')
 local dpi = beautiful.xresources.apply_dpi
 local gears = require('gears')
 
-<<<<<<< HEAD
-local helpers = require('helpers')
-local bling = require('modules.bling')
-
---Album art
-local art = helpers.imagebox(os.getenv("HOME") .. "/.config/awesome/assets/control_center/music.svg", 180, 300)
-=======
 local helpers = require('helpers.mplayer')
 local bling = require('modules.bling')
 
 --Album art
 local art = helpers.imagebox(os.getenv("HOME") .. "/.config/awesome/themes/icons/music.jpg", 180, 300)
->>>>>>> temp-branch
 art.halign = 'center'
 art.valign = 'center'
 
 --Title
-<<<<<<< HEAD
-local title_widget = helpers.textbox(beautiful.blue, "Ubuntu nerd font bold 15", "Nothing playing")
-=======
 local title_widget = helpers.textbox(beautiful.blue, "Liga SFMono Nerd Font 13", "Nothing playing")
->>>>>>> temp-branch
 title_widget.forced_width = dpi(250)
 title_widget.forced_height = dpi(35)
 title_widget.halign = 'center'
 
 --Artist
-<<<<<<< HEAD
-local artist_widget = helpers.textbox(beautiful.foreground, "Ubuntu nerd font 13", "Unknown artist")
-=======
 local artist_widget = helpers.textbox(beautiful.foreground, "Liga SFMono Nerd Font 10", "Unknown artist")
->>>>>>> temp-branch
 artist_widget.forced_width = dpi(250)
 artist_widget.forced_height = dpi(35)
 artist_widget.halign = 'center'
@@ -45,13 +29,8 @@ local playerctl = bling.signal.playerctl.lib()
 playerctl:connect_signal("metadata",
 	function(_, title, artist, album_path, album, new, player_name)
 		art:set_image(gears.surface.load_uncached(album_path))
-<<<<<<< HEAD
-		title_widget:set_markup_silently(helpers.mtext(beautiful.blue, "Ubuntu nerd font bold 14", title))
-		artist_widget:set_markup_silently(helpers.mtext(beautiful.foreground, "Ubuntu nerd font 13", artist))
-=======
 		title_widget:set_markup_silently(helpers.mtext(beautiful.blue, "Liga SFMono Nerd Font bold 11", title))
 		artist_widget:set_markup_silently(helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font 10", artist))
->>>>>>> temp-branch
 	end)
 
 -----------------------------
@@ -63,21 +42,13 @@ local media_slider = wibox.widget {
 		gears.shape.rounded_rect(cr, width, height, 25)
 	end,
 	bar_height = dpi(8),
-<<<<<<< HEAD
-	bar_color = beautiful.background,
-=======
 	bar_color = beautiful.background_alt,
->>>>>>> temp-branch
 	bar_active_color = beautiful.blue,
 	handle_shape = gears.shape.circle,
 	handle_color = beautiful.blue,
 	handle_width = dpi(15),
 	handle_border_width = 0,
-<<<<<<< HEAD
-	handle_border_color = "#4682b8",
-=======
 	handle_border_color = beautiful.blue,
->>>>>>> temp-branch
 	minimum = 0,
 	maximum = 100,
 	value = 69,
@@ -120,11 +91,7 @@ awful.spawn.with_line_callback("playerctl -F metadata -f '{{mpris:length}}'", {
 
 --Position/length text
 local length_text = wibox.widget {
-<<<<<<< HEAD
-	markup = helpers.mtext(beautiful.foreground, "Ubuntu nerd font bold 11", "00:00"),
-=======
 	markup = helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9", "00:00"),
->>>>>>> temp-branch
 	valign = 'top',
 	widget = wibox.widget.textbox,
 	forced_height = dpi(15),
@@ -132,11 +99,7 @@ local length_text = wibox.widget {
 }
 
 local position_text = wibox.widget {
-<<<<<<< HEAD
-	markup = helpers.mtext(beautiful.foreground, "Ubuntu nerd font bold 11", "00:00"),
-=======
 	markup = helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9", "00:00"),
->>>>>>> temp-branch
 	align = 'center',
 	valign = 'top',
 	widget = wibox.widget.textbox,
@@ -149,11 +112,7 @@ local update_length_text = function()
 	awful.spawn.easy_async("timeout 0.4s playerctl -F metadata -f '{{mpris:length}}'", function(stdout)
 		if stdout == "" then
 			local text = '00:00'
-<<<<<<< HEAD
-			length_text:set_markup_silently(helpers.mtext(beautiful.foreground, "Ubuntu nerd font bold 11", text))
-=======
 			length_text:set_markup_silently(helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9", text))
->>>>>>> temp-branch
 		elseif stdout == nil then
 			local length = 0
 			local minutes = math.floor(length / 60)
@@ -161,11 +120,7 @@ local update_length_text = function()
 			local seconds = math.floor(length % 60)
 			local formattedseconds = string.format("%02d", seconds)
 			length_text:set_markup_silently(
-<<<<<<< HEAD
-				helpers.mtext(beautiful.foreground, "Ubuntu nerd font bold 11",
-=======
 				helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9",
->>>>>>> temp-branch
 					formattedminutes .. ':' .. formattedseconds)
 			)
 		else
@@ -176,11 +131,7 @@ local update_length_text = function()
 				local seconds = math.floor(length % 60)
 				local formattedseconds = string.format("%02d", seconds)
 				length_text:set_markup_silently(
-<<<<<<< HEAD
-					helpers.mtext(beautiful.foreground, "Ubuntu nerd font bold 11",
-=======
 					helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9",
->>>>>>> temp-branch
 						formattedminutes .. ':' .. formattedseconds)
 				)
 			end
@@ -200,11 +151,7 @@ local update_position_text = function()
 	awful.spawn.easy_async("playerctl position", function(stdout)
 		if stdout == "" then
 			local text = '00:00'
-<<<<<<< HEAD
-			position_text:set_markup_silently(helpers.mtext(beautiful.foreground, "Ubuntu nerd font bold 11", text))
-=======
 			position_text:set_markup_silently(helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9", text))
->>>>>>> temp-branch
 		else
 			local length = tonumber(stdout)
 			local minutes = math.floor(length / 60)
@@ -212,11 +159,7 @@ local update_position_text = function()
 			local seconds = math.floor(length % 60)
 			local formattedseconds = string.format("%02d", seconds)
 			position_text:set_markup_silently(
-<<<<<<< HEAD
-				helpers.mtext(beautiful.foreground, "Ubuntu nerd font bold 11",
-=======
 				helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9",
->>>>>>> temp-branch
 					formattedminutes .. ':' .. formattedseconds)
 			)
 		end
@@ -234,19 +177,11 @@ local update_position_text_timer = gears.timer({
 --Buttons---------------------
 ------------------------------
 
-<<<<<<< HEAD
-local play_pause = helpers.textbox(beautiful.blue, "Ubuntu nerd font bold 17", "")
-local forward = helpers.textbox(beautiful.violet, "Ubuntu nerd font bold 17", "")
-local backward = helpers.textbox(beautiful.violet, "Ubuntu nerd font bold 17", "")
-local f15 = helpers.textbox(beautiful.green, "Ubuntu nerd font bold 17", "󱤺")
-local b15 = helpers.textbox(beautiful.green, "Ubuntu nerd font bold 17", "󱥆")
-=======
 local play_pause = helpers.textbox(beautiful.blue, "Liga SFMono Nerd Font bold 12", " ")
 local forward = helpers.textbox(beautiful.violet, "Liga SFMono Nerd Font bold 12", " ")
 local backward = helpers.textbox(beautiful.violet, "Liga SFMono Nerd Font bold 12", " ")
 local f15 = helpers.textbox(beautiful.green, "Liga SFMono Nerd Font bold 13", "󱤺 ")
 local b15 = helpers.textbox(beautiful.green, "Liga SFMono Nerd Font bold 13", "󱥆 ")
->>>>>>> temp-branch
 
 local create_container = function(wgt)
 	local btn = helpers.margin(
@@ -264,11 +199,7 @@ local create_container = function(wgt)
 		btn,
 		widget = wibox.container.background,
 		bg = beautiful.background,
-<<<<<<< HEAD
-		border_width = 3,
-=======
 		border_width = 0,
->>>>>>> temp-branch
 		border_color = beautiful.background .. "80",
 		shape = helpers.rrect(40)
 	}
@@ -287,17 +218,10 @@ local is_playing = true
 play_pause_btn:connect_signal("button::release", function()
 	is_playing = not is_playing
 	if is_playing then
-<<<<<<< HEAD
-		play_pause.markup = helpers.mtext(beautiful.blue, "Ubuntu nerd font bold 17", '')
-		awful.spawn('playerctl play')
-	else
-		play_pause.markup = helpers.mtext(beautiful.blue, "Ubuntu nerd font bold 17", '')
-=======
 		play_pause.markup = helpers.mtext(beautiful.blue, "Liga SFMono Nerd Font bold 12", ' ')
 		awful.spawn('playerctl play')
 	else
 		play_pause.markup = helpers.mtext(beautiful.blue, "Liga SFMono Nerd Font bold 12", ' ')
->>>>>>> temp-branch
 		awful.spawn('playerctl pause')
 	end
 end)
@@ -326,13 +250,6 @@ b15_btn:connect_signal("button::press", function(_, _, _, button)
 	end
 end)
 
-<<<<<<< HEAD
-
-
-
-
-=======
->>>>>>> temp-branch
 local mplayer = wibox.widget {
 	{
 		helpers.margin(art, 0, 0, 0, 10),
