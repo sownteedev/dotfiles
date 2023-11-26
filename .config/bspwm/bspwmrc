@@ -69,15 +69,7 @@ for process in "${processes[@]}"; do
     fi
 done
 
-<<<<<<< HEAD
 ~/.config/configs/picom/toggle --no-opacity &
-=======
-<<<<<<< HEAD
-picom --config "$HOME"/.config/configs/picom/picom_no_opacity.conf &
-=======
-~/.config/configs/picom/toggle --no-opacity &
->>>>>>> 030d01e (:>)
->>>>>>> temp-branch
 
 dunst -config "$HOME"/.config/configs/dunstrc &
 
