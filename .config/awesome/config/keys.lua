@@ -44,14 +44,26 @@ awful.keyboard.append_global_keybindings({
 	end),
 
 	-- Scripts
+<<<<<<< HEAD
 	awful.key({ alt, }, "p", function() awful.spawn.with_shell("~/.config/scripts/colorpicker") end),
+=======
+>>>>>>> temp-branch
 	awful.key({}, "Print", function() awful.spawn.with_shell("~/.config/scripts/Screenshot/Screenshot") end),
+	awful.key({ alt, }, "p", function() awful.spawn.with_shell("~/.config/scripts/colorpicker") end),
 	awful.key({ alt, }, "w", function() awful.spawn.with_shell("~/.config/scripts/Network/Network") end),
 	awful.key({ alt, }, "b", function() awful.spawn.with_shell("~/.config/scripts/Bluetooth/Bluetooth") end),
+<<<<<<< HEAD
+=======
+	awful.key({ alt, }, "m", function() awesome.emit_signal("mplayer::toggle") end),
+>>>>>>> temp-branch
 	awful.key({ alt, }, "F4", function() awful.spawn.with_shell("~/.config/scripts/Power/PowerMenu") end),
 	awful.key({ alt, }, "space", function() awful.spawn.with_shell("~/.config/scripts/RiceSelect/RiceSelector") end),
-	awful.key({ mod, alt }, "w", function() awful.spawn.with_shell("feh -z --no-fehbg --bg-fill ~/.walls") end),
 	awful.key({ alt }, "l", function() awful.spawn.with_shell("betterlockscreen -l dimblur") end),
+	awful.key({ mod, alt }, "w", function() awful.spawn.with_shell("feh -z --no-fehbg --bg-fill ~/.walls") end),
+<<<<<<< HEAD
+	awful.key({ alt }, "l", function() awful.spawn.with_shell("betterlockscreen -l dimblur") end),
+=======
+>>>>>>> temp-branch
 	awful.key({ mod, shift }, "b", function() awesome.emit_signal("hide::bar") end),
 	awful.key({ mod, }, "Return", function() awful.spawn("alacritty") end),
 	awful.key({ mod, ctrl }, "p", function() xrandr.xrandr() end),

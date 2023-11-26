@@ -10,13 +10,14 @@ fi
 
 eval "$(thefuck --alias)"
 
-alias rec='ffmpeg -framerate 60 -f x11grab -i $DISPLAY -pix_fmt yuv420p $HOME/Videos/rec.mp4'
-alias rec_mic='ffmpeg -framerate 60 -f x11grab -i $DISPLAY -f pulse -i default -pix_fmt yuv420p $HOME/Videos/rec.mp4'
+alias rec='ffmpeg -y -framerate 60 -f x11grab -i $DISPLAY -pix_fmt yuv420p $HOME/Videos/rec.mp4'
+alias rec_audio='ffmpeg -y -framerate 60 -f x11grab -i $DISPLAY -f pulse -i alsa_output.pci-0000_00_1b.0.analog-stereo.monitor -pix_fmt yuv420p $HOME/Videos/rec.mp4'
+alias rec_mic='ffmpeg -y -framerate 60 -f x11grab -i $DISPLAY -f pulse -i default -pix_fmt yuv420p $HOME/Videos/rec.mp4'
 
 alias cls="clear"
 alias nvide="neovide"
 
-alias fzr="fzf --layout=reverse --prompt ' ' --pointer '=>' --preview='less {}' --bind shift-up:preview-page-up,shift-down:preview-page-down"
+alias fzf="fzf --layout=reverse --prompt ' ' --pointer '=>' --preview='less {}' --bind shift-up:preview-page-up,shift-down:preview-page-down"
 
 alias yts="ytfzf -t"
 alias startx='startx -- -keeptty >~/.xorg.log 2>&1'
