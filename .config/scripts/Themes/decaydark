@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 
 bg="#061115"
-fg="#d9d7d6"
 bgd="#050e0f"
 bgl="#0d181c"
 bgl2="#131e22"
 bgl3="#1c272b"
+bgl4="#242f33"
+fg="#d9d7d6"
+
 red="#df5b61"
 green="#78b892"
 blue="#6791c9"
+yellow="#ecd28b"
+orange="#e89982"
+violet="#b18bb1"
+accent="#A9B1D6"

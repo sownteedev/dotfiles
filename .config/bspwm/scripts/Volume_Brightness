@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-volume_step=5
+volume_step=2
 brightness_step=10
 
 # get volume
@@ -23,12 +23,14 @@ function get_volume_icon {
     mute=`get_mute`
     if [ $volume -eq 0 ] || [ $mute == "yes" ] ; then
         volume_icon="󰖁"
-    elif [ $volume -le 30 ]; then
+    elif [ $volume -lt 30 ]; then
         volume_icon=""
-    elif [ $volume -lt 70 ] && [ $volume -gt 30 ]; then
+    elif [ $volume -lt 70 ]; then
         volume_icon="󰕾"
-    else
+    elif [ $volume -lt 100 ]; then
         volume_icon=""
+	else
+		volume_icon="󱄡"
     fi
 }
 
@@ -40,17 +42,16 @@ function show_volume_notif {
     volume=`get_volume`
     get_volume_icon
     if [ $volume -eq 0 ] || [ $mute == "yes" ] ; then
-        dunstify -i audio-volume-muted-blocking -t 1000 -r 2593 -u normal "$volume_icon  Muted"
+        dunstify -i audio-volume-muted-blocking -t 1000 -r 2593 -u normal "$volume_icon Muted"
     else
-        dunstify -i audio-volume-muted-blocking -t 1000 -r 2593 -u normal "$volume_icon  Volume: $volume%" -h int:value:$volume
+        dunstify -i audio-volume-muted-blocking -t 1000 -r 2593 -u normal "$volume_icon Volume: $volume%" -h int:value:$volume
     fi
 }
 
-# Displays a brightness notification using dunstify
 function show_brightness_notif {
     brightness=`get_brightness`
     get_brightness_icon
-    dunstify -i audio-volume-muted-blocking -t 1000 -r 2593 -u normal "$brightness_icon  Brightness: $brightness%" -h int:value:$brightness
+    dunstify -i audio-volume-muted-blocking -t 1000 -r 2593 -u normal "$brightness_icon Brightness: $brightness%" -h int:value:$brightness
 }
 
 case $1 in

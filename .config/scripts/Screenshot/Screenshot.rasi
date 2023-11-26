@@ -4,15 +4,10 @@
 configuration {
     show-icons:                 false;
 }
-
-/*****----- Global Properties -----*****/
-/*
-USE_ICON=YES
-*/
-
 * {
 	font: "Liga SFMono Nerd Font 10";
 }
+
 /*****----- Main Window -----*****/
 window {
     transparency:                "real";
@@ -22,12 +17,11 @@ window {
     width:                       350px;
     x-offset:                    508px;
     y-offset:                    0px;
-
     margin:                      0px;
     padding:                     0px;
     border:                      45px 2px 2px 2px solid;
     border-radius:               0px;
-    border-color:                #25292E;
+    border-color:                @border-color;
     cursor:                      "default";
     background-color:            @background;
 }
@@ -49,7 +43,7 @@ inputbar {
     padding:                     0px;
     border:                      0px;
     border-radius:               0px;
-    border-color:                @selected;
+    border-color:                @foreground;
     background-color:            transparent;
     text-color:                  @foreground;
     children:                    [ "textbox-prompt-colon", "prompt"];
@@ -61,8 +55,8 @@ textbox-prompt-colon {
     str:                         " ";
     padding:                     6px 10px;
     border-radius:               0px;
-    background-color:            #25292E;
-    text-color:                  #FFFFFF;
+    background-color:            @border-color;
+    text-color:                  @foreground;
 }
 prompt {
     enabled:                     true;
@@ -79,7 +73,7 @@ message {
     padding:                     6px 10px;
     border:                      0px solid;
     border-radius:               6px;
-    border-color:                @selected;
+    border-color:                @foreground;
     background-color:            @background-alt;
     text-color:                  @foreground;
 }
@@ -126,23 +120,11 @@ element-text {
 
 element normal.normal,
 element alternate.normal {
-    background-color:            var(background-alt);
-    text-color:                  var(foreground);
-}
-element normal.urgent,
-element alternate.urgent,
-element selected.active {
-    background-color:            var(urgent);
-    text-color:                  var(background);
-}
-element normal.active,
-element alternate.active,
-element selected.urgent {
-    background-color:            var(active);
-    text-color:                  var(background);
+    background-color:            @background-alt;
+    text-color:                  @foreground;
 }
 element selected.normal {
-    background-color:            var(background-alt);
-    text-color:                  var(foreground);
-    border-color:                #25292E;   
+    background-color:            @background-alt;
+    text-color:                  @foreground;
+    border-color:                @border-color;   
 }

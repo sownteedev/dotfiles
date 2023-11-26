@@ -25,26 +25,26 @@ done
 
 bspc rule -a \* state=floating
 
-bspc rule -a kitty desktop=^1 follow=on
+bspc rule -a Alacritty desktop=^1 follow=on state=tiled
 bspc rule -a Google-chrome desktop=^2 follow=on
 
 bspc rule -a Code desktop=^3
 bspc rule -a jetbrains-idea desktop=^3
-bspc rule -a neovide desktop=^3 follow=on
+bspc rule -a neovide desktop=^3
 
 bspc rule -a discord desktop=^4 follow=off
 bspc rule -a Telegram desktop=^4
 bspc rule -a Spotify desktop=^5 follow=off
+
 bspc rule -a vlc desktop=^7 follow=on
 bspc rule -a Thunar desktop=^7 follow=on
-bspc rule -a TeamViewer desktop=^8 follow=off
 
 #  ┌┐ ┌─┐┌─┐┬ ┬┌┬┐  ┌─┐┌─┐┌┐┌┌─┐┬┌─┐
 #  ├┴┐└─┐├─┘││││││  │  │ ││││├┤ ││ ┬
 #  └─┘└─┘┴  └┴┘┴ ┴  └─┘└─┘┘└┘└  ┴└─┘
 
 bspc config border_width				  0
-bspc config window_gap					  0
+bspc config window_gap					  10
 bspc config split_ratio                   0
 bspc config single_monocle                false
 bspc config borderless_monocle            false
@@ -69,11 +69,9 @@ for process in "${processes[@]}"; do
     fi
 done
 
-picom --config "$HOME"/.config/configs/picom/picom_no_opacity &
+~/.config/configs/picom/toggle --no-opacity &
 
 dunst -config "$HOME"/.config/configs/dunstrc &
-
-. "$HOME"/.config/bspwm/rices/"$RICETHEME"/Load
 
 feh -z --no-fehbg --bg-fill "$HOME"/.walls
 

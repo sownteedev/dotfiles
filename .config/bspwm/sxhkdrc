@@ -1,8 +1,8 @@
-# Kitty
+# Terminal
 super + Return
     OpenApps --terminal
 
-# Rofi
+# Menu
 super + d
     OpenApps --menu
 
@@ -27,43 +27,32 @@ super + l
 # Screenshot and Record
 Print
     ~/.config/scripts/Screenshot/Screenshot
-super + Print
-	flameshot gui
-# Show windows
-super + Tab
-    ~/.config/scripts/Windows/Windows
 
 # Manage brightness
 XF86MonBrightnessUp
-    ~/.config/scripts/Volume_Brightness brightness_up
+    ~/.config/bspwm/scripts/Volume_Brightness brightness_up
 XF86MonBrightnessDown
-    ~/.config/scripts/Volume_Brightness brightness_down
+    ~/.config/bspwm/scripts/Volume_Brightness brightness_down
 
 # Volume control
 XF86AudioRaiseVolume
-    ~/.config/scripts/Volume_Brightness volume_up
+    ~/.config/bspwm/scripts/Volume_Brightness volume_up
 XF86AudioLowerVolume
-    ~/.config/scripts/Volume_Brightness volume_down
+    ~/.config/bspwm/scripts/Volume_Brightness volume_down
 XF86AudioMute
-    ~/.config/scripts/Volume_Brightness volume_mute
-# Next Pause Previous
+    ~/.config/bspwm/scripts/Volume_Brightness volume_mute
 XF86Audio{Play,Next,Prev}
     playerctl {play-pause,next,previous}
 
 alt + @space
     ~/.config/scripts/RiceSelect/RiceSelector
 
+alt + p
+	~/.config/scripts/colorpicker
+
 # Opacity
 super + ctrl + {Up,Down}
 	OpenApps {--opacity,--noopacity}
-
-# Poweroff, Reboot, Logout, Lockscreen, Kill
-ctrl + super + alt + {p,r,q,l,k}
-    {systemctl poweroff, systemctl reboot,bspc quit,physlock -d,xkill}
-
-# Hide/Show Bar (Polybar and/or eww)
-super + {h,u}
-    HideBar {-h,-u}
 
 # Random wallpaper
 super + alt + w

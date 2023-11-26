@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 pkill picom
-while pgrep -u $UID -x picom >/dev/null; do sleep 1; done
+while pgrep -u $UID -x picom >/dev/null; do sleep 0; done
 
 case $1 in
 --opacity)
