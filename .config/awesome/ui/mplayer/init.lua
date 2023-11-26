@@ -3,7 +3,11 @@ local beautiful = require('beautiful')
 local wibox = require('wibox')
 local dpi = beautiful.xresources.apply_dpi
 
+<<<<<<< HEAD
 local helpers = require('helpers')
+=======
+local helpers = require('helpers.mplayer')
+>>>>>>> temp-branch
 
 local sep = wibox.widget.textbox(" ")
 sep.forced_height = dpi(500)
