@@ -138,8 +138,7 @@ local calendar_widget = awful.popup {
 	widget = main
 }
 
--- summon functions --
-awesome.connect_signal("summon::calendar_widget", function()
+awesome.connect_signal("sowntee::calendar_widget", function()
 	calendar:set_date(os.date("*t"))
 	calendar_widget.visible = not calendar_widget.visible
 end)

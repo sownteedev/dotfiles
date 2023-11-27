@@ -4,7 +4,10 @@ local beautiful = require("beautiful")
 local naughty = require("naughty")
 local gears = require("gears")
 local vars = require("ui.vars")
-require("scripts.init")
+
+require("scripts")
+require("ui.bar.calendar")
+require("ui.bar.notification")
 local rubato = require("modules.rubato")
 local bling = require("modules.bling")
 
@@ -70,10 +73,10 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		vars.profile_default = not vars.profile_default
 		if not vars.profile_default then
 			profile:get_children_by_id("profile")[1]:set_bg(beautiful.background_alt)
-			awesome.emit_signal("summon::control")
+			awesome.emit_signal("sowntee::control")
 		else
 			profile:get_children_by_id("profile")[1]:set_bg(beautiful.background_urgent)
-			awesome.emit_signal("summon::control")
+			awesome.emit_signal("sowntee::control")
 		end
 	end)
 	awesome.connect_signal("launcher::control", function()
@@ -283,10 +286,10 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		vars.time_default = not vars.time_default
 		if not vars.time_default then
 			time:get_children_by_id("clock")[1]:set_bg(beautiful.background_alt)
-			awesome.emit_signal("summon::calendar_widget")
+			awesome.emit_signal("sowntee::calendar_widget")
 		else
 			time:get_children_by_id("clock")[1]:set_bg(beautiful.background_urgent)
-			awesome.emit_signal("summon::calendar_widget")
+			awesome.emit_signal("sowntee::calendar_widget")
 		end
 	end)
 
@@ -469,10 +472,10 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		vars.notif_center_default = not vars.notif_center_default
 		if not vars.notif_center_default then
 			dnd_button:get_children_by_id("dnd")[1]:set_bg(beautiful.background_alt)
-			awesome.emit_signal("summon::notif_center")
+			awesome.emit_signal("sowntee::notif_center")
 		else
 			dnd_button:get_children_by_id("dnd")[1]:set_bg(beautiful.background_urgent)
-			awesome.emit_signal("summon::notif_center")
+			awesome.emit_signal("sowntee::notif_center")
 		end
 	end)
 

@@ -277,7 +277,7 @@ wifi_widget_container:buttons(gears.table.join(
 ))
 
 reveal_button:buttons(gears.table.join(awful.button({}, 1, function()
-	awesome.emit_signal("summon::wifi_popup")
+	awesome.emit_signal("sowntee::wifi_popup")
 end)))
 
 refresh_button:buttons(gears.table.join(awful.button({}, 1, function()
@@ -297,9 +297,8 @@ local wifi_popup = awful.popup {
 	widget = main,
 }
 
--- summon functions --
 
-awesome.connect_signal("summon::wifi_popup", function()
+awesome.connect_signal("sowntee::wifi_popup", function()
 	wifi_popup.visible = not wifi_popup.visible
 end)
 

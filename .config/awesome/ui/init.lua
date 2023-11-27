@@ -1,7 +1,5 @@
 require("ui.osd")
 require("ui.bar")
-require("ui.notifs_center")
-require("ui.calendar")
 require("ui.titlebars")
 require("ui.control")
 require("ui.mplayer")

@@ -2,6 +2,7 @@ local awful = require("awful")
 require("awful.hotkeys_popup.keys")
 local xrandr = require("config.xrandr")
 local switcher = require("modules.awesome-switcher")
+local Launcher = require("ui.launcher")
 
 local mod = "Mod4"
 local alt = "Mod1"
@@ -10,7 +11,8 @@ local shift = "Shift"
 
 awful.keyboard.append_global_keybindings({
 	-- Apps
-	awful.key({ mod }, "d", function() awful.spawn("rofi -show drun -theme .config/configs/launcher.rasi") end),
+	-- awful.key({ mod }, "d", function() awful.spawn("rofi -show drun -theme .config/configs/launcher.rasi") end),
+	awful.key({ mod }, "d", function() Launcher:open() end),
 	awful.key({ mod }, "e", function() awful.spawn("thunar") end),
 
 	-- Volume and Brightness
@@ -20,27 +22,27 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86AudioRaiseVolume", function()
 		awful.spawn.with_shell("pactl set-sink-volume @DEFAULT_SINK@ +2%")
 		update_value_of_volume()
-		awesome.emit_signal("summon::osd")
+		awesome.emit_signal("sowntee::osd")
 	end),
 	awful.key({}, "XF86AudioLowerVolume", function()
 		awful.spawn.with_shell("pactl set-sink-volume @DEFAULT_SINK@ -2%")
 		update_value_of_volume()
-		awesome.emit_signal("summon::osd")
+		awesome.emit_signal("sowntee::osd")
 	end),
 	awful.key({}, "XF86AudioMute", function()
 		awful.spawn.with_shell("pactl set-sink-mute @DEFAULT_SINK@ toggle")
 		update_value_of_volume()
-		awesome.emit_signal("summon::osd")
+		awesome.emit_signal("sowntee::osd")
 	end),
 	awful.key({}, "XF86MonBrightnessUp", function()
 		awful.spawn.with_shell("brightnessctl s 5%+")
 		update_value_of_bright()
-		awesome.emit_signal("summon::osd")
+		awesome.emit_signal("sowntee::osd")
 	end),
 	awful.key({}, "XF86MonBrightnessDown", function()
 		awful.spawn.with_shell("brightnessctl s 5%-")
 		update_value_of_bright()
-		awesome.emit_signal("summon::osd")
+		awesome.emit_signal("sowntee::osd")
 	end),
 
 	-- Scripts

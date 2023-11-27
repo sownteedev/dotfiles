@@ -67,7 +67,7 @@ run_cmd() {
 	elif [[ "$1" == '--opt4' ]]; then
 		confirm_run 'systemctl hibernate'
 	elif [[ "$1" == '--opt5' ]]; then
-		confirm_run 'bspc quit'
+	awesome-client 'awesome.quit()'
 	elif [[ "$1" == '--opt6' ]]; then
 		betterlockscreen -l dimblur
 	fi

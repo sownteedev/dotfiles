@@ -264,9 +264,7 @@ local notif_center = awful.popup {
 }
 
 
--- summon functions --
-
-awesome.connect_signal("summon::notif_center", function()
+awesome.connect_signal("sowntee::notif_center", function()
 	notif_center.visible = not notif_center.visible
 end)
 
