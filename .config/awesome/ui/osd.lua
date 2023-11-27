@@ -101,7 +101,6 @@ local function osd_toggle()
 	end
 end
 
-awesome.connect_signal("summon::osd", function()
+awesome.connect_signal("sowntee::osd", function()
 	osd_toggle()
 end)
-

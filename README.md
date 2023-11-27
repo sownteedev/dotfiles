@@ -54,7 +54,7 @@
 
 #### File Manager
 
-    sudo pacman -S thunar ranger ueberzug exa unzip unrar xdg-user-dirs && yay -S highlight
+    sudo pacman -S thunar tumbler nemo ranger ueberzug exa unzip unrar xdg-user-dirs && yay -S highlight
 
 #### Monitor and Theme
 
