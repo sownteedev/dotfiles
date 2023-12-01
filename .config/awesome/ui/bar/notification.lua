@@ -11,6 +11,7 @@ awesome.emit_signal("notifs::count", notifs_count)
 
 local label = wibox.widget {
 	text = "Notifications",
+	font = beautiful.font1 .. " 9",
 	align = "center",
 	widget = wibox.widget.textbox,
 }
@@ -35,7 +36,7 @@ local notifs_empty = wibox.widget {
 		layout = wibox.layout.flex.vertical,
 		{
 			markup = helpers.ui.colorizeText("No notifications", beautiful.background_urgent),
-			font = beautiful.font,
+			font = beautiful.font1 .. " 9",
 			align = "center",
 			valign = "center",
 			widget = wibox.widget.textbox,
@@ -255,10 +256,10 @@ local notif_center = awful.popup {
 	border_color = beautiful.border_color_normal,
 	minimum_height = 585,
 	maximum_height = 585,
-	minimum_width = 500,
-	maximum_width = 500,
+	minimum_width = 400,
+	maximum_width = 400,
 	placement = function(d)
-		awful.placement.bottom_left(d, { honor_workarea = true, margins = 20 + beautiful.border_width * 2 })
+		awful.placement.bottom_right(d, { honor_workarea = true, margins = 20 + beautiful.border_width * 2 })
 	end,
 	widget = main
 }

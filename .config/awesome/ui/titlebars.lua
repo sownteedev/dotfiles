@@ -37,6 +37,12 @@ local create_button = function(color, func)
 end
 
 client.connect_signal("request::titlebars", function(c)
+	local top_titlebar = awful.titlebar(c, {
+		size = 30,
+	})
+
+	awful.titlebar.enable_tooltip = false
+
 	local minimize = create_button(beautiful.yellow,
 		function()
 			gears.timer.delayed_call(function()
@@ -57,6 +63,20 @@ client.connect_signal("request::titlebars", function(c)
 		end
 	)
 
+	local function update_button_color()
+		if client.focus == c then
+			minimize.bg = beautiful.yellow
+			maximize.bg = beautiful.green
+			close.bg = beautiful.red
+		else
+			minimize.bg = beautiful.background_urgent
+			maximize.bg = beautiful.background_urgent
+			close.bg = beautiful.background_urgent
+		end
+	end
+	c:connect_signal("focus", update_button_color)
+	c:connect_signal("unfocus", update_button_color)
+
 	local buttons = gears.table.join(
 		awful.button({}, 1, function()
 			client.focus = c
@@ -70,11 +90,7 @@ client.connect_signal("request::titlebars", function(c)
 		end)
 	)
 
-	awful.titlebar(c, {
-		bg = beautiful.background,
-		size = 30,
-		position = "top"
-	}):setup {
+	top_titlebar.widget = {
 		layout = wibox.layout.align.horizontal,
 		{
 			widget = wibox.container.background,

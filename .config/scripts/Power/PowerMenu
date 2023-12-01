@@ -7,7 +7,6 @@ CNFR="$DIR/Power/Confirm.rasi"
 
 # Theme Elements
 prompt="`users`@`hostnamectl --static`"
-mesg="Uptime : `uptime -p | sed -e 's/up //g'`"
 
 # Options
 layout=`cat ${RASI} | grep 'USE_ICON' | cut -d'=' -f2`

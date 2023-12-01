@@ -6,8 +6,8 @@ local dpi = beautiful.xresources.apply_dpi
 local helpers = require('helpers.mplayer')
 
 local sep = wibox.widget.textbox(" ")
-sep.forced_height = dpi(500)
-sep.forced_width = dpi(350)
+sep.forced_height = dpi(400)
+sep.forced_width = dpi(300)
 
 local h = awful.screen.focused().workarea.height
 local w = awful.screen.focused().workarea.width + dpi(50) --Bar width
@@ -20,8 +20,9 @@ local popup = awful.popup {
 	screen = s,
 	bg = "#00000000",
 	widget = wibox.container.background,
-	x = dpi(w - 370),
-	y = dpi(h - 520),
+	placement = function(d)
+		awful.placement.top_left(d, { honor_workarea = true, margins = 10 + beautiful.border_width * 2 })
+	end,
 	shape = helpers.rrect(0),
 	ontop = true, visible = false,
 }
@@ -38,7 +39,6 @@ popup:setup({
 	},
 	widget = wibox.container.background,
 	bg = beautiful.background,
-	shape = helpers.rrect(10)
 })
 
 local drag = false

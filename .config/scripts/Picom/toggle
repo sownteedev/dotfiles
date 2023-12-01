@@ -5,9 +5,9 @@ while pgrep -u $UID -x picom >/dev/null; do sleep 0; done
 
 case $1 in
 --opacity)
-	picom --config $HOME/.config/configs/picom/picom.conf -b &
+	picom --config $HOME/.config/scripts/Picom/picom.conf -b &
 	;;
 --no-opacity)
-	picom --config $HOME/.config/configs/picom/picom_no_opacity.conf -b &
+	picom --config $HOME/.config/scripts/Picom/picom_no_opacity.conf -b &
 	;;
 esac

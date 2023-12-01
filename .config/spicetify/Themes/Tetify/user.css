@@ -12,11 +12,13 @@
   --ms-motion-timing-decelerate: cubic-bezier(0.1, 0.9, 0.2, 1);
   --noise-texture: url("https://nimsandu.github.io/spicetify-bloom/assets/noise/noise.png");
   --noise-opacity: 7.5%;
+  /* big thanks to CharlieS and harbassan for providing the svg */
   --equalizer-svg: url("data:image/svg+xml,%3Csvg id='playing-icon' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 24'%3E%3Cdefs%3E%3Cstyle%3E %23playing-icon %7B fill: %2320BC54; %7D @keyframes play %7B 0%25 %7Btransform: scaleY(1);%7D 3.3%25 %7Btransform: scaleY(0.9583);%7D 6.6%25 %7Btransform: scaleY(0.9166);%7D 9.9%25 %7Btransform: scaleY(0.8333);%7D 13.3%25 %7Btransform: scaleY(0.7083);%7D 16.6%25 %7Btransform: scaleY(0.5416);%7D 19.9%25 %7Btransform: scaleY(0.4166);%7D 23.3%25 %7Btransform: scaleY(0.25);%7D 26.6%25 %7Btransform: scaleY(0.1666);%7D 29.9%25 %7Btransform: scaleY(0.125);%7D 33.3%25 %7Btransform: scaleY(0.125);%7D 36.6%25 %7Btransform: scaleY(0.1666);%7D 39.9%25 %7Btransform: scaleY(0.1666);%7D 43.3%25 %7Btransform: scaleY(0.2083);%7D 46.6%25 %7Btransform: scaleY(0.2916);%7D 49.9%25 %7Btransform: scaleY(0.375);%7D 53.3%25 %7Btransform: scaleY(0.5);%7D 56.6%25 %7Btransform: scaleY(0.5833);%7D 59.9%25 %7Btransform: scaleY(0.625);%7D 63.3%25 %7Btransform: scaleY(0.6666);%7D 66.6%25 %7Btransform: scaleY(0.6666);%7D 69.9%25 %7Btransform: scaleY(0.6666);%7D 73.3%25 %7Btransform: scaleY(0.6666);%7D 76.6%25 %7Btransform: scaleY(0.7083);%7D 79.9%25 %7Btransform: scaleY(0.75);%7D 83.3%25 %7Btransform: scaleY(0.8333);%7D 86.6%25 %7Btransform: scaleY(0.875);%7D 89.9%25 %7Btransform: scaleY(0.9166);%7D 93.3%25 %7Btransform: scaleY(0.9583);%7D 96.6%25 %7Btransform: scaleY(1);%7D %7D %23bar1 %7B transform-origin: bottom; animation: play 0.9s -0.51s infinite; %7D %23bar2 %7B transform-origin: bottom; animation: play 0.9s infinite; %7D %23bar3 %7B transform-origin: bottom; animation: play 0.9s -0.15s infinite; %7D %23bar4 %7B transform-origin: bottom; animation: play 0.9s -0.75s infinite; %7D %3C/style%3E%3C/defs%3E%3Ctitle%3Eplaying-icon%3C/title%3E%3Crect id='bar1' class='cls-1' width='4' height='24'/%3E%3Crect id='bar2' class='cls-1' x='6' width='4' height='24'/%3E%3Crect id='bar3' class='cls-1' x='12' width='4' height='24'/%3E%3Crect id='bar4' class='cls-1' x='18' width='4' height='24'/%3E%3C/svg%3E");
 }
 
 * {
-  font-family: "Inter", "Helvetica Neue", "Helvetica", "Arial", sans-serif !important;
+  font-family: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI",
+    "Microsoft Ya Hei", sans-serif !important;
   /* font-family: 'Segoe UI Variable Display','Segoe UI Variable Text', 'Microsoft Ya Hei', sans-serif !important; */
   line-height: normal;
   box-shadow: none !important;
@@ -207,7 +209,7 @@ html {
 }
 
 .x-searchResultsTracks-root > .main-gridContainer-gridContainer,
-.main-trackList-indexable,
+.main-trackList-trackList,
 .main-card-card,
 .main-heroCard-card,
 .view-homeShortcutsGrid-draggable {
@@ -263,28 +265,20 @@ html {
   justify-content: center;
 }
 
-.Root__top-bar::before {
+.main-topBar-container::before {
   content: "";
-  z-index: 3;
+  z-index: 4;
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   background-image: var(--noise-texture);
   opacity: var(--noise-opacity);
 }
 
-.Root__top-bar {
+.main-topBar-container {
   position: absolute !important;
   width: 100vw !important;
-  grid-area: none !important;
-  z-index: 4 !important;
+  z-index: 5 !important;
   background-color: rgba(var(--spice-rgb-sidebar), 0.85);
   backdrop-filter: blur(50px) saturate(2.5);
-}
-
-.main-topBar-container {
   padding-inline-end: 167px !important;
 }
 
@@ -924,12 +918,6 @@ button.switch {
   transition: background-color ease-out 167ms;
 }
 
-/* left navbar resizer */
-
-.Root__nav-bar .LayoutResizer__resize-bar {
-  display: none;
-}
-
 /* playlist sidebar */
 
 .main-rootlist-rootlist .os-content {
@@ -1046,19 +1034,16 @@ button.switch {
 
 /* tracklist */
 
-.main-trackList-indexable .main-virtualScrollList-wrapper,
-.main-trackList-indexable .main-rootlist-wrapper {
+.main-trackList-trackList .main-virtualScrollList-wrapper,
+.main-trackList-trackList .main-rootlist-wrapper {
   background-color: var(--spice-card);
   border-radius: var(--border-radius-2);
   padding: 8px;
 }
 
-.main-trackList-indexable {
+.main-trackList-trackList {
   padding: 8px;
   padding-bottom: 24px;
-}
-
-.main-trackList-trackList.main-trackList-indexable {
   background-color: var(--spice-card);
   border-radius: var(--border-radius-2);
 }
@@ -1337,8 +1322,8 @@ button.switch {
 }
 
 .Fxnb0xe6bL7I7W8V0p6C,
-.Root__top-bar .main-avatar-avatar,
-.Root__top-bar .main-avatar-avatar div {
+.main-topBar-container .main-avatar-avatar,
+.main-topBar-container .main-avatar-avatar div {
   width: 28px !important;
   height: 28px !important;
 }
@@ -2437,12 +2422,6 @@ button.arrow-btn {
 
 :root {
   --lyrics-text-direction: left;
-}
-
-/* Needed for lyrics cinema */
-.Root__top-bar {
-  z-index: 5 !important;
-  display: unset !important;
 }
 
 .main-lyricsCinema-controls {

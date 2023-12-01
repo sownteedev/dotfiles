@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
-~/.config/configs/picom/toggle --no-opacity &
-dunst -config ~/.config/configs/dunstrc &
+processes=("picom" "dunst")
+for process in "${processes[@]}"; do
+    if pidof -q "$process"; then
+        pkill -x "$process" > /dev/null; sleep 0.1
+    fi
+done
+
+~/.config/scripts/Picom/toggle --no-opacity &
+dunst -config ~/.config/scripts/dunstrc &
 feh -z --no-fehbg --bg-fill ~/.walls
 xss-lock -- betterlockscreen -l dimblur &

@@ -1,4 +1,4 @@
-require("scripts.bat")
+require("scripts.battery")
 require("scripts.bright")
-require("scripts.vol")
+require("scripts.volume")
 require("scripts.systems")

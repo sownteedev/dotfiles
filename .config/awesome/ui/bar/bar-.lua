@@ -3,13 +3,21 @@ local wibox = require("wibox")
 local beautiful = require("beautiful")
 local naughty = require("naughty")
 local gears = require("gears")
-local vars = require("ui.vars")
 
 require("scripts")
 require("ui.bar.calendar")
 require("ui.bar.notification")
 local rubato = require("modules.rubato")
 local bling = require("modules.bling")
+local Launcher = require("ui.launcher")
+
+local vars = {
+	profile_default = false,
+	time_default = false,
+	dnd = true,
+	notif_center_default = false,
+	theme_default = false
+}
 
 bling.widget.tag_preview.enable {
 	show_client_content = true,
@@ -20,10 +28,7 @@ bling.widget.tag_preview.enable {
 	honor_workarea = false,
 	placement_fn = function(c)
 		awful.placement.top_left(c, {
-			margins = {
-				top = 60,
-				left = 70
-			}
+			margins = { top = 60, left = 70 }
 		})
 	end,
 	background_widget = wibox.widget {
@@ -41,10 +46,7 @@ bling.widget.task_preview.enable {
 	width = 300,
 	placement_fn = function(c)
 		awful.placement.bottom(c, {
-			margins = {
-				bottom = 280,
-				right = 930
-			}
+			margins = { bottom = 280, right = 930 }
 		})
 	end
 }
@@ -52,42 +54,37 @@ bling.widget.task_preview.enable {
 screen.connect_signal("request::desktop_decoration", function(s)
 	-- profile --
 	local profile = wibox.widget {
-		layout = wibox.layout.fixed.vertical,
+		layout = wibox.layout.fixed.horizontal,
 		{
 			widget = wibox.container.background,
 			id = "profile",
 			bg = beautiful.background_alt,
 			{
 				widget = wibox.container.margin,
-				margins = { bottom = 8, top = 8, left = 4 },
+				margins = { bottom = 8, top = 8, left = 10, right = 8 },
 				{
 					widget = wibox.widget.textbox,
 					text = " ",
+					font = beautiful.icon_font .. " 9",
 					halign = "center"
 				}
 			}
 		}
 	}
 
-	awesome.connect_signal("profile::control", function()
+	awesome.connect_signal("launcher::control", function()
 		vars.profile_default = not vars.profile_default
 		if not vars.profile_default then
 			profile:get_children_by_id("profile")[1]:set_bg(beautiful.background_alt)
-			awesome.emit_signal("sowntee::control")
+			Launcher:toggle()
 		else
 			profile:get_children_by_id("profile")[1]:set_bg(beautiful.background_urgent)
-			awesome.emit_signal("sowntee::control")
+			Launcher:toggle()
 		end
-	end)
-	awesome.connect_signal("launcher::control", function()
-		awful.spawn("rofi -show drun -theme .config/configs/launcher.rasi")
 	end)
 
 	profile:buttons {
 		awful.button({}, 1, function()
-			awesome.emit_signal("profile::control")
-		end),
-		awful.button({}, 3, function()
 			awesome.emit_signal("launcher::control")
 		end),
 	}
@@ -101,10 +98,11 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			bg = beautiful.background_alt,
 			{
 				widget = wibox.container.margin,
-				margins = { bottom = 8, top = 8, left = 3 },
+				margins = { bottom = 8, top = 8, left = 10, right = 8 },
 				{
 					widget = wibox.widget.textbox,
 					text = " ",
+					font = beautiful.icon_font .. " 9",
 					halign = "center"
 				}
 			}
@@ -141,22 +139,23 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			end),
 		},
 		layout = {
-			spacing = 10,
-			layout = wibox.layout.fixed.vertical,
+			spacing = 20,
+			layout = wibox.layout.fixed.horizontal,
 		},
 		widget_template = {
+			spacing = 8,
 			{
 				wibox.widget.base.make_widget(),
-				forced_height = 2,
-				id            = 'background_role',
-				widget        = wibox.container.background,
+				forced_height = 1,
+				id = 'background_role',
+				widget = wibox.container.background,
 			},
 			{
 				{
-					id     = 'clienticon',
+					id = 'clienticon',
 					widget = awful.widget.clienticon,
 				},
-				margins = 2,
+				margins = -4,
 				widget = wibox.container.margin
 			},
 			nil,
@@ -171,43 +170,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 						false, c)
 				end)
 			end,
-			layout = wibox.layout.align.vertical,
-		}
-	}
-
-	local tasklist_widget = wibox.widget {
-		widget = wibox.container.margin,
-		margins = 6,
-		tasklist
-	}
-
-	-- keyboard layout --
-	local mykeyboard = awful.widget.keyboardlayout()
-	mykeyboard.widget.text = string.upper(mykeyboard.widget.text)
-	mykeyboard.widget:connect_signal("widget::redraw_needed",
-		function(wid)
-			wid.text = string.upper(wid.text)
-		end)
-
-	local keyboard = wibox.widget {
-		widget = wibox.container.background,
-		bg = beautiful.background_alt,
-		{
-			widget = wibox.container.margin,
-			margins = { top = 6, bottom = 6 },
-			{
-				layout = wibox.layout.fixed.vertical,
-				spacing = 8,
-				{
-					widget = wibox.container.place,
-					halign = "center",
-					{
-						widget = wibox.container.margin,
-						margins = { left = -5, right = -5 },
-						mykeyboard,
-					}
-				}
-			}
+			layout = wibox.layout.fixed.vertical,
 		}
 	}
 
@@ -216,42 +179,42 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		widget = wibox.container.background,
 		bg = beautiful.background_alt,
 		{
-			layout = wibox.layout.fixed.vertical,
+			layout = wibox.layout.fixed.horizontal,
+			{
+				widget = wibox.container.place,
+				halign = "center",
+				{
+					widget = wibox.container.margin,
+					margins = { top = 4, bottom = 8, left = 8 },
+					id = "tray",
+					visible = false,
+					{
+						widget = wibox.widget.systray,
+						horizontal = true,
+						base_size = 24,
+					}
+				}
+			},
 			{
 				widget = wibox.container.margin,
 				margins = 2,
 				{
 					widget = wibox.widget.textbox,
 					id = "button",
-					text = "",
-					font = beautiful.font .. " 16",
+					text = " ",
+					font = beautiful.icon_font .. " 13",
 					halign = "center",
 				}
 			},
-			{
-				widget = wibox.container.place,
-				halign = "center",
-				{
-					widget = wibox.container.margin,
-					margins = { top = 4, bottom = 8 },
-					id = "tray",
-					visible = false,
-					{
-						widget = wibox.widget.systray,
-						horizontal = false,
-						base_size = 24,
-					}
-				}
-			}
 		}
 	}
 
 	awesome.connect_signal("show::tray", function()
 		if not tray:get_children_by_id("tray")[1].visible then
-			tray:get_children_by_id("button")[1].text = ""
+			tray:get_children_by_id("button")[1].text = " "
 			tray:get_children_by_id("tray")[1].visible = true
 		else
-			tray:get_children_by_id("button")[1].text = ""
+			tray:get_children_by_id("button")[1].text = " "
 			tray:get_children_by_id("tray")[1].visible = false
 		end
 	end)
@@ -260,20 +223,21 @@ screen.connect_signal("request::desktop_decoration", function(s)
 
 	-- clock --
 	local time = wibox.widget {
-		layout = wibox.layout.fixed.vertical,
+		layout = wibox.layout.fixed.horizontal,
 		{
 			widget = wibox.container.background,
 			id = "clock",
 			bg = beautiful.background_alt,
 			{
 				widget = wibox.container.margin,
-				margins = { bottom = 6, top = 6 },
+				margins = { bottom = 10, top = 8, left = 10, right = 10 },
 				{
-					layout = wibox.layout.fixed.vertical,
+					layout = wibox.layout.fixed.horizontal,
 					spacing = 4,
 					{
 						widget = wibox.widget.textclock,
-						format = "%H\n%M\n%S",
+						format = "%H:%M:%S",
+						font = beautiful.font1 .. " 9",
 						refresh = 1,
 						halign = "center"
 					}
@@ -310,7 +274,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		},
 		layout          = {
 			spacing = 10,
-			layout  = wibox.layout.fixed.vertical,
+			layout  = wibox.layout.fixed.horizontal,
 		},
 		widget_template = {
 			{
@@ -403,7 +367,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 					widget = wibox.widget.progressbar,
 					id = "progressbar",
 					max_value = 100,
-					forced_width = 60,
+					forced_height = 100,
 					background_color = beautiful.background_urgent,
 				}
 			},
@@ -447,11 +411,12 @@ screen.connect_signal("request::desktop_decoration", function(s)
 		fg = beautiful.foregraund,
 		{
 			widget = wibox.container.margin,
-			margins = { top = 8, bottom = 8, left = 3 },
+			margins = { top = 8, bottom = 8, left = 10, right = 8 },
 			{
 				widget = wibox.widget.textbox,
 				id = "icon",
 				text = " ",
+				font = beautiful.icon_font .. " 10",
 				halign = "center",
 			}
 		}
@@ -491,29 +456,24 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	-- bar --
 	bar = awful.wibar {
 		screen = s,
-		position = "left",
-		height = s.geometry.height - 40,
-		width = 50,
+		position = "bottom",
+		height = 40,
+		width = s.geometry.width + 300,
 		bg = beautiful.background_dark,
 		border_width = beautiful.border_width,
 		border_color = beautiful.border_color_normal,
-		margins = {
-			top = -beautiful.border_width,
-			bottom = -beautiful.border_width,
-			left = -beautiful.border_width + 10,
-		},
-		ontop = false,
+		-- margins = { bottom = 10 },
 		widget = {
-			layout = wibox.layout.flex.vertical,
+			layout = wibox.layout.flex.horizontal,
 			{
 				widget = wibox.container.place,
 				valign = "top",
-				content_fill_horizontal = true,
+				content_fill_horizontal = false,
 				{
 					widget = wibox.container.margin,
-					margins = { left = 10, right = 10, top = 10 },
+					margins = 5,
 					{
-						layout = wibox.layout.fixed.vertical,
+						layout = wibox.layout.fixed.horizontal,
 						spacing = 10,
 						profile,
 						time,
@@ -524,29 +484,28 @@ screen.connect_signal("request::desktop_decoration", function(s)
 			{
 				widget = wibox.container.place,
 				valign = "center",
-				content_fill_horizontal = true,
+				content_fill_horizontal = false,
 				{
 					widget = wibox.container.margin,
-					margins = { left = 10, right = 10 },
+					margins = 10,
 					{
-						layout = wibox.layout.fixed.vertical,
-						tasklist_widget,
+						layout = wibox.layout.fixed.horizontal,
+						tasklist,
 					}
 				}
 			},
 			{
 				widget = wibox.container.place,
 				valign = "bottom",
-				content_fill_horizontal = true,
+				content_fill_horizontal = false,
 				{
 					widget = wibox.container.margin,
-					margins = { right = 10, left = 10, bottom = 10 },
+					margins = 5,
 					{
-						layout = wibox.layout.fixed.vertical,
+						layout = wibox.layout.fixed.horizontal,
 						spacing = 10,
 						tray,
 						bat,
-						keyboard,
 						themes,
 						dnd_button,
 					}

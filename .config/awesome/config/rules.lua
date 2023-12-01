@@ -6,10 +6,6 @@ awful.layout.layouts = {
 	awful.layout.suit.floating,
 }
 
---- Get screen geometry
-local screen_width = awful.screen.focused().geometry.width
-local screen_height = awful.screen.focused().geometry.height
-
 ruled.client.connect_signal("request::rules", function()
 	ruled.client.append_rule {
 		id = "global",
@@ -37,38 +33,6 @@ ruled.client.connect_signal("request::rules", function()
 		rule_any   = { type = { "normal", "dialog" } },
 		properties = { titlebars_enabled = true }
 	}
-	ruled.client.append_rule {
-		rule       = { class = "Alacritty" },
-		properties = { tag = "1", switch_to_tags = true }
-	}
-	ruled.client.append_rule {
-		rule       = { class = "Google-chrome" },
-		properties = { tag = "2", switch_to_tags = true }
-	}
-	ruled.client.append_rule {
-		rule_any   = { class = { "Code", "jetbrains-idea", "neovide" } },
-		properties = { tag = "3" }
-	}
-	ruled.client.append_rule {
-		rule_any   = { class = { "discord", "Telegram" } },
-		properties = { tag = "4" }
-	}
-	ruled.client.append_rule {
-		rule_any   = { class = { "Spotify" } },
-		properties = { tag = "5" }
-	}
-	ruled.client.append_rule {
-		rule_any   = { class = { "Steam" } },
-		properties = { tag = "6" }
-	}
-	ruled.client.append_rule {
-		rule_any   = { class = { "Thunar", "vlc" } },
-		properties = { tag = "7", switch_to_tags = true }
-	}
-end)
-
-client.connect_signal("mouse::enter", function(c)
-	c:activate { context = "mouse_enter", raise = false }
 end)
 
 client.connect_signal('request::manage', function(c)

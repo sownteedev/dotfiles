@@ -13,13 +13,13 @@ art.halign = 'center'
 art.valign = 'center'
 
 --Title
-local title_widget = helpers.textbox(beautiful.blue, "Liga SFMono Nerd Font 13", "Nothing playing")
+local title_widget = helpers.textbox(beautiful.blue, beautiful.font1 .. " 13", "Nothing playing")
 title_widget.forced_width = dpi(250)
 title_widget.forced_height = dpi(35)
 title_widget.halign = 'center'
 
 --Artist
-local artist_widget = helpers.textbox(beautiful.foreground, "Liga SFMono Nerd Font 10", "Unknown artist")
+local artist_widget = helpers.textbox(beautiful.foreground, beautiful.font1 .. " 10", "Unknown artist")
 artist_widget.forced_width = dpi(250)
 artist_widget.forced_height = dpi(35)
 artist_widget.halign = 'center'
@@ -29,8 +29,8 @@ local playerctl = bling.signal.playerctl.lib()
 playerctl:connect_signal("metadata",
 	function(_, title, artist, album_path, album, new, player_name)
 		art:set_image(gears.surface.load_uncached(album_path))
-		title_widget:set_markup_silently(helpers.mtext(beautiful.blue, "Liga SFMono Nerd Font bold 11", title))
-		artist_widget:set_markup_silently(helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font 10", artist))
+		title_widget:set_markup_silently(helpers.mtext(beautiful.blue, beautiful.font1 .. " bold 11", title))
+		artist_widget:set_markup_silently(helpers.mtext(beautiful.foreground, beautiful.font1 .. " 10", artist))
 	end)
 
 -----------------------------
@@ -91,7 +91,7 @@ awful.spawn.with_line_callback("playerctl -F metadata -f '{{mpris:length}}'", {
 
 --Position/length text
 local length_text = wibox.widget {
-	markup = helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9", "00:00"),
+	markup = helpers.mtext(beautiful.foreground, beautiful.font1 .. " bold 9", "00:00"),
 	valign = 'top',
 	widget = wibox.widget.textbox,
 	forced_height = dpi(15),
@@ -99,7 +99,7 @@ local length_text = wibox.widget {
 }
 
 local position_text = wibox.widget {
-	markup = helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9", "00:00"),
+	markup = helpers.mtext(beautiful.foreground, beautiful.font1 .. " bold 9", "00:00"),
 	align = 'center',
 	valign = 'top',
 	widget = wibox.widget.textbox,
@@ -112,7 +112,7 @@ local update_length_text = function()
 	awful.spawn.easy_async("timeout 0.4s playerctl -F metadata -f '{{mpris:length}}'", function(stdout)
 		if stdout == "" then
 			local text = '00:00'
-			length_text:set_markup_silently(helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9", text))
+			length_text:set_markup_silently(helpers.mtext(beautiful.foreground, beautiful.font1 .. " bold 9", text))
 		elseif stdout == nil then
 			local length = 0
 			local minutes = math.floor(length / 60)
@@ -120,7 +120,7 @@ local update_length_text = function()
 			local seconds = math.floor(length % 60)
 			local formattedseconds = string.format("%02d", seconds)
 			length_text:set_markup_silently(
-				helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9",
+				helpers.mtext(beautiful.foreground, beautiful.font1 .. " bold 9",
 					formattedminutes .. ':' .. formattedseconds)
 			)
 		else
@@ -131,7 +131,7 @@ local update_length_text = function()
 				local seconds = math.floor(length % 60)
 				local formattedseconds = string.format("%02d", seconds)
 				length_text:set_markup_silently(
-					helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9",
+					helpers.mtext(beautiful.foreground, beautiful.font1 .. " bold 9",
 						formattedminutes .. ':' .. formattedseconds)
 				)
 			end
@@ -151,7 +151,7 @@ local update_position_text = function()
 	awful.spawn.easy_async("playerctl position", function(stdout)
 		if stdout == "" then
 			local text = '00:00'
-			position_text:set_markup_silently(helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9", text))
+			position_text:set_markup_silently(helpers.mtext(beautiful.foreground, " bold 9", text))
 		else
 			local length = tonumber(stdout)
 			local minutes = math.floor(length / 60)
@@ -159,7 +159,7 @@ local update_position_text = function()
 			local seconds = math.floor(length % 60)
 			local formattedseconds = string.format("%02d", seconds)
 			position_text:set_markup_silently(
-				helpers.mtext(beautiful.foreground, "Liga SFMono Nerd Font bold 9",
+				helpers.mtext(beautiful.foreground, beautiful.font1 .. " bold 9",
 					formattedminutes .. ':' .. formattedseconds)
 			)
 		end
@@ -177,11 +177,11 @@ local update_position_text_timer = gears.timer({
 --Buttons---------------------
 ------------------------------
 
-local play_pause = helpers.textbox(beautiful.blue, "Liga SFMono Nerd Font bold 12", " ")
-local forward = helpers.textbox(beautiful.violet, "Liga SFMono Nerd Font bold 12", " ")
-local backward = helpers.textbox(beautiful.violet, "Liga SFMono Nerd Font bold 12", " ")
-local f15 = helpers.textbox(beautiful.green, "Liga SFMono Nerd Font bold 13", "󱤺 ")
-local b15 = helpers.textbox(beautiful.green, "Liga SFMono Nerd Font bold 13", "󱥆 ")
+local play_pause = helpers.textbox(beautiful.blue, beautiful.icon_font .. " bold 12", " ")
+local forward = helpers.textbox(beautiful.violet, beautiful.icon_font .. " bold 12", " ")
+local backward = helpers.textbox(beautiful.violet, beautiful.icon_font .. " bold 12", " ")
+local f15 = helpers.textbox(beautiful.green, beautiful.icon_font .. " bold 13", "󱤺 ")
+local b15 = helpers.textbox(beautiful.green, beautiful.icon_font .. " bold 13", "󱥆 ")
 
 local create_container = function(wgt)
 	local btn = helpers.margin(
@@ -189,22 +189,20 @@ local create_container = function(wgt)
 			wgt,
 			widget = wibox.container.place
 		},
-		8, 8, 8, 8
+		0, 0, 0, 0
 	)
 
-	btn.forced_height = dpi(45)
-	btn.forced_width = dpi(45)
+	btn.forced_height = dpi(40)
+	btn.forced_width = dpi(40)
 
 	local container = wibox.widget {
 		btn,
 		widget = wibox.container.background,
 		bg = beautiful.background,
-		border_width = 0,
-		border_color = beautiful.background .. "80",
 		shape = helpers.rrect(40)
 	}
 
-	return helpers.margin(container, 8, 8, 0, 0)
+	return helpers.margin(container, 6, 6, 0, 0)
 end
 
 local play_pause_btn = create_container(play_pause)
@@ -218,10 +216,10 @@ local is_playing = true
 play_pause_btn:connect_signal("button::release", function()
 	is_playing = not is_playing
 	if is_playing then
-		play_pause.markup = helpers.mtext(beautiful.blue, "Liga SFMono Nerd Font bold 12", ' ')
+		play_pause.markup = helpers.mtext(beautiful.blue, beautiful.icon_font .. " bold 12", ' ')
 		awful.spawn('playerctl play')
 	else
-		play_pause.markup = helpers.mtext(beautiful.blue, "Liga SFMono Nerd Font bold 12", ' ')
+		play_pause.markup = helpers.mtext(beautiful.blue, beautiful.icon_font .. " bold 12", ' ')
 		awful.spawn('playerctl pause')
 	end
 end)
@@ -272,7 +270,7 @@ local mplayer = wibox.widget {
 	},
 	widget = wibox.container.margin,
 	margins = dpi(25),
-	forced_width = dpi(350)
+	forced_width = dpi(300)
 }
 
 return mplayer
