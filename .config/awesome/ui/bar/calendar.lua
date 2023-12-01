@@ -33,7 +33,7 @@ local function create_calendar_button(icon)
 		{
 			widget = wibox.widget.textbox,
 			text = icon,
-			font = beautiful.font .. " 20",
+			font = beautiful.icon_font .. " 20",
 		}
 	}
 	return widget
@@ -81,7 +81,7 @@ end
 
 local calendar = wibox.widget {
 	date = os.date("*t"),
-	font = beautiful.font,
+	font = beautiful.font1 .. " 9",
 	spacing = 10,
 	fn_embed = decorate_cell,
 	widget = wibox.widget.calendar.month
@@ -117,7 +117,6 @@ local main = wibox.widget {
 		{
 			layout = wibox.layout.fixed.vertical,
 			fill_space = true,
-			spacing = 10,
 			calendar,
 		}
 	}
@@ -126,8 +125,8 @@ local main = wibox.widget {
 local calendar_widget = awful.popup {
 	visible = false,
 	ontop = true,
-	border_width = beautiful.border_width,
-	border_color = beautiful.border_color_normal,
+	border_width = beautiful.border_width + 10,
+	border_color = beautiful.background,
 	minimum_height = 250,
 	maximum_height = 300,
 	minimum_width = 200,

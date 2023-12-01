@@ -2,7 +2,7 @@
 
 color_dir="$HOME/.config/scripts/Themes"
 rofi_command="rofi -dmenu -theme $HOME/.config/scripts/RiceSelect/RiceSelector.rasi"
-wm=$(wmctrl -m | grep "Name:" | awk '{print $2}')
+# wm=$(wmctrl -m | grep "Name:" | awk '{print $2}')
 
 options=()
 for file in "$color_dir"/*; do
@@ -12,10 +12,6 @@ done
 color=$(printf "%s\n" "${options[@]}" | $rofi_command)
 
 source ~/.config/scripts/Themes/$color
-
-write() {
-	echo "$color" > "$HOME"/.theme
-}
 
 term() {
 	sed -i -e "s/include .*/include $color.conf/" "$HOME"/.config/kitty/kitty.conf
@@ -37,8 +33,8 @@ gtk() {
 
 dunst() {
 	sed -i -e "s/background = .*/background = \"$bgd\"/g"\
-		   -e "s/foreground = .*/foreground = \"$fg\"/g" ~/.config/configs/dunstrc
-	killall dunst && dunst -conf "$HOME"/.config/configs/dunstrc
+		   -e "s/foreground = .*/foreground = \"$fg\"/g" ~/.config/scripts/dunstrc
+	killall dunst && dunst -conf "$HOME"/.config/scripts/dunstrc
 }
 
 discord() {
@@ -54,24 +50,55 @@ rofi(){
 }
 
 nvim() {
-	RICETHEME=$(cat $HOME/.theme)
     reload="python $HOME/.config/scripts/reload_nvim.py"
-    reload_cmd="$reload 'lua require(\"themes.switch\").settheme(\"$RICETHEME\")'"
+    reload_cmd="$reload 'lua require(\"themes.switch\").settheme(\"$color\")'"
     eval "$reload_cmd"
-	new_line="vim.g.currentTheme = \"$RICETHEME\""
+	new_line="vim.g.currentTheme = \"$color\""
 	sed -i "s/vim.g.currentTheme = .*/$new_line/" "$HOME/.config/nvim/lua/user/options.lua"
 }
 
-restart() {
-	if [[ $wm == "bspwm" ]]; then
-		bspc wm -r
-	elif [[ $wm == "awesome" ]]; then
-		awesome-client "awesome.restart()"
-	fi
+awesome() {
+	sed -i -e "s/theme.background                                     = .*/theme.background                                     = \"$bg\"/"\
+		   -e "s/theme.background_dark                                = .*/theme.background_dark                                = \"$bgd\"/"\
+		   -e "s/theme.background_alt                                 = .*/theme.background_alt                                 = \"$bgl\"/"\
+		   -e "s/theme.background_urgent                              = .*/theme.background_urgent                              = \"$bgl2\"/"\
+		   -e "s/theme.background_urgent1                             = .*/theme.background_urgent1                             = \"$bgl3\"/"\
+		   -e "s/theme.foreground                                     = .*/theme.foreground                                     = \"$fg\"/"\
+		   -e "s/theme.red                                            = .*/theme.red                                            = \"$red\"/"\
+		   -e "s/theme.green                                          = .*/theme.green                                          = \"$green\"/"\
+		   -e "s/theme.blue                                           = .*/theme.blue                                           = \"$blue\"/"\
+		   -e "s/theme.yellow                                         = .*/theme.yellow                                         = \"$yellow\"/"\
+		   -e "s/theme.orange                                         = .*/theme.orange                                         = \"$orange\"/"\
+		   -e "s/theme.violet                                         = .*/theme.violet                                         = \"$violet\"/"\
+		   -e "s/theme.accent                                         = .*/theme.accent                                         = \"$accent\"/" ~/.config/awesome/themes/theme.lua
+}
+
+backup() {
+	declare -a config_folders=("awesome" "alacritty" "zsh" "ranger" "scripts")
+	declare -a data_folders=("BetterDiscord/data/stable" "spicetify/Themes")
+
+	rm -rf ~/dotfiles/{.config,.fonts,.icons,.themes,.walls,.local}
+	mkdir -p ~/dotfiles/{.config,.fonts,.icons,.themes,.walls,.local}
+
+	for folder in "${config_folders[@]}"; do
+		cp -r ~/.config/"$folder" ~/dotfiles/.config/
+	done
+
+	for folder in "${data_folders[@]}"; do
+		mkdir -p ~/dotfiles/.config/"$folder"
+		cp -r ~/.config/"$folder"/* ~/dotfiles/.config/"$folder"
+	done
+	
+	cp -r ~/.local/other/ ~/dotfiles/.local/
+	cp -r ~/.local/bin/ ~/dotfiles/.local/
+	cp -r ~/.fonts/* ~/dotfiles/.fonts/
+	cp -r ~/.icons/* ~/dotfiles/.icons/
+	cp -r ~/.themes/* ~/dotfiles/.themes/
+	cp -r ~/.walls/* ~/dotfiles/.walls/
+	rm -f ~/dotfiles/.Xresources && cp ~/.Xresources ~/dotfiles/
 }
 
 if [[ -n "$color" ]]; then
-	write
 	term
 	gtk
 	dunst
@@ -79,7 +106,9 @@ if [[ -n "$color" ]]; then
 	discord
 	rofi
 	nvim
-	restart
+	awesome
+	backup
+	awesome-client "awesome.restart()"
 fi
 
 

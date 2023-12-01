@@ -13,11 +13,11 @@ local info = wibox.widget {
 		{
 			layout = wibox.layout.fixed.horizontal,
 			fill_space = true,
-			spacing = 8,
+			spacing = 5,
 			{
 				widget = wibox.widget.textbox,
 				id = "icon",
-				font = beautiful.font .. " 14",
+				font = beautiful.icon_font .. " 13",
 			},
 			{
 				widget = wibox.container.background,
@@ -25,6 +25,7 @@ local info = wibox.widget {
 				{
 					widget = wibox.widget.textbox,
 					id = "text",
+					font = beautiful.font1 .. " 9",
 					halign = "center"
 				},
 			},
@@ -32,7 +33,7 @@ local info = wibox.widget {
 				widget = wibox.widget.progressbar,
 				id = "progressbar",
 				max_value = 100,
-				forced_width = 380,
+				forced_width = 300,
 				forced_height = 10,
 				background_color = beautiful.background_urgent,
 				color = beautiful.accent,
@@ -46,12 +47,12 @@ local osd = awful.popup {
 	ontop = true,
 	border_width = beautiful.border_width,
 	border_color = beautiful.border_color_normal,
-	minimum_height = 60,
-	maximum_height = 60,
+	minimum_height = 50,
+	maximum_height = 55,
 	minimum_width = 300,
 	maximum_width = 300,
 	placement = function(d)
-		awful.placement.bottom(d, { margins = 20 + beautiful.border_width * 2 })
+		awful.placement.bottom(d, { honor_workarea = true, margins = 10 + beautiful.border_width * 2 })
 	end,
 	widget = info,
 }

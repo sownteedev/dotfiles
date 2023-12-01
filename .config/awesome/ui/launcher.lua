@@ -6,10 +6,10 @@ local beautiful = require("beautiful")
 local L = {}
 
 local Conf = {
-	rows = 6,
-	entry_height = 60,
-	entry_width = 290,
-	popup_margins = 10,
+	rows = 8,
+	entry_height = 45,
+	entry_width = 250,
+	popup_margins = 15,
 }
 
 local function hover_button(widget, color, fg)
@@ -36,7 +36,7 @@ local control_center_button = hover_button(
 	wibox.widget {
 		widget = wibox.widget.textbox,
 		markup = "",
-		font = "Font Awesome 5 Free Solid 15",
+		font = beautiful.icon_font .. " 15",
 		align = "center"
 	},
 	beautiful.accent, beautiful.foreground
@@ -46,7 +46,7 @@ local restart_button = hover_button(
 	wibox.widget {
 		widget = wibox.widget.textbox,
 		markup = "",
-		font = "Font Awesome 5 Free Solid 15",
+		font = beautiful.icon_font .. " 15",
 		align = "center"
 	},
 	beautiful.blue, beautiful.blue
@@ -56,7 +56,7 @@ local poweroff_button = hover_button(
 	wibox.widget {
 		widget = wibox.widget.textbox,
 		markup = "󰐥",
-		font = "Font Awesome 5 Free Solid 15",
+		font = beautiful.icon_font .. " 15",
 		align = "center"
 	},
 	beautiful.red, beautiful.red
@@ -65,7 +65,8 @@ local poweroff_button = hover_button(
 local lock_button = hover_button(
 	wibox.widget {
 		widget = wibox.widget.textbox,
-		markup = "", font = "Font Awesome 5 Free Solid 15",
+		markup = "",
+		font = beautiful.icon_font .. " 15",
 		align = "center"
 	},
 	beautiful.yellow, beautiful.yellow
@@ -75,7 +76,7 @@ local quit_button = hover_button(
 	wibox.widget {
 		widget = wibox.widget.textbox,
 		markup = "󰍃",
-		font = "Font Awesome 5 Free Solid 15",
+		font = beautiful.icon_font .. " 15",
 		align = "center"
 	},
 	beautiful.green, beautiful.green
@@ -84,7 +85,7 @@ local quit_button = hover_button(
 local sidebar = wibox.widget {
 	widget = wibox.container.background,
 	bg = beautiful.background_alt,
-	forced_width = Conf.entry_height - 10,
+	forced_width = Conf.entry_height,
 	{
 		layout = wibox.layout.align.vertical,
 		control_center_button,
@@ -105,7 +106,7 @@ local prompt = wibox.widget {
 
 local promptbox = wibox.widget {
 	widget = wibox.container.background,
-	bg = beautiful.border_color,
+	bg = beautiful.border_color_normal,
 	forced_height = Conf.entry_height,
 	forced_width = Conf.entry_width,
 	buttons = {
@@ -160,11 +161,11 @@ local main_widget = wibox.widget {
 local popup_widget = awful.popup {
 	bg = beautiful.background,
 	border_width = beautiful.border_width,
-	border_color = beautiful.border_color,
+	border_color = beautiful.border_color_normal,
 	ontop = true,
 	visible = false,
 	placement = function(d)
-		awful.placement.bottom_right(d, { honor_workarea = true, margins = 6 })
+		awful.placement.bottom_left(d, { honor_workarea = true, margins = 10 + beautiful.border_width * 2 })
 	end,
 	maximum_width = Conf.entry_width + Conf.entry_height + Conf.popup_margins * 3,
 	widget = main_widget
@@ -260,6 +261,7 @@ local function filter(input)
 				{
 					markup = entry.name,
 					widget = wibox.widget.textbox,
+					font = beautiful.font1 .. " 10",
 				}
 			}
 		}
@@ -297,10 +299,10 @@ function L:open()
 
 	awful.keygrabber.stop()
 	awful.prompt.run {
-		prompt = "",
-		font = beautiful.font,
+		prompt = "  ",
+		font = beautiful.font1 .. " 11",
 		textbox = prompt,
-		bg_cursor = beautiful.background_urgent1,
+		bg_cursor = beautiful.background_alt,
 		done_callback = function()
 			self:close()
 		end,
@@ -337,12 +339,6 @@ function L:toggle()
 		self:close()
 	end
 end
-
-awesome.connect_signal("powermenu::visibility", function(vis)
-	if vis then
-		L:close()
-	end
-end)
 
 control_center_button.buttons = {
 	awful.button({}, 1, function()
