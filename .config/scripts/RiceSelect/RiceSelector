@@ -76,6 +76,7 @@ awesome() {
 backup() {
 	declare -a config_folders=("awesome" "alacritty" "zsh" "ranger" "scripts")
 	declare -a data_folders=("BetterDiscord/data/stable" "spicetify/Themes")
+	declare -a dot_folders=("fonts" "icons" "themes" "walls")
 
 	rm -rf ~/dotfiles/{.config,.fonts,.icons,.themes,.walls,.local}
 	mkdir -p ~/dotfiles/{.config,.fonts,.icons,.themes,.walls,.local}
@@ -89,12 +90,11 @@ backup() {
 		cp -r ~/.config/"$folder"/* ~/dotfiles/.config/"$folder"
 	done
 	
+	for folder in "${dot_folders[@]}"; do
+		cp -r ~/."$folder"/* ~/dotfiles/.${folder}/
+	done
 	cp -r ~/.local/other/ ~/dotfiles/.local/
 	cp -r ~/.local/bin/ ~/dotfiles/.local/
-	cp -r ~/.fonts/* ~/dotfiles/.fonts/
-	cp -r ~/.icons/* ~/dotfiles/.icons/
-	cp -r ~/.themes/* ~/dotfiles/.themes/
-	cp -r ~/.walls/* ~/dotfiles/.walls/
 	rm -f ~/dotfiles/.Xresources && cp ~/.Xresources ~/dotfiles/
 }
 
