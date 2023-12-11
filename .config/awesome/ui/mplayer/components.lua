@@ -4,11 +4,11 @@ local wibox = require('wibox')
 local dpi = beautiful.xresources.apply_dpi
 local gears = require('gears')
 
-local helpers = require('helpers.mplayer')
+local helpers = require('helpers')
 local bling = require('modules.bling')
 
 --Album art
-local art = helpers.imagebox(os.getenv("HOME") .. "/.config/awesome/themes/icons/music.jpg", 180, 300)
+local art = helpers.imagebox(os.getenv("HOME") .. "/.config/awesome/themes/assets/music.jpg", 180, 300)
 art.halign = 'center'
 art.valign = 'center'
 

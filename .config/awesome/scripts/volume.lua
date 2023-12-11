@@ -1,7 +1,6 @@
 local awful = require("awful")
 local gears = require("gears")
 
-
 function update_value_of_volume()
 	awful.spawn.easy_async_with_shell(
 		"pactl get-sink-volume @DEFAULT_SINK@ | grep -Po '[0-9]{1,3}(?=%)' | head -1 && pactl get-sink-mute @DEFAULT_SINK@ | grep -o -E 'yes|no' | head -1",

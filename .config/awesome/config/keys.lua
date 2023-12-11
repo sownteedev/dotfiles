@@ -1,9 +1,8 @@
 local awful = require("awful")
 require("awful.hotkeys_popup.keys")
-local xrandr = require("config.xrandr")
 local switcher = require("modules.awesome-switcher")
 local Launcher = require("ui.launcher")
-local Menu = require("ui.menu")
+local Menu = require("ui.rightclick")
 
 local mod = "Mod4"
 local alt = "Mod1"
@@ -56,7 +55,6 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod }, "l", function() awful.spawn.with_shell("betterlockscreen -l dimblur") end),
 	awful.key({ mod, shift }, "b", function() awesome.emit_signal("hide::bar") end),
 	awful.key({ mod, alt }, "w", function() awful.spawn.with_shell("feh -z --no-fehbg --bg-fill ~/.walls") end),
-	awful.key({ mod, alt }, "p", function() xrandr.xrandr() end),
 	awful.key({ mod, alt }, "r", awesome.restart),
 	awful.key({ mod, alt }, "q", awesome.quit),
 	awful.key({ mod, }, "Return", function() awful.spawn("alacritty") end),
@@ -221,3 +219,9 @@ awful.mouse.append_global_mousebindings({
 	end),
 	awful.button({}, 3, function() Menu:toggle() end),
 })
+
+client.connect_signal("button::press", function()
+	Launcher:close()
+	Menu:hide()
+	awesome.emit_signal("mplayer::close")
+end)

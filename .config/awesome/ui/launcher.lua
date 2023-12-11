@@ -261,7 +261,7 @@ local function filter(input)
 				{
 					markup = entry.name,
 					widget = wibox.widget.textbox,
-					font = beautiful.font1 .. " 10",
+					font = beautiful.font1 .. " 9",
 				}
 			}
 		}
@@ -300,7 +300,7 @@ function L:open()
 	awful.keygrabber.stop()
 	awful.prompt.run {
 		prompt = "  ",
-		font = beautiful.font1 .. " 11",
+		font = beautiful.font1 .. " 10",
 		textbox = prompt,
 		bg_cursor = beautiful.background_alt,
 		done_callback = function()

@@ -1,8 +1,7 @@
 local beautiful = require('beautiful')
 local wibox = require('wibox')
+local helpers = require('helpers')
 local dpi = beautiful.xresources.apply_dpi
-
-local helpers = require('helpers.mplayer')
 
 local close = helpers.textbox(beautiful.red, beautiful.icon_font .. " bold 10", " ")
 local pin_top = helpers.textbox(beautiful.green, beautiful.icon_font .. " bold 10", " ")

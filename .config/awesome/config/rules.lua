@@ -25,7 +25,7 @@ ruled.client.connect_signal("request::rules", function()
 	ruled.client.append_rule({
 		id = "centered",
 		rule = {},
-		properties = { placement = helpers.client.centered_client_placement },
+		properties = { placement = helpers.centered_client_placement },
 	})
 
 	ruled.client.append_rule {

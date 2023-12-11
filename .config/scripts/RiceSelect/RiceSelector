@@ -2,7 +2,6 @@
 
 color_dir="$HOME/.config/scripts/Themes"
 rofi_command="rofi -dmenu -theme $HOME/.config/scripts/RiceSelect/RiceSelector.rasi"
-# wm=$(wmctrl -m | grep "Name:" | awk '{print $2}')
 
 options=()
 for file in "$color_dir"/*; do

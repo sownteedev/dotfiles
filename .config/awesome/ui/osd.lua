@@ -78,7 +78,7 @@ end)
 awesome.connect_signal("bright::value", function(value)
 	anim.target = value
 	info:get_children_by_id("text")[1].text = value
-	info:get_children_by_id("icon")[1].text = "󰃠 "
+	info:get_children_by_id("icon")[1].text = "󰃝 "
 end)
 
 -- function --

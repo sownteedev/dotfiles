@@ -17,7 +17,7 @@ local label = wibox.widget {
 }
 
 local notifs_clear = wibox.widget {
-	markup = helpers.ui.colorizeText(" ", beautiful.red),
+	markup = helpers.colorizetext(" ", beautiful.red),
 	align = "center",
 	valign = "center",
 	widget = wibox.widget.textbox,
@@ -35,7 +35,7 @@ local notifs_empty = wibox.widget {
 	{
 		layout = wibox.layout.flex.vertical,
 		{
-			markup = helpers.ui.colorizeText("No notifications", beautiful.background_urgent),
+			markup = helpers.colorizetext("No notifications", beautiful.background_urgent),
 			font = beautiful.font1 .. " 9",
 			align = "center",
 			valign = "center",
@@ -259,7 +259,7 @@ local notif_center = awful.popup {
 	minimum_width = 400,
 	maximum_width = 400,
 	placement = function(d)
-		awful.placement.bottom_right(d, { honor_workarea = true, margins = 20 + beautiful.border_width * 2 })
+		awful.placement.bottom_right(d, { honor_workarea = true, margins = 10 + beautiful.border_width * 2 })
 	end,
 	widget = main
 }
