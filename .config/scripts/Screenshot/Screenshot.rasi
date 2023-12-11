@@ -15,8 +15,8 @@ window {
     anchor:                      north;
     fullscreen:                  false;
     width:                       350px;
-    x-offset:                    508px;
-    y-offset:                    0px;
+    x-offset:                    500px;
+    y-offset:                    10px;
     margin:                      0px;
     padding:                     0px;
     border:                      45px 2px 2px 2px solid;

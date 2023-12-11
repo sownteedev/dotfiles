@@ -1,9 +1,8 @@
 local awful = require('awful')
 local beautiful = require('beautiful')
 local wibox = require('wibox')
+local helpers = require('helpers')
 local dpi = beautiful.xresources.apply_dpi
-
-local helpers = require('helpers.mplayer')
 
 local sep = wibox.widget.textbox(" ")
 sep.forced_height = dpi(400)

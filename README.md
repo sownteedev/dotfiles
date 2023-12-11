@@ -8,7 +8,7 @@
 
 #### Font
 
-    yay -S ttf-font-awesome noto-fonts noto-fonts-cjk ttf-terminus-nerd ttf-inconsolata ttf-joypixels
+    yay -S ttf-font-awesome noto-fonts noto-fonts-cjk ttf-terminus-nerd ttf-inconsolata ttf-joypixels ttf-material-icons-git
 
 #### Apps for Code
 

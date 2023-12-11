@@ -199,7 +199,7 @@ typeset -g PS3='%K{4} %K{0}%B select %b%k '
   typeset -g POWERLEVEL9K_VCS_CONFLICTED_BACKGROUND=0
   typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND=0
 
-  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON=' '
+  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON=' '
 
   # Untracked files icon. It's really a question mark, your font isn't broken.
   # Change the value of this parameter to show a different icon.
@@ -343,14 +343,14 @@ typeset -g PS3='%K{4} %K{0}%B select %b%k '
   # Status on success. No content, just an icon. No need to show it if prompt_char is enabled as
   # it will signify success by turning green.
   typeset -g POWERLEVEL9K_STATUS_OK=true
-  typeset -g POWERLEVEL9K_STATUS_OK_VISUAL_IDENTIFIER_EXPANSION=''
+  typeset -g POWERLEVEL9K_STATUS_OK_VISUAL_IDENTIFIER_EXPANSION='󰄬'
   typeset -g POWERLEVEL9K_STATUS_OK_FOREGROUND=0
   typeset -g POWERLEVEL9K_STATUS_OK_BACKGROUND=2
 
   # Status when some part of a pipe command fails but the overall exit status is zero. It may look
   # like this: 1|0.
   typeset -g POWERLEVEL9K_STATUS_OK_PIPE=true
-  typeset -g POWERLEVEL9K_STATUS_OK_PIPE_VISUAL_IDENTIFIER_EXPANSION=''
+  typeset -g POWERLEVEL9K_STATUS_OK_PIPE_VISUAL_IDENTIFIER_EXPANSION=''
   typeset -g POWERLEVEL9K_STATUS_OK_PIPE_FOREGROUND=0
   typeset -g POWERLEVEL9K_STATUS_OK_PIPE_BACKGROUND=2
 
