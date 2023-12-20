@@ -4,39 +4,15 @@
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--uc-identity-colour-blue: #6e95bd;
-		--uc-identity-colour-turquoise: #55e6c1;
-		--uc-identity-colour-green: #56966e;
-		--uc-identity-colour-yellow: #f7d794;
-		--uc-identity-colour-orange: #dc8c61;
-		--uc-identity-colour-red: #c14d53;
-		--uc-identity-colour-pink: #f78fb3;
-		--uc-identity-colour-purple: #a56db1;
+		--uc-identity-colour-blue: #6791c9;
+		--uc-identity-colour-green: #78b892;
+		--uc-identity-colour-yellow: #ecd28b;
+		--uc-identity-colour-orange: #e89982;
+		--uc-identity-colour-red: #df5b61;
 
 		--uc-base-colour: #141617;
 		--uc-highlight-colour: #0c0e0f;
-		--uc-inverted-colour: #dfdddd;
-		--uc-muted-colour: #aaaaac;
-		--uc-accent-colour: var(--uc-identity-colour-purple);
-	}
-}
-
-@media (prefers-color-scheme: light) {
-	:root {
-		--uc-identity-colour-blue: #6fadea;
-		--uc-identity-colour-turquoise: #209fb5;
-		--uc-identity-colour-green: #57a274;
-		--uc-identity-colour-yellow: #e49320;
-		--uc-identity-colour-orange: #dc8c61;
-		--uc-identity-colour-red: #da4b52;
-		--uc-identity-colour-pink: #ec83d0;
-		--uc-identity-colour-purple: #d466e9;
-
-		--uc-base-colour: #dfdddd;
-		--uc-highlight-colour: #dadadc;
-		--uc-inverted-colour: #151515;
-		--uc-muted-colour: #111111;
-		--uc-accent-colour: var(--uc-identity-colour-purple);
+		--uc-inverted-colour: #edeff0;
 	}
 }
 

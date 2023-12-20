@@ -44,8 +44,24 @@ spotify() {
 	spicetify config color_scheme $color && spicetify apply
 }
 
-rofi(){
+rofi() {
 	echo '* { background: '$bgd'; background-alt: '$bgl'; border-color: '$bgl3'; foreground: '$fg'; }' > ~/.config/scripts/.theme_rofi.rasi
+}
+
+firefox() {
+	sed -i -e "s/background: .*/background: $bg !important;/"\
+		   -e "s/background-color: .*/background-color: $bg !important;/"\
+		   -e "s/color: .*/color: $bg !important;/" ~/.config/firefox/chrome/userContent.css
+
+	sed -i -e "s/--uc-base-colour: .*/--uc-base-colour: $bgl;/"\
+		   -e "s/--uc-highlight-colour: .*/--uc-highlight-colour: $bg;/"\
+		   -e "s/--uc-inverted-colour: .*/--uc-inverted-colour: $fg;/"\
+		   -e "s/--uc-identity-colour-red: .*/--uc-identity-colour-red: $red;/"\
+		   -e "s/--uc-identity-colour-green: .*/--uc-identity-colour-green: $green;/"\
+		   -e "s/--uc-identity-colour-blue: .*/--uc-identity-colour-blue: $blue;/"\
+		   -e "s/--uc-identity-colour-yellow: .*/--uc-identity-colour-yellow: $yellow;/"\
+		   -e "s/--uc-identity-colour-orange: .*/--uc-identity-colour-orange: $orange;/" ~/.config/firefox/chrome/includes/cascade-colours.css
+	rm -r ~/.mozilla/firefox/*.default-release/chrome/* && cp -r ~/.config/firefox/chrome/* ~/.mozilla/firefox/*.default-release/chrome/
 }
 
 nvim() {
@@ -73,12 +89,16 @@ awesome() {
 }
 
 backup() {
-	declare -a config_folders=("awesome" "alacritty" "zsh" "ranger" "scripts")
+	declare -a config_folders=("awesome" "alacritty" "zsh" "ranger" "scripts" "firefox")
 	declare -a data_folders=("BetterDiscord/data/stable" "spicetify/Themes")
 	declare -a dot_folders=("fonts" "icons" "themes" "walls")
 
 	rm -rf ~/dotfiles/{.config,.fonts,.icons,.themes,.walls,.local}
 	mkdir -p ~/dotfiles/{.config,.fonts,.icons,.themes,.walls,.local}
+		
+	for folder in "${dot_folders[@]}"; do
+		cp -r ~/."$folder"/* ~/dotfiles/.${folder}/
+	done
 
 	for folder in "${config_folders[@]}"; do
 		cp -r ~/.config/"$folder" ~/dotfiles/.config/
@@ -88,13 +108,9 @@ backup() {
 		mkdir -p ~/dotfiles/.config/"$folder"
 		cp -r ~/.config/"$folder"/* ~/dotfiles/.config/"$folder"
 	done
-	
-	for folder in "${dot_folders[@]}"; do
-		cp -r ~/."$folder"/* ~/dotfiles/.${folder}/
-	done
+
 	cp -r ~/.local/other/ ~/dotfiles/.local/ && cp -r ~/.local/bin/ ~/dotfiles/.local/
 	rm -f ~/dotfiles/.Xresources && cp ~/.Xresources ~/dotfiles/
-	mkdir -p ~/dotfiles/.config/firefox && cp -r ~/.mozilla/firefox/*.default-release/chrome/ ~/dotfiles/.config/firefox/
 }
 
 if [[ -n "$color" ]]; then
@@ -103,6 +119,7 @@ if [[ -n "$color" ]]; then
 	dunst
 	spotify
 	discord
+	firefox
 	rofi
 	nvim
 	awesome
