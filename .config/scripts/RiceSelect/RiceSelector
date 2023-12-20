@@ -92,9 +92,9 @@ backup() {
 	for folder in "${dot_folders[@]}"; do
 		cp -r ~/."$folder"/* ~/dotfiles/.${folder}/
 	done
-	cp -r ~/.local/other/ ~/dotfiles/.local/
-	cp -r ~/.local/bin/ ~/dotfiles/.local/
+	cp -r ~/.local/other/ ~/dotfiles/.local/ && cp -r ~/.local/bin/ ~/dotfiles/.local/
 	rm -f ~/dotfiles/.Xresources && cp ~/.Xresources ~/dotfiles/
+	mkdir -p ~/dotfiles/.config/firefox && cp -r ~/.mozilla/firefox/*.default-release/chrome/ ~/dotfiles/.config/firefox/
 }
 
 if [[ -n "$color" ]]; then

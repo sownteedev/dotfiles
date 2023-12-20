@@ -6,7 +6,7 @@ local mainmenu = awful.menu({
 		{ "Awesome",
 			{
 				{ "Restart", awesome.restart },
-				{ "Quit",    "awesome.quit()" },
+				{ "Quit",    'awesome-client "awesome.quit()"' },
 			}
 		},
 		{ "Terminal", "alacritty" },

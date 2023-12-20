@@ -28,6 +28,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { placement = helpers.centered_client_placement },
 	})
 
+	-- Titlebars
 	ruled.client.append_rule {
 		id         = "titlebars",
 		rule_any   = { type = { "normal", "dialog" } },
@@ -41,3 +42,7 @@ client.connect_signal('request::manage', function(c)
 		awful.placement.no_offscreen(c)
 	end
 end)
+
+-- client.connect_signal("mouse::enter", function(c)
+-- 	c:activate { context = "mouse_enter", raise = false }
+-- end)

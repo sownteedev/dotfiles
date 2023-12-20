@@ -219,7 +219,6 @@ awful.mouse.append_global_mousebindings({
 	end),
 	awful.button({}, 3, function() Menu:toggle() end),
 })
-
 client.connect_signal("button::press", function()
 	Launcher:close()
 	Menu:hide()

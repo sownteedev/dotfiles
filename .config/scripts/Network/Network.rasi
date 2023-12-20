@@ -1,8 +1,8 @@
 @import "../.theme_rofi.rasi"
 
-/*****----- Configuration -----*****/
+/*****----- Global Properties -----*****/
 * {
-	font: "Liga SFMono Nerd Font 10";
+    font: "Liga SFMono Nerd Font 10";
 }
 
 /*****----- Main Window -----*****/
@@ -12,10 +12,10 @@ window {
     location:                    south;
     anchor:                      south;
     fullscreen:                  false;
-    width:                       400px;
-    height:                      450px;
-    x-offset:                    470px;
-    y-offset:                    -10px;
+    width:                       450px;
+    height:                      425px;
+    x-offset:                    458px;
+    y-offset:                    0px;
 
     /* properties for all widgets */
     enabled:                     true;
@@ -52,19 +52,19 @@ inputbar {
     border-color:                @border-color;
     background-color:            transparent;
     text-color:                  @foreground;
-    children:                    [ "textbox-prompt-colon", "prompt" ];
+    children:                    [ "textbox-prompt-colon", "prompt", "entry" ];
 }
 
 prompt {
     enabled:                     true;
     padding:                     8px 10px;
     border-radius:               0px;
-    background-color:            @background-alt;
+    background-color:            @background;
     text-color:                  @foreground;
 }
 textbox-prompt-colon {
     enabled:                     true;
-    padding:                     8px 12px;
+    padding:                     8px 10px;
     border-radius:               0px;
     expand:                      false;
     str:                         " ";
@@ -73,7 +73,7 @@ textbox-prompt-colon {
 }
 entry {
     enabled:                     true;
-    padding:                     8px 0px;
+    padding:                     8px 10px;
     background-color:            inherit;
     text-color:                  inherit;
     cursor:                      text;
@@ -109,7 +109,7 @@ case-indicator {
 listview {
     enabled:                     true;
     columns:                     1;
-    lines:                       7;
+    lines:                       8;
     cycle:                       true;
     dynamic:                     true;
     scrollbar:                   false;
@@ -117,7 +117,7 @@ listview {
     reverse:                     false;
     fixed-height:                true;
     fixed-columns:               true;
-    
+
     spacing:                     5px;
     margin:                      0px;
     padding:                     0px;

@@ -7,8 +7,6 @@ theme.font1                                          = "Liga SFMono Nerd Font"
 theme.icon_font                                      = "Material Design Icons"
 theme.useless_gap                                    = 10
 
-theme.wallpaper                                      = "~/.walls/mountains.jpeg"
-
 -- icons --
 theme.notification_wifi_icon                         = "~/.config/awesome/themes/icons/wifi.svg"
 theme.battery_icon                                   = "~/.config/awesome/themes/icons/battery.svg"
@@ -38,12 +36,12 @@ theme.systray_icon_spacing                           = 5
 
 -- Awesome Switcher --
 switcher.settings.preview_box                        = true
-switcher.settings.preview_box_bg                     = "#00000050"
-switcher.settings.preview_box_border                 = "#00000050"
+switcher.settings.preview_box_bg                     = "#00000030"
+switcher.settings.preview_box_border                 = "#00000030"
 switcher.settings.preview_box_fps                    = 60
-switcher.settings.preview_box_delay                  = 150
-switcher.settings.preview_box_title_font             = { "Inter" }
-switcher.settings.preview_box_title_font_size_factor = 0.8
+switcher.settings.preview_box_delay                  = 0
+switcher.settings.preview_box_title_font             = { "Manrope" }
+switcher.settings.preview_box_title_font_size_factor = 1
 switcher.settings.preview_box_title_color            = { 255, 255, 255, 1 }
 
 switcher.settings.client_opacity                     = true
@@ -68,24 +66,10 @@ theme.tasklist_bg_focus                              = theme.accent
 theme.tasklist_bg_urgent                             = theme.foreground
 theme.tasklist_bg_minimize                           = theme.background_urgent1
 
-theme.task_preview_widget_border_radius              = 0
-theme.task_preview_widget_bg                         = "#000000"
-theme.task_preview_widget_border_width               = 0
-theme.task_preview_widget_margin                     = 0
-
 -- taglist --
 theme.taglist_bg_focus                               = theme.accent
 theme.taglist_bg_urgent                              = theme.red
 theme.taglist_bg_occupied                            = theme.background_urgent1
-
-theme.tag_preview_widget_border_radius               = 0
-theme.tag_preview_client_border_radius               = 0
-theme.tag_preview_client_opacity                     = 1
-theme.tag_preview_client_bg                          = "#000000"
-theme.tag_preview_client_border_width                = 0
-theme.tag_preview_widget_bg                          = "#00000000"
-theme.tag_preview_widget_border_width                = 0
-theme.tag_preview_widget_margin                      = 0
 
 -- tooltips --
 theme.tooltip_bg                                     = theme.background
