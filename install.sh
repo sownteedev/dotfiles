@@ -13,6 +13,9 @@ pkg_installed()
 	fi
 }
 
+# Update
+sudo pacman -Syu --noconfirm
+
 # Git
 echo "[*] Installing git ..."
 if pkg_installed git
@@ -182,7 +185,7 @@ sleep 0.5
 
 # Other
 echo "[*] Installing other ..."
-sudo pacman -S gnome-keyring libsecret libgnome-keyring seahorse xf86-input-libinput pacman-contrib thefuck wget gpick btop ibus github-cli polkit-gnome && yay -S auto-cpufreq
+sudo pacman -S --noconfirm gnome-keyring libsecret libgnome-keyring seahorse xf86-input-libinput pacman-contrib thefuck wget gpick btop ibus github-cli polkit-gnome && yay -S --noconfirm auto-cpufreq
 echo "[*] Done."
 sleep 0.5
 
@@ -242,7 +245,7 @@ sleep 0.5
 read -p "[*] Do you want to install other apps? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	echo "[*] Installing other apps ..."
-	sudo pacman -S vlc telegram-desktop --noconfirm && yay -S --noconfirm google-chrome firefox
+	sudo pacman -S vlc telegram-desktop --noconfirm && yay -S --noconfirm google-chrome microsoft-edge-stable-bin
 else
 	echo "[*] Other apps installation skipped."
 fi
