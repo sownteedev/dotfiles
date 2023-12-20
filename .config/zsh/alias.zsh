@@ -45,6 +45,8 @@ alias -s dvi=xdvi
 alias -s chm=xchm
 alias -s djvu=djview
 
+alias dotpush='git add . && git commit -m ":>" && git push'
+
 alias upgrub="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 alias upfnt='sudo fc-cache -fv'
 
