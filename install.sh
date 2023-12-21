@@ -46,8 +46,6 @@ git clone htpps://github.com/sownteedev/dotfiles.git ~/dotfiles
 echo "[*] Done."
 
 # Font
-echo "[*] Installing font ..."
-yay -S --noconfirm noto-fonts noto-fonts-cjk noto-fonts-emoji noto-fonts-extra fontconfig # ttf-material-icons-git
 echo "[*] Copy fonts ..."
 mkdir -p ~/.fonts && cp -r ~/dotfiles/.fonts/* ~/.fonts
 fc-cache -fv
