@@ -56,7 +56,7 @@ local sidebar                           = wibox.widget {
 			{
 				{
 					widget = wibox.widget.imagebox,
-					image = beautiful.image,
+					image = beautiful.profile,
 					forced_height = 40,
 					forced_width = 40,
 					resize = true,

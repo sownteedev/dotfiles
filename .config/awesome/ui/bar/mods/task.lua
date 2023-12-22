@@ -5,10 +5,9 @@ local Gio       = require("lgi").Gio
 local helpers   = require("helpers")
 local beautiful = require("beautiful")
 local getIcon   = require("modules.getIcon")
-
 local layout    = wibox.layout.fixed.horizontal
-
 local inspect   = require("modules.inspect")
+
 local M         = {
 	metadata = {
 		{
@@ -27,9 +26,9 @@ local M         = {
 			icon = getIcon(nil, "terminal", "terminal"),
 			id = 2,
 			clients = {},
-			class = "alacritty",
-			exec = "alacritty",
-			name = "alacritty",
+			class = "Alacritty",
+			exec = "Alacritty",
+			name = "Alacritty",
 		},
 		{
 			count = 0,
@@ -43,7 +42,7 @@ local M         = {
 		},
 	},
 	entries = {},
-	classes = { "firefox", "alacritty", "discord" }
+	classes = { "firefox", "Alacritty", "discord" }
 }
 
 M.widget        = wibox.widget {
@@ -169,7 +168,7 @@ function M:showMenu(data)
 				{
 					{
 						markup = "Open New Window",
-						font   = beautiful.font .. " 12",
+						font   = beautiful.icon_font .. " 12",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.constraint,
@@ -197,7 +196,7 @@ function M:showMenu(data)
 				{
 					{
 						markup = "Close All",
-						font   = beautiful.font .. " 12",
+						font   = beautiful.font1 .. " 12",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.constraint,

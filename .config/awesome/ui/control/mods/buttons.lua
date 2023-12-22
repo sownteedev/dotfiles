@@ -81,7 +81,7 @@ local widget       = wibox.widget {
 			"network"),
 		createbutton("~/.config/awesome/signals/scripts/bluetooth --toggle", "󰂯 ", "Bluetooth", "Connected", "Disconnected",
 			"bluetooth"),
-		spacing = 20,
+		spacing = 15,
 		layout = wibox.layout.flex.horizontal
 	},
 	{
@@ -89,7 +89,7 @@ local widget       = wibox.widget {
 			"Turned Off", "airplane"),
 		createbutton('awesome-client \'naughty = require("naughty") naughty.toggle()\'', "󰍶 ", "Do Not Disturb",
 			"Turned On", "Turned Off", "dnd"),
-		spacing = 20,
+		spacing = 15,
 		layout = wibox.layout.flex.horizontal
 	},
 	{
@@ -97,7 +97,7 @@ local widget       = wibox.widget {
 			"Night Light Is Off", "redshift"),
 		createbutton('pamixer --source 1 -t', "󰍬 ", "Microphone",
 			"It's Muted", "It Is Turned On", "mic"),
-		spacing = 20,
+		spacing = 15,
 		layout = wibox.layout.flex.horizontal
 	},
 	layout = wibox.layout.fixed.vertical,

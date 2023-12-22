@@ -49,7 +49,6 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ alt, }, "p", function() awful.spawn.with_shell("~/.config/scripts/colorpicker") end),
 	awful.key({ alt, }, "w", function() awful.spawn.with_shell("~/.config/scripts/Network/Network") end),
 	awful.key({ alt, }, "b", function() awful.spawn.with_shell("~/.config/scripts/Bluetooth/Bluetooth") end),
-	-- awful.key({ alt, }, "F4", function() awful.spawn.with_shell("~/.config/scripts/Power/PowerMenu") end),
 	awful.key({ alt, }, "F4", function() awesome.emit_signal("toggle::exit") end),
 	awful.key({ alt, }, "space", function() awful.spawn.with_shell("~/.config/scripts/RiceSelect/RiceSelector") end),
 	awful.key({ mod }, "l", function() awful.spawn.with_shell("betterlockscreen -l dimblur") end),

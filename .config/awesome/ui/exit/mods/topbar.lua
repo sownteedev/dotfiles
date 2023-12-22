@@ -8,7 +8,7 @@ local widget = wibox.widget {
 		{
 			{
 				widget = wibox.widget.imagebox,
-				image = beautiful.image,
+				image = beautiful.profile,
 				forced_height = 50,
 				forced_width = 50,
 				align = "center",
