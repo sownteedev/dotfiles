@@ -49,8 +49,8 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ alt, }, "p", function() awful.spawn.with_shell("~/.config/scripts/colorpicker") end),
 	awful.key({ alt, }, "w", function() awful.spawn.with_shell("~/.config/scripts/Network/Network") end),
 	awful.key({ alt, }, "b", function() awful.spawn.with_shell("~/.config/scripts/Bluetooth/Bluetooth") end),
-	awful.key({ alt, }, "m", function() awesome.emit_signal("mplayer::toggle") end),
-	awful.key({ alt, }, "F4", function() awful.spawn.with_shell("~/.config/scripts/Power/PowerMenu") end),
+	-- awful.key({ alt, }, "F4", function() awful.spawn.with_shell("~/.config/scripts/Power/PowerMenu") end),
+	awful.key({ alt, }, "F4", function() awesome.emit_signal("toggle::exit") end),
 	awful.key({ alt, }, "space", function() awful.spawn.with_shell("~/.config/scripts/RiceSelect/RiceSelector") end),
 	awful.key({ mod }, "l", function() awful.spawn.with_shell("betterlockscreen -l dimblur") end),
 	awful.key({ mod, shift }, "b", function() awesome.emit_signal("hide::bar") end),
@@ -213,14 +213,12 @@ end)
 
 awful.mouse.append_global_mousebindings({
 	awful.button({}, 1, function()
-		Menu:hide()
 		Launcher:close()
-		awesome.emit_signal("mplayer::close")
 	end),
-	awful.button({}, 3, function() Menu:toggle() end),
+	awful.button({}, 3, function()
+		Menu.desktop:toggle()
+	end),
 })
 client.connect_signal("button::press", function()
 	Launcher:close()
-	Menu:hide()
-	awesome.emit_signal("mplayer::close")
 end)
