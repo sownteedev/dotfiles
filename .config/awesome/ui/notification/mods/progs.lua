@@ -50,7 +50,7 @@ local widget = {
 		{
 			createProgress(beautiful.red, "CPU", "cpu"),
 			createProgress(beautiful.blue, "MEM", "memory"),
-			createProgress(beautiful.red, "DIS", "disk"),
+			createProgress(beautiful.green, "DIS", "disk"),
 			spacing = 20,
 			layout = wibox.layout.fixed.vertical,
 		},
@@ -58,7 +58,7 @@ local widget = {
 		margins = 20
 	},
 	widget = wibox.container.background,
-	bg = beautiful.background_alt,
+	bg = beautiful.background,
 }
 
 return widget

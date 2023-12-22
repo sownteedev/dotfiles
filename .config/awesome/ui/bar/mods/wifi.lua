@@ -7,7 +7,7 @@ local wifi      = wibox.widget {
 	markup = helpers.colorizeText("󰤨 ", beautiful.fg),
 	widget = wibox.widget.textbox,
 	valign = "center",
-	align = "center"
+	align = "center",
 }
 
 awesome.connect_signal("signal::network", function(value)

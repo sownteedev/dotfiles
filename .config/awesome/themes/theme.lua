@@ -1,5 +1,7 @@
 local switcher           = require("modules.awesome-switcher")
-local dpi                = require("beautiful.xresources").apply_dpi
+local gears              = require("gears")
+local gfs                = require("gears.filesystem")
+local themes_path        = gfs.get_configuration_dir() .. "themes/"
 
 local theme              = {}
 
@@ -87,5 +89,10 @@ theme.tooltip_border_width                           = theme.border_width
 theme.titlebar_bg_normal                             = theme.background
 theme.titlebar_bg_focus                              = theme.background
 theme.titlebar_bg_urgent                             = theme.background
+
+theme.layout_floating                                = gears.color.recolor_image(themes_path .. "assets/floating.png",
+	theme.foreground)
+theme.layout_tile                                    = gears.color.recolor_image(themes_path .. "assets/tile.png",
+	theme.foreground)
 
 return theme

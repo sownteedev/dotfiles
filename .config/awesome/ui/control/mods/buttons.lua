@@ -96,7 +96,7 @@ local widget       = wibox.widget {
 		createbutton("~/.config/awesome/signals/scripts/redshift --toggle", "󰛨 ", "Redshift", "Your Eyes Are Safe",
 			"Night Light Is Off", "redshift"),
 		createbutton('pamixer --source 1 -t', "󰍬 ", "Microphone",
-			"It's Muted", "It Is Turned On", "mic"),
+			"It's Muted", "It's Turned On", "mic"),
 		spacing = 15,
 		layout = wibox.layout.flex.horizontal
 	},

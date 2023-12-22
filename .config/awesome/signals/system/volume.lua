@@ -36,7 +36,6 @@ gears.timer {
 	autostart = true,
 	timeout = 2,
 	callback = function()
-		update_value_of_volume()
 		volume_emit()
 	end,
 	single_shot = true

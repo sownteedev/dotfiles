@@ -46,6 +46,7 @@ local info = wibox.widget {
 local osd = awful.popup {
 	visible = false,
 	ontop = true,
+	bg = beautiful.background_dark,
 	border_width = beautiful.border_width,
 	border_color = beautiful.border_color_normal,
 	minimum_height = 50,

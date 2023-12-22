@@ -149,8 +149,8 @@ function menu.menu(widgets, width)
 		ontop = true,
 		minimum_width = width or dpi(200),
 		maximum_width = width or dpi(200),
-		shape = helpers.rrect(9),
-		bg = beautiful.background,
+		shape = helpers.rrect(5),
+		bg = beautiful.background_dark,
 		widget = wibox.layout.fixed.vertical,
 	})
 	gtable.crush(widget, menu, true)
@@ -243,9 +243,9 @@ function menu.sub_menu_button(args)
 				right = dpi(20),
 			}
 		},
-		bg = beautiful.background,
-		forced_height = 35,
-		shape = helpers.rrect(9),
+		bg = beautiful.background_dark,
+		forced_height = 40,
+		shape = helpers.rrect(5),
 		widget = wibox.container.background,
 	}
 	widget:connect_signal("mouse::enter", function(self)
@@ -305,9 +305,9 @@ function menu.button(args)
 				left = dpi(20),
 			}
 		},
-		bg = beautiful.background,
-		forced_height = 35,
-		shape = helpers.rrect(9),
+		bg = beautiful.background_dark,
+		forced_height = 45,
+		shape = helpers.rrect(5),
 		buttons = {
 			awful.button({}, 1, function()
 				args.on_press(menu, text_widget)
