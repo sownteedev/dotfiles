@@ -139,7 +139,7 @@ sleep 0.5
 
 # Brightness
 echo "[*] Installing brightness ..."
-sudo pacman -S brightnessctl xorg-xbacklight --noconfirm
+sudo pacman -S brightnessctl xorg-xbacklight redshift --noconfirm
 echo "[*] Done."
 sleep 0.5
 

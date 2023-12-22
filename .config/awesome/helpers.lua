@@ -11,33 +11,18 @@ local json                   = require("modules.json")
 local helpers                = {}
 
 --Shapes------------------------
---------------------------------
-helpers.rrect                = function(radius)
-	return function(cr, width, height)
-		gears.shape.rounded_rect(cr, width, height, radius)
-	end
-end
-
 helpers.part_rrect           = function(tl, tr, br, bl, radius)
 	return function(cr, width, height)
 		gears.shape.partially_rounded_rect(cr, width, height, tl, tr, br, bl, radius)
 	end
 end
 
-helpers.rbar                 = function(rad_x, rad_y)
-	return function(cr, width, height)
-		gears.shape.rounded_bar(cr, dpi(rad_x), dpi(rad_y))
-	end
-end
-
 --Markup-------------------------
----------------------------------
 helpers.mtext                = function(color, font, text)
 	return '<span color="' .. color .. '" font="' .. font .. '">' .. text .. '</span>'
 end
 
 --widgets------------------------
----------------------------------
 helpers.textbox              = function(color, font, text)
 	return wibox.widget {
 		markup = '<span color="' .. color .. '" font="' .. font .. '">' .. text .. '</span>',
@@ -67,7 +52,6 @@ helpers.margin               = function(wgt, ml, mr, mt, mb)
 end
 
 --Hover_effects---------------------
-------------------------------------
 helpers.add_hover_effect     = function(button, clr_hvr, clr_press, clr_nrml)
 	button:connect_signal("mouse::enter", function()
 		button.bg = clr_hvr
@@ -247,6 +231,7 @@ helpers.clickKey     = function(c, key)
 end
 
 helpers.colorizeText = function(txt, fg)
+	fg = fg or beautiful.foreground
 	if fg == "" then
 		fg = "#ffffff"
 	end

@@ -3,6 +3,7 @@ local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local rubato = require("modules.rubato")
+local helpers = require("helpers")
 
 -- osd --
 local info = wibox.widget {
@@ -51,6 +52,7 @@ local osd = awful.popup {
 	maximum_height = 55,
 	minimum_width = 300,
 	maximum_width = 300,
+	shape = helpers.rrect(5),
 	placement = function(d)
 		awful.placement.bottom(d, { honor_workarea = true, margins = 10 + beautiful.border_width * 2 })
 	end,
@@ -75,7 +77,7 @@ end)
 
 -- bright --
 
-awesome.connect_signal("bright::value", function(value)
+awesome.connect_signal("signal::brightness", function(value)
 	anim.target = value
 	info:get_children_by_id("text")[1].text = value
 	info:get_children_by_id("icon")[1].text = "󰃝 "

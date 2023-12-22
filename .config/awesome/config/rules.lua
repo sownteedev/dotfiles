@@ -4,6 +4,7 @@ local helpers = require("helpers")
 
 awful.layout.layouts = {
 	awful.layout.suit.floating,
+	awful.layout.suit.tile,
 }
 
 ruled.client.connect_signal("request::rules", function()
@@ -33,6 +34,27 @@ ruled.client.connect_signal("request::rules", function()
 		id         = "titlebars",
 		rule_any   = { type = { "normal", "dialog" } },
 		properties = { titlebars_enabled = true }
+	}
+
+	ruled.client.append_rule {
+		rule       = { class = "Alacritty" },
+		properties = { screen = 1, tag = "1" }
+	}
+	ruled.client.append_rule {
+		rule_any   = { class = { "Google-chrome", "firefox" } },
+		properties = { screen = 1, tag = "2" }
+	}
+	ruled.client.append_rule {
+		rule_any   = { class = { "Code", "jetbrains-idea", "neovide" } },
+		properties = { screen = 1, tag = "3" }
+	}
+	ruled.client.append_rule {
+		rule_any   = { class = { "discord", "Telegram", "Spotify" } },
+		properties = { screen = 1, tag = "4" }
+	}
+	ruled.client.append_rule {
+		rule_any   = { class = { "Thunar", "vlc" } },
+		properties = { tag = "5" }
 	}
 end)
 
