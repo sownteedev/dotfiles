@@ -38,11 +38,11 @@ ruled.client.connect_signal("request::rules", function()
 
 	ruled.client.append_rule {
 		rule       = { class = "Alacritty" },
-		properties = { screen = 1, tag = "1" }
+		properties = { screen = 1, tag = "1", switch_to_tags = true }
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "Google-chrome", "firefox" } },
-		properties = { screen = 1, tag = "2" }
+		properties = { screen = 1, tag = "2", switch_to_tags = true }
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "Code", "jetbrains-idea", "neovide" } },
@@ -50,7 +50,7 @@ ruled.client.connect_signal("request::rules", function()
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "discord", "Telegram", "Spotify" } },
-		properties = { screen = 1, tag = "4" }
+		properties = { screen = 1, tag = "4", switch_to_tags = true }
 	}
 	ruled.client.append_rule {
 		rule_any   = { class = { "Thunar", "vlc" } },

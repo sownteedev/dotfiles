@@ -1,5 +1,5 @@
 local awful         = require("awful")
-local menu          = require("modules.menu")
+local menu          = require("ui.rightclick.menu")
 local hotkeys_popup = require("awful.hotkeys_popup")
 local Launcher      = require("ui.launcher")
 

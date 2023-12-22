@@ -13,7 +13,7 @@ awful.screen.connect_for_each_screen(function(s)
 		screen = s,
 		width = 350,
 		height = 600,
-		bg = beautiful.background,
+		bg = beautiful.background_dark,
 		ontop = true,
 		visible = false,
 	})

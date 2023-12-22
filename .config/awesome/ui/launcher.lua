@@ -141,7 +141,7 @@ local main_widget                       = wibox.widget {
 }
 
 local popup_widget                      = awful.popup {
-	bg = beautiful.background,
+	bg = beautiful.background_dark,
 	border_width = beautiful.border_width,
 	border_color = beautiful.border_color_normal,
 	ontop = true,

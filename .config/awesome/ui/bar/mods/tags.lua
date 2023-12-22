@@ -48,7 +48,7 @@ return function(s)
 				})
 				self.update = function()
 					if tag.selected then
-						self.taganim:set(40)
+						self.taganim:set(60)
 					elseif #tag:clients() > 0 then
 						self.taganim:set(40)
 					else

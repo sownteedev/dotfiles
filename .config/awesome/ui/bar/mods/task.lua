@@ -23,26 +23,26 @@ local M         = {
 		{
 			count = 0,
 			pinned = true,
-			icon = getIcon(nil, "terminal", "terminal"),
-			id = 2,
-			clients = {},
-			class = "Alacritty",
-			exec = "Alacritty",
-			name = "Alacritty",
-		},
-		{
-			count = 0,
-			pinned = true,
 			icon = getIcon(nil, "discord", "discord"),
-			id = 3,
+			id = 2,
 			clients = {},
 			class = "discord",
 			exec = "discord",
 			name = "discord",
 		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "Spotify", "Spotify"),
+			id = 3,
+			clients = {},
+			class = "spotify",
+			exec = "spotify",
+			name = "spotify",
+		},
 	},
 	entries = {},
-	classes = { "firefox", "Alacritty", "discord" }
+	classes = { "firefox", "discord", "spotify" },
 }
 
 M.widget        = wibox.widget {
@@ -154,7 +154,7 @@ function M:showMenu(data)
 				end)
 			},
 			widget = wibox.container.background,
-			shape = helpers.rrect(4),
+			shape = helpers.rrect(5),
 			bg = j.minimized and beautiful.foreground .. '22' or beautiful.background_alt
 		}
 		M.popupWidget:connect_signal("mouse::leave", function()
@@ -187,7 +187,7 @@ function M:showMenu(data)
 			end)
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(4),
+		shape = helpers.rrect(5),
 		bg = beautiful.background
 	}
 	local closeAll = wibox.widget {
@@ -217,7 +217,7 @@ function M:showMenu(data)
 			end)
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(4),
+		shape = helpers.rrect(5),
 		bg = beautiful.background_alt
 	}
 	self.popupWidget:add(addNew)
@@ -298,11 +298,11 @@ function M:genIcons()
 						image = j.icon,
 						forced_height = 35,
 						forced_width = 35,
-						clip_shape = helpers.rrect(100),
+						clip_shape = helpers.rrect(0),
 						resize = true,
 					},
 					widget = wibox.container.margin,
-					margins = 3,
+					margins = 2,
 				},
 				shape = helpers.rrect(10),
 				widget = wibox.container.background,

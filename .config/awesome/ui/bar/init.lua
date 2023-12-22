@@ -20,7 +20,7 @@ local function init(s)
 		height = 60,
 		ontop = false,
 		width = 1366,
-		bg = beautiful.background,
+		bg = beautiful.background_dark,
 		fg = beautiful.foreground,
 		screen = s,
 		widget = {
@@ -29,16 +29,6 @@ local function init(s)
 					{
 						profile,
 						layout,
-						{
-							widget = wibox.container.background,
-							shape = helpers.rrect(5),
-							bg = beautiful.background_alt,
-							buttons = {
-								awful.button({}, 1, function()
-									awesome.emit_signal('toggle::dash')
-								end)
-							},
-						},
 						{
 							{
 								tags(s),
@@ -50,7 +40,7 @@ local function init(s)
 							widget = wibox.container.background,
 							bg = beautiful.background_alt,
 						},
-						spacing = 15,
+						spacing = 10,
 						layout = wibox.layout.fixed.horizontal
 					},
 					widget = wibox.container.place,
@@ -58,20 +48,20 @@ local function init(s)
 					halign = "left",
 				},
 				widget = wibox.container.margin,
-				left = 20,
+				left = 10,
 			},
-			-- {
-			-- 	{
-			-- 		{
-			-- 			task.widget,
-			-- 			widget = wibox.container.margin,
-			-- 		},
-			-- 		widget = wibox.container.place,
-			-- 		valign = "center",
-			-- 		halign = "left",
-			-- 	},
-			-- 	widget = wibox.container.margin,
-			-- },
+			{
+				{
+					{
+						task.widget,
+						widget = wibox.container.margin,
+					},
+					widget = wibox.container.place,
+					valign = "center",
+					halign = "left",
+				},
+				widget = wibox.container.margin,
+			},
 			{
 				{
 					{
