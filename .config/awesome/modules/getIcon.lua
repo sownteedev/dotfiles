@@ -1,16 +1,9 @@
-local gears      = require("gears")
 local icon_cache = {}
-local helpers    = require("helpers")
-local iconTheme  = helpers.readJson(gears.filesystem.get_cache_dir() .. "json/settings.json").iconTheme
+local iconTheme  = "~/.icons/Reversal-black-dark/"
 
-
-local custom = {
+local custom     = {
 	{
-		name = "alacritty",
-		to = "terminal"
-	},
-	{
-		name = "neofetchpad",
+		name = "Alacritty",
 		to = "terminal"
 	},
 	{

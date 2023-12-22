@@ -7,6 +7,7 @@ local gears     = require("gears")
 local bat       = require("ui.exit.mods.bat")
 local weather   = require("ui.exit.mods.weather")
 local top       = require("ui.exit.mods.topbar")
+local music     = require("ui.exit.mods.music")
 
 awful.screen.connect_for_each_screen(function(s)
 	local exit = wibox({
@@ -53,16 +54,16 @@ awful.screen.connect_for_each_screen(function(s)
 					{
 						id     = "icon",
 						markup = helpers.colorizeText(icon, color),
-						font   = beautiful.icon_font .. " 40",
+						font   = beautiful.icon_font .. " 30",
 						align  = "center",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.margin,
 					margins = {
-						left = 60,
-						right = 40,
-						top = 40,
-						bottom = 40,
+						left = 40,
+						right = 20,
+						top = 20,
+						bottom = 20,
 					},
 				},
 				shape = helpers.rrect(15),
@@ -107,7 +108,6 @@ awful.screen.connect_for_each_screen(function(s)
 				valign = "center",
 				widget = wibox.widget.textclock
 			},
-			spacing = 10,
 			layout = wibox.layout.fixed.horizontal
 		},
 		widget = wibox.container.place,
@@ -117,11 +117,12 @@ awful.screen.connect_for_each_screen(function(s)
 	local down = wibox.widget {
 		{
 			{
+				music,
 				time,
 				bat,
 				weather,
 				layout = wibox.layout.fixed.horizontal,
-				spacing = 20,
+				spacing = 40,
 			},
 			widget = wibox.container.place,
 			valign = "bottom",

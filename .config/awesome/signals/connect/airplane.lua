@@ -1,6 +1,5 @@
 local awful = require('awful')
 local gears = require('gears')
-local naughty = require("naughty")
 
 local function emit_airplane_status()
 	awful.spawn.easy_async_with_shell(

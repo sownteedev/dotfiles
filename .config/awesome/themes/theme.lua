@@ -27,7 +27,7 @@ theme.accent             = "#a9b1d6"
 
 
 theme.wallpaper                                      = "~/.walls/forest.jpg"
-theme.image                                          = "~/.config/awesome/themes/assets/sownteedev.png"
+theme.profile                                        = "~/.config/awesome/themes/assets/sownteedev.png"
 theme.songdefpicture                                 = "~/.config/awesome/themes/assets/defsong.jpg"
 
 -- Awesome Switcher --
