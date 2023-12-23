@@ -2,9 +2,8 @@ local awful = require("awful")
 local gears = require("gears")
 local filesystem = gears.filesystem
 local json = require("modules.json")
-local helpers = require("helpers")
-local icon_dir = filesystem.get_configuration_dir() .. "theme/assets/weather/icons/"
-local thumb_dir = filesystem.get_configuration_dir() .. "theme/assets/weather/images/"
+local icon_dir = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
+local thumb_dir = filesystem.get_configuration_dir() .. "themes/assets/weather/images/"
 
 local GET_FORECAST_CMD = [[bash -c "curl -s --show-error -X GET '%s'"]]
 
@@ -51,9 +50,8 @@ local image_map = {
 	["50n"] = "weather-fog",
 }
 
-local api_key = "30fb54d351dba61eb403747ba11a65f5"
-local coordinates = { "28.6446772", "77.320955" }
-
+local api_key = "702cd6f2a4f3450a3673e8bc3078525e"
+local coordinates = { "21.0245", "105.8412" }
 local show_hourly_forecast = true
 local show_daily_forecast = true
 local units = "metric"

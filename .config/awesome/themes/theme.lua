@@ -5,9 +5,8 @@ local themes_path        = gfs.get_configuration_dir() .. "themes/"
 
 local theme              = {}
 
-theme.font               = "Liga SFMono Nerd Font 9"
+theme.font               = "Rubik 9"
 theme.sans               = "Rubik"
-theme.font1              = "Liga SFMono Nerd Font"
 theme.icon_font          = "Material Design Icons"
 theme.useless_gap        = 10
 
@@ -59,10 +58,9 @@ theme.bg_normal                                      = theme.background
 theme.fg_normal                                      = theme.foreground
 
 -- tasklist --
-theme.tasklist_bg_normal                             = theme.background_urgent1
-theme.tasklist_bg_focus                              = theme.accent
-theme.tasklist_bg_urgent                             = theme.foreground
-theme.tasklist_bg_minimize                           = theme.background_urgent1
+theme.tasklist_bg_normal                             = theme.background
+theme.tasklist_bg_focus                              = theme.background_alt
+theme.tasklist_bg_minimize                           = theme.background_urgent
 
 -- taglist --
 theme.taglist_bg                                     = theme.background .. "00"

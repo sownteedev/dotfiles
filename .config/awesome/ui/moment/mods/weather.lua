@@ -6,7 +6,6 @@ local helpers    = require "helpers"
 local filesystem = gears.filesystem
 local icon_dir   = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
 
-
 local icon_map   = {
 	["01d"] = "weather-clear-sky",
 	["02d"] = "weather-few-clouds",
@@ -188,22 +187,23 @@ local widget = wibox.widget {
 					day3,
 					day4,
 					day5,
-					day6,
-					spacing = 25,
+					-- day6,
 					layout = require("modules.overflow").horizontal,
 					scrollbar_width = 0,
+					spacing = -15,
 				},
 				widget = wibox.container.margin,
 				top = 15,
+				bottom = 15,
 			},
 			layout = wibox.layout.align.vertical,
 		},
 		widget = wibox.container.margin,
 		margins = {
-			left = 30,
-			right = 30,
+			left = 20,
+			right = 20,
 			top = 20,
-			bottom = 20,
+			bottom = 0,
 		},
 	},
 	layout = wibox.layout.stack,

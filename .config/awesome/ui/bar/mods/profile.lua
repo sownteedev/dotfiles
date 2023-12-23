@@ -11,7 +11,7 @@ local profile   = wibox.widget {
 	resize = true,
 	buttons = {
 		awful.button({}, 1, function()
-			Launcher:open()
+			Launcher:toggle()
 		end)
 	},
 }

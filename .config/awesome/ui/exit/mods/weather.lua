@@ -6,7 +6,7 @@ local gears     = require("gears")
 local widget    = wibox.widget {
 	{
 		id            = "image",
-		image         = gears.filesystem.get_configuration_dir() .. "theme/assets/weather/icons/weather-fog.svg",
+		image         = gears.filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
 		opacity       = 0.9,
 		clip_shape    = helpers.rrect(4),
 		forced_height = 30,

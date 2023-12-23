@@ -10,7 +10,6 @@ local footer = require("ui.control.mods.footer")
 
 awful.screen.connect_for_each_screen(function(s)
 	local control = wibox({
-		shape = helpers.rrect(8),
 		screen = s,
 		width = 400,
 		height = 600,
@@ -26,7 +25,7 @@ awful.screen.connect_for_each_screen(function(s)
 				forced_height = 210,
 				widget = wibox.container.background,
 				bg = beautiful.background_dark,
-				shape = helpers.rrect(12),
+				shape = helpers.rrect(10),
 			},
 			widget = wibox.container.margin,
 			bottom = 10,
@@ -103,7 +102,7 @@ awful.screen.connect_for_each_screen(function(s)
 			},
 			widget = wibox.container.background,
 			bg = beautiful.background_dark,
-			shape = helpers.rrect(12),
+			shape = helpers.rrect(10),
 		},
 		nil,
 		layout = wibox.layout.align.vertical,

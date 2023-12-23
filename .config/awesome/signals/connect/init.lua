@@ -1,3 +1,4 @@
-require("signals.connect.wifi")
-require("signals.connect.bluetooth")
-require("signals.connect.airplane")
+require(... .. ".wifi")
+require(... .. ".bluetooth")
+require(... .. ".airplane")
+require(... .. ".dnd")

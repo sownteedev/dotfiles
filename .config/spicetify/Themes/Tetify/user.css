@@ -8,6 +8,7 @@
 
 * {
 	font-family: "Manrope" !important;
+	font-weight: 500 !important;
 }
 
 /* TOPBAR */
@@ -456,10 +457,6 @@ span.artist-artistVerifiedBadge-badge path:last-child {
 	stroke: var(--spice-text);
 }
 
-.artist-artistVerifiedBadge-badge span {
-	font-weight: bold;
-}
-
 /* change text color of hero card on 'library' tab */
 .main-heroCard-card a,
 .collection-collectionEntityHeroCard-descriptionContainer {
@@ -634,10 +631,6 @@ span.Ov0avbbVFKCQwhi1UwYi path:last-child {
 	stroke: var(--spice-text);
 }
 
-.Ov0avbbVFKCQwhi1UwYi span {
-	font-weight: bold;
-}
-
 /* change progress bar color */
 .epWhU7hHGktzlO_dop6z {
 	background-color: var(--spice-playback-bar) !important;
@@ -654,7 +647,6 @@ span.Ov0avbbVFKCQwhi1UwYi path:last-child {
 }
 
 span.ellipsis-one-line.main-type-mestoBold {
-	font-weight: 700;
 	font-size: 1rem;
 }
 

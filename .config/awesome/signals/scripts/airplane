@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-STATUS="$(rfkill list | sed -n 2p | awk '{print $3}')"
+STATUS="$(rfkill list | sed -n 5p | awk '{print $3}')"
 
 toggle() {
     if [[ $STATUS == "no" ]]; then
-        pkexec rfkill block all
+        rfkill block all
         notify-send --urgency=normal "Airplane Mode" "Airplane mode has been turned on!"
     else
-        pkexec rfkill unblock all
+		rfkill unblock all
         notify-send --urgency=normal "Airplane Mode" "Airplane mode has been turned off!"
     fi
 }

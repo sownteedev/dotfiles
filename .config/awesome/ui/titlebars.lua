@@ -2,7 +2,7 @@ local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local rubato = require("modules.rubato")
+local animation = require("modules.animation")
 
 -- titlebars --
 local create_button = function(color, func)
@@ -18,19 +18,19 @@ local create_button = function(color, func)
 		}
 	}
 
-	local widget_anim = rubato.timed {
+	local widget_anim = animation:new {
 		duration = 0.3,
-		easing = rubato.easing.linear,
+		easing = animation.easing.linear,
 		subscribed = function(h)
 			widget.forced_width = h
 		end }
-	widget_anim.target = 25
+	widget_anim:set(25)
 
 	widget:connect_signal("mouse::enter", function()
-		widget_anim.target = 50
+		widget_anim:set(50)
 	end)
 	widget:connect_signal("mouse::leave", function()
-		widget_anim.target = 25
+		widget_anim:set(25)
 	end)
 
 	return widget

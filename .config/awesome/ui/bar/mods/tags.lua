@@ -9,9 +9,7 @@ return function(s)
 			spacing = 8,
 			layout = wibox.layout.fixed.horizontal,
 		},
-		style           = {
-			shape = helpers.rrect(9)
-		},
+		style           = { shape = helpers.rrect(9) },
 		screen          = s,
 		filter          = awful.widget.taglist.filter.all,
 		buttons         = {
@@ -40,7 +38,7 @@ return function(s)
 			widget = wibox.container.place,
 			create_callback = function(self, tag)
 				self.taganim = animation:new({
-					duration = 0.25,
+					duration = 0.3,
 					easing = animation.easing.linear,
 					update = function(_, pos)
 						self:get_children_by_id('background_role')[1].forced_width = pos

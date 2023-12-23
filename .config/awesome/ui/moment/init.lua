@@ -11,8 +11,8 @@ awful.screen.connect_for_each_screen(function(s)
 	local moment = wibox({
 		shape = helpers.rrect(10),
 		screen = s,
-		width = 350,
-		height = 600,
+		width = 400,
+		height = 650,
 		bg = beautiful.background_dark,
 		ontop = true,
 		visible = false,

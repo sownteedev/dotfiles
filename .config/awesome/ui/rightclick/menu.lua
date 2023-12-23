@@ -223,7 +223,7 @@ function menu.sub_menu_button(args)
 					layout = wibox.layout.fixed.horizontal,
 					icon,
 					{
-						font = beautiful.sans .. " 11",
+						font = beautiful.sans .. " 10",
 						markup = args.text,
 						widget = wibox.widget.textbox,
 						halign = "start"
@@ -241,10 +241,11 @@ function menu.sub_menu_button(args)
 			margins = {
 				left = dpi(20),
 				right = dpi(20),
+				bottom = dpi(10),
 			}
 		},
 		bg = beautiful.background_dark,
-		forced_height = 40,
+		forced_height = 35,
 		shape = helpers.rrect(5),
 		widget = wibox.container.background,
 	}
@@ -286,7 +287,7 @@ function menu.button(args)
 	end
 
 	local text_widget = wibox.widget {
-		font = beautiful.sans .. " 11",
+		font = beautiful.sans .. " 10",
 		markup = args.text,
 		widget = wibox.widget.textbox,
 		halign = "start"
@@ -303,10 +304,11 @@ function menu.button(args)
 			widget = wibox.container.margin,
 			margins = {
 				left = dpi(20),
+				top = dpi(10),
 			}
 		},
 		bg = beautiful.background_dark,
-		forced_height = 45,
+		forced_height = 35,
 		shape = helpers.rrect(5),
 		buttons = {
 			awful.button({}, 1, function()
@@ -325,8 +327,8 @@ end
 function menu.separator()
 	return wibox.widget({
 		widget = wibox.container.margin,
-		top = 10,
-		bottom = 10,
+		top = 15,
+		bottom = 15,
 		left = 40,
 		right = 40,
 		{
