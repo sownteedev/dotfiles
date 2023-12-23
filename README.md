@@ -81,7 +81,7 @@
     EDITOR=nvim visudo
 
     Add: sowntee ALL=(ALL) ALL
-    sowntee ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff
+    sowntee ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff, /usr/sbin/rfkill unblock all, /usr/sbin/rfkill block all
     Uncomment: %wheel ALL=(ALL) ALL
 
 ### Grub and OsProber

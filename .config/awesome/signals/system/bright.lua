@@ -1,4 +1,5 @@
 local awful = require("awful")
+local gears = require("gears")
 
 function update_value_of_bright()
 	awful.spawn.easy_async_with_shell("brightnessctl i | grep Current | awk '{print $4}' | tr -d '()%'",
@@ -9,4 +10,12 @@ function update_value_of_bright()
 		end)
 end
 
-update_value_of_bright()
+gears.timer {
+	call_now = true,
+	autostart = true,
+	timeout = 2,
+	callback = function()
+		update_value_of_bright()
+	end,
+	single_shot = true
+}

@@ -34,7 +34,7 @@ local function battery_emit()
 end
 
 gears.timer {
-	timeout   = 20,
+	timeout   = 60,
 	call_now  = true,
 	autostart = true,
 	callback  = function()

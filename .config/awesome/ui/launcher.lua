@@ -22,14 +22,14 @@ local createPowerButton                 = function(icon, color, command)
 				{
 					markup = helpers.colorizeText(icon, color),
 					align = "center",
-					font = beautiful.icon_font .. " 13",
+					font = beautiful.icon_font .. " 15",
 					widget = wibox.widget.textbox,
 				},
 				widget = wibox.container.margin,
-				left = 8,
-				right = 0,
-				top = 5,
-				bottom = 5,
+				left = 15,
+				right = 8,
+				top = 10,
+				bottom = 10,
 			},
 			widget = wibox.container.background,
 			bg = color .. '11',
@@ -48,7 +48,7 @@ end
 local sidebar                           = wibox.widget {
 	widget = wibox.container.background,
 	bg = beautiful.background_alt,
-	forced_width = Conf.entry_height,
+	forced_width = Conf.entry_height + 5,
 	shape = helpers.rrect(5),
 	{
 		layout = wibox.layout.align.vertical,
@@ -77,7 +77,7 @@ local sidebar                           = wibox.widget {
 				layout = wibox.layout.fixed.vertical
 			},
 			widget = wibox.container.margin,
-			margins = 10,
+			bottom = 10
 		},
 	}
 }
@@ -268,7 +268,7 @@ local function filter(input)
 					layout = wibox.layout.fixed.horizontal,
 					spacing = 20,
 				},
-				margins = dpi(10),
+				margins = dpi(8),
 				widget = wibox.container.margin,
 			}
 		}
@@ -307,7 +307,7 @@ function L:open()
 	awful.keygrabber.stop()
 	awful.prompt.run {
 		prompt = "   ",
-		font = beautiful.font1 .. " 12",
+		font = beautiful.sans .. " 12",
 		textbox = prompt,
 		bg_cursor = beautiful.background,
 		done_callback = function()

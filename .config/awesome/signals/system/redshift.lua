@@ -10,7 +10,7 @@ local function light_emit()
 end
 
 gears.timer {
-	timeout   = 0,
+	timeout   = 1,
 	call_now  = true,
 	autostart = true,
 	callback  = function()

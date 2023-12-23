@@ -65,11 +65,10 @@ local createbutton = function(cmd, icon, name, labelconnected, labeldisconnected
 			widget:get_children_by_id("label")[1].markup = helpers.colorizetext(labelconnected, beautiful.background)
 		else
 			widget:get_children_by_id("back")[1].bg = beautiful.background_alt .. 'aa'
-			widget:get_children_by_id("arr")[1].markup = helpers.colorizetext("󰅂", beautiful.foreground .. 'cc')
-			widget:get_children_by_id("name")[1].markup = helpers.colorizetext(name, beautiful.foreground .. 'cc')
-			widget:get_children_by_id("icon")[1].markup = helpers.colorizetext(icon, beautiful.foreground .. 'cc')
-			widget:get_children_by_id("label")[1].markup = helpers.colorizetext(labeldisconnected,
-				beautiful.foreground .. 'cc')
+			widget:get_children_by_id("arr")[1].markup = helpers.colorizetext("󰅂", beautiful.foreground)
+			widget:get_children_by_id("name")[1].markup = helpers.colorizetext(name, beautiful.foreground)
+			widget:get_children_by_id("icon")[1].markup = helpers.colorizetext(icon, beautiful.foreground)
+			widget:get_children_by_id("label")[1].markup = helpers.colorizetext(labeldisconnected, beautiful.foreground)
 		end
 	end)
 	return widget
@@ -85,7 +84,7 @@ local widget       = wibox.widget {
 		layout = wibox.layout.flex.horizontal
 	},
 	{
-		createbutton("~/.config/awesome/signals/scripts/airplanemode --toggle", "󰀝 ", "Airplane Mode", "Now In Flight Mode",
+		createbutton("~/.config/awesome/signals/scripts/airplane --toggle", "󰀝 ", "Airplane", "Now In Flight Mode",
 			"Turned Off", "airplane"),
 		createbutton('awesome-client \'naughty = require("naughty") naughty.toggle()\'', "󰍶 ", "Do Not Disturb",
 			"Turned On", "Turned Off", "dnd"),

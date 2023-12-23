@@ -26,7 +26,6 @@ local widget = wibox.widget {
 				widget = wibox.container.arcchart,
 				max_value = 60,
 				min_value = 0,
-				padding = 0,
 				value = 12,
 				rounded_edge = false,
 				thickness = 15,
@@ -62,7 +61,12 @@ local widget = wibox.widget {
 			layout = wibox.layout.align.horizontal,
 		},
 		widget = wibox.container.margin,
-		margins = 10,
+		margins = {
+			top = 10,
+			bottom = 10,
+			left = 40,
+			right = 40,
+		}
 	},
 	shape = helpers.rrect(10),
 	widget = wibox.container.background,

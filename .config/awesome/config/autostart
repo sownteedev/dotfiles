@@ -9,6 +9,6 @@ done
 
 xrdb -merge ~/.Xresources
 ~/.config/scripts/Picom/toggle --no-opacity &
-dunst -config ~/.config/scripts/dunstrc &
+# dunst -config ~/.config/scripts/dunstrc &
 feh -z --no-fehbg --bg-fill ~/.walls
 xss-lock -- betterlockscreen -l dimblur &

@@ -2,8 +2,31 @@ local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local rubato = require("modules.rubato")
+local animation = require("modules.animation")
 local helpers = require("helpers")
+
+function update_value_of_volume()
+	awful.spawn.easy_async_with_shell(
+		"pamixer --get-volume && pamixer --get-mute",
+		function(stdout)
+			local value, muted = string.match(stdout, '(%d+)\n(%a+)')
+			value = tonumber(value)
+			local icon = ""
+			if value == 0 or muted == "true" then
+				icon = "󰖁 "
+				value = 0
+			elseif value <= 33 then
+				icon = " "
+			elseif value <= 66 then
+				icon = "󰕾 "
+			elseif value <= 100 then
+				icon = " "
+			else
+				icon = "󱄡 "
+			end
+			awesome.emit_signal("volume::value", value, icon)
+		end)
+end
 
 -- osd --
 local info = wibox.widget {
@@ -26,7 +49,7 @@ local info = wibox.widget {
 				{
 					widget = wibox.widget.textbox,
 					id = "text",
-					font = beautiful.font1 .. " 9",
+					font = beautiful.sans .. " 9",
 					halign = "center"
 				},
 			},
@@ -60,9 +83,9 @@ local osd = awful.popup {
 	widget = info,
 }
 
-local anim = rubato.timed {
+local anim = animation:new {
 	duration = 0.3,
-	easing = rubato.easing.linear,
+	easing = animation.easing.linear,
 	subscribed = function(value)
 		info:get_children_by_id("progressbar")[1].value = value
 	end
@@ -71,7 +94,7 @@ local anim = rubato.timed {
 -- volume --
 
 awesome.connect_signal("volume::value", function(value, icon)
-	anim.target = value
+	anim:set(value)
 	info:get_children_by_id("text")[1].text = value
 	info:get_children_by_id("icon")[1].text = icon
 end)
@@ -79,7 +102,7 @@ end)
 -- bright --
 
 awesome.connect_signal("signal::brightness", function(value)
-	anim.target = value
+	anim:set(value)
 	info:get_children_by_id("text")[1].text = value
 	info:get_children_by_id("icon")[1].text = "󰃝 "
 end)

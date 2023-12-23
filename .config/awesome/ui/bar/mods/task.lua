@@ -40,14 +40,44 @@ local M         = {
 			exec = "spotify",
 			name = "spotify",
 		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "Alacritty", "Alacritty"),
+			id = 4,
+			clients = {},
+			class = "alacritty",
+			exec = "alacritty",
+			name = "alacritty",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "visual-studio-code", "visual-studio-code"),
+			id = 5,
+			clients = {},
+			class = "code",
+			exec = "code",
+			name = "code",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "intellij", "intellij"),
+			id = 6,
+			clients = {},
+			class = "jetbrains-idea",
+			exec = "jetbrains-idea",
+			name = "jetbrains-idea",
+		}
 	},
 	entries = {},
-	classes = { "firefox", "discord", "spotify" },
+	classes = { "firefox", "discord", "spotify", "alacritty", "code", "jetbrains-idea" },
 }
 
 M.widget        = wibox.widget {
 	layout = layout,
-	spacing = 10,
+	spacing = 5,
 }
 
 M.popupWidget   = wibox.widget {
@@ -155,7 +185,7 @@ function M:showMenu(data)
 			},
 			widget = wibox.container.background,
 			shape = helpers.rrect(5),
-			bg = j.minimized and beautiful.foreground .. '22' or beautiful.background_alt
+			bg = j.minimized and beautiful.foreground .. '20'
 		}
 		M.popupWidget:connect_signal("mouse::leave", function()
 			self.popup.visible = false
@@ -196,7 +226,7 @@ function M:showMenu(data)
 				{
 					{
 						markup = "Close All",
-						font   = beautiful.font1 .. " 12",
+						font   = beautiful.sans .. " 12",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.constraint,
@@ -218,7 +248,7 @@ function M:showMenu(data)
 		},
 		widget = wibox.container.background,
 		shape = helpers.rrect(5),
-		bg = beautiful.background_alt
+		bg = beautiful.foreground
 	}
 	self.popupWidget:add(addNew)
 	self.popupWidget:add(closeAll)
@@ -284,12 +314,12 @@ function M:genIcons()
 			local bg = beautiful.background
 			if client.focus then
 				if client.focus.class:lower() == j.class then
-					bg = beautiful.foreground .. "22"
+					bg = beautiful.foreground .. "80"
 				elseif j.count > 0 then
-					bg = beautiful.foreground .. "55"
+					bg = beautiful.foreground .. "20"
 				end
 			elseif minimized > 0 then
-				bg = beautiful.foreground .. "55"
+				bg = beautiful.foreground .. "20"
 			end
 			local widget = wibox.widget {
 				{

@@ -10,7 +10,7 @@ local progs = require("ui.notification.mods.progs")
 
 awful.screen.connect_for_each_screen(function(s)
 	local notify = wibox({
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		screen = s,
 		width = 350,
 		height = 600,
@@ -23,7 +23,7 @@ awful.screen.connect_for_each_screen(function(s)
 	local finalcontent = wibox.widget {
 		layout = require('modules.overflow').vertical,
 		scrollbar_enabled = false,
-		spacing = 20,
+		spacing = 10,
 	}
 	finalcontent:insert(1, empty)
 
@@ -64,7 +64,7 @@ awful.screen.connect_for_each_screen(function(s)
 
 		local appicon = n.icon or n.app_icon
 		if not appicon then
-			appicon = gears.filesystem.get_configuration_dir() .. "theme/assets/awesome.svg"
+			appicon = gears.filesystem.get_configuration_dir() .. "themes/assets/awesome.svg"
 		end
 		finalcontent:insert(1, make(appicon, n))
 	end)

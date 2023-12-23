@@ -132,8 +132,8 @@ sleep 0.5
 # Audio
 echo "[*] Installing audio driver ..."
 sudo pacman -S pavucontrol pipewire pipewire-alsa pipewire-audio pulseaudio pulseaudio-bluetooth playerctl pamixer mpd mpc ncmpcpp --noconfirm
-sudo systemctl enable pipewire pipewire-pulse && systemctl --user start pipewire pipewire-pulse
-sudo systemctl enable mpd.service && systemctl --user start mpd.service
+sudo systemctl enable pipewire pipewire-pulse && systemctl start pipewire pipewire-pulse
+sudo systemctl enable mpd.service && systemctl start mpd.service
 echo "[*] Done."
 sleep 0.5
 
