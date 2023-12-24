@@ -11,7 +11,7 @@ local createbutton = function(cmd, icon, name, labelconnected, labeldisconnected
 					{
 						markup = icon,
 						id     = "icon",
-						font   = beautiful.icon_font .. " 18",
+						font   = beautiful.icon_font .. " 20",
 						widget = wibox.widget.textbox,
 					},
 					{
@@ -28,10 +28,9 @@ local createbutton = function(cmd, icon, name, labelconnected, labeldisconnected
 							widget = wibox.widget.textbox,
 						},
 						layout = wibox.layout.fixed.vertical,
-						spacing = 0
+						spacing = 5
 					},
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 10
 				},
 				nil,
 				{
@@ -41,16 +40,17 @@ local createbutton = function(cmd, icon, name, labelconnected, labeldisconnected
 					widget = wibox.widget.textbox,
 				},
 				layout = wibox.layout.align.horizontal,
+				spacing = 5
 			},
 			widget = wibox.container.margin,
-			top = 12,
-			bottom = 12,
+			top = 15,
+			bottom = 15,
 			left = 15,
 			right = 15
 		},
 		widget = wibox.container.background,
 		id = "back",
-		shape = helpers.rrect(8),
+		shape = helpers.rrect(5),
 		bg = beautiful.background_alt,
 		buttons = { awful.button({}, 1, function()
 			awful.spawn.with_shell(cmd)
@@ -76,19 +76,19 @@ end
 
 local widget       = wibox.widget {
 	{
-		createbutton("~/.config/awesome/signals/scripts/wifi --toggle", "󰤨 ", "Network", "Connected", "Disconnected",
+		createbutton("~/.config/awesome/signals/scripts/wifi --toggle", "󰖩 ", "Network", "Connected", "Disconnected",
 			"network"),
 		createbutton("~/.config/awesome/signals/scripts/bluetooth --toggle", "󰂯 ", "Bluetooth", "Connected", "Disconnected",
 			"bluetooth"),
-		spacing = 15,
+		spacing = 10,
 		layout = wibox.layout.flex.horizontal
 	},
 	{
 		createbutton("~/.config/awesome/signals/scripts/airplane --toggle", "󰀝 ", "Airplane", "Now In Flight Mode",
 			"Turned Off", "airplane"),
-		createbutton('awesome-client \'naughty = require("naughty") naughty.toggle()\'', "󰍶 ", "Do Not Disturb",
+		createbutton('awesome-client \'naughty = require("naughty") naughty.toggle()\'', "󰍶 ", "Don't Disturb",
 			"Turned On", "Turned Off", "dnd"),
-		spacing = 15,
+		spacing = 10,
 		layout = wibox.layout.flex.horizontal
 	},
 	{
@@ -96,11 +96,11 @@ local widget       = wibox.widget {
 			"Night Light Is Off", "redshift"),
 		createbutton('pamixer --source 1 -t', "󰍬 ", "Microphone",
 			"It's Muted", "It's Turned On", "mic"),
-		spacing = 15,
+		spacing = 10,
 		layout = wibox.layout.flex.horizontal
 	},
 	layout = wibox.layout.fixed.vertical,
-	spacing = 20
+	spacing = 15
 }
 
 return widget

@@ -1,33 +1,37 @@
-local switcher           = require("modules.awesome-switcher")
-local gears              = require("gears")
-local gfs                = require("gears.filesystem")
-local themes_path        = gfs.get_configuration_dir() .. "themes/"
+-- User config
+local colorscheme                                    = "yoru"
 
-local theme              = {}
+---------------------------------------------------------------------
+local switcher                                       = require("modules.awesome-switcher")
+local gears                                          = require("gears")
+local gfs                                            = require("gears.filesystem")
+local themes_path                                    = gfs.get_configuration_dir() .. "themes/"
 
-theme.font               = "Rubik 9"
-theme.sans               = "Rubik"
-theme.icon_font          = "Material Design Icons"
-theme.useless_gap        = 10
+local theme                                          = {}
+
+theme.font                                           = "Rubik 9"
+theme.sans                                           = "Rubik"
+theme.icon_font                                      = "Material Design Icons"
+theme.useless_gap                                    = 10
 
 -- colors --
-theme.background         = "#0c0e0f"
-theme.background_dark    = "#0a0b0c"
-theme.background_alt     = "#141617"
-theme.background_urgent  = "#161819"
-theme.background_urgent1 = "#1f2122"
-theme.foreground         = "#edeff0"
+local colors                                         = require("themes.colors." .. colorscheme)
+theme.background                                     = colors.background
+theme.background_dark                                = colors.background_dark
+theme.background_alt                                 = colors.background_alt
+theme.background_urgent                              = colors.background_urgent
+theme.background_urgent1                             = colors.background_urgent1
+theme.foreground                                     = colors.foreground
 
-theme.red                = "#df5b61"
-theme.green              = "#78b892"
-theme.blue               = "#6791c9"
-theme.yellow             = "#ecd28b"
-theme.orange             = "#e89982"
-theme.violet             = "#c49ec4"
-theme.accent             = "#a9b1d6"
+theme.red                                            = colors.red
+theme.green                                          = colors.green
+theme.blue                                           = colors.blue
+theme.yellow                                         = colors.yellow
+theme.orange                                         = colors.orange
+theme.violet                                         = colors.violet
+theme.accent                                         = colors.accent
 
-
-theme.wallpaper                                      = "~/.walls/forest.jpg"
+theme.wallpaper                                      = "~/.walls/moreroses.jpg"
 theme.profile                                        = "~/.config/awesome/themes/assets/sownteedev.png"
 theme.songdefpicture                                 = "~/.config/awesome/themes/assets/defsong.jpg"
 
@@ -84,9 +88,9 @@ theme.tooltip_fg                                     = theme.foreground
 theme.tooltip_border_width                           = theme.border_width
 
 -- Titlebar --
-theme.titlebar_bg_normal                             = theme.background
-theme.titlebar_bg_focus                              = theme.background
-theme.titlebar_bg_urgent                             = theme.background
+theme.titlebar_bg_normal                             = theme.background_alt
+theme.titlebar_bg_focus                              = theme.background_alt
+theme.titlebar_bg_urgent                             = theme.background_alt
 
 theme.layout_floating                                = gears.color.recolor_image(themes_path .. "assets/floating.png",
 	theme.foreground)

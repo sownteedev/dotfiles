@@ -5,8 +5,8 @@ local Gio       = require("lgi").Gio
 local helpers   = require("helpers")
 local beautiful = require("beautiful")
 local getIcon   = require("modules.getIcon")
-local layout    = wibox.layout.fixed.horizontal
 local inspect   = require("modules.inspect")
+local layout    = wibox.layout.fixed.horizontal
 
 local M         = {
 	metadata = {

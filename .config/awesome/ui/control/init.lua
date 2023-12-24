@@ -12,7 +12,7 @@ awful.screen.connect_for_each_screen(function(s)
 	local control = wibox({
 		screen = s,
 		width = 400,
-		height = 600,
+		height = 650,
 		bg = beautiful.background .. "00",
 		ontop = true,
 		visible = false,
@@ -41,9 +41,9 @@ awful.screen.connect_for_each_screen(function(s)
 								{
 									widget = wibox.widget.imagebox,
 									image = beautiful.profile,
-									forced_height = 30,
-									opacity = 0.7,
-									forced_width = 30,
+									forced_height = 40,
+									forced_width = 40,
+									opacity = 1,
 									clip_shape = helpers.rrect(8),
 									resize = true,
 								},
@@ -88,17 +88,16 @@ awful.screen.connect_for_each_screen(function(s)
 							-- },
 						},
 						widget = wibox.container.margin,
-						top = 15,
-						bottom = 5,
 					},
 					sliders,
 					buttons,
 					layout = wibox.layout.fixed.vertical,
-					spacing = 20,
+					spacing = 25,
 				},
 				widget = wibox.container.margin,
 				left = 20,
 				right = 20,
+				top = 20,
 			},
 			widget = wibox.container.background,
 			bg = beautiful.background_dark,
@@ -107,7 +106,7 @@ awful.screen.connect_for_each_screen(function(s)
 		nil,
 		layout = wibox.layout.align.vertical,
 	}
-	awful.placement.bottom_right(control, { honor_workarea = true, margins = 10 })
+	awful.placement.bottom_right(control, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::control", function()
 		control.visible = not control.visible
 	end)

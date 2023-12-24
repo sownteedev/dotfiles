@@ -6,7 +6,6 @@ prompt='Screenshot'
 mesg="Directory :: `xdg-user-dir PICTURES`/Screenshots"
 
 # Options
-layout=`cat ${RASI} | grep 'USE_ICON' | cut -d'=' -f2`
 option_1=" "
 option_2="󰆞 "
 option_3="󰔚 "
@@ -37,17 +36,16 @@ if [[ ! -d "$dir" ]]; then
 fi
 
 notify_view() {
-	notify_cmd_shot='notify-send -t 5000 -i ~/Pictures/Screenshots/'"$file"
 	paplay /usr/share/sounds/freedesktop/stereo/screen-capture.oga &>/dev/null &
 	if [[ -e "$dir/$file" ]]; then
-		${notify_cmd_shot} "Screenshot Saved."
+		notify-send -t 5000 -i $dir/$file "Screenshot Saved."
 	else
-		${notify_cmd_shot} "Screenshot Deleted."
+		notify-send -t 5000 -i $dir/$file "Screenshot Deleted."
 	fi
 	viewnior ${dir}/"$file"
 }
 
-# Copy screenshot to clipboard
+# Copy screenshot
 copy_shot () {
 	tee "$file" | xclip -selection clipboard -t image/png
 }
@@ -55,7 +53,7 @@ copy_shot () {
 # countdown
 countdown () {
 	for sec in `seq $1 -1 1`; do
-		dunstify -t 1000 -h string:x-dunst-stack-tag:screenshottimer -i /usr/share/archcraft/icons/dunst/timer.png "Taking shot in : $sec"
+		dunstify -t 1000 -h string:x-dunst-stack-tag:screenshottimer -i /usr/share/archcraft/icons/dunst/timer.png "Taking shot in: $sec"
 		sleep 1
 	done
 }

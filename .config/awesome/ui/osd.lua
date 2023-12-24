@@ -6,8 +6,7 @@ local animation = require("modules.animation")
 local helpers = require("helpers")
 
 function update_value_of_volume()
-	awful.spawn.easy_async_with_shell(
-		"pamixer --get-volume && pamixer --get-mute",
+	awful.spawn.easy_async_with_shell("pamixer --get-volume && pamixer --get-mute",
 		function(stdout)
 			local value, muted = string.match(stdout, '(%d+)\n(%a+)')
 			value = tonumber(value)
@@ -19,10 +18,8 @@ function update_value_of_volume()
 				icon = " "
 			elseif value <= 66 then
 				icon = "󰕾 "
-			elseif value <= 100 then
-				icon = " "
 			else
-				icon = "󱄡 "
+				icon = " "
 			end
 			awesome.emit_signal("volume::value", value, icon)
 		end)
@@ -78,7 +75,7 @@ local osd = awful.popup {
 	maximum_width = 300,
 	shape = helpers.rrect(5),
 	placement = function(d)
-		awful.placement.bottom(d, { honor_workarea = true, margins = 10 + beautiful.border_width * 2 })
+		awful.placement.bottom(d, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	end,
 	widget = info,
 }

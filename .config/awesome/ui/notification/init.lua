@@ -104,7 +104,7 @@ awful.screen.connect_for_each_screen(function(s)
 		widget = wibox.container.margin,
 		margins = 0,
 	}
-	awful.placement.bottom_right(notify, { honor_workarea = true, margins = 10 })
+	awful.placement.bottom_right(notify, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::notify", function()
 		notify.visible = not notify.visible
 	end)

@@ -16,13 +16,23 @@ local widget = wibox.widget {
 				clip_shape = helpers.rrect(40),
 				resize = true,
 			},
-			nil,
+			{
+				{
+					widget = wibox.widget.textbox,
+					markup = helpers.colorizeText("  @" .. os.getenv("USER"), beautiful.foreground),
+					font = beautiful.sans .. " 14",
+					align = "left",
+					valign = "center",
+				},
+				widget = wibox.container.margin,
+				left = 10,
+			},
 			{
 				{
 					{
 						{
 							font = beautiful.sans .. " 14",
-							format = "%a, %d %B",
+							format = "%I : %M",
 							align = "center",
 							valign = "center",
 							widget = wibox.widget.textclock
@@ -31,7 +41,24 @@ local widget = wibox.widget {
 						left = 25,
 						right = 25,
 					},
-					shape = helpers.rrect(50),
+					shape = helpers.rrect(10),
+					bg = beautiful.background_alt,
+					widget = wibox.container.background,
+				},
+				{
+					{
+						{
+							font = beautiful.sans .. " 14",
+							format = "%a, %d %B %Y",
+							align = "center",
+							valign = "center",
+							widget = wibox.widget.textclock
+						},
+						widget = wibox.container.margin,
+						left = 25,
+						right = 25,
+					},
+					shape = helpers.rrect(10),
 					bg = beautiful.background_alt,
 					widget = wibox.container.background,
 				},
@@ -48,7 +75,7 @@ local widget = wibox.widget {
 						left = 25,
 						right = 25,
 					},
-					shape = helpers.rrect(50),
+					shape = helpers.rrect(10),
 					bg = beautiful.background_alt,
 					widget = wibox.container.background,
 				},
@@ -68,7 +95,7 @@ local widget = wibox.widget {
 							awesome.emit_signal("toggle::exit")
 						end)
 					},
-					shape = helpers.rrect(50),
+					shape = helpers.rrect(10),
 					bg = beautiful.background_alt,
 					widget = wibox.container.background,
 				},
