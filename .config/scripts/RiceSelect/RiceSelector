@@ -30,12 +30,6 @@ gtk() {
 		   -e "s/accent .*/accent $accent;/" ~/.themes/tethemes/gtk-3.0/colors.css
 }
 
-dunst() {
-	sed -i -e "s/background = .*/background = \"$bgd\"/g"\
-		   -e "s/foreground = .*/foreground = \"$fg\"/g" ~/.config/scripts/dunstrc
-	killall dunst && dunst -conf "$HOME"/.config/scripts/dunstrc
-}
-
 discord() {
 	cat ~/.config/BetterDiscord/data/stable/themes/$color.css > ~/.config/BetterDiscord/data/stable/custom.css
 }
@@ -72,22 +66,6 @@ nvim() {
 	sed -i "s/vim.g.currentTheme = .*/$new_line/" "$HOME/.config/nvim/lua/user/options.lua"
 }
 
-awesome() {
-	sed -i -e "s/theme.background         = .*/theme.background         = \"$bg\"/"\
-		   -e "s/theme.background_dark    = .*/theme.background_dark    = \"$bgd\"/"\
-		   -e "s/theme.background_alt     = .*/theme.background_alt     = \"$bgl\"/"\
-		   -e "s/theme.background_urgent  = .*/theme.background_urgent  = \"$bgl2\"/"\
-		   -e "s/theme.background_urgent1 = .*/theme.background_urgent1 = \"$bgl3\"/"\
-		   -e "s/theme.foreground         = .*/theme.foreground         = \"$fg\"/"\
-		   -e "s/theme.red                = .*/theme.red                = \"$red\"/"\
-		   -e "s/theme.green              = .*/theme.green              = \"$green\"/"\
-		   -e "s/theme.blue               = .*/theme.blue               = \"$blue\"/"\
-		   -e "s/theme.yellow             = .*/theme.yellow             = \"$yellow\"/"\
-		   -e "s/theme.orange             = .*/theme.orange             = \"$orange\"/"\
-		   -e "s/theme.violet             = .*/theme.violet             = \"$violet\"/"\
-		   -e "s/theme.accent             = .*/theme.accent             = \"$accent\"/" ~/.config/awesome/themes/theme.lua
-}
-
 backup() {
 	declare -a config_folders=("awesome" "alacritty" "zsh" "ranger" "scripts" "firefox")
 	declare -a data_folders=("BetterDiscord/data/stable" "spicetify/Themes")
@@ -116,7 +94,6 @@ backup() {
 if [[ -n "$color" ]]; then
 	term
 	gtk
-	dunst
 	spotify
 	discord
 	firefox

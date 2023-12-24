@@ -9,7 +9,7 @@ local playerctl = pctl.lib()
 
 local art       = wibox.widget {
 	image = helpers.cropSurface(5.8, gears.surface.load_uncached(beautiful.songdefpicture)),
-	opacity = 0.3,
+	opacity = 0.5,
 	forced_height = dpi(36),
 	shape = helpers.rrect(5),
 	forced_width = dpi(240),
@@ -19,6 +19,7 @@ local art       = wibox.widget {
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
 	art.image = helpers.cropSurface(5.8, gears.surface.load_uncached(album_path))
 end)
+
 local next = wibox.widget {
 	align = 'center',
 	font = beautiful.icon_font .. " 16",
@@ -53,9 +54,20 @@ local play = wibox.widget {
 		end)
 	},
 }
+
+local headphones = wibox.widget {
+	align = 'center',
+	font = beautiful.icon_font .. " 16",
+	markup = helpers.colorizeText("󰟎 ", beautiful.foreground),
+	widget = wibox.widget.textbox,
+}
+
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
 	play.markup = playing and helpers.colorizeText("󰏤", beautiful.foreground) or
 		helpers.colorizeText("󰐊", beautiful.foreground)
+
+	headphones.markup = playing and helpers.colorizeText("󰋎 ", beautiful.foreground) or
+		helpers.colorizeText("󰟎 ", beautiful.foreground)
 end)
 local finalwidget = wibox.widget {
 	{
@@ -74,12 +86,7 @@ local finalwidget = wibox.widget {
 		},
 		{
 			{
-				{
-					align = 'center',
-					font = beautiful.icon_font .. " 15",
-					markup = helpers.colorizeText('󰋎 ', beautiful.foreground),
-					widget = wibox.widget.textbox,
-				},
+				headphones,
 				nil,
 				{ prev, play, next, spacing = 10, layout = wibox.layout.fixed.horizontal },
 				layout = wibox.layout.align.horizontal,

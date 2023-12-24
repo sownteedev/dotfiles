@@ -24,8 +24,8 @@ ruled.client.connect_signal("request::rules", function()
 
 	--- Centered
 	ruled.client.append_rule({
-		id = "centered",
-		rule = {},
+		id         = "centered",
+		rule       = {},
 		properties = { placement = helpers.centered_client_placement },
 	})
 
@@ -49,7 +49,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { screen = 1, tag = "3" }
 	}
 	ruled.client.append_rule {
-		rule_any   = { class = { "discord", "Telegram", "Spotify" } },
+		rule_any   = { class = { "discord", "Telegram" } },
 		properties = { screen = 1, tag = "4" }
 	}
 	ruled.client.append_rule {

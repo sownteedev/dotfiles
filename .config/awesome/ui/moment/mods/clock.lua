@@ -70,7 +70,7 @@ local widget = wibox.widget {
 	},
 	shape = helpers.rrect(10),
 	widget = wibox.container.background,
-	bg = beautiful.background_alt,
+	bg = beautiful.background,
 }
 
 local updateTime = function()

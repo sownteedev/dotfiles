@@ -172,6 +172,6 @@ return function()
 		},
 		shape = helpers.rrect(10),
 		widget = wibox.container.background,
-		bg = beautiful.background_alt,
+		bg = beautiful.background,
 	}
 end

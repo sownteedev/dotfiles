@@ -14,24 +14,24 @@ end
 local createSlider = function(icon, signal, command)
 	local slidSlider = wibox.widget {
 		bar_shape           = helpers.rrect(15),
-		bar_height          = 3,
+		bar_height          = 5,
 		handle_color        = beautiful.background,
 		bar_color           = beautiful.background .. '00',
 		bar_active_color    = beautiful.foreground,
 		handle_shape        = createHandle(),
-		handle_border_width = 2,
+		handle_border_width = 5,
 		handle_width        = dpi(20),
-		handle_margins      = { top = 0 },
+		handle_margins      = { top = 2, right = -5 },
 		handle_border_color = beautiful.foreground,
 		value               = 25,
-		forced_height       = 10,
+		forced_height       = 0,
 		maximum             = 100,
 		widget              = wibox.widget.slider,
 	}
 
 	local slidIcon = wibox.widget {
 		{
-			font = beautiful.icon_font .. " 13",
+			font = beautiful.icon_font .. " 15",
 			markup = helpers.colorizeText(icon, beautiful.foreground),
 			valign = "center",
 			widget = wibox.widget.textbox,
@@ -66,7 +66,6 @@ local createSlider = function(icon, signal, command)
 			layout = wibox.layout.fixed.horizontal,
 			spacing = 20
 		},
-		nil,
 		layout = wibox.layout.align.horizontal,
 	}
 

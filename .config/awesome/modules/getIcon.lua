@@ -1,10 +1,13 @@
 local icon_cache = {}
 local t          = "/home/sowntee/.icons/Reversal-black-dark/"
 
-
-local custom = {
+local custom     = {
 	{
 		name = "org.wezfurlong.wezterm",
+		to = "terminal"
+	},
+	{
+		name = "Alacritty",
 		to = "terminal"
 	},
 	{

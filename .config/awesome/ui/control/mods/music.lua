@@ -5,6 +5,7 @@ local gears     = require("gears")
 local pctl      = require("modules.playerctl")
 local helpers   = require("helpers")
 local playerctl = pctl.lib()
+
 local art       = wibox.widget {
 	image = helpers.cropSurface(1.71, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.3,
@@ -12,9 +13,10 @@ local art       = wibox.widget {
 	clip_shape = helpers.rrect(12),
 	widget = wibox.widget.imagebox
 }
+
 local next      = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 18",
+	font = beautiful.icon_font .. " 20",
 	text = '󰒭 ',
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -26,7 +28,7 @@ local next      = wibox.widget {
 
 local prev      = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 18",
+	font = beautiful.icon_font .. " 20",
 	text = '󰒮 ',
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -35,9 +37,10 @@ local prev      = wibox.widget {
 		end)
 	},
 }
+
 local play      = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 18",
+	font = beautiful.icon_font .. " 20",
 	markup = helpers.colorizeText('󰐍 ', beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -50,8 +53,8 @@ playerctl:connect_signal("playback_status", function(_, playing, player_name)
 	play.markup = playing and helpers.colorizeText("󰏦 ", beautiful.foreground) or
 		helpers.colorizeText("󰐍 ", beautiful.foreground)
 end)
-local finalwidget = wibox.widget {
 
+local finalwidget = wibox.widget {
 	{
 		nil,
 		{
@@ -74,7 +77,7 @@ local finalwidget = wibox.widget {
 					{
 						{
 							id = "songname",
-							font = beautiful.sans .. " 12",
+							font = beautiful.sans .. " 14",
 							markup = helpers.colorizeText('Song Name', beautiful.foreground),
 							widget = wibox.widget.textbox,
 						},
@@ -97,7 +100,9 @@ local finalwidget = wibox.widget {
 					layout = wibox.layout.align.vertical
 				},
 				widget = wibox.container.margin,
-				margins = 20
+				left = 10,
+				bottom = 10,
+				top = 10,
 			},
 			layout = wibox.layout.stack,
 		},
@@ -111,8 +116,8 @@ local finalwidget = wibox.widget {
 						layout = wibox.layout.align.vertical,
 					},
 					widget = wibox.container.margin,
-					top = 30,
-					bottom = 30,
+					top = 25,
+					bottom = 25,
 					left = 15,
 					right = 0,
 				},
@@ -145,4 +150,5 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, albu
 	helpers.gc(finalwidget, "player"):set_markup_silently(helpers.colorizeText("Playing On: " .. player_name or "",
 		beautiful.foreground))
 end)
+
 return finalwidget

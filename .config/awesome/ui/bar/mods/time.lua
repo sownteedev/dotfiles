@@ -20,7 +20,7 @@ local hourminutes = wibox.widget {
 			{
 				{
 					font = beautiful.sans .. " 10",
-					format = "%d %B",
+					format = "%a, %d %B",
 					align = "center",
 					valign = "center",
 					widget = wibox.widget.textclock

@@ -3,15 +3,15 @@ local wibox                             = require("wibox")
 local Gio                               = require("lgi").Gio
 local iconTheme                         = require("lgi").require("Gtk", "3.0").IconTheme.get_default()
 local beautiful                         = require("beautiful")
+local gears                             = require("gears")
 local helpers                           = require("helpers")
 local dpi                               = beautiful.xresources.apply_dpi
-
 local L                                 = {}
 
 local Conf                              = {
 	rows = 8,
-	entry_height = 50,
-	entry_width = 250,
+	entry_height = 55,
+	entry_width = 280,
 	popup_margins = 15,
 }
 
@@ -26,8 +26,8 @@ local createPowerButton                 = function(icon, color, command)
 					widget = wibox.widget.textbox,
 				},
 				widget = wibox.container.margin,
-				left = 15,
-				right = 8,
+				left = 13,
+				right = 3,
 				top = 10,
 				bottom = 10,
 			},
@@ -47,8 +47,8 @@ end
 
 local sidebar                           = wibox.widget {
 	widget = wibox.container.background,
-	bg = beautiful.background_alt,
-	forced_width = Conf.entry_height + 5,
+	bg = beautiful.background,
+	forced_width = Conf.entry_height,
 	shape = helpers.rrect(5),
 	{
 		layout = wibox.layout.align.vertical,
@@ -73,42 +73,58 @@ local sidebar                           = wibox.widget {
 				createPowerButton(" ", beautiful.blue, "betterlockscreen -l dimblur"),
 				createPowerButton(" ", beautiful.yellow, "reboot"),
 				createPowerButton("󰐥 ", beautiful.red, "poweroff"),
-				spacing = 10,
+				spacing = 5,
 				layout = wibox.layout.fixed.vertical
 			},
 			widget = wibox.container.margin,
-			bottom = 10
+			bottom = 5
 		},
 	}
 }
 
 local prompt                            = wibox.widget {
-	widget = wibox.widget.textbox
-}
-
-local promptbox                         = wibox.widget {
-	widget = wibox.container.background,
-	bg = beautiful.border_color_normal,
-	forced_height = Conf.entry_height,
-	forced_width = Conf.entry_width,
-	buttons = {
-		awful.button({}, 1, function()
-			L:open()
-		end)
+	{
+		image = helpers.cropSurface(3.42, gears.surface.load_uncached(beautiful.wallpaper)),
+		opacity = 0.9,
+		forced_height = 80,
+		clip_shape = helpers.rrect(10),
+		forced_width = Conf.entry_height,
+		widget = wibox.widget.imagebox
 	},
 	{
-		widget = wibox.container.margin,
-		margins = { bottom = beautiful.border_width },
 		{
-			widget = wibox.container.background,
-			bg = beautiful.background,
 			{
+				{
+					{
+						markup = "",
+						forced_height = 10,
+						id = "txt",
+						font = beautiful.sans .. " 10",
+						widget = wibox.widget.textbox,
+					},
+					{
+						markup = "Search...",
+						forced_height = 10,
+						id = "placeholder",
+						font = beautiful.sans .. " 10",
+						widget = wibox.widget.textbox,
+					},
+					layout = wibox.layout.stack
+				},
 				widget = wibox.container.margin,
-				margins = { left = 10, right = 10 },
-				prompt
-			}
-		}
-	}
+				margins = 10,
+			},
+			forced_width = Conf.entry_width - 50,
+			forced_height = 40,
+			shape = helpers.rrect(8),
+			widget = wibox.container.background,
+			bg = beautiful.background .. "60",
+		},
+		widget = wibox.container.place,
+		halign = "center",
+		valgn = "center",
+	},
+	layout = wibox.layout.stack
 }
 
 local entries_container                 = wibox.widget {
@@ -129,13 +145,13 @@ local main_widget                       = wibox.widget {
 			layout = wibox.layout.fixed.horizontal,
 			spacing = Conf.popup_margins,
 			fill_space = true,
+			sidebar,
 			{
 				layout = wibox.layout.fixed.vertical,
 				spacing = Conf.popup_margins,
-				promptbox,
+				prompt,
 				entries_container
 			},
-			sidebar
 		}
 	}
 }
@@ -147,10 +163,10 @@ local popup_widget                      = awful.popup {
 	ontop = true,
 	visible = false,
 	placement = function(d)
-		awful.placement.bottom_left(d, { honor_workarea = true, margins = 10 + beautiful.border_width * 2 })
+		awful.placement.bottom_left(d, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	end,
 	maximum_width = Conf.entry_width + 100 + Conf.entry_height + Conf.popup_margins * 3,
-	shape = helpers.rrect(5),
+	shape = helpers.rrect(10),
 	widget = main_widget
 }
 
@@ -230,7 +246,8 @@ local function filter(input)
 
 	for i, entry in ipairs(filtered) do
 		local entry_widget = wibox.widget {
-			forced_height = Conf.entry_height,
+			shape = helpers.rrect(5),
+			forced_height = Conf.entry_height + 5,
 			buttons = {
 				awful.button({}, 1, function()
 					if index_entry == i then
@@ -278,8 +295,12 @@ local function filter(input)
 		end
 
 		if i == index_entry then
-			entry_widget.bg = beautiful.background_alt
 			entry_widget.fg = beautiful.foreground
+		end
+
+		if i == index_entry then
+			entry_widget.bg = beautiful.blue .. "09"
+			entry_widget:get_children_by_id("name")[1].markup = helpers.colorizeText(entry.name, beautiful.blue)
 		end
 	end
 
@@ -292,6 +313,76 @@ local function filter(input)
 	collectgarbage("collect")
 end
 
+local exclude = {
+	"Shift_R",
+	"Shift_L",
+	"Super_R",
+	"Super_L",
+	"Tab",
+	"Alt_R",
+	"Alt_L",
+	"Control_L",
+	"Control_R",
+	"Caps_Lock",
+	"Print",
+	"Insert",
+	"CapsLock",
+	"Home",
+	"End",
+	"Down",
+	"Up",
+	"Left",
+	"Right",
+}
+local function has_value(tab, val)
+	for _, value in ipairs(tab) do
+		if value == val then
+			return true
+		end
+	end
+	return false
+end
+
+local prompt_grabber = awful.keygrabber({
+	auto_start = true,
+	stop_event = "release",
+	keypressed_callback = function(self, mod, key, command)
+		local addition = ''
+		if key == "Escape" then
+			L:close()
+		elseif key == "BackSpace" then
+			prompt:get_children_by_id('txt')[1].markup = prompt:get_children_by_id('txt')[1].markup:sub(1, -2)
+			filter(prompt:get_children_by_id('txt')[1].markup)
+		elseif key == "Delete" then
+			prompt:get_children_by_id('txt')[1].markup = ""
+			filter(prompt:get_children_by_id('txt')[1].markup)
+		elseif key == "Return" then
+			local entry = filtered[index_entry]
+			if entry then
+				entry.appinfo:launch()
+			else
+				awful.spawn.with_shell(prompt:get_children_by_id('txt')[1].markup)
+			end
+			L:close()
+		elseif key == "Up" then
+			back()
+		elseif key == "Down" then
+			next()
+		elseif has_value(exclude, key) then
+			addition = ''
+		else
+			addition = key
+		end
+		prompt:get_children_by_id('txt')[1].markup = prompt:get_children_by_id('txt')[1].markup .. addition
+		filter(prompt:get_children_by_id('txt')[1].markup)
+		if string.len(prompt:get_children_by_id('txt')[1].markup) > 0 then
+			prompt:get_children_by_id('placeholder')[1].markup = ''
+		else
+			prompt:get_children_by_id('placeholder')[1].markup = 'Search...'
+		end
+	end,
+})
+
 local function send_signal()
 	awesome.emit_signal("launcher::visibility", popup_widget.visible)
 end
@@ -299,44 +390,17 @@ end
 function L:open()
 	popup_widget.visible = true
 	send_signal()
-
 	index_start, index_entry = 1, 1
 	unfiltered = gen()
-	filter("")
-
-	awful.keygrabber.stop()
-	awful.prompt.run {
-		prompt = "   ",
-		font = beautiful.sans .. " 12",
-		textbox = prompt,
-		bg_cursor = beautiful.background,
-		done_callback = function()
-			self:close()
-		end,
-		changed_callback = function(input)
-			filter(input)
-		end,
-		exe_callback = function(input)
-			if filtered[index_entry] then
-				filtered[index_entry].appinfo:launch()
-			else
-				awful.spawn.with_shell(input)
-			end
-		end,
-		keypressed_callback = function(_, key)
-			if key == "Down" then
-				next()
-			elseif key == "Up" then
-				back()
-			end
-		end
-	}
+	filter('')
+	prompt_grabber:start()
 end
 
 function L:close()
 	popup_widget.visible = false
 	send_signal()
-	awful.keygrabber.stop()
+	prompt_grabber:stop()
+	prompt:get_children_by_id('txt')[1].markup = ""
 end
 
 function L:toggle()

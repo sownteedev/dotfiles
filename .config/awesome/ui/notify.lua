@@ -125,7 +125,7 @@ naughty.connect_signal("request::display", function(n)
 			step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
 			speed         = 50
 		},
-		widget = wibox.container.margin
+		widget = wibox.container.margin,
 	}
 
 
@@ -200,9 +200,6 @@ naughty.connect_signal("request::display", function(n)
 		layout = wibox.layout.fixed.horizontal,
 		spacing = dpi(5)
 	}
-
-
-
 
 	local widget = naughty.layout.box {
 		notification    = n,
