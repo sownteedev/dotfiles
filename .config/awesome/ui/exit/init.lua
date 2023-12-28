@@ -12,8 +12,8 @@ local music     = require("ui.exit.mods.music")
 awful.screen.connect_for_each_screen(function(s)
 	local exit = wibox({
 		screen = s,
-		width = 1366,
-		height = 768,
+		width = beautiful.width,
+		height = beautiful.height,
 		bg = beautiful.background .. "00",
 		ontop = true,
 		visible = false,
@@ -24,16 +24,16 @@ awful.screen.connect_for_each_screen(function(s)
 		id = "bg",
 		image = beautiful.wallpaper,
 		widget = wibox.widget.imagebox,
-		forced_height = 768,
+		forced_width = beautiful.width,
+		forced_height = beautiful.height,
 		horizontal_fit_policy = "fit",
 		vertical_fit_policy = "fit",
-		forced_width = 1366,
 	}
 
 	local overlay = wibox.widget {
 		widget = wibox.container.background,
-		forced_height = 768,
-		forced_width = 1366,
+		forced_width = beautiful.width,
+		forced_height = beautiful.height,
 		bg = beautiful.background .. "d1"
 	}
 	local makeImage = function()

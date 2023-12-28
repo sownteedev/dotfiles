@@ -19,7 +19,7 @@ local function init(s)
 		position = "bottom",
 		height = 60,
 		ontop = false,
-		width = 1366,
+		width = beautiful.width,
 		bg = beautiful.background_dark,
 		fg = beautiful.foreground,
 		screen = s,
@@ -33,8 +33,8 @@ local function init(s)
 							{
 								tags(s),
 								widget = wibox.container.margin,
-								left = 15,
-								right = 15,
+								left = 10,
+								right = 10,
 							},
 							shape = helpers.rrect(5),
 							widget = wibox.container.background,
@@ -44,23 +44,15 @@ local function init(s)
 						layout = wibox.layout.fixed.horizontal
 					},
 					widget = wibox.container.place,
-					valign = "center",
 					halign = "left",
 				},
 				widget = wibox.container.margin,
 				left = 10,
 			},
 			{
-				{
-					{
-						task.widget,
-						widget = wibox.container.margin,
-					},
-					widget = wibox.container.place,
-					valign = "center",
-					halign = "left",
-				},
-				widget = wibox.container.margin,
+				task.widget,
+				widget = wibox.container.place,
+				halign = "left",
 			},
 			{
 				{

@@ -138,7 +138,7 @@ end
 function M:showMenu(data)
 	local clients = data.clients
 	self.popup.x = mouse.coords().x - 80
-	self.popup.y = 1080 - 70 - (50 * (#clients + 2))
+	self.popup.y = beautiful.height - 70 - (50 * (#clients + 2))
 	self.popupWidget:reset()
 	for i, j in ipairs(clients) do
 		local widget = wibox.widget {
@@ -147,7 +147,7 @@ function M:showMenu(data)
 					{
 						{
 							markup = j.name,
-							font   = beautiful.icon .. " 12",
+							font   = beautiful.sans .. " 9",
 							height = 16,
 							widget = wibox.widget.textbox,
 						},
@@ -158,7 +158,7 @@ function M:showMenu(data)
 					nil,
 					{
 						markup  = helpers.colorizeText("󰅖", beautiful.red),
-						font    = beautiful.icon .. " 16",
+						font    = beautiful.icon .. " 12",
 						widget  = wibox.widget.textbox,
 						buttons = {
 							awful.button({}, 1, function()
@@ -198,7 +198,7 @@ function M:showMenu(data)
 				{
 					{
 						markup = "Open New Window",
-						font   = beautiful.icon .. " 12",
+						font   = beautiful.sans .. " 9",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.constraint,
@@ -224,17 +224,11 @@ function M:showMenu(data)
 		{
 			{
 				{
-					{
-						markup = "Close All",
-						font   = beautiful.sans .. " 12",
-						widget = wibox.widget.textbox,
-					},
-					widget = wibox.container.constraint,
-					width = 180,
+					markup = "Close All",
+					font   = beautiful.sans .. " 9",
+					widget = wibox.widget.textbox,
 				},
-				nil,
-				nil,
-				layout = wibox.layout.align.horizontal
+				layout = wibox.layout.align.horizontal,
 			},
 			widget = wibox.container.margin,
 			margins = 7,
@@ -248,7 +242,7 @@ function M:showMenu(data)
 		},
 		widget = wibox.container.background,
 		shape = helpers.rrect(5),
-		bg = beautiful.foreground
+		bg = beautiful.background_dark
 	}
 	self.popupWidget:add(addNew)
 	self.popupWidget:add(closeAll)

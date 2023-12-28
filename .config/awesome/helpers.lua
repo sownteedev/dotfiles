@@ -18,14 +18,14 @@ end
 
 -- UI  ----------------------------
 helpers.rrect                     = function(radius)
-	radius = radius or dpi(4)
+	radius = radius or dpi(5)
 	return function(cr, width, height)
 		gears.shape.rounded_rect(cr, width, height, radius)
 	end
 end
 
 helpers.prect                     = function(tl, tr, br, bl, radius)
-	radius = radius or dpi(4)
+	radius = radius or dpi(5)
 	return function(cr, width, height)
 		gears.shape.partially_rounded_rect(cr, width, height, tl, tr, br, bl, radius)
 	end

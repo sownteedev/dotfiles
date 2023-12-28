@@ -60,8 +60,8 @@ end
 
 
 local promptbox = wibox {
-	width = dpi(900),
-	height = dpi(800),
+	width = beautiful.width,
+	height = beautiful.height,
 	bg = beautiful.background_alt .. "00",
 	ontop = true,
 	shape = helpers.rrect(10),
@@ -69,8 +69,8 @@ local promptbox = wibox {
 }
 
 local background = wibox({
-	width = dpi(1366),
-	height = dpi(768),
+	width = beautiful.width,
+	height = beautiful.height,
 	visible = false,
 	ontop = true,
 	type = "splash"
@@ -116,8 +116,6 @@ local function grab()
 				input = ""
 				return
 			end
-			-- Accept only the single charactered key
-			-- Ignore 'Shift', 'Control', 'Return', 'F1', 'F2', etc., etc.
 			if #key == 1 then
 				header:get_children_by_id('arc')[1].colors = { beautiful.blue }
 				header:get_children_by_id('arc')[1].value = 20
@@ -170,8 +168,8 @@ local back = wibox.widget {
 	id = "bg",
 	image = beautiful.wallpaper,
 	widget = wibox.widget.imagebox,
-	forced_width = 1366,
-	forced_height = 768,
+	forced_width = beautiful.width,
+	forced_height = beautiful.height,
 	horizontal_fit_policy = "fit",
 	vertical_fit_policy = "fit",
 }
@@ -189,8 +187,8 @@ makeImage()
 
 local overlay = wibox.widget {
 	widget = wibox.container.background,
-	forced_height = 768,
-	forced_width = 1366,
+	forced_width = beautiful.width,
+	forced_height = beautiful.height,
 	bg = beautiful.background .. "c1"
 }
 background:setup {
