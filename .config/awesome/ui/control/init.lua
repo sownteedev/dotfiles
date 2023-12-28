@@ -8,6 +8,8 @@ local moosic = require("ui.control.mods.music")
 local sliders = require("ui.control.mods.slider")
 local footer = require("ui.control.mods.footer")
 
+local opacity = false
+
 awful.screen.connect_for_each_screen(function(s)
 	local control = wibox({
 		screen = s,
@@ -25,7 +27,7 @@ awful.screen.connect_for_each_screen(function(s)
 				forced_height = 210,
 				widget = wibox.container.background,
 				bg = beautiful.background_dark,
-				shape = helpers.rrect(10),
+				shape = helpers.rrect(5),
 			},
 			widget = wibox.container.margin,
 			bottom = 10,
@@ -65,27 +67,38 @@ awful.screen.connect_for_each_screen(function(s)
 								layout = wibox.layout.fixed.horizontal,
 								spacing = 20,
 							},
-							-- {
-							-- {
-							-- 	{
-							-- 		font = beautiful.icon_font .. " 12",
-							-- 		markup = helpers.colorizeText("󰐱", beautiful.foreground),
-							-- 		widget = wibox.widget.textbox,
-							-- 		valign = "center",
-							-- 		align = "center"
-							-- 	},
-							-- 	widget = wibox.container.margin,
-							-- 	margins = 10
-							-- },
-							-- widget = wibox.container.background,
-							-- shape = helpers.rrect(6),
-							-- buttons = {
-							-- 	awful.button({}, 1, function()
-							-- 		awesome.emit_signal('toggle::setup')
-							-- 	end)
-							-- },
-							-- bg = beautiful.background_alt,
-							-- },
+							nil,
+							{
+								{
+									{
+										font = beautiful.icon .. " 18",
+										markup = helpers.colorizeText("󱡓 ", beautiful.foreground),
+										widget = wibox.widget.textbox,
+										valign = "center",
+										align = "center"
+									},
+									widget = wibox.container.margin,
+									left = 13,
+									right = 5,
+									top = 5,
+									bottom = 5,
+								},
+								widget = wibox.container.background,
+								shape = helpers.rrect(5),
+								buttons = {
+									awful.button({}, 1, function()
+										opacity = not opacity
+										if opacity then
+											awful.spawn.with_shell(
+												"~/.config/awesome/signals/scripts/Picom/toggle --opacity &")
+										else
+											awful.spawn.with_shell(
+												"~/.config/awesome/signals/scripts/Picom/toggle --no-opacity &")
+										end
+									end),
+								},
+								bg = beautiful.background_alt,
+							},
 						},
 						widget = wibox.container.margin,
 					},
@@ -101,7 +114,7 @@ awful.screen.connect_for_each_screen(function(s)
 			},
 			widget = wibox.container.background,
 			bg = beautiful.background_dark,
-			shape = helpers.rrect(10),
+			shape = helpers.rrect(5),
 		},
 		nil,
 		layout = wibox.layout.align.vertical,
@@ -109,5 +122,8 @@ awful.screen.connect_for_each_screen(function(s)
 	awful.placement.bottom_right(control, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::control", function()
 		control.visible = not control.visible
+	end)
+	awesome.connect_signal("close::control", function()
+		control.visible = false
 	end)
 end)

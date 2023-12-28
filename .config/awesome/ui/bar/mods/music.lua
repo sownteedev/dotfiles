@@ -22,7 +22,7 @@ end)
 
 local next = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 16",
+	font = beautiful.icon .. " 16",
 	text = '󰒭',
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -34,7 +34,7 @@ local next = wibox.widget {
 
 local prev = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 16",
+	font = beautiful.icon .. " 16",
 	text = '󰒮',
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -45,7 +45,7 @@ local prev = wibox.widget {
 }
 local play = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 16",
+	font = beautiful.icon .. " 16",
 	markup = helpers.colorizeText('󰐊', beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -57,7 +57,7 @@ local play = wibox.widget {
 
 local headphones = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 16",
+	font = beautiful.icon .. " 16",
 	markup = helpers.colorizeText("󰟎 ", beautiful.foreground),
 	widget = wibox.widget.textbox,
 }

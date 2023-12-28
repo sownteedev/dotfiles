@@ -125,7 +125,7 @@ return function()
 					{
 						{
 							text = "󰁍",
-							font = beautiful.icon_font,
+							font = beautiful.icon,
 							widget = wibox.widget.textbox,
 							buttons = awful.button({}, 1, function()
 								curr = os.date("*t", os.time({
@@ -143,7 +143,7 @@ return function()
 					{
 						{
 							text = "󰁔",
-							font = beautiful.icon_font,
+							font = beautiful.icon,
 							widget = wibox.widget.textbox,
 							buttons = awful.button({}, 1, function()
 								curr = os.date("*t", os.time({

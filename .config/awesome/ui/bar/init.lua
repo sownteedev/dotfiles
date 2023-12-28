@@ -97,7 +97,7 @@ local function init(s)
 								{
 									{
 										align = 'center',
-										font = beautiful.icon_font .. " 13",
+										font = beautiful.icon .. " 13",
 										markup = helpers.colorizeText('󰂜 ', beautiful.foreground),
 										widget = wibox.widget.textbox,
 										buttons = {
@@ -108,7 +108,7 @@ local function init(s)
 									},
 									{
 										align = 'center',
-										font = beautiful.icon_font .. " 13",
+										font = beautiful.icon .. " 13",
 										markup = helpers.colorizeText('󰐥 ', beautiful.red),
 										widget = wibox.widget.textbox,
 										buttons = {

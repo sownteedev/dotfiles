@@ -37,8 +37,7 @@ awful.screen.connect_for_each_screen(function(s)
 		bg = beautiful.background .. "d1"
 	}
 	local makeImage = function()
-		local cmd = 'convert ' ..
-			beautiful.wallpaper .. ' -filter Gaussian -blur 0x6 ~/.cache/awesome/exit.jpg'
+		local cmd = 'convert ' .. beautiful.wallpaper .. ' -filter Gaussian -blur 0x6 ~/.cache/awesome/exit.jpg'
 		awful.spawn.easy_async_with_shell(cmd, function()
 			local blurwall = gears.filesystem.get_cache_dir() .. "exit.jpg"
 			back.image = blurwall
@@ -54,7 +53,7 @@ awful.screen.connect_for_each_screen(function(s)
 					{
 						id     = "icon",
 						markup = helpers.colorizeText(icon, color),
-						font   = beautiful.icon_font .. " 30",
+						font   = beautiful.icon .. " 30",
 						align  = "center",
 						widget = wibox.widget.textbox,
 					},
@@ -96,7 +95,7 @@ awful.screen.connect_for_each_screen(function(s)
 		{
 			{
 				markup = helpers.colorizeText("󰀠 ", beautiful.blue),
-				font   = beautiful.icon_font .. " 28",
+				font   = beautiful.icon .. " 28",
 				align  = "center",
 				valign = "center",
 				widget = wibox.widget.textbox,

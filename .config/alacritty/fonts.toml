@@ -1,0 +1,23 @@
+[font]
+size = 9.5
+
+[font.normal]
+family = "Liga SFMono Nerd Font"
+style = "Medium"
+
+[font.bold]
+style = "Bold"
+
+[font.bold_italic]
+style = "Bold Italic"
+
+[font.italic]
+style = "Italic"
+
+[font.offset]
+x = 0
+y = 3
+
+[font.glyph_offset]
+x = 0
+y = 2

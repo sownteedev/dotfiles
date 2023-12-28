@@ -19,7 +19,7 @@ local widget = wibox.widget {
 			{
 				{
 					widget = wibox.widget.textbox,
-					markup = helpers.colorizeText("  @" .. os.getenv("USER"), beautiful.foreground),
+					markup = helpers.colorizeText("@" .. beautiful.user, beautiful.foreground),
 					font = beautiful.sans .. " 14",
 					align = "left",
 					valign = "center",
@@ -28,23 +28,6 @@ local widget = wibox.widget {
 				left = 10,
 			},
 			{
-				{
-					{
-						{
-							font = beautiful.sans .. " 14",
-							format = "%I : %M",
-							align = "center",
-							valign = "center",
-							widget = wibox.widget.textclock
-						},
-						widget = wibox.container.margin,
-						left = 25,
-						right = 25,
-					},
-					shape = helpers.rrect(10),
-					bg = beautiful.background_alt,
-					widget = wibox.container.background,
-				},
 				{
 					{
 						{
@@ -82,7 +65,7 @@ local widget = wibox.widget {
 				{
 					{
 						{
-							font = beautiful.icon_font .. " 16",
+							font = beautiful.icon .. " 16",
 							markup = helpers.colorizeText("󰅖", beautiful.red),
 							valign = "center",
 							widget = wibox.widget.textbox,

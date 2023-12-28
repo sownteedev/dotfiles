@@ -28,7 +28,6 @@ local icon_map = {
 	["50n"] = "weather-fog",
 }
 
-
 local image_map = {
 	["01d"] = "weather-clear-sky",
 	["02d"] = "weather-clouds",
@@ -71,12 +70,19 @@ local url = (
 	.. (show_daily_forecast == false and ",daily" or "")
 )
 
-
-
+local url1 = (
+	"https://api.openweathermap.org/geo/1.0/reverse"
+	.. "?lat="
+	.. coordinates[1]
+	.. "&lon="
+	.. coordinates[2]
+	.. "&limit=1"
+	.. "&appid="
+	.. api_key
+)
 
 awful.widget.watch(string.format(GET_FORECAST_CMD, url), 600, function(_, stdout, stderr)
 	local result = json.decode(stdout)
-	-- Current weather setup
 	local out = {
 		desc = result.current.weather[1].description:gsub("^%l", string.upper),
 		humidity = result.current.humidity,
@@ -102,4 +108,12 @@ awful.widget.watch(string.format(GET_FORECAST_CMD, url), 600, function(_, stdout
 		}
 	}
 	awesome.emit_signal("signal::weather", out)
+end)
+
+awful.widget.watch(string.format(GET_FORECAST_CMD, url1), 600, function(_, stdout, stderr)
+	local result = json.decode(stdout)
+	local out = {
+		namecountry = result[1].name .. ", " .. result[1].country,
+	}
+	awesome.emit_signal("signal::weather1", out)
 end)

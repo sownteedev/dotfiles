@@ -10,7 +10,7 @@ local progs = require("ui.notification.mods.progs")
 
 awful.screen.connect_for_each_screen(function(s)
 	local notify = wibox({
-		shape = helpers.rrect(10),
+		shape = helpers.rrect(5),
 		screen = s,
 		width = 350,
 		height = 600,
@@ -45,7 +45,7 @@ awful.screen.connect_for_each_screen(function(s)
 
 
 	local clearButton = wibox.widget {
-		font = beautiful.icon_font .. " 12",
+		font = beautiful.icon .. " 12",
 		markup = helpers.colorizeText(" ", beautiful.red),
 		widget = wibox.widget.textbox,
 		valign = "center",
@@ -107,5 +107,8 @@ awful.screen.connect_for_each_screen(function(s)
 	awful.placement.bottom_right(notify, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::notify", function()
 		notify.visible = not notify.visible
+	end)
+	awesome.connect_signal("close::notify", function()
+		notify.visible = false
 	end)
 end)

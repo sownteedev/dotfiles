@@ -1,3 +1,8 @@
+<p align="center"><image width="600" height="80" src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=20&color=F7F7F7&pause=1000&random=false&width=600&lines=WELCOME TO SOWNTEE'S DOTFILES FOR ARCH AWESOMEWM">
+
+> **Warning:**
+> My resolution is 1366x768, if your resolution is different, it will break.
+
 <details><summary>How to install Arch Linux</summary><blockquote>
 
 ### Make you have Internet

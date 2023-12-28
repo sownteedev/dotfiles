@@ -1,5 +1,5 @@
 require(... .. ".battery")
-require(... .. ".bright")
+require(... .. ".brightness")
 require(... .. ".volume")
 require(... .. ".microphone")
 require(... .. ".systems")

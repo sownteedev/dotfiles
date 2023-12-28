@@ -5,26 +5,6 @@ local beautiful = require("beautiful")
 local animation = require("modules.animation")
 local helpers = require("helpers")
 
-function update_value_of_volume()
-	awful.spawn.easy_async_with_shell("pamixer --get-volume && pamixer --get-mute",
-		function(stdout)
-			local value, muted = string.match(stdout, '(%d+)\n(%a+)')
-			value = tonumber(value)
-			local icon = ""
-			if value == 0 or muted == "true" then
-				icon = "󰖁 "
-				value = 0
-			elseif value <= 33 then
-				icon = " "
-			elseif value <= 66 then
-				icon = "󰕾 "
-			else
-				icon = " "
-			end
-			awesome.emit_signal("volume::value", value, icon)
-		end)
-end
-
 -- osd --
 local info = wibox.widget {
 	layout = wibox.layout.fixed.horizontal,
@@ -38,7 +18,7 @@ local info = wibox.widget {
 			{
 				widget = wibox.widget.textbox,
 				id = "icon",
-				font = beautiful.icon_font .. " 13",
+				font = beautiful.icon .. " 13",
 			},
 			{
 				widget = wibox.container.background,
@@ -89,19 +69,33 @@ local anim = animation:new {
 }
 
 -- volume --
-
-awesome.connect_signal("volume::value", function(value, icon)
+awesome.connect_signal("signal::volume", function(value)
 	anim:set(value)
 	info:get_children_by_id("text")[1].text = value
-	info:get_children_by_id("icon")[1].text = icon
+	if value > 66 then
+		info:get_children_by_id("icon")[1].text = " "
+	elseif value > 33 then
+		info:get_children_by_id("icon")[1].text = "󰕾 "
+	elseif value > 0 then
+		info:get_children_by_id("icon")[1].text = " "
+	else
+		info:get_children_by_id("icon")[1].text = "󰖁 "
+	end
 end)
 
 -- bright --
-
 awesome.connect_signal("signal::brightness", function(value)
 	anim:set(value)
 	info:get_children_by_id("text")[1].text = value
-	info:get_children_by_id("icon")[1].text = "󰃝 "
+	if value > 90 then
+		info:get_children_by_id("icon")[1].text = "󰃠 "
+	elseif value > 60 then
+		info:get_children_by_id("icon")[1].text = "󰃟 "
+	elseif value > 30 then
+		info:get_children_by_id("icon")[1].text = "󰃝 "
+	elseif value > 10 then
+		info:get_children_by_id("icon")[1].text = "󰃞 "
+	end
 end)
 
 -- function --

@@ -1,6 +1,5 @@
 -- User config
-local colorscheme                                    = "yoru"
-
+local colorscheme = "yoru"
 ---------------------------------------------------------------------
 local switcher                                       = require("modules.awesome-switcher")
 local gears                                          = require("gears")
@@ -11,7 +10,7 @@ local theme                                          = {}
 
 theme.font                                           = "Rubik 9"
 theme.sans                                           = "Rubik"
-theme.icon_font                                      = "Material Design Icons"
+theme.icon                                           = "Material Design Icons"
 theme.useless_gap                                    = 10
 
 -- colors --
@@ -31,8 +30,10 @@ theme.orange                                         = colors.orange
 theme.violet                                         = colors.violet
 theme.accent                                         = colors.accent
 
+theme.user                                           = string.gsub(os.getenv('USER'), '^%l', string.upper)
 theme.wallpaper                                      = "~/.walls/moreroses.jpg"
 theme.profile                                        = "~/.config/awesome/themes/assets/sownteedev.png"
+theme.fetch                                          = "~/.config/awesome/themes/assets/neofetch.png"
 theme.songdefpicture                                 = "~/.config/awesome/themes/assets/defsong.jpg"
 
 -- Awesome Switcher --

@@ -147,7 +147,7 @@ function M:showMenu(data)
 					{
 						{
 							markup = j.name,
-							font   = beautiful.icon_font .. " 12",
+							font   = beautiful.icon .. " 12",
 							height = 16,
 							widget = wibox.widget.textbox,
 						},
@@ -158,7 +158,7 @@ function M:showMenu(data)
 					nil,
 					{
 						markup  = helpers.colorizeText("󰅖", beautiful.red),
-						font    = beautiful.icon_font .. " 16",
+						font    = beautiful.icon .. " 16",
 						widget  = wibox.widget.textbox,
 						buttons = {
 							awful.button({}, 1, function()
@@ -198,7 +198,7 @@ function M:showMenu(data)
 				{
 					{
 						markup = "Open New Window",
-						font   = beautiful.icon_font .. " 12",
+						font   = beautiful.icon .. " 12",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.constraint,

@@ -9,7 +9,7 @@ local clock = require("ui.moment.mods.clock")
 
 awful.screen.connect_for_each_screen(function(s)
 	local moment = wibox({
-		shape = helpers.rrect(10),
+		shape = helpers.rrect(5),
 		screen = s,
 		width = 400,
 		height = 650,
@@ -39,5 +39,8 @@ awful.screen.connect_for_each_screen(function(s)
 	awful.placement.bottom_right(moment, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::moment", function()
 		moment.visible = not moment.visible
+	end)
+	awesome.connect_signal("close::moment", function()
+		moment.visible = false
 	end)
 end)
