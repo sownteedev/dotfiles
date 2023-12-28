@@ -11,7 +11,7 @@ local createbutton = function(cmd, icon, name, labelconnected, labeldisconnected
 					{
 						markup = icon,
 						id     = "icon",
-						font   = beautiful.icon_font .. " 20",
+						font   = beautiful.icon .. " 20",
 						widget = wibox.widget.textbox,
 					},
 					{
@@ -35,7 +35,7 @@ local createbutton = function(cmd, icon, name, labelconnected, labeldisconnected
 				nil,
 				{
 					markup = "󰅂",
-					font   = beautiful.icon_font .. " 12",
+					font   = beautiful.icon .. " 12",
 					id     = "arr",
 					widget = wibox.widget.textbox,
 				},
@@ -59,16 +59,16 @@ local createbutton = function(cmd, icon, name, labelconnected, labeldisconnected
 	awesome.connect_signal('signal::' .. signal, function(status)
 		if status then
 			widget:get_children_by_id("back")[1].bg = beautiful.blue
-			widget:get_children_by_id("arr")[1].markup = helpers.colorizetext("󰅂", beautiful.background)
-			widget:get_children_by_id("name")[1].markup = helpers.colorizetext(name, beautiful.background)
-			widget:get_children_by_id("icon")[1].markup = helpers.colorizetext(icon, beautiful.background)
-			widget:get_children_by_id("label")[1].markup = helpers.colorizetext(labelconnected, beautiful.background)
+			widget:get_children_by_id("arr")[1].markup = helpers.colorizeText("󰅂", beautiful.background)
+			widget:get_children_by_id("name")[1].markup = helpers.colorizeText(name, beautiful.background)
+			widget:get_children_by_id("icon")[1].markup = helpers.colorizeText(icon, beautiful.background)
+			widget:get_children_by_id("label")[1].markup = helpers.colorizeText(labelconnected, beautiful.background)
 		else
 			widget:get_children_by_id("back")[1].bg = beautiful.background_alt .. 'aa'
-			widget:get_children_by_id("arr")[1].markup = helpers.colorizetext("󰅂", beautiful.foreground)
-			widget:get_children_by_id("name")[1].markup = helpers.colorizetext(name, beautiful.foreground)
-			widget:get_children_by_id("icon")[1].markup = helpers.colorizetext(icon, beautiful.foreground)
-			widget:get_children_by_id("label")[1].markup = helpers.colorizetext(labeldisconnected, beautiful.foreground)
+			widget:get_children_by_id("arr")[1].markup = helpers.colorizeText("󰅂", beautiful.foreground)
+			widget:get_children_by_id("name")[1].markup = helpers.colorizeText(name, beautiful.foreground)
+			widget:get_children_by_id("icon")[1].markup = helpers.colorizeText(icon, beautiful.foreground)
+			widget:get_children_by_id("label")[1].markup = helpers.colorizeText(labeldisconnected, beautiful.foreground)
 		end
 	end)
 	return widget

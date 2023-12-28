@@ -4,7 +4,7 @@ local helpers     = require("helpers")
 local wibox       = require("wibox")
 
 local togglertext = wibox.widget {
-	font = beautiful.icon_font .. " 15",
+	font = beautiful.icon .. " 15",
 	text = "󰅁",
 	valign = "center",
 	align = "center",

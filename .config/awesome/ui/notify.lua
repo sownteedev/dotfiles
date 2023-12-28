@@ -176,7 +176,7 @@ naughty.connect_signal("request::display", function(n)
 
 	local close = wibox.widget {
 		markup = helpers.colorizeText('󰅙 ', beautiful.red),
-		font   = beautiful.icon_font .. " 10",
+		font   = beautiful.icon .. " 10",
 		align  = "ceneter",
 		valign = "center",
 		widget = wibox.widget.textbox,
@@ -203,7 +203,7 @@ naughty.connect_signal("request::display", function(n)
 
 	local widget = naughty.layout.box {
 		notification    = n,
-		shape           = helpers.rrect(10),
+		shape           = helpers.rrect(5),
 		widget_template = {
 			{
 				{

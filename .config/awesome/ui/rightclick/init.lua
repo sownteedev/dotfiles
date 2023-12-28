@@ -17,7 +17,8 @@ local function awesome_menu()
 			icon = { icon = " ", font = "Material Design Icons" },
 			text = "Docs",
 			on_press = function()
-				awful.spawn.with_shell("firefox https://awesomewm.org/apidoc/documentation/07-my-first-awesome.md.html#")
+				awful.spawn.with_shell(
+				"firefox https://awesomewm.org/apidoc/documentation/07-my-first-awesome.md.html# &")
 				awesome.emit_signal("close::menu")
 			end,
 		}),
@@ -25,7 +26,7 @@ local function awesome_menu()
 			icon = { icon = "󰣕 ", font = "Material Design Icons" },
 			text = "Edit Config",
 			on_press = function()
-				awful.spawn.with_shell("cd ~/.config/awesome && alacritty -e nvim" .. " " .. awesome.conffile)
+				awful.spawn.with_shell("cd ~/.config/awesome && alacritty -e nvim" .. " " .. awesome.conffile .. " &")
 				awesome.emit_signal("close::menu")
 			end,
 		}),

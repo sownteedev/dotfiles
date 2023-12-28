@@ -12,6 +12,9 @@ local profile   = wibox.widget {
 	buttons = {
 		awful.button({}, 1, function()
 			Launcher:toggle()
+		end),
+		awful.button({}, 3, function()
+			awesome.emit_signal('toggle::dash')
 		end)
 	},
 }

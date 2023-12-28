@@ -1,7 +1,7 @@
 local wibox      = require("wibox")
-local beautiful  = require "beautiful"
+local beautiful  = require("beautiful")
 local gears      = require("gears")
-local helpers    = require "helpers"
+local helpers    = require("helpers")
 
 local filesystem = gears.filesystem
 local icon_dir   = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
@@ -107,7 +107,7 @@ local widget = wibox.widget {
 		id = "image",
 		forced_height = 300,
 		forced_width = 460,
-		image = helpers.cropSurface(1.53, gears.surface.load_uncached(beautiful.wallpaper)),
+		image = helpers.cropSurface(1.53, gears.surface.load_uncached(filesystem.get_configuration_dir() .. "themes/assets/weather/images/weather-clear-night.jpg")),
 		widget = wibox.widget.imagebox,
 		clip_shape = helpers.rrect(10),
 		opacity = 0.9,
@@ -132,8 +132,15 @@ local widget = wibox.widget {
 			{
 				{
 					{
+						id = "city",
+						font = beautiful.sans .. " 13",
+						markup = "",
+						valign = "center",
+						widget = wibox.widget.textbox,
+					},
+					{
 						id            = "icon",
-						image         = gears.filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
+						image         = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
 						opacity       = 0.9,
 						clip_shape    = helpers.rrect(4),
 						forced_height = 50,
@@ -144,33 +151,34 @@ local widget = wibox.widget {
 					{
 						id = "desc",
 						font = beautiful.sans .. " 10",
-						markup = "Scattered Clouds",
+						markup = "",
 						valign = "center",
 						widget = wibox.widget.textbox,
 					},
 					spacing = 10,
 					layout = wibox.layout.fixed.vertical,
+					halign = "left",
 				},
 				nil,
 				{
 					{
 						id = "temp",
 						font = beautiful.sans .. " 20",
-						markup = "31°C",
+						markup = "",
 						valign = "center",
 						widget = wibox.widget.textbox,
 					},
 					{
 						id = "fl",
 						font = beautiful.sans .. " 10",
-						markup = "Feels Like 30°C",
+						markup = "",
 						valign = "center",
 						widget = wibox.widget.textbox,
 					},
 					{
 						id = "humid",
 						font = beautiful.sans .. " 10",
-						markup = "Humidity: 30%",
+						markup = "",
 						valign = "center",
 						widget = wibox.widget.textbox,
 					},
@@ -193,8 +201,8 @@ local widget = wibox.widget {
 					spacing = -15,
 				},
 				widget = wibox.container.margin,
-				top = 15,
-				bottom = 15,
+				top = 10,
+				bottom = 10,
 			},
 			layout = wibox.layout.align.vertical,
 		},
@@ -219,6 +227,10 @@ awesome.connect_signal("signal::weather", function(out)
 	for i, j in ipairs(daylist) do
 		j.update(out, i)
 	end
+end)
+
+awesome.connect_signal("signal::weather1", function(out)
+	helpers.gc(widget, "city").markup = out.namecountry
 end)
 
 return widget

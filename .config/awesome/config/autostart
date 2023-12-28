@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 
-processes=("picom" "dunst")
+processes=("picom")
 for process in "${processes[@]}"; do
     if pidof -q "$process"; then
         pkill -x "$process" > /dev/null; sleep 0.1
     fi
 done
 
-xrdb -merge ~/.Xresources
-~/.config/scripts/Picom/toggle --no-opacity &
-# dunst -config ~/.config/scripts/dunstrc &
-feh -z --no-fehbg --bg-fill ~/.walls
-xss-lock -- betterlockscreen -l dimblur &
+~/.config/awesome/signals/scripts/Picom/toggle --no-opacity &
+feh -z --no-fehbg --bg-fill ~/.walls &
+xss-lock awesome-client "awesome.emit_signal('toggle::lock')" &

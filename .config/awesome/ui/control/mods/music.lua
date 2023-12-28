@@ -16,7 +16,7 @@ local art       = wibox.widget {
 
 local next      = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 20",
+	font = beautiful.icon .. " 20",
 	text = '󰒭 ',
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -28,7 +28,7 @@ local next      = wibox.widget {
 
 local prev      = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 20",
+	font = beautiful.icon .. " 20",
 	text = '󰒮 ',
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -40,7 +40,7 @@ local prev      = wibox.widget {
 
 local play      = wibox.widget {
 	align = 'center',
-	font = beautiful.icon_font .. " 20",
+	font = beautiful.icon .. " 20",
 	markup = helpers.colorizeText('󰐍 ', beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -121,7 +121,7 @@ local finalwidget = wibox.widget {
 					left = 15,
 					right = 0,
 				},
-				shape = helpers.rrect(12),
+				shape = helpers.rrect(5),
 				widget = wibox.container.background,
 				bg = beautiful.background_alt,
 			},

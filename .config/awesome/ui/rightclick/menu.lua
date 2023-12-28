@@ -147,10 +147,10 @@ function menu.menu(widgets, width)
 		type = "menu",
 		visible = false,
 		ontop = true,
-		minimum_width = width or dpi(200),
-		maximum_width = width or dpi(200),
-		shape = helpers.rrect(5),
+		minimum_width = width or dpi(170),
+		maximum_width = width or dpi(170),
 		bg = beautiful.background_dark,
+		shape = helpers.rrect(5),
 		widget = wibox.layout.fixed.vertical,
 	})
 	gtable.crush(widget, menu, true)
@@ -207,7 +207,7 @@ function menu.sub_menu_button(args)
 
 	local icon = args.icon ~= nil
 		and wibox.widget {
-			font = beautiful.icon_font .. "14",
+			font = beautiful.icon .. "14",
 			markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 			widget = wibox.widget.textbox,
 			halign = "start",
@@ -231,7 +231,7 @@ function menu.sub_menu_button(args)
 				},
 				nil,
 				{
-					font = beautiful.icon_font .. " 14",
+					font = beautiful.icon .. " 14",
 					markup = "󰅂",
 					widget = wibox.widget.textbox,
 					halign = "start"
@@ -240,13 +240,11 @@ function menu.sub_menu_button(args)
 			widget = wibox.container.margin,
 			margins = {
 				left = dpi(20),
-				right = dpi(20),
-				bottom = dpi(10),
+				right = dpi(10),
 			}
 		},
 		bg = beautiful.background_dark,
 		forced_height = 35,
-		shape = helpers.rrect(5),
 		widget = wibox.container.background,
 	}
 	widget:connect_signal("mouse::enter", function(self)
@@ -304,12 +302,10 @@ function menu.button(args)
 			widget = wibox.container.margin,
 			margins = {
 				left = dpi(20),
-				top = dpi(10),
 			}
 		},
 		bg = beautiful.background_dark,
 		forced_height = 35,
-		shape = helpers.rrect(5),
 		buttons = {
 			awful.button({}, 1, function()
 				args.on_press(menu, text_widget)
@@ -327,10 +323,10 @@ end
 function menu.separator()
 	return wibox.widget({
 		widget = wibox.container.margin,
-		top = 15,
-		bottom = 15,
-		left = 40,
-		right = 40,
+		top = 5,
+		bottom = 5,
+		left = 30,
+		right = 30,
 		{
 			widget = wibox.widget.separator,
 			forced_height = dpi(2),
