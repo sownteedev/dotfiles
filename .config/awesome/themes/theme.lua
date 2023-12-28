@@ -2,6 +2,7 @@
 local colorscheme = "yoru"
 ---------------------------------------------------------------------
 local switcher                                       = require("modules.awesome-switcher")
+local awful                                          = require("awful")
 local gears                                          = require("gears")
 local gfs                                            = require("gears.filesystem")
 local themes_path                                    = gfs.get_configuration_dir() .. "themes/"
@@ -30,6 +31,9 @@ theme.orange                                         = colors.orange
 theme.violet                                         = colors.violet
 theme.accent                                         = colors.accent
 
+-- Get resolution --
+theme.width                                          = awful.screen.focused().geometry.width
+theme.height                                         = awful.screen.focused().geometry.height
 theme.user                                           = string.gsub(os.getenv('USER'), '^%l', string.upper)
 theme.wallpaper                                      = "~/.walls/moreroses.jpg"
 theme.profile                                        = "~/.config/awesome/themes/assets/sownteedev.png"

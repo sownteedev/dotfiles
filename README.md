@@ -1,15 +1,30 @@
-<p align="center"><image width="600" height="60" src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=20&color=F7F7F7&pause=1000&random=false&width=600&lines=WELCOME+TO+SOWNTEE'S+DOTFILES+FOR+ARCH+AWESOMEWM">
+<p align="center"><image width="900" height="60" src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=30&color=3c8893&pause=1000&random=false&width=900&lines=WELCOME+TO+SOWNTEE'S+DOTFILES+FOR+ARCH+AWESOMEWM">
 
-> **Warning:**
-> My resolution is 1366x768, if your resolution is different, it will break.
+###### 🌸 INSTALL DOTFILES
 
-<details><summary>How to install Arch Linux</summary><blockquote>
+> **WARNING**: Script will initially reinstall all drivers. If you don't need it, you can skip it.
+
+```
+git clone https://github.com/sownteedev/dotfiles.git --depth=1
+```
+
+```
+cd dotfiles && chmod +x install.sh
+```
+
+```
+./install.sh
+```
+
+<br>
+
+<details><summary>Install Arch Linux</summary><blockquote>
 
 ### Make you have Internet
 
     iwctl
 
-### Time sync and set keyboard
+### Time sync (Vietnam) and set keyboard
 
     loadkeys i386/qwerty/us.map.gz
 

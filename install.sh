@@ -97,10 +97,15 @@ echo "[*] Done."
 sleep 0.5
 
 # Enable touchpad
-echo "[*] Enable touchpad ..."
-sudo touch /etc/X11/xorg.conf.d/30-touchpad.conf
-sudo cp ~/dotfiles/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
-echo "[*] Done."
+echo "[*] Enable touchpad for laptop ..."
+	read -p "[*] Do you want? (y/n): " choice
+	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	sudo touch /etc/X11/xorg.conf.d/30-touchpad.conf
+	sudo cp ~/dotfiles/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
+	echo "[*] Done."
+else
+	echo "[*] Skipped."
+fi
 sleep 0.5
 
 # Zsh
@@ -117,11 +122,9 @@ rm ~/.zshrc && touch ~/.zshrc && echo "source ~/.config/zsh/.zshrc" >> ~/.zshrc
 echo "[*] Done."
 sleep 0.5
 
-# Install dunst && rofi
-echo "[*] Installing dunst, rofi, picom ..."
-sudo pacman -S dunst rofi --noconfirm && yay -S --noconfirm picom-ftlabs-git
-echo "[*] Done."
-sleep 0.5
+#################################################### INSTALL DRIVER ####################################################
+read -p "[*] Do you want to install driver and dependencies(Recommend Yes)? (y/n): " choice
+if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 # Install library
 echo "[*] Installing library ..."
@@ -175,18 +178,15 @@ sudo pacman -S feh flameshot maim viewnior lxappearance neofetch arandr --noconf
 echo "[*] Done."
 sleep 0.5
 
-# Lockscreen and Startscreen
-echo "[*] Installing lockscreen and startscreen ..."
-sudo pacman -S --noconfirm xss-lock lightdm lightdm-webkit2-greeter && yay -S --noconfirm lightdm-webkit2-theme-glorious betterlockscreen
-echo "[*] Done."
-sleep 0.5
-
 # Other
 echo "[*] Installing other ..."
-sudo pacman -S --noconfirm gnome-keyring libsecret libgnome-keyring seahorse xf86-input-libinput pacman-contrib thefuck wget gpick btop ibus github-cli polkit-gnome && yay -S --noconfirm auto-cpufreq
+sudo pacman -S --noconfirm gnome-keyring libsecret libgnome-keyring seahorse xf86-input-libinput pacman-contrib thefuck wget gpick btop ibus github-cli polkit-gnome xss-lock && yay -S --noconfirm auto-cpufreq picom-ftlabs-git
 echo "[*] Done."
 sleep 0.5
 
+else
+	echo "[*] Installation driver and dependencies skipped."
+fi
 ######################################## MY CONFIG FOR CUSTOM APPS #######################################
 
 # Spotify
