@@ -29,37 +29,32 @@ end
 
 local function awesome(entry)
 	awful.spawn.easy_async_with_shell([[
-		sed -i "s/local colorscheme.*/local colorscheme = \"]] .. entry .. [[\"/" ~/.config/awesome/themes/theme.lua
+		sed -i "s/local colorscheme.*/local colorscheme = \"]] .. entry .. [[\"/" ~/.config/awesome/themes/theme.lua &&
 	]])
 end
 
 local function term(entry)
 	awful.spawn.easy_async_with_shell([[
-		echo "import = [ '~/.config/alacritty/colors/]] .. entry .. [[.toml' ]" > ~/.config/alacritty/colors.toml
+		echo "import = [ '~/.config/alacritty/colors/]] .. entry .. [[.toml' ]" > ~/.config/alacritty/colors.toml &&
 	]])
 end
 
 local function discord(entry)
 	awful.spawn.easy_async_with_shell([[
 		cat ~/.config/BetterDiscord/data/stable/themes/]] ..
-		entry .. [[.css > ~/.config/BetterDiscord/data/stable/custom.css
+		entry .. [[.css > ~/.config/BetterDiscord/data/stable/custom.css &&
 	]])
 end
 
-local function spotify(entry)
-	awful.spawn.easy_async_with_shell([[
-		spicetify config color_scheme ]] .. entry .. [[ && spicetify apply
-	]])
-end
-
-local function nvim(entry)
-	awful.spawn.easy_async_with_shell([[
-		reload="python $HOME/.local/bin/reload_nvim.py"
-		reload_cmd="$reload 'lua require(\"themes.switch\").settheme(\"]] .. entry .. [[\")'"
-		eval "$reload_cmd"
-		new_line="vim.g.currentTheme = \"]] .. entry .. [[\""
-		sed -i "s/vim.g.currentTheme = .*/$new_line/" "$HOME/.config/nvim/lua/user/options.lua"
-	]])
+function nvim(entry)
+	awful.spawn.easy_async_with_shell("ls -1 /run/user/1000/ | grep nvim ", function(stdout)
+		for line in stdout:gmatch("[^\n]+") do
+			awful.spawn([[
+				nvim --server /run/user/1000/]] ..
+				line .. [[ --remote-send ':lua require("themes.switch").settheme("]] .. entry .. [[")<CR>' &&
+			]])
+		end
+	end)
 end
 
 local function gtk(entry)
@@ -68,12 +63,12 @@ local function gtk(entry)
 		sed -i -e "s/background:.*/background:]] .. color.background .. [[/"\
 		       -e "s/background_alt:.*/background_alt:]] .. color.background_alt .. [[/"\
 		       -e "s/foreground:.*/foreground:]] .. color.foreground .. [[/"\
-		       -e "s/accent:.*/accent:]] .. color.accent .. [[/" ~/.themes/tethemes/gtk-2.0/gtkrc
+		       -e "s/accent:.*/accent:]] .. color.accent .. [[/" ~/.themes/tethemes/gtk-2.0/gtkrc &&
 		sed -i -e "s/background .*/background ]] .. color.background .. [[;/"\
 			   -e "s/background_alt .*/background_alt ]] .. color.background_alt .. [[;/"\
 			   -e "s/background_urgent .*/background_urgent ]] .. color.background_urgent .. [[;/"\
 			   -e "s/foreground .*/foreground ]] .. color.foreground .. [[;/"\
-			   -e "s/accent .*/accent ]] .. color.accent .. [[;/" ~/.themes/tethemes/gtk-3.0/colors.css
+			   -e "s/accent .*/accent ]] .. color.accent .. [[;/" ~/.themes/tethemes/gtk-3.0/colors.css &&
 	]])
 end
 
@@ -82,7 +77,7 @@ local function firefox(entry)
 	awful.spawn.easy_async_with_shell([[
 		sed -i -e "s/background: .*/background: ]] .. color.background .. [[ !important;/"\
 			   -e "s/background-color: .*/background-color: ]] .. color.background .. [[ !important;/"\
-			   -e "s/color: .*/color: ]] .. color.background .. [[ !important;/" ~/.config/firefox/chrome/userContent.css
+			   -e "s/color: .*/color: ]] .. color.background .. [[ !important;/" ~/.config/firefox/chrome/userContent.css &&
 		sed -i -e "s/--uc-base-colour: .*/--uc-base-colour: ]] .. color.background_alt .. [[;/"\
 			   -e "s/--uc-highlight-colour: .*/--uc-highlight-colour: ]] .. color.background .. [[;/"\
 			   -e "s/--uc-inverted-colour: .*/--uc-inverted-colour: ]] .. color.foreground .. [[;/"\
@@ -91,21 +86,22 @@ local function firefox(entry)
 			   -e "s/--uc-identity-colour-blue: .*/--uc-identity-colour-blue: ]] .. color.blue .. [[;/"\
 			   -e "s/--uc-identity-colour-yellow: .*/--uc-identity-colour-yellow: ]] .. color.yellow .. [[;/"\
 			   -e "s/--uc-identity-colour-orange: .*/--uc-identity-colour-orange: ]] ..
-		color.orange .. [[;/" ~/.config/firefox/chrome/includes/cascade-colours.css
-		rm -r ~/.mozilla/firefox/*.default-release/chrome/* && cp -r ~/.config/firefox/chrome/* ~/.mozilla/firefox/*.default-release/chrome/
+		color.orange .. [[;/" ~/.config/firefox/chrome/includes/cascade-colours.css &&
+		rm -r ~/.mozilla/firefox/*.default-release/chrome/* && cp -r ~/.config/firefox/chrome/* ~/.mozilla/firefox/*.default-release/chrome/ &&
 	]])
 end
 
 function applyTheme(theme)
 	term(theme)
-	gtk(theme)
-	discord(theme)
-	firefox(theme)
-	nvim(theme)
 	awesome(theme)
-	spotify(theme)
+	discord(theme)
+	gtk(theme)
+	firefox(theme)
 	backup()
 	awful.spawn.easy_async_with_shell([[
+		spicetify config color_scheme ]] .. theme .. [[ && spicetify apply &&
+		awesome-client 'nvim("]] .. theme .. [[")' && new_line="vim.g.currentTheme = \"]] .. theme .. [[\"" &&
+		sed -i "s/vim.g.currentTheme = .*/$new_line/" "$HOME/.config/nvim/lua/user/options.lua" &&
 		awesome-client 'awesome.restart()'
 	]])
 end
