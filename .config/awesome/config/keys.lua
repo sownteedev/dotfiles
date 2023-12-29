@@ -46,8 +46,6 @@ awful.keyboard.append_global_keybindings({
 	-- Scripts
 	awful.key({}, "Print", function() awful.spawn.with_shell("~/.config/scripts/Screenshot/Screenshot") end),
 	awful.key({ alt, }, "p", function() awful.spawn.with_shell("~/.local/bin/colorpicker") end),
-	awful.key({ alt, }, "w", function() awful.spawn.with_shell("~/.config/scripts/Network/Network") end),
-	awful.key({ alt, }, "b", function() awful.spawn.with_shell("~/.config/scripts/Bluetooth/Bluetooth") end),
 	awful.key({ alt, }, "F4", function() awesome.emit_signal("toggle::exit") end),
 	awful.key({ mod }, "l", function() awesome.emit_signal("toggle::lock") end),
 	awful.key({ mod, shift }, "b", function() awesome.emit_signal("hide::bar") end),

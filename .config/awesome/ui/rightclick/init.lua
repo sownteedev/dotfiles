@@ -18,7 +18,7 @@ local function awesome_menu()
 			text = "Docs",
 			on_press = function()
 				awful.spawn.with_shell(
-				"firefox https://awesomewm.org/apidoc/documentation/07-my-first-awesome.md.html# &")
+					"firefox https://awesomewm.org/apidoc/documentation/07-my-first-awesome.md.html# &")
 				awesome.emit_signal("close::menu")
 			end,
 		}),
@@ -43,42 +43,6 @@ local function awesome_menu()
 			text = "Quit",
 			on_press = function()
 				awesome.quit()
-				awesome.emit_signal("close::menu")
-			end,
-		}),
-	})
-end
-
-local function desktopMenu()
-	return menu({
-		menu.button({
-			icon = { icon = "󱪞 ", font = "Material Design Icons" },
-			text = "New File",
-			on_press = function()
-				awesome.emit_signal("toggle::popup", "create")
-				awesome.emit_signal("close::menu")
-			end,
-		}),
-		menu.button({
-			icon = { icon = "󰮝 ", font = "Material Design Icons" },
-			text = "New Folder",
-			on_press = function()
-				awesome.emit_signal("close::menu")
-				awesome.emit_signal("toggle::popup", "folder")
-			end,
-		}),
-		menu.button({
-			icon = { icon = "󰦛 ", font = "Material Design Icons" },
-			text = "Refresh Icons",
-			on_press = function()
-				awesome.emit_signal("signal::desktop")
-				awesome.emit_signal("close::menu")
-			end,
-		}),
-		menu.button({
-			icon = { icon = "󰈈 ", font = "Material Design Icons" },
-			text = "Toggle Icons",
-			on_press = function()
 				awesome.emit_signal("close::menu")
 			end,
 		}),
@@ -132,11 +96,6 @@ local function widget()
 			icon = { icon = "󰖟 ", font = "Material Design Icons" },
 			text = "AwesomeWM",
 			sub_menu = awesome_menu(),
-		}),
-		menu.sub_menu_button({
-			icon = { icon = "󰟀 ", font = "Material Design Icons" },
-			text = "Desktop",
-			sub_menu = desktopMenu(),
 		}),
 	})
 end
