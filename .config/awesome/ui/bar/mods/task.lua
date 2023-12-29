@@ -185,7 +185,7 @@ function M:showMenu(data)
 			},
 			widget = wibox.container.background,
 			shape = helpers.rrect(5),
-			bg = j.minimized and beautiful.foreground .. '20'
+			bg = j.minimized and beautiful.background_alt
 		}
 		M.popupWidget:connect_signal("mouse::leave", function()
 			self.popup.visible = false
@@ -305,15 +305,15 @@ function M:genIcons()
 	for i, j in ipairs(self.metadata) do
 		if j.pinned == true or j.count > 0 then
 			local minimized = getMinimized(j.clients)
-			local bg = beautiful.background
+			local bg = beautiful.background_alt
 			if client.focus then
 				if client.focus.class:lower() == j.class then
-					bg = beautiful.foreground .. "80"
+					bg = beautiful.foreground .. "90"
 				elseif j.count > 0 then
-					bg = beautiful.foreground .. "20"
+					bg = beautiful.foreground .. "50"
 				end
 			elseif minimized > 0 then
-				bg = beautiful.foreground .. "20"
+				bg = beautiful.foreground .. "50"
 			end
 			local widget = wibox.widget {
 				{

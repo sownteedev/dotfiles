@@ -135,7 +135,7 @@ awful.screen.connect_for_each_screen(function(s)
 		{
 			createButton("󰐥 ", "Power", "poweroff", beautiful.red),
 			createButton(" ", "Reboot", "reboot", beautiful.green),
-			createButton(" ", "Lock", "betterlockscreen -l dimblur", beautiful.blue),
+			createButton("󰍁 ", "Lock", "awesome-client \"awesome.emit_signal('toggle::lock')\"", beautiful.blue),
 			createButton("󰖔 ", "Sleep", "systemctl suspend", beautiful.yellow),
 			createButton("󰈆 ", "Log Out", "loginctl kill-user $USER", beautiful.violet),
 			layout = wibox.layout.fixed.horizontal,

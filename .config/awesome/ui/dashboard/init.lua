@@ -3,16 +3,16 @@ local beautiful = require("beautiful")
 local helpers = require("helpers")
 local wibox = require("wibox")
 
-local profile = require("ui.dash.mods.profile")
-local pomo = require("ui.dash.mods.pomo")
-local quote = require("ui.dash.mods.quote")
+local profile = require("ui.dashboard.mods.profile")
+local pomo = require("ui.dashboard.mods.pomo")
+local quote = require("ui.dashboard.mods.quote")
 
-local song = require("ui.dash.mods.song")
-local todo = require("ui.dash.mods.todo")
+local song = require("ui.dashboard.mods.song")
+local todo = require("ui.dashboard.mods.todo")
 
-local time = require("ui.dash.mods.time")
-local nf = require("ui.dash.mods.nf")
-local weather = require("ui.dash.mods.weather")
+local time = require("ui.dashboard.mods.time")
+local nf = require("ui.dashboard.mods.nf")
+local weather = require("ui.dashboard.mods.weather")
 
 awful.screen.connect_for_each_screen(function(s)
 	local dash = wibox({
