@@ -2,8 +2,8 @@ local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local animation = require("modules.animation")
 local helpers = require("helpers")
+local animation = require("modules.animation")
 
 -- osd --
 local info = wibox.widget {

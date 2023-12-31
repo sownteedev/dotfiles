@@ -2,17 +2,16 @@ local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local animation = require("modules.animation")
 local helpers = require("helpers")
+local animation = require("modules.animation")
 local getIcon = require("modules.getIcon")
 local dpi = beautiful.xresources.apply_dpi
 
--- titlebars --
 local create_button = function(color, func)
 	local widget = wibox.widget {
 		widget = wibox.container.background,
-		forced_height = 15,
-		shape = helpers.rrect(5),
+		forced_height = 8,
+		shape = helpers.rrect(3),
 		bg = color,
 		buttons = {
 			awful.button({}, 1, function()
@@ -73,7 +72,6 @@ client.connect_signal("request::titlebars", function(c)
 					widget = wibox.widget.imagebox,
 					image = getIcon(c, c.class, c.class),
 					forced_width = 40,
-					clip_shape = helpers.rrect(100),
 					resize = true,
 				},
 				widget = wibox.container.place,
@@ -82,7 +80,7 @@ client.connect_signal("request::titlebars", function(c)
 			margins = dpi(5),
 			widget = wibox.container.margin
 		},
-		bg = beautiful.background_alt,
+		bg = beautiful.background_dark,
 		shape = helpers.rrect(5),
 		widget = wibox.container.background
 	}
@@ -93,9 +91,9 @@ client.connect_signal("request::titlebars", function(c)
 			maximize.bg = beautiful.green
 			close.bg = beautiful.red
 		else
-			minimize.bg = beautiful.background_urgent
-			maximize.bg = beautiful.background_urgent
-			close.bg = beautiful.background_urgent
+			minimize.bg = beautiful.background
+			maximize.bg = beautiful.background
+			close.bg = beautiful.background
 		end
 	end
 	c:connect_signal("focus", update_button_color)
@@ -117,27 +115,27 @@ client.connect_signal("request::titlebars", function(c)
 	top_titlebar.widget = {
 		layout = wibox.layout.align.horizontal,
 		{
-			icon,
-			widget = wibox.container.margin,
-			left = 10,
+			widget = wibox.container.place,
+			{
+				widget = wibox.container.margin,
+				left = 30,
+				{
+					layout = wibox.layout.fixed.horizontal,
+					spacing = 10,
+					close,
+					maximize,
+					minimize,
+				}
+			}
 		},
 		{
 			widget = wibox.container.background,
 			buttons = buttons,
 		},
 		{
-			widget = wibox.container.place,
-			{
-				widget = wibox.container.margin,
-				margins = { right = 30, top = 12, bottom = 12 },
-				{
-					layout = wibox.layout.fixed.horizontal,
-					spacing = 10,
-					minimize,
-					maximize,
-					close,
-				}
-			}
+			icon,
+			widget = wibox.container.margin,
+			right = 10,
 		},
 	}
 end)

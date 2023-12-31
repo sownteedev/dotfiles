@@ -241,6 +241,7 @@ function menu.sub_menu_button(args)
 			margins = {
 				left = dpi(20),
 				right = dpi(10),
+				bottom = dpi(5),
 			}
 		},
 		bg = beautiful.background_dark,
@@ -302,6 +303,7 @@ function menu.button(args)
 			widget = wibox.container.margin,
 			margins = {
 				left = dpi(20),
+				top = dpi(5),
 			}
 		},
 		bg = beautiful.background_dark,

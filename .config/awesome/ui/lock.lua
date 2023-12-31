@@ -212,7 +212,7 @@ promptbox:setup {
 					},
 					{
 						font = beautiful.sans .. " Light 20",
-						format = "%A, %d %B",
+						format = "%A, %d %B %Y",
 						halign = "center",
 						valign = "center",
 						widget = wibox.widget.textclock
