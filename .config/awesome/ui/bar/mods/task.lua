@@ -341,6 +341,7 @@ function M:genIcons()
 						if j.clients[j.count].minimized then
 							j.clients[j.count].minimized = false
 							client.focus = j.clients[j.count]
+							awful.client.movetotag(mouse.screen.selected_tag, j.clients[j.count])
 						else
 							j.clients[j.count].minimized = true
 						end

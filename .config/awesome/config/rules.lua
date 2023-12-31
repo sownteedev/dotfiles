@@ -68,7 +68,3 @@ client.connect_signal('request::manage', function(c)
 		awful.placement.no_offscreen(c)
 	end
 end)
-
--- client.connect_signal("mouse::enter", function(c)
--- 	c:activate { context = "mouse_enter", raise = false }
--- end)

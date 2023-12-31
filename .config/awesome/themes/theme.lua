@@ -93,10 +93,10 @@ theme.tooltip_fg                                     = theme.foreground
 theme.tooltip_border_width                           = theme.border_width
 
 -- Titlebar --
-theme.titlebar_bg_normal                             = theme.background_alt
-theme.titlebar_bg_focus                              = theme.background_alt
-theme.titlebar_bg_urgent                             = theme.background_alt
+theme.titlebar_bg_normal                             = theme.background_dark
+theme.titlebar_bg_focus                              = theme.background_dark
 
+-- Icon layout --
 theme.layout_floating                                = gears.color.recolor_image(themes_path .. "assets/floating.png",
 	theme.foreground)
 theme.layout_tile                                    = gears.color.recolor_image(themes_path .. "assets/tile.png",

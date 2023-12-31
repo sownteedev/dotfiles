@@ -108,21 +108,7 @@ else
 fi
 sleep 0.5
 
-# Zsh
-echo "[*] Installing zsh ..."
-if pkg_installed zsh
-then
-	echo "[*] Zsh already installed, skipping ..."
-else
-	sudo pacman -S zsh --noconfirm
-	echo "[*] Zsh Installed."
-fi
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-rm ~/.zshrc && touch ~/.zshrc && echo "source ~/.config/zsh/.zshrc" >> ~/.zshrc
-echo "[*] Done."
-sleep 0.5
-
-#################################################### INSTALL DRIVER ####################################################
+#################################################### INSTALL DRIVER AND APPS ####################################################
 read -p "[*] Do you want to install driver and dependencies(Recommend Yes)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
@@ -247,3 +233,17 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 else
 	echo "[*] Other apps installation skipped."
 fi
+
+# Zsh
+echo "[*] Installing zsh ..."
+if pkg_installed zsh
+then
+	echo "[*] Zsh already installed, skipping ..."
+else
+	sudo pacman -S zsh --noconfirm
+	echo "[*] Zsh Installed."
+fi
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+rm ~/.zshrc && touch ~/.zshrc && echo "source ~/.config/zsh/.zshrc" >> ~/.zshrc
+echo "[*] Done."
+sleep 0.5
