@@ -1,5 +1,5 @@
 :root {
-	--font-primary: Manrope, sans-serif;
+	--font-primary: Manrope, sans-serif !important;
 	--font-display: Inter, sans-serif !important;
 }
 

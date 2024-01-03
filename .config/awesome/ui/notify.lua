@@ -50,7 +50,7 @@ naughty.connect_signal("request::display", function(n)
 			widget = wibox.container.margin
 		},
 		bg = beautiful.background,
-		forced_height = dpi(30),
+		forced_height = dpi(5),
 		shape = helpers.rrect(5),
 		widget = wibox.container.background
 	}
@@ -59,12 +59,12 @@ naughty.connect_signal("request::display", function(n)
 	local actions = wibox.widget {
 		notification = n,
 		base_layout = wibox.widget {
-			spacing = dpi(8),
+			spacing = dpi(5),
 			layout = wibox.layout.flex.horizontal
 		},
 		widget_template = action_widget,
 		style = { underline_normal = false, underline_selected = true },
-		widget = naughty.list.actions
+		widget = naughty.list.actions,
 	}
 
 	-- image
@@ -120,14 +120,13 @@ naughty.connect_signal("request::display", function(n)
 				valign = "center",
 				widget = wibox.widget.textbox
 			},
-			forced_width  = dpi(240),
+			forced_width  = dpi(250),
 			widget        = wibox.container.scroll.horizontal,
 			step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
 			speed         = 50
 		},
 		widget = wibox.container.margin,
 	}
-
 
 	local message_n = wibox.widget {
 		{
@@ -139,8 +138,8 @@ naughty.connect_signal("request::display", function(n)
 				wrap   = "char",
 				widget = wibox.widget.textbox
 			},
-			forced_width = dpi(240),
-			layout       = wibox.layout.fixed.horizontal
+			forced_width = dpi(250),
+			layout       = wibox.layout.fixed.horizontal,
 		},
 		widget = wibox.container.margin
 	}
@@ -225,20 +224,23 @@ naughty.connect_signal("request::display", function(n)
 					layout = wibox.layout.fixed.vertical
 				},
 				{
-					-- body
 					{
 						{
 							title_n,
 							message_n,
 							layout = wibox.layout.fixed.vertical,
-							spacing = dpi(5)
+							spacing = dpi(10)
 						},
 						nil,
-						image_n,
+						{
+							image_n,
+							layout = wibox.container.margin,
+							left = dpi(10),
+						},
 						layout = wibox.layout.align.horizontal,
 						expand = "none"
 					},
-					margins = { left = dpi(20), top = dpi(10), right = dpi(30) },
+					margins = { left = dpi(20), top = dpi(10), right = dpi(20) },
 					widget = wibox.container.margin
 				},
 				{

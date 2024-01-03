@@ -18,6 +18,10 @@ local custom     = {
 		name = "ncmpcpppad",
 		to = "deepin-music-player"
 	},
+	{
+		name = "jetbrains-idea",
+		to = "jetbrains-intellij-idea"
+	}
 }
 
 local function hasValue(str)

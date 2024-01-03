@@ -41,11 +41,11 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { screen = 1, tag = "1", switch_to_tags = true }
 	}
 	ruled.client.append_rule {
-		rule_any   = { class = { "Google-chrome", "firefox" } },
+		rule_any   = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
 		properties = { screen = 1, tag = "2", switch_to_tags = true }
 	}
 	ruled.client.append_rule {
-		rule_any   = { class = { "Code", "jetbrains-idea", "neovide" } },
+		rule_any   = { class = { "Code", "jetbrains-idea", "webstom", "neovide" } },
 		properties = { screen = 1, tag = "3" }
 	}
 	ruled.client.append_rule {

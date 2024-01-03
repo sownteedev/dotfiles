@@ -15,4 +15,6 @@ decaydark.orange             = "#e89982"
 decaydark.violet             = "#b18bb1"
 decaydark.accent             = "#A9B1D6"
 
+decaydark.wallpaper          = "~/.walls/sea.jpg"
+
 return decaydark

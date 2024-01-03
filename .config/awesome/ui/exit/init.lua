@@ -148,12 +148,11 @@ awful.screen.connect_for_each_screen(function(s)
 
 	exit:setup {
 		back,
-
 		overlay,
 		top,
 		buttons,
 		down,
-		widget = wibox.layout.stack
+		widget = wibox.layout.stack,
 	}
 	awful.placement.centered(exit)
 	awesome.connect_signal("toggle::exit", function()

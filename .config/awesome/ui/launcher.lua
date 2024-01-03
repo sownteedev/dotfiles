@@ -28,8 +28,8 @@ local createPowerButton                 = function(icon, color, command)
 				widget = wibox.container.margin,
 				left = 16,
 				right = 6,
-				top = 15,
-				bottom = 15,
+				top = 10,
+				bottom = 10,
 			},
 			widget = wibox.container.background,
 			bg = color .. '11',
@@ -69,10 +69,10 @@ local sidebar                           = wibox.widget {
 		nil,
 		{
 			{
-				createPowerButton(" ", beautiful.blue, "betterlockscreen -l dimblur"),
+				createPowerButton(" ", beautiful.blue, "awesome-client \"awesome.emit_signal('toggle::lock')\""),
 				createPowerButton(" ", beautiful.yellow, "reboot"),
 				createPowerButton("󰐥 ", beautiful.red, "poweroff"),
-				spacing = 5,
+				spacing = 10,
 				layout = wibox.layout.fixed.vertical
 			},
 			widget = wibox.container.margin,
@@ -117,7 +117,7 @@ local prompt                            = wibox.widget {
 			forced_height = 40,
 			shape = helpers.rrect(8),
 			widget = wibox.container.background,
-			bg = beautiful.background .. "60",
+			bg = beautiful.background_dark .. "CC",
 		},
 		widget = wibox.container.place,
 		halign = "center",

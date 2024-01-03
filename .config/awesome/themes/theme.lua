@@ -9,7 +9,7 @@ local themes_path                                    = gfs.get_configuration_dir
 
 local theme                                          = {}
 
-theme.font                                           = "Rubik 9"
+theme.font                                           = "Rubik 10"
 theme.sans                                           = "Rubik"
 theme.icon                                           = "Material Design Icons"
 theme.useless_gap                                    = 10
@@ -31,11 +31,13 @@ theme.orange                                         = colors.orange
 theme.violet                                         = colors.violet
 theme.accent                                         = colors.accent
 
+theme.wallpaper                                      = colors.wallpaper
+
 -- Get resolution --
 theme.width                                          = awful.screen.focused().geometry.width
 theme.height                                         = awful.screen.focused().geometry.height
+
 theme.user                                           = string.gsub(os.getenv('USER'), '^%l', string.upper)
-theme.wallpaper                                      = "~/.walls/moreroses.jpg"
 theme.profile                                        = "~/.config/awesome/themes/assets/sownteedev.png"
 theme.fetch                                          = "~/.config/awesome/themes/assets/neofetch.png"
 theme.songdefpicture                                 = "~/.config/awesome/themes/assets/defsong.jpg"
