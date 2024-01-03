@@ -15,4 +15,6 @@ yoru.orange             = "#e89982"
 yoru.violet             = "#c49ec4"
 yoru.accent             = "#a9b1d6"
 
+yoru.wallpaper          = "~/.walls/moreroses.jpg"
+
 return yoru

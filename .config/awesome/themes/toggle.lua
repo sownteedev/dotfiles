@@ -24,6 +24,7 @@ local function backup()
 
 		cp -r ~/.local/other/ ~/dotfiles/.local/ && cp -r ~/.local/bin/ ~/dotfiles/.local/
 		rm -f ~/dotfiles/.Xresources && cp ~/.Xresources ~/dotfiles/
+		rm -f ~/dotfiles/.local/other/.xinitrc && cp ~/.xinitrc ~/dotfiles/.local/other/
 	]])
 end
 
@@ -100,8 +101,7 @@ function applyTheme(theme)
 	backup()
 	awful.spawn.easy_async_with_shell([[
 		spicetify config color_scheme ]] .. theme .. [[ && spicetify apply &&
-		awesome-client 'nvim("]] .. theme .. [[")' && new_line="vim.g.currentTheme = \"]] .. theme .. [[\"" &&
-		sed -i "s/vim.g.currentTheme = .*/$new_line/" "$HOME/.config/nvim/lua/user/options.lua" &&
+		awesome-client 'nvim("]] .. theme .. [[")' &&
 		awesome-client 'awesome.restart()'
 	]])
 end

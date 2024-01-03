@@ -6,23 +6,6 @@ local Launcher      = require("ui.launcher")
 local function awesome_menu()
 	return menu({
 		menu.button({
-			icon = { icon = " ", font = "Material Design Icons" },
-			text = "Show Help",
-			on_press = function()
-				hotkeys_popup.show_help(nil, awful.screen.focused())
-				awesome.emit_signal("close::menu")
-			end,
-		}),
-		menu.button({
-			icon = { icon = " ", font = "Material Design Icons" },
-			text = "Docs",
-			on_press = function()
-				awful.spawn.with_shell(
-					"firefox https://awesomewm.org/apidoc/documentation/07-my-first-awesome.md.html# &")
-				awesome.emit_signal("close::menu")
-			end,
-		}),
-		menu.button({
 			icon = { icon = "󰣕 ", font = "Material Design Icons" },
 			text = "Edit Config",
 			on_press = function()

@@ -44,7 +44,7 @@ awful.keyboard.append_global_keybindings({
 	end),
 
 	-- Scripts
-	awful.key({}, "Print", function() awful.spawn.with_shell("~/.config/scripts/Screenshot/Screenshot") end),
+	awful.key({}, "Print", function() awful.spawn.with_shell("flameshot gui") end),
 	awful.key({ alt, }, "p", function() awful.spawn.with_shell("~/.local/bin/colorpicker") end),
 	awful.key({ alt, }, "F4", function() awesome.emit_signal("toggle::exit") end),
 	awful.key({ mod }, "l", function() awesome.emit_signal("toggle::lock") end),

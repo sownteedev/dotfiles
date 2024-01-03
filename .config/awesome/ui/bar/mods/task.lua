@@ -13,8 +13,18 @@ local M         = {
 		{
 			count = 0,
 			pinned = true,
-			icon = getIcon(nil, "firefox", "firefox"),
+			icon = getIcon(nil, "Alacritty", "Alacritty"),
 			id = 1,
+			clients = {},
+			class = "alacritty",
+			exec = "alacritty",
+			name = "alacritty",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "firefox", "firefox"),
+			id = 2,
 			clients = {},
 			class = "firefox",
 			exec = "firefox",
@@ -23,8 +33,38 @@ local M         = {
 		{
 			count = 0,
 			pinned = true,
+			icon = getIcon(nil, "visual-studio-code", "visual-studio-code"),
+			id = 3,
+			clients = {},
+			class = "code",
+			exec = "code",
+			name = "code",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "jetbrains-idea", "jetbrains-idea"),
+			id = 4,
+			clients = {},
+			class = "jetbrains-idea",
+			exec = "intellij-idea-ultimate-edition",
+			name = "jetbrains-idea",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "jetbrains-webstorm", "jetbrains-webstorm"),
+			id = 5,
+			clients = {},
+			class = "jetbrains-webstorm",
+			exec = "webstorm",
+			name = "jetbrains-webstorm",
+		},
+		{
+			count = 0,
+			pinned = true,
 			icon = getIcon(nil, "discord", "discord"),
-			id = 2,
+			id = 6,
 			clients = {},
 			class = "discord",
 			exec = "discord",
@@ -34,45 +74,15 @@ local M         = {
 			count = 0,
 			pinned = true,
 			icon = getIcon(nil, "Spotify", "Spotify"),
-			id = 3,
+			id = 7,
 			clients = {},
 			class = "spotify",
 			exec = "spotify",
 			name = "spotify",
 		},
-		{
-			count = 0,
-			pinned = true,
-			icon = getIcon(nil, "Alacritty", "Alacritty"),
-			id = 4,
-			clients = {},
-			class = "alacritty",
-			exec = "alacritty",
-			name = "alacritty",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = getIcon(nil, "visual-studio-code", "visual-studio-code"),
-			id = 5,
-			clients = {},
-			class = "code",
-			exec = "code",
-			name = "code",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = getIcon(nil, "intellij", "intellij"),
-			id = 6,
-			clients = {},
-			class = "jetbrains-idea",
-			exec = "jetbrains-idea",
-			name = "jetbrains-idea",
-		}
 	},
 	entries = {},
-	classes = { "firefox", "discord", "spotify", "alacritty", "code", "jetbrains-idea" },
+	classes = { "alacritty", "firefox", "code", "jetbrains-idea", "jetbrains-webstorm", "discord", "spotify" },
 }
 
 M.widget        = wibox.widget {
@@ -106,7 +116,7 @@ local removeDup = function(arr)
 
 	for _, v in ipairs(arr) do
 		if (not hash[v]) then
-			res[#res + 1] = v -- you could print here instead of saving to result table if you wanted
+			res[#res + 1] = v
 			hash[v] = true
 		end
 	end
@@ -174,10 +184,18 @@ function M:showMenu(data)
 			},
 			buttons = {
 				awful.button({}, 1, function()
-					if j.minimized then
+					if client.focus and client.focus.class:lower() == j.class then
+						client.focus = j
+						awful.client.movetotag(mouse.screen.selected_tag, j)
+					elseif j.minimized then
 						j.minimized = false
 						client.focus = j
-					else
+						awful.client.movetotag(mouse.screen.selected_tag, j)
+					end
+					self.popup.visible = false
+				end),
+				awful.button({}, 3, function()
+					if client.focus and client.focus.class:lower() == j.class then
 						j.minimized = true
 					end
 					self.popup.visible = false
@@ -342,8 +360,11 @@ function M:genIcons()
 							j.clients[j.count].minimized = false
 							client.focus = j.clients[j.count]
 							awful.client.movetotag(mouse.screen.selected_tag, j.clients[j.count])
-						else
+						elseif client.focus and client.focus.class:lower() == j.class then
 							j.clients[j.count].minimized = true
+						elseif client.focus and client.focus.class:lower() ~= j.class then
+							client.focus = j.clients[j.count]
+							awful.client.movetotag(mouse.screen.selected_tag, j.clients[j.count])
 						end
 					else
 						self:showMenu(j)
