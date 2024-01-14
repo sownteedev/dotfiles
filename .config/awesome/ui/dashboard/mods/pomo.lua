@@ -28,15 +28,18 @@ function timer:new()
 	self.paused = true
 	self.pausedTime = nil
 
-	self.widget = wibox.widget {
+	self.widget = wibox.widget({
 		{
 			id = "image",
-			image = helpers.cropSurface(1.42, gears.surface.load_uncached(gears.filesystem.get_configuration_dir() .. "/themes/assets/pomo.jpg")),
+			image = helpers.cropSurface(
+				1.42,
+				gears.surface.load_uncached(gears.filesystem.get_configuration_dir() .. "/themes/assets/pomo.jpg")
+			),
 			widget = wibox.widget.imagebox,
 			clip_shape = helpers.rrect(5),
 			opacity = 0.9,
 			resize = true,
-			horizontal_fit_policy = "fit"
+			horizontal_fit_policy = "fit",
 		},
 		{
 			{
@@ -46,7 +49,7 @@ function timer:new()
 				type = "linear",
 				from = { 0, 0 },
 				to = { 200, 0 },
-				stops = { { 0, beautiful.background_alt .. "aa" }, { 1, beautiful.background .. 'dd' } }
+				stops = { { 0, beautiful.background_alt .. "aa" }, { 1, beautiful.background .. "dd" } },
 			},
 			shape = helpers.rrect(5),
 			widget = wibox.container.background,
@@ -65,7 +68,7 @@ function timer:new()
 								widget = wibox.widget.textbox,
 							},
 							widget = wibox.container.place,
-							halign = 'center'
+							halign = "center",
 						},
 						{
 							{
@@ -95,7 +98,7 @@ function timer:new()
 												self.clock:stop()
 												self:update()
 											end
-										end)
+										end),
 									},
 								},
 								{
@@ -123,9 +126,9 @@ function timer:new()
 											else
 												self:resume()
 											end
-										end)
+										end),
 									},
-									bg = beautiful.blue .. '11'
+									bg = beautiful.blue .. "11",
 								},
 								{
 									{
@@ -152,9 +155,9 @@ function timer:new()
 											self.pausedTime = self.defaultTime
 											self.clock:stop()
 											self:update()
-										end)
+										end),
 									},
-									bg = beautiful.red .. '11'
+									bg = beautiful.red .. "11",
 								},
 								{
 									{
@@ -180,14 +183,14 @@ function timer:new()
 											self.pausedTime = self.defaultTime
 											self.clock:stop()
 											self:update()
-										end)
+										end),
 									},
 								},
 								layout = wibox.layout.fixed.horizontal,
 								spacing = 20,
 							},
 							widget = wibox.container.place,
-							halign = 'center',
+							halign = "center",
 						},
 						layout = wibox.layout.fixed.vertical,
 						spacing = 20,
@@ -196,41 +199,41 @@ function timer:new()
 					margins = 0,
 				},
 				widget = wibox.container.place,
-				valign = 'center',
+				valign = "center",
 			},
-			shape  = helpers.rrect(5),
+			shape = helpers.rrect(5),
 			widget = wibox.container.background,
 		},
 		{
 			{
 				nil,
 				{
-					id               = "prog",
-					max_value        = 100,
-					value            = 0,
-					forced_height    = 20,
-					bar_shape        = helpers.prect(false, false, true, true, 5),
-					shape            = helpers.prect(false, false, true, true, 5),
-					color            = beautiful.green,
-					background_color = beautiful.green .. '11',
-					paddings         = 1,
-					border_width     = 1,
-					widget           = wibox.widget.progressbar,
+					id = "prog",
+					max_value = 100,
+					value = 0,
+					forced_height = 20,
+					bar_shape = helpers.prect(false, false, true, true, 5),
+					shape = helpers.prect(false, false, true, true, 5),
+					color = beautiful.green,
+					background_color = beautiful.green .. "11",
+					paddings = 1,
+					border_width = 1,
+					widget = wibox.widget.progressbar,
 				},
 				nil,
 				layout = wibox.layout.align.vertical,
 			},
 			widget = wibox.container.place,
-			valign = "bottom"
+			valign = "bottom",
 		},
 		layout = wibox.layout.stack,
-	}
+	})
 
 	function self:update()
 		local percent = math.floor((self.timeRemaining / self.defaultTime) * 100)
-		self.widget:get_children_by_id("timer")[1].markup = string.format("%02d:%02d", self.timeRemaining / 60,
-			self.timeRemaining % 60)
-		self.widget:get_children_by_id('prog')[1].value = percent
+		self.widget:get_children_by_id("timer")[1].markup =
+			string.format("%02d:%02d", self.timeRemaining / 60, self.timeRemaining % 60)
+		self.widget:get_children_by_id("prog")[1].value = percent
 		if self.timeRemaining == 0 then
 			awful.spawn.with_shell("notify-send 'Time is up!' 'Get some rest'")
 		end
@@ -246,7 +249,7 @@ function timer:new()
 		timeout = 1,
 		call_now = true,
 		autostart = false,
-		callback = tick
+		callback = tick,
 	})
 
 	self:update()

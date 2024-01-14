@@ -10,9 +10,9 @@ fi
 
 eval "$(thefuck --alias)"
 
-alias rec='ffmpeg -y -framerate 60 -f x11grab -i $DISPLAY -pix_fmt yuv420p $HOME/Videos/rec.mp4'
-alias rec_audio='ffmpeg -y -framerate 60 -f x11grab -i $DISPLAY -f pulse -i alsa_output.pci-0000_00_1b.0.analog-stereo.monitor -pix_fmt yuv420p $HOME/Videos/rec.mp4'
-alias rec_mic='ffmpeg -y -framerate 60 -f x11grab -i $DISPLAY -f pulse -i default -pix_fmt yuv420p $HOME/Videos/rec.mp4'
+alias rec='ffmpeg -y -framerate 60 -f x11grab -i $DISPLAY -pix_fmt yuv420p $HOME/Videos/Recordings/rec.mp4'
+alias rec_audio='ffmpeg -y -framerate 60 -f x11grab -i $DISPLAY -f pulse -i alsa_output.pci-0000_00_1b.0.analog-stereo.monitor -pix_fmt yuv420p $HOME/Videos/Recordings/rec.mp4'
+alias rec_mic='ffmpeg -y -framerate 60 -f x11grab -i $DISPLAY -f pulse -i default -pix_fmt yuv420p $HOME/Videos/Recordings/rec.mp4'
 
 alias cls="clear"
 alias nvide="neovide"
@@ -63,5 +63,6 @@ alias wttr='curl wttr.in'
 alias c='cd $(fd --type d . | fzf)'
 
 bindkey -s ^n "nvims\n"
+bindkey -s ^o "startx\n"
 
 # vim:ft=zsh

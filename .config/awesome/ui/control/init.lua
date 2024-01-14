@@ -20,7 +20,7 @@ awful.screen.connect_for_each_screen(function(s)
 		visible = false,
 	})
 
-	control:setup {
+	control:setup({
 		{
 			{
 				moosic,
@@ -75,7 +75,7 @@ awful.screen.connect_for_each_screen(function(s)
 										markup = helpers.colorizeText("󱡓 ", beautiful.foreground),
 										widget = wibox.widget.textbox,
 										valign = "center",
-										align = "center"
+										align = "center",
 									},
 									widget = wibox.container.margin,
 									left = 13,
@@ -90,10 +90,12 @@ awful.screen.connect_for_each_screen(function(s)
 										opacity = not opacity
 										if opacity then
 											awful.spawn.with_shell(
-												"~/.config/awesome/signals/scripts/Picom/toggle --opacity &")
+												"~/.config/awesome/signals/scripts/Picom/toggle --opacity &"
+											)
 										else
 											awful.spawn.with_shell(
-												"~/.config/awesome/signals/scripts/Picom/toggle --no-opacity &")
+												"~/.config/awesome/signals/scripts/Picom/toggle --no-opacity &"
+											)
 										end
 									end),
 								},
@@ -118,7 +120,7 @@ awful.screen.connect_for_each_screen(function(s)
 		},
 		nil,
 		layout = wibox.layout.align.vertical,
-	}
+	})
 	awful.placement.bottom_right(control, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::control", function()
 		control.visible = not control.visible

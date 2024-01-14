@@ -1,9 +1,8 @@
-local wibox     = require("wibox")
+local wibox = require("wibox")
 local beautiful = require("beautiful")
-local helpers   = require("helpers")
+local helpers = require("helpers")
 
-
-local widget = wibox.widget {
+local widget = wibox.widget({
 	{
 		{
 			{
@@ -12,7 +11,7 @@ local widget = wibox.widget {
 						{
 							{
 								font = beautiful.sans .. " 12",
-								markup = helpers.colorizeText('󱄅 ', beautiful.background),
+								markup = helpers.colorizeText("󱄅 ", beautiful.background),
 								widget = wibox.widget.textbox,
 							},
 							widget = wibox.container.margin,
@@ -22,12 +21,12 @@ local widget = wibox.widget {
 							right = 5,
 						},
 						widget = wibox.container.background,
-						bg = beautiful.blue
+						bg = beautiful.blue,
 					},
 					{
 						{
 							font = beautiful.sans .. " 10",
-							markup = helpers.colorizeText('tefetch', beautiful.green),
+							markup = helpers.colorizeText("tefetch", beautiful.green),
 							widget = wibox.widget.textbox,
 						},
 						widget = wibox.container.place,
@@ -51,22 +50,22 @@ local widget = wibox.widget {
 				{
 					{
 						font = beautiful.sans .. " 10",
-						markup = helpers.colorizeText('OS:   Arch Linux', beautiful.foreground),
+						markup = helpers.colorizeText("OS:   Arch Linux", beautiful.foreground),
 						widget = wibox.widget.textbox,
 					},
 					{
 						font = beautiful.sans .. " 10",
-						markup = helpers.colorizeText('WM:   Awesome', beautiful.foreground),
+						markup = helpers.colorizeText("WM:   Awesome", beautiful.foreground),
 						widget = wibox.widget.textbox,
 					},
 					{
 						font = beautiful.sans .. " 10",
-						markup = helpers.colorizeText('USER:   ' .. beautiful.user, beautiful.foreground),
+						markup = helpers.colorizeText("USER:   " .. beautiful.user, beautiful.foreground),
 						widget = wibox.widget.textbox,
 					},
 					{
 						font = beautiful.sans .. " 10",
-						markup = helpers.colorizeText('SHELL:   ZSH', beautiful.foreground),
+						markup = helpers.colorizeText("SHELL:   ZSH", beautiful.foreground),
 						widget = wibox.widget.textbox,
 					},
 					spacing = 8,
@@ -123,17 +122,17 @@ local widget = wibox.widget {
 					layout = wibox.layout.fixed.horizontal,
 				},
 				widget = wibox.container.place,
-				halign = "center"
+				halign = "center",
 			},
 			spacing = 20,
 			layout = wibox.layout.fixed.vertical,
 		},
 		widget = wibox.container.margin,
-		margins = 20
+		margins = 20,
 	},
 	widget = wibox.container.background,
 	bg = beautiful.background,
-	shape = helpers.rrect(5)
-}
+	shape = helpers.rrect(5),
+})
 
 return widget

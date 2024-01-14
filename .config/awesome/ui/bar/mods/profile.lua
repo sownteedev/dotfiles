@@ -1,9 +1,9 @@
-local wibox     = require("wibox")
+local wibox = require("wibox")
 local beautiful = require("beautiful")
-local awful     = require("awful")
-local Launcher  = require("ui.launcher")
+local awful = require("awful")
+local Launcher = require("ui.launcher")
 
-local profile   = wibox.widget {
+local profile = wibox.widget({
 	widget = wibox.widget.imagebox,
 	image = beautiful.profile,
 	forced_height = 35,
@@ -14,9 +14,9 @@ local profile   = wibox.widget {
 			Launcher:toggle()
 		end),
 		awful.button({}, 3, function()
-			awesome.emit_signal('toggle::dash')
-		end)
+			awesome.emit_signal("toggle::dash")
+		end),
 	},
-}
+})
 
 return profile

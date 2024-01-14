@@ -25,7 +25,7 @@ awful.screen.connect_for_each_screen(function(s)
 		visible = false,
 	})
 
-	dash:setup {
+	dash:setup({
 		{
 			{
 				profile,
@@ -51,7 +51,7 @@ awful.screen.connect_for_each_screen(function(s)
 		},
 		widget = wibox.container.margin,
 		margins = 15,
-	}
+	})
 	awful.placement.centered(dash, { honor_workarea = true, margins = 20 })
 	awesome.connect_signal("toggle::dash", function()
 		dash.visible = not dash.visible

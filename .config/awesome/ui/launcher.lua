@@ -1,22 +1,22 @@
-local awful                             = require("awful")
-local wibox                             = require("wibox")
-local Gio                               = require("lgi").Gio
-local iconTheme                         = require("lgi").require("Gtk", "3.0").IconTheme.get_default()
-local beautiful                         = require("beautiful")
-local gears                             = require("gears")
-local helpers                           = require("helpers")
-local dpi                               = beautiful.xresources.apply_dpi
-local L                                 = {}
+local awful = require("awful")
+local wibox = require("wibox")
+local Gio = require("lgi").Gio
+local iconTheme = require("lgi").require("Gtk", "3.0").IconTheme.get_default()
+local beautiful = require("beautiful")
+local gears = require("gears")
+local helpers = require("helpers")
+local dpi = beautiful.xresources.apply_dpi
+local L = {}
 
-local Conf                              = {
+local Conf = {
 	rows = 8,
 	entry_height = 55,
 	entry_width = 280,
 	popup_margins = 15,
 }
 
-local createPowerButton                 = function(icon, color, command)
-	return wibox.widget {
+local createPowerButton = function(icon, color, command)
+	return wibox.widget({
 		{
 			{
 				{
@@ -26,26 +26,26 @@ local createPowerButton                 = function(icon, color, command)
 					widget = wibox.widget.textbox,
 				},
 				widget = wibox.container.margin,
-				left = 16,
-				right = 6,
+				left = 18,
+				right = 10,
 				top = 10,
 				bottom = 10,
 			},
 			widget = wibox.container.background,
-			bg = color .. '11',
-			shape = helpers.rrect(4)
+			bg = color .. "11",
+			shape = helpers.rrect(4),
 		},
 		widget = wibox.container.place,
 		halign = "center",
 		buttons = {
 			awful.button({}, 1, function()
 				awful.spawn.with_shell(command)
-			end)
+			end),
 		},
-	}
+	})
 end
 
-local sidebar                           = wibox.widget {
+local sidebar = wibox.widget({
 	widget = wibox.container.background,
 	bg = beautiful.background,
 	forced_width = Conf.entry_height + 10,
@@ -61,10 +61,10 @@ local sidebar                           = wibox.widget {
 					resize = true,
 				},
 				widget = wibox.container.place,
-				halign = "center"
+				halign = "center",
 			},
 			widget = wibox.container.margin,
-			top = 15
+			top = 15,
 		},
 		nil,
 		{
@@ -73,22 +73,22 @@ local sidebar                           = wibox.widget {
 				createPowerButton(" ", beautiful.yellow, "reboot"),
 				createPowerButton("󰐥 ", beautiful.red, "poweroff"),
 				spacing = 10,
-				layout = wibox.layout.fixed.vertical
+				layout = wibox.layout.fixed.vertical,
 			},
 			widget = wibox.container.margin,
-			bottom = 8
+			bottom = 8,
 		},
-	}
-}
+	},
+})
 
-local prompt                            = wibox.widget {
+local prompt = wibox.widget({
 	{
 		image = helpers.cropSurface(3.42, gears.surface.load_uncached(beautiful.wallpaper)),
 		opacity = 1,
 		forced_height = 85,
 		clip_shape = helpers.rrect(5),
 		forced_width = Conf.entry_height,
-		widget = wibox.widget.imagebox
+		widget = wibox.widget.imagebox,
 	},
 	{
 		{
@@ -108,7 +108,7 @@ local prompt                            = wibox.widget {
 						font = beautiful.sans .. " 10",
 						widget = wibox.widget.textbox,
 					},
-					layout = wibox.layout.stack
+					layout = wibox.layout.stack,
 				},
 				widget = wibox.container.margin,
 				margins = 10,
@@ -123,18 +123,18 @@ local prompt                            = wibox.widget {
 		halign = "center",
 		valgn = "center",
 	},
-	layout = wibox.layout.stack
-}
+	layout = wibox.layout.stack,
+})
 
-local entries_container                 = wibox.widget {
+local entries_container = wibox.widget({
 	layout = wibox.layout.grid,
 	homogeneous = false,
 	expand = true,
 	forced_num_cols = 1,
 	forced_width = Conf.entry_width,
-}
+})
 
-local main_widget                       = wibox.widget {
+local main_widget = wibox.widget({
 	widget = wibox.container.margin,
 	margins = 0,
 	{
@@ -149,19 +149,19 @@ local main_widget                       = wibox.widget {
 					layout = wibox.layout.fixed.vertical,
 					spacing = Conf.popup_margins,
 					prompt,
-					entries_container
+					entries_container,
 				},
 				widget = wibox.container.margin,
 				left = 0,
 				right = Conf.popup_margins,
 				bottom = Conf.popup_margins,
 				top = Conf.popup_margins,
-			}
-		}
-	}
-}
+			},
+		},
+	},
+})
 
-local popup_widget                      = awful.popup {
+local popup_widget = awful.popup({
 	bg = beautiful.background_dark,
 	border_width = beautiful.border_width,
 	border_color = beautiful.border_color_normal,
@@ -172,10 +172,10 @@ local popup_widget                      = awful.popup {
 	end,
 	maximum_width = Conf.entry_width + Conf.entry_height + Conf.popup_margins * 3,
 	shape = helpers.rrect(5),
-	widget = main_widget
-}
+	widget = main_widget,
+})
 
-local index_entry, index_start          = 1, 1
+local index_entry, index_start = 1, 1
 local unfiltered, filtered, regfiltered = {}, {}, {}
 
 local function next()
@@ -217,10 +217,7 @@ local function gen()
 					path = p
 				end
 			end
-			table.insert(
-				entries,
-				{ name = name, appinfo = entry, icon = path or '' }
-			)
+			table.insert(entries, { name = name, appinfo = entry, icon = path or "" })
 		end
 	end
 	return entries
@@ -240,8 +237,12 @@ local function filter(input)
 		end
 	end
 
-	table.sort(filtered, function(a, b) return a.name:lower() < b.name:lower() end)
-	table.sort(regfiltered, function(a, b) return a.name:lower() < b.name:lower() end)
+	table.sort(filtered, function(a, b)
+		return a.name:lower() < b.name:lower()
+	end)
+	table.sort(regfiltered, function(a, b)
+		return a.name:lower() < b.name:lower()
+	end)
 
 	for i = 1, #regfiltered do
 		filtered[#filtered + 1] = regfiltered[i]
@@ -250,7 +251,7 @@ local function filter(input)
 	entries_container:reset()
 
 	for i, entry in ipairs(filtered) do
-		local entry_widget = wibox.widget {
+		local entry_widget = wibox.widget({
 			shape = helpers.rrect(5),
 			forced_height = Conf.entry_height,
 			buttons = {
@@ -278,8 +279,8 @@ local function filter(input)
 					{
 						image = entry.icon,
 						clip_shape = helpers.rrect(10),
-						valign = 'center',
-						widget = wibox.widget.imagebox
+						valign = "center",
+						widget = wibox.widget.imagebox,
 					},
 					{
 						markup = entry.name,
@@ -292,8 +293,8 @@ local function filter(input)
 				},
 				margins = dpi(8),
 				widget = wibox.container.margin,
-			}
-		}
+			},
+		})
 
 		if index_start <= i and i <= index_start + Conf.rows - 1 then
 			entries_container:add(entry_widget)
@@ -304,7 +305,7 @@ local function filter(input)
 		end
 
 		if i == index_entry then
-			entry_widget.bg = beautiful.blue .. "09"
+			entry_widget.bg = beautiful.background
 			entry_widget:get_children_by_id("name")[1].markup = helpers.colorizeText(entry.name, beautiful.blue)
 		end
 	end
@@ -352,21 +353,21 @@ local prompt_grabber = awful.keygrabber({
 	auto_start = true,
 	stop_event = "release",
 	keypressed_callback = function(self, mod, key, command)
-		local addition = ''
+		local addition = ""
 		if key == "Escape" then
 			L:close()
 		elseif key == "BackSpace" then
-			prompt:get_children_by_id('txt')[1].markup = prompt:get_children_by_id('txt')[1].markup:sub(1, -2)
-			filter(prompt:get_children_by_id('txt')[1].markup)
+			prompt:get_children_by_id("txt")[1].markup = prompt:get_children_by_id("txt")[1].markup:sub(1, -2)
+			filter(prompt:get_children_by_id("txt")[1].markup)
 		elseif key == "Delete" then
-			prompt:get_children_by_id('txt')[1].markup = ""
-			filter(prompt:get_children_by_id('txt')[1].markup)
+			prompt:get_children_by_id("txt")[1].markup = ""
+			filter(prompt:get_children_by_id("txt")[1].markup)
 		elseif key == "Return" then
 			local entry = filtered[index_entry]
 			if entry then
 				entry.appinfo:launch()
 			else
-				awful.spawn.with_shell(prompt:get_children_by_id('txt')[1].markup)
+				awful.spawn.with_shell(prompt:get_children_by_id("txt")[1].markup)
 			end
 			L:close()
 		elseif key == "Up" then
@@ -374,38 +375,31 @@ local prompt_grabber = awful.keygrabber({
 		elseif key == "Down" then
 			next()
 		elseif has_value(exclude, key) then
-			addition = ''
+			addition = ""
 		else
 			addition = key
 		end
-		prompt:get_children_by_id('txt')[1].markup = prompt:get_children_by_id('txt')[1].markup .. addition
-		filter(prompt:get_children_by_id('txt')[1].markup)
-		if string.len(prompt:get_children_by_id('txt')[1].markup) > 0 then
-			prompt:get_children_by_id('placeholder')[1].markup = ''
+		prompt:get_children_by_id("txt")[1].markup = prompt:get_children_by_id("txt")[1].markup .. addition
+		filter(prompt:get_children_by_id("txt")[1].markup)
+		if string.len(prompt:get_children_by_id("txt")[1].markup) > 0 then
+			prompt:get_children_by_id("placeholder")[1].markup = ""
 		else
-			prompt:get_children_by_id('placeholder')[1].markup = 'Search...'
+			prompt:get_children_by_id("placeholder")[1].markup = "Search..."
 		end
 	end,
 })
 
-local function send_signal()
-	awesome.emit_signal("launcher::visibility", popup_widget.visible)
-end
-
 function L:open()
 	popup_widget.visible = true
-	send_signal()
-	index_start, index_entry = 1, 1
 	unfiltered = gen()
-	filter('')
+	filter("")
 	prompt_grabber:start()
 end
 
 function L:close()
 	popup_widget.visible = false
-	send_signal()
 	prompt_grabber:stop()
-	prompt:get_children_by_id('txt')[1].markup = ""
+	prompt:get_children_by_id("txt")[1].markup = ""
 end
 
 function L:toggle()

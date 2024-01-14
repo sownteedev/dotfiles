@@ -18,7 +18,7 @@ awful.screen.connect_for_each_screen(function(s)
 		visible = false,
 	})
 
-	moment:setup {
+	moment:setup({
 		{
 			{
 				{
@@ -35,7 +35,7 @@ awful.screen.connect_for_each_screen(function(s)
 		},
 		widget = wibox.container.margin,
 		margins = 0,
-	}
+	})
 	awful.placement.bottom_right(moment, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::moment", function()
 		moment.visible = not moment.visible

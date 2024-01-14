@@ -1,60 +1,60 @@
-local wibox     = require("wibox")
-local awful     = require("awful")
+local wibox = require("wibox")
+local awful = require("awful")
 local beautiful = require("beautiful")
-local gears     = require("gears")
-local pctl      = require("modules.playerctl")
-local helpers   = require("helpers")
+local gears = require("gears")
+local pctl = require("modules.playerctl")
+local helpers = require("helpers")
 local playerctl = pctl.lib()
 
-local art       = wibox.widget {
+local art = wibox.widget({
 	image = helpers.cropSurface(1.71, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.3,
 	resize = true,
 	clip_shape = helpers.rrect(12),
-	widget = wibox.widget.imagebox
-}
+	widget = wibox.widget.imagebox,
+})
 
-local next      = wibox.widget {
-	align = 'center',
+local next = wibox.widget({
+	align = "center",
 	font = beautiful.icon .. " 20",
-	text = '󰒭 ',
+	text = "󰒭 ",
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
 			playerctl:next()
-		end)
+		end),
 	},
-}
+})
 
-local prev      = wibox.widget {
-	align = 'center',
+local prev = wibox.widget({
+	align = "center",
 	font = beautiful.icon .. " 20",
-	text = '󰒮 ',
+	text = "󰒭 ",
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
 			playerctl:previous()
-		end)
+		end),
 	},
-}
+})
 
-local play      = wibox.widget {
-	align = 'center',
+local play = wibox.widget({
+	align = "center",
 	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText('󰐍 ', beautiful.foreground),
+	markup = helpers.colorizeText("󰐍 ", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
 			playerctl:play_pause()
-		end)
+		end),
 	},
-}
+})
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
-	play.markup = playing and helpers.colorizeText("󰏦 ", beautiful.foreground) or
-		helpers.colorizeText("󰐍 ", beautiful.foreground)
+	play.markup = playing and helpers.colorizeText("󰏦 ", beautiful.foreground)
+		or helpers.colorizeText("󰐍 ", beautiful.foreground)
 end)
 
-local finalwidget = wibox.widget {
+local finalwidget = wibox.widget({
 	{
 		nil,
 		{
@@ -67,7 +67,7 @@ local finalwidget = wibox.widget {
 					type = "linear",
 					from = { 0, 0 },
 					to = { 250, 0 },
-					stops = { { 0, beautiful.background .. "ff" }, { 1, beautiful.background_alt .. '55' } }
+					stops = { { 0, beautiful.background .. "ff" }, { 1, beautiful.background_alt .. "55" } },
 				},
 				shape = helpers.rrect(12),
 				widget = wibox.container.background,
@@ -78,13 +78,13 @@ local finalwidget = wibox.widget {
 						{
 							id = "songname",
 							font = beautiful.sans .. " 14",
-							markup = helpers.colorizeText('Song Name', beautiful.foreground),
+							markup = helpers.colorizeText("Song Name", beautiful.foreground),
 							widget = wibox.widget.textbox,
 						},
 						{
 							id = "artist",
 							font = beautiful.sans .. " 10",
-							markup = helpers.colorizeText('Artist Name', beautiful.foreground),
+							markup = helpers.colorizeText("Artist Name", beautiful.foreground),
 							widget = wibox.widget.textbox,
 						},
 						spacing = 8,
@@ -94,10 +94,10 @@ local finalwidget = wibox.widget {
 					{
 						id = "player",
 						font = beautiful.sans .. " 8",
-						markup = helpers.colorizeText('Playing On Spotify', beautiful.foreground),
+						markup = helpers.colorizeText("Playing On Spotify", beautiful.foreground),
 						widget = wibox.widget.textbox,
 					},
-					layout = wibox.layout.align.vertical
+					layout = wibox.layout.align.vertical,
 				},
 				widget = wibox.container.margin,
 				left = 10,
@@ -132,7 +132,7 @@ local finalwidget = wibox.widget {
 	},
 	widget = wibox.container.margin,
 	margins = 20,
-}
+})
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
 	if album_path == "" then
@@ -147,8 +147,9 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, albu
 	art.image = helpers.cropSurface(1.71, gears.surface.load_uncached(album_path))
 	helpers.gc(finalwidget, "songname"):set_markup_silently(helpers.colorizeText(title or "NO", beautiful.foreground))
 	helpers.gc(finalwidget, "artist"):set_markup_silently(helpers.colorizeText(artist or "HM", beautiful.foreground))
-	helpers.gc(finalwidget, "player"):set_markup_silently(helpers.colorizeText("Playing On: " .. player_name or "",
-		beautiful.foreground))
+	helpers
+		.gc(finalwidget, "player")
+		:set_markup_silently(helpers.colorizeText("Playing On: " .. player_name or "", beautiful.foreground))
 end)
 
 return finalwidget

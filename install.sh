@@ -236,7 +236,7 @@ sleep 2
 read -p "[*] Do you want to install other apps? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	echo "[*] Installing other apps ..."
-	sudo pacman -S vlc telegram-desktop --noconfirm && yay -S --noconfirm google-chrome microsoft-edge-stable-bin
+	sudo pacman -S vlc mpv telegram-desktop --noconfirm && yay -S --noconfirm google-chrome microsoft-edge-stable-bin
 else
 	echo "[*] Other apps installation skipped."
 fi

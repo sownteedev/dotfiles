@@ -1,14 +1,14 @@
-local awful     = require("awful")
-local wibox     = require("wibox")
-local gears     = require("gears")
-local Gio       = require("lgi").Gio
-local helpers   = require("helpers")
+local awful = require("awful")
+local wibox = require("wibox")
+local gears = require("gears")
+local Gio = require("lgi").Gio
+local helpers = require("helpers")
 local beautiful = require("beautiful")
-local getIcon   = require("modules.getIcon")
-local inspect   = require("modules.inspect")
-local layout    = wibox.layout.fixed.horizontal
+local getIcon = require("modules.getIcon")
+local inspect = require("modules.inspect")
+local layout = wibox.layout.fixed.horizontal
 
-local M         = {
+local M = {
 	metadata = {
 		{
 			count = 0,
@@ -63,8 +63,18 @@ local M         = {
 		{
 			count = 0,
 			pinned = true,
-			icon = getIcon(nil, "discord", "discord"),
+			icon = getIcon(nil, "TelegramDesktop", "TelegramDesktop"),
 			id = 6,
+			clients = {},
+			class = "TelegramDesktop",
+			exec = "telegram-desktop",
+			name = "TelegramDesktop",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "discord", "discord"),
+			id = 7,
 			clients = {},
 			class = "discord",
 			exec = "discord",
@@ -74,7 +84,7 @@ local M         = {
 			count = 0,
 			pinned = true,
 			icon = getIcon(nil, "Spotify", "Spotify"),
-			id = 7,
+			id = 8,
 			clients = {},
 			class = "spotify",
 			exec = "spotify",
@@ -85,37 +95,37 @@ local M         = {
 	classes = { "alacritty", "firefox", "code", "jetbrains-idea", "jetbrains-webstorm", "discord", "spotify" },
 }
 
-M.widget        = wibox.widget {
+M.widget = wibox.widget({
 	layout = layout,
 	spacing = 5,
-}
+})
 
-M.popupWidget   = wibox.widget {
+M.popupWidget = wibox.widget({
 	layout = wibox.layout.fixed.vertical,
 	spacing = 10,
-}
+})
 
-M.popup         = awful.popup {
+M.popup = awful.popup({
 	minimum_width = 240,
-	widget        = wibox.container.background,
-	visible       = false,
-	shape         = helpers.rrect(5),
-	ontop         = true,
-	bg            = beautiful.background
-}
+	widget = wibox.container.background,
+	visible = false,
+	shape = helpers.rrect(5),
+	ontop = true,
+	bg = beautiful.background,
+})
 
-M.popup:setup {
+M.popup:setup({
 	widget = wibox.container.margin,
 	margins = 10,
 	M.popupWidget,
-}
+})
 
 local removeDup = function(arr)
 	local hash = {}
 	local res = {}
 
 	for _, v in ipairs(arr) do
-		if (not hash[v]) then
+		if not hash[v] then
 			res[#res + 1] = v
 			hash[v] = true
 		end
@@ -123,7 +133,6 @@ local removeDup = function(arr)
 
 	return res
 end
-
 
 function M:getExecutable(class)
 	local class_1 = class:gsub("[%-]", "")
@@ -151,13 +160,13 @@ function M:showMenu(data)
 	self.popup.y = beautiful.height - 70 - (50 * (#clients + 2))
 	self.popupWidget:reset()
 	for i, j in ipairs(clients) do
-		local widget = wibox.widget {
+		local widget = wibox.widget({
 			{
 				{
 					{
 						{
 							markup = j.name,
-							font   = beautiful.sans .. " 9",
+							font = beautiful.sans .. " 9",
 							height = 16,
 							widget = wibox.widget.textbox,
 						},
@@ -167,17 +176,17 @@ function M:showMenu(data)
 					},
 					nil,
 					{
-						markup  = helpers.colorizeText("󰅖", beautiful.red),
-						font    = beautiful.icon .. " 12",
-						widget  = wibox.widget.textbox,
+						markup = helpers.colorizeText("󰅖", beautiful.red),
+						font = beautiful.icon .. " 12",
+						widget = wibox.widget.textbox,
 						buttons = {
 							awful.button({}, 1, function()
 								j:kill()
 								self.popup.visible = false
-							end)
+							end),
 						},
 					},
-					layout = wibox.layout.align.horizontal
+					layout = wibox.layout.align.horizontal,
 				},
 				widget = wibox.container.margin,
 				margins = 7,
@@ -199,24 +208,24 @@ function M:showMenu(data)
 						j.minimized = true
 					end
 					self.popup.visible = false
-				end)
+				end),
 			},
 			widget = wibox.container.background,
 			shape = helpers.rrect(5),
-			bg = j.minimized and beautiful.background_alt
-		}
+			bg = j.minimized and beautiful.background_alt,
+		})
 		M.popupWidget:connect_signal("mouse::leave", function()
 			self.popup.visible = false
 		end)
 		self.popupWidget:add(widget)
 	end
-	local addNew = wibox.widget {
+	local addNew = wibox.widget({
 		{
 			{
 				{
 					{
 						markup = "Open New Window",
-						font   = beautiful.sans .. " 9",
+						font = beautiful.sans .. " 9",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.constraint,
@@ -224,7 +233,7 @@ function M:showMenu(data)
 				},
 				nil,
 				nil,
-				layout = wibox.layout.align.horizontal
+				layout = wibox.layout.align.horizontal,
 			},
 			widget = wibox.container.margin,
 			margins = 7,
@@ -232,18 +241,18 @@ function M:showMenu(data)
 		buttons = {
 			awful.button({}, 1, function()
 				awful.spawn.with_shell(data.exec)
-			end)
+			end),
 		},
 		widget = wibox.container.background,
 		shape = helpers.rrect(5),
-		bg = beautiful.background
-	}
-	local closeAll = wibox.widget {
+		bg = beautiful.background,
+	})
+	local closeAll = wibox.widget({
 		{
 			{
 				{
 					markup = "Close All",
-					font   = beautiful.sans .. " 9",
+					font = beautiful.sans .. " 9",
 					widget = wibox.widget.textbox,
 				},
 				layout = wibox.layout.align.horizontal,
@@ -256,12 +265,12 @@ function M:showMenu(data)
 				for i, j in ipairs(clients) do
 					j:kill()
 				end
-			end)
+			end),
 		},
 		widget = wibox.container.background,
 		shape = helpers.rrect(5),
-		bg = beautiful.background_dark
-	}
+		bg = beautiful.background_dark,
+	})
 	self.popupWidget:add(addNew)
 	self.popupWidget:add(closeAll)
 	self.popup.visible = true
@@ -303,7 +312,9 @@ function M:genMetadata()
 			j.clients = removeDup(j.clients)
 		end
 	end
-	table.sort(self.metadata, function(a, b) return a.id < b.id end)
+	table.sort(self.metadata, function(a, b)
+		return a.id < b.id
+	end)
 end
 
 local function getMinimized(clients)
@@ -333,7 +344,7 @@ function M:genIcons()
 			elseif minimized > 0 then
 				bg = beautiful.foreground .. "50"
 			end
-			local widget = wibox.widget {
+			local widget = wibox.widget({
 				{
 					{
 						widget = wibox.widget.imagebox,
@@ -349,8 +360,7 @@ function M:genIcons()
 				shape = helpers.rrect(10),
 				widget = wibox.container.background,
 				bg = bg,
-
-			}
+			})
 			widget:buttons(gears.table.join(
 				awful.button({}, 1, function()
 					if j.count == 0 then
@@ -379,38 +389,23 @@ function M:genIcons()
 	end
 end
 
-client.connect_signal(
-	"focus",
-	function()
-		M:genIcons()
-	end
-)
-client.connect_signal(
-	"property::minimized",
-	function()
-		M:genIcons()
-	end
-)
-client.connect_signal(
-	"property::maximized",
-	function()
-		M:genIcons()
-	end
-)
-client.connect_signal(
-	"manage",
-	function()
-		M:genIcons()
-		M.popup.visible = false
-	end
-)
-client.connect_signal(
-	"unmanage",
-	function()
-		M:genIcons()
-		M.popup.visible = false
-	end
-)
+client.connect_signal("focus", function()
+	M:genIcons()
+end)
+client.connect_signal("property::minimized", function()
+	M:genIcons()
+end)
+client.connect_signal("property::maximized", function()
+	M:genIcons()
+end)
+client.connect_signal("manage", function()
+	M:genIcons()
+	M.popup.visible = false
+end)
+client.connect_signal("unmanage", function()
+	M:genIcons()
+	M.popup.visible = false
+end)
 tag.connect_signal("property::selected", function()
 	M:genIcons()
 	M.popup.visible = false

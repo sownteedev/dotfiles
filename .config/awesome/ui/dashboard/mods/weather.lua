@@ -1,21 +1,21 @@
-local wibox     = require("wibox")
-local beautiful = require "beautiful"
-local gears     = require("gears")
-local helpers   = require "helpers"
+local wibox = require("wibox")
+local beautiful = require("beautiful")
+local gears = require("gears")
+local helpers = require("helpers")
 
-local widget    = wibox.widget {
+local widget = wibox.widget({
 	{
 		{
 			{
 				{
-					id            = "icon",
-					image         = gears.filesystem.get_configuration_dir() .. "theme/assets/weather/icons/weather-fog.svg",
-					opacity       = 0.9,
-					clip_shape    = helpers.rrect(4),
+					id = "icon",
+					image = gears.filesystem.get_configuration_dir() .. "theme/assets/weather/icons/weather-fog.svg",
+					opacity = 0.9,
+					clip_shape = helpers.rrect(4),
 					forced_height = 80,
-					forced_width  = 80,
-					valign        = "center",
-					widget        = wibox.widget.imagebox
+					forced_width = 80,
+					valign = "center",
+					widget = wibox.widget.imagebox,
 				},
 				{
 					{
@@ -48,7 +48,7 @@ local widget    = wibox.widget {
 	bg = beautiful.background,
 	shape = helpers.rrect(5),
 	forced_height = 195,
-}
+})
 
 awesome.connect_signal("signal::weather", function(out)
 	helpers.gc(widget, "icon").image = out.image

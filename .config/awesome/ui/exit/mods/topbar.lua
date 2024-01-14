@@ -3,7 +3,7 @@ local helpers = require("helpers")
 local beautiful = require("beautiful")
 local awful = require("awful")
 
-local widget = wibox.widget {
+local widget = wibox.widget({
 	{
 		{
 			{
@@ -35,7 +35,7 @@ local widget = wibox.widget {
 							format = "%a, %d %B %Y",
 							align = "center",
 							valign = "center",
-							widget = wibox.widget.textclock
+							widget = wibox.widget.textclock,
 						},
 						widget = wibox.container.margin,
 						left = 25,
@@ -76,7 +76,7 @@ local widget = wibox.widget {
 					buttons = {
 						awful.button({}, 1, function()
 							awesome.emit_signal("toggle::exit")
-						end)
+						end),
 					},
 					shape = helpers.rrect(10),
 					bg = beautiful.background_alt,
@@ -96,7 +96,7 @@ local widget = wibox.widget {
 	top = 40,
 	left = 40,
 	right = 40,
-}
+})
 
 awesome.connect_signal("signal::uptime", function(v)
 	helpers.gc(widget, "uptime").markup = v
