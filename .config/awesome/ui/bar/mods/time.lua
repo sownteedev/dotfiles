@@ -1,9 +1,9 @@
-local awful       = require("awful")
-local wibox       = require("wibox")
-local beautiful   = require("beautiful")
-local dpi         = require("beautiful").xresources.apply_dpi
-local helpers     = require("helpers")
-local hourminutes = wibox.widget {
+local awful = require("awful")
+local wibox = require("wibox")
+local beautiful = require("beautiful")
+local dpi = require("beautiful").xresources.apply_dpi
+local helpers = require("helpers")
+local hourminutes = wibox.widget({
 	{
 		{
 			{
@@ -12,10 +12,10 @@ local hourminutes = wibox.widget {
 					format = "%I : %M",
 					align = "center",
 					valign = "center",
-					widget = wibox.widget.textclock
+					widget = wibox.widget.textclock,
 				},
 				widget = wibox.container.place,
-				valign = "center"
+				valign = "center",
 			},
 			{
 				{
@@ -23,25 +23,25 @@ local hourminutes = wibox.widget {
 					format = "%a, %d %B",
 					align = "center",
 					valign = "center",
-					widget = wibox.widget.textclock
+					widget = wibox.widget.textclock,
 				},
 				widget = wibox.container.place,
-				valign = "center"
+				valign = "center",
 			},
 			layout = wibox.layout.fixed.horizontal,
-			spacing = 10
+			spacing = 10,
 		},
 		margins = { left = dpi(10), right = dpi(10) },
-		widget = wibox.container.margin
+		widget = wibox.container.margin,
 	},
 	bg = beautiful.background_alt,
 	buttons = {
 		awful.button({}, 1, function()
-			awesome.emit_signal('toggle::moment')
-		end)
+			awesome.emit_signal("toggle::moment")
+		end),
 	},
 	widget = wibox.container.background,
 	shape = helpers.rrect(5),
-}
+})
 
 return hourminutes

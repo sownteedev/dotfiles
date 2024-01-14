@@ -13,8 +13,7 @@ local table = table
 local pairs = pairs
 
 local animation_manager = {}
-animation_manager.easing =
-{
+animation_manager.easing = {
 	linear = "linear",
 	inQuad = "inQuad",
 	outQuad = "outQuad",
@@ -55,7 +54,7 @@ animation_manager.easing =
 	inBounce = "inBounce",
 	outBounce = "outBounce",
 	inOutBounce = "inOutBounce",
-	outInBounce = "outInBounce"
+	outInBounce = "outInBounce",
 }
 
 local animation = {}
@@ -93,14 +92,13 @@ function animation:start(args)
 	duration = self._private.anim_manager._private.instant == true and 0.01 or duration
 
 	if self.tween == nil or self.reset_on_stop == true then
-		self.tween = tween.new
-			{
-				initial = initial,
-				subject = subject,
-				target = target,
-				duration = second_to_micro(duration),
-				easing = easing
-			}
+		self.tween = tween.new({
+			initial = initial,
+			subject = subject,
+			target = target,
+			duration = second_to_micro(duration),
+			easing = easing,
+		})
 	end
 
 	if self._private.anim_manager._private.animations[self.index] == nil then
@@ -177,58 +175,53 @@ function animation_manager:new(args)
 end
 
 local function new()
-	local ret = gobject {}
+	local ret = gobject({})
 	gtable.crush(ret, animation_manager, true)
 
 	ret._private = {}
 	ret._private.animations = {}
 	ret._private.instant = false
 
-	GLib.timeout_add
-	(
-		GLib.PRIORITY_DEFAULT,
-		ANIMATION_FRAME_DELAY,
-		function()
-			for index, animation in ipairs(ret._private.animations) do
-				if animation.state == true then
-					-- compute delta time
-					local time = GLib.get_monotonic_time()
-					local delta = time - animation.last_elapsed
-					animation.last_elapsed = time
+	GLib.timeout_add(GLib.PRIORITY_DEFAULT, ANIMATION_FRAME_DELAY, function()
+		for index, animation in ipairs(ret._private.animations) do
+			if animation.state == true then
+				-- compute delta time
+				local time = GLib.get_monotonic_time()
+				local delta = time - animation.last_elapsed
+				animation.last_elapsed = time
 
-					-- If pos is true, the animation has ended
-					local pos = animation.tween:update(delta)
-					if pos == true then
-						-- Loop the animation, don't end it.
-						-- Useful for widgets like the spinning cicle
-						if animation.loop == true then
-							animation.tween:reset()
-						else
-							-- Snap to end
-							animation.pos = animation.tween.target
-							animation:fire(animation.pos)
-							animation:emit_signal("update", animation.pos)
-
-							animation.state = false
-							animation.ended:fire(pos)
-							table.remove(ret._private.animations, index)
-							animation:emit_signal("ended", animation.pos)
-						end
-						-- Animation in process, keep updating
+				-- If pos is true, the animation has ended
+				local pos = animation.tween:update(delta)
+				if pos == true then
+					-- Loop the animation, don't end it.
+					-- Useful for widgets like the spinning cicle
+					if animation.loop == true then
+						animation.tween:reset()
 					else
-						animation.pos = pos
+						-- Snap to end
+						animation.pos = animation.tween.target
 						animation:fire(animation.pos)
 						animation:emit_signal("update", animation.pos)
-					end
-				else
-					table.remove(ret._private.animations, index)
-				end
-			end
 
-			-- call again the function after cooldown
-			return true
+						animation.state = false
+						animation.ended:fire(pos)
+						table.remove(ret._private.animations, index)
+						animation:emit_signal("ended", animation.pos)
+					end
+					-- Animation in process, keep updating
+				else
+					animation.pos = pos
+					animation:fire(animation.pos)
+					animation:emit_signal("update", animation.pos)
+				end
+			else
+				table.remove(ret._private.animations, index)
+			end
 		end
-	)
+
+		-- call again the function after cooldown
+		return true
+	end)
 
 	return ret
 end

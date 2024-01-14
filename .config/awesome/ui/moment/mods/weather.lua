@@ -1,12 +1,12 @@
-local wibox      = require("wibox")
-local beautiful  = require("beautiful")
-local gears      = require("gears")
-local helpers    = require("helpers")
+local wibox = require("wibox")
+local beautiful = require("beautiful")
+local gears = require("gears")
+local helpers = require("helpers")
 
 local filesystem = gears.filesystem
-local icon_dir   = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
+local icon_dir = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
 
-local icon_map   = {
+local icon_map = {
 	["01d"] = "weather-clear-sky",
 	["02d"] = "weather-few-clouds",
 	["03d"] = "weather-clouds",
@@ -28,10 +28,10 @@ local icon_map   = {
 }
 
 local dayWeather = function()
-	local widget = wibox.widget {
+	local widget = wibox.widget({
 		{
 			id = "day",
-			halign = 'center',
+			halign = "center",
 			widget = wibox.widget.textbox,
 			font = beautiful.sans .. " 10",
 		},
@@ -39,7 +39,7 @@ local dayWeather = function()
 			id = "icon",
 			resize = true,
 			opacity = 0.6,
-			halign = 'center',
+			halign = "center",
 			forced_height = 40,
 			forced_width = 40,
 			widget = wibox.widget.imagebox,
@@ -49,19 +49,19 @@ local dayWeather = function()
 				{
 					{
 						id = "max",
-						halign = 'center',
+						halign = "center",
 						widget = wibox.widget.textbox,
 						font = beautiful.sans .. " 10",
 					},
 					{
-						halign = 'center',
+						halign = "center",
 						markup = helpers.colorizeText("/", beautiful.blue),
 						widget = wibox.widget.textbox,
 						font = beautiful.sans .. " 10",
 					},
 					{
 						id = "min",
-						halign = 'center',
+						halign = "center",
 						widget = wibox.widget.textbox,
 						font = beautiful.sans .. " 10",
 					},
@@ -69,50 +69,54 @@ local dayWeather = function()
 					layout = wibox.layout.fixed.horizontal,
 				},
 				widget = wibox.container.place,
-				halign = 'center',
+				halign = "center",
 			},
 			widget = wibox.container.margin,
 		},
 		spacing = 10,
 		forced_width = 80,
 		layout = wibox.layout.fixed.vertical,
-	}
+	})
 
 	widget.update = function(out, i)
 		local day = out.daily[i]
-		widget:get_children_by_id('icon')[1].image = icon_dir .. icon_map[day.weather[1].icon] .. ".svg"
-		widget:get_children_by_id('day')[1].text = os.date("%a", tonumber(day.dt))
+		widget:get_children_by_id("icon")[1].image = icon_dir .. icon_map[day.weather[1].icon] .. ".svg"
+		widget:get_children_by_id("day")[1].text = os.date("%a", tonumber(day.dt))
 		local getTemp = function(temp)
-			local sp = helpers.split(temp, '.')[1]
+			local sp = helpers.split(temp, ".")[1]
 			return sp
 		end
-		widget:get_children_by_id('min')[1].text = getTemp(day.temp.night)
-		widget:get_children_by_id('max')[1].text = getTemp(day.temp.day)
+		widget:get_children_by_id("min")[1].text = getTemp(day.temp.night)
+		widget:get_children_by_id("max")[1].text = getTemp(day.temp.day)
 	end
 	return widget
 end
 
-local day1       = dayWeather()
-local day2       = dayWeather()
-local day3       = dayWeather()
-local day5       = dayWeather()
-local day6       = dayWeather()
-local day4       = dayWeather()
+local day1 = dayWeather()
+local day2 = dayWeather()
+local day3 = dayWeather()
+local day5 = dayWeather()
+local day6 = dayWeather()
+local day4 = dayWeather()
 
-local daylist    = { day1, day2, day3, day4, day5, day6 }
+local daylist = { day1, day2, day3, day4, day5, day6 }
 
-
-local widget = wibox.widget {
+local widget = wibox.widget({
 	{
 		id = "image",
 		forced_height = 300,
 		forced_width = 460,
-		image = helpers.cropSurface(1.53, gears.surface.load_uncached(filesystem.get_configuration_dir() .. "themes/assets/weather/images/weather-clear-night.jpg")),
+		image = helpers.cropSurface(
+			1.53,
+			gears.surface.load_uncached(
+				filesystem.get_configuration_dir() .. "themes/assets/weather/images/weather-clear-night.jpg"
+			)
+		),
 		widget = wibox.widget.imagebox,
 		clip_shape = helpers.rrect(10),
 		opacity = 0.9,
 		resize = true,
-		horizontal_fit_policy = "fit"
+		horizontal_fit_policy = "fit",
 	},
 	{
 		{
@@ -122,7 +126,7 @@ local widget = wibox.widget {
 			type = "linear",
 			from = { 0, 0 },
 			to = { 250, 0 },
-			stops = { { 0, beautiful.background .. "66" }, { 1, beautiful.background .. 'dd' } }
+			stops = { { 0, beautiful.background .. "66" }, { 1, beautiful.background .. "dd" } },
 		},
 		shape = helpers.rrect(10),
 		widget = wibox.container.background,
@@ -139,14 +143,14 @@ local widget = wibox.widget {
 						widget = wibox.widget.textbox,
 					},
 					{
-						id            = "icon",
-						image         = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
-						opacity       = 0.9,
-						clip_shape    = helpers.rrect(4),
+						id = "icon",
+						image = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
+						opacity = 0.9,
+						clip_shape = helpers.rrect(4),
 						forced_height = 50,
-						forced_width  = 50,
-						valign        = "center",
-						widget        = wibox.widget.imagebox
+						forced_width = 50,
+						valign = "center",
+						widget = wibox.widget.imagebox,
 					},
 					{
 						id = "desc",
@@ -215,7 +219,7 @@ local widget = wibox.widget {
 		},
 	},
 	layout = wibox.layout.stack,
-}
+})
 
 awesome.connect_signal("signal::weather", function(out)
 	helpers.gc(widget, "image").image = helpers.cropSurface(1.53, gears.surface.load_uncached(out.thumb))

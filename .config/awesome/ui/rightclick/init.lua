@@ -1,7 +1,6 @@
-local awful         = require("awful")
-local menu          = require("ui.rightclick.menu")
-local hotkeys_popup = require("awful.hotkeys_popup")
-local Launcher      = require("ui.launcher")
+local awful = require("awful")
+local menu = require("ui.rightclick.menu")
+local Launcher = require("ui.launcher")
 
 local function awesome_menu()
 	return menu({
@@ -9,7 +8,7 @@ local function awesome_menu()
 			icon = { icon = "󰣕 ", font = "Material Design Icons" },
 			text = "Edit Config",
 			on_press = function()
-				awful.spawn.with_shell("cd ~/.config/awesome && alacritty -e nvim" .. " " .. awesome.conffile .. " &")
+				awful.spawn.with_shell("cd ~/.config/awesome && alacritty -e nvim &")
 				awesome.emit_signal("close::menu")
 			end,
 		}),
@@ -83,9 +82,7 @@ local function widget()
 	})
 end
 
-
 local themenu = widget()
-
 
 awesome.connect_signal("close::menu", function()
 	themenu:hide(true)

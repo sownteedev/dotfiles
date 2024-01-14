@@ -8,7 +8,7 @@ awful.layout.layouts = {
 }
 
 ruled.client.connect_signal("request::rules", function()
-	ruled.client.append_rule {
+	ruled.client.append_rule({
 		id = "global",
 		rule = {},
 		properties = {
@@ -19,50 +19,50 @@ ruled.client.connect_signal("request::rules", function()
 			screen = awful.screen.focused,
 			focus = awful.client.focus.filter,
 			placement = awful.placement.no_overlap + awful.placement.no_offscreen,
-		}
-	}
+		},
+	})
 
 	--- Centered
 	ruled.client.append_rule({
-		id         = "centered",
-		rule       = {},
+		id = "centered",
+		rule = {},
 		properties = { placement = helpers.centered_client_placement },
 	})
 
 	-- Titlebars
-	ruled.client.append_rule {
-		id         = "titlebars",
-		rule_any   = { type = { "normal", "dialog" } },
-		properties = { titlebars_enabled = true }
-	}
+	ruled.client.append_rule({
+		id = "titlebars",
+		rule_any = { type = { "normal", "dialog" } },
+		properties = { titlebars_enabled = true },
+	})
 
-	ruled.client.append_rule {
-		rule       = { class = "Alacritty" },
-		properties = { screen = 1, tag = "1", switch_to_tags = true }
-	}
-	ruled.client.append_rule {
-		rule_any   = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
-		properties = { screen = 1, tag = "2", switch_to_tags = true }
-	}
-	ruled.client.append_rule {
-		rule_any   = { class = { "Code", "jetbrains-idea", "webstom", "neovide" } },
-		properties = { screen = 1, tag = "3" }
-	}
-	ruled.client.append_rule {
-		rule_any   = { class = { "discord", "Telegram" } },
-		properties = { screen = 1, tag = "4" }
-	}
-	ruled.client.append_rule {
-		rule       = { class = "Spotify" },
-		properties = { screen = 1, tag = "4", switch_to_tags = true }
-	}
-	ruled.client.append_rule {
-		rule_any   = { class = { "Thunar", "vlc" } },
-		properties = { tag = "5", switch_to_tags = true }
-	}
+	ruled.client.append_rule({
+		rule = { class = "Alacritty" },
+		properties = { screen = 1, tag = "1", switch_to_tags = true },
+	})
+	ruled.client.append_rule({
+		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
+		properties = { screen = 1, tag = "2", switch_to_tags = true },
+	})
+	ruled.client.append_rule({
+		rule_any = { class = { "Code", "jetbrains-idea", "webstom", "neovide" } },
+		properties = { screen = 1, tag = "3" },
+	})
+	ruled.client.append_rule({
+		rule_any = { class = { "discord", "Telegram" } },
+		properties = { screen = 1, tag = "4" },
+	})
+	ruled.client.append_rule({
+		rule = { class = "Spotify" },
+		properties = { screen = 1, tag = "4", switch_to_tags = true },
+	})
+	ruled.client.append_rule({
+		rule_any = { class = { "Thunar", "vlc" } },
+		properties = { tag = "5", switch_to_tags = true },
+	})
 end)
 
-client.connect_signal('request::manage', function(c)
+client.connect_signal("request::manage", function(c)
 	if c.transient_for then
 		awful.placement.centered(c, c.transient_for)
 		awful.placement.no_offscreen(c)

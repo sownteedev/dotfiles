@@ -3,7 +3,7 @@ local helpers = require("helpers")
 local wibox = require("wibox")
 local gears = require("gears")
 
-return wibox.widget {
+return wibox.widget({
 	{
 		{
 			{
@@ -11,7 +11,7 @@ return wibox.widget {
 				markup = helpers.colorizeText("No Notifications", beautiful.foreground),
 				font = beautiful.sans .. " 12",
 				valign = "center",
-				align = "center"
+				align = "center",
 			},
 			{
 				image = gears.filesystem.get_configuration_dir() .. "/themes/assets/wedding-bells.png",
@@ -22,11 +22,11 @@ return wibox.widget {
 				widget = wibox.widget.imagebox,
 			},
 			spacing = 20,
-			layout = wibox.layout.fixed.vertical
+			layout = wibox.layout.fixed.vertical,
 		},
 		widget = wibox.container.place,
-		valign = 'center'
+		valign = "center",
 	},
 	widget = wibox.container.background,
 	forced_height = 400,
-}
+})

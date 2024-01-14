@@ -2,21 +2,21 @@ local wibox = require("wibox")
 local helpers = require("helpers")
 local beautiful = require("beautiful")
 
-local battery = wibox.widget {
+local battery = wibox.widget({
 	{
-		max_value        = 100,
-		value            = 69,
-		id               = "prog",
-		forced_height    = 22,
-		forced_width     = 45,
-		paddings         = 3,
-		border_color     = beautiful.foreground .. "99",
+		max_value = 100,
+		value = 69,
+		id = "prog",
+		forced_height = 22,
+		forced_width = 45,
+		paddings = 3,
+		border_color = beautiful.foreground .. "99",
 		background_color = beautiful.background_alt,
-		bar_shape        = helpers.rrect(3),
-		color            = beautiful.blue,
-		border_width     = 1.25,
-		shape            = helpers.rrect(5),
-		widget           = wibox.widget.progressbar
+		bar_shape = helpers.rrect(3),
+		color = beautiful.blue,
+		border_width = 1.25,
+		shape = helpers.rrect(5),
+		widget = wibox.widget.progressbar,
 	},
 	{
 		{
@@ -30,8 +30,8 @@ local battery = wibox.widget {
 		valign = "center",
 	},
 	spacing = 3,
-	layout = wibox.layout.fixed.horizontal
-}
+	layout = wibox.layout.fixed.horizontal,
+})
 awesome.connect_signal("signal::battery", function(value)
 	local b = battery:get_children_by_id("prog")[1]
 	b.value = value

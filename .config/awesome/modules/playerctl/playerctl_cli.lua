@@ -36,10 +36,9 @@ local capi = { awesome = awesome }
 local playerctl = { mt = {} }
 
 local function save_image_async_curl(url, filepath, callback)
-	awful.spawn.with_line_callback(string.format("curl -L -s %s -o %s", url, filepath),
-		{
-			exit = callback
-		})
+	awful.spawn.with_line_callback(string.format("curl -L -s %s -o %s", url, filepath), {
+		exit = callback,
+	})
 end
 
 function playerctl:disable()
@@ -162,29 +161,27 @@ function playerctl:set_volume(volume, player)
 end
 
 local function emit_player_metadata(self)
-	local metadata_cmd = self._private.cmd ..
-		"metadata --format 'title_{{title}}artist_{{artist}}art_url_{{mpris:artUrl}}player_name_{{playerName}}album_{{album}}' -F"
+	local metadata_cmd = self._private.cmd
+		.. "metadata --format 'title_{{title}}artist_{{artist}}art_url_{{mpris:artUrl}}player_name_{{playerName}}album_{{album}}' -F"
 
 	awful.spawn.with_line_callback(metadata_cmd, {
 		stdout = function(line)
-			local title = gstring.xml_escape(line:match('title_(.*)artist_')) or ""
-			local artist = gstring.xml_escape(line:match('artist_(.*)art_url_')) or ""
-			local art_url = line:match('art_url_(.*)player_name_') or ""
-			local player_name = line:match('player_name_(.*)album_') or ""
-			local album = gstring.xml_escape(line:match('album_(.*)')) or ""
+			local title = gstring.xml_escape(line:match("title_(.*)artist_")) or ""
+			local artist = gstring.xml_escape(line:match("artist_(.*)art_url_")) or ""
+			local art_url = line:match("art_url_(.*)player_name_") or ""
+			local player_name = line:match("player_name_(.*)album_") or ""
+			local album = gstring.xml_escape(line:match("album_(.*)")) or ""
 
-			art_url = art_url:gsub('%\n', '')
+			art_url = art_url:gsub("%\n", "")
 			if player_name == "spotify" then
 				art_url = art_url:gsub("open.spotify.com", "i.scdn.co")
 			end
 
-			if self._private.metadata_timer
-				and self._private.metadata_timer.started
-			then
+			if self._private.metadata_timer and self._private.metadata_timer.started then
 				self._private.metadata_timer:stop()
 			end
 
-			self._private.metadata_timer = gtimer {
+			self._private.metadata_timer = gtimer({
 				timeout = self.debounce_delay,
 				autostart = true,
 				single_shot = true,
@@ -194,7 +191,12 @@ local function emit_player_metadata(self)
 							local art_path = os.tmpname()
 							save_image_async_curl(art_url, art_path, function()
 								self:emit_signal("metadata", title, artist, art_path, album, player_name)
-								capi.awesome.emit_signal("bling::playerctl::title_artist_album", title, artist, art_path)
+								capi.awesome.emit_signal(
+									"bling::playerctl::title_artist_album",
+									title,
+									artist,
+									art_path
+								)
 							end)
 						else
 							self:emit_signal("metadata", title, artist, "", album, player_name)
@@ -204,8 +206,8 @@ local function emit_player_metadata(self)
 						self:emit_signal("no_players")
 						capi.awesome.emit_signal("bling::playerctl::no_players")
 					end
-				end
-			}
+				end,
+			})
 
 			collectgarbage("collect")
 		end,
@@ -323,7 +325,7 @@ end
 local function new(args)
 	args = args or {}
 
-	local ret = gobject {}
+	local ret = gobject({})
 	gtable.crush(ret, playerctl, true)
 
 	ret.interval = args.interval or beautiful.playerctl_position_update_interval or 1

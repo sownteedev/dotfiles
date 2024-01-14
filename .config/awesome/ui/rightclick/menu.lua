@@ -200,21 +200,22 @@ function menu.sub_menu_button(args)
 	args = args or {}
 
 	args.icon = args.icon or nil
-	args.icon_size = args.icon_size or 16
+	args.icon_size = args.icon_size or 12
 	args.text = args.text or ""
-	args.text_size = args.text_size or 12
+	args.text_size = args.text_size or 10
 	args.sub_menu = args.sub_menu or nil
 
 	local icon = args.icon ~= nil
-		and wibox.widget {
-			font = beautiful.icon .. "14",
-			markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
-			widget = wibox.widget.textbox,
-			halign = "start",
-			forced_width = 30,
-		} or nil
+			and wibox.widget({
+				font = beautiful.icon .. "12",
+				markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
+				widget = wibox.widget.textbox,
+				halign = "start",
+				forced_width = 27,
+			})
+		or nil
 
-	local widget = wibox.widget {
+	local widget = wibox.widget({
 		{
 			{
 				layout = wibox.layout.align.horizontal,
@@ -226,28 +227,26 @@ function menu.sub_menu_button(args)
 						font = beautiful.sans .. " 10",
 						markup = args.text,
 						widget = wibox.widget.textbox,
-						halign = "start"
+						halign = "start",
 					},
 				},
 				nil,
 				{
-					font = beautiful.icon .. " 14",
+					font = beautiful.icon .. " 12",
 					markup = "󰅂",
 					widget = wibox.widget.textbox,
-					halign = "start"
+					halign = "start",
 				},
 			},
 			widget = wibox.container.margin,
-			margins = {
-				left = dpi(20),
-				right = dpi(10),
-				bottom = dpi(5),
-			}
+			left = dpi(20),
+			right = dpi(10),
+			bottom = dpi(5),
 		},
-		bg = beautiful.background_dark,
+		bg = beautiful.background,
 		forced_height = 35,
 		widget = wibox.container.background,
-	}
+	})
 	widget:connect_signal("mouse::enter", function(self)
 		local coords = helpers.get_widget_geometry(self.menu, self)
 		coords.x = coords.x + self.menu.x + self.menu.width
@@ -272,12 +271,12 @@ function menu.button(args)
 	local icon = nil
 
 	if args.icon ~= nil then
-		icon = wibox.widget {
+		icon = wibox.widget({
 			font = args.icon.font .. " " .. args.icon_size,
 			markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 			widget = wibox.widget.textbox,
-			halign = "start"
-		}
+			halign = "start",
+		})
 	elseif args.image ~= nil then
 		icon = wibox.widget({
 			widget = wibox.widget.imagebox,
@@ -285,14 +284,14 @@ function menu.button(args)
 		})
 	end
 
-	local text_widget = wibox.widget {
+	local text_widget = wibox.widget({
 		font = beautiful.sans .. " 10",
 		markup = args.text,
 		widget = wibox.widget.textbox,
-		halign = "start"
-	}
+		halign = "start",
+	})
 
-	local widget = wibox.widget {
+	local widget = wibox.widget({
 		{
 			{
 				layout = wibox.layout.fixed.horizontal,
@@ -304,7 +303,7 @@ function menu.button(args)
 			margins = {
 				left = dpi(20),
 				top = dpi(5),
-			}
+			},
 		},
 		bg = beautiful.background_dark,
 		forced_height = 35,
@@ -312,12 +311,14 @@ function menu.button(args)
 			awful.button({}, 1, function()
 				args.on_press(menu, text_widget)
 				menu:hide(true)
-			end)
+			end),
 		},
 		widget = wibox.container.background,
-	}
+	})
 	widget:connect_signal("mouse::enter", function(self)
-		if self.menu.widget then self.menu:hide_children_menus() end
+		if self.menu.widget then
+			self.menu:hide_children_menus()
+		end
 	end)
 	return widget
 end

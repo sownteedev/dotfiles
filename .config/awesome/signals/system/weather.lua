@@ -105,7 +105,7 @@ awful.widget.watch(string.format(GET_FORECAST_CMD, url), 600, function(_, stdout
 			result.daily[4],
 			result.daily[5],
 			result.daily[6],
-		}
+		},
 	}
 	awesome.emit_signal("signal::weather", out)
 end)

@@ -1,27 +1,31 @@
 local icon_cache = {}
-local t          = "/home/sowntee/.icons/Reversal-black-dark/"
+local t = "/home/sowntee/.icons/Reversal-black-dark/"
 
-local custom     = {
+local custom = {
 	{
 		name = "org.wezfurlong.wezterm",
-		to = "terminal"
+		to = "terminal",
 	},
 	{
 		name = "Alacritty",
-		to = "terminal"
+		to = "terminal",
 	},
 	{
 		name = "clearpad",
-		to = "terminal"
+		to = "terminal",
 	},
 	{
 		name = "ncmpcpppad",
-		to = "deepin-music-player"
+		to = "deepin-music-player",
 	},
 	{
 		name = "jetbrains-idea",
-		to = "jetbrains-intellij-idea"
-	}
+		to = "jetbrains-intellij-idea",
+	},
+	{
+		name = "TelegramDesktop",
+		to = "telegram",
+	},
 }
 
 local function hasValue(str)
@@ -37,13 +41,12 @@ local function hasValue(str)
 	return f, ind
 end
 
-
 local function Get_icon(client, program_string, class_string)
 	client = client or nil
 	program_string = program_string or nil
 	class_string = class_string or nil
 
-	if (client or program_string or class_string) then
+	if client or program_string or class_string then
 		local clientName
 		local isCustom, pos = hasValue(class_string)
 		if isCustom == true then
@@ -105,6 +108,5 @@ local function Get_icon(client, program_string, class_string)
 		return t .. "/apps/scalable/default-application.svg"
 	end
 end
-
 
 return Get_icon

@@ -13,7 +13,7 @@ local backends = {
 local backend = nil
 
 local function enable_wrapper(args)
-	local open = naughty.action { name = "Open" }
+	local open = naughty.action({ name = "Open" })
 
 	open:connect_signal("invoked", function()
 		awful.spawn("xdg-open https://blingcorp.github.io/bling/#/signals/pctl")
@@ -25,7 +25,7 @@ local function enable_wrapper(args)
 			text = "Global signals are deprecated! Please take a look at the playerctl documentation.",
 			app_name = "Bling Error",
 			app_icon = "system-error",
-			actions = { open }
+			actions = { open },
 		})
 	end)
 
@@ -42,5 +42,5 @@ return {
 	lib = backends.playerctl_lib,
 	cli = backends.playerctl_cli,
 	enable = enable_wrapper,
-	disable = disable_wrapper
+	disable = disable_wrapper,
 }

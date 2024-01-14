@@ -1,54 +1,54 @@
 local wibox = require("wibox")
 local awful = require("awful")
-local beautiful = require "beautiful"
+local beautiful = require("beautiful")
 local gears = require("gears")
-local helpers = require "helpers"
+local helpers = require("helpers")
 local dpi = beautiful.xresources.apply_dpi
 
 local datewidget = function(date, weekend, notIn)
 	weekend = weekend or false
 	if notIn then
-		return wibox.widget {
+		return wibox.widget({
 			markup = helpers.colorizeText(date, beautiful.foreground),
-			halign = 'center',
-			font   = beautiful.sans .. " 9",
-			widget = wibox.widget.textbox
-		}
+			halign = "center",
+			font = beautiful.sans .. " 9",
+			widget = wibox.widget.textbox,
+		})
 	else
-		return wibox.widget {
+		return wibox.widget({
 			markup = weekend and helpers.colorizeText(date, beautiful.foreground) or date,
-			halign = 'center',
-			font   = beautiful.sans .. " 9",
-			widget = wibox.widget.textbox
-		}
+			halign = "center",
+			font = beautiful.sans .. " 9",
+			widget = wibox.widget.textbox,
+		})
 	end
 end
 
 local daywidget = function(day, weekend, notIn)
 	weekend = weekend or false
-	return wibox.widget {
+	return wibox.widget({
 		markup = weekend and helpers.colorizeText(day, beautiful.red) or day,
-		halign = 'center',
-		font   = beautiful.sans .. " 10",
-		widget = wibox.widget.textbox
-	}
+		halign = "center",
+		font = beautiful.sans .. " 10",
+		widget = wibox.widget.textbox,
+	})
 end
 local currwidget = function(day)
-	return wibox.widget {
+	return wibox.widget({
 		markup = helpers.colorizeText(day, beautiful.blue),
-		halign = 'center',
-		font   = beautiful.sans .. " 10",
-		widget = wibox.widget.textbox
-	}
+		halign = "center",
+		font = beautiful.sans .. " 10",
+		widget = wibox.widget.textbox,
+	})
 end
 
-local title = wibox.widget {
+local title = wibox.widget({
 	font = beautiful.sans .. " Bold 12",
 	widget = wibox.widget.textbox,
-	halign = 'center'
-}
+	halign = "center",
+})
 
-local theGrid = wibox.widget {
+local theGrid = wibox.widget({
 	forced_num_rows = 7,
 	forced_num_cols = 7,
 	vertical_spacing = dpi(10),
@@ -57,14 +57,14 @@ local theGrid = wibox.widget {
 	min_rows_size = dpi(20),
 	homogenous = true,
 	layout = wibox.layout.grid,
-}
+})
 
 local curr
 
 local updateCalendar = function(date)
 	title.text = os.date("%B %Y", os.time(date))
 	theGrid:reset()
-	for _, w in ipairs { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" } do
+	for _, w in ipairs({ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }) do
 		if w == "Sun" or w == "Sat" then
 			theGrid:add(daywidget(w, true, false))
 		else
@@ -109,16 +109,16 @@ end
 return function()
 	curr = os.date("*t")
 	updateCalendar(curr)
-	gears.timer {
-		timeout   = 60,
-		call_now  = true,
+	gears.timer({
+		timeout = 60,
+		call_now = true,
 		autostart = true,
-		callback  = function()
+		callback = function()
 			curr = os.date("*t")
 			updateCalendar(curr)
-		end
-	}
-	return wibox.widget {
+		end,
+	})
+	return wibox.widget({
 		{
 			{
 				{
@@ -128,13 +128,16 @@ return function()
 							font = beautiful.icon,
 							widget = wibox.widget.textbox,
 							buttons = awful.button({}, 1, function()
-								curr = os.date("*t", os.time({
-									day = curr.day,
-									month = curr.month - 1,
-									year = curr.year
-								}))
+								curr = os.date(
+									"*t",
+									os.time({
+										day = curr.day,
+										month = curr.month - 1,
+										year = curr.year,
+									})
+								)
 								updateCalendar(curr)
-							end)
+							end),
 						},
 						widget = wibox.container.margin,
 						left = 38,
@@ -146,32 +149,35 @@ return function()
 							font = beautiful.icon,
 							widget = wibox.widget.textbox,
 							buttons = awful.button({}, 1, function()
-								curr = os.date("*t", os.time({
-									day = curr.day,
-									month = curr.month + 1,
-									year = curr.year
-								}))
+								curr = os.date(
+									"*t",
+									os.time({
+										day = curr.day,
+										month = curr.month + 1,
+										year = curr.year,
+									})
+								)
 								updateCalendar(curr)
-							end)
+							end),
 						},
 						widget = wibox.container.margin,
 						right = 38,
 					},
-					layout = wibox.layout.align.horizontal
+					layout = wibox.layout.align.horizontal,
 				},
 				{
 					theGrid,
 					widget = wibox.container.place,
-					halign = 'center',
+					halign = "center",
 				},
 				spacing = 10,
-				layout = wibox.layout.fixed.vertical
+				layout = wibox.layout.fixed.vertical,
 			},
 			widget = wibox.container.margin,
-			margins = 10
+			margins = 10,
 		},
 		shape = helpers.rrect(10),
 		widget = wibox.container.background,
 		bg = beautiful.background,
-	}
+	})
 end

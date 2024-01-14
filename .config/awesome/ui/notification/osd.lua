@@ -6,7 +6,7 @@ local helpers = require("helpers")
 local animation = require("modules.animation")
 
 -- osd --
-local info = wibox.widget {
+local info = wibox.widget({
 	layout = wibox.layout.fixed.horizontal,
 	{
 		widget = wibox.container.margin,
@@ -14,7 +14,7 @@ local info = wibox.widget {
 		{
 			layout = wibox.layout.fixed.horizontal,
 			fill_space = true,
-			spacing = 5,
+			spacing = 10,
 			{
 				widget = wibox.widget.textbox,
 				id = "icon",
@@ -22,28 +22,28 @@ local info = wibox.widget {
 			},
 			{
 				widget = wibox.container.background,
-				forced_width = 36,
+				forced_width = 25,
 				{
 					widget = wibox.widget.textbox,
 					id = "text",
 					font = beautiful.sans .. " 9",
-					halign = "center"
+					halign = "center",
 				},
 			},
 			{
 				widget = wibox.widget.progressbar,
 				id = "progressbar",
 				max_value = 100,
-				forced_width = 300,
+				forced_width = 200,
 				forced_height = 10,
 				background_color = beautiful.background_urgent,
 				color = beautiful.accent,
 			},
-		}
-	}
-}
+		},
+	},
+})
 
-local osd = awful.popup {
+local osd = awful.popup({
 	visible = false,
 	ontop = true,
 	bg = beautiful.background_dark,
@@ -51,22 +51,21 @@ local osd = awful.popup {
 	border_color = beautiful.border_color_normal,
 	minimum_height = 50,
 	maximum_height = 55,
-	minimum_width = 300,
-	maximum_width = 300,
+	forced_width = 300,
 	shape = helpers.rrect(5),
 	placement = function(d)
 		awful.placement.bottom(d, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	end,
 	widget = info,
-}
+})
 
-local anim = animation:new {
+local anim = animation:new({
 	duration = 0.3,
 	easing = animation.easing.linear,
 	subscribed = function(value)
 		info:get_children_by_id("progressbar")[1].value = value
-	end
-}
+	end,
+})
 
 -- volume --
 awesome.connect_signal("signal::volume", function(value)
@@ -105,10 +104,10 @@ local function osd_hide()
 	osd_timer:stop()
 end
 
-local osd_timer = gears.timer {
+local osd_timer = gears.timer({
 	timeout = 4,
-	callback = osd_hide
-}
+	callback = osd_hide,
+})
 
 local function osd_toggle()
 	if not osd.visible then

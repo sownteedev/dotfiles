@@ -46,12 +46,10 @@ local capi = { awesome = awesome }
 
 local playerctl = { mt = {} }
 
-
 local function save_image_async_curl(url, filepath, callback)
-	awful.spawn.with_line_callback(string.format("curl -L -s %s -o %s", url, filepath),
-		{
-			exit = callback
-		})
+	awful.spawn.with_line_callback(string.format("curl -L -s %s -o %s", url, filepath), {
+		exit = callback,
+	})
 end
 
 function playerctl:disable()
@@ -234,20 +232,22 @@ local function metadata_cb(self, player, metadata)
 			or artist ~= self._private.last_artist
 			or artUrl ~= self._private.last_artUrl
 		then
-			if (title == "" and artist == "" and artUrl == "") then return end
+			if title == "" and artist == "" and artUrl == "" then
+				return
+			end
 
 			if self._private.metadata_timer ~= nil and self._private.metadata_timer.started then
 				self._private.metadata_timer:stop()
 			end
 
-			self._private.metadata_timer = gtimer {
+			self._private.metadata_timer = gtimer({
 				timeout = self.debounce_delay,
 				autostart = true,
 				single_shot = true,
 				callback = function()
 					emit_metadata_signal(self, title, artist, artUrl, album, true, player.player_name)
-				end
-			}
+				end,
+			})
 
 			-- Re-sync with position timer when track changes
 			self._private.position_timer:again()
@@ -458,12 +458,12 @@ local function start_manager(self)
 	end
 
 	-- Timer to update track position at specified interval
-	self._private.position_timer = gtimer {
+	self._private.position_timer = gtimer({
 		timeout = self.interval,
 		callback = function()
 			position_cb(self)
 		end,
-	}
+	})
 
 	-- Manage existing players on startup
 	for _, name in ipairs(self._private.manager.player_names) do
@@ -521,7 +521,7 @@ end
 local function new(args)
 	args = args or {}
 
-	local ret = gobject {}
+	local ret = gobject({})
 	gtable.crush(ret, playerctl, true)
 
 	-- Grab settings from beautiful variables if not set explicitly

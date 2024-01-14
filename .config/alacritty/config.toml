@@ -6,7 +6,7 @@ y = 30
 
 [window]
 decorations = "full"
-opacity = 1.0
+opacity = 1
 dynamic_title = true
 
 [selection]

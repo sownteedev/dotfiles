@@ -4,7 +4,7 @@ local wibox = require("wibox")
 
 local createProgress = function(col, label, signal)
 	col = col or beautiful.background
-	local widget = wibox.widget {
+	local widget = wibox.widget({
 		{
 			{
 				{
@@ -12,7 +12,7 @@ local createProgress = function(col, label, signal)
 					markup = helpers.colorizeText(label, beautiful.foreground),
 					widget = wibox.widget.textbox,
 					valign = "start",
-					align = "center"
+					align = "center",
 				},
 				widget = wibox.container.background,
 				forced_width = 50,
@@ -21,24 +21,24 @@ local createProgress = function(col, label, signal)
 			right = 10,
 		},
 		{
-			id               = "pro",
-			max_value        = 100,
-			value            = 0,
-			forced_height    = 20,
-			forced_width     = 300,
-			bar_shape        = helpers.rrect(5),
-			shape            = helpers.rrect(5),
-			color            = col,
-			background_color = col .. '11',
-			paddings         = 1,
-			border_width     = 1,
-			widget           = wibox.widget.progressbar,
+			id = "pro",
+			max_value = 100,
+			value = 0,
+			forced_height = 20,
+			forced_width = 300,
+			bar_shape = helpers.rrect(5),
+			shape = helpers.rrect(5),
+			color = col,
+			background_color = col .. "11",
+			paddings = 1,
+			border_width = 1,
+			widget = wibox.widget.progressbar,
 		},
 		nil,
 		layout = wibox.layout.align.horizontal,
-	}
+	})
 
-	awesome.connect_signal('signal::' .. signal, function(val)
+	awesome.connect_signal("signal::" .. signal, function(val)
 		helpers.gc(widget, "pro").value = val
 	end)
 
@@ -55,7 +55,7 @@ local widget = {
 			layout = wibox.layout.fixed.vertical,
 		},
 		widget = wibox.container.margin,
-		margins = 20
+		margins = 20,
 	},
 	widget = wibox.container.background,
 	bg = beautiful.background,

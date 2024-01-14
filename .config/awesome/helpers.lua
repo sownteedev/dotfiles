@@ -1,12 +1,12 @@
-local awful                       = require("awful")
-local gears                       = require("gears")
-local beautiful                   = require("beautiful")
-local dpi                         = beautiful.xresources.apply_dpi
-local cairo                       = require("lgi").cairo
-local gmatrix                     = require("gears.matrix")
-local json                        = require("modules.json")
+local awful = require("awful")
+local gears = require("gears")
+local beautiful = require("beautiful")
+local dpi = beautiful.xresources.apply_dpi
+local cairo = require("lgi").cairo
+local gmatrix = require("gears.matrix")
+local json = require("modules.json")
 
-local helpers                     = {}
+local helpers = {}
 
 --Client---------------------------
 
@@ -17,46 +17,46 @@ helpers.centered_client_placement = function(c)
 end
 
 -- UI  ----------------------------
-helpers.rrect                     = function(radius)
+helpers.rrect = function(radius)
 	radius = radius or dpi(5)
 	return function(cr, width, height)
 		gears.shape.rounded_rect(cr, width, height, radius)
 	end
 end
 
-helpers.prect                     = function(tl, tr, br, bl, radius)
+helpers.prect = function(tl, tr, br, bl, radius)
 	radius = radius or dpi(5)
 	return function(cr, width, height)
 		gears.shape.partially_rounded_rect(cr, width, height, tl, tr, br, bl, radius)
 	end
 end
 
-helpers.addHover                  = function(element, bg, hbg)
-	element:connect_signal('mouse::enter', function(self)
+helpers.addHover = function(element, bg, hbg)
+	element:connect_signal("mouse::enter", function(self)
 		self.bg = hbg
 	end)
-	element:connect_signal('mouse::leave', function(self)
+	element:connect_signal("mouse::leave", function(self)
 		self.bg = bg
 	end)
 end
 
-helpers.placeWidget               = function(widget)
-	if beautiful.barDir == 'left' then
+helpers.placeWidget = function(widget)
+	if beautiful.barDir == "left" then
 		awful.placement.bottom_left(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
-	elseif beautiful.barDir == 'right' then
+	elseif beautiful.barDir == "right" then
 		awful.placement.bottom_right(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
-	elseif beautiful.barDir == 'bottom' then
+	elseif beautiful.barDir == "bottom" then
 		awful.placement.bottom(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
-	elseif beautiful.barDir == 'top' then
+	elseif beautiful.barDir == "top" then
 		awful.placement.top(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	end
 end
 
-helpers.clickKey                  = function(c, key)
+helpers.clickKey = function(c, key)
 	awful.spawn.with_shell("xdotool type --window " .. tostring(c.window) .. " '" .. key .. "'")
 end
 
-helpers.colorizeText              = function(txt, fg)
+helpers.colorizeText = function(txt, fg)
 	fg = fg or beautiful.foreground
 	if fg == "" then
 		fg = "#ffffff"
@@ -65,16 +65,18 @@ helpers.colorizeText              = function(txt, fg)
 	return "<span foreground='" .. fg .. "'>" .. txt .. "</span>"
 end
 
-helpers.cropSurface               = function(ratio, surf)
+helpers.cropSurface = function(ratio, surf)
 	local old_w, old_h = gears.surface.get_size(surf)
 	local old_ratio = old_w / old_h
-	if old_ratio == ratio then return surf end
+	if old_ratio == ratio then
+		return surf
+	end
 
 	local new_h = old_h
 	local new_w = old_w
 	local offset_h, offset_w = 0, 0
 	-- quick mafs
-	if (old_ratio < ratio) then
+	if old_ratio < ratio then
 		new_h = math.ceil(old_w * (1 / ratio))
 		offset_h = math.ceil((old_h - new_h) / 2)
 	else
@@ -91,7 +93,7 @@ helpers.cropSurface               = function(ratio, surf)
 	return out_surf
 end
 
-helpers.inTable                   = function(t, v)
+helpers.inTable = function(t, v)
 	for _, value in ipairs(t) do
 		if value == v then
 			return true
@@ -101,12 +103,11 @@ helpers.inTable                   = function(t, v)
 	return false
 end
 
-
 helpers.generateId = function()
-	local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-	return string.gsub(template, '[xy]', function(c)
-		local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
-		return string.format('%x', v)
+	local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+	return string.gsub(template, "[xy]", function(c)
+		local v = (c == "x") and math.random(0, 0xf) or math.random(8, 0xb)
+		return string.format("%x", v)
 	end)
 end
 
@@ -233,7 +234,7 @@ helpers.gc = function(widget, id)
 end
 
 helpers.beginsWith = function(str, pattern)
-	return str:find('^' .. pattern) ~= nil
+	return str:find("^" .. pattern) ~= nil
 end
 
 return helpers

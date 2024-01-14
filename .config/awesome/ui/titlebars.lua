@@ -8,7 +8,7 @@ local getIcon = require("modules.getIcon")
 local dpi = beautiful.xresources.apply_dpi
 
 local create_button = function(color, func)
-	local widget = wibox.widget {
+	local widget = wibox.widget({
 		widget = wibox.container.background,
 		forced_height = 8,
 		shape = helpers.rrect(3),
@@ -16,16 +16,17 @@ local create_button = function(color, func)
 		buttons = {
 			awful.button({}, 1, function()
 				func()
-			end)
-		}
-	}
+			end),
+		},
+	})
 
-	local widget_anim = animation:new {
+	local widget_anim = animation:new({
 		duration = 0.3,
 		easing = animation.easing.linear,
 		subscribed = function(h)
 			widget.forced_width = h
-		end }
+		end,
+	})
 	widget_anim:set(30)
 
 	widget:connect_signal("mouse::enter", function()
@@ -45,27 +46,21 @@ client.connect_signal("request::titlebars", function(c)
 
 	awful.titlebar.enable_tooltip = false
 
-	local minimize = create_button(beautiful.yellow,
-		function()
-			gears.timer.delayed_call(function()
-				c.minimized = not c.minimized
-			end)
-		end
-	)
+	local minimize = create_button(beautiful.yellow, function()
+		gears.timer.delayed_call(function()
+			c.minimized = not c.minimized
+		end)
+	end)
 
-	local maximize = create_button(beautiful.green,
-		function()
-			c.maximized = not c.maximized
-		end
-	)
+	local maximize = create_button(beautiful.green, function()
+		c.maximized = not c.maximized
+	end)
 
-	local close = create_button(beautiful.red,
-		function()
-			c:kill()
-		end
-	)
+	local close = create_button(beautiful.red, function()
+		c:kill()
+	end)
 
-	local icon = wibox.widget {
+	local icon = wibox.widget({
 		{
 			{
 				{
@@ -78,12 +73,12 @@ client.connect_signal("request::titlebars", function(c)
 				halign = "center",
 			},
 			margins = dpi(5),
-			widget = wibox.container.margin
+			widget = wibox.container.margin,
 		},
 		bg = beautiful.background_dark,
 		shape = helpers.rrect(5),
-		widget = wibox.container.background
-	}
+		widget = wibox.container.background,
+	})
 
 	local function update_button_color()
 		if client.focus == c then
@@ -125,8 +120,8 @@ client.connect_signal("request::titlebars", function(c)
 					close,
 					maximize,
 					minimize,
-				}
-			}
+				},
+			},
 		},
 		{
 			widget = wibox.container.background,

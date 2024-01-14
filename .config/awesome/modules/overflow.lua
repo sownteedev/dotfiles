@@ -13,18 +13,18 @@
 -- @layoutmod wibox.layout.overflow
 -- @supermodule wibox.layout.fixed
 ---------------------------------------------------------------------------
-local base = require('wibox.widget.base')
-local fixed = require('wibox.layout.fixed')
-local separator = require('wibox.widget.separator')
-local gtable = require('gears.table')
-local gshape = require('gears.shape')
-local gobject = require('gears.object')
-local beautiful = require('beautiful')
+local base = require("wibox.widget.base")
+local fixed = require("wibox.layout.fixed")
+local separator = require("wibox.widget.separator")
+local gtable = require("gears.table")
+local gshape = require("gears.shape")
+local gobject = require("gears.object")
+local beautiful = require("beautiful")
 local dpi = beautiful.xresources.apply_dpi
 local mousegrabber = mousegrabber
 
 local overflow = {
-	mt = {}
+	mt = {},
 }
 
 -- Determine the required space to draw the layout's children and, if necessary,
@@ -171,8 +171,16 @@ function overflow:layout(context, orig_width, orig_height)
 			height = height - bar_h
 		end
 
-		table.insert(result, base.place_widget_at(scrollbar_widget, math.floor(bar_x), math.floor(bar_y),
-			math.floor(bar_w), math.floor(bar_h)))
+		table.insert(
+			result,
+			base.place_widget_at(
+				scrollbar_widget,
+				math.floor(bar_x),
+				math.floor(bar_y),
+				math.floor(bar_w),
+				math.floor(bar_h)
+			)
+		)
 	end
 
 	local pos, spacing = 0, self._private.spacing
@@ -190,8 +198,13 @@ function overflow:layout(context, orig_width, orig_height)
 
 	for i, w in ipairs(widgets) do
 		local content_x, content_y
-		local content_w, content_h = base.fit_widget(self, context, w,
-			need_scrollbar and width - self._private.scrollbar_spacing or width, height)
+		local content_w, content_h = base.fit_widget(
+			self,
+			context,
+			w,
+			need_scrollbar and width - self._private.scrollbar_spacing or width,
+			height
+		)
 
 		-- When scrolling down, the content itself moves up -> substract
 		local scrolled_pos = pos - (scroll_position * interval)
@@ -222,8 +235,10 @@ function overflow:layout(context, orig_width, orig_height)
 		if is_in_view then
 			-- Add the spacing widget, but not before the first widget
 			if i > 1 and spacing_widget then
-				table.insert(result,
-					base.place_widget_at(spacing_widget, -- The way how spacing is added for regular widgets
+				table.insert(
+					result,
+					base.place_widget_at(
+						spacing_widget, -- The way how spacing is added for regular widgets
 						-- and the `spacing_widget` is disconnected:
 						-- The offset for regular widgets is added to `pos` one
 						-- iteration _before_ the one where the widget is actually
@@ -233,11 +248,21 @@ function overflow:layout(context, orig_width, orig_height)
 						-- the previous regular widget.
 						math.floor(is_y and content_x or (content_x - spacing)),
 						math.floor(is_y and (content_y - spacing) or content_y),
-						math.floor(is_y and content_w or spacing), math.floor(is_y and spacing or content_h)))
+						math.floor(is_y and content_w or spacing),
+						math.floor(is_y and spacing or content_h)
+					)
+				)
 			end
-			table.insert(result, base.place_widget_at(w, math.floor(content_x), math.floor(content_y),
-				math.floor(need_scrollbar and content_w - self._private.scrollbar_spacing or content_w),
-				math.floor(content_h)))
+			table.insert(
+				result,
+				base.place_widget_at(
+					w,
+					math.floor(content_x),
+					math.floor(content_y),
+					math.floor(need_scrollbar and content_w - self._private.scrollbar_spacing or content_w),
+					math.floor(content_h)
+				)
+			)
 		end
 	end
 
@@ -301,10 +326,13 @@ end
 function overflow:set_scroll_factor(factor)
 	local current = self._private.scroll_factor
 	local interval = self._private.used_in_dir - self._private.avail_in_dir
-	if current == factor -- the content takes less space than what is available, i.e. everything
+	if
+		current == factor -- the content takes less space than what is available, i.e. everything
 		-- is already visible
 		or interval <= 0 -- the scroll factor is out of range
-		or (current <= 0 and factor < 0) or (current >= 1 and factor > 1) then
+		or (current <= 0 and factor < 0)
+		or (current >= 1 and factor > 1)
+	then
 		return
 	end
 
@@ -425,7 +453,7 @@ end
 
 -- Applies a mouse button signal using `build_grabber` to a scrollbar widget.
 local function apply_scrollbar_mouse_signal(container, w)
-	w:connect_signal('button::press', function(_, x, y, button_id, _, geo)
+	w:connect_signal("button::press", function(_, x, y, button_id, _, geo)
 		if button_id ~= 1 then
 			return
 		end
@@ -492,12 +520,12 @@ local function new(dir, ...)
 	ret._private.scrollbar_spacing = dpi(15)
 
 	local scrollbar_widget = separator({
-		shape = gshape.rectangle
+		shape = gshape.rectangle,
 	})
 	apply_scrollbar_mouse_signal(ret, scrollbar_widget)
 	ret._private.scrollbar_widget = scrollbar_widget
 
-	ret:connect_signal('button::press', function(self, _, _, button)
+	ret:connect_signal("button::press", function(self, _, _, button)
 		if button == 4 then
 			self:scroll(-1)
 		elseif button == 5 then
