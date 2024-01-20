@@ -5,7 +5,7 @@ function brightness_emit()
 	awful.spawn.easy_async_with_shell(
 		"brightnessctl i | grep Current | awk '{print $4}' | tr -d '()%'",
 		function(stdout)
-			value = tonumber(stdout)
+			local value = tonumber(stdout)
 			awesome.emit_signal("signal::brightness", value)
 		end
 	)

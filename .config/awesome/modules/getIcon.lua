@@ -26,6 +26,10 @@ local custom = {
 		name = "TelegramDesktop",
 		to = "telegram",
 	},
+	{
+		name = "neovide",
+		to = "neovim",
+	},
 }
 
 local function hasValue(str)

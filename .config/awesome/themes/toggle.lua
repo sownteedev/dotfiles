@@ -24,7 +24,7 @@ local function backup()
 
 		cp -r ~/.local/other/ ~/dotfiles/.local/ && cp -r ~/.local/bin/ ~/dotfiles/.local/
 		rm -f ~/dotfiles/.Xresources && cp ~/.Xresources ~/dotfiles/
-		rm -f ~/dotfiles/.local/other/.xinitrc && cp ~/.xinitrc ~/dotfiles/.local/other/
+		rm -f ~/dotfiles/.xinitrc && cp ~/.xinitrc ~/dotfiles/
 	]])
 end
 
@@ -44,16 +44,6 @@ local function discord(entry)
 	awful.spawn.easy_async_with_shell([[
 		cat ~/.config/BetterDiscord/data/stable/themes/]] .. entry .. [[.css > ~/.config/BetterDiscord/data/stable/custom.css &&
 	]])
-end
-
-function nvim(entry)
-	awful.spawn.easy_async_with_shell("ls -1 /run/user/1000/ | grep nvim ", function(stdout)
-		for line in stdout:gmatch("[^\n]+") do
-			awful.spawn([[
-				nvim --server /run/user/1000/]] .. line .. [[ --remote-send ':lua require("tevim.themes.switch").settheme("]] .. entry .. [[")<CR>' &&
-			]])
-		end
-	end)
 end
 
 local function gtk(entry)
@@ -96,11 +86,17 @@ function applyTheme(theme)
 	gtk(theme)
 	firefox(theme)
 	backup()
-	awful.spawn.easy_async_with_shell([[
+	awful.spawn.with_shell([[
 		spicetify config color_scheme ]] .. theme .. [[ && spicetify apply &&
-		awesome-client 'nvim("]] .. theme .. [[")' &&
 	]])
-	awful.spawn.easy_async_with_shell([[
+	awful.spawn.with_shell("ls -1 /run/user/1000/ | grep nvim ", function(stdout)
+		for line in stdout:gmatch("[^\n]+") do
+			awful.spawn.with_shell([[
+				nvim --server /run/user/1000/]] .. line .. [[ --remote-send ':lua require("tevim.themes.switch").settheme("]] .. theme .. [[")<CR>' &&
+			]])
+		end
+	end)
+	awful.spawn.with_shell([[
 		awesome-client 'awesome.restart()' &&
 	]])
 end

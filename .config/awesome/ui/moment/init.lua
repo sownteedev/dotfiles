@@ -20,21 +20,14 @@ awful.screen.connect_for_each_screen(function(s)
 
 	moment:setup({
 		{
-			{
-				{
-					clock,
-					calendar(),
-					weather,
-					layout = wibox.layout.fixed.vertical,
-					spacing = 15,
-				},
-				widget = wibox.container.margin,
-				margins = 15,
-			},
-			layout = wibox.layout.align.vertical,
+			clock,
+			calendar(),
+			weather,
+			layout = wibox.layout.fixed.vertical,
+			spacing = 15,
 		},
 		widget = wibox.container.margin,
-		margins = 0,
+		margins = 15,
 	})
 	awful.placement.bottom_right(moment, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::moment", function()

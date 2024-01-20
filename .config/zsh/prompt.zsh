@@ -84,7 +84,6 @@ typeset -g PS3='%K{4} %K{0}%B select %b%k '
   typeset -g POWERLEVEL9K_EMPTY_LINE_LEFT_PROMPT_LAST_SEGMENT_END_SYMBOL=''
 
   #################################[ os_icon: os identifier ]##################################
-  # OS identifier color.
   typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=0
   typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=4
   typeset -g POWERLEVEL9K_OS_ICON_CONTENT_EXPANSION=' '
