@@ -72,9 +72,9 @@ awful.screen.connect_for_each_screen(function(s)
 				{
 					{
 						{
-							markup = helpers.colorizeText("Notifications", beautiful.foreground),
+							markup = helpers.colorizeText("Notification Center", beautiful.foreground),
 							halign = "center",
-							font = beautiful.sans .. " 12",
+							font = beautiful.sans .. " 11",
 							widget = wibox.widget.textbox,
 						},
 						nil,
@@ -82,7 +82,7 @@ awful.screen.connect_for_each_screen(function(s)
 						widget = wibox.layout.align.horizontal,
 					},
 					widget = wibox.container.margin,
-					margins = 20,
+					margins = 15,
 				},
 				widget = wibox.container.background,
 				bg = beautiful.background,
@@ -91,16 +91,15 @@ awful.screen.connect_for_each_screen(function(s)
 				{
 					finalcontent,
 					widget = wibox.container.margin,
-					margins = 20,
+					margins = 15,
 				},
 				widget = wibox.container.background,
 			},
 			progs,
 			layout = wibox.layout.align.vertical,
-			spacing = 20,
+			spacing = 15,
 		},
 		widget = wibox.container.margin,
-		margins = 0,
 	})
 	awful.placement.bottom_right(notify, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::notify", function()

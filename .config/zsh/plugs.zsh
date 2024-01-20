@@ -10,28 +10,19 @@ alias ice='zinit ice'
 alias load='zinit load'
 
 ice depth"1"
-use zsh-users/zsh-completions
-
 autoload compinit
 compinit
 
 use romkatv/powerlevel10k 
 use Aloxaf/fzf-tab
 use zdharma-continuum/fast-syntax-highlighting
+use zsh-users/zsh-completions
 use zsh-users/zsh-autosuggestions
-use hlissner/zsh-autopair 
-use MichaelAquilina/zsh-you-should-use 
-
-# FZF tab is better. Fight me.
-# use marlonrichert/zsh-autocomplete 
-
-# ice wait'3' lucid
-load zsh-users/zsh-history-substring-search 
-
-# ice wait'2' lucid
+use hlissner/zsh-autopair
 load zdharma-continuum/history-search-multi-word
 
-# ice wait'5' lucid
+bindkey '^e' autosuggest-accept
+
 unalias use snip ice load
 
 # vim:ft=zsh

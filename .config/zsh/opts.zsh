@@ -10,8 +10,6 @@ colors
 zle -N toggle_right_prompt
 zle -N toggle_left_prompt
 
-
-
 # disable sort when completing `git checkout`
 zstyle ':completion:*:git-checkout:*' sort false
 # set descriptions format to enable group support
