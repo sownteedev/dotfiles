@@ -2,11 +2,10 @@ local awful = require("awful")
 local gears = require("gears")
 
 -- Get volume level of mic
-function update_value_of_capture()
+function update_value_of_mic()
 	awful.spawn.easy_async_with_shell("bash -c 'pamixer --source 1 --get-volume'", function(stdout)
-		local value = string.gsub(stdout, "^%s*(.-)%s*$", "%1")
-		value = tonumber(value)
-		awesome.emit_signal("mic::value", value)
+		local mic_int = tonumber(stdout)
+		awesome.emit_signal("signal::micvalue", mic_int)
 	end)
 end
 
@@ -25,5 +24,6 @@ gears.timer({
 	autostart = true,
 	callback = function()
 		mic_emit()
+		update_value_of_mic()
 	end,
 })

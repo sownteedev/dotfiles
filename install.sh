@@ -165,13 +165,14 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 	# Other
 	echo "[*] Installing other ..."
-	sudo pacman -S --noconfirm gnome-keyring libsecret libgnome-keyring seahorse xf86-input-libinput pacman-contrib thefuck wget gpick btop ibus github-cli polkit-gnome xss-lock && yay -S --noconfirm auto-cpufreq picom-ftlabs-git
+	sudo pacman -S --noconfirm gnome-keyring rofi libsecret libgnome-keyring seahorse xf86-input-libinput pacman-contrib thefuck wget gpick btop ibus github-cli polkit-gnome xss-lock && yay -S --noconfirm auto-cpufreq picom-ftlabs-git
 	echo "[*] Done."
 	sleep 2
 
 else
 	echo "[*] Installation driver and dependencies skipped."
 fi
+
 ######################################## MY CONFIG FOR CUSTOM APPS #######################################
 
 # Spotify
