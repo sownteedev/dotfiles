@@ -21,7 +21,7 @@ local createSlider = function(icon, signal, command)
 		handle_shape = createHandle(),
 		handle_border_width = 3,
 		handle_width = dpi(20),
-		handle_margins = { top = 2, right = -5 },
+		handle_margins = { top = 2, right = -5, left = 1 },
 		handle_border_color = beautiful.foreground,
 		value = 25,
 		forced_height = 0,
@@ -81,8 +81,9 @@ end
 local widget = wibox.widget({
 	createSlider("󰃝 ", "brightness", "brightnessctl s %d%%"),
 	createSlider(" ", "volume", "pamixer --set-volume %d"),
+	createSlider("󰍬 ", "micvalue", "pactl set-source-volume alsa_input.pci-0000_00_1b.0.analog-stereo %d%%"),
 	layout = wibox.layout.fixed.vertical,
-	spacing = 20,
+	spacing = 15,
 })
 
 return widget

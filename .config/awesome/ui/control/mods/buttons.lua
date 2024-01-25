@@ -3,7 +3,7 @@ local wibox = require("wibox")
 local helpers = require("helpers")
 local beautiful = require("beautiful")
 
-local createbutton = function(cmd, icon, name, labelconnected, labeldisconnected, signal)
+local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisconnected, signal)
 	local widget = wibox.widget({
 		{
 			{
@@ -52,9 +52,14 @@ local createbutton = function(cmd, icon, name, labelconnected, labeldisconnected
 		id = "back",
 		shape = helpers.rrect(5),
 		bg = beautiful.background_alt,
-		buttons = { awful.button({}, 1, function()
-			awful.spawn.with_shell(cmd)
-		end) },
+		buttons = {
+			awful.button({}, 1, function()
+				awful.spawn.with_shell(cmd1)
+			end),
+			awful.button({}, 3, function()
+				awful.spawn.with_shell(cmd2)
+			end),
+		},
 	})
 	awesome.connect_signal("signal::" .. signal, function(status)
 		if status then
@@ -77,7 +82,8 @@ end
 local widget = wibox.widget({
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/wifi --toggle",
+			"~/.config/awesome/signals/scripts/Wifi/wifi --toggle",
+			"~/.config/awesome/signals/scripts/Wifi/Wifi",
 			" ",
 			"Network",
 			"Connected",
@@ -85,7 +91,8 @@ local widget = wibox.widget({
 			"network"
 		),
 		createbutton(
-			"~/.config/awesome/signals/scripts/bluetooth --toggle",
+			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth --toggle",
+			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth",
 			"󰂯 ",
 			"Bluetooth",
 			"Connected",
@@ -98,6 +105,7 @@ local widget = wibox.widget({
 	{
 		createbutton(
 			"~/.config/awesome/signals/scripts/airplane --toggle",
+			"",
 			"󰀝 ",
 			"Airplane",
 			"Now In Flight Mode",
@@ -106,6 +114,7 @@ local widget = wibox.widget({
 		),
 		createbutton(
 			"awesome-client 'naughty = require(\"naughty\") naughty.toggle()'",
+			"",
 			"󰍶 ",
 			"Don't Disturb",
 			"Turned On",
@@ -118,13 +127,14 @@ local widget = wibox.widget({
 	{
 		createbutton(
 			"~/.config/awesome/signals/scripts/redshift --toggle",
+			"",
 			"󰛨 ",
 			"Redshift",
 			"Your Eyes Are Safe",
 			"Night Light Is Off",
 			"redshift"
 		),
-		createbutton("pamixer --source 1 -t", "󰍬 ", "Microphone", "It's Muted", "It's Turned On", "mic"),
+		createbutton("pamixer --source 1 -t", "", "󰍬 ", "Microphone", "It's Muted", "It's Turned On", "mic"),
 		spacing = 15,
 		layout = wibox.layout.flex.horizontal,
 	},

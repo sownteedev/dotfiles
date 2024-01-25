@@ -243,7 +243,7 @@ function menu.sub_menu_button(args)
 			right = dpi(10),
 			bottom = dpi(5),
 		},
-		bg = beautiful.background,
+		bg = beautiful.background_dark,
 		forced_height = 35,
 		widget = wibox.container.background,
 	})
