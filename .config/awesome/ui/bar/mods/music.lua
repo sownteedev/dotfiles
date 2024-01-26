@@ -58,7 +58,7 @@ local play = wibox.widget({
 local headphones = wibox.widget({
 	align = "center",
 	font = beautiful.icon .. " 16",
-	markup = helpers.colorizeText("󰟎 ", beautiful.foreground),
+	markup = helpers.colorizeText("󰟎 ", beautiful.yellow),
 	widget = wibox.widget.textbox,
 })
 
@@ -66,8 +66,8 @@ playerctl:connect_signal("playback_status", function(_, playing, player_name)
 	play.markup = playing and helpers.colorizeText("󰏤", beautiful.foreground)
 		or helpers.colorizeText("󰐊", beautiful.foreground)
 
-	headphones.markup = playing and helpers.colorizeText("󰋎 ", beautiful.foreground)
-		or helpers.colorizeText("󰟎 ", beautiful.foreground)
+	headphones.markup = playing and helpers.colorizeText("󰋎 ", beautiful.green)
+		or helpers.colorizeText("󰟎 ", beautiful.yellow)
 end)
 local finalwidget = wibox.widget({
 	{

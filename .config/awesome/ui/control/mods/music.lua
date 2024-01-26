@@ -10,7 +10,7 @@ local art = wibox.widget({
 	image = helpers.cropSurface(1.71, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.3,
 	resize = true,
-	clip_shape = helpers.rrect(12),
+	clip_shape = helpers.rrect(5),
 	widget = wibox.widget.imagebox,
 })
 
@@ -69,7 +69,7 @@ local finalwidget = wibox.widget({
 					to = { 250, 0 },
 					stops = { { 0, beautiful.background .. "ff" }, { 1, beautiful.background_alt .. "55" } },
 				},
-				shape = helpers.rrect(12),
+				shape = helpers.rrect(5),
 				widget = wibox.container.background,
 			},
 			{
@@ -126,12 +126,12 @@ local finalwidget = wibox.widget({
 				bg = beautiful.background_alt,
 			},
 			widget = wibox.container.margin,
-			left = 20,
+			left = 15,
 		},
 		layout = wibox.layout.align.horizontal,
 	},
 	widget = wibox.container.margin,
-	margins = 20,
+	margins = 15,
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)

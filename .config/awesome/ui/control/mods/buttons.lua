@@ -93,7 +93,7 @@ local widget = wibox.widget({
 		createbutton(
 			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth --toggle",
 			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth",
-			"󰂯 ",
+			" ",
 			"Bluetooth",
 			"Connected",
 			"Disconnected",
@@ -134,7 +134,7 @@ local widget = wibox.widget({
 			"Night Light Is Off",
 			"redshift"
 		),
-		createbutton("pamixer --source 1 -t", "", "󰍬 ", "Microphone", "It's Muted", "It's Turned On", "mic"),
+		createbutton("pamixer --source 1 -t", "", " ", "Microphone", "It's Muted", "It's Turned On", "mic"),
 		spacing = 15,
 		layout = wibox.layout.flex.horizontal,
 	},

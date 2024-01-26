@@ -39,7 +39,7 @@ local widget = wibox.widget({
 			{
 				{
 					{
-						font = beautiful.sans .. " 30",
+						font = beautiful.sans .. " Bold 35",
 						format = "%I : %M",
 						align = "center",
 						valign = "center",
@@ -48,11 +48,11 @@ local widget = wibox.widget({
 					{
 						id = "uptime",
 						align = "center",
-						font = beautiful.sans .. " 12",
+						font = beautiful.sans .. " 10",
 						text = "",
 						widget = wibox.widget.textbox,
 					},
-					spacing = 10,
+					spacing = 5,
 					layout = wibox.layout.fixed.vertical,
 				},
 				widget = wibox.container.place,
