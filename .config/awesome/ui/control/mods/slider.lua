@@ -81,7 +81,7 @@ end
 local widget = wibox.widget({
 	createSlider("󰃝 ", "brightness", "brightnessctl s %d%%"),
 	createSlider(" ", "volume", "pamixer --set-volume %d"),
-	createSlider("󰍬 ", "micvalue", "pactl set-source-volume alsa_input.pci-0000_00_1b.0.analog-stereo %d%%"),
+	createSlider(" ", "micvalue", "pactl set-source-volume alsa_input.pci-0000_00_1b.0.analog-stereo %d%%"),
 	layout = wibox.layout.fixed.vertical,
 	spacing = 15,
 })

@@ -110,7 +110,7 @@ return function()
 	curr = os.date("*t")
 	updateCalendar(curr)
 	gears.timer({
-		timeout = 60,
+		timeout = 86400 - os.time() % 86400,
 		call_now = true,
 		autostart = true,
 		callback = function()

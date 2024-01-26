@@ -49,7 +49,7 @@ inputbar {
     border-color:                @border-color;
     background-color:            transparent;
     text-color:                  @foreground;
-    children:                    [ "textbox-prompt-colon", "prompt" ];
+    children:                    [ "textbox-prompt-colon", "prompt", "entry" ];
 }
 
 prompt {
@@ -71,7 +71,7 @@ textbox-prompt-colon {
 
 entry {
     enabled:                     true;
-    padding:                     8px 0px;
+    padding:                     8px 10px;
     background-color:            inherit;
     text-color:                  inherit;
     cursor:                      text;
