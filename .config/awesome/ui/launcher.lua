@@ -33,7 +33,7 @@ local createPowerButton = function(icon, color, command)
 			},
 			widget = wibox.container.background,
 			bg = color .. "11",
-			shape = helpers.rrect(4),
+			shape = helpers.rrect(5),
 		},
 		widget = wibox.container.place,
 		halign = "center",
