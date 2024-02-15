@@ -82,8 +82,8 @@ end
 local widget = wibox.widget({
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/Wifi/wifi --toggle",
-			"~/.config/awesome/signals/scripts/Wifi/Wifi",
+			"~/.config/awesome/signals/scripts/Wifi/Wifi --toggle",
+			"~/.config/awesome/signals/scripts/Wifi/Menu",
 			" ",
 			"Network",
 			"Connected",
@@ -92,7 +92,7 @@ local widget = wibox.widget({
 		),
 		createbutton(
 			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth --toggle",
-			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth",
+			"~/.config/awesome/signals/scripts/Bluetooth/Menu",
 			" ",
 			"Bluetooth",
 			"Connected",

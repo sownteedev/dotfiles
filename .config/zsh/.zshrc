@@ -25,9 +25,11 @@ export PATH=$PATH:~/.local/share/nvim/mason/bin
 alias nvim-tevim="NVIM_APPNAME=nvim"
 alias nvim-nvchad="NVIM_APPNAME=NvChad nvim"
 alias nvim-lazyvim="NVIM_APPNAME=LazyVim nvim"
+alias nvim-Kodo="NVIM_APPNAME=Kodo nvim"
+alias nvim-dharmx="NVIM_APPNAME=dharmx nvim"
 
 function nvims() {
-	items=("TeVim" "NvChad" "LazyVim" "default")
+	items=("TeVim" "NvChad" "LazyVim" "dharmx" "Kodo" "default")
 	config=$(printf "%s\n" "${items[@]}" | fzf --prompt="  Neovim Config  " --height=~50% --layout=reverse --border --exit-0)
 	if [[ -z $config ]]; then
 		echo "Nothing selected"

@@ -1,5 +1,6 @@
 local awful = require("awful")
 local gears = require("gears")
+
 local function emit_uptime_status()
 	awful.spawn.easy_async_with_shell(
 		"bash -c \"uptime --pretty | sed 's/up\\s*//g' | sed 's/\\s*days/d/g' | sed 's/\\s*hours/h/g' | sed 's/\\s*minutes/m/g'\"",

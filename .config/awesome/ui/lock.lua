@@ -5,6 +5,52 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local dpi = beautiful.xresources.apply_dpi
 local pam = require("liblua_pam")
+local music = require("ui.exit.mods.music")
+local bat = require("ui.exit.mods.bat")
+local weather = require("ui.exit.mods.weather")
+local pctl = require("modules.playerctl")
+local playerctl = pctl.lib()
+
+local next = wibox.widget({
+	align = "center",
+	font = beautiful.icon .. " 16",
+	text = "󰒭",
+	widget = wibox.widget.textbox,
+	buttons = {
+		awful.button({}, 1, function()
+			playerctl:next()
+		end),
+	},
+})
+
+local prev = wibox.widget({
+	align = "center",
+	font = beautiful.icon .. " 16",
+	text = "󰒮",
+	widget = wibox.widget.textbox,
+	buttons = {
+		awful.button({}, 1, function()
+			playerctl:previous()
+		end),
+	},
+})
+local play = wibox.widget({
+	align = "center",
+	font = beautiful.icon .. " 16",
+	markup = helpers.colorizeText("󰐊", beautiful.foreground),
+	widget = wibox.widget.textbox,
+	buttons = {
+		awful.button({}, 1, function()
+			playerctl:play_pause()
+		end),
+	},
+})
+
+playerctl:connect_signal("playback_status", function(_, playing, player_name)
+	play.markup = playing and helpers.colorizeText("󰏤", beautiful.foreground)
+		or helpers.colorizeText("󰐊", beautiful.foreground)
+end)
+
 local auth = function(password)
 	return pam.auth_current_user(password)
 end
@@ -131,7 +177,6 @@ local function grab()
 			end
 		end,
 		keyreleased_callback = function(self, _, key, _)
-			-- Validation
 			if key == "Return" then
 				if auth(input) then
 					self:stop()
@@ -220,6 +265,33 @@ promptbox:setup({
 				valign = "center",
 			},
 			header,
+			{
+				{
+					{
+						music,
+						{
+							{
+								{ prev, play, next, spacing = 10, layout = wibox.layout.fixed.horizontal },
+								widget = wibox.container.margin,
+								left = 5,
+								right = 5,
+							},
+							widget = wibox.container.background,
+							bg = beautiful.background_alt .. "CC",
+							shape = helpers.rrect(5),
+						},
+						layout = wibox.layout.fixed.horizontal,
+						spacing = 10,
+					},
+					bat,
+					weather,
+					layout = wibox.layout.fixed.horizontal,
+					spacing = 40,
+				},
+				widget = wibox.container.place,
+				valign = "bottom",
+				halign = "center",
+			},
 			layout = wibox.layout.align.vertical,
 		},
 		margins = dpi(50),

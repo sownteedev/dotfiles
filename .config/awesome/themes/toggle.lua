@@ -91,9 +91,14 @@ function applyTheme(theme)
 	]])
 	awful.spawn.with_shell("ls -1 /run/user/1000/ | grep nvim ", function(stdout)
 		for line in stdout:gmatch("[^\n]+") do
-			awful.spawn.with_shell([[
-				nvim --server /run/user/1000/]] .. line .. [[ --remote-send ':lua require("tevim.themes.switch").settheme("]] .. theme .. [[")<CR>' &&
-			]])
+			awful.spawn.with_shell(
+				[[
+				nvim --server /run/user/1000/]]
+					.. line
+					.. [[ --remote-send ':lua require("tevim.themes.pick").setTheme("]]
+					.. theme
+					.. [[")<CR>']]
+			)
 		end
 	end)
 	awful.spawn.with_shell([[

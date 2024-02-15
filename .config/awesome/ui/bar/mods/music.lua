@@ -69,6 +69,7 @@ playerctl:connect_signal("playback_status", function(_, playing, player_name)
 	headphones.markup = playing and helpers.colorizeText("󰋎 ", beautiful.green)
 		or helpers.colorizeText("󰟎 ", beautiful.yellow)
 end)
+
 local finalwidget = wibox.widget({
 	{
 		art,
