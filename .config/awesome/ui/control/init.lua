@@ -13,8 +13,8 @@ local opacity = false
 awful.screen.connect_for_each_screen(function(s)
 	local control = wibox({
 		screen = s,
-		width = 400,
-		height = 680,
+		width = beautiful.width / 3.5,
+		height = (beautiful.height / 3) * 2.05,
 		bg = beautiful.background .. "00",
 		ontop = true,
 		visible = false,
@@ -24,13 +24,13 @@ awful.screen.connect_for_each_screen(function(s)
 		{
 			{
 				moosic,
-				forced_height = 210,
+				forced_height = 300,
 				widget = wibox.container.background,
 				bg = beautiful.background_dark,
 				shape = helpers.rrect(5),
 			},
 			widget = wibox.container.margin,
-			bottom = 10,
+			bottom = 20,
 		},
 		{
 			{
@@ -43,8 +43,8 @@ awful.screen.connect_for_each_screen(function(s)
 								{
 									widget = wibox.widget.imagebox,
 									image = beautiful.profile,
-									forced_height = 40,
-									forced_width = 40,
+									forced_height = 80,
+									forced_width = 80,
 									opacity = 1,
 									clip_shape = helpers.rrect(8),
 									resize = true,
@@ -65,23 +65,23 @@ awful.screen.connect_for_each_screen(function(s)
 									bg = beautiful.background_alt,
 								},
 								layout = wibox.layout.fixed.horizontal,
-								spacing = 20,
+								spacing = 40,
 							},
 							nil,
 							{
 								{
 									{
-										font = beautiful.icon .. " 18",
+										font = beautiful.icon .. " 25",
 										markup = helpers.colorizeText("󱡓 ", beautiful.foreground),
 										widget = wibox.widget.textbox,
 										valign = "center",
 										align = "center",
 									},
 									widget = wibox.container.margin,
-									left = 13,
-									right = 5,
-									top = 5,
-									bottom = 5,
+									left = 30,
+									right = 20,
+									top = 10,
+									bottom = 10,
 								},
 								widget = wibox.container.background,
 								shape = helpers.rrect(5),
@@ -107,7 +107,7 @@ awful.screen.connect_for_each_screen(function(s)
 					sliders,
 					buttons,
 					layout = wibox.layout.fixed.vertical,
-					spacing = 30,
+					spacing = 60,
 				},
 				widget = wibox.container.margin,
 				margins = 15,

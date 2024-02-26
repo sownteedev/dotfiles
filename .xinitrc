@@ -12,3 +12,6 @@ eval $(/usr/bin/gnome-keyring-daemon --start)
 export SSH_AUTH_SOCK
 mkdir -p "$HOME"/.local/share/keyrings
 dbus-run-session pipewire &
+
+xrandr --setprovideroutputsource modesetting NVIDIA-0
+xrandr --auto

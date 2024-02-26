@@ -9,21 +9,21 @@ local widget = wibox.widget({
 		image = gears.filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
 		opacity = 0.9,
 		clip_shape = helpers.rrect(4),
-		forced_height = 30,
-		forced_width = 30,
+		forced_height = 80,
+		forced_width = 80,
 		valign = "center",
 		widget = wibox.widget.imagebox,
 	},
 	{
 		id = "desc",
-		font = beautiful.sans .. " 16",
+		font = beautiful.sans .. " 25",
 		markup = "Scattered Clouds",
 		valign = "center",
 		align = "start",
 		widget = wibox.widget.textbox,
 	},
 	layout = wibox.layout.fixed.horizontal,
-	spacing = 15,
+	spacing = 20,
 })
 
 awesome.connect_signal("signal::weather", function(out)

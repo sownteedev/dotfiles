@@ -11,14 +11,14 @@ local datewidget = function(date, weekend, notIn)
 		return wibox.widget({
 			markup = helpers.colorizeText(date, beautiful.foreground),
 			halign = "center",
-			font = beautiful.sans .. " 9",
+			font = beautiful.sans .. " 15",
 			widget = wibox.widget.textbox,
 		})
 	else
 		return wibox.widget({
 			markup = weekend and helpers.colorizeText(date, beautiful.foreground) or date,
 			halign = "center",
-			font = beautiful.sans .. " 9",
+			font = beautiful.sans .. " 15",
 			widget = wibox.widget.textbox,
 		})
 	end
@@ -29,7 +29,7 @@ local daywidget = function(day, weekend, notIn)
 	return wibox.widget({
 		markup = weekend and helpers.colorizeText(day, beautiful.red) or day,
 		halign = "center",
-		font = beautiful.sans .. " 10",
+		font = beautiful.sans .. " 15",
 		widget = wibox.widget.textbox,
 	})
 end
@@ -37,13 +37,13 @@ local currwidget = function(day)
 	return wibox.widget({
 		markup = helpers.colorizeText(day, beautiful.blue),
 		halign = "center",
-		font = beautiful.sans .. " 10",
+		font = beautiful.sans .. " 15",
 		widget = wibox.widget.textbox,
 	})
 end
 
 local title = wibox.widget({
-	font = beautiful.sans .. " Bold 12",
+	font = beautiful.sans .. " Bold 25",
 	widget = wibox.widget.textbox,
 	halign = "center",
 })
@@ -51,10 +51,10 @@ local title = wibox.widget({
 local theGrid = wibox.widget({
 	forced_num_rows = 7,
 	forced_num_cols = 7,
-	vertical_spacing = dpi(10),
-	horizontal_spacing = dpi(10),
-	min_cols_size = dpi(20),
-	min_rows_size = dpi(20),
+	vertical_spacing = dpi(30),
+	horizontal_spacing = dpi(30),
+	min_cols_size = dpi(40),
+	min_rows_size = dpi(40),
 	homogenous = true,
 	layout = wibox.layout.grid,
 })
@@ -161,7 +161,7 @@ return function()
 							end),
 						},
 						widget = wibox.container.margin,
-						right = 38,
+						right = 60,
 					},
 					layout = wibox.layout.align.horizontal,
 				},
@@ -170,7 +170,7 @@ return function()
 					widget = wibox.container.place,
 					halign = "center",
 				},
-				spacing = 10,
+				spacing = 30,
 				layout = wibox.layout.fixed.vertical,
 			},
 			widget = wibox.container.margin,

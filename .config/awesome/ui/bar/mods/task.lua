@@ -7,6 +7,7 @@ local beautiful = require("beautiful")
 local getIcon = require("modules.getIcon")
 local inspect = require("modules.inspect")
 local layout = wibox.layout.fixed.horizontal
+local dpi = beautiful.xresources.apply_dpi
 
 local M = {
 	metadata = {
@@ -97,16 +98,16 @@ local M = {
 
 M.widget = wibox.widget({
 	layout = layout,
-	spacing = 5,
+	spacing = 10,
 })
 
 M.popupWidget = wibox.widget({
 	layout = wibox.layout.fixed.vertical,
-	spacing = 10,
+	spacing = 20,
 })
 
 M.popup = awful.popup({
-	minimum_width = 240,
+	minimum_width = dpi(300),
 	widget = wibox.container.background,
 	visible = false,
 	shape = helpers.rrect(5),
@@ -116,7 +117,7 @@ M.popup = awful.popup({
 
 M.popup:setup({
 	widget = wibox.container.margin,
-	margins = 10,
+	margins = 20,
 	M.popupWidget,
 })
 
@@ -156,8 +157,8 @@ end
 
 function M:showMenu(data)
 	local clients = data.clients
-	self.popup.x = mouse.coords().x - 80
-	self.popup.y = beautiful.height - 70 - (50 * (#clients + 2))
+	self.popup.x = mouse.coords().x - 100
+	self.popup.y = beautiful.height - 130 - (50 * (#clients + 2))
 	self.popupWidget:reset()
 	for i, j in ipairs(clients) do
 		local widget = wibox.widget({
@@ -166,7 +167,7 @@ function M:showMenu(data)
 					{
 						{
 							markup = j.name,
-							font = beautiful.sans .. " 9",
+							font = beautiful.sans .. " 10",
 							height = 16,
 							widget = wibox.widget.textbox,
 						},
@@ -177,7 +178,7 @@ function M:showMenu(data)
 					nil,
 					{
 						markup = helpers.colorizeText("󰅖", beautiful.red),
-						font = beautiful.icon .. " 12",
+						font = beautiful.icon .. " 10",
 						widget = wibox.widget.textbox,
 						buttons = {
 							awful.button({}, 1, function()
@@ -225,7 +226,7 @@ function M:showMenu(data)
 				{
 					{
 						markup = "Open New Window",
-						font = beautiful.sans .. " 9",
+						font = beautiful.sans .. " 10",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.constraint,
@@ -252,7 +253,7 @@ function M:showMenu(data)
 			{
 				{
 					markup = "Close All",
-					font = beautiful.sans .. " 9",
+					font = beautiful.sans .. " 10",
 					widget = wibox.widget.textbox,
 				},
 				layout = wibox.layout.align.horizontal,
@@ -269,7 +270,7 @@ function M:showMenu(data)
 		},
 		widget = wibox.container.background,
 		shape = helpers.rrect(5),
-		bg = beautiful.background_dark,
+		bg = beautiful.background,
 	})
 	self.popupWidget:add(addNew)
 	self.popupWidget:add(closeAll)
@@ -349,15 +350,15 @@ function M:genIcons()
 					{
 						widget = wibox.widget.imagebox,
 						image = j.icon,
-						forced_height = 35,
-						forced_width = 35,
+						forced_height = dpi(60),
+						forced_width = dpi(60),
 						clip_shape = helpers.rrect(0),
 						resize = true,
 					},
 					widget = wibox.container.margin,
 					margins = 2,
 				},
-				shape = helpers.rrect(10),
+				shape = helpers.rrect(15),
 				widget = wibox.container.background,
 				bg = bg,
 			})

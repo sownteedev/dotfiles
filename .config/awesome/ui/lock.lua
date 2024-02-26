@@ -13,7 +13,7 @@ local playerctl = pctl.lib()
 
 local next = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 16",
+	font = beautiful.icon .. " 25",
 	text = "󰒭",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -25,7 +25,7 @@ local next = wibox.widget({
 
 local prev = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 16",
+	font = beautiful.icon .. " 25",
 	text = "󰒮",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -36,7 +36,7 @@ local prev = wibox.widget({
 })
 local play = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 16",
+	font = beautiful.icon .. " 25",
 	markup = helpers.colorizeText("󰐊", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -60,9 +60,9 @@ local header = wibox.widget({
 		{
 			image = beautiful.profile,
 			clip_shape = helpers.rrect(100),
-			forced_height = 180,
+			forced_height = 300,
+			forced_width = 300,
 			opacity = 1,
-			forced_width = 180,
 			halign = "center",
 			widget = wibox.widget.imagebox,
 		},
@@ -76,8 +76,8 @@ local header = wibox.widget({
 		start_angle = 4.71238898,
 		bg = beautiful.foreground,
 		colors = { beautiful.foreground },
-		forced_width = dpi(150),
-		forced_height = dpi(150),
+		forced_width = 300,
+		forced_height = 300,
 	},
 	widget = wibox.container.place,
 	halign = "center",
@@ -87,7 +87,7 @@ local label = wibox.widget({
 	valign = "center",
 	halign = "center",
 	id = "name",
-	font = beautiful.sans .. " 12",
+	font = beautiful.sans .. " 15",
 	widget = wibox.widget.textbox,
 })
 
@@ -240,14 +240,14 @@ promptbox:setup({
 			{
 				{
 					{
-						font = beautiful.sans .. " Medium 100",
+						font = beautiful.sans .. " Medium 150",
 						format = "%H:%M",
 						halign = "center",
 						valign = "center",
 						widget = wibox.widget.textclock,
 					},
 					{
-						font = beautiful.sans .. " Light 20",
+						font = beautiful.sans .. " Light 40",
 						format = "%A, %d %B %Y",
 						halign = "center",
 						valign = "center",
@@ -256,7 +256,7 @@ promptbox:setup({
 					{
 						label,
 						widget = wibox.container.margin,
-						top = 50,
+						top = 100,
 					},
 					spacing = 10,
 					layout = wibox.layout.fixed.vertical,
@@ -271,22 +271,22 @@ promptbox:setup({
 						music,
 						{
 							{
-								{ prev, play, next, spacing = 10, layout = wibox.layout.fixed.horizontal },
+								{ prev, play, next, spacing = 20, layout = wibox.layout.fixed.horizontal },
 								widget = wibox.container.margin,
-								left = 5,
-								right = 5,
+								left = 10,
+								right = 10,
 							},
 							widget = wibox.container.background,
 							bg = beautiful.background_alt .. "CC",
 							shape = helpers.rrect(5),
 						},
 						layout = wibox.layout.fixed.horizontal,
-						spacing = 10,
+						spacing = 40,
 					},
 					bat,
 					weather,
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 40,
+					spacing = 100,
 				},
 				widget = wibox.container.place,
 				valign = "bottom",

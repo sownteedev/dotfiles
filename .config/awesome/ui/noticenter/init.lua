@@ -12,8 +12,8 @@ awful.screen.connect_for_each_screen(function(s)
 	local notify = wibox({
 		shape = helpers.rrect(5),
 		screen = s,
-		width = 400,
-		height = 650,
+		width = beautiful.width / 3.5,
+		height = beautiful.height / 1.3,
 		bg = beautiful.background_dark,
 		ontop = true,
 		visible = false,
@@ -22,7 +22,7 @@ awful.screen.connect_for_each_screen(function(s)
 	local finalcontent = wibox.widget({
 		layout = require("modules.overflow").vertical,
 		scrollbar_enabled = false,
-		spacing = 10,
+		spacing = 20,
 	})
 	finalcontent:insert(1, empty)
 
@@ -43,7 +43,7 @@ awful.screen.connect_for_each_screen(function(s)
 	end
 
 	local clearButton = wibox.widget({
-		font = beautiful.icon .. " 12",
+		font = beautiful.icon .. " 20",
 		markup = helpers.colorizeText(" ", beautiful.red),
 		widget = wibox.widget.textbox,
 		valign = "center",
@@ -72,17 +72,25 @@ awful.screen.connect_for_each_screen(function(s)
 				{
 					{
 						{
-							markup = helpers.colorizeText("Notification Center", beautiful.foreground),
-							halign = "center",
-							font = beautiful.sans .. " 11",
-							widget = wibox.widget.textbox,
+							{
+								markup = helpers.colorizeText("Notification Center", beautiful.foreground),
+								halign = "center",
+								font = beautiful.sans .. " 15",
+								widget = wibox.widget.textbox,
+							},
+							widget = wibox.container.margin,
+							left = 20,
 						},
 						nil,
-						clearButton,
+						{
+							clearButton,
+							widget = wibox.container.margin,
+							right = 20,
+						},
 						widget = wibox.layout.align.horizontal,
 					},
 					widget = wibox.container.margin,
-					margins = 15,
+					margins = 20,
 				},
 				widget = wibox.container.background,
 				bg = beautiful.background,

@@ -14,14 +14,14 @@ end
 local createSlider = function(icon, signal, command)
 	local slidSlider = wibox.widget({
 		bar_shape = helpers.rrect(5),
-		bar_height = 3,
+		bar_height = 5,
 		handle_color = beautiful.background,
 		bar_color = beautiful.background .. "00",
 		bar_active_color = beautiful.foreground,
 		handle_shape = createHandle(),
-		handle_border_width = 3,
-		handle_width = dpi(20),
-		handle_margins = { top = 2, right = -5, left = 1 },
+		handle_border_width = 5,
+		handle_width = 15,
+		handle_margins = { top = 10, right = -15, left = 1 },
 		handle_border_color = beautiful.foreground,
 		value = 25,
 		forced_height = 0,
@@ -31,7 +31,7 @@ local createSlider = function(icon, signal, command)
 
 	local slidIcon = wibox.widget({
 		{
-			font = beautiful.icon .. " 15",
+			font = beautiful.icon .. " 25",
 			markup = helpers.colorizeText(icon, beautiful.foreground),
 			valign = "center",
 			widget = wibox.widget.textbox,
@@ -64,7 +64,7 @@ local createSlider = function(icon, signal, command)
 				layout = wibox.layout.stack,
 			},
 			layout = wibox.layout.fixed.horizontal,
-			spacing = 10,
+			spacing = 20,
 		},
 		layout = wibox.layout.align.horizontal,
 	})
@@ -83,7 +83,7 @@ local widget = wibox.widget({
 	createSlider(" ", "volume", "pamixer --set-volume %d"),
 	createSlider(" ", "micvalue", "pactl set-source-volume alsa_input.pci-0000_00_1b.0.analog-stereo %d%%"),
 	layout = wibox.layout.fixed.vertical,
-	spacing = 15,
+	spacing = 20,
 })
 
 return widget

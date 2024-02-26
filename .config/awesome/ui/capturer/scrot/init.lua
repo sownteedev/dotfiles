@@ -8,7 +8,6 @@ local Gtk = lgi.require("Gtk", "3.0")
 local Gdk = lgi.require("Gdk", "3.0")
 local GdkPixbuf = lgi.GdkPixbuf
 local animation = require("modules.animation")
-local dpi = beautiful.xresources.apply_dpi
 
 local useMouse = true
 local mouseString = useMouse and " -u " or ""
@@ -37,36 +36,41 @@ local createButton = function(icon, name, fn, col)
 				{
 					{
 						{
-							font = beautiful.icon .. " 20",
+							font = beautiful.icon .. " 25",
 							markup = icon,
 							valign = "center",
 							align = "center",
 							widget = wibox.widget.textbox,
 						},
 						layout = wibox.container.margin,
+						top = 10,
 						left = 10,
-						right = 3,
+						right = 5,
 					},
 					{
-						font = beautiful.sans .. " 8",
-						markup = name,
-						valign = "center",
-						align = "center",
-						widget = wibox.widget.textbox,
+						{
+							font = beautiful.sans .. " 15",
+							markup = name,
+							valign = "center",
+							align = "center",
+							widget = wibox.widget.textbox,
+						},
+						layout = wibox.container.margin,
+						bottom = 10,
 					},
 					layout = wibox.layout.fixed.vertical,
-					spacing = 10,
+					spacing = 20,
 				},
 				widget = wibox.container.margin,
 				margins = 10,
 			},
-			forced_width = 80,
-			bg = beautiful.background_alt,
+			forced_width = 120,
+			bg = beautiful.background,
 			widget = wibox.container.background,
 		},
 		{
 			forced_height = 5,
-			forced_width = 80,
+			forced_width = 120,
 			bg = col,
 			widget = wibox.container.background,
 		},
@@ -79,10 +83,10 @@ end
 
 awful.screen.connect_for_each_screen(function(s)
 	local scrotter = wibox({
-		width = dpi(280),
-		height = dpi(150),
+		width = 400,
+		height = 220,
 		shape = helpers.rrect(8),
-		bg = beautiful.background,
+		bg = beautiful.background_dark,
 		ontop = true,
 		visible = false,
 	})
@@ -139,7 +143,7 @@ awful.screen.connect_for_each_screen(function(s)
 				{
 					{
 						{
-							font = beautiful.sans .. " Bold 10",
+							font = beautiful.sans .. " Bold 15",
 							markup = "Screenshotter",
 							valign = "center",
 							align = "start",
@@ -148,7 +152,7 @@ awful.screen.connect_for_each_screen(function(s)
 						nil,
 						{
 							id = "123",
-							font = beautiful.icon .. " 10",
+							font = beautiful.icon .. " 20",
 							markup = useMouse and helpers.colorizeText("󰇀", beautiful.yellow)
 								or helpers.colorizeText("󰇀", beautiful.foreground),
 							valign = "center",

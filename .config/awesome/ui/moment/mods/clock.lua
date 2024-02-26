@@ -32,14 +32,14 @@ local widget = wibox.widget({
 				start_angle = math.random(250, 870) * math.pi / 180,
 				colors = { beautiful.blue },
 				bg = beautiful.background_alt .. "11",
-				forced_width = 60,
-				forced_height = 60,
+				forced_width = 200,
+				forced_height = 200,
 			},
 			nil,
 			{
 				{
 					{
-						font = beautiful.sans .. " Bold 35",
+						font = beautiful.sans .. " Bold 60",
 						format = "%I : %M",
 						align = "center",
 						valign = "center",
@@ -48,7 +48,7 @@ local widget = wibox.widget({
 					{
 						id = "uptime",
 						align = "center",
-						font = beautiful.sans .. " 10",
+						font = beautiful.sans .. " 20",
 						text = "",
 						widget = wibox.widget.textbox,
 					},

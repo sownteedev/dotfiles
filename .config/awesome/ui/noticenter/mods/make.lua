@@ -11,7 +11,7 @@ return function(icon, n)
 		widget = wibox.container.constraint,
 		{
 			widget = wibox.container.margin,
-			margins = 10,
+			margins = 15,
 			{
 				widget = wibox.widget.imagebox,
 				image = helpers.cropSurface(1, gears.surface.load_uncached(icon)),
@@ -26,13 +26,13 @@ return function(icon, n)
 	local title_widget = wibox.widget({
 		widget = wibox.container.scroll.horizontal,
 		step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
-		speed = 50,
+		speed = 80,
 		forced_width = 120,
 		{
 			widget = wibox.widget.textbox,
 			text = n.title,
 			align = "left",
-			font = beautiful.sans .. " 11",
+			font = beautiful.sans .. " 20",
 			forced_width = 200,
 		},
 	})
@@ -51,13 +51,13 @@ return function(icon, n)
 		markup = n.message,
 		align = "left",
 		forced_width = 165,
-		font = beautiful.sans .. " 9",
+		font = beautiful.sans .. " 15",
 		widget = wibox.widget.textbox,
 	})
 
 	local box = wibox.widget({
 		widget = wibox.container.background,
-		forced_height = 100,
+		forced_height = 150,
 		shape = helpers.rrect(10),
 		bg = beautiful.background,
 		{
@@ -65,13 +65,13 @@ return function(icon, n)
 			icon_widget,
 			{
 				widget = wibox.container.margin,
-				margins = 10,
+				margins = 20,
 				{
 					layout = wibox.layout.align.vertical,
 					{
 						layout = wibox.layout.fixed.vertical,
 						expand = "none",
-						spacing = 10,
+						spacing = 40,
 						{
 							layout = wibox.layout.align.horizontal,
 							title_widget,
