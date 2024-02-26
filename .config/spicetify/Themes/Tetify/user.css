@@ -1,4 +1,3 @@
-/* Version 14/10/21 */
 
 .encore-dark-theme .encore-bright-accent-set {
 	--background-highlight: var(--spice-play-button);
@@ -42,6 +41,13 @@
 /* add topbar transition */
 .queue-tabBar-headerItemLink {
 	transition-duration: 0.15s;
+}
+
+.yxf_6IsQEmHjijEBUMTP:focus,
+.yxf_6IsQEmHjijEBUMTP:hover,
+.yxf_6IsQEmHjijEBUMTP.queue-tabBar-active {
+  border-radius: var(--border-radius-1) !important;
+  color: var(--spice-text) !important;
 }
 
 /* remove topbar background colour */
