@@ -1,6 +1,5 @@
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local dpi = require("beautiful").xresources.apply_dpi
 local gears = require("gears")
 local pctl = require("modules.playerctl")
 local helpers = require("helpers")
@@ -8,9 +7,9 @@ local playerctl = pctl.lib()
 
 local art = wibox.widget({
 	image = helpers.cropSurface(1, gears.surface.load_uncached(beautiful.songdefpicture)),
-	forced_height = dpi(40),
+	forced_height = 80,
+	forced_width = 80,
 	clip_shape = helpers.rrect(100),
-	forced_width = dpi(40),
 	widget = wibox.widget.imagebox,
 })
 
@@ -18,7 +17,7 @@ local songname = wibox.widget({
 	markup = helpers.colorizeText("Nothing Playing", beautiful.foreground),
 	align = "left",
 	valign = "center",
-	font = beautiful.sans .. " 16",
+	font = beautiful.sans .. " 25",
 	widget = wibox.widget.textbox,
 })
 
@@ -26,7 +25,7 @@ local widget = wibox.widget({
 	art,
 	songname,
 	layout = wibox.layout.fixed.horizontal,
-	spacing = 10,
+	spacing = 20,
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)

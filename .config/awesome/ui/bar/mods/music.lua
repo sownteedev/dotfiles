@@ -8,21 +8,21 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local art = wibox.widget({
-	image = helpers.cropSurface(5.8, gears.surface.load_uncached(beautiful.songdefpicture)),
+	image = helpers.cropSurface(4, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.5,
-	forced_height = dpi(36),
+	forced_height = dpi(70),
 	shape = helpers.rrect(5),
-	forced_width = dpi(240),
+	forced_width = dpi(400),
 	widget = wibox.widget.imagebox,
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	art.image = helpers.cropSurface(5.8, gears.surface.load_uncached(album_path))
+	art.image = helpers.cropSurface(4, gears.surface.load_uncached(album_path))
 end)
 
 local next = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 16",
+	font = beautiful.icon .. " 25",
 	text = "󰒭",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -34,7 +34,7 @@ local next = wibox.widget({
 
 local prev = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 16",
+	font = beautiful.icon .. " 25",
 	text = "󰒮",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -45,7 +45,7 @@ local prev = wibox.widget({
 })
 local play = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 16",
+	font = beautiful.icon .. " 25",
 	markup = helpers.colorizeText("󰐊", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -57,7 +57,7 @@ local play = wibox.widget({
 
 local headphones = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 16",
+	font = beautiful.icon .. " 25",
 	markup = helpers.colorizeText("󰟎 ", beautiful.yellow),
 	widget = wibox.widget.textbox,
 })
@@ -89,12 +89,12 @@ local finalwidget = wibox.widget({
 			{
 				headphones,
 				nil,
-				{ prev, play, next, spacing = 10, layout = wibox.layout.fixed.horizontal },
+				{ prev, play, next, spacing = dpi(15), layout = wibox.layout.fixed.horizontal },
 				layout = wibox.layout.align.horizontal,
 			},
 			widget = wibox.container.margin,
-			left = 10,
-			right = 10,
+			left = dpi(20),
+			right = dpi(20),
 		},
 		layout = wibox.layout.stack,
 	},

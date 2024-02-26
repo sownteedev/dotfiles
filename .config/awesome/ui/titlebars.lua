@@ -5,13 +5,12 @@ local beautiful = require("beautiful")
 local helpers = require("helpers")
 local animation = require("modules.animation")
 local getIcon = require("modules.getIcon")
-local dpi = beautiful.xresources.apply_dpi
 
 local create_button = function(color, func)
 	local widget = wibox.widget({
 		widget = wibox.container.background,
-		forced_height = 8,
-		shape = helpers.rrect(3),
+		forced_height = 10,
+		shape = helpers.rrect(5),
 		bg = color,
 		buttons = {
 			awful.button({}, 1, function()
@@ -27,13 +26,13 @@ local create_button = function(color, func)
 			widget.forced_width = h
 		end,
 	})
-	widget_anim:set(30)
+	widget_anim:set(50)
 
 	widget:connect_signal("mouse::enter", function()
-		widget_anim:set(60)
+		widget_anim:set(100)
 	end)
 	widget:connect_signal("mouse::leave", function()
-		widget_anim:set(30)
+		widget_anim:set(50)
 	end)
 
 	return widget
@@ -41,7 +40,7 @@ end
 
 client.connect_signal("request::titlebars", function(c)
 	local top_titlebar = awful.titlebar(c, {
-		size = 35,
+		size = 50,
 	})
 
 	awful.titlebar.enable_tooltip = false
@@ -63,21 +62,16 @@ client.connect_signal("request::titlebars", function(c)
 	local icon = wibox.widget({
 		{
 			{
-				{
-					widget = wibox.widget.imagebox,
-					image = getIcon(c, c.class, c.class),
-					forced_width = 40,
-					resize = true,
-				},
-				widget = wibox.container.place,
-				halign = "center",
+				widget = wibox.widget.imagebox,
+				image = getIcon(c, c.class, c.class),
+				forced_width = 40,
+				resize = true,
 			},
-			margins = dpi(5),
-			widget = wibox.container.margin,
+			widget = wibox.container.place,
+			halign = "center",
 		},
-		bg = beautiful.background_dark,
-		shape = helpers.rrect(5),
-		widget = wibox.container.background,
+		margins = 5,
+		widget = wibox.container.margin,
 	})
 
 	local function update_button_color()
@@ -113,10 +107,10 @@ client.connect_signal("request::titlebars", function(c)
 			widget = wibox.container.place,
 			{
 				widget = wibox.container.margin,
-				left = 30,
+				left = 50,
 				{
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 10,
+					spacing = 15,
 					close,
 					maximize,
 					minimize,
@@ -130,7 +124,7 @@ client.connect_signal("request::titlebars", function(c)
 		{
 			icon,
 			widget = wibox.container.margin,
-			right = 10,
+			right = 50,
 		},
 	}
 end)

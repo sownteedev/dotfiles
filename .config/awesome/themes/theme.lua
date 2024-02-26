@@ -9,7 +9,7 @@ local themes_path = gfs.get_configuration_dir() .. "themes/"
 
 local theme = {}
 
-theme.font = "Rubik 10"
+theme.font = "Rubik 15"
 theme.sans = "Rubik"
 theme.icon = "Material Design Icons"
 theme.useless_gap = 10

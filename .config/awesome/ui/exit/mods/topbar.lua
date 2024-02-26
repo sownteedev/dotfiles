@@ -9,8 +9,8 @@ local widget = wibox.widget({
 			{
 				widget = wibox.widget.imagebox,
 				image = beautiful.profile,
-				forced_height = 50,
-				forced_width = 50,
+				forced_height = 100,
+				forced_width = 100,
 				align = "center",
 				valign = "center",
 				clip_shape = helpers.rrect(40),
@@ -20,19 +20,19 @@ local widget = wibox.widget({
 				{
 					widget = wibox.widget.textbox,
 					markup = helpers.colorizeText("@" .. beautiful.user, beautiful.foreground),
-					font = beautiful.sans .. " 14",
+					font = beautiful.sans .. " 20",
 					align = "left",
 					valign = "center",
 				},
 				widget = wibox.container.margin,
-				left = 10,
+				left = 20,
 			},
 			{
 				{
 					{
 						{
-							font = beautiful.sans .. " 14",
-							format = "%a, %d %B %Y",
+							font = beautiful.sans .. " 20",
+							format = "%A, %d %B %Y",
 							align = "center",
 							valign = "center",
 							widget = wibox.widget.textclock,
@@ -48,7 +48,7 @@ local widget = wibox.widget({
 				{
 					{
 						{
-							font = beautiful.sans .. " 14",
+							font = beautiful.sans .. " 20",
 							id = "uptime",
 							markup = helpers.colorizeText("", beautiful.foreground),
 							valign = "center",
@@ -65,13 +65,13 @@ local widget = wibox.widget({
 				{
 					{
 						{
-							font = beautiful.icon .. " 16",
+							font = beautiful.icon .. " 25",
 							markup = helpers.colorizeText("󰅖", beautiful.red),
 							valign = "center",
 							widget = wibox.widget.textbox,
 						},
 						widget = wibox.container.margin,
-						margins = 20,
+						margins = { left = 40, top = 20, right = 40, bottom = 20 },
 					},
 					buttons = {
 						awful.button({}, 1, function()
@@ -82,7 +82,7 @@ local widget = wibox.widget({
 					bg = beautiful.background_alt,
 					widget = wibox.container.background,
 				},
-				spacing = 20,
+				spacing = 40,
 				layout = wibox.layout.fixed.horizontal,
 			},
 			layout = wibox.layout.align.horizontal,
@@ -93,9 +93,9 @@ local widget = wibox.widget({
 		valign = "top",
 	},
 	widget = wibox.container.margin,
-	top = 40,
-	left = 40,
-	right = 40,
+	top = 50,
+	left = 50,
+	right = 50,
 })
 
 awesome.connect_signal("signal::uptime", function(v)

@@ -7,7 +7,7 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local art = wibox.widget({
-	image = helpers.cropSurface(1.71, gears.surface.load_uncached(beautiful.songdefpicture)),
+	image = helpers.cropSurface(2.2, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.3,
 	resize = true,
 	clip_shape = helpers.rrect(5),
@@ -16,8 +16,8 @@ local art = wibox.widget({
 
 local next = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 20",
-	text = "󰒭 ",
+	font = beautiful.icon .. " 30",
+	text = " 󰒭 ",
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -28,8 +28,8 @@ local next = wibox.widget({
 
 local prev = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 20",
-	text = "󰒭 ",
+	font = beautiful.icon .. " 30",
+	text = " 󰒭 ",
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -40,7 +40,7 @@ local prev = wibox.widget({
 
 local play = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 20",
+	font = beautiful.icon .. " 30",
 	markup = helpers.colorizeText("󰐍 ", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -77,32 +77,32 @@ local finalwidget = wibox.widget({
 					{
 						{
 							id = "songname",
-							font = beautiful.sans .. " 14",
+							font = beautiful.sans .. " 25",
 							markup = helpers.colorizeText("Song Name", beautiful.foreground),
 							widget = wibox.widget.textbox,
 						},
 						{
 							id = "artist",
-							font = beautiful.sans .. " 10",
+							font = beautiful.sans .. " 15",
 							markup = helpers.colorizeText("Artist Name", beautiful.foreground),
 							widget = wibox.widget.textbox,
 						},
-						spacing = 8,
+						spacing = 15,
 						layout = wibox.layout.fixed.vertical,
 					},
 					nil,
 					{
 						id = "player",
-						font = beautiful.sans .. " 8",
+						font = beautiful.sans .. " 15",
 						markup = helpers.colorizeText("Playing On Spotify", beautiful.foreground),
 						widget = wibox.widget.textbox,
 					},
 					layout = wibox.layout.align.vertical,
 				},
 				widget = wibox.container.margin,
-				left = 10,
-				bottom = 10,
-				top = 10,
+				left = 30,
+				bottom = 30,
+				top = 30,
 			},
 			layout = wibox.layout.stack,
 		},
@@ -116,10 +116,10 @@ local finalwidget = wibox.widget({
 						layout = wibox.layout.align.vertical,
 					},
 					widget = wibox.container.margin,
-					top = 25,
-					bottom = 25,
-					left = 15,
-					right = 0,
+					top = 40,
+					bottom = 40,
+					left = 20,
+					right = 10,
 				},
 				shape = helpers.rrect(5),
 				widget = wibox.container.background,
@@ -144,7 +144,7 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, albu
 	if string.len(artist) > 22 then
 		artist = string.sub(artist, 0, 22) .. "..."
 	end
-	art.image = helpers.cropSurface(1.71, gears.surface.load_uncached(album_path))
+	art.image = helpers.cropSurface(2.2, gears.surface.load_uncached(album_path))
 	helpers.gc(finalwidget, "songname"):set_markup_silently(helpers.colorizeText(title or "NO", beautiful.foreground))
 	helpers.gc(finalwidget, "artist"):set_markup_silently(helpers.colorizeText(artist or "HM", beautiful.foreground))
 	helpers

@@ -4,7 +4,7 @@ local helpers = require("helpers")
 local wibox = require("wibox")
 
 local togglertext = wibox.widget({
-	font = beautiful.icon .. " 15",
+	font = beautiful.icon .. " 20",
 	text = "󰅁",
 	valign = "center",
 	align = "center",
@@ -19,7 +19,7 @@ local togglertext = wibox.widget({
 local systray = wibox.widget({
 	{
 		{
-			base_size = 18,
+			base_size = 30,
 			widget = wibox.widget.systray,
 		},
 		widget = wibox.container.place,

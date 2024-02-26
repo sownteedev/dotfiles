@@ -52,16 +52,16 @@ awful.screen.connect_for_each_screen(function(s)
 					{
 						id = "icon",
 						markup = helpers.colorizeText(icon, color),
-						font = beautiful.icon .. " 40",
+						font = beautiful.icon .. " 60",
 						align = "center",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.margin,
 					margins = {
-						left = 50,
-						right = 25,
-						top = 25,
-						bottom = 25,
+						left = 90,
+						right = 70,
+						top = 50,
+						bottom = 50,
 					},
 				},
 				shape = helpers.rrect(15),
@@ -77,11 +77,10 @@ awful.screen.connect_for_each_screen(function(s)
 					awful.spawn.with_shell(cmd)
 				end),
 			},
-			spacing = 15,
 			layout = wibox.layout.fixed.vertical,
 		})
 		widget:connect_signal("mouse::enter", function()
-			helpers.gc(widget, "bg").bg = beautiful.background_alt
+			helpers.gc(widget, "bg").bg = helpers.blend(color, beautiful.background, 0.1)
 		end)
 		widget:connect_signal("mouse::leave", function()
 			helpers.gc(widget, "bg").bg = beautiful.background
@@ -93,19 +92,20 @@ awful.screen.connect_for_each_screen(function(s)
 		{
 			{
 				markup = helpers.colorizeText("󰀠 ", beautiful.blue),
-				font = beautiful.icon .. " 28",
+				font = beautiful.icon .. " 50",
 				align = "center",
 				valign = "center",
 				widget = wibox.widget.textbox,
 			},
 			{
-				font = beautiful.sans .. " 16",
+				font = beautiful.sans .. " 25",
 				format = "%H:%M",
 				align = "center",
 				valign = "center",
 				widget = wibox.widget.textclock,
 			},
 			layout = wibox.layout.fixed.horizontal,
+			spacing = 20,
 		},
 		widget = wibox.container.place,
 		valign = "center",
@@ -119,14 +119,14 @@ awful.screen.connect_for_each_screen(function(s)
 				bat,
 				weather,
 				layout = wibox.layout.fixed.horizontal,
-				spacing = 40,
+				spacing = 100,
 			},
 			widget = wibox.container.place,
 			valign = "bottom",
 			halign = "center",
 		},
 		widget = wibox.container.margin,
-		bottom = 40,
+		bottom = 60,
 	})
 
 	local buttons = wibox.widget({
@@ -137,7 +137,7 @@ awful.screen.connect_for_each_screen(function(s)
 			createButton("󰖔 ", "Sleep", "systemctl suspend", beautiful.yellow),
 			createButton("󰈆 ", "Log Out", "loginctl kill-user $USER", beautiful.violet),
 			layout = wibox.layout.fixed.horizontal,
-			spacing = 20,
+			spacing = 40,
 		},
 		widget = wibox.container.place,
 		halign = "center",

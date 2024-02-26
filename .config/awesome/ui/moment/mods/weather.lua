@@ -33,15 +33,15 @@ local dayWeather = function()
 			id = "day",
 			halign = "center",
 			widget = wibox.widget.textbox,
-			font = beautiful.sans .. " 10",
+			font = beautiful.sans .. " 20",
 		},
 		{
 			id = "icon",
 			resize = true,
 			opacity = 0.6,
 			halign = "center",
-			forced_height = 40,
-			forced_width = 40,
+			forced_height = 60,
+			forced_width = 60,
 			widget = wibox.widget.imagebox,
 		},
 		{
@@ -51,19 +51,19 @@ local dayWeather = function()
 						id = "max",
 						halign = "center",
 						widget = wibox.widget.textbox,
-						font = beautiful.sans .. " 10",
+						font = beautiful.sans .. " 15",
 					},
 					{
 						halign = "center",
 						markup = helpers.colorizeText("/", beautiful.blue),
 						widget = wibox.widget.textbox,
-						font = beautiful.sans .. " 10",
+						font = beautiful.sans .. " 15",
 					},
 					{
 						id = "min",
 						halign = "center",
 						widget = wibox.widget.textbox,
-						font = beautiful.sans .. " 10",
+						font = beautiful.sans .. " 15",
 					},
 					spacing = 8,
 					layout = wibox.layout.fixed.horizontal,
@@ -95,19 +95,19 @@ end
 local day1 = dayWeather()
 local day2 = dayWeather()
 local day3 = dayWeather()
+local day4 = dayWeather()
 local day5 = dayWeather()
 local day6 = dayWeather()
-local day4 = dayWeather()
 
 local daylist = { day1, day2, day3, day4, day5, day6 }
 
 local widget = wibox.widget({
 	{
 		id = "image",
-		forced_height = 300,
-		forced_width = 460,
+		forced_height = 500,
+		forced_width = 600,
 		image = helpers.cropSurface(
-			1.53,
+			1,
 			gears.surface.load_uncached(
 				filesystem.get_configuration_dir() .. "themes/assets/weather/images/weather-clear-night.jpg"
 			)
@@ -137,7 +137,7 @@ local widget = wibox.widget({
 				{
 					{
 						id = "city",
-						font = beautiful.sans .. " 13",
+						font = beautiful.sans .. " 20",
 						markup = "",
 						valign = "center",
 						widget = wibox.widget.textbox,
@@ -147,19 +147,19 @@ local widget = wibox.widget({
 						image = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
 						opacity = 0.9,
 						clip_shape = helpers.rrect(4),
-						forced_height = 50,
-						forced_width = 50,
+						forced_height = 100,
+						forced_width = 100,
 						valign = "center",
 						widget = wibox.widget.imagebox,
 					},
 					{
 						id = "desc",
-						font = beautiful.sans .. " 10",
+						font = beautiful.sans .. " 15",
 						markup = "",
 						valign = "center",
 						widget = wibox.widget.textbox,
 					},
-					spacing = 10,
+					spacing = 20,
 					layout = wibox.layout.fixed.vertical,
 					halign = "left",
 				},
@@ -167,26 +167,26 @@ local widget = wibox.widget({
 				{
 					{
 						id = "temp",
-						font = beautiful.sans .. " 20",
+						font = beautiful.sans .. " 40",
 						markup = "",
 						valign = "center",
 						widget = wibox.widget.textbox,
 					},
 					{
 						id = "fl",
-						font = beautiful.sans .. " 10",
+						font = beautiful.sans .. " 20",
 						markup = "",
 						valign = "center",
 						widget = wibox.widget.textbox,
 					},
 					{
 						id = "humid",
-						font = beautiful.sans .. " 10",
+						font = beautiful.sans .. " 20",
 						markup = "",
 						valign = "center",
 						widget = wibox.widget.textbox,
 					},
-					spacing = 10,
+					spacing = 20,
 					layout = wibox.layout.fixed.vertical,
 				},
 				layout = wibox.layout.align.horizontal,
@@ -199,24 +199,20 @@ local widget = wibox.widget({
 					day3,
 					day4,
 					day5,
-					-- day6,
+					day6,
 					layout = require("modules.overflow").horizontal,
 					scrollbar_width = 0,
-					spacing = -15,
+					spacing = 25,
 				},
 				widget = wibox.container.margin,
-				top = 10,
 				bottom = 10,
 			},
 			layout = wibox.layout.align.vertical,
 		},
 		widget = wibox.container.margin,
-		margins = {
-			left = 20,
-			right = 20,
-			top = 20,
-			bottom = 0,
-		},
+		left = 40,
+		right = 40,
+		top = 40,
 	},
 	layout = wibox.layout.stack,
 })

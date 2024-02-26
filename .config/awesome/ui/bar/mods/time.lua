@@ -3,12 +3,12 @@ local wibox = require("wibox")
 local beautiful = require("beautiful")
 local dpi = require("beautiful").xresources.apply_dpi
 local helpers = require("helpers")
-local hourminutes = wibox.widget({
+local time = wibox.widget({
 	{
 		{
 			{
 				{
-					font = beautiful.sans .. " 10",
+					font = beautiful.sans .. " 15",
 					format = "%I : %M",
 					align = "center",
 					valign = "center",
@@ -19,7 +19,7 @@ local hourminutes = wibox.widget({
 			},
 			{
 				{
-					font = beautiful.sans .. " 10",
+					font = beautiful.sans .. " 15",
 					format = "%a, %d %B",
 					align = "center",
 					valign = "center",
@@ -29,9 +29,9 @@ local hourminutes = wibox.widget({
 				valign = "center",
 			},
 			layout = wibox.layout.fixed.horizontal,
-			spacing = 10,
+			spacing = dpi(20),
 		},
-		margins = { left = dpi(10), right = dpi(10) },
+		margins = { left = dpi(20), right = dpi(20) },
 		widget = wibox.container.margin,
 	},
 	bg = beautiful.background_alt,
@@ -44,4 +44,4 @@ local hourminutes = wibox.widget({
 	shape = helpers.rrect(5),
 })
 
-return hourminutes
+return time

@@ -3,7 +3,7 @@ local beautiful = require("beautiful")
 local helpers = require("helpers")
 
 local blue = wibox.widget({
-	font = beautiful.icon .. " 12",
+	font = beautiful.icon .. " 20",
 	markup = helpers.colorizeText("󰂯", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	valign = "center",
