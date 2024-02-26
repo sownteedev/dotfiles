@@ -13,6 +13,7 @@ pkg_installed() {
 
 # Update
 sudo pacman -Syu --noconfirm
+sleep 5 && clear
 
 # Yay
 echo "[*] Installing AUR helper(yay) ..."
@@ -24,32 +25,32 @@ else
 	cd .. && rm -rf yay
 	echo "[*] Yay Installed."
 fi
-sleep 2
+sleep 5 && clear
 
 # Font
 echo "[*] Copy fonts ..."
 mkdir -p ~/.fonts && cp -r ~/dotfiles/.fonts/* ~/.fonts
 fc-cache -fv
 echo "[*] Done."
-sleep 2
+sleep 5 && clear
 
 # Icon theme && Cursor theme
 echo "[*] Copy icons ..."
 mkdir -p ~/.icons && cp -r ~/dotfiles/.icons/* ~/.icons
 echo "[*] Done."
-sleep 2
+sleep 5 && clear
 
 # Themes
 echo "[*] Copy themes ..."
 mkdir -p ~/.themes && cp -r ~/dotfiles/.themes/* ~/.themes
 echo "[*] Done."
-sleep 2
+sleep 5 && clear
 
 # Wallpaper
 echo "[*] Copy wallpaper ..."
 mkdir -p ~/.walls && cp -r ~/dotfiles/.walls/* ~/.walls
 echo "[*] Done."
-sleep 2
+sleep 5 && clear
 
 # Config
 echo "[*] Copy config ..."
@@ -58,7 +59,7 @@ if ! [ -d $HOME/.config ]; then
 fi
 cp -r ~/dotfiles/.config/* ~/.config
 echo "[*] Done."
-sleep 2
+sleep 5 && clear
 
 # Local
 echo "[*] Copy local ..."
@@ -67,7 +68,7 @@ if ! [ -d $HOME/.local ]; then
 fi
 cp -r ~/dotfiles/.local/* ~/.local
 echo "[*] Done."
-sleep 2
+sleep 5 && clear
 
 # Enable touchpad
 echo "[*] Enable touchpad for laptop ..."
@@ -79,79 +80,79 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 else
 	echo "[*] Skipped."
 fi
-sleep 2
+sleep 5 && clear
 
 # .Xresources
 echo "[*] Copy .Xresources ..."
 rm -f ~/.Xresources && cp ~/dotfiles/.Xresources ~/.Xresources
 echo "[*] Done."
-sleep 2
+sleep 5 && clear
 
 # Xinitrc
 echo "[*] Override .xinitrc ..."
 sudo rm -f ~/.xinitrc && sudo cp ~/dotfiles/.xinitrc ~/.xinitrc
 echo "[*] Done"
-sleep 2
+sleep 5 && clear
 
 #################################################### INSTALL DRIVER AND APPS ####################################################
 read -p "[*] Do you want to install driver and dependencies(Recommend Yes)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-
 	# Install library
 	echo "[*] Installing library ..."
 	sudo pacman -S nodejs npm yarn python python-pip clang jdk-openjdk rustup cargo --noconfirm
 	echo "[*] Done."
-	sleep 2
+	sleep 5 && clear
 
 	# Audio
-	echo "[*] Installing audio driver ..."
-	sudo pacman -S pavucontrol pipewire pipewire-alsa pipewire-audio pipewire-pulse playerctl pamixer --noconfirm
+	echo "[*] Installing audio & mic driver ..."
+	sudo pacman -S pavucontrol pipewire pipewire-alsa pipewire-audio pipewire-pulse alsa-ucm-conf sof-firmware playerctl pamixer --noconfirm
+	systemctl --user enable pipewire pipewire-pulse wireplumber
 	echo "[*] Done."
-	sleep 2
+	sleep 5 && clear
 
 	# Brightness
 	echo "[*] Installing brightness ..."
 	sudo pacman -S brightnessctl xorg-xbacklight redshift --noconfirm
 	echo "[*] Done."
-	sleep 2
+	sleep 5 && clear
 
 	# Battery
 	echo "[*] Installing battery ..."
 	sudo pacman -S acpi acpid --noconfirm
-	sudo systemctl enable acpid && systemctl start acpid
+	sudo systemctl enable acpid
 	echo "[*] Done."
-	sleep 2
+	sleep 5 && clear
 
 	# Network
 	echo "[*] Installing network ..."
 	sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools --noconfirm
 	sudo systemctl enable NetworkManager dhcpcd.service
 	echo "[*] Done."
-	sleep 2
+	sleep 5 && clear
 
 	# Bluetooth
 	echo "[*] Installing bluetooth driver ..."
 	sudo pacman -S bluez bluez-utils bluez-tools bluez-libs blueman --noconfirm
-	sudo systemctl enable bluetooth.service && sudo systemctl start bluetooth.service
-	sleep 2
+	sudo systemctl enable bluetooth.service
+	sleep 5 && clear
 
 	# File manager
 	echo "[*] Installing file manager ..."
 	sudo pacman -S thunar tumbler ranger ueberzug exa unzip unrar xdg-user-dirs gvfs --noconfirm
 	echo "[*] Done."
-	sleep 2
+	sleep 5 && clear
 
 	# Monitor and Theme
 	echo "[*] Installing monitor and theme ..."
 	sudo pacman -S feh flameshot maim viewnior lxappearance imagemagick neofetch arandr --noconfirm
 	echo "[*] Done."
-	sleep 2
+	sleep 5 && clear
 
 	# Other
 	echo "[*] Installing other ..."
-	sudo pacman -S --noconfirm gnome-keyring rofi libsecret libgnome-keyring seahorse xf86-input-libinput pacman-contrib thefuck wget gpick btop ibus github-cli polkit-gnome xss-lock && yay -S --noconfirm auto-cpufreq picom-ftlabs-git
+	sudo pacman -S --noconfirm gnome-keyring polkit-gnome libgnome-keyring libsecret seahorse xf86-input-libinput pacman-contrib gpick btop ibus github-cli xss-lock && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi
 	echo "[*] Done."
-	sleep 2
+	sleep 5 && clear
 
 else
 	echo "[*] Installation driver and dependencies skipped."
@@ -163,18 +164,19 @@ fi
 read -p "[*] Do you want to install Spotify and get my custom? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	if pkg_installed spotify; then
-		echo "[*] Installing Spicetify config ..."
-		sudo chmod a+wr /opt/spotify
-		sudo chmod a+wr /opt/spotify/Apps -R
+		echo "[*] Spotify installation skipped."
 	else
 		echo "[*] Installing Spotify ..."
-		yay -S --noconfirm spotify spicetify-cli
+		yay -S --noconfirm spotify
 	fi
+	yay -S --noconfirm spicetify-cli
+	sudo chmod a+wr /opt/spotify
+	sudo chmod a+wr /opt/spotify/Apps -R
 	echo "[*] Done."
 else
 	echo "[*] Spotify installation skipped."
 fi
-sleep 2
+sleep 5 && clear
 
 # Discord
 read -p "[*] Do you want to install Discord and get my custom? (y/n): " choice
@@ -185,7 +187,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 else
 	echo "[*] Discord installation skipped."
 fi
-sleep 2
+sleep 5 && clear
 
 # Firefox
 read -p "[*] Do you want to install Firefox and get my custom? (y/n): " choice
@@ -193,14 +195,14 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	echo "[*] Installing Firefox ..."
 	sudo pacman -S firefox --noconfirm
 	firefox &
-    sleep 3
+	sleep 3
 	pkill firefox
 	echo "[*] Done."
 else
 	echo "[*] Firefox installation skipped."
 fi
 cp -r ~/dotfiles/.config/firefox/* ~/.mozilla/firefox/*.default-release/
-sleep 2
+sleep 5 && clear
 
 # Zsh
 echo "[*] Installing zsh ..."
@@ -211,5 +213,6 @@ else
 	echo "[*] Zsh Installed."
 fi
 rm -f ~/.zshrc && touch ~/.zshrc && echo "source ~/.config/zsh/.zshrc" >>~/.zshrc
+sleep 5 && clear
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 echo "[*] Done."
