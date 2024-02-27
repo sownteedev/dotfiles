@@ -51,7 +51,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 		widget = wibox.container.background,
 		id = "back",
 		shape = helpers.rrect(5),
-		bg = beautiful.background_alt,
+		bg = beautiful.background,
 		buttons = {
 			awful.button({}, 1, function()
 				awful.spawn.with_shell(cmd1)
@@ -69,7 +69,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 			widget:get_children_by_id("icon")[1].markup = helpers.colorizeText(icon, beautiful.background)
 			widget:get_children_by_id("label")[1].markup = helpers.colorizeText(labelconnected, beautiful.background)
 		else
-			widget:get_children_by_id("back")[1].bg = beautiful.background_alt .. "aa"
+			widget:get_children_by_id("back")[1].bg = beautiful.background
 			widget:get_children_by_id("arr")[1].markup = helpers.colorizeText("󰅂", beautiful.foreground)
 			widget:get_children_by_id("name")[1].markup = helpers.colorizeText(name, beautiful.foreground)
 			widget:get_children_by_id("icon")[1].markup = helpers.colorizeText(icon, beautiful.foreground)
@@ -134,7 +134,15 @@ local widget = wibox.widget({
 			"Night Light Is Off",
 			"redshift"
 		),
-		createbutton("pamixer --source 59 -t", "", " ", "Microphone", "It's Muted", "It's Turned On", "mic"),
+		createbutton(
+			"pamixer --source 59 -t",
+			"pavucontrol",
+			" ",
+			"Microphone",
+			"It's Muted",
+			"It's Turned On",
+			"mic"
+		),
 		spacing = 15,
 		layout = wibox.layout.flex.horizontal,
 	},

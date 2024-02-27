@@ -44,8 +44,7 @@ end
 
 local function discord(entry)
 	awful.spawn.easy_async_with_shell([[
-		cat ~/.config/BetterDiscord/data/stable/themes/]] ..
-		entry .. [[.css > ~/.config/BetterDiscord/data/stable/custom.css &&
+		cat ~/.config/BetterDiscord/data/stable/themes/]] .. entry .. [[.css > ~/.config/BetterDiscord/data/stable/custom.css &&
 	]])
 end
 
@@ -58,7 +57,6 @@ local function gtk(entry)
 		       -e "s/accent:.*/accent:]] .. color.accent .. [[/" ~/.themes/tethemes/gtk-2.0/gtkrc &&
 		sed -i -e "s/background .*/background ]] .. color.background .. [[;/"\
 			   -e "s/background_alt .*/background_alt ]] .. color.background_alt .. [[;/"\
-			   -e "s/background_urgent .*/background_urgent ]] .. color.background_urgent .. [[;/"\
 			   -e "s/foreground .*/foreground ]] .. color.foreground .. [[;/"\
 			   -e "s/accent .*/accent ]] .. color.accent .. [[;/" ~/.themes/tethemes/gtk-3.0/colors.css &&
 	]])
@@ -77,8 +75,7 @@ local function firefox(entry)
 			   -e "s/--uc-identity-colour-green: .*/--uc-identity-colour-green: ]] .. color.green .. [[;/"\
 			   -e "s/--uc-identity-colour-blue: .*/--uc-identity-colour-blue: ]] .. color.blue .. [[;/"\
 			   -e "s/--uc-identity-colour-yellow: .*/--uc-identity-colour-yellow: ]] .. color.yellow .. [[;/"\
-			   -e "s/--uc-identity-colour-orange: .*/--uc-identity-colour-orange: ]] ..
-		color.orange .. [[;/" ~/.config/firefox/chrome/includes/cascade-colours.css &&
+			   -e "s/--uc-identity-colour-orange: .*/--uc-identity-colour-orange: ]] .. color.orange .. [[;/" ~/.config/firefox/chrome/includes/cascade-colours.css &&
 		rm -r ~/.mozilla/firefox/*.default-release/chrome/* && cp -r ~/.config/firefox/chrome/* ~/.mozilla/firefox/*.default-release/chrome/ &&
 	]])
 end
@@ -98,10 +95,10 @@ function applyTheme(theme)
 			awful.spawn.with_shell(
 				[[
 				nvim --server /run/user/1000/]]
-				.. line
-				.. [[ --remote-send ':lua require("tevim.themes.pick").setTheme("]]
-				.. theme
-				.. [[")<CR>']]
+					.. line
+					.. [[ --remote-send ':lua require("tevim.themes.pick").setTheme("]]
+					.. theme
+					.. [[")<CR>']]
 			)
 		end
 	end)

@@ -3,7 +3,6 @@ local awful = require("awful")
 local beautiful = require("beautiful")
 local gears = require("gears")
 local helpers = require("helpers")
-local dpi = beautiful.xresources.apply_dpi
 
 local datewidget = function(date, weekend, notIn)
 	weekend = weekend or false
@@ -35,10 +34,15 @@ local daywidget = function(day, weekend, notIn)
 end
 local currwidget = function(day)
 	return wibox.widget({
-		markup = helpers.colorizeText(day, beautiful.blue),
-		halign = "center",
-		font = beautiful.sans .. " 15",
-		widget = wibox.widget.textbox,
+		{
+			markup = helpers.colorizeText(day, beautiful.foreground),
+			halign = "center",
+			font = beautiful.sans .. " 15",
+			widget = wibox.widget.textbox,
+		},
+		widget = wibox.container.background,
+		bg = helpers.blend(beautiful.blue, beautiful.background, 0.5),
+		shape = helpers.rrect(50),
 	})
 end
 
@@ -51,10 +55,10 @@ local title = wibox.widget({
 local theGrid = wibox.widget({
 	forced_num_rows = 7,
 	forced_num_cols = 7,
-	vertical_spacing = dpi(30),
-	horizontal_spacing = dpi(30),
-	min_cols_size = dpi(40),
-	min_rows_size = dpi(40),
+	vertical_spacing = 30,
+	horizontal_spacing = 30,
+	min_cols_size = 40,
+	min_rows_size = 40,
 	homogenous = true,
 	layout = wibox.layout.grid,
 })
@@ -140,7 +144,7 @@ return function()
 							end),
 						},
 						widget = wibox.container.margin,
-						left = 38,
+						left = 60,
 					},
 					title,
 					{
@@ -174,7 +178,7 @@ return function()
 				layout = wibox.layout.fixed.vertical,
 			},
 			widget = wibox.container.margin,
-			margins = 10,
+			margins = 15,
 		},
 		shape = helpers.rrect(10),
 		widget = wibox.container.background,

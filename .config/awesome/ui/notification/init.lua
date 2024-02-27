@@ -2,7 +2,6 @@ local naughty = require("naughty")
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local awful = require("awful")
-local dpi = beautiful.xresources.apply_dpi
 local helpers = require("helpers")
 local ruled = require("ruled")
 local menubar = require("menubar")
@@ -63,7 +62,7 @@ naughty.connect_signal("request::display", function(n)
 		min_value = 0,
 		value = 100,
 		rounded_edge = true,
-		thickness = dpi(4),
+		thickness = 4,
 		start_angle = 4.71238898,
 		bg = beautiful.blue,
 		colors = { beautiful.foreground },

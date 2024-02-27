@@ -4,7 +4,6 @@ local gtimer = require("gears.timer")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local helpers = require("helpers")
-local dpi = beautiful.xresources.apply_dpi
 local setmetatable = setmetatable
 local ipairs = ipairs
 local capi = { awesome = awesome, mouse = mouse, tag = tag }
@@ -218,7 +217,7 @@ function menu.sub_menu_button(args)
 		{
 			{
 				layout = wibox.layout.align.horizontal,
-				forced_width = dpi(200),
+				forced_width = 200,
 				{
 					icon,
 					{
@@ -302,8 +301,8 @@ function menu.button(args)
 			},
 			widget = wibox.container.margin,
 			left = 30,
-			top = 20,
-			bottom = 10,
+			top = 15,
+			bottom = 15,
 		},
 		bg = beautiful.background_dark,
 		forced_height = 60,
@@ -332,7 +331,7 @@ function menu.separator()
 		right = 30,
 		{
 			widget = wibox.widget.separator,
-			forced_height = dpi(2),
+			forced_height = 2,
 			orientation = "horizontal",
 			color = beautiful.foreground .. "29",
 		},

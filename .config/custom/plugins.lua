@@ -17,11 +17,20 @@ local plugins = {
 	},
 	{
 		"stevearc/conform.nvim",
+		lazy = true,
 		event = "BufWritePre",
 		config = function()
 			require("custom.configs.conform")
 		end,
-	}
+	},
+	{
+		"Exafunction/codeium.nvim",
+		lazy = true,
+		event = "InsertEnter",
+		config = function()
+			require("codeium").setup({})
+		end,
+	},
 }
 
 return plugins

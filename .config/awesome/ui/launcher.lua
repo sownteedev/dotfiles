@@ -5,13 +5,12 @@ local iconTheme = require("lgi").require("Gtk", "3.0").IconTheme.get_default()
 local beautiful = require("beautiful")
 local gears = require("gears")
 local helpers = require("helpers")
-local dpi = beautiful.xresources.apply_dpi
 local L = {}
 
 local Conf = {
 	rows = 8,
-	entry_height = dpi(100),
-	entry_width = dpi(500),
+	entry_height = 100,
+	entry_width = 500,
 	popup_margins = 15,
 }
 
@@ -212,7 +211,7 @@ local function gen()
 			if icon then
 				path = icon:to_string()
 				if not path:find("/") then
-					local icon_info = iconTheme:lookup_icon(path, dpi(48), 0)
+					local icon_info = iconTheme:lookup_icon(path, 48, 0)
 					local p = icon_info and icon_info:get_filename()
 					path = p
 				end

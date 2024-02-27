@@ -1,48 +1,114 @@
+local awful = require("awful")
 local wibox = require("wibox")
 local helpers = require("helpers")
 local beautiful = require("beautiful")
 
+local opacity = false
+
 local widget = wibox.widget({
 	{
-		{
-			max_value = 100,
-			value = 69,
-			id = "prog",
-			forced_height = 30,
-			forced_width = 80,
-			paddings = 3,
-			border_color = beautiful.foreground .. "99",
-			background_color = beautiful.background_alt,
-			bar_shape = helpers.rrect(2),
-			color = beautiful.blue,
-			border_width = 1.25,
-			shape = helpers.rrect(5),
-			widget = wibox.widget.progressbar,
-		},
+		layout = wibox.layout.align.horizontal,
 		{
 			{
-				bg = beautiful.foreground .. "99",
-				forced_height = 5,
-				forced_width = 2,
-				shape = helpers.rrect(10),
-				widget = wibox.container.background,
+				widget = wibox.widget.imagebox,
+				image = beautiful.profile,
+				forced_height = 80,
+				forced_width = 80,
+				opacity = 1,
+				clip_shape = helpers.rrect(8),
+				resize = true,
 			},
-			widget = wibox.container.place,
-			valign = "center",
+
+			{
+				{
+					{
+						{
+							{
+								max_value = 100,
+								value = 69,
+								id = "prog",
+								forced_height = 30,
+								forced_width = 100,
+								paddings = 3,
+								border_color = beautiful.foreground .. "99",
+								background_color = beautiful.background,
+								bar_shape = helpers.rrect(2),
+								color = beautiful.blue,
+								border_width = 1.25,
+								shape = helpers.rrect(5),
+								widget = wibox.widget.progressbar,
+							},
+							{
+								{
+									bg = beautiful.foreground .. "99",
+									forced_height = 5,
+									forced_width = 2,
+									shape = helpers.rrect(10),
+									widget = wibox.container.background,
+								},
+								widget = wibox.container.place,
+								valign = "center",
+							},
+							spacing = 3,
+							layout = wibox.layout.fixed.horizontal,
+						},
+						{
+							font = beautiful.sans .. " 15",
+							markup = helpers.colorizeText("25%", beautiful.foreground),
+							valign = "center",
+							id = "batvalue",
+							widget = wibox.widget.textbox,
+						},
+						layout = wibox.layout.fixed.horizontal,
+						spacing = 15,
+					},
+					widget = wibox.container.margin,
+					left = 10,
+					right = 10,
+					top = 20,
+					bottom = 20,
+				},
+				widget = wibox.container.background,
+				shape = helpers.rrect(5),
+				bg = beautiful.background,
+			},
+			layout = wibox.layout.fixed.horizontal,
+			spacing = 30,
 		},
-		spacing = 3,
-		layout = wibox.layout.fixed.horizontal,
+		nil,
+		{
+			{
+				{
+					font = beautiful.icon .. " 25",
+					markup = helpers.colorizeText("󱡓 ", beautiful.foreground),
+					widget = wibox.widget.textbox,
+					valign = "center",
+					align = "center",
+				},
+				widget = wibox.container.margin,
+				left = 30,
+				right = 20,
+				top = 10,
+				bottom = 10,
+			},
+			buttons = {
+				awful.button({}, 1, function()
+					opacity = not opacity
+					if opacity then
+						awful.spawn.with_shell("~/.config/awesome/signals/scripts/Picom/toggle --opacity &")
+					else
+						awful.spawn.with_shell("~/.config/awesome/signals/scripts/Picom/toggle --no-opacity &")
+					end
+				end),
+			},
+			widget = wibox.container.background,
+			shape = helpers.rrect(5),
+			bg = beautiful.background,
+		},
 	},
-	{
-		font = beautiful.sans .. " 15",
-		markup = helpers.colorizeText("25%", beautiful.foreground),
-		valign = "center",
-		id = "batvalue",
-		widget = wibox.widget.textbox,
-	},
-	layout = wibox.layout.fixed.horizontal,
-	spacing = 10,
+	widget = wibox.container.margin,
 })
+
 awesome.connect_signal("signal::battery", function(value)
 	local b = widget:get_children_by_id("prog")[1]
 	local v = widget:get_children_by_id("batvalue")[1]

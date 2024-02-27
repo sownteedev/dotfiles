@@ -2,7 +2,7 @@
 
 ###### 🌸 INSTALL DOTFILES
 
-> **WARNING**: Script will initially reinstall all drivers. If you don't need it, you can skip it.
+> **WARNING**: Script will initially reinstall all drivers. If you don't need it, you can skip it.(Perfect with Resolution 2560x1600)
 
 ```
 git clone https://github.com/sownteedev/dotfiles.git --depth=1
