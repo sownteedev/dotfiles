@@ -205,6 +205,18 @@ fi
 cp -r ~/dotfiles/.config/firefox/* ~/.mozilla/firefox/*.default-release/
 sleep 5 && clear
 
+# Install TeVim
+read -p "[*] Do you want to install TeVim? (y/n): " choice
+if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	echo "[*] Installing TeVim ..."
+	yay -S --noconfirm neovim-nightly-bin lazygit xclip xsel fzf ripgrep
+	git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
+	echo "[*] Done."
+else
+	echo "[*] TeVim installation skipped."
+fi
+sleep 5 && clear
+
 # Fix Driver audio (for me)
 read -p "[*] Do you want to fix audio driver(Recommend No, because it is for me)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then

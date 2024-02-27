@@ -1,7 +1,6 @@
 local wibox = require("wibox")
 local awful = require("awful")
 local beautiful = require("beautiful")
-local dpi = require("beautiful").xresources.apply_dpi
 local gears = require("gears")
 local pctl = require("modules.playerctl")
 local helpers = require("helpers")
@@ -10,9 +9,9 @@ local playerctl = pctl.lib()
 local art = wibox.widget({
 	image = helpers.cropSurface(4, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.5,
-	forced_height = dpi(70),
+	forced_height = 70,
 	shape = helpers.rrect(5),
-	forced_width = dpi(400),
+	forced_width = 400,
 	widget = wibox.widget.imagebox,
 })
 
@@ -89,12 +88,12 @@ local finalwidget = wibox.widget({
 			{
 				headphones,
 				nil,
-				{ prev, play, next, spacing = dpi(15), layout = wibox.layout.fixed.horizontal },
+				{ prev, play, next, spacing = 15, layout = wibox.layout.fixed.horizontal },
 				layout = wibox.layout.align.horizontal,
 			},
 			widget = wibox.container.margin,
-			left = dpi(20),
-			right = dpi(20),
+			left = 20,
+			right = 20,
 		},
 		layout = wibox.layout.stack,
 	},

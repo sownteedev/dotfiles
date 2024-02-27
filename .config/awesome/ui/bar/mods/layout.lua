@@ -2,7 +2,6 @@ local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local helpers = require("helpers")
-local dpi = beautiful.xresources.apply_dpi
 
 local layouts = awful.widget.layoutbox({
 	buttons = {
@@ -44,11 +43,11 @@ local widget = {
 			clip_shape = helpers.rrect(3),
 			widget = wibox.container.margin,
 		},
-		margins = dpi(15),
+		margins = 15,
 		widget = wibox.container.margin,
 	},
 	bg = beautiful.background_alt,
-	forced_height = dpi(40),
+	forced_height = 40,
 	shape = helpers.rrect(5),
 	widget = wibox.container.background,
 }

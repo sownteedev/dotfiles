@@ -1,7 +1,6 @@
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local dpi = require("beautiful").xresources.apply_dpi
 local helpers = require("helpers")
 local time = wibox.widget({
 	{
@@ -29,9 +28,9 @@ local time = wibox.widget({
 				valign = "center",
 			},
 			layout = wibox.layout.fixed.horizontal,
-			spacing = dpi(20),
+			spacing = 20,
 		},
-		margins = { left = dpi(20), right = dpi(20) },
+		margins = { left = 20, right = 20 },
 		widget = wibox.container.margin,
 	},
 	bg = beautiful.background_alt,

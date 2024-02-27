@@ -2,13 +2,11 @@ local awful = require("awful")
 local wibox = require("wibox")
 local helpers = require("helpers")
 local animation = require("modules.animation")
-local beautiful = require("beautiful")
-local dpi = beautiful.xresources.apply_dpi
 
 return function(s)
 	local taglist = awful.widget.taglist({
 		layout = {
-			spacing = dpi(10),
+			spacing = 10,
 			layout = wibox.layout.fixed.horizontal,
 		},
 		style = { shape = helpers.rrect(9) },
@@ -36,8 +34,8 @@ return function(s)
 				id = "background_role",
 				shape = helpers.rrect(1),
 				widget = wibox.container.background,
-				forced_width = dpi(60),
-				forced_height = dpi(15),
+				forced_width = 60,
+				forced_height = 15,
 			},
 			widget = wibox.container.place,
 			create_callback = function(self, tag)
@@ -50,11 +48,11 @@ return function(s)
 				})
 				self.update = function()
 					if tag.selected then
-						self.taganim:set(dpi(120))
+						self.taganim:set(120)
 					elseif #tag:clients() > 0 then
-						self.taganim:set(dpi(60))
+						self.taganim:set(60)
 					else
-						self.taganim:set(dpi(50))
+						self.taganim:set(50)
 					end
 				end
 
