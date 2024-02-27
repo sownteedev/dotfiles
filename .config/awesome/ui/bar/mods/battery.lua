@@ -5,19 +5,24 @@ local beautiful = require("beautiful")
 local battery = wibox.widget({
 	{
 		{
-			max_value = 100,
-			value = 69,
-			id = "prog",
-			forced_height = -100,
-			forced_width = 100,
-			paddings = 5,
-			border_color = beautiful.foreground .. "99",
-			background_color = beautiful.background_alt,
-			bar_shape = helpers.rrect(5),
-			color = beautiful.blue,
-			border_width = 1.25,
-			shape = helpers.rrect(10),
-			widget = wibox.widget.progressbar,
+			{
+				max_value = 100,
+				value = 69,
+				id = "prog",
+				forced_height = -100,
+				forced_width = 100,
+				paddings = 5,
+				border_color = beautiful.foreground .. "99",
+				background_color = beautiful.background_alt,
+				bar_shape = helpers.rrect(5),
+				color = beautiful.blue,
+				border_width = 1.25,
+				shape = helpers.rrect(10),
+				widget = wibox.widget.progressbar,
+			},
+			widget = wibox.container.margin,
+			top = 10,
+			bottom = 10,
 		},
 		{
 			{

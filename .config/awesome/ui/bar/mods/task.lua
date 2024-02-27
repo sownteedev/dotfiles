@@ -7,7 +7,6 @@ local beautiful = require("beautiful")
 local getIcon = require("modules.getIcon")
 local inspect = require("modules.inspect")
 local layout = wibox.layout.fixed.horizontal
-local dpi = beautiful.xresources.apply_dpi
 
 local M = {
 	metadata = {
@@ -107,7 +106,7 @@ M.popupWidget = wibox.widget({
 })
 
 M.popup = awful.popup({
-	minimum_width = dpi(300),
+	minimum_width = 300,
 	widget = wibox.container.background,
 	visible = false,
 	shape = helpers.rrect(5),
@@ -350,8 +349,8 @@ function M:genIcons()
 					{
 						widget = wibox.widget.imagebox,
 						image = j.icon,
-						forced_height = dpi(60),
-						forced_width = dpi(60),
+						forced_height = 60,
+						forced_width = 60,
 						clip_shape = helpers.rrect(0),
 						resize = true,
 					},
