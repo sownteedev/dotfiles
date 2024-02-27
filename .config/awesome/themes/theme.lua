@@ -9,8 +9,8 @@ local themes_path = gfs.get_configuration_dir() .. "themes/"
 
 local theme = {}
 
-theme.font = "Rubik 15"
-theme.sans = "Rubik"
+theme.font = "SF Pro Display 15"
+theme.sans = "SF Pro Display"
 theme.icon = "Material Design Icons"
 theme.useless_gap = 10
 
@@ -19,8 +19,6 @@ local colors = require("themes.colors." .. colorscheme)
 theme.background = colors.background
 theme.background_dark = colors.background_dark
 theme.background_alt = colors.background_alt
-theme.background_urgent = colors.background_urgent
-theme.background_urgent1 = colors.background_urgent1
 theme.foreground = colors.foreground
 
 theme.red = colors.red

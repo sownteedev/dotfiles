@@ -28,6 +28,7 @@ fi
 sleep 5 && clear
 
 # Font
+sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm
 echo "[*] Copy fonts ..."
 mkdir -p ~/.fonts && cp -r ~/dotfiles/.fonts/* ~/.fonts
 fc-cache -fv
@@ -203,6 +204,26 @@ else
 fi
 cp -r ~/dotfiles/.config/firefox/* ~/.mozilla/firefox/*.default-release/
 sleep 5 && clear
+
+# Fix Driver audio (for me)
+read -p "[*] Do you want to fix audio driver(Recommend No, because it is for me)? (y/n): " choice
+if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	mkdir -p ~/old-sof-backup
+	sudo mv /lib/firmware/intel/sof* ~/old-sof-backup
+	sudo mv /usr/local/bin/sof-* ~/old-sof-backup
+
+	git clone https://github.com/thesofproject/sof-bin.git && cd sof-bin/v2.1.x
+	sudo rsync -a sof*v2.1.1 /lib/firmware/intel/
+	sudo ln -s sof-v2.1.1 /lib/firmware/intel/sof
+	sudo ln -s sof-tplg-v2.1.1 /lib/firmware/intel/sof-tplg
+	sudo rsync tools-v2.1.1/* /usr/local/bin
+
+	git clone https://github.com/thesofproject/alsa-ucm-conf.git && cd alsa-ucm-conf
+	sudo rm -r /usr/share/alsa/ucm
+	sudo mv ./ucm /usr/share/alsa
+else
+	echo "[*] Fix audio driver skipped."
+fi
 
 # Zsh
 echo "[*] Installing zsh ..."

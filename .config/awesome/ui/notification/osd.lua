@@ -36,7 +36,7 @@ local info = wibox.widget({
 					max_value = 100,
 					forced_width = 400,
 					shape = helpers.rrect(5),
-					background_color = beautiful.background_urgent,
+					background_color = beautiful.background_alt,
 					color = beautiful.accent,
 					bar_shape = helpers.rrect(5),
 				},

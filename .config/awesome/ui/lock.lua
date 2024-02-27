@@ -3,7 +3,6 @@ local helpers = require("helpers")
 local awful = require("awful")
 local beautiful = require("beautiful")
 local gears = require("gears")
-local dpi = beautiful.xresources.apply_dpi
 local pam = require("liblua_pam")
 local music = require("ui.exit.mods.music")
 local bat = require("ui.exit.mods.bat")
@@ -72,7 +71,7 @@ local header = wibox.widget({
 		min_value = 0,
 		value = 0,
 		rounded_edge = false,
-		thickness = dpi(8),
+		thickness = 8,
 		start_angle = 4.71238898,
 		bg = beautiful.foreground,
 		colors = { beautiful.foreground },
@@ -240,11 +239,26 @@ promptbox:setup({
 			{
 				{
 					{
-						font = beautiful.sans .. " Medium 150",
-						format = "%H:%M",
-						halign = "center",
-						valign = "center",
-						widget = wibox.widget.textclock,
+						{
+							font = beautiful.sans .. " Bold 150",
+							format = "%I:%M",
+							halign = "center",
+							valign = "center",
+							widget = wibox.widget.textclock,
+						},
+						{
+							{
+								font = beautiful.sans .. " Bold 20",
+								format = "%p",
+								halign = "left",
+								valign = "bottom",
+								widget = wibox.widget.textclock,
+							},
+							widget = wibox.container.margin,
+							bottom = 50,
+						},
+						spacing = 10,
+						layout = wibox.layout.fixed.horizontal,
 					},
 					{
 						font = beautiful.sans .. " Light 40",
@@ -294,7 +308,7 @@ promptbox:setup({
 			},
 			layout = wibox.layout.align.vertical,
 		},
-		margins = dpi(50),
+		margins = 50,
 		widget = wibox.container.margin,
 	},
 	widget = wibox.container.background,

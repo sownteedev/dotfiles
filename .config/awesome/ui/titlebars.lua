@@ -10,7 +10,7 @@ local create_button = function(color, func)
 	local widget = wibox.widget({
 		widget = wibox.container.background,
 		forced_height = 10,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(3),
 		bg = color,
 		buttons = {
 			awful.button({}, 1, function()
@@ -40,7 +40,7 @@ end
 
 client.connect_signal("request::titlebars", function(c)
 	local top_titlebar = awful.titlebar(c, {
-		size = 50,
+		size = 60,
 	})
 
 	awful.titlebar.enable_tooltip = false

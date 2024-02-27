@@ -218,7 +218,7 @@ local widget = wibox.widget({
 })
 
 awesome.connect_signal("signal::weather", function(out)
-	helpers.gc(widget, "image").image = helpers.cropSurface(1.53, gears.surface.load_uncached(out.thumb))
+	helpers.gc(widget, "image").image = helpers.cropSurface(1, gears.surface.load_uncached(out.thumb))
 	helpers.gc(widget, "icon").image = out.image
 	helpers.gc(widget, "temp").markup = out.temp .. "°C"
 	helpers.gc(widget, "desc").markup = out.desc

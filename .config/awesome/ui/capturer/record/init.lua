@@ -4,7 +4,6 @@ local awful = require("awful")
 local beautiful = require("beautiful")
 local gears = require("gears")
 local animation = require("modules.animation")
-local dpi = beautiful.xresources.apply_dpi
 
 local getName = function()
 	local string = "~/Videos/Recordings/" .. os.date("%d-%m-%Y-%H:%M:%S") .. ".mp4"

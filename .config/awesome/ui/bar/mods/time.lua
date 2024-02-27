@@ -9,7 +9,7 @@ local time = wibox.widget({
 			{
 				{
 					font = beautiful.sans .. " 15",
-					format = "%I : %M",
+					format = "%I : %M %p",
 					align = "center",
 					valign = "center",
 					widget = wibox.widget.textclock,
@@ -20,7 +20,7 @@ local time = wibox.widget({
 			{
 				{
 					font = beautiful.sans .. " 15",
-					format = "%a, %d %B",
+					format = "%A, %d %B %Y",
 					align = "center",
 					valign = "center",
 					widget = wibox.widget.textclock,
