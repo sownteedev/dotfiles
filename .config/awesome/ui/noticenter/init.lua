@@ -22,7 +22,7 @@ awful.screen.connect_for_each_screen(function(s)
 	local finalcontent = wibox.widget({
 		layout = require("modules.overflow").vertical,
 		scrollbar_enabled = false,
-		spacing = 20,
+		spacing = 15,
 	})
 	finalcontent:insert(1, empty)
 
@@ -71,43 +71,31 @@ awful.screen.connect_for_each_screen(function(s)
 			{
 				{
 					{
-						{
-							{
-								markup = helpers.colorizeText("Notification Center", beautiful.foreground),
-								halign = "center",
-								font = beautiful.sans .. " 15",
-								widget = wibox.widget.textbox,
-							},
-							widget = wibox.container.margin,
-							left = 20,
-						},
-						nil,
-						{
-							clearButton,
-							widget = wibox.container.margin,
-							right = 20,
-						},
-						widget = wibox.layout.align.horizontal,
+						markup = helpers.colorizeText("Notification Center", beautiful.foreground),
+						halign = "center",
+						font = beautiful.sans .. " 15",
+						widget = wibox.widget.textbox,
 					},
-					widget = wibox.container.margin,
-					margins = 20,
+					nil,
+					clearButton,
+					widget = wibox.layout.align.horizontal,
 				},
-				widget = wibox.container.background,
-				bg = beautiful.background,
+				widget = wibox.container.margin,
+				margins = 20,
 			},
-			{
-				{
-					finalcontent,
-					widget = wibox.container.margin,
-					margins = 15,
-				},
-				widget = wibox.container.background,
-			},
-			progs,
-			layout = wibox.layout.align.vertical,
-			spacing = 15,
+			widget = wibox.container.background,
+			bg = beautiful.background,
 		},
-		widget = wibox.container.margin,
+		{
+			{
+				finalcontent,
+				widget = wibox.container.margin,
+				margins = 15,
+			},
+			widget = wibox.container.background,
+		},
+		progs,
+		layout = wibox.layout.align.vertical,
 	})
 	awful.placement.bottom_right(notify, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	awesome.connect_signal("toggle::notify", function()

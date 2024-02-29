@@ -1,6 +1,7 @@
 local awful = require("awful")
 local wibox = require("wibox")
 local helpers = require("helpers")
+local beautiful = require("beautiful")
 local animation = require("modules.animation")
 
 return function(s)
@@ -63,5 +64,20 @@ return function(s)
 			end,
 		},
 	})
-	return taglist
+
+	local tags = wibox.widget({
+		{
+			{
+				taglist,
+				layout = wibox.layout.fixed.horizontal,
+			},
+			widget = wibox.container.margin,
+			left = 15,
+			right = 15,
+		},
+		widget = wibox.container.background,
+		bg = beautiful.background_alt,
+		shape = helpers.rrect(5),
+	})
+	return tags
 end

@@ -8,8 +8,6 @@ if [ $(command -v ripgrep) ]; then
     alias grep="ripgrep"
 fi
 
-eval "$(thefuck --alias)"
-
 alias rec='ffmpeg -y -f x11grab -r 60 -i $DISPLAY -pix_fmt yuv420p -c:a aac -b:a 64k -b:v 500k -preset ultrafast -tune zerolatency -crf 28 ~/Videos/Recordings/$(date +%d-%m-%Y-%H:%M:%S).mp4'
 
 alias cls="clear"

@@ -10,9 +10,10 @@ local battery = require("ui.bar.mods.battery")
 local wifi = require("ui.bar.mods.wifi")
 local bluetooth = require("ui.bar.mods.bluetooth")
 local music = require("ui.bar.mods.music")
-local hourminutes = require("ui.bar.mods.time")
+local timedate = require("ui.bar.mods.time")
 local layout = require("ui.bar.mods.layout")
 local systray = require("ui.bar.mods.systray")
+local notipower = require("ui.bar.mods.notipower")
 
 local function init(s)
 	local wibar = awful.wibar({
@@ -28,26 +29,16 @@ local function init(s)
 					{
 						profile,
 						layout,
-						{
-							{
-								tags(s),
-								widget = wibox.container.margin,
-								left = 20,
-								right = 20,
-							},
-							shape = helpers.rrect(5),
-							widget = wibox.container.background,
-							bg = beautiful.background_alt,
-						},
+						tags(s),
 						task.widget,
-						spacing = 20,
+						spacing = 15,
 						layout = wibox.layout.fixed.horizontal,
 					},
 					widget = wibox.container.place,
 					halign = "left",
 				},
 				widget = wibox.container.margin,
-				left = 20,
+				left = 15,
 			},
 			{
 				{
@@ -60,12 +51,12 @@ local function init(s)
 									battery,
 									wifi,
 									bluetooth,
-									spacing = 25,
+									spacing = 20,
 									layout = wibox.layout.fixed.horizontal,
 								},
 								widget = wibox.container.margin,
-								left = 20,
-								right = 20,
+								left = 15,
+								right = 15,
 							},
 							widget = wibox.container.background,
 							shape = helpers.rrect(5),
@@ -76,52 +67,16 @@ local function init(s)
 								end),
 							},
 						},
-						hourminutes,
-						{
-							{
-								{
-									{
-										align = "center",
-										font = beautiful.icon .. " 20",
-										markup = helpers.colorizeText("󰂜 ", beautiful.foreground),
-										widget = wibox.widget.textbox,
-										buttons = {
-											awful.button({}, 1, function()
-												awesome.emit_signal("toggle::notify")
-											end),
-										},
-									},
-									{
-										align = "center",
-										font = beautiful.icon .. " 20",
-										markup = helpers.colorizeText("󰐥 ", beautiful.red),
-										widget = wibox.widget.textbox,
-										buttons = {
-											awful.button({}, 1, function()
-												awesome.emit_signal("toggle::exit")
-											end),
-										},
-									},
-									spacing = 20,
-									layout = wibox.layout.fixed.horizontal,
-								},
-								widget = wibox.container.margin,
-								left = 20,
-								right = 10,
-							},
-							widget = wibox.container.background,
-							shape = helpers.rrect(5),
-							bg = beautiful.background_alt,
-						},
+						timedate,
+						notipower,
 						layout = wibox.layout.fixed.horizontal,
-						spacing = 20,
+						spacing = 15,
 					},
 					widget = wibox.container.place,
-					valign = "center",
 					halign = "right",
 				},
 				widget = wibox.container.margin,
-				right = 20,
+				right = 15,
 			},
 			layout = wibox.layout.align.horizontal,
 		},

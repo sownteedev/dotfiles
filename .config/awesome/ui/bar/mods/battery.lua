@@ -21,8 +21,8 @@ local battery = wibox.widget({
 				widget = wibox.widget.progressbar,
 			},
 			widget = wibox.container.margin,
-			top = 10,
-			bottom = 10,
+			top = 15,
+			bottom = 15,
 		},
 		{
 			{

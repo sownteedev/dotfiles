@@ -56,82 +56,88 @@ end)
 
 local finalwidget = wibox.widget({
 	{
-		nil,
 		{
-			art,
+			nil,
 			{
-				{
-					widget = wibox.widget.textbox,
-				},
-				bg = {
-					type = "linear",
-					from = { 0, 0 },
-					to = { 250, 0 },
-					stops = { { 0, beautiful.background .. "ff" }, { 1, beautiful.background_alt .. "55" } },
-				},
-				shape = helpers.rrect(5),
-				widget = wibox.container.background,
-			},
-			{
+				art,
 				{
 					{
-						{
-							id = "songname",
-							font = beautiful.sans .. " 25",
-							markup = helpers.colorizeText("Song Name", beautiful.foreground),
-							widget = wibox.widget.textbox,
-						},
-						{
-							id = "artist",
-							font = beautiful.sans .. " 15",
-							markup = helpers.colorizeText("Artist Name", beautiful.foreground),
-							widget = wibox.widget.textbox,
-						},
-						spacing = 20,
-						layout = wibox.layout.fixed.vertical,
-					},
-					nil,
-					{
-						id = "player",
-						font = beautiful.sans .. " 10",
-						markup = helpers.colorizeText("Playing On: unknown", beautiful.foreground),
 						widget = wibox.widget.textbox,
 					},
-					layout = wibox.layout.align.vertical,
+					bg = {
+						type = "linear",
+						from = { 0, 0 },
+						to = { 250, 0 },
+						stops = { { 0, beautiful.background .. "ff" }, { 1, beautiful.background_alt .. "55" } },
+					},
+					shape = helpers.rrect(5),
+					widget = wibox.container.background,
 				},
-				widget = wibox.container.margin,
-				left = 30,
-				bottom = 30,
-				top = 30,
-			},
-			layout = wibox.layout.stack,
-		},
-		{
-			{
 				{
 					{
-						prev,
-						play,
-						next,
+						{
+							{
+								id = "songname",
+								font = beautiful.sans .. " 25",
+								markup = helpers.colorizeText("Song Name", beautiful.foreground),
+								widget = wibox.widget.textbox,
+							},
+							{
+								id = "artist",
+								font = beautiful.sans .. " 15",
+								markup = helpers.colorizeText("Artist Name", beautiful.foreground),
+								widget = wibox.widget.textbox,
+							},
+							spacing = 20,
+							layout = wibox.layout.fixed.vertical,
+						},
+						nil,
+						{
+							id = "player",
+							font = beautiful.sans .. " 10",
+							markup = helpers.colorizeText("Playing On: unknown", beautiful.foreground),
+							widget = wibox.widget.textbox,
+						},
 						layout = wibox.layout.align.vertical,
 					},
 					widget = wibox.container.margin,
-					top = 40,
-					bottom = 40,
-					left = 20,
-					right = 10,
+					left = 30,
+					bottom = 30,
+					top = 30,
 				},
-				shape = helpers.rrect(5),
-				widget = wibox.container.background,
-				bg = beautiful.background,
+				layout = wibox.layout.stack,
 			},
-			widget = wibox.container.margin,
-			left = 15,
+			{
+				{
+					{
+						{
+							prev,
+							play,
+							next,
+							layout = wibox.layout.align.vertical,
+						},
+						widget = wibox.container.margin,
+						top = 40,
+						bottom = 40,
+						left = 20,
+						right = 10,
+					},
+					shape = helpers.rrect(5),
+					widget = wibox.container.background,
+					bg = beautiful.background,
+				},
+				widget = wibox.container.margin,
+				left = 15,
+			},
+			layout = wibox.layout.align.horizontal,
 		},
-		layout = wibox.layout.align.horizontal,
+		widget = wibox.container.margin,
+		margins = 15,
 	},
-	widget = wibox.container.margin,
-	margins = 15,
+	forced_height = 300,
+	widget = wibox.container.background,
+	bg = beautiful.background_dark,
+	shape = helpers.rrect(5),
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)

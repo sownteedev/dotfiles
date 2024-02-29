@@ -11,6 +11,18 @@ for _, lsp in ipairs(servers) do
 	})
 end
 
+lspconfig.lua_ls.setup({
+	on_attach = on_attach,
+	capabilities = capabilities,
+	settings = {
+		Lua = {
+			hint = { enable = true },
+			diagnostics = { globals = { "vim", "awesome", "client", "screen", "mouse", "tag" } },
+			workspace = { checkThirdParty = false },
+		},
+	},
+})
+
 lspconfig.tsserver.setup({
 	on_attach = on_attach,
 	capabilities = capabilities,

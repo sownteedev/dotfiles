@@ -20,13 +20,7 @@ awful.screen.connect_for_each_screen(function(s)
 
 	control:setup({
 		{
-			{
-				moosic,
-				forced_height = 300,
-				widget = wibox.container.background,
-				bg = beautiful.background_dark,
-				shape = helpers.rrect(5),
-			},
+			moosic,
 			widget = wibox.container.margin,
 			bottom = 20,
 		},

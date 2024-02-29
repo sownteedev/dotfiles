@@ -3,7 +3,7 @@ local awful = require("awful")
 local function backup()
 	awful.spawn.easy_async_with_shell([[
 		declare -a config_folders=("awesome" "alacritty" "zsh" "ranger" "firefox")
-		declare -a data_folders=("BetterDiscord/data/stable" "spicetify/Themes")
+		declare -a data_folders=("BetterDiscord/data/stable" "spicetify/Themes" "nvim/lua/custom")
 		declare -a dot_folders=("fonts" "icons" "themes" "walls") &&
 
 		rm -rf ~/dotfiles/{.config,.fonts,.icons,.themes,.walls,.local}
@@ -25,8 +25,6 @@ local function backup()
 		cp -r ~/.local/other/ ~/dotfiles/.local/ && cp -r ~/.local/bin/ ~/dotfiles/.local/
 		rm -f ~/dotfiles/.Xresources && cp ~/.Xresources ~/dotfiles/
 		rm -f ~/dotfiles/.xinitrc && cp ~/.xinitrc ~/dotfiles/
-
-		rm -rf ~/dotfiles/.config/custom && cp -r ~/.config/nvim/lua/custom ~/dotfiles/.config/
 	]])
 end
 
