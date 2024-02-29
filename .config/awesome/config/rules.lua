@@ -38,11 +38,11 @@ ruled.client.connect_signal("request::rules", function()
 
 	ruled.client.append_rule({
 		rule = { class = "Alacritty" },
-		properties = { screen = 1, tag = "1", switch_to_tags = true },
+		properties = { screen = 1, tag = "1", switch_to_tags = true, width = 1920, height = 1080 },
 	})
 	ruled.client.append_rule({
 		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
-		properties = { screen = 1, tag = "2", switch_to_tags = true },
+		properties = { screen = 1, tag = "2", switch_to_tags = true, maximized = true },
 	})
 	ruled.client.append_rule({
 		rule_any = { class = { "Code", "jetbrains-idea", "webstom", "neovide" } },
@@ -57,7 +57,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { screen = 1, tag = "4", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "Thunar", "vlc" } },
+		rule_any = { class = { "Thunar", "vlc", "libreoffice-impress", "libreoffice-calc", "libreoffice-writer" } },
 		properties = { tag = "5", switch_to_tags = true },
 	})
 end)

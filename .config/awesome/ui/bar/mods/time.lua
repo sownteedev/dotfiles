@@ -2,36 +2,42 @@ local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local helpers = require("helpers")
-local time = wibox.widget({
+
+local timedate = wibox.widget({
 	{
 		{
 			{
 				{
-					font = beautiful.sans .. " 15",
-					format = "%I : %M %p",
-					align = "center",
+					{
+						font = beautiful.sans .. " Bold 15",
+						format = "%I : %M %p",
+						align = "center",
+						valign = "center",
+						widget = wibox.widget.textclock,
+					},
+					widget = wibox.container.place,
 					valign = "center",
-					widget = wibox.widget.textclock,
 				},
-				widget = wibox.container.place,
-				valign = "center",
-			},
-			{
 				{
-					font = beautiful.sans .. " 15",
-					format = "%A, %d %B %Y",
-					align = "center",
+					{
+						font = beautiful.sans .. " 14",
+						format = "%A, %d %B",
+						align = "center",
+						valign = "center",
+						widget = wibox.widget.textclock,
+					},
+					widget = wibox.container.place,
 					valign = "center",
-					widget = wibox.widget.textclock,
 				},
-				widget = wibox.container.place,
-				valign = "center",
+				layout = wibox.layout.fixed.vertical,
+				spacing = 5,
 			},
-			layout = wibox.layout.fixed.horizontal,
-			spacing = 20,
+			widget = wibox.container.place,
+			halign = "center",
 		},
-		margins = { left = 20, right = 20 },
 		widget = wibox.container.margin,
+		right = 20,
+		left = 20,
 	},
 	bg = beautiful.background_alt,
 	buttons = {
@@ -43,4 +49,4 @@ local time = wibox.widget({
 	shape = helpers.rrect(5),
 })
 
-return time
+return timedate

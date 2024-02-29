@@ -79,8 +79,8 @@ local header = wibox.widget({
 		forced_height = 300,
 	},
 	widget = wibox.container.place,
-	halign = "center",
 })
+
 local label = wibox.widget({
 	markup = "Type The Password",
 	valign = "center",
@@ -93,7 +93,7 @@ local label = wibox.widget({
 local check_caps = function()
 	awful.spawn.easy_async_with_shell("xset q | grep Caps | cut -d: -f3 | cut -d0 -f1 | tr -d ' '", function(stdout)
 		if stdout:match("off") then
-			label.markup = "Type The Password Here"
+			label.markup = " "
 		else
 			label.markup = "HINT: Caps Lock Is ON"
 		end
@@ -260,59 +260,59 @@ promptbox:setup({
 						spacing = 10,
 						layout = wibox.layout.fixed.horizontal,
 					},
-					{
-						font = beautiful.sans .. " Light 40",
-						format = "%A, %d %B %Y",
-						halign = "center",
-						valign = "center",
-						widget = wibox.widget.textclock,
-					},
-					{
-						label,
-						widget = wibox.container.margin,
-						top = 100,
-					},
-					spacing = 10,
-					layout = wibox.layout.fixed.vertical,
+					widget = wibox.container.margin,
+					left = 100,
+					top = 50,
 				},
-				widget = wibox.container.place,
-				valign = "center",
+				{
+					font = beautiful.sans .. " Light 45",
+					format = "%A, %d %B %Y",
+					halign = "center",
+					valign = "center",
+					widget = wibox.widget.textclock,
+				},
+				{
+					label,
+					widget = wibox.container.margin,
+					top = 50,
+				},
+				spacing = 20,
+				layout = wibox.layout.fixed.vertical,
 			},
-			header,
+			widget = wibox.container.place,
+			valign = "top",
+		},
+		header,
+		{
 			{
 				{
+					music,
 					{
-						music,
 						{
-							{
-								{ prev, play, next, spacing = 20, layout = wibox.layout.fixed.horizontal },
-								widget = wibox.container.margin,
-								left = 10,
-								right = 10,
-							},
-							widget = wibox.container.background,
-							bg = beautiful.background_alt .. "CC",
-							shape = helpers.rrect(5),
+							{ prev, play, next, spacing = 20, layout = wibox.layout.fixed.horizontal },
+							widget = wibox.container.margin,
+							left = 10,
+							right = 10,
 						},
-						layout = wibox.layout.fixed.horizontal,
-						spacing = 40,
+						widget = wibox.container.background,
+						bg = beautiful.background_alt .. "CC",
+						shape = helpers.rrect(5),
 					},
-					bat,
-					weather,
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 100,
+					spacing = 40,
 				},
-				widget = wibox.container.place,
-				valign = "bottom",
-				halign = "center",
+				bat,
+				weather,
+				layout = wibox.layout.fixed.horizontal,
+				spacing = 100,
 			},
-			layout = wibox.layout.align.vertical,
+			widget = wibox.container.place,
+			valign = "bottom",
 		},
-		margins = 50,
-		widget = wibox.container.margin,
+		layout = wibox.layout.align.vertical,
 	},
-	widget = wibox.container.background,
-	shape = helpers.rrect(20),
+	margins = 50,
+	widget = wibox.container.margin,
 })
 awful.placement.centered(promptbox)
 

@@ -45,7 +45,6 @@ local createButton = function(icon, name, fn, col)
 						layout = wibox.container.margin,
 						top = 10,
 						left = 10,
-						right = 5,
 					},
 					{
 						{
@@ -62,15 +61,15 @@ local createButton = function(icon, name, fn, col)
 					spacing = 20,
 				},
 				widget = wibox.container.margin,
-				margins = 10,
+				margins = 15,
 			},
-			forced_width = 120,
+			forced_width = 130,
 			bg = beautiful.background,
 			widget = wibox.container.background,
 		},
 		{
 			forced_height = 5,
-			forced_width = 120,
+			forced_width = 130,
 			bg = col,
 			widget = wibox.container.background,
 		},
@@ -83,8 +82,8 @@ end
 
 awful.screen.connect_for_each_screen(function(s)
 	local scrotter = wibox({
-		width = 400,
-		height = 220,
+		width = 450,
+		height = 240,
 		shape = helpers.rrect(8),
 		bg = beautiful.background_dark,
 		ontop = true,
@@ -142,33 +141,14 @@ awful.screen.connect_for_each_screen(function(s)
 			{
 				{
 					{
-						{
-							font = beautiful.sans .. " Bold 15",
-							markup = "Screenshotter",
-							valign = "center",
-							align = "start",
-							widget = wibox.widget.textbox,
-						},
-						nil,
-						{
-							id = "123",
-							font = beautiful.icon .. " 20",
-							markup = useMouse and helpers.colorizeText("󰇀", beautiful.yellow)
-								or helpers.colorizeText("󰇀", beautiful.foreground),
-							valign = "center",
-							align = "start",
-							widget = wibox.widget.textbox,
-							buttons = awful.button({}, 1, function()
-								useMouse = not useMouse
-								scrotter:get_children_by_id("123")[1].markup = useMouse
-										and helpers.colorizeText("󰇀", beautiful.yellow)
-									or helpers.colorizeText("󰇀", beautiful.foreground)
-							end),
-						},
-						widget = wibox.layout.align.horizontal,
+						font = beautiful.sans .. " Bold 15",
+						markup = "Screenshotter",
+						valign = "center",
+						align = "start",
+						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.margin,
-					margins = 10,
+					margins = 15,
 				},
 				widget = wibox.container.background,
 				bg = beautiful.background_alt,
@@ -177,14 +157,14 @@ awful.screen.connect_for_each_screen(function(s)
 				fullscreen,
 				selection,
 				window,
-				spacing = 10,
+				spacing = 15,
 				layout = wibox.layout.fixed.horizontal,
 			},
-			spacing = 10,
+			spacing = 15,
 			layout = wibox.layout.fixed.vertical,
 		},
 		widget = wibox.container.margin,
-		margins = 10,
+		margins = 15,
 	})
 
 	awesome.connect_signal("toggle::scrotter", function()

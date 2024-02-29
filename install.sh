@@ -13,7 +13,7 @@ pkg_installed() {
 
 # Update
 sudo pacman -Syu --noconfirm
-sleep 5 && clear
+sleep 3 && clear
 
 # Yay
 echo "[*] Installing AUR helper(yay) ..."
@@ -25,7 +25,7 @@ else
 	cd .. && rm -rf yay
 	echo "[*] Yay Installed."
 fi
-sleep 5 && clear
+sleep 3 && clear
 
 # Font
 sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm
@@ -33,25 +33,25 @@ echo "[*] Copy fonts ..."
 mkdir -p ~/.fonts && cp -r ~/dotfiles/.fonts/* ~/.fonts
 fc-cache -fv
 echo "[*] Done."
-sleep 5 && clear
+sleep 3 && clear
 
 # Icon theme && Cursor theme
 echo "[*] Copy icons ..."
 mkdir -p ~/.icons && cp -r ~/dotfiles/.icons/* ~/.icons
 echo "[*] Done."
-sleep 5 && clear
+sleep 3 && clear
 
 # Themes
 echo "[*] Copy themes ..."
 mkdir -p ~/.themes && cp -r ~/dotfiles/.themes/* ~/.themes
 echo "[*] Done."
-sleep 5 && clear
+sleep 3 && clear
 
 # Wallpaper
 echo "[*] Copy wallpaper ..."
 mkdir -p ~/.walls && cp -r ~/dotfiles/.walls/* ~/.walls
 echo "[*] Done."
-sleep 5 && clear
+sleep 3 && clear
 
 # Config
 echo "[*] Copy config ..."
@@ -60,7 +60,7 @@ if ! [ -d $HOME/.config ]; then
 fi
 cp -r ~/dotfiles/.config/* ~/.config
 echo "[*] Done."
-sleep 5 && clear
+sleep 3 && clear
 
 # Local
 echo "[*] Copy local ..."
@@ -69,7 +69,7 @@ if ! [ -d $HOME/.local ]; then
 fi
 cp -r ~/dotfiles/.local/* ~/.local
 echo "[*] Done."
-sleep 5 && clear
+sleep 3 && clear
 
 # Enable touchpad
 echo "[*] Enable touchpad for laptop ..."
@@ -81,19 +81,19 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 else
 	echo "[*] Skipped."
 fi
-sleep 5 && clear
+sleep 3 && clear
 
 # .Xresources
 echo "[*] Copy .Xresources ..."
 rm -f ~/.Xresources && cp ~/dotfiles/.Xresources ~/.Xresources
 echo "[*] Done."
-sleep 5 && clear
+sleep 3 && clear
 
 # Xinitrc
 echo "[*] Override .xinitrc ..."
-sudo rm -f ~/.xinitrc && sudo cp ~/dotfiles/.xinitrc ~/.xinitrc
+sudo rm -f ~/.xinitrc && cp ~/dotfiles/.xinitrc ~/.xinitrc
 echo "[*] Done"
-sleep 5 && clear
+sleep 3 && clear
 
 #################################################### INSTALL DRIVER AND APPS ####################################################
 read -p "[*] Do you want to install driver and dependencies(Recommend Yes)? (y/n): " choice
@@ -102,58 +102,58 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	echo "[*] Installing library ..."
 	sudo pacman -S nodejs npm yarn python python-pip clang jdk-openjdk rustup cargo --noconfirm
 	echo "[*] Done."
-	sleep 5 && clear
+	sleep 3 && clear
 
 	# Audio
 	echo "[*] Installing audio & mic driver ..."
 	sudo pacman -S pavucontrol pipewire pipewire-alsa pipewire-audio pipewire-pulse alsa-ucm-conf sof-firmware playerctl pamixer --noconfirm
 	systemctl --user enable pipewire pipewire-pulse wireplumber
 	echo "[*] Done."
-	sleep 5 && clear
+	sleep 3 && clear
 
 	# Brightness
 	echo "[*] Installing brightness ..."
 	sudo pacman -S brightnessctl xorg-xbacklight redshift --noconfirm
 	echo "[*] Done."
-	sleep 5 && clear
+	sleep 3 && clear
 
 	# Battery
 	echo "[*] Installing battery ..."
 	sudo pacman -S acpi acpid --noconfirm
 	sudo systemctl enable acpid
 	echo "[*] Done."
-	sleep 5 && clear
+	sleep 3 && clear
 
 	# Network
 	echo "[*] Installing network ..."
 	sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools --noconfirm
 	sudo systemctl enable NetworkManager dhcpcd.service
 	echo "[*] Done."
-	sleep 5 && clear
+	sleep 3 && clear
 
 	# Bluetooth
 	echo "[*] Installing bluetooth driver ..."
 	sudo pacman -S bluez bluez-utils bluez-tools bluez-libs blueman --noconfirm
 	sudo systemctl enable bluetooth.service
-	sleep 5 && clear
+	sleep 3 && clear
 
 	# File manager
 	echo "[*] Installing file manager ..."
-	sudo pacman -S thunar tumbler ranger ueberzug exa unzip unrar xdg-user-dirs gvfs --noconfirm
+	sudo pacman -S thunar tumbler ranger ueberzug exa unzip unrar xdg-user-dirs gvfs vlc --noconfirm
 	echo "[*] Done."
-	sleep 5 && clear
+	sleep 3 && clear
 
 	# Monitor and Theme
 	echo "[*] Installing monitor and theme ..."
 	sudo pacman -S feh flameshot maim viewnior lxappearance imagemagick neofetch arandr --noconfirm
 	echo "[*] Done."
-	sleep 5 && clear
+	sleep 3 && clear
 
 	# Other
 	echo "[*] Installing other ..."
-	sudo pacman -S --noconfirm gnome-keyring polkit-gnome libgnome-keyring libsecret seahorse xf86-input-libinput pacman-contrib gpick btop ibus github-cli xss-lock && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi
+	sudo pacman -S --noconfirm gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop ibus github-cli xss-lock && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi
 	echo "[*] Done."
-	sleep 5 && clear
+	sleep 3 && clear
 
 else
 	echo "[*] Installation driver and dependencies skipped."
@@ -177,7 +177,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 else
 	echo "[*] Spotify installation skipped."
 fi
-sleep 5 && clear
+sleep 3 && clear
 
 # Discord
 read -p "[*] Do you want to install Discord and get my custom? (y/n): " choice
@@ -188,7 +188,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 else
 	echo "[*] Discord installation skipped."
 fi
-sleep 5 && clear
+sleep 3 && clear
 
 # Firefox
 read -p "[*] Do you want to install Firefox and get my custom? (y/n): " choice
@@ -203,10 +203,10 @@ else
 	echo "[*] Firefox installation skipped."
 fi
 cp -r ~/dotfiles/.config/firefox/* ~/.mozilla/firefox/*.default-release/
-sleep 5 && clear
+sleep 3 && clear
 
 # Install TeVim
-read -p "[*] Do you want to install TeVim? (y/n): " choice
+read -p "[*] Do you want to install TeVim(Awesome Neovim <3)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	echo "[*] Installing TeVim ..."
 	yay -S --noconfirm neovim-nightly-bin lazygit xclip xsel fzf ripgrep
@@ -215,11 +215,12 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 else
 	echo "[*] TeVim installation skipped."
 fi
-sleep 5 && clear
+sleep 3 && clear
 
 # Fix Driver audio (for me)
 read -p "[*] Do you want to fix audio driver(Recommend No, because it is for me)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	sudo pacman -S rsync --noconfirm && cd ~
 	mkdir -p ~/old-sof-backup
 	sudo mv /lib/firmware/intel/sof* ~/old-sof-backup
 	sudo mv /usr/local/bin/sof-* ~/old-sof-backup
@@ -230,12 +231,26 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	sudo ln -s sof-tplg-v2.1.1 /lib/firmware/intel/sof-tplg
 	sudo rsync tools-v2.1.1/* /usr/local/bin
 
-	git clone https://github.com/thesofproject/alsa-ucm-conf.git && cd alsa-ucm-conf
+	cd ~ && git clone https://github.com/thesofproject/alsa-ucm-conf.git && cd alsa-ucm-conf
 	sudo rm -r /usr/share/alsa/ucm
 	sudo mv ./ucm /usr/share/alsa
+
+	cd ~ && rm -rf sof-bin alsa-ucm-conf
 else
 	echo "[*] Fix audio driver skipped."
 fi
+echo "[*] Done."
+sleep 3 && clear
+
+# App for me
+read -p "[*] Do you want to install app for me(Recommend No, because it is for me)? (y/n): " choice
+if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	sudo pacman -S --noconfirm libreoffice-fresh
+	yay -S --noconfirm visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre
+else
+	echo "[*] App for me skipped."
+fi
+sleep 3 && clear
 
 # Zsh
 echo "[*] Installing zsh ..."
@@ -245,7 +260,7 @@ else
 	sudo pacman -S zsh --noconfirm
 	echo "[*] Zsh Installed."
 fi
-rm -f ~/.zshrc && touch ~/.zshrc && echo "source ~/.config/zsh/.zshrc" >>~/.zshrc
-sleep 5 && clear
+rm -f ~/.zshrc && touch ~/.zshrc && echo "source ~/.config/zsh/.zshrc" > ~/.zshrc
+sleep 3 && clear
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 echo "[*] Done."

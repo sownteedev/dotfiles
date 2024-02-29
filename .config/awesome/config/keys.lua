@@ -10,7 +10,7 @@ local shift = "Shift"
 
 awful.keyboard.append_global_keybindings({
 	-- Apps
-	awful.key({ mod }, "d", function()
+	awful.key({ alt }, "space", function()
 		Launcher:toggle()
 	end),
 	awful.key({ mod }, "e", function()
@@ -56,6 +56,7 @@ awful.keyboard.append_global_keybindings({
 		brightness_emit()
 		awesome.emit_signal("sowntee::osd")
 	end),
+
 	awful.key({}, "Print", function()
 		awesome.emit_signal("toggle::scrotter")
 	end),

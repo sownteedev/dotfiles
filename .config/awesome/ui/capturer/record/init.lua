@@ -11,11 +11,11 @@ local getName = function()
 	return string
 end
 
-local start = function(fps, file_name)
+local rec_mic = function(fps, file_name)
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
 		"sleep 0.25 && ffmpeg -y -f x11grab "
-			.. "-r %s -i %s -f pulse -i 0 -c:v libx264 -qp 0 -profile:v main "
+			.. "-r %s -i %s -f pulse -i 59 -c:v libx264 -qp 0 -profile:v main "
 			.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
 			.. "-c:a aac -b:a 64k -b:v 500k %s",
 		fps,
@@ -25,6 +25,22 @@ local start = function(fps, file_name)
 	print(defCommand)
 	awful.spawn.with_shell(defCommand)
 end
+
+local rec_audio = function(fps, file_name)
+	local display = os.getenv("DISPLAY")
+	local defCommand = string.format(
+		"sleep 0.25 && ffmpeg -y -f x11grab "
+			.. "-r %s -i %s -f pulse -i 57 -c:v libx264 -qp 0 -profile:v main "
+			.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
+			.. "-c:a aac -b:a 64k -b:v 500k %s",
+		fps,
+		display,
+		file_name
+	)
+	print(defCommand)
+	awful.spawn.with_shell(defCommand)
+end
+
 local createButton = function(icon, name, fn, col)
 	return wibox.widget({
 		{
@@ -41,7 +57,6 @@ local createButton = function(icon, name, fn, col)
 						layout = wibox.container.margin,
 						top = 10,
 						left = 10,
-						right = 5,
 					},
 					{
 						{
@@ -60,13 +75,13 @@ local createButton = function(icon, name, fn, col)
 				widget = wibox.container.margin,
 				margins = 10,
 			},
-			forced_width = 120,
+			forced_width = 130,
 			bg = beautiful.background,
 			widget = wibox.container.background,
 		},
 		{
 			forced_height = 5,
-			forced_width = 120,
+			forced_width = 130,
 			bg = col,
 			widget = wibox.container.background,
 		},
@@ -79,8 +94,8 @@ end
 
 awful.screen.connect_for_each_screen(function(s)
 	local recorder = wibox({
-		width = 270,
-		height = 220,
+		width = 450,
+		height = 240,
 		shape = helpers.rrect(5),
 		bg = beautiful.background_dark,
 		ontop = true,
@@ -108,13 +123,19 @@ awful.screen.connect_for_each_screen(function(s)
 		slide:set(0 - recorder.height)
 	end
 
-	local fullscreen = createButton("󰄄 ", "Start", function()
+	local recaudio = createButton(" ", "Rec Audio", function()
 		close()
 		local name = getName()
-		start("60", name)
+		rec_audio("60", name)
 	end, beautiful.green)
 
-	local window = createButton("󰜺 ", "Finish", function()
+	local recmic = createButton("󰄄 ", "Rec Mic", function()
+		close()
+		local name = getName()
+		rec_mic("60", name)
+	end, beautiful.blue)
+
+	local stop = createButton("󰜺 ", "Finish", function()
 		close()
 		awful.spawn.with_shell("killall ffmpeg")
 	end, beautiful.red)
@@ -140,16 +161,17 @@ awful.screen.connect_for_each_screen(function(s)
 				bg = beautiful.background_alt,
 			},
 			{
-				fullscreen,
-				window,
-				spacing = 10,
+				recaudio,
+				recmic,
+				stop,
+				spacing = 15,
 				layout = wibox.layout.fixed.horizontal,
 			},
-			spacing = 10,
+			spacing = 15,
 			layout = wibox.layout.fixed.vertical,
 		},
 		widget = wibox.container.margin,
-		margins = 10,
+		margins = 15,
 	})
 
 	awesome.connect_signal("toggle::recorder", function()

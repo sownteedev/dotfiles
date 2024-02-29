@@ -135,7 +135,7 @@ local widget = wibox.widget({
 			"redshift"
 		),
 		createbutton(
-			"pamixer --source 59 -t",
+			"pactl set-source-mute @DEFAULT_SOURCE@ toggle",
 			"pavucontrol",
 			" ",
 			"Microphone",

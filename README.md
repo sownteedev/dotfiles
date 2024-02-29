@@ -106,8 +106,9 @@ cd dotfiles && chmod +x install.sh
 
 ###### If GRUB not found Windows (For Dual Boot)
 
-    Try: sudo os-prober
+    sudo os-prober
     grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB --recheck
+    grub-mkconfig -o /boot/grub/grub.cfg
 
 ### Exit and Reboot
 

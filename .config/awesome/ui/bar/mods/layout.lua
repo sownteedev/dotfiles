@@ -35,20 +35,17 @@ local layouts = awful.widget.layoutbox({
 		}),
 	},
 })
+
 local widget = {
 	{
-		{
-			layouts,
-			id = "icon",
-			clip_shape = helpers.rrect(3),
-			widget = wibox.container.margin,
-		},
+		layouts,
 		margins = 15,
 		widget = wibox.container.margin,
 	},
 	bg = beautiful.background_alt,
-	forced_height = 40,
+	forced_height = 0,
 	shape = helpers.rrect(5),
 	widget = wibox.container.background,
 }
+
 return widget
