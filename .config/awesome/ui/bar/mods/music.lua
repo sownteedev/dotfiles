@@ -7,16 +7,16 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local art = wibox.widget({
-	image = helpers.cropSurface(4, gears.surface.load_uncached(beautiful.songdefpicture)),
+	image = helpers.cropSurface(6.7, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.5,
-	forced_height = 70,
+	forced_height = 60,
 	shape = helpers.rrect(5),
 	forced_width = 400,
 	widget = wibox.widget.imagebox,
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	art.image = helpers.cropSurface(4, gears.surface.load_uncached(album_path))
+	art.image = helpers.cropSurface(6.7, gears.surface.load_uncached(album_path))
 end)
 
 local next = wibox.widget({
@@ -57,7 +57,7 @@ local play = wibox.widget({
 local headphones = wibox.widget({
 	align = "center",
 	font = beautiful.icon .. " 25",
-	markup = helpers.colorizeText("󰟎 ", beautiful.yellow),
+	markup = helpers.colorizeText("󰟎 ", beautiful.red),
 	widget = wibox.widget.textbox,
 })
 
@@ -65,22 +65,19 @@ playerctl:connect_signal("playback_status", function(_, playing, player_name)
 	play.markup = playing and helpers.colorizeText("󰏤", beautiful.foreground)
 		or helpers.colorizeText("󰐊", beautiful.foreground)
 
-	headphones.markup = playing and helpers.colorizeText("󰋎 ", beautiful.green)
-		or helpers.colorizeText("󰟎 ", beautiful.yellow)
+	headphones.markup = playing and helpers.colorizeText("󰋎 ", beautiful.violet)
+		or helpers.colorizeText("󰟎 ", beautiful.red)
 end)
 
 local finalwidget = wibox.widget({
 	{
 		art,
 		{
-			{
-				widget = wibox.widget.textbox,
-			},
 			bg = {
 				type = "linear",
 				from = { 0, 0 },
 				to = { 250, 0 },
-				stops = { { 0, beautiful.background .. "00" }, { 1, beautiful.background_alt } },
+				stops = { { 0, beautiful.background .. "22" }, { 1, beautiful.background_alt .. "bb" } },
 			},
 			widget = wibox.container.background,
 		},

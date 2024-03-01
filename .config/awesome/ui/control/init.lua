@@ -4,7 +4,7 @@ local helpers = require("helpers")
 local wibox = require("wibox")
 
 local buttons = require("ui.control.mods.buttons")
-local moosic = require("ui.control.mods.music")
+local music = require("ui.control.mods.music")
 local sliders = require("ui.control.mods.slider")
 local footer = require("ui.control.mods.footer")
 
@@ -20,7 +20,7 @@ awful.screen.connect_for_each_screen(function(s)
 
 	control:setup({
 		{
-			moosic,
+			music,
 			widget = wibox.container.margin,
 			bottom = 20,
 		},

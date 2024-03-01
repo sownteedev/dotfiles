@@ -39,17 +39,17 @@ cd dotfiles && chmod +x install.sh
 
 ### Disk
 
-    cfdisk /dev/sda
+    cfdisk /dev/nvme0n1
 
-    mkswap /dev/sda6
-    swapon /dev/sda6
+    mkswap /dev/nvme0n1p6
+    swapon /dev/nvme0n1p6
 
-    mkfs.ext4 /dev/sda5
+    mkfs.ext4 /dev/nvme0n1p5
 
-    mount /dev/sda5 /mnt
+    mount /dev/nvme0n1p5 /mnt
 
     mkdir /mnt/efi
-    mount /dev/sda1 /mnt/efi
+    mount /dev/nvme0n1p1 /mnt/efi
 
 ### Install basic package
 
@@ -104,16 +104,15 @@ cd dotfiles && chmod +x install.sh
     grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB
     grub-mkconfig -o /boot/grub/grub.cfg
 
+### Exit and Reboot
+
+    exit
+    reboot
+
 ###### If GRUB not found Windows (For Dual Boot)
 
     sudo os-prober
     grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB --recheck
     grub-mkconfig -o /boot/grub/grub.cfg
-
-### Exit and Reboot
-
-    exit
-
-    reboot
 
 </blockquote></details>

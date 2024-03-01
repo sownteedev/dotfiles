@@ -7,10 +7,7 @@ local animation = require("modules.animation")
 
 -- osd --
 local info = wibox.widget({
-	layout = wibox.layout.fixed.horizontal,
 	{
-		widget = wibox.container.margin,
-		margins = 30,
 		{
 			layout = wibox.layout.fixed.horizontal,
 			fill_space = true,
@@ -30,22 +27,20 @@ local info = wibox.widget({
 				},
 			},
 			{
-				{
-					widget = wibox.widget.progressbar,
-					id = "progressbar",
-					max_value = 100,
-					forced_width = 400,
-					shape = helpers.rrect(5),
-					background_color = beautiful.background_alt,
-					color = beautiful.accent,
-					bar_shape = helpers.rrect(5),
-				},
-				widget = wibox.container.margin,
-				top = 10,
-				bottom = 10,
+				widget = wibox.widget.progressbar,
+				id = "progressbar",
+				max_value = 100,
+				forced_width = 400,
+				shape = helpers.rrect(5),
+				background_color = beautiful.background_alt,
+				color = beautiful.accent,
+				bar_shape = helpers.rrect(5),
 			},
 		},
+		layout = wibox.layout.fixed.horizontal,
 	},
+	widget = wibox.container.margin,
+	margins = 40,
 })
 
 local osd = awful.popup({

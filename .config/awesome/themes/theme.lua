@@ -42,20 +42,16 @@ theme.songdefpicture = "~/.config/awesome/themes/assets/defsong.jpg"
 
 -- Awesome Switcher --
 switcher.settings.preview_box = true
-switcher.settings.preview_box_bg = "#00000030"
-switcher.settings.preview_box_border = "#00000030"
+switcher.settings.preview_box_bg = "#00000025"
+switcher.settings.preview_box_border = "#00000025"
 switcher.settings.preview_box_fps = 60
 switcher.settings.preview_box_delay = 0
-switcher.settings.preview_box_title_font = { "Manrope" }
-switcher.settings.preview_box_title_font_size_factor = 1
+switcher.settings.preview_box_title_font = { "SF Pro Display" }
+switcher.settings.preview_box_title_font_size_factor = 0.9
 switcher.settings.preview_box_title_color = { 255, 255, 255, 1 }
-
 switcher.settings.client_opacity = true
-switcher.settings.client_opacity_value = 0.5
-switcher.settings.client_opacity_value_in_focus = 0.5
+switcher.settings.client_opacity_value = 0.3
 switcher.settings.client_opacity_value_selected = 1
-
-switcher.settings.cycle_raise_client = true
 
 -- borders --
 theme.border_width = 0

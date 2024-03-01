@@ -10,7 +10,7 @@ return function(s)
 			spacing = 10,
 			layout = wibox.layout.fixed.horizontal,
 		},
-		style = { shape = helpers.rrect(9) },
+		style = { shape = helpers.rrect(5) },
 		screen = s,
 		filter = awful.widget.taglist.filter.all,
 		buttons = {
@@ -33,9 +33,7 @@ return function(s)
 				},
 				valign = "center",
 				id = "background_role",
-				shape = helpers.rrect(1),
 				widget = wibox.container.background,
-				forced_width = 60,
 				forced_height = 15,
 			},
 			widget = wibox.container.place,
@@ -49,11 +47,11 @@ return function(s)
 				})
 				self.update = function()
 					if tag.selected then
-						self.taganim:set(120)
+						self.taganim:set(80)
 					elseif #tag:clients() > 0 then
 						self.taganim:set(60)
 					else
-						self.taganim:set(50)
+						self.taganim:set(40)
 					end
 				end
 
