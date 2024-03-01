@@ -21,7 +21,7 @@ local timedate = wibox.widget({
 				{
 					{
 						font = beautiful.sans .. " 14",
-						format = "%A, %d %B",
+						format = "%A, %d %B %Y",
 						align = "center",
 						valign = "center",
 						widget = wibox.widget.textclock,

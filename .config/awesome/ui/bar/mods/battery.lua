@@ -16,13 +16,13 @@ local battery = wibox.widget({
 				background_color = beautiful.background_alt,
 				bar_shape = helpers.rrect(5),
 				color = beautiful.blue,
-				border_width = 1.25,
+				border_width = 1,
 				shape = helpers.rrect(10),
 				widget = wibox.widget.progressbar,
 			},
 			widget = wibox.container.margin,
-			top = 15,
-			bottom = 15,
+			top = 10,
+			bottom = 10,
 		},
 		{
 			{
