@@ -51,7 +51,7 @@ local function init(s)
 									battery,
 									wifi,
 									bluetooth,
-									spacing = 25,
+									spacing = 20,
 									layout = wibox.layout.fixed.horizontal,
 								},
 								widget = wibox.container.margin,

@@ -6,36 +6,31 @@ local helpers = require("helpers")
 
 local createHandle = function()
 	return function(cr)
-		gears.shape.rounded_rect(cr, 20, 20, 15)
+		gears.shape.rounded_rect(cr, 30, 30, 15)
 	end
 end
 
 local createSlider = function(icon, signal, command)
 	local slidSlider = wibox.widget({
 		bar_shape = helpers.rrect(5),
-		bar_height = 5,
+		bar_height = 3,
 		handle_color = beautiful.background,
 		bar_color = beautiful.background .. "00",
 		bar_active_color = beautiful.foreground,
 		handle_shape = createHandle(),
-		handle_border_width = 5,
-		handle_width = 15,
-		handle_margins = { top = 10, right = -15, left = 1 },
+		handle_border_width = 3,
+		handle_margins = { top = 5, right = -15, left = 1 },
 		handle_border_color = beautiful.foreground,
-		value = 25,
 		forced_height = 0,
+		value = 25,
 		maximum = 100,
 		widget = wibox.widget.slider,
 	})
 
 	local slidIcon = wibox.widget({
-		{
-			font = beautiful.icon .. " 25",
-			markup = helpers.colorizeText(icon, beautiful.foreground),
-			valign = "center",
-			widget = wibox.widget.textbox,
-		},
-		widget = wibox.container.margin,
+		font = beautiful.icon .. " 25",
+		markup = helpers.colorizeText(icon, beautiful.foreground),
+		widget = wibox.widget.textbox,
 	})
 
 	local slidScale = wibox.widget({
@@ -48,7 +43,7 @@ local createSlider = function(icon, signal, command)
 					halign = "left",
 				},
 				widget = wibox.container.margin,
-				left = 10,
+				left = 15,
 			},
 			{
 				{

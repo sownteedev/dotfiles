@@ -66,7 +66,7 @@ local function widget()
 			end,
 		}),
 		menu.button({
-			icon = { icon = "󱇨 ", font = "Material Design Icons" },
+			icon = { icon = "󱇧 ", font = "Material Design Icons" },
 			text = "Text Editor",
 			on_press = function()
 				awful.spawn("alacritty -e nvim", false)

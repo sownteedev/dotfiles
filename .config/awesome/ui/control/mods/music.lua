@@ -7,7 +7,7 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local art = wibox.widget({
-	image = helpers.cropSurface(2.3, gears.surface.load_uncached(beautiful.songdefpicture)),
+	image = helpers.cropSurface(2.25, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.3,
 	resize = true,
 	clip_shape = helpers.rrect(5),
@@ -68,7 +68,7 @@ local finalwidget = wibox.widget({
 						type = "linear",
 						from = { 0, 0 },
 						to = { 250, 0 },
-						stops = { { 0, beautiful.background .. "ff" }, { 1, beautiful.background_alt .. "55" } },
+						stops = { { 0, beautiful.background .. "ff" }, { 1, beautiful.background .. "00" } },
 					},
 					shape = helpers.rrect(5),
 					widget = wibox.container.background,
@@ -79,13 +79,13 @@ local finalwidget = wibox.widget({
 							{
 								id = "songname",
 								font = beautiful.sans .. " 25",
-								markup = helpers.colorizeText(" ", beautiful.foreground),
+								markup = helpers.colorizeText("Song Name", beautiful.foreground),
 								widget = wibox.widget.textbox,
 							},
 							{
 								id = "artist",
 								font = beautiful.sans .. " 15",
-								markup = helpers.colorizeText(" ", beautiful.foreground),
+								markup = helpers.colorizeText("Artist Name", beautiful.foreground),
 								widget = wibox.widget.textbox,
 							},
 							spacing = 20,
@@ -95,7 +95,7 @@ local finalwidget = wibox.widget({
 						{
 							id = "player",
 							font = beautiful.sans .. " 10",
-							markup = helpers.colorizeText(" ", beautiful.foreground),
+							markup = helpers.colorizeText("Playing On: unknown", beautiful.foreground),
 							widget = wibox.widget.textbox,
 						},
 						layout = wibox.layout.align.vertical,
@@ -148,13 +148,13 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, albu
 	if album_path == "" then
 		album_path = beautiful.songdefpicture
 	end
-	if string.len(title) > 30 then
-		title = string.sub(title, 0, 30) .. "..."
+	if string.len(title) > 40 then
+		title = string.sub(title, 0, 40) .. "..."
 	end
-	if string.len(artist) > 22 then
-		artist = string.sub(artist, 0, 22) .. "..."
+	if string.len(artist) > 25 then
+		artist = string.sub(artist, 0, 25) .. "..."
 	end
-	art.image = helpers.cropSurface(2.3, gears.surface.load_uncached(album_path))
+	art.image = helpers.cropSurface(2.25, gears.surface.load_uncached(album_path))
 	helpers.gc(finalwidget, "songname"):set_markup_silently(helpers.colorizeText(title or "NO", beautiful.foreground))
 	helpers.gc(finalwidget, "artist"):set_markup_silently(helpers.colorizeText(artist or "HM", beautiful.foreground))
 	helpers

@@ -10,7 +10,7 @@ local battery = wibox.widget({
 				value = 69,
 				id = "prog",
 				forced_height = -100,
-				forced_width = 100,
+				forced_width = 80,
 				paddings = 5,
 				border_color = beautiful.foreground .. "99",
 				background_color = beautiful.background_alt,
@@ -21,7 +21,7 @@ local battery = wibox.widget({
 				widget = wibox.widget.progressbar,
 			},
 			widget = wibox.container.margin,
-			top = 10,
+			top = 15,
 			bottom = 10,
 		},
 		{

@@ -11,7 +11,7 @@ local info = wibox.widget({
 		{
 			layout = wibox.layout.fixed.horizontal,
 			fill_space = true,
-			spacing = 20,
+			spacing = 10,
 			{
 				widget = wibox.widget.textbox,
 				id = "icon",
@@ -19,7 +19,7 @@ local info = wibox.widget({
 			},
 			{
 				widget = wibox.container.background,
-				forced_width = 50,
+				forced_width = 40,
 				{
 					widget = wibox.widget.textbox,
 					id = "text",
@@ -27,20 +27,25 @@ local info = wibox.widget({
 				},
 			},
 			{
-				widget = wibox.widget.progressbar,
-				id = "progressbar",
-				max_value = 100,
-				forced_width = 400,
-				shape = helpers.rrect(5),
-				background_color = beautiful.background_alt,
-				color = beautiful.accent,
-				bar_shape = helpers.rrect(5),
+				{
+					widget = wibox.widget.progressbar,
+					id = "progressbar",
+					max_value = 100,
+					forced_width = 400,
+					shape = helpers.rrect(5),
+					background_color = beautiful.background_alt,
+					color = beautiful.accent,
+					bar_shape = helpers.rrect(5),
+				},
+				widget = wibox.container.margin,
+				top = 10,
+				bottom = 10,
 			},
 		},
 		layout = wibox.layout.fixed.horizontal,
 	},
 	widget = wibox.container.margin,
-	margins = 40,
+	margins = 30,
 })
 
 local osd = awful.popup({

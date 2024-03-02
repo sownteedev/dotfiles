@@ -1,6 +1,6 @@
 local overrides = require("custom.configs.overrides")
 
-local plugins = {
+return {
 	{
 		"github/copilot.vim",
 	},
@@ -32,5 +32,3 @@ local plugins = {
 		end,
 	},
 }
-
-return plugins
