@@ -85,7 +85,7 @@ local finalwidget = wibox.widget({
 			{
 				headphones,
 				nil,
-				{ prev, play, next, spacing = 15, layout = wibox.layout.fixed.horizontal },
+				{ prev, play, next, spacing = 10, layout = wibox.layout.fixed.horizontal },
 				layout = wibox.layout.align.horizontal,
 			},
 			widget = wibox.container.margin,

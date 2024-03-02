@@ -28,26 +28,26 @@ local function backup()
 	]])
 end
 
-local function awesome(entry)
+local function awesome(theme)
 	awful.spawn.easy_async_with_shell([[
-		sed -i "s/local colorscheme.*/local colorscheme = \"]] .. entry .. [[\"/" ~/.config/awesome/themes/theme.lua &&
+		sed -i "s/local colorscheme.*/local colorscheme = \"]] .. theme .. [[\"/" ~/.config/awesome/themes/theme.lua &&
 	]])
 end
 
-local function term(entry)
+local function term(theme)
 	awful.spawn.easy_async_with_shell([[
-		echo "import = [ '~/.config/alacritty/colors/]] .. entry .. [[.toml' ]" > ~/.config/alacritty/colors.toml &&
+		echo "import = [ '~/.config/alacritty/colors/]] .. theme .. [[.toml' ]" > ~/.config/alacritty/colors.toml &&
 	]])
 end
 
-local function discord(entry)
+local function discord(theme)
 	awful.spawn.easy_async_with_shell([[
-		cat ~/.config/BetterDiscord/data/stable/themes/]] .. entry .. [[.css > ~/.config/BetterDiscord/data/stable/custom.css &&
+		cat ~/.config/BetterDiscord/data/stable/themes/]] .. theme .. [[.css > ~/.config/BetterDiscord/data/stable/custom.css &&
 	]])
 end
 
-local function gtk(entry)
-	local color = require("themes.colors." .. entry)
+local function gtk(theme)
+	local color = require("themes.colors." .. theme)
 	awful.spawn.easy_async_with_shell([[
 		sed -i -e "s/background:.*/background:]] .. color.background .. [[/"\
 		       -e "s/background_alt:.*/background_alt:]] .. color.background_alt .. [[/"\
@@ -60,8 +60,8 @@ local function gtk(entry)
 	]])
 end
 
-local function firefox(entry)
-	local color = require("themes.colors." .. entry)
+local function firefox(theme)
+	local color = require("themes.colors." .. theme)
 	awful.spawn.easy_async_with_shell([[
 		sed -i -e "s/background: .*/background: ]] .. color.background .. [[ !important;/"\
 			   -e "s/background-color: .*/background-color: ]] .. color.background .. [[ !important;/"\
@@ -88,9 +88,9 @@ function applyTheme(theme)
 	awful.spawn.with_shell([[
 		spicetify config color_scheme ]] .. theme .. [[ && spicetify apply &&
 	]])
-	awful.spawn.with_shell("ls -1 /run/user/1000/ | grep nvim ", function(stdout)
+	awful.spawn.easy_async_with_shell("ls -1 /run/user/1000/ | grep nvim", function(stdout)
 		for line in stdout:gmatch("[^\n]+") do
-			awful.spawn.with_shell(
+			awful.spawn.easy_async_with_shell(
 				[[
 				nvim --server /run/user/1000/]]
 					.. line
@@ -99,8 +99,6 @@ function applyTheme(theme)
 					.. [[")<CR>']]
 			)
 		end
+		awful.spawn.easy_async_with_shell("awesome-client 'awesome.restart()'")
 	end)
-	awful.spawn.with_shell([[
-		awesome-client 'awesome.restart()' &&
-	]])
 end

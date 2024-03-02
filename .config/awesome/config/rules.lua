@@ -49,12 +49,8 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { screen = 1, tag = "3" },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "discord", "Telegram" } },
+		rule_any = { class = { "discord", "Telegram", "Spotify" } },
 		properties = { screen = 1, tag = "4" },
-	})
-	ruled.client.append_rule({
-		rule = { class = "Spotify" },
-		properties = { screen = 1, tag = "4", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
 		rule_any = { class = { "Thunar", "vlc", "libreoffice-impress", "libreoffice-calc", "libreoffice-writer" } },
