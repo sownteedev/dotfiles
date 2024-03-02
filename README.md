@@ -1,20 +1,6 @@
-<p align="center"><image width="900" height="60" src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=30&color=3c8893&pause=1000&random=false&width=900&lines=WELCOME+TO+SOWNTEE'S+DOTFILES+FOR+ARCH+AWESOMEWM">
+<p align="center"><image width="900" height="60" src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=30&color=3c8893&pause=1000&random=false&width=900&lines=WELCOME TO SOWNTEE'S DOTFILES ARCH AWESOMEWM 🌸">
 
-###### 🌸 INSTALL DOTFILES
-
-> **WARNING**: Script will initially reinstall all drivers. If you don't need it, you can skip it.(Perfect with Resolution 2560x1600)
-
-```
-git clone https://github.com/sownteedev/dotfiles.git --depth=1
-```
-
-```
-cd dotfiles && chmod +x install.sh
-```
-
-```
-./install.sh
-```
+> **NOTE**: Perfect with Resolution 2560x1600(16:10) 2K
 
 <br>
 
