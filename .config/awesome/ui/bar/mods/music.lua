@@ -77,7 +77,7 @@ local finalwidget = wibox.widget({
 				type = "linear",
 				from = { 0, 0 },
 				to = { 250, 0 },
-				stops = { { 0, beautiful.background .. "22" }, { 1, beautiful.background_alt .. "bb" } },
+				stops = { { 0, beautiful.background .. "00" }, { 1, beautiful.background .. "00" } },
 			},
 			widget = wibox.container.background,
 		},

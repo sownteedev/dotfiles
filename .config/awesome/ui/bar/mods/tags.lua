@@ -26,11 +26,6 @@ return function(s)
 		},
 		widget_template = {
 			{
-				{
-					markup = "",
-					shape = helpers.rrect(3),
-					widget = wibox.widget.textbox,
-				},
 				valign = "center",
 				id = "background_role",
 				widget = wibox.container.background,
@@ -47,7 +42,7 @@ return function(s)
 				})
 				self.update = function()
 					if tag.selected then
-						self.taganim:set(80)
+						self.taganim:set(100)
 					elseif #tag:clients() > 0 then
 						self.taganim:set(60)
 					else
@@ -70,8 +65,8 @@ return function(s)
 				layout = wibox.layout.fixed.horizontal,
 			},
 			widget = wibox.container.margin,
-			left = 15,
-			right = 15,
+			left = 20,
+			right = 20,
 		},
 		widget = wibox.container.background,
 		bg = beautiful.background_alt,
