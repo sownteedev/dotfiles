@@ -112,8 +112,6 @@ end)
 
 awful.widget.watch(string.format(GET_FORECAST_CMD, url1), 600, function(_, stdout, stderr)
 	local result = json.decode(stdout)
-	local out = {
-		namecountry = result[1].name .. ", " .. result[1].country,
-	}
+	local out = { namecountry = result[1].name .. ", " .. result[1].country }
 	awesome.emit_signal("signal::weather1", out)
 end)

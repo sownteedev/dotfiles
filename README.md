@@ -95,10 +95,17 @@
     exit
     reboot
 
-###### If GRUB not found Windows (For Dual Boot)
+## For Dual Boot
+
+#### If GRUB not found Windows
 
     sudo os-prober
     grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB --recheck
     grub-mkconfig -o /boot/grub/grub.cfg
+
+#### Access file Windows
+    
+    sudo mkdir /particion
+    sudo mount -t ntfs-3g -o ro /dev/nvme0n1p3 /particion
 
 </blockquote></details>
