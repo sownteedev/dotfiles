@@ -378,4 +378,5 @@ helpers.warm = function(c, f)
 	g = math.min(255, math.max(0, g))
 	return string.format("#%02X%02X%02X", r, g, b)
 end
+
 return helpers

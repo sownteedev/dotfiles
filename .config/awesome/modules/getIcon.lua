@@ -30,6 +30,18 @@ local custom = {
 		name = "neovide",
 		to = "neovim",
 	},
+	{
+		name = "libreoffice-writer",
+		to = "libreoffice-writer",
+	},
+	{
+		name = "libreoffice-calc",
+		to = "libreoffice-calc",
+	},
+	{
+		name = "libreoffice-impress",
+		to = "libreoffice-impress",
+	},
 }
 
 local function hasValue(str)

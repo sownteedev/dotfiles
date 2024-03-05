@@ -1,8 +1,8 @@
 live_config_reload = true
 
 [window.padding]
-x = 30
-y = 30
+x = 40
+y = 40
 
 [window]
 decorations = "full"
