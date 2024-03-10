@@ -38,14 +38,19 @@ local layouts = awful.widget.layoutbox({
 
 local widget = {
 	{
-		layouts,
-		margins = 15,
-		widget = wibox.container.margin,
+		{
+			layouts,
+			margins = 15,
+			widget = wibox.container.margin,
+		},
+		bg = beautiful.background_alt,
+		forced_height = 0,
+		shape = helpers.rrect(5),
+		widget = wibox.container.background,
 	},
-	bg = beautiful.background_alt,
-	forced_height = 0,
-	shape = helpers.rrect(5),
-	widget = wibox.container.background,
+	widget = wibox.container.margin,
+	top = 10,
+	bottom = 10,
 }
 
 return widget

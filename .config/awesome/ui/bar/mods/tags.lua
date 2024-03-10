@@ -29,7 +29,7 @@ return function(s)
 				valign = "center",
 				id = "background_role",
 				widget = wibox.container.background,
-				forced_height = 15,
+				forced_height = 12,
 			},
 			widget = wibox.container.place,
 			create_callback = function(self, tag)
@@ -61,16 +61,22 @@ return function(s)
 	local tags = wibox.widget({
 		{
 			{
-				taglist,
-				layout = wibox.layout.fixed.horizontal,
+				{
+					taglist,
+					layout = wibox.layout.fixed.horizontal,
+				},
+				widget = wibox.container.margin,
+				left = 20,
+				right = 20,
 			},
-			widget = wibox.container.margin,
-			left = 20,
-			right = 20,
+			forced_height = 10,
+			widget = wibox.container.background,
+			bg = beautiful.background_alt,
+			shape = helpers.rrect(5),
 		},
-		widget = wibox.container.background,
-		bg = beautiful.background_alt,
-		shape = helpers.rrect(5),
+		widget = wibox.container.margin,
+		top = 10,
+		bottom = 10,
 	})
 	return tags
 end

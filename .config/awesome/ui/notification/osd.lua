@@ -9,43 +9,39 @@ local animation = require("modules.animation")
 local info = wibox.widget({
 	{
 		{
-			layout = wibox.layout.fixed.horizontal,
-			fill_space = true,
-			spacing = 10,
+			widget = wibox.widget.textbox,
+			id = "icon",
+			font = beautiful.icon .. " 20",
+		},
+		{
+			widget = wibox.container.background,
+			forced_width = 40,
 			{
 				widget = wibox.widget.textbox,
-				id = "icon",
-				font = beautiful.icon .. " 20",
-			},
-			{
-				widget = wibox.container.background,
-				forced_width = 40,
-				{
-					widget = wibox.widget.textbox,
-					id = "text",
-					font = beautiful.sans .. " 15",
-				},
-			},
-			{
-				{
-					widget = wibox.widget.progressbar,
-					id = "progressbar",
-					max_value = 100,
-					forced_width = 400,
-					shape = helpers.rrect(5),
-					background_color = beautiful.background_alt,
-					color = beautiful.accent,
-					bar_shape = helpers.rrect(5),
-				},
-				widget = wibox.container.margin,
-				top = 10,
-				bottom = 10,
+				id = "text",
+				font = beautiful.sans .. " 15",
 			},
 		},
+		{
+			{
+				widget = wibox.widget.progressbar,
+				id = "progressbar",
+				max_value = 100,
+				forced_width = 350,
+				shape = helpers.rrect(5),
+				background_color = beautiful.background_alt,
+				color = beautiful.accent,
+				bar_shape = helpers.rrect(5),
+			},
+			widget = wibox.container.margin,
+			top = 10,
+			bottom = 10,
+		},
 		layout = wibox.layout.fixed.horizontal,
+		spacing = 10,
 	},
 	widget = wibox.container.margin,
-	margins = 30,
+	margins = 25,
 })
 
 local osd = awful.popup({
@@ -54,9 +50,9 @@ local osd = awful.popup({
 	bg = beautiful.background_dark,
 	border_width = beautiful.border_width,
 	border_color = beautiful.border_color_normal,
-	minimum_height = 100,
-	maximum_height = 100,
-	forced_width = 500,
+	minimum_height = 80,
+	maximum_height = 80,
+	forced_width = 0,
 	shape = helpers.rrect(5),
 	placement = function(d)
 		awful.placement.bottom(d, { honor_workarea = true, margins = beautiful.useless_gap * 2 })

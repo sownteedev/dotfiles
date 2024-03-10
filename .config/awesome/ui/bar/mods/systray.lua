@@ -26,8 +26,8 @@ local systray = wibox.widget({
 		valign = "center",
 	},
 	visible = false,
-	left = 10,
-	right = 8,
+	left = 5,
+	right = 5,
 	widget = wibox.container.margin,
 })
 
@@ -52,7 +52,8 @@ local widget = wibox.widget({
 		bg = beautiful.background_alt,
 		widget = wibox.container.background,
 	},
-	margins = 0,
 	widget = wibox.container.margin,
+	top = 10,
+	bottom = 10,
 })
 return widget

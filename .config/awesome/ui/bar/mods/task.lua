@@ -97,7 +97,7 @@ local M = {
 
 M.widget = wibox.widget({
 	layout = layout,
-	spacing = 10,
+	spacing = 5,
 })
 
 M.popupWidget = wibox.widget({
@@ -334,17 +334,30 @@ function M:genIcons()
 	for i, j in ipairs(self.metadata) do
 		if j.pinned == true or j.count > 0 then
 			local minimized = getMinimized(j.clients)
-			local bg = beautiful.background_alt
+			local bg = beautiful.background_dark
 			if client.focus then
 				if client.focus.class:lower() == j.class then
-					bg = beautiful.foreground .. "90"
+					bg = beautiful.foreground
 				elseif j.count > 0 then
-					bg = beautiful.foreground .. "50"
+					bg = beautiful.foreground .. "80"
 				end
 			elseif minimized > 0 then
-				bg = beautiful.foreground .. "50"
+				bg = beautiful.foreground .. "80"
 			end
 			local widget = wibox.widget({
+				{
+					{
+						widget = wibox.container.background,
+						forced_height = 5,
+						shape = helpers.rrect(50),
+						bg = bg,
+					},
+					widget = wibox.container.margin,
+					top = 70,
+					left = 27,
+					right = 27,
+					bottom = 5,
+				},
 				{
 					{
 						widget = wibox.widget.imagebox,
@@ -353,12 +366,11 @@ function M:genIcons()
 						forced_width = 60,
 						resize = true,
 					},
-					widget = wibox.container.margin,
-					margins = 1,
+					widget = wibox.container.place,
+					halign = "center",
+					valign = "center",
 				},
-				shape = helpers.rrect(15),
-				widget = wibox.container.background,
-				bg = bg,
+				layout = wibox.layout.stack,
 			})
 			widget:buttons(gears.table.join(
 				awful.button({}, 1, function()

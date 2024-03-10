@@ -40,7 +40,7 @@ end
 
 client.connect_signal("request::titlebars", function(c)
 	local top_titlebar = awful.titlebar(c, {
-		size = 60,
+		size = 50,
 	})
 
 	awful.titlebar.enable_tooltip = false

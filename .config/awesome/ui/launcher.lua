@@ -38,6 +38,7 @@ local createPowerButton = function(icon, color, command)
 		halign = "center",
 		buttons = {
 			awful.button({}, 1, function()
+				L:close()
 				awful.spawn.with_shell(command)
 			end),
 		},
@@ -82,7 +83,7 @@ local sidebar = wibox.widget({
 
 local prompt = wibox.widget({
 	{
-		image = helpers.cropSurface(4, gears.surface.load_uncached(beautiful.wallpaper)),
+		image = helpers.cropSurface(4.5, gears.surface.load_uncached(beautiful.wallpaper)),
 		opacity = 1,
 		forced_height = 120,
 		clip_shape = helpers.rrect(5),
@@ -112,11 +113,11 @@ local prompt = wibox.widget({
 				widget = wibox.container.margin,
 				margins = 20,
 			},
-			forced_width = Conf.entry_width - 50,
+			forced_width = Conf.entry_width - 200,
 			forced_height = 70,
-			shape = helpers.rrect(8),
+			shape = helpers.rrect(5),
 			widget = wibox.container.background,
-			bg = beautiful.background_dark .. "CC",
+			bg = beautiful.background_dark .. "DD",
 		},
 		widget = wibox.container.place,
 		halign = "center",
