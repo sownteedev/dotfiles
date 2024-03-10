@@ -73,9 +73,9 @@ theme.taglist_bg_focus = theme.accent
 theme.taglist_fg_focus = theme.foreground
 theme.taglist_bg_urgent = theme.red
 theme.taglist_fg_urgent = theme.foreground
-theme.taglist_bg_occupied = theme.green .. "70"
+theme.taglist_bg_occupied = theme.accent .. "60"
 theme.taglist_fg_occupied = theme.foreground
-theme.taglist_bg_empty = theme.foreground .. "33"
+theme.taglist_bg_empty = theme.foreground .. "20"
 theme.taglist_fg_empty = theme.foreground
 theme.taglist_disable_icon = true
 

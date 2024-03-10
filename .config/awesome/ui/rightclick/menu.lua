@@ -146,8 +146,8 @@ function menu.menu(widgets, width)
 		type = "menu",
 		visible = false,
 		ontop = true,
-		minimum_width = width or 270,
-		maximum_width = width or 270,
+		minimum_width = width or 260,
+		maximum_width = width or 260,
 		bg = beautiful.background_dark,
 		shape = helpers.rrect(5),
 		widget = wibox.layout.fixed.vertical,
@@ -206,7 +206,7 @@ function menu.sub_menu_button(args)
 
 	local icon = args.icon ~= nil
 			and wibox.widget({
-				font = args.icon.font .. " " .. args.icon_size,
+				font = beautiful.icon .. " " .. args.icon_size,
 				markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 				widget = wibox.widget.textbox,
 				halign = "start",
@@ -227,7 +227,7 @@ function menu.sub_menu_button(args)
 						halign = "start",
 					},
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 20,
+					spacing = 15,
 				},
 				nil,
 				{
@@ -239,10 +239,10 @@ function menu.sub_menu_button(args)
 			},
 			widget = wibox.container.margin,
 			left = 30,
-			right = 30,
+			right = 15,
 		},
 		bg = beautiful.background_dark,
-		forced_height = 60,
+		forced_height = 55,
 		widget = wibox.container.background,
 	})
 	widget:connect_signal("mouse::enter", function(self)
@@ -270,7 +270,7 @@ function menu.button(args)
 
 	if args.icon ~= nil then
 		icon = wibox.widget({
-			font = args.icon.font .. " " .. args.icon_size,
+			font = beautiful.icon .. " " .. args.icon_size,
 			markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 			widget = wibox.widget.textbox,
 			halign = "start",
@@ -295,7 +295,7 @@ function menu.button(args)
 				icon,
 				text_widget,
 				layout = wibox.layout.fixed.horizontal,
-				spacing = 20,
+				spacing = 15,
 			},
 			widget = wibox.container.margin,
 			left = 30,
@@ -303,7 +303,7 @@ function menu.button(args)
 			bottom = 15,
 		},
 		bg = beautiful.background_dark,
-		forced_height = 60,
+		forced_height = 55,
 		buttons = {
 			awful.button({}, 1, function()
 				args.on_press(menu, text_widget)
@@ -323,8 +323,8 @@ end
 function menu.separator()
 	return wibox.widget({
 		widget = wibox.container.margin,
-		top = 10,
-		bottom = 10,
+		top = 5,
+		bottom = 5,
 		left = 30,
 		right = 30,
 		{

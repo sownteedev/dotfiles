@@ -94,8 +94,8 @@ local finalwidget = wibox.widget({
 						nil,
 						{
 							id = "player",
-							font = beautiful.sans .. " 10",
-							markup = helpers.colorizeText("Playing On: unknown", beautiful.foreground),
+							font = beautiful.sans .. " 12",
+							markup = helpers.colorizeText("", beautiful.foreground),
 							widget = wibox.widget.textbox,
 						},
 						layout = wibox.layout.align.vertical,

@@ -7,16 +7,15 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local art = wibox.widget({
-	image = helpers.cropSurface(6.7, gears.surface.load_uncached(beautiful.songdefpicture)),
+	image = helpers.cropSurface(5.9, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.5,
-	forced_height = 60,
 	shape = helpers.rrect(5),
-	forced_width = 400,
+	forced_width = 350,
 	widget = wibox.widget.imagebox,
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	art.image = helpers.cropSurface(6.7, gears.surface.load_uncached(album_path))
+	art.image = helpers.cropSurface(5.9, gears.surface.load_uncached(album_path))
 end)
 
 local next = wibox.widget({
@@ -71,31 +70,36 @@ end)
 
 local finalwidget = wibox.widget({
 	{
-		art,
 		{
-			bg = {
-				type = "linear",
-				from = { 0, 0 },
-				to = { 250, 0 },
-				stops = { { 0, beautiful.background .. "00" }, { 1, beautiful.background .. "00" } },
-			},
-			widget = wibox.container.background,
-		},
-		{
+			art,
 			{
-				headphones,
-				nil,
-				{ prev, play, next, spacing = 10, layout = wibox.layout.fixed.horizontal },
-				layout = wibox.layout.align.horizontal,
+				bg = {
+					type = "linear",
+					from = { 0, 0 },
+					to = { 250, 0 },
+					stops = { { 0, beautiful.background .. "00" }, { 1, beautiful.background .. "00" } },
+				},
+				widget = wibox.container.background,
 			},
-			widget = wibox.container.margin,
-			left = 20,
-			right = 20,
+			{
+				{
+					headphones,
+					nil,
+					{ prev, play, next, spacing = 10, layout = wibox.layout.fixed.horizontal },
+					layout = wibox.layout.align.horizontal,
+				},
+				widget = wibox.container.margin,
+				left = 20,
+				right = 20,
+			},
+			layout = wibox.layout.stack,
 		},
-		layout = wibox.layout.stack,
+		widget = wibox.container.background,
+		shape = helpers.rrect(5),
 	},
-	widget = wibox.container.background,
-	shape = helpers.rrect(5),
+	widget = wibox.container.margin,
+	top = 10,
+	bottom = 10,
 })
 
 return finalwidget
