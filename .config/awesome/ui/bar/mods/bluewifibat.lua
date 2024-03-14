@@ -11,7 +11,6 @@ local bluetooth = wibox.widget({
 	valign = "center",
 	align = "center",
 })
-
 awesome.connect_signal("signal::bluetooth", function(value)
 	if value then
 		bluetooth.markup = helpers.colorizeText("󰂯", beautiful.blue)
@@ -27,7 +26,6 @@ local wifi = wibox.widget({
 	valign = "center",
 	align = "center",
 })
-
 awesome.connect_signal("signal::network", function(value)
 	if value then
 		wifi.markup = helpers.colorizeText(" ", beautiful.yellow)
@@ -75,7 +73,6 @@ local battery = wibox.widget({
 	widget = wibox.container.margin,
 	margin = 20,
 })
-
 awesome.connect_signal("signal::battery", function(value)
 	local b = battery:get_children_by_id("prog")[1]
 	b.value = value

@@ -9,8 +9,6 @@ M.mason = {
 		"clangd",
 		"clang-format",
 		"prettier",
-		"bash-language-server",
-		"shfmt",
 		"emmet-ls",
 		"eslint_d",
 		"eslint-lsp",

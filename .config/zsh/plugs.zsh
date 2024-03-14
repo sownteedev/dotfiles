@@ -21,8 +21,6 @@ use zsh-users/zsh-autosuggestions
 use hlissner/zsh-autopair
 load zdharma-continuum/history-search-multi-word
 
-bindkey '^e' "autosuggest-accept"
-
 unalias use snip ice load
 
 # vim:ft=zsh

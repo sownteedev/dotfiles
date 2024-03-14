@@ -6,7 +6,7 @@ local helpers = require("helpers")
 
 local createHandle = function()
 	return function(cr)
-		gears.shape.rounded_rect(cr, 30, 30, 15)
+		gears.shape.rounded_rect(cr, 20, 20, 15)
 	end
 end
 
@@ -28,7 +28,7 @@ local createSlider = function(icon, signal, command)
 	})
 
 	local slidIcon = wibox.widget({
-		font = beautiful.icon .. " 25",
+		font = beautiful.icon .. " 20",
 		markup = helpers.colorizeText(icon, beautiful.foreground),
 		widget = wibox.widget.textbox,
 	})
@@ -76,20 +76,15 @@ local createSlider = function(icon, signal, command)
 end
 
 local widget = wibox.widget({
-	{
-		createSlider("󰃝 ", "brightness", "brightnessctl s %d%%"),
-		createSlider(" ", "volume", "pamixer --set-volume %d"),
-		createSlider(
-			" ",
-			"micvalue",
-			"pactl set-source-volume alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__hw_sofhdadsp_6__source %d%%"
-		),
-		layout = wibox.layout.fixed.vertical,
-		spacing = 20,
-	},
-	widget = wibox.container.background,
-	shape = helpers.rrect(5),
-	bg = beautiful.background,
+	createSlider("󰃝 ", "brightness", "brightnessctl s %d%%"),
+	createSlider(" ", "volume", "pamixer --set-volume %d"),
+	createSlider(
+		" ",
+		"micvalue",
+		"pactl set-source-volume alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__hw_sofhdadsp_6__source %d%%"
+	),
+	layout = wibox.layout.fixed.vertical,
+	spacing = 20,
 })
 
 return widget

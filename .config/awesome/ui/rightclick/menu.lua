@@ -146,8 +146,8 @@ function menu.menu(widgets, width)
 		type = "menu",
 		visible = false,
 		ontop = true,
-		minimum_width = width or 260,
-		maximum_width = width or 260,
+		minimum_width = width or 230,
+		maximum_width = width or 230,
 		bg = beautiful.background_dark,
 		shape = helpers.rrect(5),
 		widget = wibox.layout.fixed.vertical,
@@ -199,14 +199,12 @@ function menu.sub_menu_button(args)
 	args = args or {}
 
 	args.icon = args.icon or nil
-	args.icon_size = args.icon_size or 20
 	args.text = args.text or ""
-	args.text_size = args.text_size or 10
 	args.sub_menu = args.sub_menu or nil
 
 	local icon = args.icon ~= nil
 			and wibox.widget({
-				font = beautiful.icon .. " " .. args.icon_size,
+				font = beautiful.icon .. " 15",
 				markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 				widget = wibox.widget.textbox,
 				halign = "start",
@@ -221,7 +219,7 @@ function menu.sub_menu_button(args)
 				{
 					icon,
 					{
-						font = beautiful.sans .. " 15",
+						font = beautiful.sans .. " 13",
 						markup = args.text,
 						widget = wibox.widget.textbox,
 						halign = "start",
@@ -231,7 +229,7 @@ function menu.sub_menu_button(args)
 				},
 				nil,
 				{
-					font = beautiful.icon .. " 15",
+					font = beautiful.icon .. " 13",
 					markup = "󰅂",
 					widget = wibox.widget.textbox,
 					halign = "left",
@@ -242,7 +240,7 @@ function menu.sub_menu_button(args)
 			right = 15,
 		},
 		bg = beautiful.background_dark,
-		forced_height = 55,
+		forced_height = 50,
 		widget = wibox.container.background,
 	})
 	widget:connect_signal("mouse::enter", function(self)
@@ -260,17 +258,15 @@ function menu.button(args)
 	args = args or {}
 
 	args.icon = args.icon or nil
-	args.icon_size = args.icon_size or 20
 	args.image = args.image
 	args.text = args.text or ""
-	args.text_size = args.text_size or 10
 	args.on_press = args.on_press or nil
 
 	local icon = nil
 
 	if args.icon ~= nil then
 		icon = wibox.widget({
-			font = beautiful.icon .. " " .. args.icon_size,
+			font = beautiful.icon .. " 15",
 			markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 			widget = wibox.widget.textbox,
 			halign = "start",
@@ -283,7 +279,7 @@ function menu.button(args)
 	end
 
 	local text_widget = wibox.widget({
-		font = beautiful.sans .. " 15",
+		font = beautiful.sans .. " 13",
 		markup = args.text,
 		widget = wibox.widget.textbox,
 		halign = "start",
@@ -303,7 +299,7 @@ function menu.button(args)
 			bottom = 15,
 		},
 		bg = beautiful.background_dark,
-		forced_height = 55,
+		forced_height = 50,
 		buttons = {
 			awful.button({}, 1, function()
 				args.on_press(menu, text_widget)

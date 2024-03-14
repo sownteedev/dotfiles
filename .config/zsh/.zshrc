@@ -4,10 +4,10 @@ while read file
 do 
   source "$HOME/.config/zsh/$file.zsh"
 done <<-EOF
+plugs
 theme
 alias
 opts
-plugs
 prompt
 EOF
 

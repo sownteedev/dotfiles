@@ -12,8 +12,8 @@ awful.screen.connect_for_each_screen(function(s)
 	local notify = wibox({
 		shape = helpers.rrect(5),
 		screen = s,
-		width = beautiful.width / 3.5,
-		height = beautiful.height / 1.3,
+		width = beautiful.width / 4,
+		height = beautiful.height / 1.33,
 		bg = beautiful.background_dark,
 		ontop = true,
 		visible = false,
@@ -43,7 +43,7 @@ awful.screen.connect_for_each_screen(function(s)
 	end
 
 	local clearButton = wibox.widget({
-		font = beautiful.icon .. " 20",
+		font = beautiful.icon .. " 15",
 		markup = helpers.colorizeText(" ", beautiful.red),
 		widget = wibox.widget.textbox,
 		valign = "center",

@@ -105,7 +105,7 @@
 
 #### Access file Windows
     
-    sudo mkdir /particion
-    sudo mount -t ntfs-3g -o ro /dev/nvme0n1p3 /particion
+    mkdir Windows
+    sudo mount -t ntfs-3g -o ro /dev/nvme0n1p3 $HOME/Windows
 
 </blockquote></details>

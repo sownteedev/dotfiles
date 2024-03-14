@@ -10,7 +10,7 @@ local L = {}
 local Conf = {
 	rows = 8,
 	entry_height = 100,
-	entry_width = 500,
+	entry_width = 450,
 	popup_margins = 15,
 }
 
@@ -25,7 +25,7 @@ local createPowerButton = function(icon, color, command)
 					widget = wibox.widget.textbox,
 				},
 				widget = wibox.container.margin,
-				left = 28,
+				left = 30,
 				right = 15,
 				top = 20,
 				bottom = 20,

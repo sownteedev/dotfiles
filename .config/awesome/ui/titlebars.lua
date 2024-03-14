@@ -3,61 +3,80 @@ local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local helpers = require("helpers")
-local animation = require("modules.animation")
 local getIcon = require("modules.getIcon")
-
-local create_button = function(color, func)
-	local widget = wibox.widget({
-		widget = wibox.container.background,
-		forced_height = 10,
-		shape = helpers.rrect(3),
-		bg = color,
-		buttons = {
-			awful.button({}, 1, function()
-				func()
-			end),
-		},
-	})
-
-	local widget_anim = animation:new({
-		duration = 0.3,
-		easing = animation.easing.linear,
-		subscribed = function(h)
-			widget.forced_width = h
-		end,
-	})
-	widget_anim:set(50)
-
-	widget:connect_signal("mouse::enter", function()
-		widget_anim:set(100)
-	end)
-	widget:connect_signal("mouse::leave", function()
-		widget_anim:set(50)
-	end)
-
-	return widget
-end
 
 client.connect_signal("request::titlebars", function(c)
 	local top_titlebar = awful.titlebar(c, {
 		size = 50,
 	})
 
+	local close = wibox.widget({
+		font = beautiful.icon .. " 15",
+		markup = helpers.colorizeText("󰅙 ", beautiful.red),
+		widget = wibox.widget.textbox,
+		valign = "center",
+		align = "center",
+		buttons = {
+			awful.button({}, 1, function()
+				c:kill()
+			end),
+		},
+	})
+	local minimize = wibox.widget({
+		font = beautiful.icon .. " 15",
+		markup = helpers.colorizeText("󰍶 ", beautiful.yellow),
+		widget = wibox.widget.textbox,
+		valign = "center",
+		align = "center",
+		buttons = {
+			awful.button({}, 1, function()
+				gears.timer.delayed_call(function()
+					c.minimized = not c.minimized
+				end)
+			end),
+		},
+	})
+	local maximize = wibox.widget({
+		font = beautiful.icon .. " 15",
+		markup = helpers.colorizeText("󰿣 ", beautiful.green),
+		widget = wibox.widget.textbox,
+		valign = "center",
+		align = "center",
+		buttons = {
+			awful.button({}, 1, function()
+				c.maximized = not c.maximized
+			end),
+		},
+	})
+	local function update_button_color()
+		if client.focus ~= c then
+			close.markup = helpers.colorizeText("󰅙 ", beautiful.background)
+			minimize.markup = helpers.colorizeText("󰍶 ", beautiful.background)
+			maximize.markup = helpers.colorizeText("󰿣 ", beautiful.background)
+		else
+			close.markup = helpers.colorizeText("󰅙 ", beautiful.red)
+			minimize.markup = helpers.colorizeText("󰍶 ", beautiful.yellow)
+			maximize.markup = helpers.colorizeText("󰿣 ", beautiful.green)
+		end
+	end
+
+	c:connect_signal("focus", update_button_color)
+	c:connect_signal("unfocus", update_button_color)
+
 	awful.titlebar.enable_tooltip = false
 
-	local minimize = create_button(beautiful.yellow, function()
-		gears.timer.delayed_call(function()
-			c.minimized = not c.minimized
+	local space = gears.table.join(
+		awful.button({}, 1, function()
+			client.focus = c
+			c:raise()
+			awful.mouse.client.move(c)
+		end),
+		awful.button({}, 3, function()
+			client.focus = c
+			c:raise()
+			awful.mouse.client.resize(c)
 		end)
-	end)
-
-	local maximize = create_button(beautiful.green, function()
-		c.maximized = not c.maximized
-	end)
-
-	local close = create_button(beautiful.red, function()
-		c:kill()
-	end)
+	)
 
 	local icon = wibox.widget({
 		{
@@ -74,33 +93,6 @@ client.connect_signal("request::titlebars", function(c)
 		widget = wibox.container.margin,
 	})
 
-	local function update_button_color()
-		if client.focus == c then
-			minimize.bg = beautiful.yellow
-			maximize.bg = beautiful.green
-			close.bg = beautiful.red
-		else
-			minimize.bg = beautiful.background
-			maximize.bg = beautiful.background
-			close.bg = beautiful.background
-		end
-	end
-	c:connect_signal("focus", update_button_color)
-	c:connect_signal("unfocus", update_button_color)
-
-	local buttons = gears.table.join(
-		awful.button({}, 1, function()
-			client.focus = c
-			c:raise()
-			awful.mouse.client.move(c)
-		end),
-		awful.button({}, 3, function()
-			client.focus = c
-			c:raise()
-			awful.mouse.client.resize(c)
-		end)
-	)
-
 	top_titlebar.widget = {
 		layout = wibox.layout.align.horizontal,
 		{
@@ -110,7 +102,7 @@ client.connect_signal("request::titlebars", function(c)
 				left = 50,
 				{
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 15,
+					spacing = 10,
 					close,
 					maximize,
 					minimize,
@@ -119,7 +111,7 @@ client.connect_signal("request::titlebars", function(c)
 		},
 		{
 			widget = wibox.container.background,
-			buttons = buttons,
+			buttons = space,
 		},
 		{
 			icon,
