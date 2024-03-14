@@ -103,7 +103,7 @@ end
 local promptbox = wibox({
 	width = beautiful.width,
 	height = beautiful.height,
-	bg = beautiful.background_alt .. "00",
+	bg = beautiful.lighter .. "00",
 	ontop = true,
 	shape = helpers.rrect(10),
 	visible = false,
@@ -170,7 +170,7 @@ local function grab()
 				header:get_children_by_id("arc")[1].start_angle = getRandom()
 				input = input:sub(1, -2)
 				if #input == 0 then
-					header:get_children_by_id("arc")[1].colors = { beautiful.violet }
+					header:get_children_by_id("arc")[1].colors = { beautiful.red }
 					header:get_children_by_id("arc")[1].value = 100
 				end
 			end
@@ -295,7 +295,7 @@ promptbox:setup({
 							right = 10,
 						},
 						widget = wibox.container.background,
-						bg = beautiful.background_alt .. "CC",
+						bg = beautiful.lighter .. "CC",
 						shape = helpers.rrect(5),
 					},
 					layout = wibox.layout.fixed.horizontal,

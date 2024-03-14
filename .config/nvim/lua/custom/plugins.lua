@@ -23,14 +23,14 @@ return {
 			require("custom.configs.conform")
 		end,
 	},
-	{
-		"Exafunction/codeium.nvim",
-		lazy = true,
-		event = "InsertEnter",
-		config = function()
-			require("codeium").setup({})
-		end,
-	},
+	-- {
+	-- 	"Exafunction/codeium.nvim",
+	-- 	lazy = true,
+	-- 	event = "InsertEnter",
+	-- 	config = function()
+	-- 		require("codeium").setup({})
+	-- 	end,
+	-- },
 	{
 		"iamcco/markdown-preview.nvim",
 		lazy = true,

@@ -1,18 +1,13 @@
-local yoru = {}
+return {
+	foreground = "#edeff0",
+	background = "#0c0e0f",
+	darker = "#0a0b0c",
+	lighter = "#141617",
 
-yoru.background = "#0c0e0f"
-yoru.background_dark = "#0a0b0c"
-yoru.background_alt = "#141617"
-yoru.foreground = "#edeff0"
+	red = "#df5b61",
+	green = "#78b892",
+	blue = "#6791c9",
+	yellow = "#ecd28b",
 
-yoru.red = "#df5b61"
-yoru.green = "#78b892"
-yoru.blue = "#6791c9"
-yoru.yellow = "#ecd28b"
-yoru.orange = "#e89982"
-yoru.violet = "#c49ec4"
-yoru.accent = "#a9b1d6"
-
-yoru.wallpaper = "~/.walls/moreroses.jpg"
-
-return yoru
+	wallpaper = "~/.walls/moreroses.jpg",
+}

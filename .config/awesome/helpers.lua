@@ -194,13 +194,12 @@ end
 
 function helpers.randomColor()
 	local accents = {
-		beautiful.violet,
+		helpers.mix(beautiful.red, beautiful.yellow, 0.5),
+		helpers.mix(beautiful.red, beautiful.blue, 0.5),
 		beautiful.yellow,
 		beautiful.green,
 		beautiful.red,
 		beautiful.blue,
-		beautiful.orange,
-		beautiful.accent,
 	}
 	local i = math.random(1, #accents)
 	return accents[i]

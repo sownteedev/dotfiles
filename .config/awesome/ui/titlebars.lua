@@ -96,17 +96,14 @@ client.connect_signal("request::titlebars", function(c)
 	top_titlebar.widget = {
 		layout = wibox.layout.align.horizontal,
 		{
-			widget = wibox.container.place,
+			widget = wibox.container.margin,
+			left = 50,
 			{
-				widget = wibox.container.margin,
-				left = 50,
-				{
-					layout = wibox.layout.fixed.horizontal,
-					spacing = 10,
-					close,
-					maximize,
-					minimize,
-				},
+				layout = wibox.layout.fixed.horizontal,
+				spacing = 10,
+				close,
+				maximize,
+				minimize,
 			},
 		},
 		{

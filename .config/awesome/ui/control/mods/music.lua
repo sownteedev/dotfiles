@@ -8,7 +8,7 @@ local playerctl = pctl.lib()
 
 local art = wibox.widget({
 	image = helpers.cropSurface(1.95, gears.surface.load_uncached(beautiful.songdefpicture)),
-	opacity = 0.3,
+	opacity = 0.5,
 	resize = true,
 	clip_shape = helpers.rrect(5),
 	widget = wibox.widget.imagebox,
@@ -140,7 +140,7 @@ local finalwidget = wibox.widget({
 	},
 	forced_height = 300,
 	widget = wibox.container.background,
-	bg = beautiful.background_dark,
+	bg = beautiful.darker,
 	shape = helpers.rrect(5),
 })
 

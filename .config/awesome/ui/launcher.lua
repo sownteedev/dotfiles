@@ -85,7 +85,7 @@ local prompt = wibox.widget({
 	{
 		image = helpers.cropSurface(4.5, gears.surface.load_uncached(beautiful.wallpaper)),
 		opacity = 1,
-		forced_height = 120,
+		forced_height = 100,
 		clip_shape = helpers.rrect(5),
 		forced_width = Conf.entry_height,
 		widget = wibox.widget.imagebox,
@@ -111,13 +111,13 @@ local prompt = wibox.widget({
 					layout = wibox.layout.stack,
 				},
 				widget = wibox.container.margin,
-				margins = 20,
+				left = 20,
 			},
 			forced_width = Conf.entry_width - 200,
-			forced_height = 70,
+			forced_height = 60,
 			shape = helpers.rrect(5),
 			widget = wibox.container.background,
-			bg = beautiful.background_dark .. "DD",
+			bg = beautiful.darker .. "50",
 		},
 		widget = wibox.container.place,
 		halign = "center",
@@ -162,7 +162,7 @@ local main_widget = wibox.widget({
 })
 
 local popup_widget = awful.popup({
-	bg = beautiful.background_dark,
+	bg = beautiful.darker,
 	border_width = beautiful.border_width,
 	border_color = beautiful.border_color_normal,
 	ontop = true,
@@ -279,6 +279,8 @@ local function filter(input)
 					{
 						image = entry.icon,
 						clip_shape = helpers.rrect(10),
+						forced_height = 70,
+						forced_width = 70,
 						valign = "center",
 						widget = wibox.widget.imagebox,
 					},
@@ -289,9 +291,11 @@ local function filter(input)
 						font = beautiful.sans .. " 15",
 					},
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 30,
+					spacing = 20,
 				},
-				margins = 10,
+				left = 30,
+				top = 10,
+				bottom = 10,
 				widget = wibox.container.margin,
 			},
 		})

@@ -71,7 +71,7 @@ return function(s)
 			},
 			forced_height = 10,
 			widget = wibox.container.background,
-			bg = beautiful.background_alt,
+			bg = beautiful.lighter,
 			shape = helpers.rrect(5),
 		},
 		widget = wibox.container.margin,

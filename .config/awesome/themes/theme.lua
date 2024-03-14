@@ -17,8 +17,8 @@ theme.useless_gap = 10
 -- colors --
 local colors = require("themes.colors." .. colorscheme)
 theme.background = colors.background
-theme.background_dark = colors.background_dark
-theme.background_alt = colors.background_alt
+theme.darker = colors.darker
+theme.lighter = colors.lighter
 theme.foreground = colors.foreground
 
 theme.red = colors.red
@@ -26,8 +26,6 @@ theme.green = colors.green
 theme.blue = colors.blue
 theme.yellow = colors.yellow
 theme.orange = colors.orange
-theme.violet = colors.violet
-theme.accent = colors.accent
 
 theme.wallpaper = colors.wallpaper
 
@@ -56,7 +54,7 @@ switcher.settings.client_opacity_value_selected = 1
 -- borders --
 theme.border_width = 0
 theme.border_color_normal = theme.background_urgent
-theme.border_color_active = theme.accent
+theme.border_color_active = theme.foreground
 
 -- default vars --
 theme.bg_normal = theme.background
@@ -64,23 +62,23 @@ theme.fg_normal = theme.foreground
 
 -- tasklist --
 theme.tasklist_bg_normal = theme.background
-theme.tasklist_bg_focus = theme.background_alt
+theme.tasklist_bg_focus = theme.lighter
 theme.tasklist_bg_minimize = theme.background_urgent
 
 -- taglist --
 theme.taglist_bg = theme.background .. "00"
-theme.taglist_bg_focus = theme.accent
+theme.taglist_bg_focus = theme.foreground .. "DD"
 theme.taglist_fg_focus = theme.foreground
 theme.taglist_bg_urgent = theme.red
 theme.taglist_fg_urgent = theme.foreground
-theme.taglist_bg_occupied = theme.accent .. "60"
+theme.taglist_bg_occupied = theme.foreground .. "60"
 theme.taglist_fg_occupied = theme.foreground
 theme.taglist_bg_empty = theme.foreground .. "20"
 theme.taglist_fg_empty = theme.foreground
 theme.taglist_disable_icon = true
 
 -- Tray --
-theme.bg_systray = theme.background_alt
+theme.bg_systray = theme.lighter
 theme.systray_icon_spacing = 10
 
 -- tooltips --
@@ -89,8 +87,8 @@ theme.tooltip_fg = theme.foreground
 theme.tooltip_border_width = theme.border_width
 
 -- Titlebar --
-theme.titlebar_bg_normal = theme.background_dark
-theme.titlebar_bg_focus = theme.background_dark
+theme.titlebar_bg_normal = theme.darker
+theme.titlebar_bg_focus = theme.darker
 
 -- Icon layout --
 theme.layout_floating = gears.color.recolor_image(themes_path .. "assets/floating.png", theme.foreground)
