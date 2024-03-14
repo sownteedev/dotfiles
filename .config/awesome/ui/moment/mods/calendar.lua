@@ -47,7 +47,7 @@ local currwidget = function(day)
 end
 
 local title = wibox.widget({
-	font = beautiful.sans .. " Bold 25",
+	font = beautiful.sans .. " Bold 20",
 	widget = wibox.widget.textbox,
 	halign = "center",
 })
@@ -55,8 +55,8 @@ local title = wibox.widget({
 local theGrid = wibox.widget({
 	forced_num_rows = 7,
 	forced_num_cols = 7,
-	vertical_spacing = 30,
-	horizontal_spacing = 30,
+	vertical_spacing = 25,
+	horizontal_spacing = 25,
 	min_cols_size = 40,
 	min_rows_size = 40,
 	homogenous = true,
@@ -178,7 +178,7 @@ return function()
 				layout = wibox.layout.fixed.vertical,
 			},
 			widget = wibox.container.margin,
-			margins = 15,
+			margins = 30,
 		},
 		shape = helpers.rrect(10),
 		widget = wibox.container.background,

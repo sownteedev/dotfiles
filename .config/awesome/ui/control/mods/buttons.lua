@@ -11,27 +11,27 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 					{
 						markup = icon,
 						id = "icon",
-						font = beautiful.icon .. " 30",
+						font = beautiful.icon .. " 25",
 						widget = wibox.widget.textbox,
 					},
 					{
 						{
 							markup = name,
 							id = "name",
-							font = beautiful.sans .. " 20",
+							font = beautiful.sans .. " 15",
 							widget = wibox.widget.textbox,
 						},
 						{
 							markup = labelconnected,
 							id = "label",
-							font = beautiful.sans .. " 12",
+							font = beautiful.sans .. " 10",
 							widget = wibox.widget.textbox,
 						},
 						layout = wibox.layout.fixed.vertical,
 						spacing = 10,
 					},
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 20,
+					spacing = 15,
 				},
 				nil,
 				{

@@ -7,6 +7,8 @@ local ruled = require("ruled")
 local menubar = require("menubar")
 local gears = require("gears")
 local animation = require("modules.animation")
+local getIcon = require("modules.getIcon")
+
 require(... .. ".osd")
 
 naughty.connect_signal("request::icon", function(n, context, hints)
@@ -132,10 +134,9 @@ naughty.connect_signal("request::display", function(n)
 		widget = wibox.widget.textbox,
 	})
 
-	local time = os.date("%H:%M:%S")
 	local time_n = wibox.widget({
 		{
-			markup = helpers.colorizeText(time, beautiful.foreground .. "BF"),
+			markup = helpers.colorizeText(os.date("%H:%M:%S"), beautiful.foreground .. "BF"),
 			font = beautiful.sans .. " 15",
 			align = "right",
 			valign = "center",

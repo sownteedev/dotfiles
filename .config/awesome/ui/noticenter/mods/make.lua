@@ -5,8 +5,6 @@ local awful = require("awful")
 local wibox = require("wibox")
 
 return function(icon, n)
-	local time = os.date("%H:%M:%S")
-
 	local icon_widget = wibox.widget({
 		widget = wibox.container.constraint,
 		{
@@ -35,7 +33,7 @@ return function(icon, n)
 
 	local time_widget = wibox.widget({
 		widget = wibox.widget.textbox,
-		text = time,
+		text = os.date("%H:%M:%S"),
 		align = "right",
 	})
 
@@ -43,7 +41,7 @@ return function(icon, n)
 		markup = n.message,
 		align = "left",
 		forced_width = 165,
-		font = beautiful.sans .. " 15",
+		font = beautiful.sans .. " 12",
 		widget = wibox.widget.textbox,
 	})
 
@@ -60,19 +58,16 @@ return function(icon, n)
 					widget = wibox.container.margin,
 					left = 40,
 					{
-						layout = wibox.layout.align.vertical,
 						{
-							layout = wibox.layout.fixed.vertical,
-							expand = "none",
-							spacing = 40,
-							{
-								layout = wibox.layout.align.horizontal,
-								title_widget,
-								nil,
-								time_widget,
-							},
-							text_notif,
+							layout = wibox.layout.align.horizontal,
+							title_widget,
+							nil,
+							time_widget,
 						},
+						text_notif,
+						layout = wibox.layout.fixed.vertical,
+						expand = "none",
+						spacing = 40,
 					},
 				},
 			},
