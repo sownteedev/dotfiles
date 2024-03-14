@@ -51,7 +51,7 @@ local createSlider = function(icon, signal, command)
 						widget = wibox.container.background,
 						forced_height = 2,
 						shape = helpers.rrect(10),
-						bg = beautiful.background_alt,
+						bg = beautiful.lighter,
 					},
 					widget = wibox.container.place,
 					content_fill_horizontal = true,

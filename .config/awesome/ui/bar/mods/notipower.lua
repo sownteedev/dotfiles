@@ -10,7 +10,7 @@ local notipower = wibox.widget({
 				{
 					align = "center",
 					font = beautiful.icon .. " 20",
-					markup = helpers.colorizeText("󰂜 ", beautiful.accent),
+					markup = helpers.colorizeText("󰂜 ", beautiful.green),
 					widget = wibox.widget.textbox,
 					buttons = {
 						awful.button({}, 1, function()
@@ -38,7 +38,7 @@ local notipower = wibox.widget({
 		},
 		widget = wibox.container.background,
 		shape = helpers.rrect(5),
-		bg = beautiful.background_alt,
+		bg = beautiful.lighter,
 	},
 	widget = wibox.container.margin,
 	top = 10,

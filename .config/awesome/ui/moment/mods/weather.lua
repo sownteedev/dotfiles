@@ -32,13 +32,14 @@ local dayWeather = function()
 		{
 			id = "day",
 			halign = "center",
+			markup = "",
 			widget = wibox.widget.textbox,
 			font = beautiful.sans .. " 15",
 		},
 		{
 			id = "icon",
 			resize = true,
-			opacity = 0.6,
+			opacity = 1,
 			halign = "center",
 			forced_height = 50,
 			forced_width = 50,
@@ -47,31 +48,30 @@ local dayWeather = function()
 		{
 			{
 				{
-					{
-						id = "max",
-						halign = "center",
-						widget = wibox.widget.textbox,
-						font = beautiful.sans .. " 10",
-					},
-					{
-						halign = "center",
-						markup = helpers.colorizeText("/", beautiful.blue),
-						widget = wibox.widget.textbox,
-						font = beautiful.sans .. " 10",
-					},
-					{
-						id = "min",
-						halign = "center",
-						widget = wibox.widget.textbox,
-						font = beautiful.sans .. " 10",
-					},
-					spacing = 8,
-					layout = wibox.layout.fixed.horizontal,
+					id = "max",
+					markup = "",
+					halign = "center",
+					widget = wibox.widget.textbox,
+					font = beautiful.sans .. " 10",
 				},
-				widget = wibox.container.place,
-				halign = "center",
+				{
+					halign = "center",
+					markup = helpers.colorizeText("/", beautiful.blue),
+					widget = wibox.widget.textbox,
+					font = beautiful.sans .. " 10",
+				},
+				{
+					id = "min",
+					markup = "",
+					halign = "center",
+					widget = wibox.widget.textbox,
+					font = beautiful.sans .. " 10",
+				},
+				spacing = 8,
+				layout = wibox.layout.fixed.horizontal,
 			},
-			widget = wibox.container.margin,
+			widget = wibox.container.place,
+			halign = "center",
 		},
 		spacing = 10,
 		forced_width = 80,
@@ -80,14 +80,14 @@ local dayWeather = function()
 
 	widget.update = function(out, i)
 		local day = out.daily[i]
-		widget:get_children_by_id("icon")[1].image = icon_dir .. icon_map[day.weather[1].icon] .. ".svg"
-		widget:get_children_by_id("day")[1].text = os.date("%a", tonumber(day.dt))
+		helpers.gc(widget, "icon").image = icon_dir .. icon_map[day.weather[1].icon] .. ".svg"
+		helpers.gc(widget, "day").markup = helpers.colorizeText(os.date("%a", tonumber(day.dt)), "#ffffff")
 		local getTemp = function(temp)
 			local sp = helpers.split(temp, ".")[1]
 			return sp
 		end
-		widget:get_children_by_id("min")[1].text = getTemp(day.temp.night)
-		widget:get_children_by_id("max")[1].text = getTemp(day.temp.day)
+		helpers.gc(widget, "min").markup = helpers.colorizeText(getTemp(day.temp.night), "#ffffff")
+		helpers.gc(widget, "max").markup = helpers.colorizeText(getTemp(day.temp.day), "#ffffff")
 	end
 	return widget
 end
@@ -114,19 +114,9 @@ local widget = wibox.widget({
 		),
 		widget = wibox.widget.imagebox,
 		clip_shape = helpers.rrect(5),
-		opacity = 0.9,
+		opacity = 1,
 		resize = true,
 		horizontal_fit_policy = "fit",
-	},
-	{
-		bg = {
-			type = "linear",
-			from = { 0, 0 },
-			to = { 250, 0 },
-			stops = { { 0, beautiful.background .. "50" }, { 1, beautiful.background .. "aa" } },
-		},
-		shape = helpers.rrect(5),
-		widget = wibox.container.background,
 	},
 	{
 		{
@@ -142,7 +132,7 @@ local widget = wibox.widget({
 					{
 						id = "icon",
 						image = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
-						opacity = 0.9,
+						opacity = 1,
 						clip_shape = helpers.rrect(4),
 						forced_height = 80,
 						forced_width = 80,
@@ -214,17 +204,17 @@ local widget = wibox.widget({
 awesome.connect_signal("signal::weather", function(out)
 	helpers.gc(widget, "image").image = helpers.cropSurface(1, gears.surface.load_uncached(out.thumb))
 	helpers.gc(widget, "icon").image = out.image
-	helpers.gc(widget, "temp").markup = out.temp .. "°C"
-	helpers.gc(widget, "desc").markup = out.desc
-	helpers.gc(widget, "humid").markup = "Humidity: " .. out.humidity .. "%"
-	helpers.gc(widget, "fl").markup = "Feels Like " .. out.temp .. "°C"
+	helpers.gc(widget, "temp").markup = helpers.colorizeText(out.temp .. "°C", "#ffffff")
+	helpers.gc(widget, "desc").markup = helpers.colorizeText(out.desc, "#ffffff")
+	helpers.gc(widget, "humid").markup = helpers.colorizeText("Humidity: " .. out.humidity .. "%", "#ffffff")
+	helpers.gc(widget, "fl").markup = helpers.colorizeText("Feels Like " .. out.temp .. "°C", "#ffffff")
 	for i, j in ipairs(daylist) do
 		j.update(out, i)
 	end
 end)
 
 awesome.connect_signal("signal::weather1", function(out)
-	helpers.gc(widget, "city").markup = out.namecountry
+	helpers.gc(widget, "city").markup = helpers.colorizeText(out.namecountry, "#ffffff")
 end)
 
 return widget

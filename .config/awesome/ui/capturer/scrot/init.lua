@@ -85,7 +85,7 @@ awful.screen.connect_for_each_screen(function(s)
 		width = 450,
 		height = 240,
 		shape = helpers.rrect(8),
-		bg = beautiful.background_dark,
+		bg = beautiful.darker,
 		ontop = true,
 		visible = false,
 	})
@@ -151,7 +151,7 @@ awful.screen.connect_for_each_screen(function(s)
 					margins = 15,
 				},
 				widget = wibox.container.background,
-				bg = beautiful.background_alt,
+				bg = beautiful.lighter,
 			},
 			{
 				fullscreen,

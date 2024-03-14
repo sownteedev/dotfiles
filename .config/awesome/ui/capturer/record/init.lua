@@ -14,7 +14,7 @@ end
 local rec_mic = function(fps, file_name)
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
-		"sleep 0.25 && ffmpeg -y -f x11grab "
+		"sleep 0.5 && ffmpeg -y -f x11grab "
 			.. "-r %s -i %s -f pulse -i 59 -c:v libx264 -qp 0 -profile:v main "
 			.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
 			.. "-c:a aac -b:a 64k -b:v 500k %s",
@@ -97,7 +97,7 @@ awful.screen.connect_for_each_screen(function(s)
 		width = 450,
 		height = 240,
 		shape = helpers.rrect(5),
-		bg = beautiful.background_dark,
+		bg = beautiful.darker,
 		ontop = true,
 		visible = false,
 	})
@@ -158,7 +158,7 @@ awful.screen.connect_for_each_screen(function(s)
 					margins = 15,
 				},
 				widget = wibox.container.background,
-				bg = beautiful.background_alt,
+				bg = beautiful.lighter,
 			},
 			{
 				recaudio,

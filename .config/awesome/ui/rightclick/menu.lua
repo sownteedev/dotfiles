@@ -148,7 +148,7 @@ function menu.menu(widgets, width)
 		ontop = true,
 		minimum_width = width or 230,
 		maximum_width = width or 230,
-		bg = beautiful.background_dark,
+		bg = beautiful.darker,
 		shape = helpers.rrect(5),
 		widget = wibox.layout.fixed.vertical,
 	})
@@ -239,7 +239,7 @@ function menu.sub_menu_button(args)
 			left = 30,
 			right = 15,
 		},
-		bg = beautiful.background_dark,
+		bg = beautiful.darker,
 		forced_height = 50,
 		widget = wibox.container.background,
 	})
@@ -298,7 +298,7 @@ function menu.button(args)
 			top = 15,
 			bottom = 15,
 		},
-		bg = beautiful.background_dark,
+		bg = beautiful.darker,
 		forced_height = 50,
 		buttons = {
 			awful.button({}, 1, function()

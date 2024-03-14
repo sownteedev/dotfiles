@@ -18,7 +18,7 @@ local function init(s)
 		height = 80,
 		ontop = false,
 		width = beautiful.width,
-		bg = beautiful.background_dark,
+		bg = beautiful.darker,
 		screen = s,
 		widget = {
 			{

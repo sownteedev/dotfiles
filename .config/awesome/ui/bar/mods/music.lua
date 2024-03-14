@@ -21,7 +21,7 @@ end)
 local next = wibox.widget({
 	align = "center",
 	font = beautiful.icon .. " 20",
-	text = "󰒭",
+	markup = helpers.colorizeText("󰒭", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -33,7 +33,7 @@ local next = wibox.widget({
 local prev = wibox.widget({
 	align = "center",
 	font = beautiful.icon .. " 20",
-	text = "󰒮",
+	markup = helpers.colorizeText("󰒮", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -64,7 +64,7 @@ playerctl:connect_signal("playback_status", function(_, playing, player_name)
 	play.markup = playing and helpers.colorizeText("󰏤", beautiful.foreground)
 		or helpers.colorizeText("󰐊", beautiful.foreground)
 
-	headphones.markup = playing and helpers.colorizeText("󰋎 ", beautiful.violet)
+	headphones.markup = playing and helpers.colorizeText("󰋎 ", beautiful.foreground)
 		or helpers.colorizeText("󰟎 ", beautiful.red)
 end)
 
@@ -77,7 +77,7 @@ local finalwidget = wibox.widget({
 					type = "linear",
 					from = { 0, 0 },
 					to = { 250, 0 },
-					stops = { { 0, beautiful.background .. "00" }, { 1, beautiful.background .. "00" } },
+					stops = { { 0, beautiful.background .. "40" }, { 1, beautiful.background .. "40" } },
 				},
 				widget = wibox.container.background,
 			},

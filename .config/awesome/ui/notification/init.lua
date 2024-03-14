@@ -221,7 +221,7 @@ naughty.connect_signal("request::display", function(n)
 				spacing = 10,
 			},
 			widget = wibox.container.background,
-			bg = beautiful.background_dark,
+			bg = beautiful.darker,
 		},
 	})
 
