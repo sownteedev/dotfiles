@@ -79,7 +79,6 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod, alt }, "q", awesome.quit),
 })
 
--- Switch between windows
 awful.keyboard.append_global_keybindings({
 	-- Tag
 	awful.key({ mod, shift }, "Tab", awful.tag.viewnext),
@@ -93,6 +92,18 @@ awful.keyboard.append_global_keybindings({
 		switcher.switch(-1, "Mod1", "Alt_L", "Shift", "Tab")
 	end),
 })
+
+client.connect_signal("request::default_keybindings", function()
+	awful.keyboard.append_client_keybindings({
+		awful.key({ mod }, "d", function(c)
+			c.minimized = true
+		end, { description = "minimize", group = "client" }),
+		awful.key({ mod }, "m", function(c)
+			c.maximized = not c.maximized
+			c:raise()
+		end, { description = "toggle maximize", group = "client" }),
+	})
+end)
 
 awful.keyboard.append_global_keybindings({
 	awful.key({
