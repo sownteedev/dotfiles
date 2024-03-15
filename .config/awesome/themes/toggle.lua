@@ -37,7 +37,7 @@ end
 
 local function term(theme)
 	awful.spawn.easy_async_with_shell([[
-		echo "import = [ '~/.config/alacritty/colors/]] .. theme .. [[.toml' ]" > ~/.config/alacritty/colors.toml &&
+		sed -i "s#~/.config/alacritty/colors/.*\.toml#~/.config/alacritty/colors/"]] .. theme .. [[".toml#" ~/.config/alacritty/alacritty.toml &&
 	]])
 end
 
@@ -50,9 +50,10 @@ end
 local function gtk(theme)
 	local color = require("themes.colors." .. theme)
 	awful.spawn.easy_async_with_shell([[
-		sed -i -e "s/background:.*/background:]] .. color.background .. [[/"\
-		       -e "s/background_alt:.*/lighter:]] .. color.lighter .. [[/"\
-		       -e "s/foreground:.*/foreground:]] .. color.foreground .. [[/"\
+		sed -i -e "s/background:.*/background:]] .. color.background .. [['/"\
+		       -e "s/lighter:.*/lighter:]] .. color.lighter .. [['/"\
+		       -e "s/foreground:.*/foreground:]] .. color.foreground .. [['/"\
+			   -e "s/accent:.*/accent:]] .. helpers.blend(color.background, color.foreground, 0.4) .. [['/" ~/.themes/tethemes/gtk-2.0/gtkrc &&
 		sed -i -e "s/background .*/background ]] .. color.background .. [[;/"\
 			   -e "s/lighter .*/lighter ]] .. color.lighter .. [[;/"\
 			   -e "s/foreground .*/foreground ]] .. color.foreground .. [[;/"\
