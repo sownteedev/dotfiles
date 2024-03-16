@@ -3,6 +3,7 @@ local overrides = require("custom.configs.overrides")
 return {
 	{
 		"github/copilot.vim",
+		lazy = false,
 	},
 	{
 		"williamboman/mason.nvim",
@@ -11,13 +12,12 @@ return {
 	{
 		"neovim/nvim-lspconfig",
 		config = function()
-			require("tevim.plugins.lsp.lspconfig")
+			require("tevim.plugins.configs.lspconfig")
 			require("custom.configs.lspconfig")
 		end,
 	},
 	{
 		"stevearc/conform.nvim",
-		lazy = true,
 		event = "BufWritePre",
 		config = function()
 			require("custom.configs.conform")
@@ -33,7 +33,6 @@ return {
 	-- },
 	{
 		"iamcco/markdown-preview.nvim",
-		lazy = true,
 		ft = "markdown",
 		build = ":call mkdp#util#install()",
 	},

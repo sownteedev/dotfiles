@@ -3,13 +3,9 @@ return {
 	background = "#fff9e8",
 	darker = "#f5efde",
 	lighter = "#F0EAD9",
-	grey = "#B3AD9C",
 	red = "#c85552",
 	green = "#5da111",
 	blue = "#3a94c5",
-	yellow = "#dfa000",
-	cyan = "#89bfdc",
-	none = "NONE",
 
 	base00 = "#fff9e8",
 	base01 = "#f6f0df",

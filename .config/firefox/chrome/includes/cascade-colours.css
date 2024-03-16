@@ -4,15 +4,15 @@
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--uc-identity-colour-blue: #6791c9;
-		--uc-identity-colour-green: #78b892;
-		--uc-identity-colour-yellow: #AB8979;
-		--uc-identity-colour-orange: #C5726D;
-		--uc-identity-colour-red: #df5b61;
+		--uc-identity-colour-blue: #4078f2;
+		--uc-identity-colour-green: #50a14f;
+		--uc-identity-colour-yellow: #947546;
+		--uc-identity-colour-orange: #B65F41;
+		--uc-identity-colour-red: #d84a3d;
 
-		--uc-base-colour: #141617;
-		--uc-highlight-colour: #0c0e0f;
-		--uc-inverted-colour: #edeff0;
+		--uc-base-colour: #EAEAEB;
+		--uc-highlight-colour: #fafafa;
+		--uc-inverted-colour: #54555b;
 	}
 }
 
