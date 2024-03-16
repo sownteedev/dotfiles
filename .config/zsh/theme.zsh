@@ -26,7 +26,7 @@ function toggle_left_prompt() {
 }
 
 # Colors
-export bgl='#141617'
+export bgl=#EAEAEB
 
 # FZF bases
 export FZF_DEFAULT_OPTS="
