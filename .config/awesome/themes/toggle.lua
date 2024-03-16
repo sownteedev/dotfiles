@@ -50,8 +50,10 @@ local function rofi(theme)
 end
 
 local function term(theme)
+	local color = require("themes.colors." .. theme)
 	awful.spawn.easy_async_with_shell([[
 		sed -i "s#~/.config/alacritty/colors/.*\.toml#~/.config/alacritty/colors/"]] .. theme .. [[".toml#" ~/.config/alacritty/alacritty.toml &&
+		sed -i "s/bgl=.*/bgl=]] .. color.lighter .. [[/" ~/.config/zsh/theme.zsh &&
 	]])
 end
 
