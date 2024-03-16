@@ -3,7 +3,7 @@
 	html:not(#ublock0-epicker),
 	html:not(#ublock0-epicker) body,
 	#newtab-customize-overlay {
-		background: #0c0e0f !important;
+		background: #fafafa !important;
 	}
 }
 
@@ -11,8 +11,8 @@
 
 url(about:home){
 body {
-	background-color: #0c0e0f !important;
+	background-color: #fafafa !important;
 
-	color: #0c0e0f !important;
+	color: #fafafa !important;
 }
 }

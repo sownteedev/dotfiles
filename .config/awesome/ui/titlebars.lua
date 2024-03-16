@@ -11,7 +11,7 @@ client.connect_signal("request::titlebars", function(c)
 	})
 
 	local close = wibox.widget({
-		font = beautiful.icon .. " 15",
+		font = beautiful.icon .. " 18",
 		markup = helpers.colorizeText("󰅙 ", beautiful.red),
 		widget = wibox.widget.textbox,
 		valign = "center",
@@ -23,7 +23,7 @@ client.connect_signal("request::titlebars", function(c)
 		},
 	})
 	local minimize = wibox.widget({
-		font = beautiful.icon .. " 15",
+		font = beautiful.icon .. " 18",
 		markup = helpers.colorizeText("󰍶 ", beautiful.yellow),
 		widget = wibox.widget.textbox,
 		valign = "center",
@@ -37,7 +37,7 @@ client.connect_signal("request::titlebars", function(c)
 		},
 	})
 	local maximize = wibox.widget({
-		font = beautiful.icon .. " 15",
+		font = beautiful.icon .. " 18",
 		markup = helpers.colorizeText("󰿣 ", beautiful.green),
 		widget = wibox.widget.textbox,
 		valign = "center",
@@ -80,17 +80,13 @@ client.connect_signal("request::titlebars", function(c)
 
 	local icon = wibox.widget({
 		{
-			{
-				widget = wibox.widget.imagebox,
-				image = getIcon(c, c.class, c.class),
-				forced_width = 40,
-				resize = true,
-			},
-			widget = wibox.container.place,
-			halign = "center",
+			widget = wibox.widget.imagebox,
+			image = getIcon(c, c.class, c.class),
+			forced_width = 35,
+			resize = true,
 		},
-		margins = 5,
-		widget = wibox.container.margin,
+		widget = wibox.container.place,
+		halign = "center",
 	})
 
 	top_titlebar.widget = {
@@ -100,7 +96,7 @@ client.connect_signal("request::titlebars", function(c)
 			left = 50,
 			{
 				layout = wibox.layout.fixed.horizontal,
-				spacing = 10,
+				spacing = 5,
 				close,
 				maximize,
 				minimize,

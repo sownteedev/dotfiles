@@ -1,4 +1,4 @@
-import = [ '~/.config/alacritty/colors/yoru.toml' ]
+import = [ '~/.config/alacritty/colors/one_light.toml' ]
 
 [font]
 size = 15
@@ -30,7 +30,7 @@ y = 40
 
 [window]
 decorations = "full"
-opacity = 1
+opacity = 0.9
 dynamic_title = true
 
 [selection]

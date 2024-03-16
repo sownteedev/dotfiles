@@ -35,6 +35,20 @@ local function awesome(theme)
 	]])
 end
 
+local function rofi(theme)
+	local color = require("themes.colors." .. theme)
+	awful.spawn.easy_async_with_shell([[
+		sed -i -e "s/background:.*/background:]] .. color.darker .. [[;/"\
+		       -e "s/lighter:.*/lighter:]] .. color.lighter .. [[;/"\
+		       -e "s/foreground:.*/foreground:]] .. color.foreground .. [[;/"\
+			   -e "s/darker:.*/darker:]] .. color.background .. [[;/" ~/.config/awesome/signals/scripts/Wifi/Wifi.rasi &&
+		sed -i -e "s/background:.*/background:]] .. color.darker .. [[;/"\
+		       -e "s/lighter:.*/lighter:]] .. color.lighter .. [[;/"\
+		       -e "s/foreground:.*/foreground:]] .. color.foreground .. [[;/"\
+			   -e "s/darker:.*/darker:]] .. color.background .. [[;/" ~/.config/awesome/signals/scripts/Bluetooth/Bluetooth.rasi &&
+	]])
+end
+
 local function term(theme)
 	awful.spawn.easy_async_with_shell([[
 		sed -i "s#~/.config/alacritty/colors/.*\.toml#~/.config/alacritty/colors/"]] .. theme .. [[".toml#" ~/.config/alacritty/alacritty.toml &&
@@ -90,6 +104,7 @@ end
 function applyTheme(theme)
 	term(theme)
 	awesome(theme)
+	rofi(theme)
 	discord(theme)
 	gtk(theme)
 	firefox(theme)

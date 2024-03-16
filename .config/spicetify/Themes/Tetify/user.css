@@ -245,6 +245,36 @@ ul.main-navBar-entryPoints > div.GlueDropTarget > *.active {
   -webkit-transform: scale(1) !important;
 }
 
+.main-skipForwardButton-button {
+  background-color: inherit;
+  color: var(--spice-text);
+  transition-duration: 0.15s !important;
+}
+
+.main-skipBackButton-button {
+  background-color: inherit;
+  color: var(--spice-text);
+  transition-duration: 0.15s !important;
+}
+
+.main-repeatButton-button[aria-checked="false"] {
+  background-color: inherit;
+  color: var(--spice-text);
+  transition-duration: 0.15s !important;
+}
+
+.main-repeatButton-button[aria-checked="mixed"] {
+  background-color: inherit;
+  color: var(--spice-text);
+  transition-duration: 0.15s !important;
+}
+
+.main-repeatButton-button[aria-checked="true"] {
+  background-color: inherit;
+  color: var(--spice-text);
+  transition-duration: 0.15s !important;
+}
+
 /* change progress bar slider color */
 .progress-bar__slider {
   background-color: var(--spice-subtext);

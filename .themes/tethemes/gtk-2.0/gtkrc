@@ -1,7 +1,7 @@
-gtk-color-scheme = 'background:#0c0e0f'
-gtk-color-scheme = 'lighter:#141617'
-gtk-color-scheme = 'foreground:#edeff0'
-gtk-color-scheme = 'accent:#939596'
+gtk-color-scheme = 'background:#fafafa'
+gtk-color-scheme = 'lighter:#EAEAEB'
+gtk-color-scheme = 'foreground:#54555b'
+gtk-color-scheme = 'accent:#96979b'
 
 # Default Style
 style "murrine-default" {

@@ -1,6 +1,6 @@
 local lspconfig = require("lspconfig")
-local on_attach = require("tevim.plugins.lsp.lspconfig").on_attach
-local capabilities = require("tevim.plugins.lsp.lspconfig").capabilities
+local on_attach = require("tevim.plugins.configs.lspconfig").on_attach
+local capabilities = require("tevim.plugins.configs.lspconfig").capabilities
 
 local servers = { "clangd", "cssls", "html", "jsonls", "bashls", "emmet_ls", "eslint" }
 

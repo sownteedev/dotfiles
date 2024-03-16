@@ -1,6 +1,9 @@
 * {
-	background: #0a0b0c; background-alt: #141617; border-color: #1f2122; foreground: #edeff0;
-	font: "Liga SFMono Nerd Font 10";
+	background:#efeff0;
+	lighter:#EAEAEB;
+	darker:#fafafa;
+	foreground:#54555b;
+	font: "SF Pro Display 15";
 }
 
 window {
@@ -10,8 +13,8 @@ window {
     /* anchor:                      south; */
 	location:					 center;
     fullscreen:                  false;
-    width:                       400px;
-	height:                      450px;							 
+    width:                       500px;
+	height:                      600px;							 
     x-offset:                    0px;
     y-offset:                    0px;
 
@@ -21,7 +24,7 @@ window {
     padding:                     0px;
     border:                      45px 2px 2px 2px solid;
     border-radius:               0px;
-    border-color:                @border-color;
+    border-color:                @darker;
     cursor:                      "default";
 	background-color:            @background;
 }
@@ -34,7 +37,7 @@ mainbox {
     padding:                     30px;
     border:                      0px solid;
     border-radius:               0px 0px 0px 0px;
-    border-color:                @border-color;
+    border-color:                @darker;
     background-color:            transparent;
     children:                    [ "inputbar", "listview" ];
 }
@@ -47,7 +50,7 @@ inputbar {
     padding:                     0px 0px 0px 0px;
     border:                      0px 0px 0px 0px;
     border-radius:               0px;
-    border-color:                @border-color;
+    border-color:                @darker;
     background-color:            transparent;
     text-color:                  @foreground;
     children:                    [ "textbox-prompt-colon", "prompt" ];
@@ -57,7 +60,7 @@ prompt {
     enabled:                     true;
     padding:                     8px 10px;
     border-radius:               0px;
-    background-color:            @background-alt;
+    background-color:            @lighter;
     text-color:                  @foreground;
 }
 
@@ -67,7 +70,7 @@ textbox-prompt-colon {
     border-radius:               0px;
     expand:                      false;
     str:                         " ";
-    background-color:            @border-color;
+    background-color:            @darker;
     text-color:                  @foreground;
 }
 entry {
@@ -121,7 +124,7 @@ listview {
     padding:                     0px;
     border:                      0px solid;
     border-radius:               0px;
-    border-color:                @border-color;
+    border-color:                @darker;
     background-color:            transparent;
     text-color:                  @foreground;
     cursor:                      "default";
@@ -142,8 +145,8 @@ element {
 }
 
 element selected.normal {
-    background-color:            @background-alt;
-    border-color:                @border-color;
+    background-color:            @lighter;
+    border-color:                @darker;
 }
 
 element-icon {

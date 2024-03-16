@@ -1,5 +1,5 @@
 -- User config
-local colorscheme = "yoru"
+local colorscheme = "one_light"
 ---------------------------------------------------------------------
 local switcher = require("modules.awesome-switcher")
 local awful = require("awful")
@@ -25,7 +25,6 @@ theme.red = colors.red
 theme.green = colors.green
 theme.blue = colors.blue
 theme.yellow = colors.yellow
-theme.orange = colors.orange
 
 theme.wallpaper = colors.wallpaper
 

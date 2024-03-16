@@ -27,7 +27,6 @@ button {
   margin: 4px;
   padding: 5px 5px;
   border: 0px solid @lighter;
-  border-radius: 0px;
   color: @foreground;
   background-color: @lighter;
 }
@@ -281,7 +280,6 @@ scrollbar slider {
   min-height: 6px;
   margin: -1px;
   border: 0px solid transparent;
-  border-radius: 0px;
   background-clip: padding-box;
   background-color: @foreground;
 }
@@ -334,7 +332,6 @@ scrollbar.overlay-indicator:not(.dragging):not(.hovering) button {
   min-height: 5px;
   background-color: @foreground;
   background-clip: padding-box;
-  border-radius: 0px;
   border: 0px solid @background;
   -gtk-icon-source: none;
 }
@@ -382,7 +379,6 @@ scale {
 scale fill,
 scale trough {
   border: none;
-  border-radius: 0px;
   background-color: @background_urgent;
   outline-offset: 2px;
   -gtk-outline-radius: 0px;
@@ -405,7 +401,6 @@ scale trough:backdrop {
 
 scale highlight {
   border: none;
-  border-radius: 0px;
   background-color: @accent;
 }
 
@@ -462,7 +457,6 @@ scale.fine-tune slider {
 scale.fine-tune fill,
 scale.fine-tune trough,
 scale.fine-tune highlight {
-  border-radius: 0px;
   -gtk-outline-radius: 0px;
 }
 
@@ -491,7 +485,6 @@ scale slider {
   min-width: 14px;
   margin: -8px;
   border: 0px solid @accent;
-  border-radius: 0px;
   background-color: @background;
 }
 
@@ -566,7 +559,6 @@ progressbar {
 
 progressbar progress {
   border: none;
-  border-radius: 0px;
   background-color: @accent;
 }
 
@@ -575,7 +567,6 @@ progressbar progress:backdrop {
 }
 
 progressbar trough {
-  border-radius: 0px;
   background-color: @background_urgent;
 }
 
@@ -600,7 +591,6 @@ switch {
   outline-offset: -4px;
   margin: 4px;
   border: 0px solid @background_urgent;
-  border-radius: 0px;
   background-color: @background_urgent;
 }
 
@@ -639,7 +629,6 @@ switch slider {
   min-height: 20px;
   margin: 0px;
   border: none;
-  border-radius: 0px;
   color: @background;
   background-color: @background;
 }
@@ -2044,14 +2033,9 @@ menuitem.button.flat radio:hover:indeterminate:disabled:backdrop {
   color: rgba(255, 255, 255, 0.12);
 }
 
-#MozillaGtkWidget > widget > frame > border {
-  border-color: #696b71;
-}
-
 #MozillaGtkWidget > widget > entry,
 #MozillaGtkWidget > widget > button > button {
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
   box-shadow: none;
 }
 
