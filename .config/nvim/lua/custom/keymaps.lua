@@ -9,4 +9,4 @@ map(
 	opts
 )
 
-vim.cmd([[imap <silent><script><expr> <C-c> copilot#Accept("\<CR>")]])
+vim.cmd([[imap <silent><script><expr> <C-a> copilot#Accept("\<CR>")]])

@@ -37,7 +37,7 @@ ruled.client.connect_signal("request::rules", function()
 	})
 
 	ruled.client.append_rule({
-		rule = { class = "Alacritty" },
+		rule_any = { class = { "St", "Alacritty" } },
 		properties = { screen = 1, tag = "1", switch_to_tags = true, width = 1920, height = 1080 },
 	})
 	ruled.client.append_rule({

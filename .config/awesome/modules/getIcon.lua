@@ -11,6 +11,10 @@ local custom = {
 		to = "terminal",
 	},
 	{
+		name = "St",
+		to = "terminal",
+	},
+	{
 		name = "clearpad",
 		to = "terminal",
 	},

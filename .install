@@ -252,6 +252,18 @@ else
 fi
 sleep 3 && clear
 
+# Download st terminal
+read -p "[*] Do you want to download st terminal(Recommend No, because it is for me)? (y/n): " choice
+if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	git clone https://github.com/siduck/st.git && cd st
+	sudo make install
+	cd ..
+else
+	echo "[*] Download st terminal skipped."
+fi
+echo "[*] Done."
+sleep 3 && clear
+
 # Zsh
 echo "[*] Installing zsh ..."
 if pkg_installed zsh; then
