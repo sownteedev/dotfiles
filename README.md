@@ -1,6 +1,6 @@
 <p align="center"><image width="900" height="60" src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=30&color=3c8893&pause=1000&random=false&width=900&lines=WELCOME+TO+SOWNTEE'S+DOTFILES+ARCH+AWESOMEWM+🌸">
 
-> **NOTE**: Perfect with Resolution 2560x1600(16:10) 2K
+> **NOTE**: Perfect with Resolution 2560x1600 (16:10 2K)
 
 <br>
 

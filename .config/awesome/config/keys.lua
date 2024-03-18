@@ -19,6 +19,9 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod }, "Return", function()
 		awful.spawn("alacritty")
 	end),
+	awful.key({ mod, alt }, "Return", function()
+		awful.spawn("st")
+	end),
 
 	-- Volume and Brightness
 	awful.key({}, "XF86AudioPlay", function()

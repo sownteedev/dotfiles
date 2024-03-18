@@ -23,14 +23,21 @@ return {
 			require("custom.configs.conform")
 		end,
 	},
-	-- {
-	-- 	"Exafunction/codeium.nvim",
-	-- 	lazy = true,
-	-- 	event = "InsertEnter",
-	-- 	config = function()
-	-- 		require("codeium").setup({})
-	-- 	end,
-	-- },
+	{
+		"Exafunction/codeium.nvim",
+		event = "InsertEnter",
+		config = function()
+			require("codeium").setup({})
+		end,
+	},
+	{
+		"codota/tabnine-nvim",
+		lazy = false,
+		build = "./dl_binaries.sh",
+		config = function()
+			require("tabnine").setup()
+		end,
+	},
 	{
 		"iamcco/markdown-preview.nvim",
 		ft = "markdown",

@@ -82,7 +82,7 @@ local widget = wibox.widget({
 		bottom = 20,
 		top = 20,
 	},
-	shape = helpers.rrect(10),
+	shape = helpers.rrect(5),
 	widget = wibox.container.background,
 	bg = beautiful.background,
 })

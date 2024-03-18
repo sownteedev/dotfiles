@@ -13,12 +13,12 @@ local M = {
 		{
 			count = 0,
 			pinned = true,
-			icon = getIcon(nil, "Alacritty", "Alacritty"),
+			icon = getIcon(nil, "St", "St"),
 			id = 1,
 			clients = {},
-			class = "alacritty",
-			exec = "alacritty",
-			name = "alacritty",
+			class = "st",
+			exec = "st",
+			name = "st",
 		},
 		{
 			count = 0,
@@ -92,7 +92,7 @@ local M = {
 		},
 	},
 	entries = {},
-	classes = { "alacritty", "firefox", "code", "jetbrains-idea", "jetbrains-webstorm", "discord", "spotify" },
+	classes = { "st", "firefox", "code", "jetbrains-idea", "jetbrains-webstorm", "discord", "spotify" },
 }
 
 M.widget = wibox.widget({

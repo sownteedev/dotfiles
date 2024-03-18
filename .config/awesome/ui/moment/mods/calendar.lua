@@ -180,7 +180,7 @@ return function()
 			widget = wibox.container.margin,
 			margins = 30,
 		},
-		shape = helpers.rrect(10),
+		shape = helpers.rrect(5),
 		widget = wibox.container.background,
 		bg = beautiful.background,
 	})
