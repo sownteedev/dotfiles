@@ -6,6 +6,7 @@ st.borderpx: 40
 st.alpha: 1.0
 st.font: Liga SFMono Nerd Font:style:Regular:pixelsize=20
 st.chscale: 1.3
+st.cwscale: 1.0
 
 *foreground:#54555b
 *background:#fafafa
