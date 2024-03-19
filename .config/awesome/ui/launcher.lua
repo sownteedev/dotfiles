@@ -70,7 +70,7 @@ local sidebar = wibox.widget({
 		{
 			{
 				createPowerButton(" ", beautiful.blue, "awesome-client \"awesome.emit_signal('toggle::lock')\""),
-				createPowerButton(" ", beautiful.yellow, "reboot"),
+				createPowerButton(" ", beautiful.green, "reboot"),
 				createPowerButton("󰐥 ", beautiful.red, "poweroff"),
 				spacing = 15,
 				layout = wibox.layout.fixed.vertical,
