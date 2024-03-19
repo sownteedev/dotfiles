@@ -45,6 +45,7 @@ awful.keyboard.append_global_keybindings({
 	end),
 	awful.key({}, "XF86AudioMute", function()
 		awful.spawn.with_shell("pamixer -t")
+		awesome.emit_signal("sowntee::osd")
 	end),
 	awful.key({}, "XF86AudioMicMute", function()
 		awful.spawn.with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle")

@@ -82,6 +82,11 @@ awesome.connect_signal("signal::volume", function(value)
 		info:get_children_by_id("icon")[1].text = "󰖁 "
 	end
 end)
+awesome.connect_signal("signal::volumemute", function(value)
+	if value then
+		info:get_children_by_id("icon")[1].text = "󰖁 "
+	end
+end)
 
 -- bright --
 awesome.connect_signal("signal::brightness", function(value)
