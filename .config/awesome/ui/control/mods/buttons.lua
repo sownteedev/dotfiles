@@ -138,7 +138,7 @@ local widget = wibox.widget({
 			"Microphone",
 			"It's Muted",
 			"It's Turned On",
-			"mic"
+			"micmute"
 		),
 		spacing = 15,
 		layout = wibox.layout.flex.horizontal,

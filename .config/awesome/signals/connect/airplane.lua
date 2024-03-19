@@ -9,7 +9,7 @@ local function emit_airplane_status()
 end
 
 gears.timer({
-	timeout = 2,
+	timeout = 1,
 	call_now = true,
 	autostart = true,
 	callback = function()
