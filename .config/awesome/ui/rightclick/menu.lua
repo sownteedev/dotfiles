@@ -6,6 +6,7 @@ local beautiful = require("beautiful")
 local helpers = require("helpers")
 local setmetatable = setmetatable
 local ipairs = ipairs
+
 local capi = { awesome = awesome, mouse = mouse, tag = tag }
 
 local menu = { mt = {} }
@@ -204,7 +205,7 @@ function menu.sub_menu_button(args)
 
 	local icon = args.icon ~= nil
 			and wibox.widget({
-				font = beautiful.icon .. " 15",
+				font = beautiful.icon .. " 17",
 				markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 				widget = wibox.widget.textbox,
 				halign = "start",
@@ -219,7 +220,7 @@ function menu.sub_menu_button(args)
 				{
 					icon,
 					{
-						font = beautiful.sans .. " 13",
+						font = beautiful.sans .. " 14",
 						markup = args.text,
 						widget = wibox.widget.textbox,
 						halign = "start",
@@ -229,7 +230,7 @@ function menu.sub_menu_button(args)
 				},
 				nil,
 				{
-					font = beautiful.icon .. " 13",
+					font = beautiful.icon .. " 14",
 					markup = "󰅂",
 					widget = wibox.widget.textbox,
 					halign = "left",
@@ -266,7 +267,7 @@ function menu.button(args)
 
 	if args.icon ~= nil then
 		icon = wibox.widget({
-			font = beautiful.icon .. " 15",
+			font = beautiful.icon .. " 17",
 			markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 			widget = wibox.widget.textbox,
 			halign = "start",
@@ -279,7 +280,7 @@ function menu.button(args)
 	end
 
 	local text_widget = wibox.widget({
-		font = beautiful.sans .. " 13",
+		font = beautiful.sans .. " 14",
 		markup = args.text,
 		widget = wibox.widget.textbox,
 		halign = "start",

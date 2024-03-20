@@ -7,7 +7,6 @@ local ruled = require("ruled")
 local menubar = require("menubar")
 local gears = require("gears")
 local animation = require("modules.animation")
-local getIcon = require("modules.getIcon")
 
 require(... .. ".osd")
 
