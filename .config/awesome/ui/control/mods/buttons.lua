@@ -2,45 +2,44 @@ local awful = require("awful")
 local wibox = require("wibox")
 local helpers = require("helpers")
 local beautiful = require("beautiful")
+local animation = require("modules.animation")
 
 local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisconnected, signal)
 	local widget = wibox.widget({
 		{
 			{
 				{
+					markup = icon,
+					id = "icon",
+					font = beautiful.icon .. " 25",
+					widget = wibox.widget.textbox,
+				},
+				{
 					{
-						markup = icon,
-						id = "icon",
-						font = beautiful.icon .. " 25",
+						markup = name,
+						id = "name",
+						font = beautiful.sans .. " 15",
 						widget = wibox.widget.textbox,
 					},
 					{
-						{
-							markup = name,
-							id = "name",
-							font = beautiful.sans .. " 15",
-							widget = wibox.widget.textbox,
-						},
+						widget = wibox.container.scroll.horizontal,
+						step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
+						speed = 50,
+						forced_width = 250,
 						{
 							markup = labelconnected,
 							id = "label",
-							font = beautiful.sans .. " 10",
+							font = beautiful.sans .. " 11",
+							forced_width = 200,
+							forced_height = 18,
 							widget = wibox.widget.textbox,
 						},
-						layout = wibox.layout.fixed.vertical,
-						spacing = 10,
 					},
-					layout = wibox.layout.fixed.horizontal,
-					spacing = 15,
+					layout = wibox.layout.fixed.vertical,
+					spacing = 10,
 				},
-				nil,
-				{
-					markup = "󰅂",
-					font = beautiful.icon .. " 15",
-					id = "arr",
-					widget = wibox.widget.textbox,
-				},
-				layout = wibox.layout.align.horizontal,
+				layout = wibox.layout.fixed.horizontal,
+				spacing = 15,
 			},
 			widget = wibox.container.margin,
 			margins = 25,
@@ -58,16 +57,28 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 			end),
 		},
 	})
+
 	awesome.connect_signal("signal::" .. signal, function(status)
 		if status then
 			widget:get_children_by_id("back")[1].bg = beautiful.blue
-			widget:get_children_by_id("arr")[1].markup = helpers.colorizeText("󰅂", beautiful.background)
 			widget:get_children_by_id("name")[1].markup = helpers.colorizeText(name, beautiful.background)
 			widget:get_children_by_id("icon")[1].markup = helpers.colorizeText(icon, beautiful.background)
-			widget:get_children_by_id("label")[1].markup = helpers.colorizeText(labelconnected, beautiful.background)
+			if signal == "network" then
+				awesome.connect_signal("signal::wifiname", function(stdout)
+					widget:get_children_by_id("label")[1].markup =
+						helpers.colorizeText("Connected " .. stdout, beautiful.background)
+				end)
+			elseif signal == "bluetooth" then
+				awesome.connect_signal("signal::bluetoothname", function(stdout)
+					widget:get_children_by_id("label")[1].markup =
+						helpers.colorizeText("Connected " .. stdout, beautiful.background)
+				end)
+			else
+				widget:get_children_by_id("label")[1].markup =
+					helpers.colorizeText(labelconnected, beautiful.background)
+			end
 		else
 			widget:get_children_by_id("back")[1].bg = beautiful.background
-			widget:get_children_by_id("arr")[1].markup = helpers.colorizeText("󰅂", beautiful.foreground)
 			widget:get_children_by_id("name")[1].markup = helpers.colorizeText(name, beautiful.foreground)
 			widget:get_children_by_id("icon")[1].markup = helpers.colorizeText(icon, beautiful.foreground)
 			widget:get_children_by_id("label")[1].markup = helpers.colorizeText(labeldisconnected, beautiful.foreground)

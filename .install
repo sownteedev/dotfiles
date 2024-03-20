@@ -127,7 +127,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	# Network
 	echo "[*] Installing network ..."
 	sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools --noconfirm
-	sudo systemctl enable NetworkManager dhcpcd.service
+	sudo systemctl enable NetworkManager dhcpcd
 	echo "[*] Done."
 	sleep 3 && clear
 
@@ -151,10 +151,17 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 	# Other
 	echo "[*] Installing other ..."
-	sudo pacman -S --noconfirm gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop ibus github-cli xss-lock && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi
+	sudo pacman -S --noconfirm gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi
 	echo "[*] Done."
+	clear
+	echo "[*] Install ibus"
+	yay -S ibus ibus-bamboo --noconfirm
+	env DCONF_PROFILE=ibus dconf write /desktop/ibus/general/preload-engines "['xkb:us::eng', 'Bamboo']" && gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'Bamboo')]"
+	mkdir ibus-bamboo && cd ibus-bamboo
+	wget "https://raw.githubusercontent.com/BambooEngine/ibus-bamboo/master/archlinux/PKGBUILD-$VER" -O PKGBUILD
+	makepkg -si
+	cd .. && rm -rf ibus-bamboo
 	sleep 3 && clear
-
 else
 	echo "[*] Installation driver and dependencies skipped."
 fi
@@ -235,7 +242,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	sudo rm -r /usr/share/alsa/ucm
 	sudo mv ./ucm /usr/share/alsa
 
-	cd ~ && rm -rf sof-bin alsa-ucm-conf
+	cd ~ && rm -rf sof-bin alsa-ucm-conf old-sof-backup
 else
 	echo "[*] Fix audio driver skipped."
 fi
@@ -245,7 +252,7 @@ sleep 3 && clear
 # App for me
 read -p "[*] Do you want to install app for me(Recommend No, because it is for me)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-	sudo pacman -S --noconfirm libreoffice-fresh
+	sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop
 	yay -S --noconfirm visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre
 else
 	echo "[*] App for me skipped."
@@ -255,6 +262,7 @@ sleep 3 && clear
 # Download st terminal
 read -p "[*] Do you want to download st terminal(Recommend No, because it is for me)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	sudo pacman -S --noconfirm gd
 	git clone https://github.com/siduck/st.git && cd st
 	sudo make install
 	cd ..
