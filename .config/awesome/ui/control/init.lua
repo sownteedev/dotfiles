@@ -31,7 +31,7 @@ awful.screen.connect_for_each_screen(function(s)
 					sliders,
 					buttons,
 					layout = wibox.layout.fixed.vertical,
-					spacing = 40,
+					spacing = 35,
 				},
 				widget = wibox.container.margin,
 				margins = 15,

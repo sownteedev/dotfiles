@@ -4,7 +4,7 @@ local awful = require("awful")
 local beautiful = require("beautiful")
 local gears = require("gears")
 
-local bat = require("ui.exit.mods.bat")
+local bat = require("ui.exit.mods.battery")
 local weather = require("ui.exit.mods.weather")
 local top = require("ui.exit.mods.topbar")
 local music = require("ui.exit.mods.music")

@@ -1,16 +1,8 @@
 #!/usr/bin/env bash
 STATUS="$(rfkill list | sed -n 5p | awk '{print $3}')"
 
-toggle() {
-	if [[ $STATUS == "no" ]]; then
-		rfkill block all
-		notify-send --urgency=normal "Airplane Mode" "Airplane mode has been turned on!"
-	else
-		rfkill unblock all
-		notify-send --urgency=normal "Airplane Mode" "Airplane mode has been turned off!"
-	fi
-}
-
-if [[ $1 == "--toggle" ]]; then
-	toggle
+if [[ $STATUS == "no" ]]; then
+	rfkill block all
+else
+	rfkill unblock all
 fi

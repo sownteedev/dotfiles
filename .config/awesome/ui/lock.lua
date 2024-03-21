@@ -5,14 +5,14 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local pam = require("liblua_pam")
 local music = require("ui.exit.mods.music")
-local bat = require("ui.exit.mods.bat")
+local bat = require("ui.exit.mods.battery")
 local weather = require("ui.exit.mods.weather")
 local pctl = require("modules.playerctl")
 local playerctl = pctl.lib()
 
 local next = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 25",
+	font = beautiful.icon .. " 30",
 	text = "󰒭",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -24,7 +24,7 @@ local next = wibox.widget({
 
 local prev = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 25",
+	font = beautiful.icon .. " 30",
 	text = "󰒮",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -34,20 +34,24 @@ local prev = wibox.widget({
 	},
 })
 local play = wibox.widget({
-	align = "center",
-	font = beautiful.icon .. " 25",
-	markup = helpers.colorizeText("󰐊", beautiful.foreground),
-	widget = wibox.widget.textbox,
-	buttons = {
-		awful.button({}, 1, function()
-			playerctl:play_pause()
-		end),
+	{
+		align = "center",
+		font = beautiful.icon .. " 30",
+		markup = helpers.colorizeText("󰐍 ", beautiful.foreground),
+		widget = wibox.widget.textbox,
+		buttons = {
+			awful.button({}, 1, function()
+				playerctl:play_pause()
+			end),
+		},
 	},
+	widget = wibox.container.margin,
+	left = 15,
 })
 
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
-	play.markup = playing and helpers.colorizeText("󰏤", beautiful.foreground)
-		or helpers.colorizeText("󰐊", beautiful.foreground)
+	play.markup = playing and helpers.colorizeText("󰏦 ", beautiful.foreground)
+		or helpers.colorizeText("󰐍 ", beautiful.foreground)
 end)
 
 local auth = function(password)
@@ -289,7 +293,7 @@ promptbox:setup({
 					music,
 					{
 						{
-							{ prev, play, next, spacing = 20, layout = wibox.layout.fixed.horizontal },
+							{ prev, play, next, layout = wibox.layout.fixed.horizontal },
 							widget = wibox.container.margin,
 							left = 10,
 							right = 10,

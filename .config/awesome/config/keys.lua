@@ -19,9 +19,6 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod }, "Return", function()
 		awful.spawn("alacritty")
 	end),
-	awful.key({ mod, alt }, "Return", function()
-		awful.spawn("st")
-	end),
 
 	-- Volume and Brightness
 	awful.key({}, "XF86AudioPlay", function()
@@ -45,6 +42,7 @@ awful.keyboard.append_global_keybindings({
 	end),
 	awful.key({}, "XF86AudioMute", function()
 		awful.spawn.with_shell("pamixer -t")
+		volume_emit()
 		awesome.emit_signal("sowntee::osd")
 	end),
 	awful.key({}, "XF86AudioMicMute", function()

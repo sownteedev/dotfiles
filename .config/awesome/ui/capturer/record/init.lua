@@ -5,6 +5,12 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local animation = require("modules.animation")
 
+local checkFolder = function()
+	if not os.rename(os.getenv("HOME") .. "/Videos/Recordings", os.getenv("HOME") .. "/Videos/Recordings") then
+		os.execute("mkdir -p " .. os.getenv("HOME") .. "/Videos/Recordings")
+	end
+end
+
 local getName = function()
 	local string = "~/Videos/Recordings/" .. os.date("%d-%m-%Y-%H:%M:%S") .. ".mp4"
 	string = string:gsub("~", os.getenv("HOME"))
@@ -125,12 +131,14 @@ awful.screen.connect_for_each_screen(function(s)
 
 	local recaudio = createButton(" ", "Rec Audio", function()
 		close()
+		checkFolder()
 		local name = getName()
 		rec_audio("60", name)
 	end, beautiful.green)
 
 	local recmic = createButton("󰄄 ", "Rec Mic", function()
 		close()
+		checkFolder()
 		local name = getName()
 		rec_mic("60", name)
 	end, beautiful.blue)

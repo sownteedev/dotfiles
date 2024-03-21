@@ -22,7 +22,7 @@ awful.widget.watch(ram_script, update_interval_ram, function(widget, stdout)
 end)
 
 -- DISK
-local update_interval_disk = 600
+local update_interval_disk = 86400
 local disk_script = [[sh -c "df -h | grep '/$' | awk '{printf \"%d\", $5}'"]]
 awful.widget.watch(disk_script, update_interval_disk, function(widget, stdout)
 	local value = stdout
