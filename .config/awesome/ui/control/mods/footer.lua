@@ -76,35 +76,7 @@ local widget = wibox.widget({
 			spacing = 30,
 		},
 		nil,
-		{
-			{
-				{
-					font = beautiful.icon .. " 20",
-					markup = helpers.colorizeText("󱡓 ", beautiful.foreground),
-					widget = wibox.widget.textbox,
-					valign = "center",
-					align = "center",
-				},
-				widget = wibox.container.margin,
-				left = 20,
-				right = 15,
-				top = 5,
-				bottom = 5,
-			},
-			buttons = {
-				awful.button({}, 1, function()
-					opacity = not opacity
-					if opacity then
-						awful.spawn.with_shell("~/.config/awesome/signals/scripts/Picom/toggle --opacity &")
-					else
-						awful.spawn.with_shell("~/.config/awesome/signals/scripts/Picom/toggle --no-opacity &")
-					end
-				end),
-			},
-			widget = wibox.container.background,
-			shape = helpers.rrect(5),
-			bg = beautiful.background,
-		},
+		nil,
 	},
 	widget = wibox.container.margin,
 })
@@ -114,10 +86,12 @@ awesome.connect_signal("signal::battery", function(value)
 	local v = widget:get_children_by_id("batvalue")[1]
 	v.markup = helpers.colorizeText(value .. "%", beautiful.foreground)
 	b.value = value
-	if value > 80 then
+	if value >= 75 then
 		b.color = beautiful.green
-	elseif value > 20 then
+	elseif value >= 50 then
 		b.color = beautiful.blue
+	elseif value >= 25 then
+		b.color = beautiful.yellow
 	else
 		b.color = beautiful.red
 	end

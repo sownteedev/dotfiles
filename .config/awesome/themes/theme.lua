@@ -34,35 +34,16 @@ theme.height = awful.screen.focused().geometry.height
 
 theme.user = string.gsub(os.getenv("USER"), "^%l", string.upper)
 theme.profile = "~/.config/awesome/themes/assets/sownteedev.png"
-theme.fetch = "~/.config/awesome/themes/assets/neofetch.png"
 theme.songdefpicture = "~/.config/awesome/themes/assets/defsong.jpg"
-
--- Awesome Switcher --
-switcher.settings.preview_box = true
-switcher.settings.preview_box_bg = "#00000025"
-switcher.settings.preview_box_border = "#00000025"
-switcher.settings.preview_box_fps = 60
-switcher.settings.preview_box_delay = 0
-switcher.settings.preview_box_title_font = { "SF Pro Display" }
-switcher.settings.preview_box_title_font_size_factor = 0.9
-switcher.settings.preview_box_title_color = { 255, 255, 255, 1 }
-switcher.settings.client_opacity = true
-switcher.settings.client_opacity_value = 0.3
-switcher.settings.client_opacity_value_selected = 1
-
--- borders --
-theme.border_width = 0
-theme.border_color_normal = theme.background_urgent
-theme.border_color_active = theme.foreground
 
 -- default vars --
 theme.bg_normal = theme.background
 theme.fg_normal = theme.foreground
 
--- tasklist --
-theme.tasklist_bg_normal = theme.background
-theme.tasklist_bg_focus = theme.lighter
-theme.tasklist_bg_minimize = theme.background_urgent
+-- borders --
+theme.border_width = 0
+theme.border_color_normal = theme.blue
+theme.border_color_active = theme.foreground
 
 -- taglist --
 theme.taglist_bg = theme.background .. "00"
@@ -84,6 +65,19 @@ theme.systray_icon_spacing = 10
 theme.tooltip_bg = theme.background
 theme.tooltip_fg = theme.foreground
 theme.tooltip_border_width = theme.border_width
+
+-- Awesome Switcher --
+switcher.settings.preview_box = true
+switcher.settings.preview_box_bg = "#00000025"
+switcher.settings.preview_box_border = "#00000025"
+switcher.settings.preview_box_fps = 60
+switcher.settings.preview_box_delay = 0
+switcher.settings.preview_box_title_font = { "SF Pro Display" }
+switcher.settings.preview_box_title_font_size_factor = 0.9
+switcher.settings.preview_box_title_color = { 255, 255, 255, 1 }
+switcher.settings.client_opacity = true
+switcher.settings.client_opacity_value = 0.3
+switcher.settings.client_opacity_value_selected = 1
 
 -- Titlebar --
 theme.titlebar_bg_normal = theme.darker

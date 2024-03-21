@@ -95,9 +95,9 @@ awesome.connect_signal("signal::brightness", function(value)
 	if value > 90 then
 		info:get_children_by_id("icon")[1].text = "󰃠 "
 	elseif value > 60 then
-		info:get_children_by_id("icon")[1].text = "󰃟 "
-	elseif value > 30 then
 		info:get_children_by_id("icon")[1].text = "󰃝 "
+	elseif value > 30 then
+		info:get_children_by_id("icon")[1].text = "󰃟 "
 	elseif value > 10 then
 		info:get_children_by_id("icon")[1].text = "󰃞 "
 	end

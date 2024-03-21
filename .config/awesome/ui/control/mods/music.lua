@@ -16,7 +16,7 @@ local art = wibox.widget({
 
 local next = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 25",
+	font = beautiful.icon .. " 30",
 	text = "󰒭",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -28,7 +28,7 @@ local next = wibox.widget({
 
 local prev = wibox.widget({
 	align = "center",
-	font = beautiful.icon .. " 25",
+	font = beautiful.icon .. " 30",
 	text = "󰒮",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -39,15 +39,19 @@ local prev = wibox.widget({
 })
 
 local play = wibox.widget({
-	align = "center",
-	font = beautiful.icon .. " 25",
-	markup = helpers.colorizeText("󰐍 ", beautiful.foreground),
-	widget = wibox.widget.textbox,
-	buttons = {
-		awful.button({}, 1, function()
-			playerctl:play_pause()
-		end),
+	{
+		align = "center",
+		font = beautiful.icon .. " 30",
+		markup = helpers.colorizeText("󰐍 ", beautiful.foreground),
+		widget = wibox.widget.textbox,
+		buttons = {
+			awful.button({}, 1, function()
+				playerctl:play_pause()
+			end),
+		},
 	},
+	widget = wibox.container.margin,
+	left = 15,
 })
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
 	play.markup = playing and helpers.colorizeText("󰏦 ", beautiful.foreground)
@@ -112,11 +116,7 @@ local finalwidget = wibox.widget({
 					{
 						{
 							prev,
-							{
-								play,
-								widget = wibox.container.margin,
-								left = 15,
-							},
+							play,
 							next,
 							layout = wibox.layout.align.vertical,
 						},

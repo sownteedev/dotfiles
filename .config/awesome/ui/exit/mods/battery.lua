@@ -48,10 +48,12 @@ awesome.connect_signal("signal::battery", function(value)
 	local v = widget:get_children_by_id("batvalue")[1]
 	v.markup = helpers.colorizeText(value .. "%", beautiful.foreground)
 	b.value = value
-	if value > 80 then
+	if value >= 75 then
 		b.color = beautiful.green
-	elseif value > 20 then
+	elseif value >= 50 then
 		b.color = beautiful.blue
+	elseif value >= 25 then
+		b.color = beautiful.yellow
 	else
 		b.color = beautiful.red
 	end

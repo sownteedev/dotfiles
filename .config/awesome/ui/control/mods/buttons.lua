@@ -2,7 +2,6 @@ local awful = require("awful")
 local wibox = require("wibox")
 local helpers = require("helpers")
 local beautiful = require("beautiful")
-local animation = require("modules.animation")
 
 local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisconnected, signal)
 	local widget = wibox.widget({
@@ -24,14 +23,14 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 					{
 						widget = wibox.container.scroll.horizontal,
 						step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
-						speed = 50,
+						speed = 80,
 						forced_width = 250,
 						{
 							markup = labelconnected,
 							id = "label",
 							font = beautiful.sans .. " 11",
 							forced_width = 200,
-							forced_height = 18,
+							forced_height = 20,
 							widget = wibox.widget.textbox,
 						},
 					},
@@ -65,13 +64,23 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 			widget:get_children_by_id("icon")[1].markup = helpers.colorizeText(icon, beautiful.background)
 			if signal == "network" then
 				awesome.connect_signal("signal::wifiname", function(stdout)
-					widget:get_children_by_id("label")[1].markup =
-						helpers.colorizeText("Connected " .. stdout, beautiful.background)
+					if stdout ~= "" then
+						widget:get_children_by_id("label")[1].markup =
+							helpers.colorizeText("Connected " .. stdout, beautiful.background)
+					else
+						widget:get_children_by_id("label")[1].markup =
+							helpers.colorizeText("No Network", beautiful.background)
+					end
 				end)
 			elseif signal == "bluetooth" then
 				awesome.connect_signal("signal::bluetoothname", function(stdout)
-					widget:get_children_by_id("label")[1].markup =
-						helpers.colorizeText("Connected " .. stdout, beautiful.background)
+					if stdout ~= "" then
+						widget:get_children_by_id("label")[1].markup =
+							helpers.colorizeText("Connected " .. stdout, beautiful.background)
+					else
+						widget:get_children_by_id("label")[1].markup =
+							helpers.colorizeText("No Device", beautiful.background)
+					end
 				end)
 			else
 				widget:get_children_by_id("label")[1].markup =
@@ -90,7 +99,7 @@ end
 local widget = wibox.widget({
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/Wifi/Wifi --toggle",
+			"~/.config/awesome/signals/scripts/Wifi/Wifi",
 			"~/.config/awesome/signals/scripts/Wifi/Menu",
 			" ",
 			"Network",
@@ -99,7 +108,7 @@ local widget = wibox.widget({
 			"network"
 		),
 		createbutton(
-			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth --toggle",
+			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth",
 			"~/.config/awesome/signals/scripts/Bluetooth/Menu",
 			" ",
 			"Bluetooth",
@@ -112,12 +121,12 @@ local widget = wibox.widget({
 	},
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/airplane --toggle",
+			"~/.config/awesome/signals/scripts/airplane",
 			"",
 			"󰀝 ",
 			"Airplane",
 			"Now In Flight Mode",
-			"Turned Off",
+			"We're Underground",
 			"airplane"
 		),
 		createbutton(
@@ -125,8 +134,8 @@ local widget = wibox.widget({
 			"",
 			"󰍶 ",
 			"Don't Disturb",
-			"Turned On",
-			"Turned Off",
+			"Don't Disturb Me",
+			"Disturb Me Please",
 			"dnd"
 		),
 		spacing = 15,
@@ -134,22 +143,22 @@ local widget = wibox.widget({
 	},
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/redshift --toggle",
+			"~/.config/awesome/signals/scripts/redshift",
 			"",
 			"󰛨 ",
 			"Redshift",
 			"Your Eyes Are Safe",
-			"Night Light Is Off",
+			"Monitor Can Steal Your Eyes",
 			"redshift"
 		),
 		createbutton(
-			"pactl set-source-mute @DEFAULT_SOURCE@ toggle",
-			"pavucontrol",
-			" ",
-			"Microphone",
-			"It's Muted",
-			"It's Turned On",
-			"micmute"
+			"~/.config/awesome/signals/scripts/Picom/toggle",
+			"",
+			"󱡓 ",
+			"Transparency",
+			"Blur So Good",
+			"I Can't See You",
+			"transparency"
 		),
 		spacing = 15,
 		layout = wibox.layout.flex.horizontal,

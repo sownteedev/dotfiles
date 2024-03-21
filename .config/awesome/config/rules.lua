@@ -45,7 +45,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { screen = 1, tag = "2", switch_to_tags = true, width = 2560, height = 1600 - 80 },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "Code", "jetbrains-idea", "webstom", "neovide" } },
+		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "neovide" } },
 		properties = { screen = 1, tag = "3" },
 	})
 	ruled.client.append_rule({

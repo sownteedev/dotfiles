@@ -42,6 +42,12 @@ awful.screen.connect_for_each_screen(function(s)
 		end
 	end
 
+	local title = wibox.widget({
+		font = beautiful.sans .. " 15",
+		markup = helpers.colorizeText("Notification Center", beautiful.foreground),
+		widget = wibox.widget.textbox,
+	})
+
 	local clearButton = wibox.widget({
 		font = beautiful.icon .. " 15",
 		markup = helpers.colorizeText(" ", beautiful.red),
@@ -70,12 +76,7 @@ awful.screen.connect_for_each_screen(function(s)
 		{
 			{
 				{
-					{
-						markup = helpers.colorizeText("Notification Center", beautiful.foreground),
-						halign = "center",
-						font = beautiful.sans .. " 15",
-						widget = wibox.widget.textbox,
-					},
+					title,
 					nil,
 					clearButton,
 					widget = wibox.layout.align.horizontal,
