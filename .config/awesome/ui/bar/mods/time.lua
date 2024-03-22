@@ -9,26 +9,18 @@ local timedate = wibox.widget({
 			{
 				{
 					{
-						{
-							font = beautiful.sans .. " Bold 14",
-							format = "%I : %M %p",
-							align = "center",
-							valign = "center",
-							widget = wibox.widget.textclock,
-						},
-						widget = wibox.container.place,
+						font = beautiful.sans .. " Bold 14",
+						format = "%I : %M %p",
+						align = "center",
 						valign = "center",
+						widget = wibox.widget.textclock,
 					},
 					{
-						{
-							font = beautiful.sans .. " 12",
-							format = "%A, %d %B %Y",
-							align = "center",
-							valign = "center",
-							widget = wibox.widget.textclock,
-						},
-						widget = wibox.container.place,
+						font = beautiful.sans .. " 12",
+						format = "%A, %d %B %Y",
+						align = "center",
 						valign = "center",
+						widget = wibox.widget.textclock,
 					},
 					layout = wibox.layout.fixed.vertical,
 					spacing = 5,
@@ -40,14 +32,14 @@ local timedate = wibox.widget({
 			right = 20,
 			left = 20,
 		},
-		bg = beautiful.lighter,
+		bg = beautiful.background,
+		widget = wibox.container.background,
+		shape = helpers.rrect(5),
 		buttons = {
 			awful.button({}, 1, function()
 				awesome.emit_signal("toggle::moment")
 			end),
 		},
-		widget = wibox.container.background,
-		shape = helpers.rrect(5),
 	},
 	widget = wibox.container.margin,
 	top = 10,

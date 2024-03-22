@@ -45,7 +45,7 @@ local battery = wibox.widget({
 				forced_width = 80,
 				paddings = 5,
 				border_color = beautiful.foreground .. "99",
-				background_color = beautiful.lighter,
+				background_color = beautiful.background,
 				color = beautiful.blue,
 				bar_shape = helpers.rrect(5),
 				border_width = 1,
@@ -103,10 +103,11 @@ M.widget = wibox.widget({
 		},
 		widget = wibox.container.background,
 		shape = helpers.rrect(5),
-		bg = beautiful.lighter,
+		bg = beautiful.background,
 		buttons = {
 			awful.button({}, 1, function()
 				awesome.emit_signal("toggle::control")
+				awesome.emit_signal("toggle::music")
 			end),
 		},
 	},

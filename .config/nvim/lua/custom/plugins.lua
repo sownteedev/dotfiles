@@ -31,14 +31,6 @@ return {
 		end,
 	},
 	{
-		"codota/tabnine-nvim",
-		lazy = false,
-		build = "./dl_binaries.sh",
-		config = function()
-			require("tabnine").setup()
-		end,
-	},
-	{
 		"iamcco/markdown-preview.nvim",
 		ft = "markdown",
 		build = ":call mkdp#util#install()",

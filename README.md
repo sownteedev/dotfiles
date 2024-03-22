@@ -31,7 +31,6 @@
     swapon /dev/nvme0n1p6
 
     mkfs.ext4 /dev/nvme0n1p5
-
     mount /dev/nvme0n1p5 /mnt
 
     mkdir /mnt/boot
@@ -61,9 +60,9 @@
     echo arch > /etc/hostname
 
     nvim /etc/hosts
-    127.0.0.1[TAB]localhost
-    ::1[TAB][TAB]localhost
-    127.0.1.1[TAB]arch.localdomain[TAB]arch
+    Add: 127.0.0.1[TAB]localhost
+         ::1[TAB][TAB]localhost
+         127.0.1.1[TAB]arch.localdomain[TAB]arch
 
 ### User add or password
 
@@ -75,7 +74,7 @@
 
     EDITOR=nvim visudo
     Add: sowntee ALL=(ALL) ALL
-    sowntee ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff, /usr/sbin/rfkill unblock all, /usr/sbin/rfkill block all
+         sowntee ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff, /usr/sbin/rfkill unblock all, /usr/sbin/rfkill block all
     Uncomment: %wheel ALL=(ALL) ALL
 
 ###  Wifi
@@ -83,16 +82,11 @@
 	sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools
 	sudo systemctl enable NetworkManager dhcpcd
 
-## For GRUB
+## For GRUB (Enable Secure Boot)
 
     sudo pacman -S grub os-prober efibootmgr ntfs-3g mtools dosfstools
     sudo nvim /etc/default/grub
     Uncomment: GRUB_DISABLE_OS_PROBER=false
-    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
-    grub-mkconfig -o /boot/grub/grub.cfg
-
-#### Enable GRUB with secure boot
-
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
     sudo grub-mkconfig -o /boot/grub/grub.cfg
     sudo sbctl create-keys
@@ -100,7 +94,7 @@
     sudo chattr -i /sys/firmware/efi/efivars/*
     sudo sbctl enroll-keys -mi
 
-#### If GRUB not found Windows
+#### If GRUB not found Windows (Do it when restart)
 
     sudo os-prober
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --recheck

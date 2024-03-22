@@ -23,7 +23,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 					{
 						widget = wibox.container.scroll.horizontal,
 						step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
-						speed = 80,
+						speed = 100,
 						forced_width = 250,
 						{
 							markup = labelconnected,

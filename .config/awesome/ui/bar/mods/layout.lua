@@ -43,7 +43,7 @@ local widget = {
 			margins = 15,
 			widget = wibox.container.margin,
 		},
-		bg = beautiful.lighter,
+		bg = beautiful.background,
 		forced_height = 0,
 		shape = helpers.rrect(5),
 		widget = wibox.container.background,
