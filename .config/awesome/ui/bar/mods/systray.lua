@@ -49,7 +49,7 @@ local widget = wibox.widget({
 			layout = wibox.layout.fixed.horizontal,
 		},
 		shape = helpers.rrect(2),
-		bg = beautiful.lighter,
+		bg = beautiful.background,
 		widget = wibox.container.background,
 	},
 	widget = wibox.container.margin,
