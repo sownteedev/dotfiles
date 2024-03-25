@@ -34,7 +34,7 @@ return function(s)
 			widget = wibox.container.place,
 			create_callback = function(self, tag)
 				self.taganim = animation:new({
-					duration = 0.3,
+					duration = 0.1,
 					easing = animation.easing.linear,
 					update = function(_, pos)
 						self:get_children_by_id("background_role")[1].forced_width = pos

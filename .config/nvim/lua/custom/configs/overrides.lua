@@ -15,4 +15,8 @@ M.mason = {
 	},
 }
 
+M.whichkey = {
+	setup = { triggers = { "<leader>" } },
+}
+
 return M

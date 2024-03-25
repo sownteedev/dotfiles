@@ -20,7 +20,7 @@ end
 local rec_mic = function(fps, file_name)
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
-		"sleep 0.75 && ffmpeg -y -f x11grab "
+		"sleep 1 && ffmpeg -y -f x11grab "
 			.. "-r %s -i %s -f pulse -i 59 -c:v libx264 -qp 0 -profile:v main "
 			.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
 			.. "-c:a aac -b:a 64k -b:v 500k %s",
@@ -35,7 +35,7 @@ end
 local rec_audio = function(fps, file_name)
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
-		"sleep 0.75 && ffmpeg -y -f x11grab "
+		"sleep 1 && ffmpeg -y -f x11grab "
 			.. "-r %s -i %s -f pulse -i 57 -c:v libx264 -qp 0 -profile:v main "
 			.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
 			.. "-c:a aac -b:a 64k -b:v 500k %s",
@@ -108,7 +108,7 @@ awful.screen.connect_for_each_screen(function(s)
 		visible = false,
 	})
 	local slide = animation:new({
-		duration = 0.6,
+		duration = 1,
 		pos = 0 - recorder.height,
 		easing = animation.easing.inOutExpo,
 		update = function(_, pos)
@@ -118,7 +118,7 @@ awful.screen.connect_for_each_screen(function(s)
 
 	local slide_end = gears.timer({
 		single_shot = true,
-		timeout = 0.5,
+		timeout = 1,
 		callback = function()
 			recorder.visible = false
 		end,

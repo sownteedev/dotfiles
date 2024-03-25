@@ -59,7 +59,7 @@ awful.screen.connect_for_each_screen(function(s)
 		screen = s,
 		width = beautiful.width / 4,
 		height = (beautiful.height / 3) * 0.56,
-		bg = beautiful.background .. "00",
+		bg = beautiful.background,
 		ontop = true,
 		visible = false,
 	})
@@ -110,17 +110,31 @@ awful.screen.connect_for_each_screen(function(s)
 							},
 							nil,
 							{
-								id = "player",
-								font = beautiful.sans .. " 12",
-								markup = helpers.colorizeText("", beautiful.foreground),
-								widget = wibox.widget.textbox,
+								{
+									id = "pos",
+									font = beautiful.sans .. " 12",
+									markup = "",
+									widget = wibox.widget.textbox,
+								},
+								{
+									id = "player",
+									font = beautiful.sans .. " 11",
+									markup = " ",
+									widget = wibox.widget.textbox,
+								},
+								{
+									id = "prg",
+									forced_height = 4,
+									color = beautiful.foreground,
+									background_color = beautiful.foreground .. "00",
+									widget = wibox.widget.progressbar,
+								},
+								layout = wibox.layout.fixed.vertical,
 							},
 							layout = wibox.layout.align.vertical,
 						},
 						widget = wibox.container.margin,
-						left = 20,
-						bottom = 20,
-						top = 20,
+						margins = 20,
 					},
 					layout = wibox.layout.stack,
 				},
@@ -180,8 +194,27 @@ awful.screen.connect_for_each_screen(function(s)
 		art.image = helpers.cropSurface(1.9, gears.surface.load_uncached(album_path))
 		helpers.gc(music, "songname"):set_markup_silently(helpers.colorizeText(title or "NO", beautiful.foreground))
 		helpers.gc(music, "artist"):set_markup_silently(helpers.colorizeText(artist or "HM", beautiful.foreground))
-		helpers
-			.gc(music, "player")
-			:set_markup_silently(helpers.colorizeText("Playing On: " .. player_name or "", beautiful.foreground))
+		if player_name ~= "spotify" then
+			helpers
+				.gc(music, "player")
+				:set_markup_silently(helpers.colorizeText("Playing On: " .. player_name, beautiful.foreground))
+		else
+			helpers.gc(music, "player"):set_markup_silently(helpers.colorizeText(" ", beautiful.foreground))
+		end
+	end)
+	playerctl:connect_signal("position", function(_, a, b, _)
+		music:get_children_by_id("prg")[1].value = a
+		music:get_children_by_id("prg")[1].max_value = b
+		if b ~= 0 then
+			local pos = string.format("%02d:%02d", math.floor(a / 60), math.floor(a % 60))
+			local len = string.format("%02d:%02d", math.floor(b / 60), math.floor(b % 60))
+			helpers
+				.gc(music, "pos")
+				:set_markup_silently(helpers.colorizeText(pos .. " / " .. len, beautiful.foreground))
+			music:get_children_by_id("prg")[1].background_color = beautiful.foreground .. "11"
+		else
+			helpers.gc(music, "pos"):set_markup_silently(helpers.colorizeText("", beautiful.foreground))
+			music:get_children_by_id("prg")[1].background_color = beautiful.foreground .. "00"
+		end
 	end)
 end)
