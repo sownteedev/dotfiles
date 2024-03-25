@@ -12,7 +12,7 @@ awful.screen.connect_for_each_screen(function(s)
 		screen = s,
 		width = beautiful.width / 4,
 		height = (beautiful.height / 3) * 1.3,
-		bg = beautiful.background .. "00",
+		bg = beautiful.background,
 		ontop = true,
 		visible = false,
 	})

@@ -133,7 +133,7 @@ local widget = wibox.widget({
 			"awesome-client 'naughty = require(\"naughty\") naughty.toggle()'",
 			"",
 			"󰍶 ",
-			"Don't Disturb",
+			"Disturb",
 			"Don't Disturb Me",
 			"Disturb Me Please",
 			"dnd"

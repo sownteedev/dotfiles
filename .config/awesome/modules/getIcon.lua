@@ -1,5 +1,6 @@
 local icon_cache = {}
-local t = "/home/sowntee/.icons/Reversal-black-dark/"
+local getUser = os.getenv("USER")
+local t = "/home/" .. getUser .. "/.icons/Reversal-black-dark/"
 
 local custom = {
 	{
@@ -24,7 +25,7 @@ local custom = {
 	},
 	{
 		name = "jetbrains-idea",
-		to = "jetbrains-intellij-idea",
+		to = "intellij-idea-ultimate-edition",
 	},
 	{
 		name = "TelegramDesktop",
@@ -45,6 +46,10 @@ local custom = {
 	{
 		name = "libreoffice-impress",
 		to = "libreoffice-impress",
+	},
+	{
+		name = "FFPWA-01HSQTMPBC1480B2EK2ECV42TX",
+		to = "soundcloud",
 	},
 }
 

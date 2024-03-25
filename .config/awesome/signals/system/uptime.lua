@@ -3,7 +3,7 @@ local gears = require("gears")
 
 local function emit_uptime_status()
 	awful.spawn.easy_async_with_shell(
-		"uptime --pretty | sed 's/up\\s*//g' | sed 's/\\s*days/d/g' | sed 's/\\s*hours/h/g' | sed 's/\\s*minutes/m/g'",
+		"bash -c \"uptime --pretty | sed 's/up\\s*//g' | sed 's/\\s*days/d/g' | sed 's/\\s*hours/h/g' | sed 's/\\s*minutes/m/g'\"",
 		function(stdout)
 			stdout = stdout:gsub("%s+", " ")
 			awesome.emit_signal("signal::uptime", stdout)
@@ -18,5 +18,4 @@ gears.timer({
 	callback = function()
 		emit_uptime_status()
 	end,
-	single_shot = true,
 })

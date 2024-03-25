@@ -90,7 +90,7 @@ awful.screen.connect_for_each_screen(function(s)
 		visible = false,
 	})
 	local slide = animation:new({
-		duration = 0.6,
+		duration = 1,
 		pos = 0 - scrotter.height,
 		easing = animation.easing.inOutExpo,
 		update = function(_, pos)
@@ -100,7 +100,7 @@ awful.screen.connect_for_each_screen(function(s)
 
 	local slide_end = gears.timer({
 		single_shot = true,
-		timeout = 0.5,
+		timeout = 1,
 		callback = function()
 			scrotter.visible = false
 		end,

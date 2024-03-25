@@ -39,6 +39,7 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 				slidIcon,
 				widget = wibox.container.margin,
 				left = 15,
+				right = 2,
 				top = 8,
 				bottom = 8,
 			},

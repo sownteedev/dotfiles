@@ -75,7 +75,6 @@ sleep 3 && clear
 echo "[*] Enable touchpad for laptop ..."
 read -p "[*] Do you want? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-	sudo touch /etc/X11/xorg.conf.d/30-touchpad.conf
 	sudo cp ~/dotfiles/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
 	echo "[*] Done."
 else

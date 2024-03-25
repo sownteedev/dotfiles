@@ -2,7 +2,7 @@ local awful = require("awful")
 local gears = require("gears")
 
 local function emit_airplane_status()
-	awful.spawn.easy_async_with_shell("rfkill list | sed -n 5p | awk '{print $3}'", function(stdout)
+	awful.spawn.easy_async_with_shell("bash -c \"rfkill list | sed -n 2p | awk '{print $3}'\" ", function(stdout)
 		local status = stdout:match("yes")
 		awesome.emit_signal("signal::airplane", status)
 	end)

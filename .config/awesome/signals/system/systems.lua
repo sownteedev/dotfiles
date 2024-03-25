@@ -1,7 +1,7 @@
 local awful = require("awful")
 
 -- CPU
-local update_interval_cpu = 10
+local update_interval_cpu = 60
 local cpu_idle_script = [[sh -c "vmstat 1 2 | tail -1 | awk '{printf \"%d\", $15}'"]]
 
 awful.widget.watch(cpu_idle_script, update_interval_cpu, function(widget, stdout)
@@ -11,7 +11,7 @@ awful.widget.watch(cpu_idle_script, update_interval_cpu, function(widget, stdout
 end)
 
 -- RAM
-local update_interval_ram = 10
+local update_interval_ram = 60
 local ram_script = [[sh -c "free -m | grep 'Mem:' | awk '{printf \"%d@@%d@\", $7, $2}'"]]
 awful.widget.watch(ram_script, update_interval_ram, function(widget, stdout)
 	local available = stdout:match("(.*)@@")
