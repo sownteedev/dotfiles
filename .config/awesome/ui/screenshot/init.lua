@@ -15,6 +15,12 @@ local delay = tostring(1) .. " "
 
 local clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
+local checkFolder = function()
+	if not os.rename(os.getenv("HOME") .. "/Pictures/Screenshots/", os.getenv("HOME") .. "/Pictures/Screenshots") then
+		os.execute("mkdir -p " .. os.getenv("HOME") .. "/Pictures/Screenshots")
+	end
+end
+
 local getName = function()
 	local string = "~/Pictures/Screenshots/" .. os.date("%d-%m-%Y-%H:%M:%S") .. ".png"
 	string = string:gsub("~", os.getenv("HOME"))
@@ -113,8 +119,10 @@ awful.screen.connect_for_each_screen(function(s)
 
 	local fullscreen = createButton(" ", "Fullscreen", function()
 		close()
+		checkFolder()
 		local name = getName()
 		local cmd = defCommand .. name
+		awful.spawn.with_shell(cmd .. " && notify-send -i " .. name .. " 'Capture' 'Screenshot saved'")
 		awful.spawn.easy_async_with_shell(cmd, function()
 			copyScrot(name)
 		end)
@@ -128,9 +136,10 @@ awful.screen.connect_for_each_screen(function(s)
 
 	local window = createButton(" ", "Window", function()
 		close()
+		checkFolder()
 		local name = getName()
 		local cmd = "maim" .. mouseString .. " -i " .. client.focus.window .. " " .. name
-		awful.spawn.with_shell(cmd)
+		awful.spawn.with_shell(cmd .. " && notify-send -i " .. name .. " 'Capture' 'Screenshot saved'")
 		awful.spawn.easy_async_with_shell(cmd, function()
 			copyScrot(name)
 		end)
@@ -167,7 +176,7 @@ awful.screen.connect_for_each_screen(function(s)
 		margins = 15,
 	})
 
-	awesome.connect_signal("toggle::scrotter", function()
+	awesome.connect_signal("toggle::screenshot", function()
 		if scrotter.visible then
 			slide_end:again()
 			slide:set(0 - scrotter.height)
@@ -177,7 +186,7 @@ awful.screen.connect_for_each_screen(function(s)
 		end
 		awful.placement.centered(scrotter)
 	end)
-	awesome.connect_signal("close::scrotter", function()
+	awesome.connect_signal("close::screenshot", function()
 		close()
 	end)
 end)

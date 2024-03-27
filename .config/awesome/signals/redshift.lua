@@ -2,7 +2,7 @@ local awful = require("awful")
 local gears = require("gears")
 
 local function light_emit()
-	awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/redshift'", function(stdout)
+	awful.spawn.easy_async_with_shell("cat ~/.cache/redshift", function(stdout)
 		local status = stdout:match("true")
 		awesome.emit_signal("signal::redshift", status)
 	end)
