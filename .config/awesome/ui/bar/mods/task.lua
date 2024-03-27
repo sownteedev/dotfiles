@@ -386,8 +386,6 @@ function M:genIcons()
 						resize = true,
 					},
 					widget = wibox.container.place,
-					halign = "center",
-					valign = "center",
 				},
 				layout = wibox.layout.stack,
 			})

@@ -26,7 +26,6 @@ return function(s)
 		},
 		widget_template = {
 			{
-				valign = "center",
 				id = "background_role",
 				widget = wibox.container.background,
 				forced_height = 12,

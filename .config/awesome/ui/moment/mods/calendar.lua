@@ -9,14 +9,14 @@ local datewidget = function(date, weekend, notIn)
 	if notIn then
 		return wibox.widget({
 			markup = helpers.colorizeText(date, beautiful.foreground),
-			halign = "center",
+			align = "center",
 			font = beautiful.sans .. " 15",
 			widget = wibox.widget.textbox,
 		})
 	else
 		return wibox.widget({
 			markup = weekend and helpers.colorizeText(date, beautiful.foreground) or date,
-			halign = "center",
+			align = "center",
 			font = beautiful.sans .. " 15",
 			widget = wibox.widget.textbox,
 		})
@@ -27,7 +27,7 @@ local daywidget = function(day, weekend, notIn)
 	weekend = weekend or false
 	return wibox.widget({
 		markup = weekend and helpers.colorizeText(day, beautiful.red) or day,
-		halign = "center",
+		align = "center",
 		font = beautiful.sans .. " 15",
 		widget = wibox.widget.textbox,
 	})
@@ -36,7 +36,7 @@ local currwidget = function(day)
 	return wibox.widget({
 		{
 			markup = helpers.colorizeText(day, beautiful.foreground),
-			halign = "center",
+			align = "center",
 			font = beautiful.sans .. " 15",
 			widget = wibox.widget.textbox,
 		},
@@ -49,7 +49,7 @@ end
 local title = wibox.widget({
 	font = beautiful.sans .. " Bold 20",
 	widget = wibox.widget.textbox,
-	halign = "center",
+	align = "center",
 })
 
 local theGrid = wibox.widget({

@@ -12,8 +12,6 @@ return function(icon, n)
 			image = helpers.cropSurface(1, gears.surface.load_uncached(icon)),
 			resize = true,
 			clip_shape = gears.shape.circle,
-			halign = "center",
-			valign = "center",
 		},
 	})
 
@@ -35,13 +33,14 @@ return function(icon, n)
 		widget = wibox.widget.textbox,
 		text = os.date("%H:%M:%S"),
 		align = "right",
+		font = beautiful.sans .. " 12",
 	})
 
 	local text_notif = wibox.widget({
 		markup = n.message,
 		align = "left",
 		forced_width = 165,
-		font = beautiful.sans .. " 12",
+		font = beautiful.sans .. " 13",
 		widget = wibox.widget.textbox,
 	})
 

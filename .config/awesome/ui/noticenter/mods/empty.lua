@@ -8,12 +8,11 @@ return wibox.widget({
 			resize = true,
 			forced_height = 400,
 			halign = "center",
-			valign = "center",
 			widget = wibox.widget.imagebox,
 		},
 		widget = wibox.container.place,
 		valign = "center",
 	},
 	widget = wibox.container.background,
-	forced_height = 1000,
+	forced_height = 800,
 })

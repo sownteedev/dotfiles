@@ -20,7 +20,6 @@ local createPowerButton = function(icon, color, command)
 			{
 				{
 					markup = helpers.colorizeText(icon, color),
-					align = "center",
 					font = beautiful.icon .. " 25",
 					widget = wibox.widget.textbox,
 				},
@@ -35,7 +34,6 @@ local createPowerButton = function(icon, color, command)
 			shape = helpers.rrect(5),
 		},
 		widget = wibox.container.place,
-		halign = "center",
 		buttons = {
 			awful.button({}, 1, function()
 				L:close()
@@ -61,7 +59,6 @@ local sidebar = wibox.widget({
 					resize = true,
 				},
 				widget = wibox.container.place,
-				halign = "center",
 			},
 			widget = wibox.container.margin,
 			top = 15,
@@ -120,8 +117,6 @@ local prompt = wibox.widget({
 			bg = beautiful.darker .. "50",
 		},
 		widget = wibox.container.place,
-		halign = "center",
-		valgn = "center",
 	},
 	layout = wibox.layout.stack,
 })
@@ -281,7 +276,6 @@ local function filter(input)
 						clip_shape = helpers.rrect(10),
 						forced_height = 70,
 						forced_width = 70,
-						valign = "center",
 						widget = wibox.widget.imagebox,
 					},
 					{

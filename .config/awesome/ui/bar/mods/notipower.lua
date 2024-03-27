@@ -8,7 +8,6 @@ local notipower = wibox.widget({
 		{
 			{
 				{
-					align = "center",
 					font = beautiful.icon .. " 20",
 					markup = helpers.colorizeText("󰂜 ", beautiful.green),
 					widget = wibox.widget.textbox,
@@ -19,7 +18,6 @@ local notipower = wibox.widget({
 					},
 				},
 				{
-					align = "center",
 					font = beautiful.icon .. " 20",
 					markup = helpers.colorizeText("󰐥 ", beautiful.red),
 					widget = wibox.widget.textbox,

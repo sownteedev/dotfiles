@@ -27,7 +27,6 @@ local widget = wibox.widget({
 				widget = wibox.container.background,
 			},
 			widget = wibox.container.place,
-			valign = "center",
 		},
 		spacing = 5,
 		layout = wibox.layout.fixed.horizontal,
@@ -35,7 +34,6 @@ local widget = wibox.widget({
 	{
 		font = beautiful.sans .. " 25",
 		markup = helpers.colorizeText("25%", beautiful.foreground),
-		valign = "center",
 		id = "batvalue",
 		widget = wibox.widget.textbox,
 	},

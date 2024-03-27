@@ -49,11 +49,9 @@ awful.screen.connect_for_each_screen(function(s)
 	})
 
 	local clearButton = wibox.widget({
-		font = beautiful.icon .. " 15",
+		font = beautiful.icon .. " 20",
 		markup = helpers.colorizeText(" ", beautiful.red),
 		widget = wibox.widget.textbox,
-		valign = "center",
-		align = "center",
 		buttons = {
 			awful.button({}, 1, function()
 				notif_center_reset_notifs_container()

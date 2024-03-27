@@ -19,7 +19,6 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, albu
 end)
 
 local next = wibox.widget({
-	align = "center",
 	font = beautiful.icon .. " 20",
 	markup = helpers.colorizeText("󰒭", beautiful.foreground),
 	widget = wibox.widget.textbox,
@@ -31,7 +30,6 @@ local next = wibox.widget({
 })
 
 local prev = wibox.widget({
-	align = "center",
 	font = beautiful.icon .. " 20",
 	markup = helpers.colorizeText("󰒮", beautiful.foreground),
 	widget = wibox.widget.textbox,
@@ -42,7 +40,6 @@ local prev = wibox.widget({
 	},
 })
 local play = wibox.widget({
-	align = "center",
 	font = beautiful.icon .. " 20",
 	markup = helpers.colorizeText("󰐊", beautiful.foreground),
 	widget = wibox.widget.textbox,
@@ -54,7 +51,6 @@ local play = wibox.widget({
 })
 
 local headphones = wibox.widget({
-	align = "center",
 	font = beautiful.icon .. " 20",
 	markup = helpers.colorizeText("󰟎 ", beautiful.red),
 	widget = wibox.widget.textbox,

@@ -42,16 +42,12 @@ local widget = wibox.widget({
 						{
 							font = beautiful.sans .. " Bold 50",
 							format = "%I : %M",
-							align = "center",
-							valign = "center",
 							widget = wibox.widget.textclock,
 						},
 						{
 							{
 								font = beautiful.sans .. " Bold 10",
 								format = "%p",
-								align = "center",
-								valign = "bottom",
 								widget = wibox.widget.textclock,
 							},
 							widget = wibox.container.margin,
@@ -71,8 +67,7 @@ local widget = wibox.widget({
 					layout = wibox.layout.fixed.vertical,
 				},
 				widget = wibox.container.place,
-				valign = "center",
-				halign = "center",
+				align = "center",
 			},
 			layout = wibox.layout.align.horizontal,
 		},
@@ -104,4 +99,5 @@ gears.timer({
 		updateTime()
 	end,
 })
+
 return widget

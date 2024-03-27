@@ -129,4 +129,16 @@
     mkdir Windows
     sudo mount -t ntfs-3g -o ro /dev/nvme0n1p3 $HOME/Windows
 
+## Driver NVDIA
+    
+    sudo nvim /etc/pacman.conf
+    Uncomment: [multilib]
+               Include = /etc/pacman.d/mirrorlist
+    sudo pacman -S --needed nvidia nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime --noconfirm
+
+    sudo nvim /etc/default/grub
+    Add: nvidia_drm.modeset=1 on GRUB_CMDLINE_LINUX_DEFAULT
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+    reboot
+
 </blockquote></details>

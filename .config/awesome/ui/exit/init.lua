@@ -53,7 +53,6 @@ awful.screen.connect_for_each_screen(function(s)
 						id = "icon",
 						markup = helpers.colorizeText(icon, color),
 						font = beautiful.icon .. " 60",
-						align = "center",
 						widget = wibox.widget.textbox,
 					},
 					widget = wibox.container.margin,
@@ -90,24 +89,16 @@ awful.screen.connect_for_each_screen(function(s)
 
 	local time = wibox.widget({
 		{
-			{
-				markup = helpers.colorizeText("󰀠 ", beautiful.blue),
-				font = beautiful.icon .. " 50",
-				align = "center",
-				valign = "center",
-				widget = wibox.widget.textbox,
-			},
-			{
-				font = beautiful.sans .. " 25",
-				format = "%I:%M %p",
-				align = "center",
-				valign = "center",
-				widget = wibox.widget.textclock,
-			},
-			layout = wibox.layout.fixed.horizontal,
+			markup = helpers.colorizeText("󰀠 ", beautiful.blue),
+			font = beautiful.icon .. " 50",
+			widget = wibox.widget.textbox,
 		},
-		widget = wibox.container.place,
-		valign = "center",
+		{
+			font = beautiful.sans .. " 25",
+			format = "%I:%M %p",
+			widget = wibox.widget.textclock,
+		},
+		layout = wibox.layout.fixed.horizontal,
 	})
 
 	local down = wibox.widget({
@@ -122,7 +113,6 @@ awful.screen.connect_for_each_screen(function(s)
 			},
 			widget = wibox.container.place,
 			valign = "bottom",
-			halign = "center",
 		},
 		widget = wibox.container.margin,
 		bottom = 60,
@@ -144,8 +134,6 @@ awful.screen.connect_for_each_screen(function(s)
 			spacing = 40,
 		},
 		widget = wibox.container.place,
-		halign = "center",
-		valign = "center",
 	})
 
 	exit:setup({

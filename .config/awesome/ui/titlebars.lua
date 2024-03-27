@@ -12,10 +12,7 @@ client.connect_signal("request::titlebars", function(c)
 
 	local close = wibox.widget({
 		font = beautiful.icon .. " 18",
-		markup = helpers.colorizeText("󰅙 ", beautiful.red),
 		widget = wibox.widget.textbox,
-		valign = "center",
-		align = "center",
 		buttons = {
 			awful.button({}, 1, function()
 				c:kill()
@@ -24,10 +21,7 @@ client.connect_signal("request::titlebars", function(c)
 	})
 	local minimize = wibox.widget({
 		font = beautiful.icon .. " 18",
-		markup = helpers.colorizeText("󰍶 ", beautiful.yellow),
 		widget = wibox.widget.textbox,
-		valign = "center",
-		align = "center",
 		buttons = {
 			awful.button({}, 1, function()
 				gears.timer.delayed_call(function()
@@ -38,10 +32,7 @@ client.connect_signal("request::titlebars", function(c)
 	})
 	local maximize = wibox.widget({
 		font = beautiful.icon .. " 18",
-		markup = helpers.colorizeText("󰿣 ", beautiful.green),
 		widget = wibox.widget.textbox,
-		valign = "center",
-		align = "center",
 		buttons = {
 			awful.button({}, 1, function()
 				c.maximized = not c.maximized
@@ -86,7 +77,6 @@ client.connect_signal("request::titlebars", function(c)
 			resize = true,
 		},
 		widget = wibox.container.place,
-		halign = "center",
 	})
 
 	top_titlebar.widget = {

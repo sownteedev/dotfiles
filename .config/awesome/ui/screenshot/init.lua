@@ -3,37 +3,8 @@ local helpers = require("helpers")
 local awful = require("awful")
 local beautiful = require("beautiful")
 local gears = require("gears")
-local lgi = require("lgi")
-local Gtk = lgi.require("Gtk", "3.0")
-local Gdk = lgi.require("Gdk", "3.0")
-local GdkPixbuf = lgi.GdkPixbuf
 local animation = require("modules.animation")
-
-local useMouse = true
-local mouseString = useMouse and " -u " or ""
-local delay = tostring(1) .. " "
-
-local clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-
-local checkFolder = function()
-	if not os.rename(os.getenv("HOME") .. "/Pictures/Screenshots/", os.getenv("HOME") .. "/Pictures/Screenshots") then
-		os.execute("mkdir -p " .. os.getenv("HOME") .. "/Pictures/Screenshots")
-	end
-end
-
-local getName = function()
-	local string = "~/Pictures/Screenshots/" .. os.date("%d-%m-%Y-%H:%M:%S") .. ".png"
-	string = string:gsub("~", os.getenv("HOME"))
-	return string
-end
-
-local defCommand = "maim" .. mouseString .. "-d " .. delay
-
-local copyScrot = function(path)
-	local image = GdkPixbuf.Pixbuf.new_from_file(path)
-	clipboard:set_image(image)
-	clipboard:store()
-end
+local screenshot = require("ui.screenshot.mods")
 
 local createButton = function(icon, name, fn, col)
 	return wibox.widget({
@@ -44,7 +15,6 @@ local createButton = function(icon, name, fn, col)
 						{
 							font = beautiful.icon .. " 25",
 							markup = icon,
-							valign = "center",
 							align = "center",
 							widget = wibox.widget.textbox,
 						},
@@ -56,7 +26,6 @@ local createButton = function(icon, name, fn, col)
 						{
 							font = beautiful.sans .. " 15",
 							markup = name,
-							valign = "center",
 							align = "center",
 							widget = wibox.widget.textbox,
 						},
@@ -119,30 +88,17 @@ awful.screen.connect_for_each_screen(function(s)
 
 	local fullscreen = createButton(" ", "Fullscreen", function()
 		close()
-		checkFolder()
-		local name = getName()
-		local cmd = defCommand .. name
-		awful.spawn.with_shell(cmd .. " && notify-send -i " .. name .. " 'Capture' 'Screenshot saved'")
-		awful.spawn.easy_async_with_shell(cmd, function()
-			copyScrot(name)
-		end)
+		screenshot.full({ notify = true })
 	end, beautiful.green)
 
 	local selection = createButton(" ", "Selection", function()
 		close()
-		local cmd = "sleep 1 && flameshot gui"
-		awful.spawn.with_shell(cmd)
+		screenshot.area({ notify = true })
 	end, beautiful.yellow)
 
 	local window = createButton(" ", "Window", function()
 		close()
-		checkFolder()
-		local name = getName()
-		local cmd = "maim" .. mouseString .. " -i " .. client.focus.window .. " " .. name
-		awful.spawn.with_shell(cmd .. " && notify-send -i " .. name .. " 'Capture' 'Screenshot saved'")
-		awful.spawn.easy_async_with_shell(cmd, function()
-			copyScrot(name)
-		end)
+		screenshot.window({ notify = true })
 	end, beautiful.red)
 
 	scrotter:setup({
@@ -152,7 +108,6 @@ awful.screen.connect_for_each_screen(function(s)
 					{
 						font = beautiful.sans .. " Bold 15",
 						markup = "Screenshotter",
-						valign = "center",
 						align = "start",
 						widget = wibox.widget.textbox,
 					},
