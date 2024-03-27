@@ -56,7 +56,6 @@ local createButton = function(icon, name, fn, col)
 						{
 							font = beautiful.icon .. " 25",
 							markup = icon,
-							valign = "center",
 							align = "center",
 							widget = wibox.widget.textbox,
 						},
@@ -68,7 +67,6 @@ local createButton = function(icon, name, fn, col)
 						{
 							font = beautiful.sans .. " 15",
 							markup = name,
-							valign = "center",
 							align = "center",
 							widget = wibox.widget.textbox,
 						},
@@ -156,7 +154,6 @@ awful.screen.connect_for_each_screen(function(s)
 						{
 							font = beautiful.sans .. " Bold 15",
 							markup = "Video Recorder",
-							valign = "center",
 							align = "start",
 							widget = wibox.widget.textbox,
 						},

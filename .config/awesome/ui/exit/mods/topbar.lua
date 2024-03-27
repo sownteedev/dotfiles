@@ -11,8 +11,6 @@ local widget = wibox.widget({
 				image = beautiful.profile,
 				forced_height = 100,
 				forced_width = 100,
-				align = "center",
-				valign = "center",
 				clip_shape = helpers.rrect(40),
 				resize = true,
 			},
@@ -22,7 +20,6 @@ local widget = wibox.widget({
 					markup = helpers.colorizeText("@" .. beautiful.user, beautiful.foreground),
 					font = beautiful.sans .. " 20",
 					align = "left",
-					valign = "center",
 				},
 				widget = wibox.container.margin,
 				left = 20,
@@ -39,8 +36,6 @@ local widget = wibox.widget({
 							{
 								font = beautiful.sans .. " 20",
 								format = "%A, %d %B %Y",
-								align = "center",
-								valign = "center",
 								widget = wibox.widget.textclock,
 							},
 							layout = wibox.layout.fixed.horizontal,
@@ -51,7 +46,6 @@ local widget = wibox.widget({
 						right = 25,
 					},
 					widget = wibox.container.place,
-					valign = "center",
 				},
 				{
 					{
@@ -65,7 +59,6 @@ local widget = wibox.widget({
 								font = beautiful.sans .. " 20",
 								id = "uptime",
 								markup = helpers.colorizeText("", beautiful.foreground),
-								valign = "center",
 								widget = wibox.widget.textbox,
 							},
 							layout = wibox.layout.fixed.horizontal,
@@ -76,14 +69,12 @@ local widget = wibox.widget({
 						right = 25,
 					},
 					widget = wibox.container.place,
-					valign = "center",
 				},
 				{
 					{
 						{
 							font = beautiful.icon .. " 25",
 							markup = helpers.colorizeText("󰅖", beautiful.red),
-							valign = "center",
 							widget = wibox.widget.textbox,
 						},
 						widget = wibox.container.margin,
@@ -95,7 +86,6 @@ local widget = wibox.widget({
 						end),
 					},
 					widget = wibox.container.place,
-					valign = "center",
 				},
 				spacing = 40,
 				layout = wibox.layout.fixed.horizontal,
@@ -104,7 +94,6 @@ local widget = wibox.widget({
 		},
 		widget = wibox.container.place,
 		content_fill_horizontal = true,
-		halign = "center",
 		valign = "top",
 	},
 	widget = wibox.container.margin,

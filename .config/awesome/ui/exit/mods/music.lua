@@ -16,7 +16,6 @@ local art = wibox.widget({
 local songname = wibox.widget({
 	markup = helpers.colorizeText("Nothing Playing", beautiful.foreground),
 	align = "left",
-	valign = "center",
 	font = beautiful.sans .. " 25",
 	widget = wibox.widget.textbox,
 })

@@ -18,8 +18,6 @@ local profile = wibox.widget({
 			},
 		},
 		widget = wibox.container.place,
-		halign = "center",
-		valign = "center",
 	},
 	widget = wibox.container.margin,
 	top = 10,

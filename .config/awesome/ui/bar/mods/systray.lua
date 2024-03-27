@@ -6,8 +6,6 @@ local wibox = require("wibox")
 local togglertext = wibox.widget({
 	font = beautiful.icon .. " 20",
 	text = "󰅁",
-	valign = "center",
-	align = "center",
 	buttons = {
 		awful.button({}, 1, function()
 			awesome.emit_signal("systray::toggle")
@@ -49,7 +47,7 @@ local widget = wibox.widget({
 			layout = wibox.layout.fixed.horizontal,
 		},
 		shape = helpers.rrect(2),
-		bg = beautiful.background,
+		bg = beautiful.lighter,
 		widget = wibox.container.background,
 	},
 	widget = wibox.container.margin,

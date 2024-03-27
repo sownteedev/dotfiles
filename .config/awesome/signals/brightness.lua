@@ -3,7 +3,7 @@ local gears = require("gears")
 
 local function brightness()
 	awful.spawn.easy_async_with_shell(
-		"echo $(($(cat /sys/class/backlight/*/brightness) * 100 / $(cat /sys/class/backlight/*/max_brightness)))",
+		"bash -c 'echo $(($(cat /sys/class/backlight/*/brightness) * 100 / $(cat /sys/class/backlight/*/max_brightness)))'",
 		function(stdout)
 			local value = tonumber(stdout)
 			awesome.emit_signal("signal::brightnesss", value)
@@ -13,7 +13,7 @@ end
 
 function brightness_emit()
 	awful.spawn.easy_async_with_shell(
-		"echo $(($(cat /sys/class/backlight/*/brightness) * 100 / $(cat /sys/class/backlight/*/max_brightness)))",
+		"bash -c 'echo $(($(cat /sys/class/backlight/*/brightness) * 100 / $(cat /sys/class/backlight/*/max_brightness)))'",
 		function(stdout)
 			local value = tonumber(stdout)
 			awesome.emit_signal("signal::brightness", value)

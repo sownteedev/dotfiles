@@ -41,6 +41,31 @@ end)
 
 --------------------------
 naughty.connect_signal("request::display", function(n)
+	-- actions
+	local action_widget = {
+		{
+			id = "text_role",
+			align = "center",
+			font = beautiful.sans .. " 12",
+			widget = wibox.widget.textbox,
+		},
+		bg = beautiful.lighter,
+		forced_height = 30,
+		shape = helpers.rrect(2),
+		widget = wibox.container.background,
+	}
+	local actions = wibox.widget({
+		notification = n,
+		base_layout = wibox.widget({
+			spacing = 30,
+			layout = wibox.layout.flex.horizontal,
+		}),
+		align = "center",
+		widget_template = action_widget,
+		style = { underline_normal = false, underline_selected = true },
+		widget = naughty.list.actions,
+	})
+
 	-- image
 	local image_n = wibox.widget({
 		{
@@ -48,8 +73,6 @@ naughty.connect_signal("request::display", function(n)
 				image = n.icon and helpers.cropSurface(1, gears.surface.load_uncached(n.icon))
 					or gears.filesystem.get_configuration_dir() .. "themes/assets/bell.png",
 				resize = true,
-				halign = "center",
-				valign = "center",
 				clip_shape = helpers.rrect(50),
 				widget = wibox.widget.imagebox,
 			},
@@ -91,7 +114,6 @@ naughty.connect_signal("request::display", function(n)
 				markup = n.title,
 				font = beautiful.sans .. " 20",
 				align = "right",
-				valign = "center",
 				widget = wibox.widget.textbox,
 			},
 			forced_width = 400,
@@ -108,7 +130,6 @@ naughty.connect_signal("request::display", function(n)
 				markup = helpers.colorizeText("<span weight='normal'>" .. n.message .. "</span>", beautiful.foreground),
 				font = beautiful.sans .. " 15",
 				align = "left",
-				valign = "center",
 				wrap = "char",
 				widget = wibox.widget.textbox,
 			},
@@ -129,7 +150,6 @@ naughty.connect_signal("request::display", function(n)
 		markup = helpers.colorizeText(aname, beautiful.foreground .. "BF"),
 		font = beautiful.sans .. " 15",
 		align = "left",
-		valign = "center",
 		widget = wibox.widget.textbox,
 	})
 
@@ -138,7 +158,6 @@ naughty.connect_signal("request::display", function(n)
 			markup = helpers.colorizeText(os.date("%H:%M:%S"), beautiful.foreground .. "BF"),
 			font = beautiful.sans .. " 15",
 			align = "right",
-			valign = "center",
 			widget = wibox.widget.textbox,
 		},
 		margins = { right = 20 },
@@ -149,7 +168,6 @@ naughty.connect_signal("request::display", function(n)
 		markup = helpers.colorizeText("󰅙 ", beautiful.red),
 		font = beautiful.icon .. " 15",
 		align = "ceneter",
-		valign = "center",
 		widget = wibox.widget.textbox,
 	})
 
@@ -200,6 +218,7 @@ naughty.connect_signal("request::display", function(n)
 						{
 							title_n,
 							message_n,
+							actions,
 							layout = wibox.layout.fixed.vertical,
 							spacing = 30,
 						},
@@ -207,17 +226,17 @@ naughty.connect_signal("request::display", function(n)
 						{
 							image_n,
 							layout = wibox.container.margin,
-							top = 20,
-							bottom = 20,
+							bottom = 30,
+							left = 40,
 						},
 						layout = wibox.layout.align.horizontal,
 						expand = "none",
 					},
-					margins = { left = 30, top = 10, right = 30 },
 					widget = wibox.container.margin,
+					margins = { left = 30, right = 30 },
 				},
 				layout = wibox.layout.fixed.vertical,
-				spacing = 10,
+				spacing = 30,
 			},
 			widget = wibox.container.background,
 			bg = beautiful.darker,

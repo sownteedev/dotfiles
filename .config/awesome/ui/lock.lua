@@ -11,7 +11,6 @@ local pctl = require("modules.playerctl")
 local playerctl = pctl.lib()
 
 local next = wibox.widget({
-	align = "center",
 	font = beautiful.icon .. " 30",
 	text = "󰒭",
 	widget = wibox.widget.textbox,
@@ -23,7 +22,6 @@ local next = wibox.widget({
 })
 
 local prev = wibox.widget({
-	align = "center",
 	font = beautiful.icon .. " 30",
 	text = "󰒮",
 	widget = wibox.widget.textbox,
@@ -34,19 +32,14 @@ local prev = wibox.widget({
 	},
 })
 local play = wibox.widget({
-	{
-		align = "center",
-		font = beautiful.icon .. " 30",
-		markup = helpers.colorizeText("󰐍 ", beautiful.foreground),
-		widget = wibox.widget.textbox,
-		buttons = {
-			awful.button({}, 1, function()
-				playerctl:play_pause()
-			end),
-		},
+	font = beautiful.icon .. " 30",
+	markup = helpers.colorizeText("󰐍 ", beautiful.foreground),
+	widget = wibox.widget.textbox,
+	buttons = {
+		awful.button({}, 1, function()
+			playerctl:play_pause()
+		end),
 	},
-	widget = wibox.container.margin,
-	left = 15,
 })
 
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
@@ -66,7 +59,6 @@ local header = wibox.widget({
 			forced_height = 300,
 			forced_width = 300,
 			opacity = 1,
-			halign = "center",
 			widget = wibox.widget.imagebox,
 		},
 		id = "arc",
@@ -87,8 +79,6 @@ local header = wibox.widget({
 
 local label = wibox.widget({
 	markup = "Type The Password",
-	valign = "center",
-	halign = "center",
 	id = "name",
 	font = beautiful.sans .. " 15",
 	widget = wibox.widget.textbox,
@@ -246,8 +236,6 @@ promptbox:setup({
 						{
 							font = beautiful.sans .. " Bold 150",
 							format = "%I:%M",
-							halign = "center",
-							valign = "center",
 							widget = wibox.widget.textclock,
 						},
 						{
@@ -271,8 +259,6 @@ promptbox:setup({
 				{
 					font = beautiful.sans .. " Light 45",
 					format = "%A, %d %B %Y",
-					halign = "center",
-					valign = "center",
 					widget = wibox.widget.textclock,
 				},
 				{
@@ -293,7 +279,16 @@ promptbox:setup({
 					music,
 					{
 						{
-							{ prev, play, next, layout = wibox.layout.fixed.horizontal },
+							{
+								prev,
+								{
+									play,
+									widget = wibox.container.margin,
+									left = 15,
+								},
+								next,
+								layout = wibox.layout.fixed.horizontal,
+							},
 							widget = wibox.container.margin,
 							left = 10,
 							right = 10,

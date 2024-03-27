@@ -144,7 +144,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 	# Monitor and Theme
 	echo "[*] Installing monitor and theme ..."
-	sudo pacman -S feh flameshot maim viewnior lxappearance imagemagick neofetch arandr --noconfirm
+	sudo pacman -S flameshot maim viewnior lxappearance imagemagick neofetch arandr --noconfirm
 	echo "[*] Done."
 	sleep 3 && clear
 

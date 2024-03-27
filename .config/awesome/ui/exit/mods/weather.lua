@@ -6,19 +6,19 @@ local gears = require("gears")
 local widget = wibox.widget({
 	{
 		id = "image",
-		image = gears.filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
+		image = gears.color.recolor_image(
+			gears.filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
+			beautiful.foreground
+		),
 		opacity = 1,
-		clip_shape = helpers.rrect(4),
 		forced_height = 80,
 		forced_width = 80,
-		valign = "center",
 		widget = wibox.widget.imagebox,
 	},
 	{
 		id = "desc",
 		font = beautiful.sans .. " 25",
 		markup = "Scattered Clouds",
-		valign = "center",
 		align = "start",
 		widget = wibox.widget.textbox,
 	},
@@ -28,7 +28,7 @@ local widget = wibox.widget({
 
 awesome.connect_signal("signal::weather", function(out)
 	helpers.gc(widget, "desc").markup = out.desc
-	helpers.gc(widget, "image").image = out.image
+	helpers.gc(widget, "image").image = gears.color.recolor_image(out.image, beautiful.foreground)
 end)
 
 return widget

@@ -3,6 +3,7 @@ local gtable = require("gears.table")
 local gtimer = require("gears.timer")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
+local gears = require("gears")
 local helpers = require("helpers")
 local setmetatable = setmetatable
 local ipairs = ipairs
@@ -205,10 +206,15 @@ function menu.sub_menu_button(args)
 
 	local icon = args.icon ~= nil
 			and wibox.widget({
-				font = beautiful.icon .. " 17",
-				markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
-				widget = wibox.widget.textbox,
-				halign = "start",
+				image = gears.color.recolor_image(
+					gears.filesystem.get_configuration_dir() .. "/themes/assets/awesome.svg",
+					helpers.randomColor()
+				),
+				resize = true,
+				forced_height = 20,
+				forced_width = 20,
+				valign = "center",
+				widget = wibox.widget.imagebox,
 			})
 		or nil
 
@@ -226,7 +232,7 @@ function menu.sub_menu_button(args)
 						halign = "start",
 					},
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 15,
+					spacing = 20,
 				},
 				nil,
 				{
@@ -292,7 +298,7 @@ function menu.button(args)
 				icon,
 				text_widget,
 				layout = wibox.layout.fixed.horizontal,
-				spacing = 15,
+				spacing = 10,
 			},
 			widget = wibox.container.margin,
 			left = 30,

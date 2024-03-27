@@ -5,7 +5,7 @@ local json = require("modules.json")
 local icon_dir = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
 local thumb_dir = filesystem.get_configuration_dir() .. "themes/assets/weather/images/"
 
-local GET_FORECAST_CMD = [[curl -s --show-error -X GET '%s']]
+local GET_FORECAST_CMD = [[bash -c "curl -s --show-error -X GET '%s'"]]
 
 local icon_map = {
 	["01d"] = "weather-clear-sky",

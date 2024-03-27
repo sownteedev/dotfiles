@@ -17,7 +17,7 @@ local info = wibox.widget({
 					markup = "",
 				},
 				widget = wibox.container.margin,
-				left = 18,
+				left = 17,
 				right = 5,
 				top = 10,
 				bottom = 10,
@@ -28,7 +28,7 @@ local info = wibox.widget({
 		},
 		{
 			widget = wibox.container.background,
-			forced_width = 40,
+			forced_width = 35,
 			{
 				widget = wibox.widget.textbox,
 				id = "text",
@@ -47,8 +47,8 @@ local info = wibox.widget({
 				bar_shape = helpers.rrect(5),
 			},
 			widget = wibox.container.margin,
-			top = 15,
-			bottom = 15,
+			top = 20,
+			bottom = 20,
 		},
 		layout = wibox.layout.fixed.horizontal,
 		spacing = 20,
