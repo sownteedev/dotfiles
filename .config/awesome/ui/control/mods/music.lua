@@ -78,9 +78,6 @@ awful.screen.connect_for_each_screen(function(s)
 				{
 					art,
 					{
-						{
-							widget = wibox.widget.textbox,
-						},
 						bg = {
 							type = "linear",
 							from = { 0, 0 },

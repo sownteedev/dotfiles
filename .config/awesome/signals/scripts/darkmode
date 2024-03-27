@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+is_active=$(cat ~/.cache/darkmode)
+
+if [[ $is_active == *"true"* ]]; then
+	awesome-client 'applyTheme("yoru")' && echo false > ~/.cache/darkmode
+else
+	awesome-client 'applyTheme("one_light")' && echo true > ~/.cache/darkmode
+fi

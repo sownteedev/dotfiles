@@ -60,7 +60,7 @@ awful.keyboard.append_global_keybindings({
 	end),
 
 	awful.key({}, "Print", function()
-		awesome.emit_signal("toggle::scrotter")
+		awesome.emit_signal("toggle::screenshot")
 	end),
 	awful.key({ mod }, "Print", function()
 		awesome.emit_signal("toggle::recorder")
@@ -171,7 +171,7 @@ awful.mouse.append_global_mousebindings({
 		awesome.emit_signal("close::control")
 		awesome.emit_signal("close::music")
 		awesome.emit_signal("close::recorder")
-		awesome.emit_signal("close::scrotter")
+		awesome.emit_signal("close::screenshot")
 	end),
 	awful.button({}, 3, function()
 		Menu.desktop:toggle()
@@ -184,5 +184,5 @@ client.connect_signal("button::press", function()
 	awesome.emit_signal("close::control")
 	awesome.emit_signal("close::music")
 	awesome.emit_signal("close::recorder")
-	awesome.emit_signal("close::scrotter")
+	awesome.emit_signal("close::screenshot")
 end)

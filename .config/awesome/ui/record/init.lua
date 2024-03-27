@@ -144,8 +144,8 @@ awful.screen.connect_for_each_screen(function(s)
 	end, beautiful.blue)
 
 	local stop = createButton("󰜺 ", "Finish", function()
-		close()
 		awful.spawn.with_shell("killall ffmpeg")
+		close()
 	end, beautiful.red)
 
 	recorder:setup({

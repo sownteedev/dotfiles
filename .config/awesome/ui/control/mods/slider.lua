@@ -12,7 +12,6 @@ end
 
 local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 	local slidSlider = wibox.widget({
-		bar_shape = helpers.rrect(5),
 		bar_height = 3,
 		bar_color = beautiful.foreground .. "05",
 		bar_active_color = beautiful.foreground,
@@ -56,21 +55,7 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 				end),
 			},
 		},
-		{
-			{
-				{
-					widget = wibox.container.background,
-					forced_height = 2,
-					shape = helpers.rrect(10),
-					bg = beautiful.lighter,
-				},
-				widget = wibox.container.place,
-				content_fill_horizontal = true,
-				valign = "center",
-			},
-			slidSlider,
-			layout = wibox.layout.stack,
-		},
+		slidSlider,
 		layout = wibox.layout.fixed.horizontal,
 		spacing = 15,
 	})
@@ -120,7 +105,7 @@ local widget = wibox.widget({
 		"micmute",
 		"pactl set-source-mute @DEFAULT_SOURCE@ toggle",
 		"pavucontrol",
-		"pactl set-source-volume alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__hw_sofhdadsp_6__source %d%%"
+		"pactl set-source-volume @DEFAULT_SOURCE@ %d%%"
 	),
 	layout = wibox.layout.fixed.vertical,
 	spacing = 15,
