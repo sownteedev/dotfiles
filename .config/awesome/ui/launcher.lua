@@ -163,7 +163,7 @@ local popup_widget = awful.popup({
 	ontop = true,
 	visible = false,
 	placement = function(d)
-		awful.placement.bottom_left(d, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
+		helpers.placeWidget(d, "bottom_left", 0, 2, 2, 0)
 	end,
 	maximum_width = Conf.entry_width + Conf.entry_height + Conf.popup_margins * 3,
 	shape = helpers.rrect(5),
@@ -304,7 +304,7 @@ local function filter(input)
 
 		if i == index_entry then
 			entry_widget.bg = beautiful.background
-			entry_widget:get_children_by_id("name")[1].markup = helpers.colorizeText(entry.name, beautiful.blue)
+			helpers.gc(entry_widget, "name"):set_markup_silently(helpers.colorizeText(entry.name, beautiful.blue))
 		end
 	end
 
@@ -355,17 +355,17 @@ local prompt_grabber = awful.keygrabber({
 		if key == "Escape" then
 			L:close()
 		elseif key == "BackSpace" then
-			prompt:get_children_by_id("txt")[1].markup = prompt:get_children_by_id("txt")[1].markup:sub(1, -2)
-			filter(prompt:get_children_by_id("txt")[1].markup)
+			helpers.gc(prompt, "txt"):set_markup_silently(helpers.gc(prompt, "txt").markup:sub(1, -2))
+			filter(helpers.gc(prompt, "txt").markup)
 		elseif key == "Delete" then
-			prompt:get_children_by_id("txt")[1].markup = ""
-			filter(prompt:get_children_by_id("txt")[1].markup)
+			helpers.gc(prompt, "txt"):set_markup_silently("")
+			filter(helpers.gc(prompt, "txt").markup)
 		elseif key == "Return" then
 			local entry = filtered[index_entry]
 			if entry then
 				entry.appinfo:launch()
 			else
-				awful.spawn.with_shell(prompt:get_children_by_id("txt")[1].markup)
+				awful.spawn.with_shell(helpers.gc(prompt, "txt").markup)
 			end
 			L:close()
 		elseif key == "Up" then
@@ -377,12 +377,12 @@ local prompt_grabber = awful.keygrabber({
 		else
 			addition = key
 		end
-		prompt:get_children_by_id("txt")[1].markup = prompt:get_children_by_id("txt")[1].markup .. addition
-		filter(prompt:get_children_by_id("txt")[1].markup)
-		if string.len(prompt:get_children_by_id("txt")[1].markup) > 0 then
-			prompt:get_children_by_id("placeholder")[1].markup = ""
+		helpers.gc(prompt, "txt"):set_markup_silently(helpers.gc(prompt, "txt").markup .. addition)
+		filter(helpers.gc(prompt, "txt").markup)
+		if string.len(helpers.gc(prompt, "txt").markup) > 0 then
+			helpers.gc(prompt, "placeholder"):set_markup_silently("")
 		else
-			prompt:get_children_by_id("placeholder")[1].markup = "Search..."
+			helpers.gc(prompt, "placeholder"):set_markup_silently("Search...")
 		end
 	end,
 })
@@ -397,7 +397,7 @@ end
 function L:close()
 	popup_widget.visible = false
 	prompt_grabber:stop()
-	prompt:get_children_by_id("txt")[1].markup = ""
+	helpers.gc(prompt, "txt"):set_markup_silently("")
 end
 
 function L:toggle()

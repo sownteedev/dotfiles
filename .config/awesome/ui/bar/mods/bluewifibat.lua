@@ -69,7 +69,7 @@ local battery = wibox.widget({
 	margin = 20,
 })
 awesome.connect_signal("signal::battery", function(value)
-	local b = battery:get_children_by_id("prog")[1]
+	local b = helpers.gc(battery, "prog")
 	b.value = value
 	if value >= 75 then
 		b.color = beautiful.green

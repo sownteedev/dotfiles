@@ -48,7 +48,7 @@ local rec_audio = function(fps, file_name)
 end
 
 local createButton = function(icon, name, fn, col)
-	return wibox.widget({
+	local button = wibox.widget({
 		{
 			{
 				{
@@ -81,6 +81,7 @@ local createButton = function(icon, name, fn, col)
 			},
 			forced_width = 130,
 			bg = beautiful.background,
+			id = "bg",
 			widget = wibox.container.background,
 		},
 		{
@@ -94,6 +95,8 @@ local createButton = function(icon, name, fn, col)
 			fn()
 		end),
 	})
+	helpers.addHover(button, beautiful.background, helpers.blend(col, beautiful.background, 0.1))
+	return button
 end
 
 awful.screen.connect_for_each_screen(function(s)

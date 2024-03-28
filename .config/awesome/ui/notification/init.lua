@@ -100,7 +100,7 @@ naughty.connect_signal("request::display", function(n)
 		reset_on_stop = false,
 		easing = animation.easing.linear,
 		update = function(_, pos)
-			image_n:get_children_by_id("arc")[1].value = pos
+			helpers.gc(image_n, "arc"):set_value(pos)
 		end,
 	})
 	anim:connect_signal("ended", function()

@@ -28,7 +28,11 @@ ruled.client.connect_signal("request::rules", function()
 		rule = {},
 		properties = { placement = helpers.centered_client_placement },
 	})
-
+	-- helpers.centered_client_placement = function(c)
+	-- 	return gears.timer.delayed_call(function()
+	-- 		awful.placement.centered(c, { honor_padding = true, honor_workarea = true })
+	-- 	end)
+	-- end
 	-- Titlebars
 	ruled.client.append_rule({
 		id = "titlebars",

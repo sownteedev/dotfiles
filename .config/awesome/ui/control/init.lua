@@ -6,6 +6,7 @@ local wibox = require("wibox")
 local buttons = require("ui.control.mods.buttons")
 local sliders = require("ui.control.mods.slider")
 local footer = require("ui.control.mods.footer")
+require(... .. ".mods.music")
 
 awful.screen.connect_for_each_screen(function(s)
 	local control = wibox({
@@ -34,7 +35,7 @@ awful.screen.connect_for_each_screen(function(s)
 		shape = helpers.rrect(5),
 	})
 
-	awful.placement.bottom_right(control, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
+	helpers.placeWidget(control, "bottom_right", 0, 2, 0, 2)
 	awesome.connect_signal("toggle::control", function()
 		control.visible = not control.visible
 	end)

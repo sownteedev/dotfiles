@@ -119,8 +119,8 @@ local visible = function(v)
 end
 
 local reset = function(f)
-	header:get_children_by_id("arc")[1].value = not f and 100 or 0
-	header:get_children_by_id("arc")[1].colors = { not f and beautiful.red or beautiful.foreground }
+	helpers.gc(header, "arc"):set_value(not f and 100 or 0)
+	helpers.gc(header, "arc"):set_colors({ not f and beautiful.red or beautiful.foreground })
 end
 
 local getRandom = function()
@@ -150,22 +150,22 @@ local function grab()
 				return
 			end
 			if #key == 1 then
-				header:get_children_by_id("arc")[1].colors = { beautiful.blue }
-				header:get_children_by_id("arc")[1].value = 20
-				header:get_children_by_id("arc")[1].start_angle = getRandom()
+				helpers.gc(header, "arc"):set_colors({ beautiful.blue })
+				helpers.gc(header, "arc"):set_value(20)
+				helpers.gc(header, "arc"):set_start_angle(getRandom())
 				if input == nil then
 					input = key
 					return
 				end
 				input = input .. key
 			elseif key == "BackSpace" then
-				header:get_children_by_id("arc")[1].colors = { beautiful.blue }
-				header:get_children_by_id("arc")[1].value = 20
-				header:get_children_by_id("arc")[1].start_angle = getRandom()
+				helpers.gc(header, "arc"):set_colors({ beautiful.blue })
+				helpers.gc(header, "arc"):set_value(20)
+				helpers.gc(header, "arc"):set_start_angle(getRandom())
 				input = input:sub(1, -2)
 				if #input == 0 then
-					header:get_children_by_id("arc")[1].colors = { beautiful.red }
-					header:get_children_by_id("arc")[1].value = 100
+					helpers.gc(header, "arc"):set_colors({ beautiful.red })
+					helpers.gc(header, "arc"):set_value(100)
 				end
 			end
 		end,
@@ -177,7 +177,7 @@ local function grab()
 					visible(false)
 					input = ""
 				else
-					header:get_children_by_id("arc")[1].colors = { beautiful.red }
+					helpers.gc(header, "arc"):set_colors({ beautiful.red })
 					reset(false)
 					grab()
 					input = ""

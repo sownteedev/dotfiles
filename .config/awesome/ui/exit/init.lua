@@ -78,12 +78,7 @@ awful.screen.connect_for_each_screen(function(s)
 			},
 			layout = wibox.layout.fixed.vertical,
 		})
-		widget:connect_signal("mouse::enter", function()
-			helpers.gc(widget, "bg").bg = helpers.blend(color, beautiful.background, 0.1)
-		end)
-		widget:connect_signal("mouse::leave", function()
-			helpers.gc(widget, "bg").bg = beautiful.background
-		end)
+		helpers.addHover(widget, beautiful.background, helpers.blend(color, beautiful.background, 0.1))
 		return widget
 	end
 

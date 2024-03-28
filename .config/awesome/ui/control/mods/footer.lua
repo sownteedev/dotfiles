@@ -97,8 +97,8 @@ local widget = wibox.widget({
 })
 
 awesome.connect_signal("signal::battery", function(value)
-	local b = widget:get_children_by_id("prog")[1]
-	local v = widget:get_children_by_id("batvalue")[1]
+	local b = helpers.gc(widget, "prog")
+	local v = helpers.gc(widget, "batvalue")
 	v.markup = helpers.colorizeText(value .. "%", beautiful.foreground)
 	b.value = value
 	if value >= 75 then

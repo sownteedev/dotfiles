@@ -36,7 +36,7 @@ return function(s)
 					duration = 0.1,
 					easing = animation.easing.linear,
 					update = function(_, pos)
-						self:get_children_by_id("background_role")[1].forced_width = pos
+						helpers.gc(self, "background_role"):set_forced_width(pos)
 					end,
 				})
 				self.update = function()
