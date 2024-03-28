@@ -59,38 +59,41 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 
 	awesome.connect_signal("signal::" .. signal, function(status)
 		if status then
-			widget:get_children_by_id("back")[1].bg = beautiful.blue
-			widget:get_children_by_id("name")[1].markup = helpers.colorizeText(name, beautiful.background)
-			widget:get_children_by_id("icon")[1].markup = helpers.colorizeText(icon, beautiful.background)
+			helpers.gc(widget, "back"):set_bg(beautiful.blue)
+			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.background))
+			helpers.gc(widget, "icon"):set_markup_silently(helpers.colorizeText(icon, beautiful.background))
 			if signal == "network" then
 				awesome.connect_signal("signal::wifiname", function(stdout)
 					if stdout ~= "" then
-						widget:get_children_by_id("label")[1].markup =
-							helpers.colorizeText("Connected " .. stdout, beautiful.background)
+						helpers
+							.gc(widget, "label")
+							:set_markup_silently(helpers.colorizeText("Connected " .. stdout, beautiful.background))
 					else
-						widget:get_children_by_id("label")[1].markup =
-							helpers.colorizeText("No Network", beautiful.background)
+						helpers
+							.gc(widget, "label")
+							:set_markup_silently(helpers.colorizeText("No Network", beautiful.background))
 					end
 				end)
 			elseif signal == "bluetooth" then
 				awesome.connect_signal("signal::bluetoothname", function(stdout)
 					if stdout ~= "" then
-						widget:get_children_by_id("label")[1].markup =
-							helpers.colorizeText("Connected " .. stdout, beautiful.background)
+						helpers
+							.gc(widget, "label")
+							:set_markup_silently(helpers.colorizeText("Connected " .. stdout, beautiful.background))
 					else
-						widget:get_children_by_id("label")[1].markup =
-							helpers.colorizeText("No Device", beautiful.background)
+						helpers
+							.gc(widget, "label")
+							:set_markup_silently(helpers.colorizeText("No Device", beautiful.background))
 					end
 				end)
 			else
-				widget:get_children_by_id("label")[1].markup =
-					helpers.colorizeText(labelconnected, beautiful.background)
+				helpers.gc(widget, "label").markup = helpers.colorizeText(labelconnected, beautiful.background)
 			end
 		else
-			widget:get_children_by_id("back")[1].bg = beautiful.background
-			widget:get_children_by_id("name")[1].markup = helpers.colorizeText(name, beautiful.foreground)
-			widget:get_children_by_id("icon")[1].markup = helpers.colorizeText(icon, beautiful.foreground)
-			widget:get_children_by_id("label")[1].markup = helpers.colorizeText(labeldisconnected, beautiful.foreground)
+			helpers.gc(widget, "back").bg = beautiful.background
+			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.foreground))
+			helpers.gc(widget, "icon"):set_markup_silently(helpers.colorizeText(icon, beautiful.foreground))
+			helpers.gc(widget, "label").markup = helpers.colorizeText(labeldisconnected, beautiful.foreground)
 		end
 	end)
 	return widget

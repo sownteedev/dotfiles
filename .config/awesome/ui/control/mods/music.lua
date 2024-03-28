@@ -6,14 +6,6 @@ local pctl = require("modules.playerctl")
 local helpers = require("helpers")
 local playerctl = pctl.lib()
 
-local art = wibox.widget({
-	image = helpers.cropSurface(1.9, gears.surface.load_uncached(beautiful.songdefpicture)),
-	opacity = 0.5,
-	resize = true,
-	clip_shape = helpers.rrect(5),
-	widget = wibox.widget.imagebox,
-})
-
 local next = wibox.widget({
 	align = "center",
 	font = beautiful.icon .. " 30",
@@ -63,20 +55,21 @@ awful.screen.connect_for_each_screen(function(s)
 		ontop = true,
 		visible = false,
 	})
-	awful.placement.bottom_right(music, {
-		honor_workarea = true,
-		margins = {
-			bottom = beautiful.useless_gap * 74,
-			right = beautiful.useless_gap * 2,
-		},
-	})
+	helpers.placeWidget(music, "bottom_right", 0, 74, 0, 2)
 
 	music:setup({
 		{
 			{
 				nil,
 				{
-					art,
+					{
+						id = "art",
+						image = helpers.cropSurface(1.9, gears.surface.load_uncached(beautiful.songdefpicture)),
+						opacity = 0.5,
+						resize = true,
+						clip_shape = helpers.rrect(5),
+						widget = wibox.widget.imagebox,
+					},
 					{
 						bg = {
 							type = "linear",
@@ -121,7 +114,7 @@ awful.screen.connect_for_each_screen(function(s)
 								},
 								{
 									id = "prg",
-									forced_height = 4,
+									forced_height = 3,
 									color = beautiful.foreground,
 									background_color = beautiful.foreground .. "00",
 									widget = wibox.widget.progressbar,
@@ -178,6 +171,7 @@ awful.screen.connect_for_each_screen(function(s)
 	awesome.connect_signal("close::music", function()
 		music.visible = false
 	end)
+
 	playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
 		if album_path == "" then
 			album_path = beautiful.songdefpicture
@@ -188,9 +182,9 @@ awful.screen.connect_for_each_screen(function(s)
 		if string.len(artist) > 25 then
 			artist = string.sub(artist, 0, 25) .. "..."
 		end
-		art.image = helpers.cropSurface(1.9, gears.surface.load_uncached(album_path))
 		helpers.gc(music, "songname"):set_markup_silently(helpers.colorizeText(title or "NO", beautiful.foreground))
 		helpers.gc(music, "artist"):set_markup_silently(helpers.colorizeText(artist or "HM", beautiful.foreground))
+		helpers.gc(music, "art"):set_image(helpers.cropSurface(1.9, gears.surface.load_uncached(album_path)))
 		if player_name ~= "spotify" then
 			helpers
 				.gc(music, "player")
@@ -200,18 +194,18 @@ awful.screen.connect_for_each_screen(function(s)
 		end
 	end)
 	playerctl:connect_signal("position", function(_, a, b, _)
-		music:get_children_by_id("prg")[1].value = a
-		music:get_children_by_id("prg")[1].max_value = b
 		if b ~= 0 then
 			local pos = string.format("%02d:%02d", math.floor(a / 60), math.floor(a % 60))
 			local len = string.format("%02d:%02d", math.floor(b / 60), math.floor(b % 60))
 			helpers
 				.gc(music, "pos")
 				:set_markup_silently(helpers.colorizeText(pos .. " / " .. len, beautiful.foreground))
-			music:get_children_by_id("prg")[1].background_color = beautiful.foreground .. "11"
+			helpers.gc(music, "prg"):set_value(a)
+			helpers.gc(music, "prg"):set_max_value(b)
+			helpers.gc(music, "prg"):set_background_color(beautiful.foreground .. "33")
 		else
 			helpers.gc(music, "pos"):set_markup_silently(helpers.colorizeText("", beautiful.foreground))
-			music:get_children_by_id("prg")[1].background_color = beautiful.foreground .. "00"
+			helpers.gc(music, "prg"):set_background_color(beautiful.foreground .. "00")
 		end
 	end)
 end)

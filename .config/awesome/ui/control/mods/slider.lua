@@ -67,20 +67,20 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 		if value then
 			if signal2 == "micmute" then
 				slidIcon.markup = helpers.colorizeText(" ", beautiful.background)
-				slidScale:get_children_by_id("background_role")[1].bg = beautiful.blue
+				helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
 			elseif signal2 == "volumemute" then
 				slidIcon.markup = helpers.colorizeText("󰖁 ", beautiful.background)
-				slidScale:get_children_by_id("background_role")[1].bg = beautiful.blue
+				helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
 			elseif value == 25 and signal2 == "brightnesss" then
 				slidIcon.markup = helpers.colorizeText("󰃝 ", beautiful.background)
-				slidScale:get_children_by_id("background_role")[1].bg = beautiful.blue
+				helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
 			elseif value == 70 and signal2 == "brightnesss" then
 				slidIcon.markup = helpers.colorizeText(icon, beautiful.foreground)
-				slidScale:get_children_by_id("background_role")[1].bg = beautiful.background
+				helpers.gc(slidScale, "background_role"):set_bg(beautiful.background)
 			end
 		else
 			slidIcon.markup = helpers.colorizeText(icon, beautiful.foreground)
-			slidScale:get_children_by_id("background_role")[1].bg = beautiful.background
+			helpers.gc(slidScale, "background_role"):set_bg(beautiful.background)
 		end
 	end)
 	slidSlider:connect_signal("property::value", function(_, new_value)

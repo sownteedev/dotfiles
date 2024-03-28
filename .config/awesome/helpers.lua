@@ -29,28 +29,60 @@ helpers.prect = function(tl, tr, br, bl, radius)
 end
 
 helpers.addHover = function(element, bg, hbg)
-	element:connect_signal("mouse::enter", function(self)
-		self.bg = hbg
+	element:connect_signal("mouse::enter", function()
+		helpers.gc(element, "bg").bg = hbg
 	end)
-	element:connect_signal("mouse::leave", function(self)
-		self.bg = bg
+	element:connect_signal("mouse::leave", function()
+		helpers.gc(element, "bg").bg = bg
 	end)
 end
 
-helpers.placeWidget = function(widget)
-	if beautiful.barDir == "left" then
-		awful.placement.bottom_left(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
-	elseif beautiful.barDir == "right" then
-		awful.placement.bottom_right(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
-	elseif beautiful.barDir == "bottom" then
+helpers.placeWidget = function(widget, where, t, b, l, r)
+	if where == "top_right" then
+		awful.placement.top_right(widget, {
+			honor_workarea = true,
+			margins = {
+				top = beautiful.useless_gap * t,
+				bottom = beautiful.useless_gap * b,
+				left = beautiful.useless_gap * l,
+				right = beautiful.useless_gap * r,
+			},
+		})
+	elseif where == "bottom_right" then
+		awful.placement.bottom_right(widget, {
+			honor_workarea = true,
+			margins = {
+				top = beautiful.useless_gap * t,
+				bottom = beautiful.useless_gap * b,
+				left = beautiful.useless_gap * l,
+				right = beautiful.useless_gap * r,
+			},
+		})
+	elseif where == "top_left" then
+		awful.placement.top_left(widget, {
+			honor_workarea = true,
+			margins = {
+				top = beautiful.useless_gap * t,
+				bottom = beautiful.useless_gap * b,
+				left = beautiful.useless_gap * l,
+				right = beautiful.useless_gap * r,
+			},
+		})
+	elseif where == "bottom_left" then
+		awful.placement.bottom_left(widget, {
+			honor_workarea = true,
+			margins = {
+				top = beautiful.useless_gap * t,
+				bottom = beautiful.useless_gap * b,
+				left = beautiful.useless_gap * l,
+				right = beautiful.useless_gap * r,
+			},
+		})
+	elseif where == "bottom" then
 		awful.placement.bottom(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
-	elseif beautiful.barDir == "top" then
+	elseif where == "top" then
 		awful.placement.top(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	end
-end
-
-helpers.clickKey = function(c, key)
-	awful.spawn.with_shell("xdotool type --window " .. tostring(c.window) .. " '" .. key .. "'")
 end
 
 helpers.colorizeText = function(txt, fg)
@@ -58,7 +90,6 @@ helpers.colorizeText = function(txt, fg)
 	if fg == "" then
 		fg = "#ffffff"
 	end
-
 	return "<span foreground='" .. fg .. "'>" .. txt .. "</span>"
 end
 
@@ -96,53 +127,11 @@ helpers.inTable = function(t, v)
 			return true
 		end
 	end
-
 	return false
-end
-
-helpers.generateId = function()
-	local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-	return string.gsub(template, "[xy]", function(c)
-		local v = (c == "x") and math.random(0, 0xf) or math.random(8, 0xb)
-		return string.format("%x", v)
-	end)
-end
-
-helpers.find_last = function(haystack, needle)
-	local found = haystack:reverse():find(needle:reverse(), nil, true)
-	if found then
-		return haystack:len() - needle:len() - found + 2
-	else
-		return found
-	end
-end
-
-helpers.addTables = function(a, b)
-	local result = {}
-	for _, v in pairs(a) do
-		table.insert(result, v)
-	end
-	for _, v in pairs(b) do
-		table.insert(result, v)
-	end
-	return result
 end
 
 helpers.hasKey = function(set, key)
 	return set[key] ~= nil
-end
-
-helpers.trim = function(string)
-	return string:gsub("^%s*(.-)%s*$", "%1")
-end
-
-helpers.indexOf = function(array, value)
-	for i, v in ipairs(array) do
-		if v == value then
-			return i
-		end
-	end
-	return nil
 end
 
 helpers.split = function(inputstr, sep)
@@ -163,48 +152,6 @@ helpers.readFile = function(file)
 	return content
 end
 
-helpers.file_exists = function(name)
-	local f = io.open(name, "r")
-	if f ~= nil then
-		io.close(f)
-		return true
-	else
-		return false
-	end
-end
-
-local function get_widget_geometry(_hierarchy, widget)
-	local width, height = _hierarchy:get_size()
-	if _hierarchy:get_widget() == widget then
-		local x, y, w, h = gmatrix.transform_rectangle(_hierarchy:get_matrix_to_device(), 0, 0, width, height)
-		return { x = x, y = y, width = w, height = h, hierarchy = _hierarchy }
-	end
-
-	for _, child in ipairs(_hierarchy:get_children()) do
-		local ret = get_widget_geometry(child, widget)
-		if ret then
-			return ret
-		end
-	end
-end
-
-function helpers.get_widget_geometry(wibox, widget)
-	return get_widget_geometry(wibox._drawable._widget_hierarchy, widget)
-end
-
-function helpers.randomColor()
-	local accents = {
-		helpers.mix(beautiful.red, beautiful.yellow, 0.5),
-		helpers.mix(beautiful.red, beautiful.blue, 0.5),
-		beautiful.yellow,
-		beautiful.green,
-		beautiful.red,
-		beautiful.blue,
-	}
-	local i = math.random(1, #accents)
-	return accents[i]
-end
-
 helpers.readJson = function(DATA)
 	if helpers.file_exists(DATA) then
 		local f = assert(io.open(DATA, "rb"))
@@ -223,12 +170,40 @@ helpers.writeJson = function(PATH, DATA)
 	w:close()
 end
 
-helpers.gc = function(widget, id)
-	return widget:get_children_by_id(id)[1]
+local function get_widget_geometry(_hierarchy, widget)
+	local width, height = _hierarchy:get_size()
+	if _hierarchy:get_widget() == widget then
+		local x, y, w, h = gmatrix.transform_rectangle(_hierarchy:get_matrix_to_device(), 0, 0, width, height)
+		return { x = x, y = y, width = w, height = h, hierarchy = _hierarchy }
+	end
+	for _, child in ipairs(_hierarchy:get_children()) do
+		local ret = get_widget_geometry(child, widget)
+		if ret then
+			return ret
+		end
+	end
+end
+helpers.get_widget_geometry = function(wibox, widget)
+	return get_widget_geometry(wibox._drawable._widget_hierarchy, widget)
 end
 
-helpers.beginsWith = function(str, pattern)
-	return str:find("^" .. pattern) ~= nil
+helpers.randomColor = function()
+	local accents = {
+		helpers.makeColor("orange"),
+		helpers.makeColor("cyan"),
+		helpers.makeColor("purple"),
+		helpers.makeColor("pink"),
+		beautiful.yellow,
+		beautiful.green,
+		beautiful.red,
+		beautiful.blue,
+	}
+	local i = math.random(1, #accents)
+	return accents[i]
+end
+
+helpers.gc = function(widget, id)
+	return widget:get_children_by_id(id)[1]
 end
 
 -- Color
@@ -265,6 +240,20 @@ helpers.mix = function(c1, c2, wt)
 	local nb = math.floor((1 - wt) * b1 + wt * b2)
 
 	return string.format("#%02X%02X%02X", nr, ng, nb)
+end
+
+helpers.makeColor = function(name)
+	if name == "yellow" then
+		return helpers.mix(beautiful.red, beautiful.green, 0.5)
+	elseif name == "orange" then
+		return helpers.mix(beautiful.red, helpers.makeColor("yellow"), 0.5)
+	elseif name == "cyan" then
+		return helpers.mix(beautiful.green, beautiful.blue, 0.5)
+	elseif name == "purple" then
+		return helpers.mix(beautiful.red, beautiful.blue, 0.5)
+	elseif name == "pink" then
+		return helpers.mix(beautiful.red, "#ffffff", 0.5)
+	end
 end
 
 return helpers

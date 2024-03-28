@@ -31,6 +31,7 @@ local dayWeather = function()
 	local widget = wibox.widget({
 		{
 			id = "day",
+			halign = "center",
 			markup = "",
 			widget = wibox.widget.textbox,
 			font = beautiful.sans .. " 15",
@@ -39,6 +40,7 @@ local dayWeather = function()
 			id = "icon",
 			resize = true,
 			opacity = 1,
+			halign = "center",
 			forced_height = 50,
 			forced_width = 50,
 			widget = wibox.widget.imagebox,

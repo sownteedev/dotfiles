@@ -7,7 +7,7 @@ local animation = require("modules.animation")
 local screenshot = require("ui.screenshot.mods")
 
 local createButton = function(icon, name, fn, col)
-	return wibox.widget({
+	local button = wibox.widget({
 		{
 			{
 				{
@@ -40,6 +40,7 @@ local createButton = function(icon, name, fn, col)
 			},
 			forced_width = 130,
 			bg = beautiful.background,
+			id = "bg",
 			widget = wibox.container.background,
 		},
 		{
@@ -53,6 +54,8 @@ local createButton = function(icon, name, fn, col)
 			fn()
 		end),
 	})
+	helpers.addHover(button, beautiful.background, helpers.blend(col, beautiful.background, 0.1))
+	return button
 end
 
 awful.screen.connect_for_each_screen(function(s)
@@ -94,7 +97,7 @@ awful.screen.connect_for_each_screen(function(s)
 	local selection = createButton(" ", "Selection", function()
 		close()
 		screenshot.area({ notify = true })
-	end, beautiful.yellow)
+	end, beautiful.blue)
 
 	local window = createButton(" ", "Window", function()
 		close()

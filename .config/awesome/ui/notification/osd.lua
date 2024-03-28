@@ -68,7 +68,7 @@ local osd = awful.popup({
 	forced_width = 0,
 	shape = helpers.rrect(5),
 	placement = function(d)
-		awful.placement.bottom(d, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
+		helpers.placeWidget(d, "bottom")
 	end,
 	widget = info,
 })
@@ -77,42 +77,42 @@ local anim = animation:new({
 	duration = 0.3,
 	easing = animation.easing.linear,
 	subscribed = function(value)
-		info:get_children_by_id("progressbar")[1].value = value
+		helpers.gc(info, "progressbar"):set_value(value)
 	end,
 })
 
 -- volume --
 awesome.connect_signal("signal::volume", function(value)
 	anim:set(value)
-	info:get_children_by_id("text")[1].text = value
+	helpers.gc(info, "text").text = value
 	if value > 66 then
-		info:get_children_by_id("icon")[1].markup = helpers.colorizeText(" ", beautiful.background)
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.background))
 	elseif value > 33 then
-		info:get_children_by_id("icon")[1].markup = helpers.colorizeText("󰕾 ", beautiful.background)
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰕾 ", beautiful.background))
 	elseif value > 0 then
-		info:get_children_by_id("icon")[1].markup = helpers.colorizeText(" ", beautiful.background)
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.background))
 	else
-		info:get_children_by_id("icon")[1].markup = helpers.colorizeText("󰖁 ", beautiful.background)
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.background))
 	end
 end)
 awesome.connect_signal("signal::volumemute", function(value)
 	if value then
-		info:get_children_by_id("icon")[1].markup = helpers.colorizeText("󰖁 ", beautiful.background)
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.background))
 	end
 end)
 
 -- bright --
 awesome.connect_signal("signal::brightness", function(value)
 	anim:set(value)
-	info:get_children_by_id("text")[1].text = value
+	helpers.gc(info, "text").text = value
 	if value > 90 then
-		info:get_children_by_id("icon")[1].markup = helpers.colorizeText("󰃠 ", beautiful.background)
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃠 ", beautiful.background))
 	elseif value > 60 then
-		info:get_children_by_id("icon")[1].markup = helpers.colorizeText("󰃝 ", beautiful.background)
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃝 ", beautiful.background))
 	elseif value > 30 then
-		info:get_children_by_id("icon")[1].markup = helpers.colorizeText("󰃟 ", beautiful.background)
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃟 ", beautiful.background))
 	elseif value > 10 then
-		info:get_children_by_id("icon")[1].markup = helpers.colorizeText("󰃞 ", beautiful.background)
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃞 ", beautiful.background))
 	end
 end)
 
