@@ -33,7 +33,7 @@ local prev = wibox.widget({
 local play = wibox.widget({
 	align = "center",
 	font = beautiful.icon .. " 30",
-	markup = helpers.colorizeText("󰐍 ", beautiful.foreground),
+	markup = "󰐍 ",
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -42,8 +42,7 @@ local play = wibox.widget({
 	},
 })
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
-	play.markup = playing and helpers.colorizeText("󰏦 ", beautiful.foreground)
-		or helpers.colorizeText("󰐍 ", beautiful.foreground)
+	play.markup = playing and "󰏦 " or "󰐍 "
 end)
 
 awful.screen.connect_for_each_screen(function(s)

@@ -5,8 +5,7 @@ local beautiful = require("beautiful")
 local helpers = require("helpers")
 
 local bluetooth = wibox.widget({
-	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText("󰂯", beautiful.foreground),
+	font = beautiful.icon .. " 18",
 	widget = wibox.widget.textbox,
 })
 awesome.connect_signal("signal::bluetooth", function(value)
@@ -18,8 +17,7 @@ awesome.connect_signal("signal::bluetooth", function(value)
 end)
 
 local wifi = wibox.widget({
-	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText(" ", beautiful.foreground),
+	font = beautiful.icon .. " 18",
 	widget = wibox.widget.textbox,
 })
 awesome.connect_signal("signal::network", function(value)
@@ -49,8 +47,8 @@ local battery = wibox.widget({
 				widget = wibox.widget.progressbar,
 			},
 			widget = wibox.container.margin,
-			top = 15,
-			bottom = 15,
+			top = 10,
+			bottom = 10,
 		},
 		{
 			{

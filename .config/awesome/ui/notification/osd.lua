@@ -5,26 +5,13 @@ local beautiful = require("beautiful")
 local helpers = require("helpers")
 local animation = require("modules.animation")
 
--- osd --
 local info = wibox.widget({
 	{
 		{
-			{
-				{
-					widget = wibox.widget.textbox,
-					id = "icon",
-					font = beautiful.icon .. " 20",
-					markup = "",
-				},
-				widget = wibox.container.margin,
-				left = 17,
-				right = 5,
-				top = 10,
-				bottom = 10,
-			},
-			widget = wibox.container.background,
-			bg = beautiful.foreground,
-			shape = helpers.rrect(100),
+			widget = wibox.widget.textbox,
+			id = "icon",
+			font = beautiful.icon .. " 20",
+			markup = "",
 		},
 		{
 			widget = wibox.container.background,
@@ -42,19 +29,20 @@ local info = wibox.widget({
 				max_value = 100,
 				forced_width = 350,
 				shape = helpers.rrect(5),
-				background_color = beautiful.lighter,
+				background_color = beautiful.foreground .. "11",
 				color = beautiful.foreground,
 				bar_shape = helpers.rrect(5),
 			},
 			widget = wibox.container.margin,
-			top = 20,
-			bottom = 20,
+			top = 35,
+			bottom = 35,
 		},
 		layout = wibox.layout.fixed.horizontal,
-		spacing = 20,
+		spacing = 15,
 	},
 	widget = wibox.container.margin,
-	margins = 20,
+	left = 30,
+	right = 30,
 })
 
 local osd = awful.popup({
@@ -63,8 +51,8 @@ local osd = awful.popup({
 	bg = beautiful.darker,
 	border_width = beautiful.border_width,
 	border_color = beautiful.border_color_normal,
-	minimum_height = 90,
-	maximum_height = 90,
+	minimum_height = 80,
+	maximum_height = 80,
 	forced_width = 0,
 	shape = helpers.rrect(5),
 	placement = function(d)
@@ -86,18 +74,18 @@ awesome.connect_signal("signal::volume", function(value)
 	anim:set(value)
 	helpers.gc(info, "text").text = value
 	if value > 66 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.background))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.foreground))
 	elseif value > 33 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰕾 ", beautiful.background))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰕾 ", beautiful.foreground))
 	elseif value > 0 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.background))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.foreground))
 	else
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.background))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.foreground))
 	end
 end)
 awesome.connect_signal("signal::volumemute", function(value)
 	if value then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.background))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.foreground))
 	end
 end)
 
@@ -106,17 +94,15 @@ awesome.connect_signal("signal::brightness", function(value)
 	anim:set(value)
 	helpers.gc(info, "text").text = value
 	if value > 90 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃠 ", beautiful.background))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃠 ", beautiful.foreground))
 	elseif value > 60 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃝 ", beautiful.background))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃝 ", beautiful.foreground))
 	elseif value > 30 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃟 ", beautiful.background))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃟 ", beautiful.foreground))
 	elseif value > 10 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃞 ", beautiful.background))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃞 ", beautiful.foreground))
 	end
 end)
-
--- function --
 
 local function osd_hide()
 	osd.visible = false

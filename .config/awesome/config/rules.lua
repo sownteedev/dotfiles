@@ -28,11 +28,7 @@ ruled.client.connect_signal("request::rules", function()
 		rule = {},
 		properties = { placement = helpers.centered_client_placement },
 	})
-	-- helpers.centered_client_placement = function(c)
-	-- 	return gears.timer.delayed_call(function()
-	-- 		awful.placement.centered(c, { honor_padding = true, honor_workarea = true })
-	-- 	end)
-	-- end
+
 	-- Titlebars
 	ruled.client.append_rule({
 		id = "titlebars",
@@ -46,7 +42,7 @@ ruled.client.connect_signal("request::rules", function()
 	})
 	ruled.client.append_rule({
 		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
-		properties = { screen = 1, tag = "2", switch_to_tags = true, width = 2560, height = 1600 - 80 },
+		properties = { screen = 1, tag = "2", switch_to_tags = true, width = 2560, height = 1600 - 75 },
 	})
 	ruled.client.append_rule({
 		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "jetbrains-pycharm", "neovide" } },
