@@ -9,13 +9,13 @@ local timedate = wibox.widget({
 			{
 				{
 					{
-						font = beautiful.sans .. " Bold 14",
+						font = beautiful.sans .. " Bold 13",
 						format = "%I : %M %p",
 						align = "center",
 						widget = wibox.widget.textclock,
 					},
 					{
-						font = beautiful.sans .. " 12",
+						font = beautiful.sans .. " 11",
 						format = "%A, %d %B %Y",
 						align = "center",
 						widget = wibox.widget.textclock,

@@ -7,20 +7,19 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local art = wibox.widget({
-	image = helpers.cropSurface(5.9, gears.surface.load_uncached(beautiful.songdefpicture)),
+	image = helpers.cropSurface(7, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.5,
-	shape = helpers.rrect(5),
 	forced_width = 350,
 	widget = wibox.widget.imagebox,
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	art.image = helpers.cropSurface(5.9, gears.surface.load_uncached(album_path))
+	art.image = helpers.cropSurface(7, gears.surface.load_uncached(album_path))
 end)
 
 local next = wibox.widget({
-	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText("󰒭", beautiful.foreground),
+	font = beautiful.icon .. " 18",
+	markup = "󰒭",
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -30,8 +29,8 @@ local next = wibox.widget({
 })
 
 local prev = wibox.widget({
-	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText("󰒮", beautiful.foreground),
+	font = beautiful.icon .. " 18",
+	markup = "󰒮",
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -40,7 +39,8 @@ local prev = wibox.widget({
 	},
 })
 local play = wibox.widget({
-	font = beautiful.icon .. " 20",
+	font = beautiful.icon .. " 18",
+	markup = "󰐊",
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -50,16 +50,14 @@ local play = wibox.widget({
 })
 
 local headphones = wibox.widget({
-	font = beautiful.icon .. " 20",
+	font = beautiful.icon .. " 18",
+	markup = "󰟎 ",
 	widget = wibox.widget.textbox,
 })
 
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
-	play.markup = playing and helpers.colorizeText("󰏤", beautiful.foreground)
-		or helpers.colorizeText("󰐊", beautiful.foreground)
-
-	headphones.markup = playing and helpers.colorizeText("󰋎 ", beautiful.foreground)
-		or helpers.colorizeText("󰟎 ", beautiful.foreground)
+	play.markup = playing and "󰏤" or "󰐊"
+	headphones.markup = playing and "󰋎 " or "󰟎 "
 end)
 
 local finalwidget = wibox.widget({

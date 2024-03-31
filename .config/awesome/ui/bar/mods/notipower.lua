@@ -8,7 +8,7 @@ local notipower = wibox.widget({
 		{
 			{
 				{
-					font = beautiful.icon .. " 20",
+					font = beautiful.icon .. " 18",
 					markup = helpers.colorizeText("󰂜 ", beautiful.green),
 					widget = wibox.widget.textbox,
 					buttons = {
@@ -18,7 +18,7 @@ local notipower = wibox.widget({
 					},
 				},
 				{
-					font = beautiful.icon .. " 20",
+					font = beautiful.icon .. " 18",
 					markup = helpers.colorizeText("󰐥 ", beautiful.red),
 					widget = wibox.widget.textbox,
 					buttons = {

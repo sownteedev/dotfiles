@@ -15,7 +15,7 @@ local notipower = require("ui.bar.mods.notipower")
 local function init(s)
 	local wibar = awful.wibar({
 		position = "bottom",
-		height = 80,
+		height = 70,
 		ontop = false,
 		width = beautiful.width,
 		bg = beautiful.darker,
@@ -31,7 +31,7 @@ local function init(s)
 					layout = wibox.layout.fixed.horizontal,
 				},
 				widget = wibox.container.margin,
-				left = 15,
+				left = 20,
 			},
 			nil,
 			{
@@ -45,7 +45,7 @@ local function init(s)
 					spacing = 15,
 				},
 				widget = wibox.container.margin,
-				right = 15,
+				right = 20,
 			},
 			layout = wibox.layout.align.horizontal,
 		},

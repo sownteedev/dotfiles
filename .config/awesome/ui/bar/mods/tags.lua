@@ -28,7 +28,7 @@ return function(s)
 			{
 				id = "background_role",
 				widget = wibox.container.background,
-				forced_height = 12,
+				forced_height = 10,
 			},
 			widget = wibox.container.place,
 			create_callback = function(self, tag)
@@ -68,7 +68,6 @@ return function(s)
 				left = 20,
 				right = 20,
 			},
-			forced_height = 10,
 			widget = wibox.container.background,
 			bg = beautiful.background,
 			shape = helpers.rrect(5),

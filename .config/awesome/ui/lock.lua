@@ -33,7 +33,7 @@ local prev = wibox.widget({
 })
 local play = wibox.widget({
 	font = beautiful.icon .. " 30",
-	markup = helpers.colorizeText("󰐍 ", beautiful.foreground),
+	markup = "󰐍 ",
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -43,8 +43,7 @@ local play = wibox.widget({
 })
 
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
-	play.markup = playing and helpers.colorizeText("󰏦 ", beautiful.foreground)
-		or helpers.colorizeText("󰐍 ", beautiful.foreground)
+	play.markup = playing and "󰏦 " or "󰐍 "
 end)
 
 local auth = function(password)
@@ -75,12 +74,13 @@ local header = wibox.widget({
 		forced_height = 300,
 	},
 	widget = wibox.container.place,
+	valign = "top",
 })
 
 local label = wibox.widget({
-	markup = "Type The Password",
 	id = "name",
 	font = beautiful.sans .. " 15",
+	halign = "center",
 	widget = wibox.widget.textbox,
 })
 
@@ -89,7 +89,7 @@ local check_caps = function()
 		if stdout:match("off") then
 			label.markup = " "
 		else
-			label.markup = "HINT: Caps Lock Is ON"
+			label.markup = helpers.colorizeText("WARNING: CAPS LOCK IS ON", helpers.makeColor("orange"))
 		end
 	end)
 end
@@ -242,7 +242,6 @@ promptbox:setup({
 							{
 								font = beautiful.sans .. " Bold 20",
 								format = "%p",
-								halign = "left",
 								valign = "bottom",
 								widget = wibox.widget.textclock,
 							},
@@ -253,20 +252,19 @@ promptbox:setup({
 						layout = wibox.layout.fixed.horizontal,
 					},
 					widget = wibox.container.margin,
-					left = 100,
-					top = 50,
+					left = 80,
 				},
 				{
-					font = beautiful.sans .. " Light 45",
+					font = beautiful.sans .. " Light 50",
 					format = "%A, %d %B %Y",
 					widget = wibox.widget.textclock,
 				},
 				{
 					label,
 					widget = wibox.container.margin,
-					top = 50,
+					top = 200,
+					bottom = 100,
 				},
-				spacing = 20,
 				layout = wibox.layout.fixed.vertical,
 			},
 			widget = wibox.container.place,
@@ -294,7 +292,7 @@ promptbox:setup({
 							right = 10,
 						},
 						widget = wibox.container.background,
-						bg = beautiful.lighter .. "CC",
+						bg = beautiful.lighter,
 						shape = helpers.rrect(5),
 					},
 					layout = wibox.layout.fixed.horizontal,
