@@ -33,17 +33,17 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86AudioRaiseVolume", function()
 		awful.spawn.with_shell("pamixer -i 2")
 		volume_emit()
-		awesome.emit_signal("sowntee::osd")
+		awesome.emit_signal("volume::toggle")
 	end),
 	awful.key({}, "XF86AudioLowerVolume", function()
 		awful.spawn.with_shell("pamixer -d 2")
 		volume_emit()
-		awesome.emit_signal("sowntee::osd")
+		awesome.emit_signal("volume::toggle")
 	end),
 	awful.key({}, "XF86AudioMute", function()
 		awful.spawn.with_shell("pamixer -t")
 		volume_emit()
-		awesome.emit_signal("sowntee::osd")
+		awesome.emit_signal("volume::toggle")
 	end),
 	awful.key({}, "XF86AudioMicMute", function()
 		awful.spawn.with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle")
@@ -51,12 +51,12 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86MonBrightnessUp", function()
 		awful.spawn.with_shell("brightnessctl s 5%+")
 		brightness_emit()
-		awesome.emit_signal("sowntee::osd")
+		awesome.emit_signal("brightness::toggle")
 	end),
 	awful.key({}, "XF86MonBrightnessDown", function()
 		awful.spawn.with_shell("brightnessctl s 5%-")
 		brightness_emit()
-		awesome.emit_signal("sowntee::osd")
+		awesome.emit_signal("brightness::toggle")
 	end),
 
 	awful.key({}, "Print", function()

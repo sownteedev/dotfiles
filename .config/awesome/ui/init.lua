@@ -1,4 +1,3 @@
-require(... .. ".wallpaper")
 require(... .. ".bar")
 require(... .. ".titlebars")
 require(... .. ".notification")
