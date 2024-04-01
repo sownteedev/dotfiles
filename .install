@@ -132,7 +132,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 	# Bluetooth
 	echo "[*] Installing bluetooth driver ..."
-	sudo pacman -S bluez bluez-utils bluez-tools bluez-libs blueman --noconfirm
+	sudo pacman -S bluez bluez-utils bluez-tools bluez-libs --noconfirm
 	sudo systemctl enable bluetooth.service
 	sleep 3 && clear
 
@@ -144,7 +144,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 	# Monitor and Theme
 	echo "[*] Installing monitor and theme ..."
-	sudo pacman -S flameshot maim viewnior lxappearance imagemagick neofetch arandr --noconfirm
+	sudo pacman -S feh maim viewnior lxappearance imagemagick neofetch arandr --noconfirm
 	echo "[*] Done."
 	sleep 3 && clear
 

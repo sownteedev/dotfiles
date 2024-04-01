@@ -16,7 +16,7 @@ local notipower = require("ui.bar.mods.notipower")
 local function init(s)
 	local wibar = awful.wibar({
 		position = "bottom",
-		margins = { bottom = 20, left = 50, right = 50 },
+		margins = { bottom = 30, left = 50, right = 50 },
 		height = 70,
 		ontop = false,
 		width = beautiful.width - 200,

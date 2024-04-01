@@ -69,26 +69,6 @@ local anim = animation:new({
 	end,
 })
 
--- volume --
-awesome.connect_signal("signal::volume", function(value)
-	anim:set(value)
-	helpers.gc(info, "text").text = value
-	if value > 66 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.foreground))
-	elseif value > 33 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰕾 ", beautiful.foreground))
-	elseif value > 0 then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.foreground))
-	else
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.foreground))
-	end
-end)
-awesome.connect_signal("signal::volumemute", function(value)
-	if value then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.foreground))
-	end
-end)
-
 -- bright --
 awesome.connect_signal("signal::brightness", function(value)
 	anim:set(value)
@@ -123,6 +103,6 @@ local function osd_toggle()
 	end
 end
 
-awesome.connect_signal("sowntee::osd", function()
+awesome.connect_signal("brightness::toggle", function()
 	osd_toggle()
 end)
