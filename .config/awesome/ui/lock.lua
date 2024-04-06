@@ -252,7 +252,7 @@ promptbox:setup({
 						layout = wibox.layout.fixed.horizontal,
 					},
 					widget = wibox.container.margin,
-					left = 80,
+					left = 30,
 				},
 				{
 					font = beautiful.sans .. " Light 50",
