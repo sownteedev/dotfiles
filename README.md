@@ -38,7 +38,7 @@
 
 ### Install basic package
 
-    pacstrap /mnt base base-devel linux linux-firmware linux-headers intel-ucode sbctl neovim
+    pacstrap /mnt base base-devel linux linux-firmware linux-headers sbctl neovim
 
 ### Switch to /mnt
 
@@ -82,7 +82,7 @@
 	sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools
 	sudo systemctl enable NetworkManager dhcpcd
 
-## For GRUB (Enable Secure Boot)
+## GRUB (Enable Secure Boot)(Make u sure, u have ~1GB for EFI BOOT)
 
     sudo pacman -S grub os-prober efibootmgr ntfs-3g mtools dosfstools
     sudo nvim /etc/default/grub
@@ -91,32 +91,15 @@
     sudo grub-mkconfig -o /boot/grub/grub.cfg
     sudo sbctl create-keys
     sudo sbctl sign -s /boot/EFI/GRUB/grubx64.efi
+    sbctl sign -s /boot/EFI/Boot/bootx64.efi
+    sbctl sign -s /boot/vmlinuz-linux
     sudo chattr -i /sys/firmware/efi/efivars/*
     sudo sbctl enroll-keys -mi
 
 #### If GRUB not found Windows (Do it when restart)
 
-    sudo os-prober
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --recheck
     grub-mkconfig -o /boot/grub/grub.cfg
-
-## For Linux Boot System
-
-    nvim /boot/loader/loader.conf
-    Add : default arch.conf
-
-    touch /boot/loader/entries/arch.conf
-    Add : title Arch
-          linux /vmlinuz-linux
-          initrd /initramfs-linux.img
-          initrd /intel-ucode.img
-          options root=/dev/nvme0n1p5 rw quite
-    
-    sbctl create-keys
-    sbctl sign -s /boot/EFI/Boot/bootx64.efi
-    sbctl sign -s /boot/EFI/systemd/systemd-bootx64.efi
-    sbctl sign -s /boot/vmlinuz-linux
-    sbctl enroll-keys -mi
 
 ### Exit and Reboot
 

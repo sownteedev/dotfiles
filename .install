@@ -150,7 +150,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 	# Other
 	echo "[*] Installing other ..."
-	sudo pacman -S --noconfirm gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi
+	sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi
 	echo "[*] Done."
 	clear
 	echo "[*] Install ibus"
@@ -175,10 +175,14 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	else
 		echo "[*] Installing Spotify ..."
 		yay -S --noconfirm spotify
+		spotify &
+		sleep 3
+		pkill spotify
 	fi
 	yay -S --noconfirm spicetify-cli
 	sudo chmod a+wr /opt/spotify
 	sudo chmod a+wr /opt/spotify/Apps -R
+	spicetify config current_theme Tetify color_scheme one_light
 	echo "[*] Done."
 else
 	echo "[*] Spotify installation skipped."
@@ -215,12 +219,14 @@ sleep 3 && clear
 read -p "[*] Do you want to install TeVim(Awesome Neovim <3)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	echo "[*] Installing TeVim ..."
-	yay -S --noconfirm neovim-nightly-bin lazygit xclip xsel fzf ripgrep
+	yay -S --noconfirm lazygit xclip xsel fzf ripgrep
+	rm -rf ~/.config/nvim
 	git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
-	echo "[*] Done."
+	cp -r ~/dotfiles/.config/nvim/lua/custom ~/.config/nvim/lua/
 else
 	echo "[*] TeVim installation skipped."
 fi
+echo "[*] Done."
 sleep 3 && clear
 
 # Fix Driver audio (for me)
@@ -241,7 +247,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	sudo rm -r /usr/share/alsa/ucm
 	sudo mv ./ucm /usr/share/alsa
 
-	cd ~ && rm -rf sof-bin alsa-ucm-conf old-sof-backup
+	cd ~ && sudo rm -rf sof-bin alsa-ucm-conf old-sof-backup
 else
 	echo "[*] Fix audio driver skipped."
 fi
@@ -252,10 +258,11 @@ sleep 3 && clear
 read -p "[*] Do you want to install app for me(Recommend No, because it is for me)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop
-	yay -S --noconfirm visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre
+	yay -S --noconfirm visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional
 else
 	echo "[*] App for me skipped."
 fi
+echo "[*] Done."
 sleep 3 && clear
 
 # Grtub Theme
@@ -265,6 +272,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	sudo cp -r Grub-Themes/* /boot/grub/themes/
 	sudo sed -i 's/#GRUB_THEME=.*/GRUB_THEME=\/boot\/grub\/themes\/Anime\/theme.txt/g' /etc/default/grub
 	sudo grub-mkconfig -o /boot/grub/grub.cfg
+	sudo rm -rf ~/Grub-Themes
 else
 	echo "[*] Grub theme installation skipped."
 fi
@@ -276,7 +284,7 @@ read -p "[*] Do you want to install Lightdm(Recommend No, because it is for me)?
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	yay -S --noconfirm lightdm lightdm-webkit2-greeter lightdm-webkit2-theme-glorious
 	sudo systemctl enable lightdm
-	sudo sed -i 's/^\(#?greeter\)-session\s*=\s*\(.*\)/greeter-session = lightdm-webkit2-greeter #\1/ #\2g' /etc/lightdm/lightdm.conf
+	sudo sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
 	sudo sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
 	sudo sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
 	sudo cp .walls/* /usr/share/backgrounds
@@ -294,7 +302,5 @@ else
 	sudo pacman -S zsh --noconfirm
 	echo "[*] Zsh Installed."
 fi
-rm -f ~/.zshrc && touch ~/.zshrc && echo "source ~/.config/zsh/.zshrc" > ~/.zshrc
-sleep 3 && clear
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 echo "[*] Done."

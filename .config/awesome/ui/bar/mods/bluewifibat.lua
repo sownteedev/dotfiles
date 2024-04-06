@@ -20,11 +20,19 @@ local wifi = wibox.widget({
 	font = beautiful.icon .. " 18",
 	widget = wibox.widget.textbox,
 })
-awesome.connect_signal("signal::network", function(value)
-	if value then
-		wifi.markup = helpers.colorizeText(" ", beautiful.yellow)
+awesome.connect_signal("signal::quality", function(value)
+	if value == 101 then
+		wifi.markup = helpers.colorizeText("󰤩 ", beautiful.yellow)
+	elseif value >= 75 then
+		wifi.markup = helpers.colorizeText("󰤨 ", beautiful.yellow)
+	elseif value >= 50 then
+		wifi.markup = helpers.colorizeText("󰤥 ", beautiful.yellow)
+	elseif value >= 25 then
+		wifi.markup = helpers.colorizeText("󰤢 ", beautiful.yellow)
+	elseif value > 0 then
+		wifi.markup = helpers.colorizeText("󰤟 ", beautiful.yellow)
 	else
-		wifi.markup = helpers.colorizeText("󰖪 ", beautiful.foreground .. "99")
+		wifi.markup = helpers.colorizeText("󰤭 ", beautiful.foreground .. "99")
 	end
 end)
 
