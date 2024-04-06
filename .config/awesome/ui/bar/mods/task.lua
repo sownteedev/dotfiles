@@ -175,7 +175,7 @@ end
 function M:showMenu(data)
 	local clients = data.clients
 	self.popup.x = mouse.coords().x - 100
-	self.popup.y = beautiful.height - 110 - (50 * (#clients + 2))
+	self.popup.y = beautiful.height - 130 - (50 * (#clients + 2))
 	self.popupWidget:reset()
 	for i, j in ipairs(clients) do
 		local widget = wibox.widget({
@@ -183,7 +183,7 @@ function M:showMenu(data)
 				{
 					{
 						markup = j.name,
-						font = beautiful.sans .. " 10",
+						font = beautiful.sans .. " 11",
 						height = 16,
 						widget = wibox.widget.textbox,
 					},
@@ -194,7 +194,7 @@ function M:showMenu(data)
 				nil,
 				{
 					markup = helpers.colorizeText("󰅖", beautiful.red),
-					font = beautiful.icon .. " 10",
+					font = beautiful.icon .. " 11",
 					widget = wibox.widget.textbox,
 					buttons = {
 						awful.button({}, 1, function()
@@ -236,21 +236,16 @@ function M:showMenu(data)
 	local addNew = wibox.widget({
 		{
 			{
-				{
-					markup = "Open New Window",
-					font = beautiful.sans .. " 10",
-					widget = wibox.widget.textbox,
-				},
-				widget = wibox.container.constraint,
-				width = 180,
+				markup = "Open New Window",
+				font = beautiful.sans .. " 11",
+				widget = wibox.widget.textbox,
 			},
-			nil,
-			nil,
-			layout = wibox.layout.align.horizontal,
+			widget = wibox.container.constraint,
+			width = 180,
 		},
 		buttons = {
 			awful.button({}, 1, function()
-				awful.spawn.with_shell(data.exec)
+				awful.spawn.easy_async_with_shell(data.exec)
 			end),
 		},
 		widget = wibox.container.background,
@@ -259,12 +254,9 @@ function M:showMenu(data)
 	})
 	local closeAll = wibox.widget({
 		{
-			{
-				markup = "Close All",
-				font = beautiful.sans .. " 10",
-				widget = wibox.widget.textbox,
-			},
-			layout = wibox.layout.align.horizontal,
+			markup = "Close All",
+			font = beautiful.sans .. " 11",
+			widget = wibox.widget.textbox,
 		},
 		buttons = {
 			awful.button({}, 1, function()
@@ -379,7 +371,7 @@ function M:genIcons()
 			widget:buttons(gears.table.join(
 				awful.button({}, 1, function()
 					if j.count == 0 then
-						awful.spawn.with_shell(j.exec)
+						awful.spawn.easy_async_with_shell(j.exec)
 					elseif j.count == 1 then
 						if j.clients[j.count].minimized then
 							j.clients[j.count].minimized = false

@@ -73,7 +73,7 @@ awful.screen.connect_for_each_screen(function(s)
 			buttons = {
 				awful.button({}, 1, function()
 					awesome.emit_signal("toggle::exit")
-					awful.spawn.with_shell(cmd)
+					awful.spawn.easy_async_with_shell(cmd)
 				end),
 			},
 			layout = wibox.layout.fixed.vertical,

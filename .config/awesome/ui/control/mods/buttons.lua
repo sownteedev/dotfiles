@@ -49,10 +49,10 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 		bg = beautiful.background,
 		buttons = {
 			awful.button({}, 1, function()
-				awful.spawn.with_shell(cmd1)
+				awful.spawn.easy_async_with_shell(cmd1)
 			end),
 			awful.button({}, 3, function()
-				awful.spawn.with_shell(cmd2)
+				awful.spawn.easy_async_with_shell(cmd2)
 			end),
 		},
 	})
@@ -60,18 +60,14 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 	awesome.connect_signal("signal::" .. signal, function(status)
 		if status then
 			helpers.gc(widget, "back"):set_bg(beautiful.blue)
-			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.background))
 			helpers.gc(widget, "icon"):set_markup_silently(helpers.colorizeText(icon, beautiful.background))
+			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.background))
 			if signal == "network" then
 				awesome.connect_signal("signal::wifiname", function(stdout)
 					if stdout ~= "" then
 						helpers
 							.gc(widget, "label")
-							:set_markup_silently(helpers.colorizeText("Connected " .. stdout, beautiful.background))
-					else
-						helpers
-							.gc(widget, "label")
-							:set_markup_silently(helpers.colorizeText("No Network", beautiful.background))
+							:set_markup_silently(helpers.colorizeText(stdout, beautiful.background))
 					end
 				end)
 			elseif signal == "bluetooth" then
@@ -91,8 +87,8 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 			end
 		else
 			helpers.gc(widget, "back").bg = beautiful.background
-			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.foreground))
 			helpers.gc(widget, "icon"):set_markup_silently(helpers.colorizeText(icon, beautiful.foreground))
+			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.foreground))
 			helpers.gc(widget, "label").markup = helpers.colorizeText(labeldisconnected, beautiful.foreground)
 		end
 	end)

@@ -29,7 +29,7 @@ local rec_mic = function(fps, file_name)
 		file_name
 	)
 	print(defCommand)
-	awful.spawn.with_shell(defCommand)
+	awful.spawn.easy_async_with_shell(defCommand)
 end
 
 local rec_audio = function(fps, file_name)
@@ -44,7 +44,7 @@ local rec_audio = function(fps, file_name)
 		file_name
 	)
 	print(defCommand)
-	awful.spawn.with_shell(defCommand)
+	awful.spawn.easy_async_with_shell(defCommand)
 end
 
 local createButton = function(icon, name, fn, col)
@@ -145,7 +145,7 @@ awful.screen.connect_for_each_screen(function(s)
 	end, beautiful.blue)
 
 	local stop = createButton("󰜺 ", "Finish", function()
-		awful.spawn.with_shell("killall ffmpeg")
+		awful.spawn.easy_async_with_shell("killall ffmpeg")
 		close()
 	end, beautiful.red)
 
