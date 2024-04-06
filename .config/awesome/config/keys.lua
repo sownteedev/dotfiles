@@ -14,47 +14,50 @@ awful.keyboard.append_global_keybindings({
 		Launcher:toggle()
 	end),
 	awful.key({ mod }, "e", function()
-		awful.spawn("thunar")
+		awful.spawn.easy_async_with_shell("thunar")
 	end),
 	awful.key({ mod }, "Return", function()
-		awful.spawn("alacritty")
+		awful.spawn.easy_async_with_shell("alacritty")
+	end),
+	awful.key({ ctrl, shift }, "Escape", function()
+		awful.spawn.easy_async_with_shell("alacritty -e btop")
 	end),
 
 	-- Volume and Brightness
 	awful.key({}, "XF86AudioPlay", function()
-		awful.spawn.with_shell("playerctl play-pause")
+		awful.spawn.easy_async_with_shell("playerctl play-pause")
 	end),
 	awful.key({}, "XF86AudioPrev", function()
-		awful.spawn.with_shell("playerctl previous")
+		awful.spawn.easy_async_with_shell("playerctl previous")
 	end),
 	awful.key({}, "XF86AudioNext", function()
-		awful.spawn.with_shell("playerctl next")
+		awful.spawn.easy_async_with_shell("playerctl next")
 	end),
 	awful.key({}, "XF86AudioRaiseVolume", function()
-		awful.spawn.with_shell("pamixer -i 2")
+		awful.spawn.easy_async_with_shell("pamixer -i 2")
 		volume_emit()
 		awesome.emit_signal("volume::toggle")
 	end),
 	awful.key({}, "XF86AudioLowerVolume", function()
-		awful.spawn.with_shell("pamixer -d 2")
+		awful.spawn.easy_async_with_shell("pamixer -d 2")
 		volume_emit()
 		awesome.emit_signal("volume::toggle")
 	end),
 	awful.key({}, "XF86AudioMute", function()
-		awful.spawn.with_shell("pamixer -t")
+		awful.spawn.easy_async_with_shell("pamixer -t")
 		volume_emit()
 		awesome.emit_signal("volume::toggle")
 	end),
 	awful.key({}, "XF86AudioMicMute", function()
-		awful.spawn.with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle")
+		awful.spawn.easy_async_with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle")
 	end),
 	awful.key({}, "XF86MonBrightnessUp", function()
-		awful.spawn.with_shell("brightnessctl s 5%+")
+		awful.spawn.easy_async_with_shell("brightnessctl s 5%+")
 		brightness_emit()
 		awesome.emit_signal("brightness::toggle")
 	end),
 	awful.key({}, "XF86MonBrightnessDown", function()
-		awful.spawn.with_shell("brightnessctl s 5%-")
+		awful.spawn.easy_async_with_shell("brightnessctl s 5%-")
 		brightness_emit()
 		awesome.emit_signal("brightness::toggle")
 	end),
@@ -66,7 +69,7 @@ awful.keyboard.append_global_keybindings({
 		awesome.emit_signal("toggle::recorder")
 	end),
 	awful.key({ alt }, "p", function()
-		awful.spawn.with_shell("~/.local/bin/colorpicker")
+		awful.spawn.easy_async_with_shell("~/.local/bin/colorpicker")
 	end),
 	awful.key({ alt }, "F4", function()
 		awesome.emit_signal("toggle::exit")
@@ -75,7 +78,7 @@ awful.keyboard.append_global_keybindings({
 		awesome.emit_signal("toggle::lock")
 	end),
 	awful.key({ mod, alt }, "w", function()
-		awful.spawn.with_shell("feh -z --no-fehbg --bg-fill ~/.walls")
+		awful.spawn.easy_async_with_shell("feh -z --no-fehbg --bg-fill ~/.walls")
 	end),
 	awful.key({ mod, alt }, "r", awesome.restart),
 	awful.key({ mod, alt }, "q", awesome.quit),

@@ -7,10 +7,14 @@ local function emit_network_status()
 		awesome.emit_signal("signal::network", status)
 	end)
 	awful.spawn.easy_async_with_shell(
-		"bash -c 'iwgetid -r ; nmcli -t -f DEVICE,TYPE con show --active'",
+		"bash -c 'iwgetid -r ; nmcli -t -f DEVICE,TYPE con show --active ; nmcli networking connectivity check'",
 		function(stdout)
-			if stdout:match("ethernet") then
-				stdout = "Ethernet"
+			if stdout:match("limited") or stdout:match("Error:") then
+				stdout = "Wifi or Ethernet no network"
+			elseif stdout:match("full") and stdout:match("ethernet") then
+				stdout = "Connected Ethernet"
+			else
+				stdout = "Connected " .. stdout
 			end
 			awesome.emit_signal("signal::wifiname", stdout)
 		end

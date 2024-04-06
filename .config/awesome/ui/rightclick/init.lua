@@ -8,7 +8,7 @@ local function awesome_menu()
 			icon = { icon = "󰣕 ", font = "Material Design Icons" },
 			text = "Edit Config",
 			on_press = function()
-				awful.spawn.with_shell("cd ~/.config/awesome && alacritty -e nvim &")
+				awful.spawn.easy_async_with_shell("cd ~/.config/awesome && alacritty -e nvim &")
 				awesome.emit_signal("close::menu")
 			end,
 		}),

@@ -48,10 +48,10 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 			shape = helpers.rrect(30),
 			buttons = {
 				awful.button({}, 1, function()
-					awful.spawn.with_shell(cmd)
+					awful.spawn.easy_async_with_shell(cmd)
 				end),
 				awful.button({}, 3, function()
-					awful.spawn.with_shell(cmd2)
+					awful.spawn.easy_async_with_shell(cmd2)
 				end),
 			},
 		},
@@ -84,7 +84,7 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 		end
 	end)
 	slidSlider:connect_signal("property::value", function(_, new_value)
-		awful.spawn.with_shell(string.format(command, new_value))
+		awful.spawn.easy_async_with_shell(string.format(command, new_value))
 	end)
 	return slidScale
 end

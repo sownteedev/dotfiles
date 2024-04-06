@@ -89,7 +89,7 @@ local widget = wibox.widget({
 		bg = beautiful.background,
 		buttons = {
 			awful.button({}, 1, function()
-				awful.spawn.with_shell("~/.config/awesome/signals/scripts/darkmode")
+				awful.spawn.easy_async_with_shell("~/.config/awesome/signals/scripts/darkmode")
 			end),
 		},
 	},

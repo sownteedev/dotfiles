@@ -22,7 +22,7 @@ function M.do_notify(tmp_path)
 	local delete = naughty.action({ name = "Delete" })
 
 	copy:connect_signal("invoked", function()
-		awful.spawn.with_shell('xclip -sel clip -target image/png "' .. tmp_path .. '"')
+		awful.spawn.easy_async_with_shell('xclip -sel clip -target image/png "' .. tmp_path .. '"')
 		naughty.notify({
 			app_name = "Screenshot",
 			app_icon = tmp_path,
@@ -33,7 +33,9 @@ function M.do_notify(tmp_path)
 	end)
 
 	delete:connect_signal("invoked", function()
-		awful.spawn.with_shell('xclip -sel clip -target image/png "' .. tmp_path .. '" && rm -f "' .. tmp_path .. '"')
+		awful.spawn.easy_async_with_shell(
+			'xclip -sel clip -target image/png "' .. tmp_path .. '" && rm -f "' .. tmp_path .. '"'
+		)
 		naughty.notify({
 			app_name = "Screenshot",
 			title = "Screenshot",

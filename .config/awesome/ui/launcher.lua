@@ -37,7 +37,7 @@ local createPowerButton = function(icon, color, command)
 		buttons = {
 			awful.button({}, 1, function()
 				L:close()
-				awful.spawn.with_shell(command)
+				awful.spawn.easy_async_with_shell(command)
 			end),
 		},
 	})
@@ -365,7 +365,7 @@ local prompt_grabber = awful.keygrabber({
 			if entry then
 				entry.appinfo:launch()
 			else
-				awful.spawn.with_shell(helpers.gc(prompt, "txt").markup)
+				awful.spawn.easy_async_with_shell(helpers.gc(prompt, "txt").markup)
 			end
 			L:close()
 		elseif key == "Up" then

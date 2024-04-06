@@ -17,16 +17,15 @@ local togglertext = wibox.widget({
 local systray = wibox.widget({
 	{
 		{
-			base_size = 30,
+			base_size = 25,
 			widget = wibox.widget.systray,
 		},
 		widget = wibox.container.place,
 		valign = "center",
 	},
 	visible = false,
-	left = 5,
-	right = 5,
 	widget = wibox.container.margin,
+	margins = 10,
 })
 
 awesome.connect_signal("systray::toggle", function()
@@ -46,7 +45,7 @@ local widget = wibox.widget({
 			togglertext,
 			layout = wibox.layout.fixed.horizontal,
 		},
-		shape = helpers.rrect(2),
+		shape = helpers.rrect(5),
 		bg = beautiful.lighter,
 		widget = wibox.container.background,
 	},
@@ -54,4 +53,5 @@ local widget = wibox.widget({
 	top = 10,
 	bottom = 10,
 })
+
 return widget
