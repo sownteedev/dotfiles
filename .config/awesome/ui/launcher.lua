@@ -66,9 +66,9 @@ local sidebar = wibox.widget({
 		nil,
 		{
 			{
-				createPowerButton(" ", beautiful.blue, "awesome-client \"awesome.emit_signal('toggle::lock')\""),
-				createPowerButton(" ", beautiful.green, "reboot"),
-				createPowerButton("󰐥 ", beautiful.red, "poweroff"),
+				createPowerButton(" ", beautiful.blue, "awesome-client \"awesome.emit_signal('toggle::lock')\" &"),
+				createPowerButton(" ", beautiful.green, "reboot &"),
+				createPowerButton("󰐥 ", beautiful.red, "poweroff &"),
 				spacing = 15,
 				layout = wibox.layout.fixed.vertical,
 			},
@@ -365,7 +365,7 @@ local prompt_grabber = awful.keygrabber({
 			if entry then
 				entry.appinfo:launch()
 			else
-				awful.spawn.easy_async_with_shell(helpers.gc(prompt, "txt").markup)
+				awful.spawn.easy_async_with_shell(helpers.gc(prompt, "txt").markup .. " &")
 			end
 			L:close()
 		elseif key == "Up" then

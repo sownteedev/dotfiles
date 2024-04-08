@@ -22,7 +22,7 @@ function M.do_notify(tmp_path)
 	local delete = naughty.action({ name = "Delete" })
 
 	copy:connect_signal("invoked", function()
-		awful.spawn.easy_async_with_shell('xclip -sel clip -target image/png "' .. tmp_path .. '"')
+		awful.spawn.easy_async_with_shell('xclip -sel clip -target image/png "' .. tmp_path .. '" &')
 		naughty.notify({
 			app_name = "Screenshot",
 			app_icon = tmp_path,
@@ -34,7 +34,7 @@ function M.do_notify(tmp_path)
 
 	delete:connect_signal("invoked", function()
 		awful.spawn.easy_async_with_shell(
-			'xclip -sel clip -target image/png "' .. tmp_path .. '" && rm -f "' .. tmp_path .. '"'
+			'xclip -sel clip -target image/png "' .. tmp_path .. '" && rm -f "' .. tmp_path .. '" &'
 		)
 		naughty.notify({
 			app_name = "Screenshot",
@@ -69,7 +69,7 @@ function M.full(opts)
 		autostart = true,
 		single_shot = true,
 		callback = function()
-			awful.spawn.easy_async_with_shell('maim "' .. tmp_path .. '"', function()
+			awful.spawn.easy_async_with_shell('maim "' .. tmp_path .. '" &', function()
 				awesome.emit_signal("screenshot::done")
 				if with_defaults(opts).notify then
 					M.do_notify(tmp_path)
@@ -82,7 +82,7 @@ end
 function M.area(opts)
 	checkFolder()
 	local tmp_path = get_path()
-	awful.spawn.easy_async_with_shell('sleep 1 && maim --select "' .. tmp_path .. '"', function()
+	awful.spawn.easy_async_with_shell('sleep 1 && maim --select "' .. tmp_path .. '" &', function()
 		awesome.emit_signal("screenshot::done")
 		if with_defaults(opts).notify then
 			M.do_notify(tmp_path)
@@ -93,7 +93,7 @@ end
 function M.window(opts)
 	checkFolder()
 	local tmp_path = get_path()
-	awful.spawn.easy_async_with_shell('maim --window=$(xdotool getactivewindow) "' .. tmp_path .. '"', function()
+	awful.spawn.easy_async_with_shell('maim --window=$(xdotool getactivewindow) "' .. tmp_path .. '" &', function()
 		awesome.emit_signal("screenshot::done")
 		if with_defaults(opts).notify then
 			M.do_notify(tmp_path)

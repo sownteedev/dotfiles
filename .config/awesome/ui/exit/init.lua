@@ -36,7 +36,7 @@ awful.screen.connect_for_each_screen(function(s)
 		bg = beautiful.background .. "d1",
 	})
 	local makeImage = function()
-		local cmd = "convert " .. beautiful.wallpaper .. " -filter Gaussian -blur 0x6 ~/.cache/awesome/exit.jpg"
+		local cmd = "convert " .. beautiful.wallpaper .. " -filter Gaussian -blur 0x6 ~/.cache/awesome/exit.jpg &"
 		awful.spawn.easy_async_with_shell(cmd, function()
 			local blurwall = gears.filesystem.get_cache_dir() .. "exit.jpg"
 			back.image = blurwall
@@ -115,14 +115,14 @@ awful.screen.connect_for_each_screen(function(s)
 
 	local buttons = wibox.widget({
 		{
-			createButton("󰐥 ", "Power", "poweroff", beautiful.red),
-			createButton(" ", "Reboot", "reboot", beautiful.yellow),
-			createButton("󰍁 ", "Lock", "awesome-client \"awesome.emit_signal('toggle::lock')\"", beautiful.blue),
-			createButton("󰖔 ", "Sleep", "systemctl suspend", beautiful.green),
+			createButton("󰐥 ", "Power", "poweroff &", beautiful.red),
+			createButton(" ", "Reboot", "reboot &", beautiful.yellow),
+			createButton("󰍁 ", "Lock", "awesome-client \"awesome.emit_signal('toggle::lock')\" &", beautiful.blue),
+			createButton("󰖔 ", "Sleep", "systemctl suspend &", beautiful.green),
 			createButton(
 				"󰈆 ",
 				"Log Out",
-				"loginctl kill-user $USER",
+				"loginctl kill-user $USER &",
 				helpers.mix(beautiful.red, beautiful.yellow, 0.5)
 			),
 			layout = wibox.layout.fixed.horizontal,

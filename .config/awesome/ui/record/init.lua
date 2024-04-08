@@ -23,7 +23,7 @@ local rec_mic = function(fps, file_name)
 		"sleep 1 && ffmpeg -y -f x11grab "
 			.. "-r %s -i %s -f pulse -i 59 -c:v libx264 -qp 0 -profile:v main "
 			.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
-			.. "-c:a aac -b:a 64k -b:v 500k %s",
+			.. "-c:a aac -b:a 64k -b:v 500k %s &",
 		fps,
 		display,
 		file_name
@@ -38,7 +38,7 @@ local rec_audio = function(fps, file_name)
 		"sleep 1 && ffmpeg -y -f x11grab "
 			.. "-r %s -i %s -f pulse -i 57 -c:v libx264 -qp 0 -profile:v main "
 			.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
-			.. "-c:a aac -b:a 64k -b:v 500k %s",
+			.. "-c:a aac -b:a 64k -b:v 500k %s &",
 		fps,
 		display,
 		file_name
@@ -145,7 +145,7 @@ awful.screen.connect_for_each_screen(function(s)
 	end, beautiful.blue)
 
 	local stop = createButton("󰜺 ", "Finish", function()
-		awful.spawn.easy_async_with_shell("killall ffmpeg")
+		awful.spawn.easy_async_with_shell("killall ffmpeg &")
 		close()
 	end, beautiful.red)
 

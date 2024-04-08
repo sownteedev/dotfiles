@@ -23,13 +23,13 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 					{
 						widget = wibox.container.scroll.horizontal,
 						step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
-						speed = 100,
+						speed = 60,
 						forced_width = 250,
 						{
 							markup = labelconnected,
 							id = "label",
 							font = beautiful.sans .. " 11",
-							forced_width = 200,
+							forced_width = 230,
 							forced_height = 20,
 							widget = wibox.widget.textbox,
 						},
@@ -98,8 +98,8 @@ end
 local widget = wibox.widget({
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/Wifi/Wifi",
-			"~/.config/awesome/signals/scripts/Wifi/Menu",
+			"~/.config/awesome/signals/scripts/Wifi/Wifi &",
+			"~/.config/awesome/signals/scripts/Wifi/Menu &",
 			" ",
 			"Network",
 			"Connected",
@@ -107,8 +107,8 @@ local widget = wibox.widget({
 			"network"
 		),
 		createbutton(
-			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth",
-			"~/.config/awesome/signals/scripts/Bluetooth/Menu",
+			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth &",
+			"~/.config/awesome/signals/scripts/Bluetooth/Menu &",
 			" ",
 			"Bluetooth",
 			"Connected",
@@ -120,7 +120,7 @@ local widget = wibox.widget({
 	},
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/airplane",
+			"~/.config/awesome/signals/scripts/airplane &",
 			"",
 			"󰀝 ",
 			"Airplane",
@@ -129,7 +129,7 @@ local widget = wibox.widget({
 			"airplane"
 		),
 		createbutton(
-			"awesome-client 'naughty = require(\"naughty\") naughty.toggle()'",
+			"awesome-client 'naughty = require(\"naughty\") naughty.toggle()' &",
 			"",
 			"󰍶 ",
 			"Disturb",
@@ -142,7 +142,7 @@ local widget = wibox.widget({
 	},
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/redshift",
+			"~/.config/awesome/signals/scripts/redshift &",
 			"",
 			"󰛨 ",
 			"Redshift",
@@ -151,7 +151,7 @@ local widget = wibox.widget({
 			"redshift"
 		),
 		createbutton(
-			"~/.config/awesome/signals/scripts/Picom/toggle",
+			"~/.config/awesome/signals/scripts/Picom/toggle &",
 			"",
 			"󱡓 ",
 			"Transparency",

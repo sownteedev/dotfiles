@@ -2,7 +2,7 @@ local awful = require("awful")
 local gears = require("gears")
 
 local function trans_emit()
-	awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/transparency'", function(stdout)
+	awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/transparency' &", function(stdout)
 		local status = stdout:match("true")
 		awesome.emit_signal("signal::transparency", status)
 	end)

@@ -85,7 +85,7 @@ local label = wibox.widget({
 })
 
 local check_caps = function()
-	awful.spawn.easy_async_with_shell("xset q | grep Caps | cut -d: -f3 | cut -d0 -f1 | tr -d ' '", function(stdout)
+	awful.spawn.easy_async_with_shell("xset q | grep Caps | cut -d: -f3 | cut -d0 -f1 | tr -d ' ' &", function(stdout)
 		if stdout:match("off") then
 			label.markup = " "
 		else
@@ -206,7 +206,7 @@ local back = wibox.widget({
 })
 
 local makeImage = function()
-	local cmd = "convert " .. beautiful.wallpaper .. " -filter Gaussian -blur 0x6 ~/.cache/awesome/lock.jpg"
+	local cmd = "convert " .. beautiful.wallpaper .. " -filter Gaussian -blur 0x6 ~/.cache/awesome/lock.jpg &"
 	awful.spawn.easy_async_with_shell(cmd, function()
 		local blurwall = gears.filesystem.get_cache_dir() .. "lock.jpg"
 		back.image = blurwall
