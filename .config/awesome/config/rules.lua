@@ -42,7 +42,14 @@ ruled.client.connect_signal("request::rules", function()
 	})
 	ruled.client.append_rule({
 		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
-		properties = { screen = 1, tag = "2", switch_to_tags = true },
+		properties = {
+			screen = 1,
+			tag = "2",
+			switch_to_tags = true,
+			callback = function(c)
+				awful.tag.setproperty(c.first_tag, "layout", awful.layout.suit.tile)
+			end,
+		},
 	})
 	ruled.client.append_rule({
 		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "jetbrains-pycharm", "neovide" } },

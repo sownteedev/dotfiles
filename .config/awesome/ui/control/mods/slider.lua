@@ -71,12 +71,9 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 			elseif signal2 == "volumemute" then
 				slidIcon.markup = helpers.colorizeText("󰖁 ", beautiful.background)
 				helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
-			elseif value == 25 and signal2 == "brightnesss" then
+			elseif signal2 == "brightnesss" then
 				slidIcon.markup = helpers.colorizeText("󰃝 ", beautiful.background)
 				helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
-			elseif value == 70 and signal2 == "brightnesss" then
-				slidIcon.markup = helpers.colorizeText(icon, beautiful.foreground)
-				helpers.gc(slidScale, "background_role"):set_bg(beautiful.background)
 			end
 		else
 			slidIcon.markup = helpers.colorizeText(icon, beautiful.foreground)
@@ -94,18 +91,18 @@ local widget = wibox.widget({
 		"󰃠 ",
 		"brightness",
 		"brightnesss",
-		"~/.config/awesome/signals/scripts/brightness",
+		"~/.config/awesome/signals/scripts/brightness &",
 		"",
-		"brightnessctl s %d%%"
+		"brightnessctl s %d%% &"
 	),
-	createSlider("󰕾 ", "volume", "volumemute", "pamixer -t", "pavucontrol", "pamixer --set-volume %d"),
+	createSlider("󰕾 ", "volume", "volumemute", "pamixer -t &", "pavucontrol &", "pamixer --set-volume %d &"),
 	createSlider(
 		" ",
 		"mic",
 		"micmute",
-		"pactl set-source-mute @DEFAULT_SOURCE@ toggle",
-		"pavucontrol",
-		"pactl set-source-volume @DEFAULT_SOURCE@ %d%%"
+		"pactl set-source-mute @DEFAULT_SOURCE@ toggle &",
+		"pavucontrol &",
+		"pactl set-source-volume @DEFAULT_SOURCE@ %d%% &"
 	),
 	layout = wibox.layout.fixed.vertical,
 	spacing = 15,

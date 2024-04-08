@@ -2,6 +2,7 @@ local awful = require("awful")
 local switcher = require("modules.awesome-switcher")
 local Launcher = require("ui.launcher")
 local Menu = require("ui.rightclick")
+local screenshot = require("ui.screenshot.mods")
 
 local mod = "Mod4"
 local alt = "Mod1"
@@ -14,50 +15,50 @@ awful.keyboard.append_global_keybindings({
 		Launcher:toggle()
 	end),
 	awful.key({ mod }, "e", function()
-		awful.spawn.easy_async_with_shell("thunar")
+		awful.spawn.easy_async_with_shell("thunar &")
 	end),
 	awful.key({ mod }, "Return", function()
-		awful.spawn.easy_async_with_shell("alacritty")
+		awful.spawn.easy_async_with_shell("alacritty &")
 	end),
 	awful.key({ ctrl, shift }, "Escape", function()
-		awful.spawn.easy_async_with_shell("alacritty -e btop")
+		awful.spawn.easy_async_with_shell("alacritty -e btop &")
 	end),
 
 	-- Volume and Brightness
 	awful.key({}, "XF86AudioPlay", function()
-		awful.spawn.easy_async_with_shell("playerctl play-pause")
+		awful.spawn.easy_async_with_shell("playerctl play-pause &")
 	end),
 	awful.key({}, "XF86AudioPrev", function()
-		awful.spawn.easy_async_with_shell("playerctl previous")
+		awful.spawn.easy_async_with_shell("playerctl previous &")
 	end),
 	awful.key({}, "XF86AudioNext", function()
-		awful.spawn.easy_async_with_shell("playerctl next")
+		awful.spawn.easy_async_with_shell("playerctl next &")
 	end),
 	awful.key({}, "XF86AudioRaiseVolume", function()
-		awful.spawn.easy_async_with_shell("pamixer -i 2")
+		awful.spawn.easy_async_with_shell("pamixer -i 2 &")
 		volume_emit()
 		awesome.emit_signal("volume::toggle")
 	end),
 	awful.key({}, "XF86AudioLowerVolume", function()
-		awful.spawn.easy_async_with_shell("pamixer -d 2")
+		awful.spawn.easy_async_with_shell("pamixer -d 2 &")
 		volume_emit()
 		awesome.emit_signal("volume::toggle")
 	end),
 	awful.key({}, "XF86AudioMute", function()
-		awful.spawn.easy_async_with_shell("pamixer -t")
+		awful.spawn.easy_async_with_shell("pamixer -t &")
 		volume_emit()
 		awesome.emit_signal("volume::toggle")
 	end),
 	awful.key({}, "XF86AudioMicMute", function()
-		awful.spawn.easy_async_with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle")
+		awful.spawn.easy_async_with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle &")
 	end),
 	awful.key({}, "XF86MonBrightnessUp", function()
-		awful.spawn.easy_async_with_shell("brightnessctl s 5%+")
+		awful.spawn.easy_async_with_shell("brightnessctl s 5%+ &")
 		brightness_emit()
 		awesome.emit_signal("brightness::toggle")
 	end),
 	awful.key({}, "XF86MonBrightnessDown", function()
-		awful.spawn.easy_async_with_shell("brightnessctl s 5%-")
+		awful.spawn.easy_async_with_shell("brightnessctl s 5%- &")
 		brightness_emit()
 		awesome.emit_signal("brightness::toggle")
 	end),
@@ -65,11 +66,14 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "Print", function()
 		awesome.emit_signal("toggle::screenshot")
 	end),
+	awful.key({ mod, shift }, "s", function()
+		screenshot.area({ notify = true })
+	end),
 	awful.key({ mod }, "Print", function()
 		awesome.emit_signal("toggle::recorder")
 	end),
 	awful.key({ alt }, "p", function()
-		awful.spawn.easy_async_with_shell("~/.local/bin/colorpicker")
+		awful.spawn.easy_async_with_shell("~/.local/bin/colorpicker &")
 	end),
 	awful.key({ alt }, "F4", function()
 		awesome.emit_signal("toggle::exit")
@@ -78,23 +82,45 @@ awful.keyboard.append_global_keybindings({
 		awesome.emit_signal("toggle::lock")
 	end),
 	awful.key({ mod, alt }, "w", function()
-		awful.spawn.easy_async_with_shell("feh -z --no-fehbg --bg-fill ~/.walls")
+		awful.spawn.easy_async_with_shell("feh -z --no-fehbg --bg-fill ~/.walls &")
 	end),
 	awful.key({ mod, alt }, "r", awesome.restart),
 	awful.key({ mod, alt }, "q", awesome.quit),
 })
 
+local tagactive = {}
+local function update_tag_info()
+	for i, _ in ipairs(tagactive) do
+		tagactive[i] = nil
+	end
+	for i, t in ipairs(screen.primary.tags) do
+		if #t:clients() > 0 then
+			table.insert(tagactive, tonumber(i))
+		end
+	end
+end
+client.connect_signal("manage", update_tag_info)
+client.connect_signal("unmanage", update_tag_info)
+
 awful.keyboard.append_global_keybindings({
 	-- Tag
 	awful.key({ mod, shift }, "Tab", awful.tag.viewnext),
 	awful.key({ mod, ctrl }, "Tab", awful.tag.viewprev),
-	awful.key({ mod }, "Tab", awful.tag.history.restore),
+	awful.key({ mod }, "Tab", function()
+		local current_tag = tonumber(awful.screen.focused().selected_tag.name)
+		local current_index = 0
+		for i, tag in ipairs(tagactive) do
+			if tag == current_tag then
+				current_index = i
+				break
+			end
+		end
+		awful.screen.focused().tags[tagactive[current_index % #tagactive + 1]]:view_only()
+	end),
+
 	-- Client
 	awful.key({ alt }, "Tab", function()
 		switcher.switch(1, "Mod1", "Alt_L", "Shift", "Tab")
-	end),
-	awful.key({ alt, shift }, "Tab", function()
-		switcher.switch(-1, "Mod1", "Alt_L", "Shift", "Tab")
 	end),
 })
 

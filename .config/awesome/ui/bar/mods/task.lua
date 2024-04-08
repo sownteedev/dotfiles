@@ -245,7 +245,7 @@ function M:showMenu(data)
 		},
 		buttons = {
 			awful.button({}, 1, function()
-				awful.spawn.easy_async_with_shell(data.exec)
+				awful.spawn.easy_async_with_shell(data.exec .. " &")
 			end),
 		},
 		widget = wibox.container.background,
@@ -371,7 +371,7 @@ function M:genIcons()
 			widget:buttons(gears.table.join(
 				awful.button({}, 1, function()
 					if j.count == 0 then
-						awful.spawn.easy_async_with_shell(j.exec)
+						awful.spawn.easy_async_with_shell(j.exec .. " &")
 					elseif j.count == 1 then
 						if j.clients[j.count].minimized then
 							j.clients[j.count].minimized = false
