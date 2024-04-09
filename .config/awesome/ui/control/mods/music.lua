@@ -64,7 +64,7 @@ awful.screen.connect_for_each_screen(function(s)
 					{
 						id = "art",
 						image = helpers.cropSurface(1.9, gears.surface.load_uncached(beautiful.songdefpicture)),
-						opacity = 0.5,
+						opacity = 0.7,
 						resize = true,
 						clip_shape = helpers.rrect(5),
 						widget = wibox.widget.imagebox,

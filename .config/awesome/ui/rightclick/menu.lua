@@ -207,7 +207,7 @@ function menu.sub_menu_button(args)
 	local icon = args.icon ~= nil
 			and wibox.widget({
 				image = gears.color.recolor_image(
-					gears.filesystem.get_configuration_dir() .. "/themes/assets/awesome.svg",
+					gears.filesystem.get_configuration_dir() .. "/themes/assets/awm.png",
 					helpers.randomColor()
 				),
 				resize = true,

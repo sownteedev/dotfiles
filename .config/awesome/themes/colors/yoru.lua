@@ -9,5 +9,5 @@ return {
 	blue = "#6791c9",
 	yellow = "#ecd28b",
 
-	wallpaper = "~/.walls/moreroses.jpg",
+	wallpaper = "~/.walls/mountains.jpeg",
 }

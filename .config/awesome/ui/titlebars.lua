@@ -73,7 +73,7 @@ client.connect_signal("request::titlebars", function(c)
 		{
 			widget = wibox.widget.imagebox,
 			image = getIcon(c, c.class, c.class),
-			forced_width = 35,
+			forced_width = 40,
 			resize = true,
 		},
 		widget = wibox.container.place,

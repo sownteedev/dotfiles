@@ -45,23 +45,22 @@ awful.screen.connect_for_each_screen(function(s)
 
 	makeImage()
 
-	local createButton = function(icon, name, cmd, color)
+	local createButton = function(path, cmd, color)
 		local widget = wibox.widget({
 			{
 				{
 					{
 						id = "icon",
-						markup = helpers.colorizeText(icon, color),
-						font = beautiful.icon .. " 60",
-						widget = wibox.widget.textbox,
+						image = path,
+						resize = true,
+						forced_height = 110,
+						forced_width = 110,
+						valign = "center",
+						widget = wibox.widget.imagebox,
 					},
+					id = "margin",
 					widget = wibox.container.margin,
-					margins = {
-						left = 100,
-						right = 60,
-						top = 60,
-						bottom = 60,
-					},
+					margins = 90,
 				},
 				shape = helpers.rrect(15),
 				widget = wibox.container.background,
@@ -79,6 +78,14 @@ awful.screen.connect_for_each_screen(function(s)
 			layout = wibox.layout.fixed.vertical,
 		})
 		helpers.addHover(widget, beautiful.background, helpers.blend(color, beautiful.background, 0.1))
+		if
+			path == gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png"
+			or path == gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/sleep.png"
+		then
+			helpers.gc(widget, "icon").forced_width = 90
+			helpers.gc(widget, "icon").forced_height = 90
+			helpers.gc(widget, "margin").margins = 100
+		end
 		return widget
 	end
 
@@ -115,15 +122,30 @@ awful.screen.connect_for_each_screen(function(s)
 
 	local buttons = wibox.widget({
 		{
-			createButton("󰐥 ", "Power", "poweroff &", beautiful.red),
-			createButton(" ", "Reboot", "reboot &", beautiful.yellow),
-			createButton("󰍁 ", "Lock", "awesome-client \"awesome.emit_signal('toggle::lock')\" &", beautiful.blue),
-			createButton("󰖔 ", "Sleep", "systemctl suspend &", beautiful.green),
 			createButton(
-				"󰈆 ",
-				"Log Out",
+				gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png",
+				"poweroff &",
+				beautiful.red
+			),
+			createButton(
+				gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/restart.png",
+				"reboot &",
+				beautiful.green
+			),
+			createButton(
+				gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/lock.png",
+				"awesome-client \"awesome.emit_signal('toggle::lock')\" &",
+				beautiful.blue
+			),
+			createButton(
+				gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/sleep.png",
+				"systemctl suspend &",
+				helpers.makeColor("purple")
+			),
+			createButton(
+				gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/logout.png",
 				"loginctl kill-user $USER &",
-				helpers.mix(beautiful.red, beautiful.yellow, 0.5)
+				beautiful.yellow
 			),
 			layout = wibox.layout.fixed.horizontal,
 			spacing = 40,

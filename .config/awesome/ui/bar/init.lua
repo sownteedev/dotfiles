@@ -17,7 +17,7 @@ local function init(s)
 	local wibar = awful.wibar({
 		position = "bottom",
 		margins = { bottom = beautiful.useless_gap * 2, left = 40, right = 40 },
-		height = 70,
+		height = 65,
 		ontop = false,
 		width = beautiful.width - 100,
 		bg = beautiful.darker,

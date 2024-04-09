@@ -18,7 +18,7 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 		handle_shape = createHandle(),
 		handle_color = beautiful.background,
 		handle_border_width = 3,
-		handle_margins = { top = 15, right = -5, left = 1 },
+		handle_margins = { top = 13, right = -5, left = 1 },
 		handle_border_color = beautiful.foreground,
 		forced_height = 0,
 		value = 25,
