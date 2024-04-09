@@ -7,18 +7,32 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local art = wibox.widget({
-	image = helpers.cropSurface(7, gears.surface.load_uncached(beautiful.songdefpicture)),
-	opacity = 0.5,
-	forced_width = 350,
+	image = helpers.cropSurface(7.4, gears.surface.load_uncached(beautiful.songdefpicture)),
+	opacity = 0.7,
+	forced_width = 330,
+	widget = wibox.widget.imagebox,
+})
+
+local player = wibox.widget({
+	image = gears.filesystem.get_configuration_dir() .. "/themes/assets/music/default.png",
+	resize = true,
+	forced_height = 25,
+	forced_width = 25,
+	valign = "center",
 	widget = wibox.widget.imagebox,
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	art.image = helpers.cropSurface(7, gears.surface.load_uncached(album_path))
+	art.image = helpers.cropSurface(7.4, gears.surface.load_uncached(album_path))
+	if player_name == "spotify" then
+		player.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/music/spotify.png"
+	else
+		player.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/music/playing.png"
+	end
 end)
 
 local next = wibox.widget({
-	font = beautiful.icon .. " 18",
+	font = beautiful.icon .. " 17",
 	markup = "󰒭",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -29,7 +43,7 @@ local next = wibox.widget({
 })
 
 local prev = wibox.widget({
-	font = beautiful.icon .. " 18",
+	font = beautiful.icon .. " 17",
 	markup = "󰒮",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -39,7 +53,7 @@ local prev = wibox.widget({
 	},
 })
 local play = wibox.widget({
-	font = beautiful.icon .. " 18",
+	font = beautiful.icon .. " 17",
 	markup = "󰐊",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -49,15 +63,8 @@ local play = wibox.widget({
 	},
 })
 
-local headphones = wibox.widget({
-	font = beautiful.icon .. " 18",
-	markup = "󰟎 ",
-	widget = wibox.widget.textbox,
-})
-
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
 	play.markup = playing and "󰏤" or "󰐊"
-	headphones.markup = playing and "󰋎 " or "󰟎 "
 end)
 
 local finalwidget = wibox.widget({
@@ -75,7 +82,7 @@ local finalwidget = wibox.widget({
 			},
 			{
 				{
-					headphones,
+					player,
 					nil,
 					{ prev, play, next, spacing = 10, layout = wibox.layout.fixed.horizontal },
 					layout = wibox.layout.align.horizontal,

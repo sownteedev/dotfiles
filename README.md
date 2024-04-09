@@ -82,24 +82,23 @@
 	sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools
 	sudo systemctl enable NetworkManager dhcpcd
 
-## GRUB (Enable Secure Boot)(Make u sure, u have ~1GB for EFI BOOT)
+## GRUB
 
     sudo pacman -S grub os-prober efibootmgr ntfs-3g mtools dosfstools
     sudo nvim /etc/default/grub
     Uncomment: GRUB_DISABLE_OS_PROBER=false
+    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+
+#### Enable Secure Boot (Do it when restart)
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
     sudo grub-mkconfig -o /boot/grub/grub.cfg
     sudo sbctl create-keys
     sudo sbctl sign -s /boot/EFI/GRUB/grubx64.efi
-    sbctl sign -s /boot/EFI/Boot/bootx64.efi
-    sbctl sign -s /boot/vmlinuz-linux
+    sudo sbctl sign -s /boot/EFI/Boot/bootx64.efi
+    sudo sbctl sign -s /boot/vmlinuz-linux
     sudo chattr -i /sys/firmware/efi/efivars/*
     sudo sbctl enroll-keys -mi
-
-#### If GRUB not found Windows (Do it when restart)
-
-    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --recheck
-    grub-mkconfig -o /boot/grub/grub.cfg
 
 ### Exit and Reboot
 

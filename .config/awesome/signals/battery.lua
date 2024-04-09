@@ -13,11 +13,27 @@ local function battery_emit()
 	)
 end
 
+local function battery_status()
+	awful.spawn.easy_async_with_shell("bash -c 'acpi' &", function(stdout)
+		local status = string.match(stdout, "Full")
+		awesome.emit_signal("signal::batterystatus", status)
+	end)
+end
+
 gears.timer({
 	timeout = 60,
 	call_now = true,
 	autostart = true,
 	callback = function()
 		battery_emit()
+	end,
+})
+
+gears.timer({
+	timeout = 1,
+	call_now = true,
+	autostart = true,
+	callback = function()
+		battery_status()
 	end,
 })

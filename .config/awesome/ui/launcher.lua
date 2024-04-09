@@ -10,27 +10,29 @@ local L = {}
 local Conf = {
 	rows = 8,
 	entry_height = 100,
-	entry_width = 450,
+	entry_width = 480,
 	popup_margins = 15,
 }
 
-local createPowerButton = function(icon, color, command)
-	return wibox.widget({
+local createPowerButton = function(path, color, command)
+	local buttons = wibox.widget({
 		{
 			{
 				{
-					markup = helpers.colorizeText(icon, color),
-					font = beautiful.icon .. " 25",
-					widget = wibox.widget.textbox,
+					id = "icon",
+					image = path,
+					resize = true,
+					forced_height = 40,
+					forced_width = 40,
+					halign = "center",
+					widget = wibox.widget.imagebox,
 				},
+				id = "margin",
 				widget = wibox.container.margin,
-				left = 30,
-				right = 15,
-				top = 20,
-				bottom = 20,
+				margins = 25,
 			},
 			widget = wibox.container.background,
-			bg = color .. "11",
+			bg = color .. "22",
 			shape = helpers.rrect(5),
 		},
 		widget = wibox.container.place,
@@ -41,6 +43,12 @@ local createPowerButton = function(icon, color, command)
 			end),
 		},
 	})
+	if path == gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png" then
+		helpers.gc(buttons, "icon").forced_width = 30
+		helpers.gc(buttons, "icon").forced_height = 30
+		helpers.gc(buttons, "margin").margins = 30
+	end
+	return buttons
 end
 
 local sidebar = wibox.widget({
@@ -66,9 +74,21 @@ local sidebar = wibox.widget({
 		nil,
 		{
 			{
-				createPowerButton(" ", beautiful.blue, "awesome-client \"awesome.emit_signal('toggle::lock')\" &"),
-				createPowerButton(" ", beautiful.green, "reboot &"),
-				createPowerButton("󰐥 ", beautiful.red, "poweroff &"),
+				createPowerButton(
+					gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/lock.png",
+					beautiful.blue,
+					"awesome-client \"awesome.emit_signal('toggle::lock')\" &"
+				),
+				createPowerButton(
+					gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/restart.png",
+					beautiful.green,
+					"reboot &"
+				),
+				createPowerButton(
+					gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png",
+					beautiful.red,
+					"poweroff &"
+				),
 				spacing = 15,
 				layout = wibox.layout.fixed.vertical,
 			},
@@ -80,9 +100,9 @@ local sidebar = wibox.widget({
 
 local prompt = wibox.widget({
 	{
-		image = helpers.cropSurface(4.5, gears.surface.load_uncached(beautiful.wallpaper)),
+		image = helpers.cropSurface(4, gears.surface.load_uncached(beautiful.wallpaper)),
 		opacity = 1,
-		forced_height = 100,
+		forced_height = 130,
 		clip_shape = helpers.rrect(5),
 		forced_width = Conf.entry_height,
 		widget = wibox.widget.imagebox,

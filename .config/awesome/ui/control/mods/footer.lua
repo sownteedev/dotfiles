@@ -1,7 +1,8 @@
 local awful = require("awful")
 local wibox = require("wibox")
-local helpers = require("helpers")
 local beautiful = require("beautiful")
+local gears = require("gears")
+local helpers = require("helpers")
 
 local widget = wibox.widget({
 	{
@@ -19,32 +20,49 @@ local widget = wibox.widget({
 				{
 					{
 						{
-							max_value = 100,
-							value = 69,
-							id = "prog",
-							forced_height = 0,
-							forced_width = 80,
-							paddings = 3,
-							border_color = beautiful.foreground .. "99",
-							background_color = beautiful.background,
-							bar_shape = helpers.rrect(10),
-							color = beautiful.blue,
-							border_width = 1,
-							shape = helpers.rrect(10),
-							widget = wibox.widget.progressbar,
+							{
+								max_value = 100,
+								value = 69,
+								id = "prog",
+								forced_height = 0,
+								forced_width = 110,
+								paddings = 3,
+								border_color = beautiful.foreground .. "99",
+								background_color = beautiful.background,
+								bar_shape = helpers.rrect(10),
+								color = beautiful.blue,
+								border_width = 1,
+								shape = helpers.rrect(10),
+								widget = wibox.widget.progressbar,
+							},
+							{
+								{
+									bg = beautiful.foreground .. "99",
+									forced_height = 10,
+									forced_width = 2,
+									shape = helpers.rrect(10),
+									widget = wibox.container.background,
+								},
+								widget = wibox.container.place,
+							},
+							spacing = 3,
+							layout = wibox.layout.fixed.horizontal,
 						},
 						{
 							{
-								bg = beautiful.foreground .. "99",
-								forced_height = 5,
-								forced_width = 2,
-								shape = helpers.rrect(10),
-								widget = wibox.container.background,
+								id = "status",
+								image = nil,
+								resize = true,
+								forced_height = 25,
+								forced_width = 25,
+								halign = "center",
+								widget = wibox.widget.imagebox,
 							},
-							widget = wibox.container.place,
+							widget = wibox.container.margin,
+							top = 10,
+							bottom = 10,
 						},
-						spacing = 3,
-						layout = wibox.layout.fixed.horizontal,
+						layout = wibox.layout.stack,
 					},
 					{
 						font = beautiful.sans .. " 15",
@@ -58,8 +76,8 @@ local widget = wibox.widget({
 				widget = wibox.container.margin,
 				left = 10,
 				right = 10,
-				top = 20,
-				bottom = 20,
+				top = 15,
+				bottom = 15,
 			},
 			widget = wibox.container.background,
 			shape = helpers.rrect(5),
@@ -109,6 +127,18 @@ awesome.connect_signal("signal::battery", function(value)
 		b.color = beautiful.yellow
 	else
 		b.color = beautiful.red
+	end
+end)
+
+awesome.connect_signal("signal::batterystatus", function(stdout)
+	local b = helpers.gc(widget, "status")
+	if stdout then
+		b.image = gears.color.recolor_image(
+			gears.filesystem.get_configuration_dir() .. "/themes/assets/thunder.png",
+			beautiful.foreground
+		)
+	else
+		b.image = nil
 	end
 end)
 

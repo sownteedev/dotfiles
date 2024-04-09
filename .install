@@ -174,9 +174,13 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 		echo "[*] Spotify installation skipped."
 	else
 		echo "[*] Installing Spotify ..."
-		yay -S --noconfirm spotify
+		curl -sS https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg  | gpg --import -
+		git clone https://aur.archlinux.org/spotify.git && cd spotify
+		pkgctl build
+		pacman -U spotify-*.pkg.tar.zst --noconfirm
+		cd .. && rm -rf spotify
 		spotify &
-		sleep 3
+		sleep 5
 		pkill spotify
 	fi
 	yay -S --noconfirm spicetify-cli

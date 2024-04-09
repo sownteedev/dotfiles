@@ -17,12 +17,6 @@ return function(s)
 			awful.button({}, 1, function(t)
 				t:view_only()
 			end),
-			awful.button({}, 4, function(t)
-				awful.tag.viewprev(t.screen)
-			end),
-			awful.button({}, 5, function(t)
-				awful.tag.viewnext(t.screen)
-			end),
 		},
 		widget_template = {
 			{
@@ -41,7 +35,7 @@ return function(s)
 				})
 				self.update = function()
 					if tag.selected then
-						self.taganim:set(100)
+						self.taganim:set(90)
 					elseif #tag:clients() > 0 then
 						self.taganim:set(60)
 					else

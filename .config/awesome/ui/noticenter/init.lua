@@ -49,9 +49,12 @@ awful.screen.connect_for_each_screen(function(s)
 	})
 
 	local clearButton = wibox.widget({
-		font = beautiful.icon .. " 20",
-		markup = helpers.colorizeText(" ", beautiful.red),
-		widget = wibox.widget.textbox,
+		image = gears.filesystem.get_configuration_dir() .. "/themes/assets/trash.png",
+		resize = true,
+		forced_height = 25,
+		forced_width = 25,
+		halign = "center",
+		widget = wibox.widget.imagebox,
 		buttons = {
 			awful.button({}, 1, function()
 				notif_center_reset_notifs_container()
@@ -66,10 +69,14 @@ awful.screen.connect_for_each_screen(function(s)
 
 		local appicon = n.icon or n.app_icon
 		if not appicon then
-			appicon = gears.filesystem.get_configuration_dir() .. "themes/assets/awesome.svg"
+			appicon = gears.color.recolor_image(
+				gears.filesystem.get_configuration_dir() .. "/themes/assets/awm.png",
+				helpers.randomColor()
+			)
 		end
 		finalcontent:insert(1, make(appicon, n))
 	end)
+
 	notify:setup({
 		{
 			{
