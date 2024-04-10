@@ -46,8 +46,8 @@ local notipower = wibox.widget({
 		bg = beautiful.background,
 	},
 	widget = wibox.container.margin,
-	top = 10,
-	bottom = 10,
+	top = 5,
+	bottom = 5,
 })
 
 return notipower

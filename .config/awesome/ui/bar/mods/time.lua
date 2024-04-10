@@ -21,7 +21,7 @@ local timedate = wibox.widget({
 						widget = wibox.widget.textclock,
 					},
 					layout = wibox.layout.fixed.vertical,
-					spacing = 2,
+					spacing = 3,
 				},
 				widget = wibox.container.place,
 			},
@@ -39,8 +39,8 @@ local timedate = wibox.widget({
 		},
 	},
 	widget = wibox.container.margin,
-	top = 10,
-	bottom = 10,
+	top = 5,
+	bottom = 5,
 })
 
 return timedate

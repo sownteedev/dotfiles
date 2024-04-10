@@ -22,7 +22,7 @@ return function(s)
 			{
 				id = "background_role",
 				widget = wibox.container.background,
-				forced_height = 10,
+				forced_height = 15,
 			},
 			widget = wibox.container.place,
 			create_callback = function(self, tag)
@@ -35,9 +35,9 @@ return function(s)
 				})
 				self.update = function()
 					if tag.selected then
-						self.taganim:set(90)
+						self.taganim:set(100)
 					elseif #tag:clients() > 0 then
-						self.taganim:set(60)
+						self.taganim:set(70)
 					else
 						self.taganim:set(40)
 					end
@@ -67,8 +67,8 @@ return function(s)
 			shape = helpers.rrect(5),
 		},
 		widget = wibox.container.margin,
-		top = 10,
-		bottom = 10,
+		top = 5,
+		bottom = 5,
 	})
 	return tags
 end

@@ -261,7 +261,7 @@ sleep 3 && clear
 # App for me
 read -p "[*] Do you want to install app for me(Recommend No, because it is for me)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-	sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop
+	sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop notion-app-electron
 	yay -S --noconfirm visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional
 else
 	echo "[*] App for me skipped."

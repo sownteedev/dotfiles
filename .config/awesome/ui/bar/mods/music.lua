@@ -7,7 +7,7 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local art = wibox.widget({
-	image = helpers.cropSurface(7.4, gears.surface.load_uncached(beautiful.songdefpicture)),
+	image = helpers.cropSurface(6.1, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.7,
 	forced_width = 330,
 	widget = wibox.widget.imagebox,
@@ -16,23 +16,25 @@ local art = wibox.widget({
 local player = wibox.widget({
 	image = gears.filesystem.get_configuration_dir() .. "/themes/assets/music/default.png",
 	resize = true,
-	forced_height = 25,
-	forced_width = 25,
+	forced_height = 35,
+	forced_width = 35,
 	valign = "center",
 	widget = wibox.widget.imagebox,
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	art.image = helpers.cropSurface(7.4, gears.surface.load_uncached(album_path))
+	art.image = helpers.cropSurface(6.1, gears.surface.load_uncached(album_path))
 	if player_name == "spotify" then
 		player.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/music/spotify.png"
+		player.forced_width = 30
+		player.forced_height = 30
 	else
 		player.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/music/playing.png"
 	end
 end)
 
 local next = wibox.widget({
-	font = beautiful.icon .. " 17",
+	font = beautiful.icon .. " 18",
 	markup = "󰒭",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -43,7 +45,7 @@ local next = wibox.widget({
 })
 
 local prev = wibox.widget({
-	font = beautiful.icon .. " 17",
+	font = beautiful.icon .. " 18",
 	markup = "󰒮",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -53,7 +55,7 @@ local prev = wibox.widget({
 	},
 })
 local play = wibox.widget({
-	font = beautiful.icon .. " 17",
+	font = beautiful.icon .. " 18",
 	markup = "󰐊",
 	widget = wibox.widget.textbox,
 	buttons = {
@@ -97,8 +99,8 @@ local finalwidget = wibox.widget({
 		shape = helpers.rrect(5),
 	},
 	widget = wibox.container.margin,
-	top = 10,
-	bottom = 10,
+	top = 5,
+	bottom = 5,
 })
 
 return finalwidget
