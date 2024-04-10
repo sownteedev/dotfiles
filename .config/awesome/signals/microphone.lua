@@ -2,11 +2,9 @@ local awful = require("awful")
 local gears = require("gears")
 
 local function get_mute()
-	awful.spawn.easy_async_with_shell("pactl get-source-mute @DEFAULT_SOURCE@ | awk '{print $2}' &", function(value)
-		local stringtoboolean = { ["yes"] = true, ["no"] = false }
-		value = value:gsub("%s+", "")
-		value = stringtoboolean[value]
-		awesome.emit_signal("signal::micmute", value)
+	awful.spawn.easy_async_with_shell("bash -c 'pactl get-source-mute @DEFAULT_SOURCE@' &", function(value)
+		local boolen = value:match("yes")
+		awesome.emit_signal("signal::micmute", boolen)
 	end)
 end
 
