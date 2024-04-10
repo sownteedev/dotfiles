@@ -8,8 +8,8 @@ local profile = wibox.widget({
 		{
 			widget = wibox.widget.imagebox,
 			image = beautiful.profile,
-			forced_height = 45,
-			forced_width = 45,
+			forced_height = 50,
+			forced_width = 50,
 			resize = true,
 			buttons = {
 				awful.button({}, 1, function()
@@ -20,8 +20,9 @@ local profile = wibox.widget({
 		widget = wibox.container.place,
 	},
 	widget = wibox.container.margin,
-	top = 10,
-	bottom = 10,
+	top = 5,
+	bottom = 5,
+	left = 15,
 })
 
 return profile

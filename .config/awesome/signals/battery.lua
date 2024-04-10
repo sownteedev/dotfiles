@@ -15,7 +15,7 @@ end
 
 local function battery_status()
 	awful.spawn.easy_async_with_shell("bash -c 'acpi' &", function(stdout)
-		local status = string.match(stdout, "Full")
+		local status = not string.match(stdout, "Discharging")
 		awesome.emit_signal("signal::batterystatus", status)
 	end)
 end

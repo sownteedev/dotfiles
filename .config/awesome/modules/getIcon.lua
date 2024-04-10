@@ -29,7 +29,7 @@ local custom = {
 	},
 	{
 		name = "TelegramDesktop",
-		to = "telegram",
+		to = "telegram-desktop",
 	},
 	{
 		name = "neovide",
@@ -46,10 +46,6 @@ local custom = {
 	{
 		name = "libreoffice-impress",
 		to = "libreoffice-impress",
-	},
-	{
-		name = "FFPWA-01HSQTMPBC1480B2EK2ECV42TX",
-		to = "soundcloud",
 	},
 }
 

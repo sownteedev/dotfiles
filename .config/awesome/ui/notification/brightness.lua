@@ -10,7 +10,7 @@ local info = wibox.widget({
 		{
 			widget = wibox.widget.textbox,
 			id = "icon",
-			font = beautiful.icon .. " 20",
+			font = beautiful.icon .. " 25",
 			markup = "",
 		},
 		{
@@ -34,11 +34,11 @@ local info = wibox.widget({
 				bar_shape = helpers.rrect(5),
 			},
 			widget = wibox.container.margin,
-			top = 35,
-			bottom = 35,
+			top = 30,
+			bottom = 30,
 		},
 		layout = wibox.layout.fixed.horizontal,
-		spacing = 15,
+		spacing = 10,
 	},
 	widget = wibox.container.margin,
 	left = 30,
