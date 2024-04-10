@@ -53,14 +53,17 @@ awful.screen.connect_for_each_screen(function(s)
 						id = "icon",
 						image = path,
 						resize = true,
-						forced_height = 110,
-						forced_width = 110,
+						forced_height = 120,
+						forced_width = 120,
 						valign = "center",
 						widget = wibox.widget.imagebox,
 					},
 					id = "margin",
 					widget = wibox.container.margin,
-					margins = 90,
+					left = 110,
+					right = 110,
+					top = 90,
+					bottom = 90,
 				},
 				shape = helpers.rrect(15),
 				widget = wibox.container.background,
@@ -84,7 +87,10 @@ awful.screen.connect_for_each_screen(function(s)
 		then
 			helpers.gc(widget, "icon").forced_width = 90
 			helpers.gc(widget, "icon").forced_height = 90
-			helpers.gc(widget, "margin").margins = 100
+			helpers.gc(widget, "margin").left = 125
+			helpers.gc(widget, "margin").right = 125
+			helpers.gc(widget, "margin").top = 105
+			helpers.gc(widget, "margin").bottom = 105
 		end
 		return widget
 	end
