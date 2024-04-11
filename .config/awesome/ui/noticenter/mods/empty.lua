@@ -4,7 +4,7 @@ local gears = require("gears")
 return wibox.widget({
 	{
 		{
-			image = gears.filesystem.get_configuration_dir() .. "/themes/assets/wedding-bells.png",
+			image = gears.filesystem.get_configuration_dir() .. "/themes/assets/notify/wedding-bells.png",
 			resize = true,
 			forced_height = 400,
 			halign = "center",

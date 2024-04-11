@@ -357,29 +357,33 @@ function M:genIcons()
 			local widget = wibox.widget({
 				{
 					{
-						widget = wibox.container.background,
-						forced_height = 5,
-						shape = helpers.rrect(50),
-						bg = bg,
-					},
-					widget = wibox.container.margin,
-					top = 58,
-					left = 25,
-					right = 25,
-					bottom = 2,
-				},
-				{
-					{
 						widget = wibox.widget.imagebox,
 						image = j.icon,
 						forced_height = 55,
 						forced_width = 55,
 						resize = true,
 					},
-					widget = wibox.container.place,
+					widget = wibox.container.margin,
+					top = 4,
 				},
-				layout = wibox.layout.stack,
+				{
+					{
+						font = beautiful.icon .. " 6",
+						markup = helpers.colorizeText("●", bg),
+						widget = wibox.widget.textbox,
+						halign = "center",
+					},
+					widget = wibox.container.margin,
+					top = -4,
+				},
+				layout = wibox.layout.fixed.vertical,
 			})
+			if j.count > 0 then
+				for i = 1, j.count - 1 do
+					widget.children[2].widget.markup =
+						helpers.colorizeText(widget.children[2].widget.markup .. " ●", bg)
+				end
+			end
 			widget:buttons(gears.table.join(
 				awful.button({}, 1, function()
 					if j.count == 0 then
