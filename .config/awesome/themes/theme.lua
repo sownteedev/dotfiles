@@ -33,8 +33,8 @@ theme.height = awful.screen.focused().geometry.height
 theme.useless_gap = 10
 
 theme.user = string.gsub(os.getenv("USER"), "^%l", string.upper)
-theme.profile = "~/.config/awesome/themes/assets/sownteedev.png"
-theme.songdefpicture = "~/.config/awesome/themes/assets/defsong.jpg"
+theme.profile = themes_path .. "assets/sownteedev.png"
+theme.songdefpicture = themes_path .. "assets/music/defsong.jpg"
 
 -- default vars --
 theme.bg_normal = theme.background

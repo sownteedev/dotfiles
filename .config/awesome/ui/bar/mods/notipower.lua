@@ -9,7 +9,7 @@ local notipower = wibox.widget({
 		{
 			{
 				{
-					image = gears.filesystem.get_configuration_dir() .. "/themes/assets/bell.png",
+					image = gears.filesystem.get_configuration_dir() .. "/themes/assets/notify/bell.png",
 					resize = true,
 					forced_height = 28,
 					forced_width = 28,

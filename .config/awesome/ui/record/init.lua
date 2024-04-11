@@ -47,31 +47,24 @@ local rec_audio = function(fps, file_name)
 	awful.spawn.easy_async_with_shell(defCommand)
 end
 
-local createButton = function(icon, name, fn, col)
+local createButton = function(path, name, fn, col)
 	local button = wibox.widget({
 		{
 			{
 				{
 					{
-						{
-							font = beautiful.icon .. " 25",
-							markup = icon,
-							align = "center",
-							widget = wibox.widget.textbox,
-						},
-						layout = wibox.container.margin,
-						top = 10,
-						left = 10,
+						image = path,
+						forced_width = 50,
+						forced_height = 50,
+						resize = true,
+						widget = wibox.widget.imagebox,
+						halign = "center",
 					},
 					{
-						{
-							font = beautiful.sans .. " 15",
-							markup = name,
-							align = "center",
-							widget = wibox.widget.textbox,
-						},
-						layout = wibox.container.margin,
-						bottom = 10,
+						font = beautiful.sans .. " 15",
+						markup = name,
+						align = "center",
+						widget = wibox.widget.textbox,
 					},
 					layout = wibox.layout.fixed.vertical,
 					spacing = 20,
@@ -102,7 +95,7 @@ end
 awful.screen.connect_for_each_screen(function(s)
 	local recorder = wibox({
 		width = 450,
-		height = 240,
+		height = 230,
 		shape = helpers.rrect(5),
 		bg = beautiful.darker,
 		ontop = true,
@@ -130,24 +123,39 @@ awful.screen.connect_for_each_screen(function(s)
 		slide:set(0 - recorder.height)
 	end
 
-	local recaudio = createButton(" ", "Rec Audio", function()
-		close()
-		checkFolder()
-		local name = getName()
-		rec_audio("60", name)
-	end, beautiful.green)
+	local recaudio = createButton(
+		gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recaudio.png",
+		"Rec Audio",
+		function()
+			close()
+			checkFolder()
+			local name = getName()
+			rec_audio("60", name)
+		end,
+		beautiful.green
+	)
 
-	local recmic = createButton("󰄄 ", "Rec Mic", function()
-		close()
-		checkFolder()
-		local name = getName()
-		rec_mic("60", name)
-	end, beautiful.blue)
+	local recmic = createButton(
+		gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recmic.png",
+		"Rec Mic",
+		function()
+			close()
+			checkFolder()
+			local name = getName()
+			rec_mic("60", name)
+		end,
+		beautiful.blue
+	)
 
-	local stop = createButton("󰜺 ", "Finish", function()
-		awful.spawn.easy_async_with_shell("killall ffmpeg &")
-		close()
-	end, beautiful.red)
+	local stop = createButton(
+		gears.filesystem.get_configuration_dir() .. "/themes/assets/record/finish.png",
+		"Finish",
+		function()
+			awful.spawn.easy_async_with_shell("killall ffmpeg &")
+			close()
+		end,
+		beautiful.red
+	)
 
 	recorder:setup({
 		{

@@ -6,31 +6,24 @@ local gears = require("gears")
 local animation = require("modules.animation")
 local screenshot = require("ui.screenshot.mods")
 
-local createButton = function(icon, name, fn, col)
+local createButton = function(path, name, fn, col)
 	local button = wibox.widget({
 		{
 			{
 				{
 					{
-						{
-							font = beautiful.icon .. " 25",
-							markup = icon,
-							align = "center",
-							widget = wibox.widget.textbox,
-						},
-						layout = wibox.container.margin,
-						top = 10,
-						left = 10,
+						image = path,
+						forced_width = 50,
+						forced_height = 50,
+						resize = true,
+						widget = wibox.widget.imagebox,
+						halign = "center",
 					},
 					{
-						{
-							font = beautiful.sans .. " 15",
-							markup = name,
-							align = "center",
-							widget = wibox.widget.textbox,
-						},
-						layout = wibox.container.margin,
-						bottom = 10,
+						font = beautiful.sans .. " 15",
+						markup = name,
+						align = "center",
+						widget = wibox.widget.textbox,
 					},
 					layout = wibox.layout.fixed.vertical,
 					spacing = 20,
@@ -61,7 +54,7 @@ end
 awful.screen.connect_for_each_screen(function(s)
 	local scrotter = wibox({
 		width = 450,
-		height = 240,
+		height = 230,
 		shape = helpers.rrect(8),
 		bg = beautiful.darker,
 		ontop = true,
@@ -89,20 +82,35 @@ awful.screen.connect_for_each_screen(function(s)
 		slide:set(0 - scrotter.height)
 	end
 
-	local fullscreen = createButton(" ", "Fullscreen", function()
-		close()
-		screenshot.full({ notify = true })
-	end, beautiful.green)
+	local fullscreen = createButton(
+		gears.filesystem.get_configuration_dir() .. "/themes/assets/screenshot/fullscreen.png",
+		"Fullscreen",
+		function()
+			close()
+			screenshot.full({ notify = true })
+		end,
+		beautiful.green
+	)
 
-	local selection = createButton(" ", "Selection", function()
-		close()
-		screenshot.area({ notify = true })
-	end, beautiful.blue)
+	local selection = createButton(
+		gears.filesystem.get_configuration_dir() .. "/themes/assets/screenshot/selection.png",
+		"Selection",
+		function()
+			close()
+			screenshot.area({ notify = true })
+		end,
+		beautiful.blue
+	)
 
-	local window = createButton(" ", "Window", function()
-		close()
-		screenshot.window({ notify = true })
-	end, beautiful.red)
+	local window = createButton(
+		gears.filesystem.get_configuration_dir() .. "/themes/assets/screenshot/window.png",
+		"Window",
+		function()
+			close()
+			screenshot.window({ notify = true })
+		end,
+		beautiful.red
+	)
 
 	scrotter:setup({
 		{

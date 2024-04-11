@@ -49,7 +49,7 @@ awful.screen.connect_for_each_screen(function(s)
 	})
 
 	local clearButton = wibox.widget({
-		image = gears.filesystem.get_configuration_dir() .. "/themes/assets/trash.png",
+		image = gears.filesystem.get_configuration_dir() .. "/themes/assets/notify/trash.png",
 		resize = true,
 		forced_height = 25,
 		forced_width = 25,

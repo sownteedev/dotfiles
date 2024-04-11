@@ -72,7 +72,7 @@ naughty.connect_signal("request::display", function(n)
 		{
 			{
 				image = n.icon and helpers.cropSurface(1, gears.surface.load_uncached(n.icon))
-					or gears.filesystem.get_configuration_dir() .. "themes/assets/bell.png",
+					or gears.filesystem.get_configuration_dir() .. "themes/assets/notify/bell.png",
 				resize = true,
 				clip_shape = helpers.rrect(50),
 				widget = wibox.widget.imagebox,
