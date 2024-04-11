@@ -2,6 +2,17 @@
 
 > **NOTE**: Perfect with Resolution 2560x1600 (16:10 2K)
 
+### Showcase:
+
+<img src="https://github.com/sownteedev/dotfiles/assets/90148193/b1700e0a-c045-4da3-9071-994ca819b934">
+<img src="https://github.com/sownteedev/dotfiles/assets/90148193/63f6f207-8a00-4524-9918-5977afcf8936">
+<img src="https://github.com/sownteedev/dotfiles/assets/90148193/79a03cb5-589a-449a-aba4-0ef4e6706848">
+<img src="https://github.com/sownteedev/dotfiles/assets/90148193/4b835d57-71b7-4e82-8ae4-aaf798d1635f">
+<img src="https://github.com/sownteedev/dotfiles/assets/90148193/7cfc29c5-8b63-4c95-afba-33f857ab40a5">
+<img src="https://github.com/sownteedev/dotfiles/assets/90148193/f9101aff-dfed-4f97-a29f-788f1c56f095">
+
+<br>
+<br>
 <br>
 
 <details><summary>Install Arch Linux</summary><blockquote>
