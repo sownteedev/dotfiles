@@ -8,7 +8,7 @@ require(... .. ".weather")
 require(... .. ".redshift")
 require(... .. ".transparency")
 
-require(... .. ".wifi")
+require(... .. ".network")
 require(... .. ".bluetooth")
 require(... .. ".airplane")
 require(... .. ".dnd")

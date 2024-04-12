@@ -70,23 +70,6 @@ local widget = wibox.widget({
 					},
 					widget = wibox.container.place,
 				},
-				{
-					{
-						{
-							font = beautiful.icon .. " 25",
-							markup = helpers.colorizeText("󰅖", beautiful.red),
-							widget = wibox.widget.textbox,
-						},
-						widget = wibox.container.margin,
-						margins = { left = 40, top = 20, right = 40, bottom = 20 },
-					},
-					buttons = {
-						awful.button({}, 1, function()
-							awesome.emit_signal("toggle::exit")
-						end),
-					},
-					widget = wibox.container.place,
-				},
 				spacing = 40,
 				layout = wibox.layout.fixed.horizontal,
 			},

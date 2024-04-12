@@ -10,7 +10,7 @@ return function(s)
 			spacing = 10,
 			layout = wibox.layout.fixed.horizontal,
 		},
-		style = { shape = helpers.rrect(5) },
+		style = { shape = helpers.rrect(10) },
 		screen = s,
 		filter = awful.widget.taglist.filter.all,
 		buttons = {
@@ -64,7 +64,7 @@ return function(s)
 			},
 			widget = wibox.container.background,
 			bg = beautiful.background,
-			shape = helpers.rrect(5),
+			shape = helpers.rrect(10),
 		},
 		widget = wibox.container.margin,
 		top = 5,

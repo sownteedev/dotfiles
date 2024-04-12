@@ -31,7 +31,7 @@ local timedate = wibox.widget({
 		},
 		bg = beautiful.background,
 		widget = wibox.container.background,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		buttons = {
 			awful.button({}, 1, function()
 				awesome.emit_signal("toggle::moment")

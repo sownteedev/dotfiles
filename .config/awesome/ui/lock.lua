@@ -1,3 +1,4 @@
+local M = {}
 local wibox = require("wibox")
 local helpers = require("helpers")
 local awful = require("awful")
@@ -31,6 +32,7 @@ local prev = wibox.widget({
 		end),
 	},
 })
+
 local play = wibox.widget({
 	font = beautiful.icon .. " 30",
 	markup = "󰐍 ",
@@ -50,7 +52,7 @@ local auth = function(password)
 	return pam.auth_current_user(password)
 end
 
-local header = wibox.widget({
+local profilepic = wibox.widget({
 	{
 		{
 			image = beautiful.profile,
@@ -77,7 +79,7 @@ local header = wibox.widget({
 	valign = "top",
 })
 
-local label = wibox.widget({
+local checkcaps = wibox.widget({
 	id = "name",
 	font = beautiful.sans .. " 15",
 	halign = "center",
@@ -87,46 +89,33 @@ local label = wibox.widget({
 local check_caps = function()
 	awful.spawn.easy_async_with_shell("xset q | grep Caps | cut -d: -f3 | cut -d0 -f1 | tr -d ' ' &", function(stdout)
 		if stdout:match("off") then
-			label.markup = " "
+			checkcaps.markup = " "
 		else
-			label.markup = helpers.colorizeText("WARNING: CAPS LOCK IS ON", helpers.makeColor("orange"))
+			checkcaps.markup = helpers.colorizeText("WARNING: CAPS LOCK IS ON", helpers.makeColor("orange"))
 		end
 	end)
 end
 
-local promptbox = wibox({
+local lock = wibox({
 	width = beautiful.width,
 	height = beautiful.height,
-	bg = beautiful.lighter .. "00",
 	ontop = true,
-	shape = helpers.rrect(10),
 	visible = false,
 })
-
-local background = wibox({
-	width = beautiful.width,
-	height = beautiful.height,
-	visible = false,
-	ontop = true,
-	type = "splash",
-})
-
-awful.placement.centered(background)
-
-local visible = function(v)
-	background.visible = v
-	promptbox.visible = v
-end
 
 local reset = function(f)
-	helpers.gc(header, "arc"):set_value(not f and 100 or 0)
-	helpers.gc(header, "arc"):set_colors({ not f and beautiful.red or beautiful.foreground })
+	helpers.gc(profilepic, "arc"):set_value(not f and 100 or 0)
+	helpers.gc(profilepic, "arc"):set_colors({ not f and beautiful.red or beautiful.foreground })
 end
 
 local getRandom = function()
 	local r = math.random(0, 628)
 	r = r / 100
 	return r
+end
+
+local visible = function(v)
+	lock.visible = v
 end
 
 local input = ""
@@ -150,22 +139,22 @@ local function grab()
 				return
 			end
 			if #key == 1 then
-				helpers.gc(header, "arc"):set_colors({ beautiful.blue })
-				helpers.gc(header, "arc"):set_value(20)
-				helpers.gc(header, "arc"):set_start_angle(getRandom())
+				helpers.gc(profilepic, "arc"):set_colors({ beautiful.blue })
+				helpers.gc(profilepic, "arc"):set_value(20)
+				helpers.gc(profilepic, "arc"):set_start_angle(getRandom())
 				if input == nil then
 					input = key
 					return
 				end
 				input = input .. key
 			elseif key == "BackSpace" then
-				helpers.gc(header, "arc"):set_colors({ beautiful.blue })
-				helpers.gc(header, "arc"):set_value(20)
-				helpers.gc(header, "arc"):set_start_angle(getRandom())
+				helpers.gc(profilepic, "arc"):set_colors({ beautiful.blue })
+				helpers.gc(profilepic, "arc"):set_value(20)
+				helpers.gc(profilepic, "arc"):set_start_angle(getRandom())
 				input = input:sub(1, -2)
 				if #input == 0 then
-					helpers.gc(header, "arc"):set_colors({ beautiful.red })
-					helpers.gc(header, "arc"):set_value(100)
+					helpers.gc(profilepic, "arc"):set_colors({ beautiful.red })
+					helpers.gc(profilepic, "arc"):set_value(100)
 				end
 			end
 		end,
@@ -177,7 +166,7 @@ local function grab()
 					visible(false)
 					input = ""
 				else
-					helpers.gc(header, "arc"):set_colors({ beautiful.red })
+					helpers.gc(profilepic, "arc"):set_colors({ beautiful.red })
 					reset(false)
 					grab()
 					input = ""
@@ -190,12 +179,7 @@ local function grab()
 	grabber:start()
 end
 
-awesome.connect_signal("toggle::lock", function()
-	visible(true)
-	grab()
-end)
-
-local back = wibox.widget({
+local background = wibox.widget({
 	id = "bg",
 	image = beautiful.wallpaper,
 	widget = wibox.widget.imagebox,
@@ -209,7 +193,7 @@ local makeImage = function()
 	local cmd = "convert " .. beautiful.wallpaper .. " -filter Gaussian -blur 0x6 ~/.cache/awesome/lock.jpg &"
 	awful.spawn.easy_async_with_shell(cmd, function()
 		local blurwall = gears.filesystem.get_cache_dir() .. "lock.jpg"
-		back.image = blurwall
+		background.image = blurwall
 	end)
 end
 
@@ -221,96 +205,102 @@ local overlay = wibox.widget({
 	forced_height = beautiful.height,
 	bg = beautiful.background .. "c1",
 })
-background:setup({
-	back,
-	overlay,
-	layout = wibox.layout.stack,
-})
 
-promptbox:setup({
+lock:setup({
+	background,
+	overlay,
 	{
 		{
 			{
 				{
 					{
 						{
-							font = beautiful.sans .. " Bold 150",
-							format = "%I:%M",
-							widget = wibox.widget.textclock,
-						},
-						{
 							{
-								font = beautiful.sans .. " Bold 20",
-								format = "%p",
-								valign = "bottom",
+								font = beautiful.sans .. " Bold 150",
+								format = "%I:%M",
 								widget = wibox.widget.textclock,
 							},
-							widget = wibox.container.margin,
-							bottom = 50,
+							{
+								{
+									font = beautiful.sans .. " Bold 20",
+									format = "%p",
+									valign = "bottom",
+									widget = wibox.widget.textclock,
+								},
+								widget = wibox.container.margin,
+								bottom = 50,
+							},
+							spacing = 10,
+							layout = wibox.layout.fixed.horizontal,
 						},
-						spacing = 10,
-						layout = wibox.layout.fixed.horizontal,
+						widget = wibox.container.margin,
+						left = 30,
 					},
-					widget = wibox.container.margin,
-					left = 30,
+					{
+						font = beautiful.sans .. " Light 50",
+						format = "%A, %d %B %Y",
+						widget = wibox.widget.textclock,
+					},
+					{
+						checkcaps,
+						widget = wibox.container.margin,
+						top = 200,
+						bottom = 100,
+					},
+					layout = wibox.layout.fixed.vertical,
 				},
-				{
-					font = beautiful.sans .. " Light 50",
-					format = "%A, %d %B %Y",
-					widget = wibox.widget.textclock,
-				},
-				{
-					label,
-					widget = wibox.container.margin,
-					top = 200,
-					bottom = 100,
-				},
-				layout = wibox.layout.fixed.vertical,
+				widget = wibox.container.place,
+				valign = "top",
 			},
-			widget = wibox.container.place,
-			valign = "top",
-		},
-		header,
-		{
+			profilepic,
 			{
 				{
-					music,
 					{
+						music,
 						{
 							{
-								prev,
 								{
-									play,
-									widget = wibox.container.margin,
-									left = 15,
+									prev,
+									{
+										play,
+										widget = wibox.container.margin,
+										left = 15,
+									},
+									next,
+									layout = wibox.layout.fixed.horizontal,
 								},
-								next,
-								layout = wibox.layout.fixed.horizontal,
+								widget = wibox.container.margin,
+								left = 10,
+								right = 10,
 							},
-							widget = wibox.container.margin,
-							left = 10,
-							right = 10,
+							widget = wibox.container.background,
+							bg = beautiful.lighter,
+							shape = helpers.rrect(10),
 						},
-						widget = wibox.container.background,
-						bg = beautiful.lighter,
-						shape = helpers.rrect(5),
+						layout = wibox.layout.fixed.horizontal,
+						spacing = 40,
 					},
+					bat,
+					weather,
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 40,
+					spacing = 100,
 				},
-				bat,
-				weather,
-				layout = wibox.layout.fixed.horizontal,
-				spacing = 100,
+				widget = wibox.container.place,
+				valign = "bottom",
 			},
-			widget = wibox.container.place,
-			valign = "bottom",
+			layout = wibox.layout.align.vertical,
 		},
-		layout = wibox.layout.align.vertical,
+		margins = 50,
+		widget = wibox.container.margin,
 	},
-	margins = 50,
-	widget = wibox.container.margin,
+	layout = wibox.layout.stack,
 })
-awful.placement.centered(promptbox)
 
 check_caps()
+
+function M.open()
+	visible(true)
+	grab()
+end
+
+return M

@@ -45,7 +45,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 		},
 		widget = wibox.container.background,
 		id = "back",
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		bg = beautiful.background,
 		buttons = {
 			awful.button({}, 1, function()
@@ -57,25 +57,25 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 		},
 	})
 
-	awesome.connect_signal("signal::" .. signal, function(status)
+	awesome.connect_signal("signal::" .. signal, function(status, _, _)
 		if status then
 			helpers.gc(widget, "back"):set_bg(beautiful.blue)
 			helpers.gc(widget, "icon"):set_markup_silently(helpers.colorizeText(icon, beautiful.background))
 			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.background))
 			if signal == "network" then
-				awesome.connect_signal("signal::wifiname", function(stdout)
-					if stdout ~= "" then
+				awesome.connect_signal("signal::network", function(_, name, _)
+					if name ~= "" then
 						helpers
 							.gc(widget, "label")
-							:set_markup_silently(helpers.colorizeText(stdout, beautiful.background))
+							:set_markup_silently(helpers.colorizeText(name, beautiful.background))
 					end
 				end)
 			elseif signal == "bluetooth" then
-				awesome.connect_signal("signal::bluetoothname", function(stdout)
-					if stdout ~= "" then
+				awesome.connect_signal("signal::bluetooth", function(_, name)
+					if name ~= "" then
 						helpers
 							.gc(widget, "label")
-							:set_markup_silently(helpers.colorizeText("Connected " .. stdout, beautiful.background))
+							:set_markup_silently(helpers.colorizeText("Connected " .. name, beautiful.background))
 					else
 						helpers
 							.gc(widget, "label")

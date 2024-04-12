@@ -2,7 +2,7 @@ local awful = require("awful")
 
 -- CPU
 local update_interval_cpu = 60
-local cpu_idle_script = [[bash -c "vmstat 1 2 | tail -1 | awk '{printf \"%d\", $15}'" &]]
+local cpu_idle_script = [[bash -c "vmstat 1 2 | tail -1 | awk '{printf \"%d\", $15}'"]]
 
 awful.widget.watch(cpu_idle_script, update_interval_cpu, function(widget, stdout)
 	local cpu_idle = stdout
@@ -12,7 +12,7 @@ end)
 
 -- RAM
 local update_interval_ram = 60
-local ram_script = [[bash -c "free -m | grep 'Mem:' | awk '{printf \"%d@@%d@\", $7, $2}'" &]]
+local ram_script = [[bash -c "free -m | grep 'Mem:' | awk '{printf \"%d@@%d@\", $7, $2}'"]]
 awful.widget.watch(ram_script, update_interval_ram, function(widget, stdout)
 	local available = stdout:match("(.*)@@")
 	local total = stdout:match("@@(.*)@")
@@ -23,7 +23,7 @@ end)
 
 -- DISK
 local update_interval_disk = 86400
-local disk_script = [[bash -c "df -h | grep '/$' | awk '{printf \"%d\", $5}'" &]]
+local disk_script = [[bash -c "df -h | grep '/$' | awk '{printf \"%d\", $5}'"]]
 awful.widget.watch(disk_script, update_interval_disk, function(widget, stdout)
 	local value = stdout
 	value = string.gsub(value, "^%s*(.-)%s*$", "%1")

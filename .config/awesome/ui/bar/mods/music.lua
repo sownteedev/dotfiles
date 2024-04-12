@@ -96,7 +96,7 @@ local finalwidget = wibox.widget({
 			layout = wibox.layout.stack,
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 	},
 	widget = wibox.container.margin,
 	top = 5,

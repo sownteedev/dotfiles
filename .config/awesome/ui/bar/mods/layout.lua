@@ -40,12 +40,12 @@ local widget = {
 	{
 		{
 			layouts,
-			margins = 10,
+			margins = 12,
 			widget = wibox.container.margin,
 		},
 		bg = beautiful.background,
 		forced_height = 0,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		widget = wibox.container.background,
 	},
 	widget = wibox.container.margin,

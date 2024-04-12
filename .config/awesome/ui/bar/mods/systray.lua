@@ -45,7 +45,7 @@ local widget = wibox.widget({
 			togglertext,
 			layout = wibox.layout.fixed.horizontal,
 		},
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		bg = beautiful.lighter,
 		widget = wibox.container.background,
 	},

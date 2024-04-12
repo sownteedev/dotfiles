@@ -8,9 +8,6 @@ local menubar = require("menubar")
 local gears = require("gears")
 local animation = require("modules.animation")
 
-require(... .. ".volume")
-require(... .. ".brightness")
-
 naughty.connect_signal("request::icon", function(n, context, hints)
 	if context ~= "app_icon" then
 		return
@@ -32,7 +29,6 @@ beautiful.notification_spacing = 20
 naughty.config.presets.low.timeout = 10
 naughty.config.presets.critical.timeout = 0
 
--- ruled notification
 ruled.notification.connect_signal("request::rules", function()
 	ruled.notification.append_rule({
 		rule = {},
@@ -40,7 +36,6 @@ ruled.notification.connect_signal("request::rules", function()
 	})
 end)
 
---------------------------
 naughty.connect_signal("request::display", function(n)
 	-- actions
 	local action_widget = {
@@ -52,7 +47,7 @@ naughty.connect_signal("request::display", function(n)
 		},
 		bg = beautiful.lighter,
 		forced_height = 30,
-		shape = helpers.rrect(2),
+		shape = helpers.rrect(10),
 		widget = wibox.container.background,
 	}
 	local actions = wibox.widget({
@@ -193,7 +188,7 @@ naughty.connect_signal("request::display", function(n)
 
 	local widget = naughty.layout.box({
 		notification = n,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		widget_template = {
 			{
 				{

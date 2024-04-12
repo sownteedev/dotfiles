@@ -10,7 +10,7 @@ local L = {}
 local Conf = {
 	rows = 8,
 	entry_height = 100,
-	entry_width = 480,
+	entry_width = 490,
 	popup_margins = 15,
 }
 
@@ -33,7 +33,7 @@ local createPowerButton = function(path, color, command)
 			},
 			widget = wibox.container.background,
 			bg = color .. "22",
-			shape = helpers.rrect(5),
+			shape = helpers.rrect(10),
 		},
 		widget = wibox.container.place,
 		buttons = {
@@ -54,7 +54,7 @@ end
 local sidebar = wibox.widget({
 	widget = wibox.container.background,
 	bg = beautiful.background,
-	forced_width = Conf.entry_height + 10,
+	forced_width = Conf.entry_height + 20,
 	{
 		layout = wibox.layout.align.vertical,
 		{
@@ -103,7 +103,7 @@ local prompt = wibox.widget({
 		image = helpers.cropSurface(4, gears.surface.load_uncached(beautiful.wallpaper)),
 		opacity = 1,
 		forced_height = 130,
-		clip_shape = helpers.rrect(5),
+		clip_shape = helpers.rrect(10),
 		forced_width = Conf.entry_height,
 		widget = wibox.widget.imagebox,
 	},
@@ -132,7 +132,7 @@ local prompt = wibox.widget({
 			},
 			forced_width = Conf.entry_width - 200,
 			forced_height = 60,
-			shape = helpers.rrect(5),
+			shape = helpers.rrect(10),
 			widget = wibox.container.background,
 			bg = beautiful.darker .. "50",
 		},
@@ -186,7 +186,7 @@ local popup_widget = awful.popup({
 		helpers.placeWidget(d, "bottom_left", 0, 2, 2, 0)
 	end,
 	maximum_width = Conf.entry_width + Conf.entry_height + Conf.popup_margins * 3,
-	shape = helpers.rrect(5),
+	shape = helpers.rrect(10),
 	widget = main_widget,
 })
 
@@ -267,7 +267,7 @@ local function filter(input)
 
 	for i, entry in ipairs(filtered) do
 		local entry_widget = wibox.widget({
-			shape = helpers.rrect(5),
+			shape = helpers.rrect(10),
 			forced_height = Conf.entry_height,
 			buttons = {
 				awful.button({}, 1, function()

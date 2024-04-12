@@ -1,3 +1,4 @@
+local M = {}
 local wibox = require("wibox")
 local helpers = require("helpers")
 local awful = require("awful")
@@ -92,115 +93,112 @@ local createButton = function(path, name, fn, col)
 	return button
 end
 
-awful.screen.connect_for_each_screen(function(s)
-	local recorder = wibox({
-		width = 450,
-		height = 230,
-		shape = helpers.rrect(5),
-		bg = beautiful.darker,
-		ontop = true,
-		visible = false,
-	})
-	local slide = animation:new({
-		duration = 1,
-		pos = 0 - recorder.height,
-		easing = animation.easing.inOutExpo,
-		update = function(_, pos)
-			recorder.y = s.geometry.y + pos
-		end,
-	})
+local recorder = wibox({
+	width = 450,
+	height = 230,
+	bg = beautiful.darker,
+	shape = helpers.rrect(10),
+	ontop = true,
+	visible = false,
+})
+local slide = animation:new({
+	duration = 1,
+	pos = 0 - recorder.height,
+	easing = animation.easing.inOutExpo,
+	update = function(_, pos)
+		recorder.y = pos
+	end,
+})
 
-	local slide_end = gears.timer({
-		single_shot = true,
-		timeout = 1,
-		callback = function()
-			recorder.visible = false
-		end,
-	})
+local slide_end = gears.timer({
+	single_shot = true,
+	timeout = 1,
+	callback = function()
+		recorder.visible = false
+	end,
+})
 
-	local close = function()
-		slide_end:again()
-		slide:set(0 - recorder.height)
-	end
+local recaudio = createButton(
+	gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recaudio.png",
+	"Rec Audio",
+	function()
+		M.close()
+		checkFolder()
+		local name = getName()
+		rec_audio("60", name)
+	end,
+	beautiful.green
+)
 
-	local recaudio = createButton(
-		gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recaudio.png",
-		"Rec Audio",
-		function()
-			close()
-			checkFolder()
-			local name = getName()
-			rec_audio("60", name)
-		end,
-		beautiful.green
-	)
+local recmic = createButton(
+	gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recmic.png",
+	"Rec Mic",
+	function()
+		M.close()
+		checkFolder()
+		local name = getName()
+		rec_mic("60", name)
+	end,
+	beautiful.blue
+)
 
-	local recmic = createButton(
-		gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recmic.png",
-		"Rec Mic",
-		function()
-			close()
-			checkFolder()
-			local name = getName()
-			rec_mic("60", name)
-		end,
-		beautiful.blue
-	)
+local stop = createButton(
+	gears.filesystem.get_configuration_dir() .. "/themes/assets/record/finish.png",
+	"Finish",
+	function()
+		awful.spawn.easy_async_with_shell("killall ffmpeg &")
+		M.close()
+	end,
+	beautiful.red
+)
 
-	local stop = createButton(
-		gears.filesystem.get_configuration_dir() .. "/themes/assets/record/finish.png",
-		"Finish",
-		function()
-			awful.spawn.easy_async_with_shell("killall ffmpeg &")
-			close()
-		end,
-		beautiful.red
-	)
-
-	recorder:setup({
+recorder:setup({
+	{
 		{
 			{
 				{
 					{
-						{
-							font = beautiful.sans .. " Bold 15",
-							markup = "Video Recorder",
-							align = "start",
-							widget = wibox.widget.textbox,
-						},
-						widget = wibox.layout.align.horizontal,
+						font = beautiful.sans .. " Bold 15",
+						markup = "Video Recorder",
+						align = "start",
+						widget = wibox.widget.textbox,
 					},
-					widget = wibox.container.margin,
-					margins = 15,
+					widget = wibox.layout.align.horizontal,
 				},
-				widget = wibox.container.background,
-				bg = beautiful.lighter,
+				widget = wibox.container.margin,
+				margins = 15,
 			},
-			{
-				recaudio,
-				recmic,
-				stop,
-				spacing = 15,
-				layout = wibox.layout.fixed.horizontal,
-			},
-			spacing = 15,
-			layout = wibox.layout.fixed.vertical,
+			widget = wibox.container.background,
+			bg = beautiful.lighter,
 		},
-		widget = wibox.container.margin,
-		margins = 15,
-	})
+		{
+			recaudio,
+			recmic,
+			stop,
+			spacing = 15,
+			layout = wibox.layout.fixed.horizontal,
+		},
+		spacing = 15,
+		layout = wibox.layout.fixed.vertical,
+	},
+	widget = wibox.container.margin,
+	margins = 15,
+})
 
-	awesome.connect_signal("toggle::recorder", function()
-		if recorder.visible then
-			slide_end:again()
-			slide:set(0 - recorder.height)
-		elseif not recorder.visible then
-			slide:set(beautiful.height / 2 - recorder.height / 2)
-			recorder.visible = true
-		end
-		awful.placement.centered(recorder)
-	end)
-	awesome.connect_signal("close::recorder", function()
-		close()
-	end)
-end)
+function M.close()
+	slide_end:again()
+	slide:set(0 - recorder.height)
+end
+
+function M.toggle()
+	if recorder.visible then
+		slide_end:again()
+		slide:set(0 - recorder.height)
+	elseif not recorder.visible then
+		slide:set(beautiful.height / 2 - recorder.height / 2)
+		recorder.visible = true
+	end
+	awful.placement.centered(recorder)
+end
+
+return M

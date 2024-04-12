@@ -13,10 +13,10 @@ local bluetooth = wibox.widget({
 	valign = "center",
 	widget = wibox.widget.imagebox,
 })
-awesome.connect_signal("signal::bluetooth", function(value)
+awesome.connect_signal("signal::bluetooth", function(value, _)
 	if value then
-		awesome.connect_signal("signal::bluetoothname", function(stdout)
-			if stdout ~= "" then
+		awesome.connect_signal("signal::bluetooth", function(_, name)
+			if name ~= "" then
 				bluetooth.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth.png"
 			else
 				bluetooth.image = gears.filesystem.get_configuration_dir()
@@ -39,16 +39,16 @@ local wifi = wibox.widget({
 	valign = "center",
 	widget = wibox.widget.imagebox,
 })
-awesome.connect_signal("signal::quality", function(value)
-	if value == 101 then
+awesome.connect_signal("signal::network", function(_, _, quality)
+	if quality == 101 then
 		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/ethernet.png"
-	elseif value >= 75 then
+	elseif quality >= 75 then
 		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi4.png"
-	elseif value >= 50 then
+	elseif quality >= 50 then
 		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi3.png"
-	elseif value >= 25 then
+	elseif quality >= 25 then
 		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi2.png"
-	elseif value > 0 then
+	elseif quality > 0 then
 		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi1.png"
 	else
 		wifi.image = gears.color.recolor_image(
@@ -124,9 +124,9 @@ awesome.connect_signal("signal::battery", function(value)
 	end
 end)
 
-awesome.connect_signal("signal::batterystatus", function(stdout)
+awesome.connect_signal("signal::battery", function(_, status)
 	local b = helpers.gc(battery, "status")
-	if stdout then
+	if status then
 		b.image = gears.color.recolor_image(
 			gears.filesystem.get_configuration_dir() .. "/themes/assets/thunder.png",
 			beautiful.foreground
@@ -151,7 +151,7 @@ M.widget = wibox.widget({
 			right = 20,
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		bg = beautiful.background,
 		buttons = {
 			awful.button({}, 1, function()

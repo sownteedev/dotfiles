@@ -80,7 +80,7 @@ local widget = wibox.widget({
 				bottom = 15,
 			},
 			widget = wibox.container.background,
-			shape = helpers.rrect(5),
+			shape = helpers.rrect(10),
 			bg = beautiful.background,
 		},
 		layout = wibox.layout.fixed.horizontal,
@@ -103,7 +103,7 @@ local widget = wibox.widget({
 		},
 		id = "back",
 		widget = wibox.container.background,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		bg = beautiful.background,
 		buttons = {
 			awful.button({}, 1, function()
@@ -130,9 +130,9 @@ awesome.connect_signal("signal::battery", function(value)
 	end
 end)
 
-awesome.connect_signal("signal::batterystatus", function(stdout)
+awesome.connect_signal("signal::battery", function(_, status)
 	local b = helpers.gc(widget, "status")
-	if stdout then
+	if status then
 		b.image = gears.color.recolor_image(
 			gears.filesystem.get_configuration_dir() .. "/themes/assets/thunder.png",
 			beautiful.foreground

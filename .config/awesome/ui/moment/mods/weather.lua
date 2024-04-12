@@ -109,7 +109,7 @@ local widget = wibox.widget({
 			)
 		),
 		widget = wibox.widget.imagebox,
-		clip_shape = helpers.rrect(5),
+		clip_shape = helpers.rrect(10),
 		opacity = 1,
 		resize = true,
 		horizontal_fit_policy = "fit",
@@ -128,7 +128,6 @@ local widget = wibox.widget({
 						id = "icon",
 						image = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
 						opacity = 1,
-						clip_shape = helpers.rrect(4),
 						forced_height = 80,
 						forced_width = 80,
 						widget = wibox.widget.imagebox,

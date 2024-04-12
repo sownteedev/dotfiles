@@ -21,7 +21,7 @@ local function init(s)
 		ontop = false,
 		width = beautiful.width - 150,
 		bg = beautiful.darker,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		screen = s,
 		widget = {
 			{

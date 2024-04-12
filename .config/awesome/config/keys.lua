@@ -2,7 +2,13 @@ local awful = require("awful")
 local switcher = require("modules.awesome-switcher")
 local Launcher = require("ui.launcher")
 local Menu = require("ui.rightclick")
-local screenshot = require("ui.screenshot.mods")
+local volume = require("ui.notification.volume")
+local brightness = require("ui.notification.brightness")
+local lock = require("ui.lock")
+local exit = require("ui.exit")
+local screenshot = require("ui.screenshot")
+local screenshotarea = require("ui.screenshot.mods")
+local record = require("ui.record")
 
 local mod = "Mod4"
 local alt = "Mod1"
@@ -37,17 +43,17 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86AudioRaiseVolume", function()
 		awful.spawn.easy_async_with_shell("pamixer -i 2 &")
 		volume_emit()
-		awesome.emit_signal("volume::toggle")
+		volume.toggle()
 	end),
 	awful.key({}, "XF86AudioLowerVolume", function()
 		awful.spawn.easy_async_with_shell("pamixer -d 2 &")
 		volume_emit()
-		awesome.emit_signal("volume::toggle")
+		volume.toggle()
 	end),
 	awful.key({}, "XF86AudioMute", function()
 		awful.spawn.easy_async_with_shell("pamixer -t &")
 		volume_emit()
-		awesome.emit_signal("volume::toggle")
+		volume.toggle()
 	end),
 	awful.key({}, "XF86AudioMicMute", function()
 		awful.spawn.easy_async_with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle &")
@@ -55,31 +61,31 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86MonBrightnessUp", function()
 		awful.spawn.easy_async_with_shell("brightnessctl s 5%+ &")
 		brightness_emit()
-		awesome.emit_signal("brightness::toggle")
+		brightness.toggle()
 	end),
 	awful.key({}, "XF86MonBrightnessDown", function()
 		awful.spawn.easy_async_with_shell("brightnessctl s 5%- &")
 		brightness_emit()
-		awesome.emit_signal("brightness::toggle")
+		brightness.toggle()
 	end),
 
 	awful.key({}, "Print", function()
-		awesome.emit_signal("toggle::screenshot")
+		screenshot:toggle()
 	end),
 	awful.key({ mod, shift }, "s", function()
-		screenshot.area({ notify = true })
+		screenshotarea.area({ notify = true })
 	end),
 	awful.key({ mod }, "Print", function()
-		awesome.emit_signal("toggle::recorder")
+		record:toggle()
 	end),
 	awful.key({ alt }, "p", function()
 		awful.spawn.easy_async_with_shell("~/.local/bin/colorpicker &")
 	end),
 	awful.key({ alt }, "F4", function()
-		awesome.emit_signal("toggle::exit")
+		exit:toggle()
 	end),
 	awful.key({ mod }, "l", function()
-		awesome.emit_signal("toggle::lock")
+		lock:open()
 	end),
 	awful.key({ mod, alt }, "w", function()
 		awful.spawn.easy_async_with_shell("feh -z --no-fehbg --bg-fill ~/.walls &")
@@ -195,12 +201,12 @@ end)
 awful.mouse.append_global_mousebindings({
 	awful.button({}, 1, function()
 		Launcher:close()
+		screenshot:close()
+		record:close()
 		awesome.emit_signal("close::notify")
 		awesome.emit_signal("close::moment")
 		awesome.emit_signal("close::control")
 		awesome.emit_signal("close::music")
-		awesome.emit_signal("close::recorder")
-		awesome.emit_signal("close::screenshot")
 	end),
 	awful.button({}, 3, function()
 		Menu.desktop:toggle()
@@ -208,10 +214,10 @@ awful.mouse.append_global_mousebindings({
 })
 client.connect_signal("button::press", function()
 	Launcher:close()
+	screenshot:close()
+	record:close()
 	awesome.emit_signal("close::notify")
 	awesome.emit_signal("close::moment")
 	awesome.emit_signal("close::control")
 	awesome.emit_signal("close::music")
-	awesome.emit_signal("close::recorder")
-	awesome.emit_signal("close::screenshot")
 end)
