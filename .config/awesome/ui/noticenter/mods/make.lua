@@ -47,7 +47,7 @@ return function(icon, n)
 	local box = wibox.widget({
 		widget = wibox.container.background,
 		forced_height = 150,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		bg = beautiful.background,
 		{
 			{

@@ -9,11 +9,11 @@ local clock = require("ui.moment.mods.clock")
 
 awful.screen.connect_for_each_screen(function(s)
 	local moment = wibox({
-		shape = helpers.rrect(5),
 		screen = s,
 		width = beautiful.width / 4,
 		height = beautiful.height / 1.3,
 		bg = beautiful.darker,
+		shape = helpers.rrect(10),
 		ontop = true,
 		visible = false,
 	})

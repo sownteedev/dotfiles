@@ -1,3 +1,4 @@
+local M = {}
 local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
@@ -28,10 +29,10 @@ local info = wibox.widget({
 				id = "progressbar",
 				max_value = 100,
 				forced_width = 350,
-				shape = helpers.rrect(5),
+				shape = helpers.rrect(10),
 				background_color = beautiful.foreground .. "11",
 				color = beautiful.foreground,
-				bar_shape = helpers.rrect(5),
+				bar_shape = helpers.rrect(10),
 			},
 			widget = wibox.container.margin,
 			top = 30,
@@ -54,7 +55,7 @@ local osd = awful.popup({
 	minimum_height = 80,
 	maximum_height = 80,
 	forced_width = 0,
-	shape = helpers.rrect(5),
+	shape = helpers.rrect(10),
 	placement = function(d)
 		helpers.placeWidget(d, "bottom")
 	end,
@@ -84,17 +85,17 @@ awesome.connect_signal("signal::brightness", function(value)
 	end
 end)
 
-local function osd_hide()
+local function hide()
 	osd.visible = false
 	osd_timer:stop()
 end
 
 local osd_timer = gears.timer({
 	timeout = 4,
-	callback = osd_hide,
+	callback = hide,
 })
 
-local function osd_toggle()
+function M.toggle()
 	if not osd.visible then
 		osd.visible = true
 		osd_timer:start()
@@ -103,6 +104,4 @@ local function osd_toggle()
 	end
 end
 
-awesome.connect_signal("brightness::toggle", function()
-	osd_toggle()
-end)
+return M

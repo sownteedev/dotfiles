@@ -36,6 +36,7 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 		{
 			{
 				slidIcon,
+				id = "margin",
 				widget = wibox.container.margin,
 				left = 15,
 				right = 2,
@@ -74,10 +75,16 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 			elseif signal2 == "brightnesss" then
 				slidIcon.markup = helpers.colorizeText("󰃝 ", beautiful.background)
 				helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
+				helpers.gc(slidScale, "margin").left = 10
+				helpers.gc(slidScale, "margin").right = 5
 			end
 		else
 			slidIcon.markup = helpers.colorizeText(icon, beautiful.foreground)
 			helpers.gc(slidScale, "background_role"):set_bg(beautiful.background)
+			if signal2 == "brightnesss" then
+				helpers.gc(slidScale, "margin").left = 12
+				helpers.gc(slidScale, "margin").right = 5
+			end
 		end
 	end)
 	slidSlider:connect_signal("property::value", function(_, new_value)

@@ -10,11 +10,11 @@ local progs = require("ui.noticenter.mods.progs")
 
 awful.screen.connect_for_each_screen(function(s)
 	local notify = wibox({
-		shape = helpers.rrect(5),
 		screen = s,
 		width = beautiful.width / 4,
 		height = beautiful.height / 1.33,
 		bg = beautiful.darker,
+		shape = helpers.rrect(10),
 		ontop = true,
 		visible = false,
 	})

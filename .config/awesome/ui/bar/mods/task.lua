@@ -139,7 +139,7 @@ M.popup = awful.popup({
 	minimum_width = 300,
 	widget = wibox.container.background,
 	visible = false,
-	shape = helpers.rrect(5),
+	shape = helpers.rrect(10),
 	ontop = true,
 	bg = beautiful.background,
 })
@@ -237,7 +237,6 @@ function M:showMenu(data)
 				end),
 			},
 			widget = wibox.container.background,
-			shape = helpers.rrect(5),
 			bg = j.minimized and beautiful.background,
 		})
 		M.popupWidget:connect_signal("mouse::leave", function()
@@ -261,7 +260,6 @@ function M:showMenu(data)
 			end),
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(5),
 		bg = beautiful.background,
 	})
 	local closeAll = wibox.widget({
@@ -278,7 +276,6 @@ function M:showMenu(data)
 			end),
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(5),
 		bg = beautiful.background,
 	})
 	self.popupWidget:add(addNew)

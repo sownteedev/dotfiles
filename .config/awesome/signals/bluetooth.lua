@@ -2,14 +2,15 @@ local awful = require("awful")
 local gears = require("gears")
 
 local function emit_bluetooth_status()
-	awful.spawn.easy_async_with_shell("bash -c 'bluetoothctl show | grep -i powered:' &", function(stdout)
-		local status = stdout:match("yes")
-		awesome.emit_signal("signal::bluetooth", status)
-	end)
 	awful.spawn.easy_async_with_shell(
-		"bash -c \"bluetoothctl info | grep -i Name: | cut -d ' ' -f 2-\" &",
+		"bash -c 'bluetoothctl show | grep -i powered: ; bluetoothctl info'",
 		function(stdout)
-			awesome.emit_signal("signal::bluetoothname", stdout:gsub("%s+", ""))
+			local status = stdout:match("yes")
+			local name = stdout:match("Name: ([^\n]+)")
+			if not name then
+				name = ""
+			end
+			awesome.emit_signal("signal::bluetooth", status, name)
 		end
 	)
 end

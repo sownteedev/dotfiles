@@ -66,7 +66,7 @@ awful.screen.connect_for_each_screen(function(s)
 						image = helpers.cropSurface(1.9, gears.surface.load_uncached(beautiful.songdefpicture)),
 						opacity = 0.7,
 						resize = true,
-						clip_shape = helpers.rrect(5),
+						clip_shape = helpers.rrect(10),
 						widget = wibox.widget.imagebox,
 					},
 					{
@@ -76,7 +76,7 @@ awful.screen.connect_for_each_screen(function(s)
 							to = { 250, 0 },
 							stops = { { 0, beautiful.background .. "ff" }, { 1, beautiful.background .. "00" } },
 						},
-						shape = helpers.rrect(5),
+						shape = helpers.rrect(10),
 						widget = wibox.container.background,
 					},
 					{
@@ -146,7 +146,7 @@ awful.screen.connect_for_each_screen(function(s)
 							left = 10,
 							right = 5,
 						},
-						shape = helpers.rrect(5),
+						shape = helpers.rrect(10),
 						widget = wibox.container.background,
 						bg = beautiful.background,
 					},
@@ -161,15 +161,8 @@ awful.screen.connect_for_each_screen(function(s)
 		forced_height = 300,
 		widget = wibox.container.background,
 		bg = beautiful.darker,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 	})
-
-	awesome.connect_signal("toggle::music", function()
-		music.visible = not music.visible
-	end)
-	awesome.connect_signal("close::music", function()
-		music.visible = false
-	end)
 
 	playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
 		if album_path == "" then
@@ -206,5 +199,12 @@ awful.screen.connect_for_each_screen(function(s)
 			helpers.gc(music, "pos"):set_markup_silently(helpers.colorizeText("", beautiful.foreground))
 			helpers.gc(music, "prg"):set_background_color(beautiful.foreground .. "00")
 		end
+	end)
+
+	awesome.connect_signal("toggle::music", function()
+		music.visible = not music.visible
+	end)
+	awesome.connect_signal("close::music", function()
+		music.visible = false
 	end)
 end)

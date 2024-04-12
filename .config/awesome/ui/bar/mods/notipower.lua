@@ -42,7 +42,7 @@ local notipower = wibox.widget({
 			right = 20,
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		bg = beautiful.background,
 	},
 	widget = wibox.container.margin,

@@ -32,7 +32,7 @@ awful.screen.connect_for_each_screen(function(s)
 		},
 		widget = wibox.container.background,
 		bg = beautiful.darker,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 	})
 
 	helpers.placeWidget(control, "bottom_right", 0, 2, 0, 2)
