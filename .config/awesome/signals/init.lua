@@ -6,7 +6,7 @@ require(... .. ".systems")
 require(... .. ".uptime")
 require(... .. ".weather")
 require(... .. ".redshift")
-require(... .. ".transparency")
+require(... .. ".blur")
 
 require(... .. ".network")
 require(... .. ".bluetooth")

@@ -151,13 +151,13 @@ local widget = wibox.widget({
 			"redshift"
 		),
 		createbutton(
-			"~/.config/awesome/signals/scripts/Picom/toggle &",
+			"awesome-client 'blur_toggle()' &",
 			"",
 			"󱡓 ",
-			"Transparency",
+			"Blur",
 			"Blur So Good",
 			"I Can't See You",
-			"transparency"
+			"blur"
 		),
 		spacing = 15,
 		layout = wibox.layout.flex.horizontal,
