@@ -59,7 +59,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 
 	awesome.connect_signal("signal::" .. signal, function(status, _, _)
 		if status then
-			helpers.gc(widget, "back"):set_bg(beautiful.blue)
+			helpers.gc(widget, "back"):set_bg(helpers.makeGradient(beautiful.red, beautiful.blue, 0, 250))
 			helpers.gc(widget, "icon"):set_markup_silently(helpers.colorizeText(icon, beautiful.background))
 			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.background))
 			if signal == "network" then
@@ -129,7 +129,7 @@ local widget = wibox.widget({
 			"airplane"
 		),
 		createbutton(
-			"awesome-client 'naughty = require(\"naughty\") naughty.toggle()' &",
+			"awesome-client 'dnd_toggle()' &",
 			"",
 			"󰍶 ",
 			"Disturb",

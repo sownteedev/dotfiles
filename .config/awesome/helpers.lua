@@ -256,4 +256,27 @@ helpers.makeColor = function(name)
 	end
 end
 
+helpers.makeGradient = function(color1, color2, height, width)
+	return {
+		type = "linear",
+		from = {
+			0,
+			height,
+		},
+		to = {
+			width,
+			height,
+		},
+		stops = {
+			{
+				0,
+				color1,
+			},
+			{
+				1,
+				color2,
+			},
+		},
+	}
+end
 return helpers
