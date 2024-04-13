@@ -81,7 +81,7 @@ local url1 = (
 	.. api_key
 )
 
-awful.widget.watch(string.format(GET_FORECAST_CMD, url), 600, function(_, stdout, stderr)
+awful.widget.watch(string.format(GET_FORECAST_CMD, url), 3600, function(_, stdout, stderr)
 	local result = json.decode(stdout)
 	local out = {
 		desc = result.current.weather[1].description:gsub("^%l", string.upper),
@@ -110,7 +110,7 @@ awful.widget.watch(string.format(GET_FORECAST_CMD, url), 600, function(_, stdout
 	awesome.emit_signal("signal::weather", out)
 end)
 
-awful.widget.watch(string.format(GET_FORECAST_CMD, url1), 600, function(_, stdout, stderr)
+awful.widget.watch(string.format(GET_FORECAST_CMD, url1), 3600, function(_, stdout, stderr)
 	local result = json.decode(stdout)
 	local out = { namecountry = result[1].name .. ", " .. result[1].country }
 	awesome.emit_signal("signal::weather1", out)

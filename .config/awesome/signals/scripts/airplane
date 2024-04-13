@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-STATUS="$(rfkill list | sed -n 5p | awk '{print $3}')"
-
-if [[ $STATUS == "no" ]]; then
-	rfkill block all
-else
-	rfkill unblock all
-fi

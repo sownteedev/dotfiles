@@ -98,7 +98,7 @@ local widget = wibox.widget({
 		"󰃠 ",
 		"brightness",
 		"brightnesss",
-		"~/.config/awesome/signals/scripts/brightness &",
+		"awesome-client 'brightness_toggle()' &",
 		"",
 		"brightnessctl s %d%% &"
 	),

@@ -1,5 +1,4 @@
 local awful = require("awful")
-local gears = require("gears")
 
 local function mic()
 	awful.spawn.easy_async_with_shell(
@@ -10,16 +9,7 @@ local function mic()
 		end
 	)
 end
-
-gears.timer({
-	timeout = 1,
-	call_now = true,
-	autostart = true,
-	callback = function()
-		mic()
-	end,
-	single_shot = true,
-})
+mic()
 
 local function mic_mute()
 	awful.spawn.easy_async_with_shell("bash -c 'pactl get-source-mute @DEFAULT_SOURCE@'", function(value)
