@@ -1,5 +1,6 @@
 -- User config
 local colorscheme = "one_light"
+require("themes.toggle")
 ---------------------------------------------------------------------
 local switcher = require("modules.awesome-switcher")
 local awful = require("awful")

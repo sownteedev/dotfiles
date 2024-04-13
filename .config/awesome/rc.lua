@@ -23,7 +23,6 @@ gtimer.start_new(5, function()
 end)
 
 require("beautiful").init(require("gears").filesystem.get_configuration_dir() .. "themes/theme.lua")
-require("themes.toggle")
 require("config")
 require("signals")
 require("ui")

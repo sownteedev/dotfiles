@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-current_brightness=$(brightnessctl i | grep Current | awk '{print $4}' | tr -d '()%')
-
-if [ "$current_brightness" != "25" ]; then
-    brightnessctl s 25% && echo true > ~/.cache/brightness
-else
-    brightnessctl s 70% && echo false > ~/.cache/brightness
-fi

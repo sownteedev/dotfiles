@@ -1,5 +1,4 @@
 local awful = require("awful")
-local gears = require("gears")
 
 function brightness_emit()
 	awful.spawn.easy_async_with_shell(
@@ -10,15 +9,7 @@ function brightness_emit()
 		end
 	)
 end
-gears.timer({
-	timeout = 1,
-	call_now = true,
-	autostart = true,
-	callback = function()
-		brightness_emit()
-	end,
-	single_shot = true,
-})
+brightness_emit()
 
 local function brightnesss()
 	awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/brightness'", function(stdout)
@@ -36,3 +27,14 @@ awful.spawn.easy_async({ "pkill", "--full", "--uid", os.getenv("USER"), "^inotif
 		end,
 	})
 end)
+
+function brightness_toggle()
+	awful.spawn.easy_async_with_shell("bash -c 'brightnessctl i | grep Current'", function(status)
+		status = status:match("25")
+		if not status then
+			awful.spawn.with_shell("bash -c 'brightnessctl s 25% && echo true > ~/.cache/brightness'")
+		else
+			awful.spawn.with_shell("bash -c 'brightnessctl s 75% && echo false > ~/.cache/brightness'")
+		end
+	end)
+end

@@ -98,7 +98,7 @@ end
 local widget = wibox.widget({
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/Wifi/Wifi &",
+			"awesome-client 'network_toggle()' &",
 			"~/.config/awesome/signals/scripts/Wifi/Menu &",
 			" ",
 			"Network",
@@ -107,7 +107,7 @@ local widget = wibox.widget({
 			"network"
 		),
 		createbutton(
-			"~/.config/awesome/signals/scripts/Bluetooth/Bluetooth &",
+			"awesome-client 'bluetooth_toggle()' &",
 			"~/.config/awesome/signals/scripts/Bluetooth/Menu &",
 			" ",
 			"Bluetooth",
@@ -120,7 +120,7 @@ local widget = wibox.widget({
 	},
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/airplane &",
+			"awesome-client 'airplane_toggle()' &",
 			"",
 			"󰀝 ",
 			"Airplane",
@@ -142,7 +142,7 @@ local widget = wibox.widget({
 	},
 	{
 		createbutton(
-			"~/.config/awesome/signals/scripts/redshift &",
+			"awesome-client 'redshift_toggle()' &",
 			"",
 			"󰛨 ",
 			"Redshift",

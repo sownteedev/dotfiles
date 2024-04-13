@@ -7,7 +7,7 @@ local function emit_dnd_status()
 end
 
 gears.timer({
-	timeout = 1,
+	timeout = 5,
 	call_now = true,
 	autostart = true,
 	callback = function()
