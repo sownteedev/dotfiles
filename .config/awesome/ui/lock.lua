@@ -303,4 +303,9 @@ function M.open()
 	grab()
 end
 
+awesome.connect_signal("toggle::lock", function()
+	visible(true)
+	grab()
+end)
+
 return M

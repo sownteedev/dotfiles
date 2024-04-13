@@ -66,15 +66,13 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 	end)
 	awesome.connect_signal("signal::" .. signal2, function(value)
 		if value then
+			helpers.gc(slidScale, "background_role"):set_bg(helpers.makeGradient(beautiful.red, beautiful.blue, 0, 50))
 			if signal2 == "micmute" then
 				slidIcon.markup = helpers.colorizeText(" ", beautiful.background)
-				helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
 			elseif signal2 == "volumemute" then
 				slidIcon.markup = helpers.colorizeText("󰖁 ", beautiful.background)
-				helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
 			elseif signal2 == "brightnesss" then
 				slidIcon.markup = helpers.colorizeText("󰃝 ", beautiful.background)
-				helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
 				helpers.gc(slidScale, "margin").left = 10
 				helpers.gc(slidScale, "margin").right = 5
 			end

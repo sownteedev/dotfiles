@@ -114,7 +114,12 @@ awful.screen.connect_for_each_screen(function(s)
 								{
 									id = "prg",
 									forced_height = 3,
-									color = beautiful.foreground,
+									color = helpers.makeGradient(
+										beautiful.red,
+										beautiful.blue,
+										3,
+										beautiful.width / 4 - 200
+									),
 									background_color = beautiful.foreground .. "00",
 									widget = wibox.widget.progressbar,
 								},
