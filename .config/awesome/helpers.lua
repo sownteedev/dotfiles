@@ -28,12 +28,12 @@ helpers.prect = function(tl, tr, br, bl, radius)
 	end
 end
 
-helpers.addHover = function(element, bg, hbg)
+helpers.addHover = function(element, id, bg, hbg)
 	element:connect_signal("mouse::enter", function()
-		helpers.gc(element, "bg").bg = hbg
+		helpers.gc(element, id).bg = hbg
 	end)
 	element:connect_signal("mouse::leave", function()
-		helpers.gc(element, "bg").bg = bg
+		helpers.gc(element, id).bg = bg
 	end)
 end
 
@@ -256,7 +256,7 @@ helpers.makeColor = function(name)
 	end
 end
 
-helpers.makeGradient = function(color1, color2, height, width)
+helpers.makeGradient = function(color1, color2, trans, height, width)
 	return {
 		type = "linear",
 		from = {
@@ -270,13 +270,14 @@ helpers.makeGradient = function(color1, color2, height, width)
 		stops = {
 			{
 				0,
-				color1,
+				color1 .. trans,
 			},
 			{
 				1,
-				color2,
+				color2 .. trans,
 			},
 		},
 	}
 end
+
 return helpers
