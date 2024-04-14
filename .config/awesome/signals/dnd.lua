@@ -2,8 +2,10 @@ local awful = require("awful")
 local naughty = require("naughty")
 
 local function emit_dnd_status()
-	local status = naughty.is_suspended()
-	awesome.emit_signal("signal::dnd", status)
+	awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/dnd'", function(stdout)
+		local status = stdout:match("true")
+		awesome.emit_signal("signal::dnd", status)
+	end)
 end
 
 emit_dnd_status()

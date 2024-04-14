@@ -2,7 +2,7 @@ return {
 	foreground = "#54555b",
 	background = "#fafafa",
 	darker = "#efeff0",
-	lighter = "#EAEAEB",
+	lighter = "#ffffff",
 
 	red = "#d84a3d",
 	green = "#50a14f",

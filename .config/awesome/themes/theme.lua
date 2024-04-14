@@ -6,6 +6,7 @@ local switcher = require("modules.awesome-switcher")
 local awful = require("awful")
 local gears = require("gears")
 local gfs = require("gears.filesystem")
+local helpers = require("helpers")
 local themes_path = gfs.get_configuration_dir() .. "themes/"
 
 local theme = {}
@@ -36,6 +37,7 @@ theme.useless_gap = 10
 theme.user = string.gsub(os.getenv("USER"), "^%l", string.upper)
 theme.profile = themes_path .. "assets/sownteedev.png"
 theme.songdefpicture = themes_path .. "assets/music/defsong.jpg"
+theme.lock = "$HOME/.walls/4028603.jpg"
 
 -- default vars --
 theme.bg_normal = theme.background
@@ -48,13 +50,13 @@ theme.border_color_active = theme.foreground
 
 -- taglist --
 theme.taglist_bg = theme.background .. "00"
-theme.taglist_bg_focus = theme.foreground .. "DD"
+theme.taglist_bg_focus = helpers.makeGradient(theme.red, theme.blue, "FF", 0, 100)
 theme.taglist_fg_focus = theme.foreground
 theme.taglist_bg_urgent = theme.red
 theme.taglist_fg_urgent = theme.foreground
-theme.taglist_bg_occupied = theme.foreground .. "60"
+theme.taglist_bg_occupied = helpers.makeGradient(theme.blue, theme.green, "80", 0, 70)
 theme.taglist_fg_occupied = theme.foreground
-theme.taglist_bg_empty = theme.foreground .. "20"
+theme.taglist_bg_empty = helpers.makeGradient(theme.yellow, theme.green, "40", 0, 40)
 theme.taglist_fg_empty = theme.foreground
 theme.taglist_disable_icon = true
 
