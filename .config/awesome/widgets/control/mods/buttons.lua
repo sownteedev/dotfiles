@@ -155,7 +155,7 @@ local widget = wibox.widget({
 			"awesome-client 'blur_toggle()' &",
 			"",
 			"󱡓 ",
-			"Blur",
+			"Blur Effect",
 			"Blur So Good",
 			"I Can't See You",
 			"blur"

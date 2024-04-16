@@ -32,9 +32,9 @@ function brightness_toggle()
 	awful.spawn.easy_async_with_shell("bash -c 'brightnessctl i | grep Current'", function(status)
 		status = status:match("25")
 		if not status then
-			awful.spawn.with_shell("bash -c 'brightnessctl s 25% && echo true > ~/.cache/brightness'")
+			awful.spawn.easy_async_with_shell("bash -c 'brightnessctl s 25% && echo true > ~/.cache/brightness'")
 		else
-			awful.spawn.with_shell("bash -c 'brightnessctl s 75% && echo false > ~/.cache/brightness'")
+			awful.spawn.easy_async_with_shell("bash -c 'brightnessctl s 75% && echo false > ~/.cache/brightness'")
 		end
 	end)
 end
