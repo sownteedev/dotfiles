@@ -132,17 +132,6 @@ local next = wibox.widget({
 				text = "󰁔",
 				font = beautiful.icon,
 				widget = wibox.widget.textbox,
-				buttons = awful.button({}, 1, function()
-					curr = os.date(
-						"*t",
-						os.time({
-							day = curr.day,
-							month = curr.month + 1,
-							year = curr.year,
-						})
-					)
-					updateCalendar(curr)
-				end),
 			},
 			widget = wibox.container.margin,
 			left = 20,
@@ -154,6 +143,17 @@ local next = wibox.widget({
 		widget = wibox.container.background,
 		bg = beautiful.background,
 		shape = helpers.rrect(50),
+		buttons = awful.button({}, 1, function()
+			curr = os.date(
+				"*t",
+				os.time({
+					day = curr.day,
+					month = curr.month + 1,
+					year = curr.year,
+				})
+			)
+			updateCalendar(curr)
+		end),
 	},
 	widget = wibox.container.margin,
 	right = 40,
@@ -167,17 +167,6 @@ local prev = wibox.widget({
 				text = "󰁍",
 				font = beautiful.icon,
 				widget = wibox.widget.textbox,
-				buttons = awful.button({}, 1, function()
-					curr = os.date(
-						"*t",
-						os.time({
-							day = curr.day,
-							month = curr.month - 1,
-							year = curr.year,
-						})
-					)
-					updateCalendar(curr)
-				end),
 			},
 			widget = wibox.container.margin,
 			left = 20,
@@ -189,6 +178,17 @@ local prev = wibox.widget({
 		widget = wibox.container.background,
 		bg = beautiful.background,
 		shape = helpers.rrect(30),
+		buttons = awful.button({}, 1, function()
+			curr = os.date(
+				"*t",
+				os.time({
+					day = curr.day,
+					month = curr.month - 1,
+					year = curr.year,
+				})
+			)
+			updateCalendar(curr)
+		end),
 	},
 	widget = wibox.container.margin,
 	left = 40,

@@ -151,13 +151,13 @@ naughty.connect_signal("request::display", function(n)
 
 	local time_n = wibox.widget({
 		{
-			markup = helpers.colorizeText(os.date("%H:%M:%S"), beautiful.foreground .. "BF"),
+			markup = helpers.colorizeText(os.date("%H:%M"), beautiful.foreground .. "BF"),
 			font = beautiful.sans .. " 15",
 			align = "right",
 			widget = wibox.widget.textbox,
 		},
-		margins = { right = 20 },
 		widget = wibox.container.margin,
+		right = 20,
 	})
 
 	local close = wibox.widget({

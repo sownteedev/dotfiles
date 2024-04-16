@@ -43,7 +43,7 @@ awful.screen.connect_for_each_screen(function(s)
 	end
 
 	local title = wibox.widget({
-		font = beautiful.sans .. " 15",
+		font = "azuki_font Bold 18",
 		markup = helpers.colorizeText("Notification Center", beautiful.foreground),
 		widget = wibox.widget.textbox,
 	})

@@ -6,13 +6,14 @@ local wibox = require("wibox")
 local buttons = require(... .. ".mods.buttons")
 local sliders = require(... .. ".mods.slider")
 local footer = require(... .. ".mods.footer")
+local bottom = require(... .. ".mods.bottom")
 require(... .. ".mods.music")
 
 awful.screen.connect_for_each_screen(function(s)
 	local control = wibox({
 		screen = s,
 		width = beautiful.width / 4,
-		height = (beautiful.height / 3) * 1.3,
+		height = (beautiful.height / 3) * 1.41,
 		bg = beautiful.background,
 		ontop = true,
 		visible = false,
@@ -24,8 +25,9 @@ awful.screen.connect_for_each_screen(function(s)
 				footer,
 				sliders,
 				buttons,
+				bottom,
 				layout = wibox.layout.fixed.vertical,
-				spacing = 35,
+				spacing = 25,
 			},
 			widget = wibox.container.margin,
 			margins = 15,

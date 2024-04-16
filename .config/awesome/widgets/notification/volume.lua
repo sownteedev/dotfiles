@@ -87,7 +87,7 @@ awesome.connect_signal("signal::volume", function(value)
 end)
 awesome.connect_signal("signal::volumemute", function(value)
 	if value then
-		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.foreground))
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.red))
 	end
 end)
 

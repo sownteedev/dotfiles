@@ -34,7 +34,7 @@ theme.width = awful.screen.focused().geometry.width
 theme.height = awful.screen.focused().geometry.height
 theme.useless_gap = 10
 
-theme.user = string.gsub(os.getenv("USER"), "^%l", string.upper)
+theme.user = os.getenv("USER")
 theme.profile = themes_path .. "assets/sownteedev.png"
 theme.songdefpicture = themes_path .. "assets/music/defsong.jpg"
 theme.lock = "$HOME/.walls/4028603.jpg"

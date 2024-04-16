@@ -31,7 +31,7 @@ return function(icon, n)
 
 	local time_widget = wibox.widget({
 		widget = wibox.widget.textbox,
-		text = os.date("%H:%M:%S"),
+		text = os.date("%H:%M"),
 		align = "right",
 		font = beautiful.sans .. " 12",
 	})
