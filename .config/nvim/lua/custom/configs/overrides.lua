@@ -7,8 +7,6 @@ M.mason = {
 		"json-lsp",
 		"typescript-language-server",
 		"clangd",
-		"clang-format",
-		"prettier",
 		"emmet-ls",
 		"eslint_d",
 		"eslint-lsp",

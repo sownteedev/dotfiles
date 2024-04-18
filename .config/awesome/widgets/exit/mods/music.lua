@@ -28,9 +28,6 @@ local widget = wibox.widget({
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	if album_path == "" then
-		album_path = beautiful.songdefpicture
-	end
 	if string.len(title) > 30 then
 		title = string.sub(title, 0, 30) .. "..."
 	end
