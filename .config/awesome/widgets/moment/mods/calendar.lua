@@ -28,7 +28,7 @@ local daywidget = function(day, weekend, notIn)
 	return wibox.widget({
 		markup = weekend and helpers.colorizeText(day, beautiful.red) or day,
 		align = "center",
-		font = beautiful.sans .. " Bold 15",
+		font = beautiful.sans .. " Medium 15",
 		widget = wibox.widget.textbox,
 	})
 end

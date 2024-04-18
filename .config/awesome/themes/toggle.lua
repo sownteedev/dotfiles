@@ -45,21 +45,24 @@ local function rofi(theme)
 		sed -i -e "s/background:.*/background:]] .. color.darker .. [[;/"\
 		       -e "s/lighter:.*/lighter:]] .. color.lighter .. [[;/"\
 		       -e "s/foreground:.*/foreground:]] .. color.foreground .. [[;/"\
-			   -e "s/darker:.*/darker:]] .. color.background .. [[;/" ~/.config/awesome/signals/scripts/Bluetooth/Bluetooth.rasi &&
+			   -e "s/darker:.*/darker:]] ..
+		color.background .. [[;/" ~/.config/awesome/signals/scripts/Bluetooth/Bluetooth.rasi &&
 	]])
 end
 
 local function term(theme)
 	local color = require("themes.colors." .. theme)
 	awful.spawn.easy_async_with_shell([[
-		sed -i "s#~/.config/alacritty/colors/.*\.toml#~/.config/alacritty/colors/"]] .. theme .. [[".toml#" ~/.config/alacritty/alacritty.toml &&
+		sed -i "s#~/.config/alacritty/colors/.*\.toml#~/.config/alacritty/colors/"]] ..
+		theme .. [[".toml#" ~/.config/alacritty/alacritty.toml &&
 		sed -i "s/bgl=.*/bgl=]] .. color.lighter .. [[/" ~/.config/zsh/theme.zsh &&
 	]])
 end
 
 local function discord(theme)
 	awful.spawn.easy_async_with_shell([[
-		cat ~/.config/BetterDiscord/data/stable/themes/]] .. theme .. [[.css > ~/.config/BetterDiscord/data/stable/custom.css &&
+		cat ~/.config/BetterDiscord/data/stable/themes/]] ..
+		theme .. [[.css > ~/.config/BetterDiscord/data/stable/custom.css &&
 	]])
 end
 
@@ -69,11 +72,13 @@ local function gtk(theme)
 		sed -i -e "s/background:.*/background:]] .. color.background .. [['/"\
 		       -e "s/lighter:.*/lighter:]] .. color.lighter .. [['/"\
 		       -e "s/foreground:.*/foreground:]] .. color.foreground .. [['/"\
-			   -e "s/accent:.*/accent:]] .. helpers.blend(color.background, color.foreground, 0.4) .. [['/" ~/.themes/tethemes/gtk-2.0/gtkrc &&
+			   -e "s/accent:.*/accent:]] ..
+		helpers.blend(color.background, color.foreground, 0.4) .. [['/" ~/.themes/tethemes/gtk-2.0/gtkrc &&
 		sed -i -e "s/background .*/background ]] .. color.background .. [[;/"\
 			   -e "s/lighter .*/lighter ]] .. color.lighter .. [[;/"\
 			   -e "s/foreground .*/foreground ]] .. color.foreground .. [[;/"\
-			   -e "s/accent .*/accent ]] .. helpers.blend(color.background, color.foreground, 0.4) .. [[;/" ~/.themes/tethemes/gtk-3.0/colors.css &&
+			   -e "s/accent .*/accent ]] ..
+		helpers.blend(color.background, color.foreground, 0.4) .. [[;/" ~/.themes/tethemes/gtk-3.0/colors.css &&
 	]])
 end
 
@@ -108,7 +113,7 @@ function applyTheme(theme)
 	awesome(theme)
 	rofi(theme)
 	discord(theme)
-	gtk(theme)
+	-- gtk(theme)
 	firefox(theme)
 	backup()
 	awful.spawn.with_shell([[
@@ -119,10 +124,10 @@ function applyTheme(theme)
 			awful.spawn.easy_async_with_shell(
 				[[
 				nvim --server /run/user/1000/]]
-					.. line
-					.. [[ --remote-send ':lua require("tevim.themes.pick").setTheme("]]
-					.. theme
-					.. [[")<CR>']]
+				.. line
+				.. [[ --remote-send ':lua require("tevim.themes.pick").setTheme("]]
+				.. theme
+				.. [[")<CR>']]
 			)
 		end
 		awful.spawn.easy_async_with_shell("awesome-client 'awesome.restart()'")

@@ -12,7 +12,7 @@ awful.screen.connect_for_each_screen(function(s)
 	local notify = wibox({
 		screen = s,
 		width = beautiful.width / 4,
-		height = beautiful.height / 1.33,
+		height = beautiful.height / 1.2,
 		bg = beautiful.darker,
 		shape = helpers.rrect(10),
 		ontop = true,

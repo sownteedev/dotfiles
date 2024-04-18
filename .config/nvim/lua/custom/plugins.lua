@@ -16,13 +16,13 @@ return {
 			require("custom.configs.lspconfig")
 		end,
 	},
-	{
-		"stevearc/conform.nvim",
-		event = "BufWritePre",
-		config = function()
-			require("custom.configs.conform")
-		end,
-	},
+	-- {
+	-- 	"stevearc/conform.nvim",
+	-- 	event = "BufWritePre",
+	-- 	config = function()
+	-- 		require("custom.configs.conform")
+	-- 	end,
+	-- },
 	{
 		"Exafunction/codeium.nvim",
 		event = "InsertEnter",
