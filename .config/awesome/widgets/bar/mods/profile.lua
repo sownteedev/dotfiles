@@ -2,6 +2,7 @@ local wibox = require("wibox")
 local beautiful = require("beautiful")
 local awful = require("awful")
 local helpers = require("helpers")
+local gears = require("gears")
 local Launcher = require("widgets.launcher")
 
 local profile = wibox.widget({
@@ -10,10 +11,11 @@ local profile = wibox.widget({
 			{
 				{
 					widget = wibox.widget.imagebox,
-					image = beautiful.profile,
+					image = gears.filesystem.get_configuration_dir() .. "/themes/assets/cat.jpg",
 					forced_height = 45,
 					forced_width = 45,
 					resize = true,
+					clip_shape = helpers.rrect(100),
 					buttons = {
 						awful.button({}, 1, function()
 							Launcher:toggle()
@@ -23,9 +25,9 @@ local profile = wibox.widget({
 				widget = wibox.container.place,
 			},
 			widget = wibox.container.margin,
-			top = 5,
-			bottom = 5,
-			left = 10,
+			top = 3,
+			bottom = 3,
+			left = 5,
 			right = 5,
 		},
 		widget = wibox.container.background,

@@ -21,7 +21,7 @@ end
 local rec_mic = function(fps, file_name)
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
-		"sleep 1 && ffmpeg -y -f x11grab "
+		"sleep 1.25 && ffmpeg -y -f x11grab "
 		.. "-r %s -i %s -f pulse -i 59 -c:v libx264 -qp 0 -profile:v main "
 		.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
 		.. "-c:a aac -b:a 64k -b:v 500k %s &",
@@ -36,7 +36,7 @@ end
 local rec_audio = function(fps, file_name)
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
-		"sleep 1 && ffmpeg -y -f x11grab "
+		"sleep 1.25 && ffmpeg -y -f x11grab "
 		.. "-r %s -i %s -f pulse -i 57 -c:v libx264 -qp 0 -profile:v main "
 		.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
 		.. "-c:a aac -b:a 64k -b:v 500k %s &",
