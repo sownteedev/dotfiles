@@ -1,6 +1,6 @@
 * {
-	background:#efeff0;
-	lighter:#ffffff;
+	background:#ffffff;
+	lighter:#efeff0;
 	darker:#fafafa;
 	foreground:#54555b;
     font: "SF Pro Display 15";

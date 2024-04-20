@@ -5,12 +5,12 @@
 }
 
 window.background.chromium {
-	background: @base;
+	background: @lighter;
 	color: rgba(75, 70, 70, 0.87);
 }
 
 window.background.chromium button {
-	border: 1px solid @base;
+	border: 1px solid @lighter;
 }
 
 window.background.chromium .titlebutton {
@@ -22,7 +22,7 @@ window.background.chromium entry:focus {
 }
 
 window.background.chromium menu {
-	background: @base1;
+	background: @lighter;
 }
 
 window.background.chromium menu menuitem {
@@ -85,11 +85,11 @@ window.background.chromium textview {
 }
 
 #MozillaGtkWidget text {
-	background: @base2;
+	background: @lighter1;
 }
 
 #MozillaGtkWidget menu {
-	background: @base1;
+	background: @lighter;
 }
 
 #MozillaGtkWidget menu :disabled {
@@ -101,35 +101,7 @@ window.background.chromium textview {
 }
 
 #MozillaGtkWidget border {
-	border: 1px solid @base1;
-}
-
-
-.nemo-window .nemo-places-sidebar {
-	background: @background;
-}
-
-.nemo-window .primary-toolbar {
-	background: @base1;
-	padding: 0.3em;
-}
-
-.nemo-window menubar~separator {
-	min-width: 0;
-	min-height: 0;
-}
-
-.nemo-window .toolbar {
-	background: @base1;
-	margin: -0.1em;
-}
-
-.nemo-window .nemo-window-pane :selected {
-	background: rgba(235, 230, 225, 0.6);
-}
-
-.nemo-window .nemo-window-pane :active {
-	background: rgba(235, 230, 225, 0.6);
+	border: 1px solid @lighter;
 }
 
 actionbar {
@@ -155,13 +127,13 @@ button:disabled {
 
 button:checked,
 button.suggested-action {
-	background: @base2;
+	background: @lighter1;
 	color: rgba(75, 70, 70, 0.87);
 }
 
 button:checked:hover:not(:active),
 button.suggested-action:hover:not(:active) {
-	background: @base2;
+	background: @lighter1;
 }
 
 button.image-button:not(.text-button) {
@@ -223,41 +195,6 @@ button.small-button image:only-child {
 	border-bottom-right-radius: 0;
 }
 
-calendar {
-	background: @background;
-}
-
-calendar.button {
-	background: @base1;
-	color: rgba(75, 70, 70, 0.34);
-}
-
-calendar.button:hover {
-	color: rgba(75, 70, 70, 0.87);
-}
-
-calendar.button:disabled {
-	color: rgba(75, 70, 70, 0.06);
-}
-
-calendar.header {
-	background: @base1;
-}
-
-calendar.highlight {
-	color: rgba(75, 70, 70, 0.34);
-}
-
-calendar:selected {
-	color: @foreground;
-	border-radius: 0.5em;
-	background: @base2;
-}
-
-calendar:indeterminate {
-	color: rgba(75, 70, 70, 0.14);
-}
-
 check {
 	-gtk-icon-source: -gtk-recolor(url("../assets/symbolic/check.symbolic.png"));
 	-gtk-icon-transform: scale(0);
@@ -280,9 +217,9 @@ check:checked {
 }
 
 check:checked {
-	background: @base2;
+	background: @lighter1;
 	-gtk-icon-transform: scale(1);
-	border-color: @base2;
+	border-color: @lighter1;
 }
 
 check:checked:active {
@@ -354,7 +291,7 @@ messagedialog {
 
 dialog .dialog-action-box,
 messagedialog .dialog-action-box {
-	background: @base1;
+	background: @lighter;
 	padding: 0.6em;
 	margin: -0.4em;
 	margin-top: 0;
@@ -375,7 +312,7 @@ messagedialog filechooser+.dialog-action-box {
 dialog filechooser #pathbarbox,
 messagedialog filechooser #pathbarbox {
 	padding: 0.3em;
-	background: @base1;
+	background: @lighter;
 }
 
 dialog filechooser treeview,
@@ -455,7 +392,7 @@ expander title arrow:checked+label {
 
 frame>border,
 .frame {
-	border: 1px solid @base1;
+	border: 1px solid @lighter;
 }
 
 scrolledwindow viewport.frame {
@@ -463,7 +400,7 @@ scrolledwindow viewport.frame {
 }
 
 headerbar {
-	background: @base1;
+	background: @lighter;
 	padding: 0.6em;
 }
 
@@ -507,13 +444,13 @@ headerbar button.titlebutton.appmenu:not(:active):not(:checked) {
 }
 
 iconview {
-	background: @base1;
+	background: @lighter;
 	padding: 0.3em;
 }
 
 iconview:selected {
 	color: @foreground;
-	background: @base2;
+	background: @lighter1;
 	border-radius: 0.5em;
 }
 
@@ -545,7 +482,7 @@ label:disabled {
 }
 
 label selection {
-	background: @base2;
+	background: @lighter1;
 	color: rgba(202, 198, 198, 0.87);
 }
 
@@ -555,11 +492,11 @@ levelbar trough block {
 }
 
 levelbar trough block.filled {
-	background: @base3;
+	background: @lighter1;
 }
 
 levelbar trough block.empty {
-	background: @base1;
+	background: @lighter;
 }
 
 levelbar.discrete block:not(:first-child) {
@@ -576,7 +513,7 @@ list row {
 }
 
 list row:hover {
-	background: @base1;
+	background: @lighter;
 }
 
 list>label {
@@ -584,7 +521,7 @@ list>label {
 }
 
 menu {
-	background: @base1;
+	background: @lighter;
 }
 
 menu menuitem {
@@ -688,7 +625,7 @@ placessidebar .frame {
 }
 
 popover {
-	background: @base2;
+	background: @lighter1;
 	box-shadow: 0 0 5px @foreground;
 	border-radius: 0.5em;
 	padding: 0.5em;
@@ -713,7 +650,7 @@ progressbar trough {
 }
 
 progressbar trough progress {
-	background: @base3;
+	background: @lighter1;
 }
 
 radio {
@@ -738,9 +675,9 @@ radio:checked {
 }
 
 radio:checked {
-	-gtk-icon-transform: scale(1);
-	border-color: @base2;
-	background: @base2;
+	-gtk-icon-transform: scale(0.7);
+	border-color: @lighter1;
+	background: @lighter1;
 }
 
 radiobutton label {
@@ -753,7 +690,7 @@ radiobutton:disabled {
 
 revealer frame.app-notification border {
 	border-radius: 0.5em;
-	background: @base1;
+	background: @lighter;
 	padding: 0.6em;
 }
 
@@ -784,7 +721,7 @@ scale {
 }
 
 scale contents trough {
-	background: @base1;
+	background: @lighter;
 }
 
 scale contents trough slider {
@@ -795,7 +732,7 @@ scale contents trough slider {
 }
 
 scale contents trough highlight {
-	background: @base2;
+	background: @lighter1;
 }
 
 scale marks mark {
@@ -803,7 +740,7 @@ scale marks mark {
 }
 
 scale marks mark indicator {
-	color: @base1;
+	color: @lighter;
 	min-height: 8px;
 	min-width: 1px;
 }
@@ -828,7 +765,7 @@ scrollbar slider:hover {
 }
 
 scrollbar slider:active {
-	background: @base2;
+	background: @lighter1;
 }
 
 separator {
@@ -852,7 +789,7 @@ spinbutton button {
 }
 
 spinbutton:focus button {
-	border-color: @base2;
+	border-color: @lighter1;
 }
 
 spinbutton:focus button:hover {
@@ -1003,7 +940,7 @@ tabs {
 }
 
 .top>tabs {
-	border-bottom: 0.2em solid @base1;
+	border-bottom: 0.2em solid @lighter;
 }
 
 .top>tabs tab {
@@ -1012,7 +949,7 @@ tabs {
 }
 
 .right>tabs {
-	border-left: 0.2em solid @base1;
+	border-left: 0.2em solid @lighter;
 }
 
 .right>tabs tab {
@@ -1021,7 +958,7 @@ tabs {
 }
 
 .bottom>tabs {
-	border-top: 0.2em solid @base1;
+	border-top: 0.2em solid @lighter;
 }
 
 .bottom>tabs tab {
@@ -1030,7 +967,7 @@ tabs {
 }
 
 .left>tabs {
-	border-right: 0.2em solid @base1;
+	border-right: 0.2em solid @lighter;
 }
 
 .left>tabs tab {
@@ -1075,13 +1012,13 @@ toolbar,
 
 toolbar.osd,
 .toolbar.osd {
-	background: @base1;
+	background: @lighter;
 	padding: 0.6em;
 	border-radius: 0.5em;
 }
 
 tooltip {
-	background: @base2;
+	background: @lighter1;
 }
 
 tooltip>* {
@@ -1141,5 +1078,3 @@ window.csd decoration {
 	box-shadow: 0 0 8px 0 black;
 	margin: 8px;
 }
-
-/*# sourceMappingURL=gtk.css.map */

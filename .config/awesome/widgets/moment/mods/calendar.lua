@@ -70,7 +70,7 @@ local title = wibox.widget({
 			margins = 10,
 		},
 		widget = wibox.container.background,
-		bg = beautiful.lighter,
+		bg = beautiful.lighter1,
 		shape = helpers.rrect(10),
 	},
 	widget = wibox.container.margin,
@@ -141,7 +141,7 @@ local next = wibox.widget({
 		},
 		id = "next_bg",
 		widget = wibox.container.background,
-		bg = beautiful.background,
+		bg = beautiful.lighter1,
 		shape = helpers.rrect(50),
 		buttons = awful.button({}, 1, function()
 			curr = os.date(
@@ -158,7 +158,7 @@ local next = wibox.widget({
 	widget = wibox.container.margin,
 	right = 40,
 })
-helpers.addHover(next, "next_bg", beautiful.lighter, helpers.blend(beautiful.foreground, beautiful.background, 0.2))
+helpers.addHover(next, "next_bg", beautiful.lighter1, helpers.blend(beautiful.foreground, beautiful.background, 0.2))
 
 local prev = wibox.widget({
 	{
@@ -176,7 +176,7 @@ local prev = wibox.widget({
 		},
 		id = "prev_bg",
 		widget = wibox.container.background,
-		bg = beautiful.background,
+		bg = beautiful.lighter1,
 		shape = helpers.rrect(30),
 		buttons = awful.button({}, 1, function()
 			curr = os.date(
@@ -193,7 +193,7 @@ local prev = wibox.widget({
 	widget = wibox.container.margin,
 	left = 40,
 })
-helpers.addHover(prev, "prev_bg", beautiful.lighter, helpers.blend(beautiful.foreground, beautiful.background, 0.2))
+helpers.addHover(prev, "prev_bg", beautiful.lighter1, helpers.blend(beautiful.foreground, beautiful.background, 0.2))
 
 return function()
 	curr = os.date("*t")
@@ -229,6 +229,8 @@ return function()
 		},
 		shape = helpers.rrect(10),
 		widget = wibox.container.background,
-		bg = beautiful.background,
+		bg = beautiful.lighter,
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 	})
 end

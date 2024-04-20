@@ -22,9 +22,9 @@ local rec_mic = function(fps, file_name)
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
 		"sleep 1 && ffmpeg -y -f x11grab "
-			.. "-r %s -i %s -f pulse -i 59 -c:v libx264 -qp 0 -profile:v main "
-			.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
-			.. "-c:a aac -b:a 64k -b:v 500k %s &",
+		.. "-r %s -i %s -f pulse -i 59 -c:v libx264 -qp 0 -profile:v main "
+		.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
+		.. "-c:a aac -b:a 64k -b:v 500k %s &",
 		fps,
 		display,
 		file_name
@@ -37,9 +37,9 @@ local rec_audio = function(fps, file_name)
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
 		"sleep 1 && ffmpeg -y -f x11grab "
-			.. "-r %s -i %s -f pulse -i 57 -c:v libx264 -qp 0 -profile:v main "
-			.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
-			.. "-c:a aac -b:a 64k -b:v 500k %s &",
+		.. "-r %s -i %s -f pulse -i 57 -c:v libx264 -qp 0 -profile:v main "
+		.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
+		.. "-c:a aac -b:a 64k -b:v 500k %s &",
 		fps,
 		display,
 		file_name
@@ -74,7 +74,7 @@ local createButton = function(path, name, fn, col)
 				margins = 15,
 			},
 			forced_width = 130,
-			bg = beautiful.background,
+			bg = beautiful.lighter,
 			id = "bg",
 			widget = wibox.container.background,
 		},
@@ -89,15 +89,15 @@ local createButton = function(path, name, fn, col)
 			fn()
 		end),
 	})
-	helpers.addHover(button, "bg", beautiful.background, helpers.blend(col, beautiful.background, 0.1))
+	helpers.addHover(button, "bg", beautiful.lighter, helpers.blend(col, beautiful.background, 0.1))
 	return button
 end
 
 local recorder = wibox({
 	width = 450,
 	height = 230,
-	bg = beautiful.darker,
-	shape = helpers.rrect(10),
+	bg = beautiful.background,
+	shape = helpers.rrect(5),
 	ontop = true,
 	visible = false,
 })

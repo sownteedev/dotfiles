@@ -51,7 +51,7 @@ local widget = {
 		margins = 30,
 	},
 	widget = wibox.container.background,
-	bg = beautiful.background,
+	bg = beautiful.lighter,
 }
 
 return widget

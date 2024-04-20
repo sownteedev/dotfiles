@@ -54,7 +54,9 @@ local widget = wibox.widget({
 		id = "back",
 		widget = wibox.container.background,
 		shape = helpers.rrect(10),
-		bg = beautiful.background,
+		bg = beautiful.lighter,
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 		buttons = {
 			awful.button({}, 1, function()
 				awful.spawn.easy_async_with_shell("awesome-client 'darkmode()' &")

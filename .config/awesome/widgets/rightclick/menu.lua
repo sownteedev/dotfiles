@@ -151,7 +151,7 @@ function menu.menu(widgets, width)
 		minimum_width = width or 230,
 		maximum_width = width or 230,
 		bg = beautiful.darker,
-		shape = helpers.rrect(10),
+		shape = helpers.rrect(5),
 		widget = wibox.layout.fixed.vertical,
 	})
 	gtable.crush(widget, menu, true)
@@ -205,17 +205,17 @@ function menu.sub_menu_button(args)
 	args.sub_menu = args.sub_menu or nil
 
 	local icon = args.icon ~= nil
-			and wibox.widget({
-				image = gears.color.recolor_image(
-					gears.filesystem.get_configuration_dir() .. "/themes/assets/awm.png",
-					helpers.randomColor()
-				),
-				resize = true,
-				forced_height = 20,
-				forced_width = 20,
-				valign = "center",
-				widget = wibox.widget.imagebox,
-			})
+		and wibox.widget({
+			image = gears.color.recolor_image(
+				gears.filesystem.get_configuration_dir() .. "/themes/assets/awm.png",
+				helpers.randomColor()
+			),
+			resize = true,
+			forced_height = 20,
+			forced_width = 20,
+			valign = "center",
+			widget = wibox.widget.imagebox,
+		})
 		or nil
 
 	local widget = wibox.widget({

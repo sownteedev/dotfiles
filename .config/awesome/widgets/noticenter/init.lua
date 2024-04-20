@@ -13,8 +13,8 @@ awful.screen.connect_for_each_screen(function(s)
 		screen = s,
 		width = beautiful.width / 4,
 		height = beautiful.height / 1.2,
-		bg = beautiful.darker,
-		shape = helpers.rrect(10),
+		bg = beautiful.background,
+		shape = helpers.rrect(5),
 		ontop = true,
 		visible = false,
 	})
@@ -81,27 +81,33 @@ awful.screen.connect_for_each_screen(function(s)
 		{
 			{
 				{
-					title,
-					nil,
-					clearButton,
-					widget = wibox.layout.align.horizontal,
+					{
+						title,
+						nil,
+						clearButton,
+						widget = wibox.layout.align.horizontal,
+					},
+					widget = wibox.container.margin,
+					margins = 20,
 				},
-				widget = wibox.container.margin,
-				margins = 20,
+				widget = wibox.container.background,
+				bg = beautiful.lighter,
 			},
-			widget = wibox.container.background,
-			bg = beautiful.background,
-		},
-		{
 			{
-				finalcontent,
-				widget = wibox.container.margin,
-				margins = 15,
+				{
+					finalcontent,
+					widget = wibox.container.margin,
+					margins = 15,
+				},
+				widget = wibox.container.background,
 			},
-			widget = wibox.container.background,
+			progs,
+			layout = wibox.layout.align.vertical,
 		},
-		progs,
-		layout = wibox.layout.align.vertical,
+		widget = wibox.container.background,
+		shape = helpers.rrect(5),
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 	})
 	helpers.placeWidget(notify, "bottom_right", 0, 2, 0, 2)
 	awesome.connect_signal("toggle::notify", function()

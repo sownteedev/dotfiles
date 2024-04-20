@@ -20,6 +20,7 @@ local colors = require("themes.colors." .. colorscheme)
 theme.background = colors.background
 theme.darker = colors.darker
 theme.lighter = colors.lighter
+theme.lighter1 = colors.lighter1
 theme.foreground = colors.foreground
 
 theme.red = colors.red
@@ -45,6 +46,8 @@ theme.fg_normal = theme.foreground
 
 -- borders --
 theme.border_width = 0
+theme.border_width_custom = 1
+theme.border_color = theme.foreground .. "33"
 theme.border_color_normal = theme.blue
 theme.border_color_active = theme.foreground
 

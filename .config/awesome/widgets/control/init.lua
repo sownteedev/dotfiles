@@ -14,7 +14,6 @@ awful.screen.connect_for_each_screen(function(s)
 		screen = s,
 		width = beautiful.width / 4,
 		height = (beautiful.height / 3) * 1.41,
-		bg = beautiful.background,
 		ontop = true,
 		visible = false,
 	})
@@ -33,8 +32,10 @@ awful.screen.connect_for_each_screen(function(s)
 			margins = 15,
 		},
 		widget = wibox.container.background,
-		bg = beautiful.darker,
-		shape = helpers.rrect(10),
+		bg = beautiful.background,
+		shape = helpers.rrect(5),
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 	})
 
 	helpers.placeWidget(control, "bottom_right", 0, 2, 0, 2)

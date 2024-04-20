@@ -34,7 +34,7 @@ local createButton = function(path, name, fn, col)
 				margins = 15,
 			},
 			forced_width = 130,
-			bg = beautiful.background,
+			bg = beautiful.lighter,
 			id = "bg",
 			widget = wibox.container.background,
 		},
@@ -49,15 +49,15 @@ local createButton = function(path, name, fn, col)
 			fn()
 		end),
 	})
-	helpers.addHover(button, "bg", beautiful.background, helpers.blend(col, beautiful.background, 0.1))
+	helpers.addHover(button, "bg", beautiful.lighter, helpers.blend(col, beautiful.background, 0.1))
 	return button
 end
 
 local scrotter = wibox({
 	width = 450,
 	height = 230,
-	shape = helpers.rrect(10),
-	bg = beautiful.darker,
+	shape = helpers.rrect(5),
+	bg = beautiful.background,
 	ontop = true,
 	visible = false,
 })

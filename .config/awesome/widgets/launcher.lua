@@ -34,6 +34,8 @@ local createPowerButton = function(path, color, command)
 			widget = wibox.container.background,
 			bg = color .. "22",
 			shape = helpers.rrect(10),
+			shape_border_width = beautiful.border_width_custom,
+			shape_border_color = color .. "99",
 		},
 		widget = wibox.container.place,
 		buttons = {
@@ -135,6 +137,8 @@ local prompt = wibox.widget({
 			shape = helpers.rrect(10),
 			widget = wibox.container.background,
 			bg = beautiful.darker .. "50",
+			shape_border_width = beautiful.border_width_custom,
+			shape_border_color = beautiful.border_color,
 		},
 		widget = wibox.container.place,
 	},
@@ -150,43 +154,41 @@ local entries_container = wibox.widget({
 })
 
 local main_widget = wibox.widget({
-	widget = wibox.container.margin,
-	margins = 0,
+	widget = wibox.container.background,
+	bg = beautiful.lighter,
+	shape = helpers.rrect(5),
+	shape_border_width = beautiful.border_width_custom,
+	shape_border_color = beautiful.border_color,
+	forced_height = (Conf.entry_height * (Conf.rows + 1)) + Conf.popup_margins,
 	{
-		widget = wibox.container.background,
-		forced_height = (Conf.entry_height * (Conf.rows + 1)) + Conf.popup_margins,
+		layout = wibox.layout.fixed.horizontal,
+		spacing = Conf.popup_margins,
+		sidebar,
 		{
-			layout = wibox.layout.fixed.horizontal,
-			spacing = Conf.popup_margins,
-			sidebar,
 			{
-				{
-					layout = wibox.layout.fixed.vertical,
-					spacing = Conf.popup_margins,
-					prompt,
-					entries_container,
-				},
-				widget = wibox.container.margin,
-				left = 0,
-				right = Conf.popup_margins,
-				bottom = Conf.popup_margins,
-				top = Conf.popup_margins,
+				layout = wibox.layout.fixed.vertical,
+				spacing = Conf.popup_margins,
+				prompt,
+				entries_container,
 			},
+			widget = wibox.container.margin,
+			left = 0,
+			right = Conf.popup_margins,
+			bottom = Conf.popup_margins,
+			top = Conf.popup_margins,
 		},
 	},
 })
 
 local popup_widget = awful.popup({
-	bg = beautiful.darker,
-	border_width = beautiful.border_width,
-	border_color = beautiful.border_color_normal,
+	bg = beautiful.lighter,
 	ontop = true,
 	visible = false,
 	placement = function(d)
 		helpers.placeWidget(d, "bottom_left", 0, 2, 2, 0)
 	end,
 	maximum_width = Conf.entry_width + Conf.entry_height + Conf.popup_margins * 3,
-	shape = helpers.rrect(10),
+	shape = helpers.rrect(5),
 	widget = main_widget,
 })
 
@@ -289,6 +291,7 @@ local function filter(input)
 				end),
 			},
 			widget = wibox.container.background,
+			shape_border_width = beautiful.border_width_custom,
 			{
 				{
 					{
@@ -320,11 +323,11 @@ local function filter(input)
 
 		if i == index_entry then
 			entry_widget.fg = beautiful.foreground
-		end
-
-		if i == index_entry then
-			entry_widget.bg = beautiful.background
+			entry_widget.bg = beautiful.lighter1
+			entry_widget.shape_border_color = beautiful.border_color
 			helpers.gc(entry_widget, "name"):set_markup_silently(helpers.colorizeText(entry.name, beautiful.blue))
+		else
+			entry_widget.shape_border_color = beautiful.foreground .. "00"
 		end
 	end
 

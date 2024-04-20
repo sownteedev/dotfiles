@@ -3,7 +3,7 @@ local helpers = require("helpers")
 
 local function backup()
 	awful.spawn.easy_async_with_shell([[
-		declare -a config_folders=("awesome" "alacritty" "zsh" "ranger" "firefox")
+		declare -a config_folders=("awesome" "alacritty" "zsh" "ranger" "firefox" "gtk-3.0")
 		declare -a data_folders=("BetterDiscord/data/stable" "spicetify/Themes" "nvim/lua/custom")
 		declare -a dot_folders=("fonts" "icons" "themes" "walls") &&
 
@@ -69,16 +69,10 @@ end
 local function gtk(theme)
 	local color = require("themes.colors." .. theme)
 	awful.spawn.easy_async_with_shell([[
-		sed -i -e "s/background:.*/background:]] .. color.background .. [['/"\
-		       -e "s/lighter:.*/lighter:]] .. color.lighter .. [['/"\
-		       -e "s/foreground:.*/foreground:]] .. color.foreground .. [['/"\
-			   -e "s/accent:.*/accent:]] ..
-		helpers.blend(color.background, color.foreground, 0.4) .. [['/" ~/.themes/tethemes/gtk-2.0/gtkrc &&
 		sed -i -e "s/background .*/background ]] .. color.background .. [[;/"\
 			   -e "s/lighter .*/lighter ]] .. color.lighter .. [[;/"\
-			   -e "s/foreground .*/foreground ]] .. color.foreground .. [[;/"\
-			   -e "s/accent .*/accent ]] ..
-		helpers.blend(color.background, color.foreground, 0.4) .. [[;/" ~/.themes/tethemes/gtk-3.0/colors.css &&
+			   -e "s/lighter1 .*/lighter1 ]] .. color.lighter1 .. [[;/"\
+			   -e "s/foreground .*/foreground ]] .. color.foreground .. [[;/" ~/.themes/tethemes/gtk-3.0/colors.css &&
 	]])
 end
 
@@ -113,7 +107,7 @@ function applyTheme(theme)
 	awesome(theme)
 	rofi(theme)
 	discord(theme)
-	-- gtk(theme)
+	gtk(theme)
 	firefox(theme)
 	backup()
 	awful.spawn.with_shell([[

@@ -12,22 +12,27 @@ awful.screen.connect_for_each_screen(function(s)
 		screen = s,
 		width = beautiful.width / 4,
 		height = beautiful.height / 1.27,
-		bg = beautiful.darker,
-		shape = helpers.rrect(10),
 		ontop = true,
 		visible = false,
 	})
 
 	moment:setup({
 		{
-			clock,
-			calendar(),
-			weather,
-			layout = wibox.layout.fixed.vertical,
-			spacing = 15,
+			{
+				clock,
+				calendar(),
+				weather,
+				layout = wibox.layout.fixed.vertical,
+				spacing = 15,
+			},
+			widget = wibox.container.margin,
+			margins = 15,
 		},
-		widget = wibox.container.margin,
-		margins = 15,
+		widget = wibox.container.background,
+		bg = beautiful.background,
+		shape = helpers.rrect(5),
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 	})
 	helpers.placeWidget(moment, "bottom_right", 0, 2, 0, 2)
 	awesome.connect_signal("toggle::moment", function()

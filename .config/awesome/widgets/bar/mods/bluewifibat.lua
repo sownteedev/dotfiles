@@ -151,8 +151,10 @@ M.widget = wibox.widget({
 			right = 20,
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(10),
-		bg = beautiful.background,
+		shape = helpers.rrect(5),
+		bg = beautiful.lighter,
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 		buttons = {
 			awful.button({}, 1, function()
 				awesome.emit_signal("toggle::control")

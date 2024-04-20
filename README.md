@@ -15,7 +15,7 @@
 <br>
 <br>
 
-<details><summary>Install Arch Linux</summary><blockquote>
+<details><summary> </summary><blockquote>
 
 ### Make you have Internet
 
@@ -45,7 +45,7 @@
     mount /dev/nvme0n1p5 /mnt
 
     mkdir /mnt/boot
-    mount /dev/nvme0n1p1 /mnt/boot
+    mount /dev/nvme0n1p3 /mnt/boot
 
 ### Install basic package
 
@@ -85,7 +85,7 @@
 
     EDITOR=nvim visudo
     Add: sowntee ALL=(ALL) ALL
-         sowntee ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff, /usr/sbin/rfkill unblock all, /usr/sbin/rfkill block all
+         sowntee ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl, /usr/sbin/rfkill
     Uncomment: %wheel ALL=(ALL) ALL
 
 ###  Wifi
