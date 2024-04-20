@@ -12,7 +12,6 @@ local widget = wibox.widget({
 			forced_height = 70,
 			forced_width = 70,
 			opacity = 1,
-			clip_shape = helpers.rrect(8),
 			resize = true,
 		},
 		{

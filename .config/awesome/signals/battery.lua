@@ -6,7 +6,7 @@ local function battery_emit()
 		"bash -c 'echo $(cat /sys/class/power_supply/BAT0/capacity) echo $(cat /sys/class/power_supply/BAT0/status)'",
 		function(stdout)
 			local level = tonumber(string.match(stdout:match("(%d+)"), "(%d+)"))
-			local status = not stdout:match("Discharging")
+			local status = not stdout:match("Discharging") and not stdout:match("Not charging")
 			awesome.emit_signal("signal::battery", level, status)
 		end
 	)
