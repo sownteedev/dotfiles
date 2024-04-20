@@ -45,8 +45,9 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 			},
 			id = "background_role",
 			widget = wibox.container.background,
-			bg = beautiful.background,
 			shape = helpers.rrect(30),
+			shape_border_width = beautiful.border_width_custom,
+			shape_border_color = beautiful.border_color,
 			buttons = {
 				awful.button({}, 1, function()
 					awful.spawn.easy_async_with_shell(cmd)
@@ -80,7 +81,7 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 			end
 		else
 			slidIcon.markup = helpers.colorizeText(icon, beautiful.foreground)
-			helpers.gc(slidScale, "background_role"):set_bg(beautiful.background)
+			helpers.gc(slidScale, "background_role"):set_bg(beautiful.lighter)
 			if signal2 == "brightnesss" then
 				helpers.gc(slidScale, "margin").left = 12
 				helpers.gc(slidScale, "margin").right = 5

@@ -50,13 +50,13 @@ local info = wibox.widget({
 local osd = awful.popup({
 	visible = false,
 	ontop = true,
-	bg = beautiful.darker,
+	bg = beautiful.background,
 	border_width = beautiful.border_width,
 	border_color = beautiful.border_color_normal,
 	minimum_height = 80,
 	maximum_height = 80,
 	forced_width = 0,
-	shape = helpers.rrect(10),
+	shape = helpers.rrect(5),
 	placement = function(d)
 		helpers.placeWidget(d, "bottom")
 	end,

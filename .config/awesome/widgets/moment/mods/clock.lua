@@ -80,7 +80,9 @@ local widget = wibox.widget({
 	},
 	shape = helpers.rrect(10),
 	widget = wibox.container.background,
-	bg = beautiful.background,
+	bg = beautiful.lighter,
+	shape_border_width = beautiful.border_width_custom,
+	shape_border_color = beautiful.border_color,
 })
 
 local updateTime = function()

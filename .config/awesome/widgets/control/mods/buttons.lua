@@ -46,7 +46,8 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 		widget = wibox.container.background,
 		id = "back",
 		shape = helpers.rrect(10),
-		bg = beautiful.background,
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 		buttons = {
 			awful.button({}, 1, function()
 				awful.spawn.easy_async_with_shell(cmd1)
@@ -86,7 +87,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 				helpers.gc(widget, "label").markup = helpers.colorizeText(labelconnected, beautiful.background)
 			end
 		else
-			helpers.gc(widget, "back").bg = beautiful.background
+			helpers.gc(widget, "back").bg = beautiful.lighter
 			helpers.gc(widget, "icon"):set_markup_silently(helpers.colorizeText(icon, beautiful.foreground))
 			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.foreground))
 			helpers.gc(widget, "label").markup = helpers.colorizeText(labeldisconnected, beautiful.foreground)

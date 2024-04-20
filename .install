@@ -174,14 +174,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 		echo "[*] Spotify installation skipped."
 	else
 		echo "[*] Installing Spotify ..."
-		curl -sS https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg  | gpg --import -
-		git clone https://aur.archlinux.org/spotify.git && cd spotify
-		pkgctl build
-		pacman -U spotify-*.pkg.tar.zst --noconfirm
-		cd .. && rm -rf spotify
-		spotify &
-		sleep 5
-		pkill spotify
+		yay -S spotify --noconfirm
 	fi
 	yay -S --noconfirm spicetify-cli
 	sudo chmod a+wr /opt/spotify
@@ -262,8 +255,8 @@ sleep 3 && clear
 # App for me
 read -p "[*] Do you want to install app for me(Recommend No, because it is for me)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-	sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop notion-app-electron
-	yay -S --noconfirm visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional
+	sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop
+	yay -S --noconfirm notion-app-electron visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional
 else
 	echo "[*] App for me skipped."
 fi

@@ -98,23 +98,29 @@ awful.screen.connect_for_each_screen(function(s)
 				nil,
 				{
 					{
-						id = "art",
-						image = helpers.cropSurface(1.75, gears.surface.load_uncached(beautiful.songdefpicture)),
-						opacity = 1,
-						resize = true,
-						clip_shape = helpers.rrect(10),
-						widget = wibox.widget.imagebox,
-					},
-					{
-						id = "overlay",
-						bg = {
-							type = "linear",
-							from = { 0, 0 },
-							to = { 250, 0 },
-							stops = { { 0, beautiful.background .. "00" }, { 1, beautiful.background .. "00" } },
+						{
+							id = "art",
+							image = helpers.cropSurface(1.75, gears.surface.load_uncached(beautiful.songdefpicture)),
+							opacity = 1,
+							resize = true,
+							clip_shape = helpers.rrect(10),
+							widget = wibox.widget.imagebox,
 						},
-						shape = helpers.rrect(10),
+						{
+							id = "overlay",
+							bg = {
+								type = "linear",
+								from = { 0, 0 },
+								to = { 250, 0 },
+								stops = { { 0, beautiful.lighter .. "00" }, { 1, beautiful.lighter .. "00" } },
+							},
+							shape = helpers.rrect(10),
+							widget = wibox.container.background,
+						},
 						widget = wibox.container.background,
+						shape = helpers.rrect(10),
+						shape_border_width = beautiful.border_width_custom,
+						shape_border_color = beautiful.border_color,
 					},
 					{
 						{
@@ -136,9 +142,9 @@ awful.screen.connect_for_each_screen(function(s)
 												id = "songname",
 												font = beautiful.sans .. " Medium 20",
 												markup = "",
-												forced_height = 100,
+												forced_height = 80,
 												widget = wibox.widget.textbox,
-												align = "left",
+												valign = "top",
 											},
 											{
 												id = "artist",
@@ -147,7 +153,7 @@ awful.screen.connect_for_each_screen(function(s)
 												widget = wibox.widget.textbox,
 											},
 											layout = wibox.layout.fixed.vertical,
-											spacing = 20,
+											spacing = 10,
 										},
 										nil,
 										{
@@ -194,7 +200,9 @@ awful.screen.connect_for_each_screen(function(s)
 						},
 						shape = helpers.rrect(10),
 						widget = wibox.container.background,
-						bg = beautiful.background,
+						bg = beautiful.lighter,
+						shape_border_width = beautiful.border_width_custom,
+						shape_border_color = beautiful.border_color,
 					},
 					widget = wibox.container.margin,
 					left = 15,
@@ -206,8 +214,10 @@ awful.screen.connect_for_each_screen(function(s)
 		},
 		forced_height = 300,
 		widget = wibox.container.background,
-		bg = beautiful.darker,
-		shape = helpers.rrect(10),
+		bg = beautiful.background,
+		shape = helpers.rrect(5),
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 	})
 
 	playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _, player_name)
@@ -217,7 +227,7 @@ awful.screen.connect_for_each_screen(function(s)
 			type = "linear",
 			from = { 0, 0 },
 			to = { 250, 0 },
-			stops = { { 0, beautiful.background .. "88" }, { 1, beautiful.background .. "88" } },
+			stops = { { 0, beautiful.lighter .. "88" }, { 1, beautiful.lighter .. "88" } },
 		})
 		helpers.gc(music, "artt"):set_image(helpers.cropSurface(1, gears.surface.load_uncached(album_path)))
 		helpers.gc(music, "songname"):set_markup_silently(helpers.colorizeText(title or "NO", beautiful.foreground))

@@ -3,8 +3,38 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
+local naughty = require("naughty")
 
 return function(icon, n)
+	local action_widget = {
+		{
+			{
+				id = "text_role",
+				align = "center",
+				font = beautiful.sans .. " 12",
+				widget = wibox.widget.textbox,
+			},
+			bg = beautiful.lighter1,
+			shape = helpers.rrect(10),
+			forced_height = 30,
+			widget = wibox.container.background,
+		},
+		widget = wibox.container.margin,
+		left = 20,
+		right = 20,
+	}
+	local actions = wibox.widget({
+		notification = n,
+		base_layout = wibox.widget({
+			spacing = 30,
+			layout = wibox.layout.flex.horizontal,
+		}),
+		align = "center",
+		widget_template = action_widget,
+		style = { underline_normal = false, underline_selected = true },
+		widget = naughty.list.actions,
+	})
+
 	local icon_widget = wibox.widget({
 		widget = wibox.container.constraint,
 		{
@@ -46,9 +76,11 @@ return function(icon, n)
 
 	local box = wibox.widget({
 		widget = wibox.container.background,
-		forced_height = 150,
+		forced_height = 180,
 		shape = helpers.rrect(10),
-		bg = beautiful.background,
+		bg = beautiful.lighter,
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 		{
 			{
 				layout = wibox.layout.align.horizontal,
@@ -64,17 +96,14 @@ return function(icon, n)
 							time_widget,
 						},
 						text_notif,
+						actions,
 						layout = wibox.layout.fixed.vertical,
-						expand = "none",
-						spacing = 40,
+						spacing = 30,
 					},
 				},
 			},
 			widget = wibox.container.margin,
-			left = 20,
-			right = 20,
-			top = 20,
-			bottom = 20,
+			margins = 15,
 		},
 	})
 

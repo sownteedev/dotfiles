@@ -29,9 +29,11 @@ local timedate = wibox.widget({
 			right = 20,
 			left = 20,
 		},
-		bg = beautiful.background,
+		bg = beautiful.lighter,
 		widget = wibox.container.background,
-		shape = helpers.rrect(10),
+		shape = helpers.rrect(5),
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
 		buttons = {
 			awful.button({}, 1, function()
 				awesome.emit_signal("toggle::moment")

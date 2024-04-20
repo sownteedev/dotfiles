@@ -45,7 +45,7 @@ naughty.connect_signal("request::display", function(n)
 			font = beautiful.sans .. " 12",
 			widget = wibox.widget.textbox,
 		},
-		bg = beautiful.background,
+		bg = beautiful.lighter,
 		forced_height = 30,
 		shape = helpers.rrect(10),
 		widget = wibox.container.background,
@@ -188,7 +188,7 @@ naughty.connect_signal("request::display", function(n)
 
 	local widget = naughty.layout.box({
 		notification = n,
-		shape = helpers.rrect(10),
+		shape = helpers.rrect(5),
 		widget_template = {
 			{
 				{
@@ -205,7 +205,7 @@ naughty.connect_signal("request::display", function(n)
 							widget = wibox.container.margin,
 						},
 						widget = wibox.container.background,
-						bg = beautiful.background,
+						bg = beautiful.lighter,
 					},
 					layout = wibox.layout.fixed.vertical,
 				},
@@ -235,7 +235,7 @@ naughty.connect_signal("request::display", function(n)
 				spacing = 30,
 			},
 			widget = wibox.container.background,
-			bg = beautiful.darker,
+			bg = beautiful.background,
 		},
 	})
 
