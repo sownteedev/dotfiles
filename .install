@@ -150,7 +150,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 	# Other
 	echo "[*] Installing other ..."
-	sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi inotify-tools
+	sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget xdotool && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi inotify-tools ulauncher-git
 	echo "[*] Done."
 	clear
 	echo "[*] Install ibus"

@@ -3,8 +3,7 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local helpers = require("helpers")
 
-local filesystem = gears.filesystem
-local icon_dir = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
+local icon_dir = gears.filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
 
 local icon_map = {
 	["01d"] = "weather-clear-sky",
@@ -105,7 +104,7 @@ local widget = wibox.widget({
 		image = helpers.cropSurface(
 			1,
 			gears.surface.load_uncached(
-				filesystem.get_configuration_dir() .. "themes/assets/weather/images/weather-clear-night.jpg"
+				gears.filesystem.get_configuration_dir() .. "themes/assets/weather/images/weather-clear-night.jpg"
 			)
 		),
 		widget = wibox.widget.imagebox,
@@ -126,7 +125,7 @@ local widget = wibox.widget({
 					},
 					{
 						id = "icon",
-						image = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
+						image = gears.filesystem.get_configuration_dir() .. "themes/assets/weather/icons/weather-fog.svg",
 						opacity = 1,
 						forced_height = 80,
 						forced_width = 80,
