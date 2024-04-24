@@ -99,23 +99,26 @@ awful.screen.connect_for_each_screen(function(s)
 				{
 					{
 						{
-							id = "art",
-							image = helpers.cropSurface(1.75, gears.surface.load_uncached(beautiful.songdefpicture)),
-							opacity = 1,
-							resize = true,
-							clip_shape = helpers.rrect(10),
-							widget = wibox.widget.imagebox,
-						},
-						{
-							id = "overlay",
-							bg = {
-								type = "linear",
-								from = { 0, 0 },
-								to = { 250, 0 },
-								stops = { { 0, beautiful.lighter .. "00" }, { 1, beautiful.lighter .. "00" } },
+							{
+								id = "art",
+								image = helpers.cropSurface(1.75, gears.surface.load_uncached(beautiful.songdefpicture)),
+								opacity = 1,
+								resize = true,
+								clip_shape = helpers.rrect(10),
+								widget = wibox.widget.imagebox,
 							},
-							shape = helpers.rrect(10),
-							widget = wibox.container.background,
+							{
+								id = "overlay",
+								bg = {
+									type = "linear",
+									from = { 0, 0 },
+									to = { 250, 0 },
+									stops = { { 0, beautiful.lighter .. "00" }, { 1, beautiful.lighter .. "00" } },
+								},
+								shape = helpers.rrect(10),
+								widget = wibox.container.background,
+							},
+							layout = wibox.layout.stack,
 						},
 						widget = wibox.container.background,
 						shape = helpers.rrect(10),
@@ -222,7 +225,7 @@ awful.screen.connect_for_each_screen(function(s)
 
 	playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _, player_name)
 		helpers.gc(music, "art"):set_image(helpers.cropSurface(1.75, gears.surface.load_uncached(album_path)))
-		helpers.gc(music, "art"):set_opacity(0.5)
+		helpers.gc(music, "art"):set_opacity(0.7)
 		helpers.gc(music, "overlay"):set_bg({
 			type = "linear",
 			from = { 0, 0 },

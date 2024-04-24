@@ -1,6 +1,6 @@
 local icon_cache = {}
 local getUser = os.getenv("USER")
-local t = "/home/" .. getUser .. "/.icons/Reversal-black-dark/"
+local t = "/home/" .. getUser .. "/.icons/Reversal-Black/"
 
 local custom = {
 	{

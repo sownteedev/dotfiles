@@ -33,6 +33,7 @@ ruled.client.connect_signal("request::rules", function()
 	ruled.client.append_rule({
 		id = "titlebars",
 		rule_any = { type = { "normal", "dialog" } },
+		except_any = { class = { "Ulauncher" } },
 		properties = { titlebars_enabled = true },
 	})
 

@@ -8,8 +8,8 @@ local helpers = require("helpers")
 local bluetooth = wibox.widget({
 	image = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-dis.png",
 	resize = true,
-	forced_height = 28,
-	forced_width = 28,
+	forced_height = 25,
+	forced_width = 25,
 	valign = "center",
 	widget = wibox.widget.imagebox,
 })
@@ -42,6 +42,8 @@ local wifi = wibox.widget({
 awesome.connect_signal("signal::network", function(_, _, quality)
 	if quality == 101 then
 		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/ethernet.png"
+		wifi.forced_height = 23
+		wifi.forced_width = 23
 	elseif quality >= 75 then
 		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi4.png"
 	elseif quality >= 50 then
@@ -65,7 +67,7 @@ local battery = wibox.widget({
 				max_value = 100,
 				value = 69,
 				id = "prog",
-				forced_height = -100,
+				forced_height = 0,
 				forced_width = 90,
 				paddings = 3,
 				border_color = beautiful.foreground .. "99",

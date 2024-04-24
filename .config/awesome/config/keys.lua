@@ -20,6 +20,9 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ alt }, "space", function()
 		Launcher:toggle()
 	end),
+	awful.key({ mod }, "space", function()
+		awful.spawn.easy_async_with_shell("ulauncher-toggle &")
+	end),
 	awful.key({ mod }, "e", function()
 		awful.spawn.easy_async_with_shell("thunar &")
 	end),
