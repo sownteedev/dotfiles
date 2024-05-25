@@ -72,10 +72,11 @@ echo "[*] Done."
 sleep 3 && clear
 
 # Enable touchpad
-echo "[*] Enable touchpad for laptop ..."
+echo "[*] Enable touchpad for laptop and set time to sleep ..."
 read -p "[*] Do you want? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	sudo cp ~/dotfiles/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
+	sudo cp ~/dotfiles/.local/other/30-dpms.conf /etc/X11/xorg.conf.d/30-dpms.conf
 	echo "[*] Done."
 else
 	echo "[*] Skipped."
@@ -150,7 +151,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 	# Other
 	echo "[*] Installing other ..."
-	sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget xdotool && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi inotify-tools ulauncher-git
+	sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget xdotool && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi inotify-tools ulauncher-git appimagelauncher-bin
 	echo "[*] Done."
 	clear
 	echo "[*] Install ibus"
@@ -190,7 +191,7 @@ sleep 3 && clear
 read -p "[*] Do you want to install Discord and get my custom? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	echo "[*] Installing Discord ..."
-	yay -S --noconfirm discord-electron betterdiscord-installer
+	yay -S --noconfirm discord_arch_electron betterdiscord-installer
 	echo "[*] Done."
 else
 	echo "[*] Discord installation skipped."
@@ -256,7 +257,7 @@ sleep 3 && clear
 read -p "[*] Do you want to install app for me(Recommend No, because it is for me)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop
-	yay -S --noconfirm notion-app-electron visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional
+	yay -S --noconfirm notion-app-electron visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional docker-desktop
 else
 	echo "[*] App for me skipped."
 fi

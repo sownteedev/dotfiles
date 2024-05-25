@@ -1,6 +1,6 @@
 Xcursor.theme: mountain
 Xcursor.size: 30
-Xft.dpi: 96
+! Xft.dpi: 96
 
 st.borderpx: 40
 st.alpha: 1.0

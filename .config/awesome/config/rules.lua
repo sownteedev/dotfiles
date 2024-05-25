@@ -39,13 +39,9 @@ ruled.client.connect_signal("request::rules", function()
 
 	ruled.client.append_rule({
 		rule_any = { class = { "St", "Alacritty" } },
-		properties = { screen = 1, tag = "1", switch_to_tags = true, width = 1920, height = 1080 },
-	})
-	ruled.client.append_rule({
-		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
 		properties = {
 			screen = 1,
-			tag = "2",
+			tag = "Terminal",
 			switch_to_tags = true,
 			callback = function(c)
 				awful.tag.setproperty(c.first_tag, "layout", awful.layout.suit.tile)
@@ -53,16 +49,27 @@ ruled.client.connect_signal("request::rules", function()
 		},
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "jetbrains-pycharm", "neovide" } },
-		properties = { screen = 1, tag = "3" },
+		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
+		properties = {
+			screen = 1,
+			tag = "Browser",
+			switch_to_tags = true,
+			callback = function(c)
+				awful.tag.setproperty(c.first_tag, "layout", awful.layout.suit.tile)
+			end,
+		},
+	})
+	ruled.client.append_rule({
+		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "jetbrains-pycharm", "Docker Desktop", "neovide" } },
+		properties = { screen = 1, tag = "Develop" },
 	})
 	ruled.client.append_rule({
 		rule_any = { class = { "discord", "Telegram", "Spotify", "Notion" } },
-		properties = { screen = 1, tag = "4" },
+		properties = { screen = 1, tag = "Media" },
 	})
 	ruled.client.append_rule({
 		rule_any = { class = { "Thunar", "vlc", "libreoffice-impress", "libreoffice-writer", "libreoffice-calc" } },
-		properties = { tag = "5", switch_to_tags = true },
+		properties = { tag = "Other", switch_to_tags = true },
 	})
 end)
 

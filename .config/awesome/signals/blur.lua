@@ -24,8 +24,7 @@ function blur_toggle()
 			local status = stdout:match("true")
 			if status then
 				awful.spawn.with_shell(
-					"picom --config ~/.config/awesome/signals/scripts/Picom/picom_no_opacity.conf -b &"
-				)
+					"picom --config ~/.config/awesome/signals/scripts/Picom/picom_no_opacity.conf -b &")
 				awful.spawn.with_shell("echo false > ~/.cache/blur")
 			else
 				awful.spawn.with_shell("picom --config ~/.config/awesome/signals/scripts/Picom/picom.conf -b &")

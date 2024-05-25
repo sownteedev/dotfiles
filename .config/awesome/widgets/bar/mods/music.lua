@@ -7,8 +7,8 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local art = wibox.widget({
-	image = helpers.cropSurface(6.7, gears.surface.load_uncached(beautiful.songdefpicture)),
-	opacity = 0.7,
+	image = helpers.cropSurface(6.6, gears.surface.load_uncached(beautiful.songdefpicture)),
+	opacity = 0.8,
 	forced_width = 330,
 	widget = wibox.widget.imagebox,
 })
@@ -23,7 +23,7 @@ local player = wibox.widget({
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	art.image = helpers.cropSurface(6.7, gears.surface.load_uncached(album_path))
+	art.image = helpers.cropSurface(6.6, gears.surface.load_uncached(album_path))
 	if player_name == "spotify" then
 		player.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/music/spotify.png"
 		player.forced_width = 25

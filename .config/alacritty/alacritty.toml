@@ -1,7 +1,7 @@
 import = [ '~/.config/alacritty/colors/one_light.toml' ]
 
 [font]
-size = 15
+size = 7.5
 
 [font.normal]
 family = "Liga SFMono Nerd Font"
@@ -25,8 +25,8 @@ x = 0
 y = 4
 
 [window.padding]
-x = 40
-y = 40
+x = 30
+y = 30
 
 [window]
 decorations = "full"

@@ -139,7 +139,7 @@ M.popup = awful.popup({
 	minimum_width = 300,
 	widget = wibox.container.background,
 	visible = false,
-	shape = helpers.rrect(10),
+	shape = helpers.rrect(5),
 	ontop = true,
 	bg = beautiful.background,
 })
@@ -356,22 +356,22 @@ function M:genIcons()
 					{
 						widget = wibox.widget.imagebox,
 						image = j.icon,
-						forced_height = 55,
-						forced_width = 55,
+						forced_height = 52,
+						forced_width = 52,
 						resize = true,
 					},
 					widget = wibox.container.margin,
-					top = 7,
+					top = 10,
 				},
 				{
 					{
-						font = beautiful.icon .. " 6",
+						font = beautiful.icon .. " 5",
 						markup = helpers.colorizeText("●", bg),
 						widget = wibox.widget.textbox,
 						halign = "center",
 					},
 					widget = wibox.container.margin,
-					top = -4,
+					top = -3,
 				},
 				layout = wibox.layout.fixed.vertical,
 			})

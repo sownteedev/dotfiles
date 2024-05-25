@@ -54,5 +54,3 @@ lspconfig.tsserver.setup({
 		},
 	},
 })
-require("tevim.plugins.configs.lspconfig").inlay_hints = false
-require("tevim.plugins.configs.lspconfig").inlay_hints = true

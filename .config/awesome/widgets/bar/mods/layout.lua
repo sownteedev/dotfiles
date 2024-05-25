@@ -40,7 +40,7 @@ local widget = {
 	{
 		{
 			layouts,
-			margins = { top = 10, bottom = 10, left = 15, right = 15 },
+			margins = { top = 10, bottom = 10, left = 10, right = 10 },
 			widget = wibox.container.margin,
 		},
 		bg = beautiful.lighter,

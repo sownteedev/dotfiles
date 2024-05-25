@@ -124,7 +124,7 @@ naughty.connect_signal("request::display", function(n)
 		{
 			{
 				markup = helpers.colorizeText("<span weight='normal'>" .. n.message .. "</span>", beautiful.foreground),
-				font = beautiful.sans .. " 15",
+				font = beautiful.sans .. " 13",
 				align = "left",
 				wrap = "char",
 				widget = wibox.widget.textbox,
@@ -144,7 +144,7 @@ naughty.connect_signal("request::display", function(n)
 	end
 	local app_name_n = wibox.widget({
 		markup = helpers.colorizeText(aname, beautiful.foreground .. "BF"),
-		font = beautiful.sans .. " 15",
+		font = beautiful.sans .. " 13",
 		align = "left",
 		widget = wibox.widget.textbox,
 	})
@@ -152,7 +152,7 @@ naughty.connect_signal("request::display", function(n)
 	local time_n = wibox.widget({
 		{
 			markup = helpers.colorizeText(os.date("%H:%M"), beautiful.foreground .. "BF"),
-			font = beautiful.sans .. " 15",
+			font = beautiful.sans .. " 13",
 			align = "right",
 			widget = wibox.widget.textbox,
 		},

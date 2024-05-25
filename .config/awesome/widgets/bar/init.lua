@@ -13,14 +13,25 @@ local layout = require(... .. ".mods.layout")
 local systray = require(... .. ".mods.systray")
 local notipower = require(... .. ".mods.notipower")
 
+local pos = "float"
+local a = nil
+local b = nil
+if pos == "float" then
+	a = beautiful.useless_gap * 2
+	b = 100
+elseif pos == "bottom" then
+	a = 0
+	b = 0
+end
+
 local function init(s)
 	local wibar = awful.wibar({
 		position = "bottom",
-		margins = { bottom = beautiful.useless_gap * 2 },
+		margins = { bottom = a },
 		shape = helpers.rrect(5),
 		height = 70,
 		ontop = false,
-		width = beautiful.width - 150,
+		width = beautiful.width - b,
 		screen = s,
 		widget = {
 			{

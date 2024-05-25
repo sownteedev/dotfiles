@@ -39,4 +39,11 @@ return {
 		"folke/which-key.nvim",
 		opts = overrides.whichkey,
 	},
+	{
+		'Wansmer/symbol-usage.nvim',
+		event = 'LspAttach',
+		config = function()
+			require("custom.configs.symbol-usage")
+		end
+	}
 }
