@@ -35,7 +35,7 @@ local notipower = wibox.widget({
 						end),
 					},
 				},
-				spacing = 20,
+				spacing = 15,
 				layout = wibox.layout.fixed.horizontal,
 			},
 			widget = wibox.container.margin,

@@ -17,10 +17,10 @@ local shift = "Shift"
 
 awful.keyboard.append_global_keybindings({
 	-- Apps
-	awful.key({ alt }, "space", function()
+	awful.key({ mod }, "space", function()
 		Launcher:toggle()
 	end),
-	awful.key({ mod }, "space", function()
+	awful.key({ alt }, "space", function()
 		awful.spawn.easy_async_with_shell("ulauncher-toggle &")
 	end),
 	awful.key({ mod }, "e", function()
@@ -98,13 +98,14 @@ awful.keyboard.append_global_keybindings({
 })
 
 local tagactive = {}
+local tagactive_index = {}
 local function update_tag_info()
-	for i, _ in ipairs(tagactive) do
-		tagactive[i] = nil
-	end
+	tagactive = {}
+	tagactive_index = {}
 	for i, t in ipairs(screen.primary.tags) do
 		if #t:clients() > 0 then
-			table.insert(tagactive, tonumber(i))
+			table.insert(tagactive, t.name)
+			table.insert(tagactive_index, i)
 		end
 	end
 end
@@ -116,15 +117,15 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod, shift }, "Tab", awful.tag.viewnext),
 	awful.key({ mod, ctrl }, "Tab", awful.tag.viewprev),
 	awful.key({ mod }, "Tab", function()
-		local current_tag = tonumber(awful.screen.focused().selected_tag.name)
-		local current_index = 0
+		local current_tag = awful.screen.focused().selected_tag.name
+		local current_index = nil
 		for i, tag in ipairs(tagactive) do
 			if tag == current_tag then
 				current_index = i
 				break
 			end
 		end
-		awful.screen.focused().tags[tagactive[current_index % #tagactive + 1]]:view_only()
+		awful.screen.focused().tags[tagactive_index[current_index % #tagactive + 1]]:view_only()
 	end),
 
 	-- Client

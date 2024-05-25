@@ -20,34 +20,25 @@ return function(s)
 		},
 		widget_template = {
 			{
-				id = "background_role",
-				widget = wibox.container.background,
-				forced_height = 15,
+				{
+					{
+						markup = '',
+						shape  = helpers.rrect(0),
+						id     = 'text_role',
+						widget = wibox.widget.textbox,
+					},
+					widget = wibox.container.margin,
+					left = 10,
+					right = 10,
+				},
+				valign        = 'center',
+				id            = 'background_role',
+				shape         = helpers.rrect(0),
+				widget        = wibox.container.background,
+				forced_height = 30,
 			},
 			widget = wibox.container.place,
-			create_callback = function(self, tag)
-				self.taganim = animation:new({
-					duration = 0.1,
-					easing = animation.easing.linear,
-					update = function(_, pos)
-						helpers.gc(self, "background_role"):set_forced_width(pos)
-					end,
-				})
-				self.update = function()
-					if tag.selected then
-						self.taganim:set(100)
-					elseif #tag:clients() > 0 then
-						self.taganim:set(70)
-					else
-						self.taganim:set(40)
-					end
-				end
-
-				self.update()
-			end,
-			update_callback = function(self)
-				self.update()
-			end,
+			valign = 'center',
 		},
 	})
 

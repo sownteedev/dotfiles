@@ -47,6 +47,14 @@ local custom = {
 		name = "libreoffice-impress",
 		to = "libreoffice-impress",
 	},
+	{
+		name = "Docker Desktop",
+		to = "docker",
+	},
+	{
+		name = "ptit-code-client",
+		to = "PTIT",
+	}
 }
 
 local function hasValue(str)

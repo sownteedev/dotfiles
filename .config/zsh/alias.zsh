@@ -26,9 +26,11 @@ alias mv='mv -i'
 
 alias dotpush='git add . && git commit -m ":>" && git push'
 alias syncfont='sudo fc-cache -fv'
+alias windows='sudo mount -t ntfs-3g -o ro /dev/nvme0n1p2 $HOME/Windows'
 alias startx='startx -- -keeptty >~/.xorg.log 2>&1'
 alias fetch="$HOME/.local/bin/fetch"
-alias spotifyd="spotifyd --config-path '$HOME/.config/spotifyd/spotifyd.conf' --no-daemon"
+alias trans="$HOME/.local/bin/trans"
+alias wal="$HOME/.local/bin/wal"
 
 bindkey -s ^n "nvims\n"
 bindkey -s ^o "startx\n"

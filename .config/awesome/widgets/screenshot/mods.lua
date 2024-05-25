@@ -64,7 +64,7 @@ function M.full(opts)
 	checkFolder()
 	local tmp_path = get_path()
 	gears.timer({
-		timeout = 1.25,
+		timeout = 1.5,
 		call_now = false,
 		autostart = true,
 		single_shot = true,
@@ -82,7 +82,7 @@ end
 function M.area(opts)
 	checkFolder()
 	local tmp_path = get_path()
-	awful.spawn.easy_async_with_shell('sleep 1.25 && maim --select "' .. tmp_path .. '" &', function()
+	awful.spawn.easy_async_with_shell('sleep 1.5 && maim --select "' .. tmp_path .. '" &', function()
 		awesome.emit_signal("screenshot::done")
 		if with_defaults(opts).notify then
 			M.do_notify(tmp_path)

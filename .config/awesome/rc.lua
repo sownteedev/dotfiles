@@ -1,6 +1,5 @@
 pcall(require, "luarocks.loader")
 require("awful.autofocus")
-
 require("beautiful").init(require("gears").filesystem.get_configuration_dir() .. "themes/theme.lua")
 require("config")
 require("signals")
