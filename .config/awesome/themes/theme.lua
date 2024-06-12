@@ -86,6 +86,7 @@ switcher.settings.client_opacity_value               = 0.3
 switcher.settings.client_opacity_value_selected      = 1
 
 -- Titlebar --
+theme.titlebar_bg                                    = theme.lighter
 theme.titlebar_bg_normal                             = theme.lighter
 theme.titlebar_bg_focus                              = theme.lighter
 

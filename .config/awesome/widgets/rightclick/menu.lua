@@ -148,8 +148,8 @@ function menu.menu(widgets, width)
 		type = "menu",
 		visible = false,
 		ontop = true,
-		minimum_width = width or 230,
-		maximum_width = width or 230,
+		minimum_width = width or 210,
+		maximum_width = width or 210,
 		bg = beautiful.darker,
 		shape = helpers.rrect(5),
 		widget = wibox.layout.fixed.vertical,
@@ -226,7 +226,7 @@ function menu.sub_menu_button(args)
 				{
 					icon,
 					{
-						font = beautiful.sans .. " 14",
+						font = beautiful.sans .. " 12",
 						markup = args.text,
 						widget = wibox.widget.textbox,
 						halign = "start",
@@ -236,7 +236,7 @@ function menu.sub_menu_button(args)
 				},
 				nil,
 				{
-					font = beautiful.icon .. " 14",
+					font = beautiful.icon .. " 12",
 					markup = "󰅂",
 					widget = wibox.widget.textbox,
 					halign = "left",
@@ -286,7 +286,7 @@ function menu.button(args)
 	end
 
 	local text_widget = wibox.widget({
-		font = beautiful.sans .. " 14",
+		font = beautiful.sans .. " 12",
 		markup = args.text,
 		widget = wibox.widget.textbox,
 		halign = "start",
@@ -302,11 +302,9 @@ function menu.button(args)
 			},
 			widget = wibox.container.margin,
 			left = 30,
-			top = 15,
-			bottom = 15,
 		},
 		bg = beautiful.darker,
-		forced_height = 50,
+		forced_height = 45,
 		buttons = {
 			awful.button({}, 1, function()
 				args.on_press(menu, text_widget)
@@ -334,7 +332,7 @@ function menu.separator()
 			widget = wibox.widget.separator,
 			forced_height = 2,
 			orientation = "horizontal",
-			color = beautiful.foreground .. "29",
+			color = beautiful.foreground .. "55",
 		},
 	})
 end
