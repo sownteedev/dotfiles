@@ -85,7 +85,11 @@ awful.keyboard.append_global_keybindings({
 		awful.spawn.easy_async_with_shell("~/.local/bin/colorpicker &")
 	end),
 	awful.key({ alt }, "F4", function()
-		exit:toggle()
+		if client.focus then
+			client.focus:kill()
+		else
+			exit:toggle()
+		end
 	end),
 	awful.key({ mod }, "l", function()
 		lock:open()
@@ -123,6 +127,8 @@ awful.keyboard.append_global_keybindings({
 			if tag == current_tag then
 				current_index = i
 				break
+			else
+				current_index = #tagactive
 			end
 		end
 		awful.screen.focused().tags[tagactive_index[current_index % #tagactive + 1]]:view_only()
@@ -181,9 +187,6 @@ client.connect_signal("request::default_keybindings", function()
 			c:raise()
 		end),
 		awful.key({ mod, shift }, "f", awful.client.floating.toggle),
-		awful.key({ mod, shift }, "q", function(c)
-			c:kill()
-		end),
 	})
 end)
 

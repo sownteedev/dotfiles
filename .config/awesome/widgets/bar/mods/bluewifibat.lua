@@ -92,7 +92,7 @@ local battery = wibox.widget({
 			},
 			widget = wibox.container.place,
 		},
-		spacing = 5,
+		spacing = 3,
 		layout = wibox.layout.fixed.horizontal,
 	},
 	{

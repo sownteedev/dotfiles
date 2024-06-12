@@ -342,14 +342,15 @@ function M:genIcons()
 		if j.pinned == true or j.count > 0 then
 			local minimized = getMinimized(j.clients)
 			local bg = beautiful.darker
+			if minimized > 0 then
+				bg = beautiful.yellow
+			end
 			if client.focus then
 				if client.focus.class:lower() == j.class then
 					bg = beautiful.foreground
 				elseif j.count > 0 then
-					bg = beautiful.foreground .. "80"
+					bg = beautiful.foreground .. "AA"
 				end
-			elseif minimized > 0 then
-				bg = beautiful.foreground .. "80"
 			end
 			local widget = wibox.widget({
 				{
@@ -365,7 +366,7 @@ function M:genIcons()
 				},
 				{
 					{
-						font = beautiful.icon .. " 5",
+						font = beautiful.icon .. " 6",
 						markup = helpers.colorizeText("●", bg),
 						widget = wibox.widget.textbox,
 						halign = "center",
@@ -375,11 +376,9 @@ function M:genIcons()
 				},
 				layout = wibox.layout.fixed.vertical,
 			})
-			if j.count > 0 then
-				for i = 1, j.count - 1 do
-					widget.children[2].widget.markup =
-						helpers.colorizeText(widget.children[2].widget.markup .. " ●", bg)
-				end
+			for i = 1, j.count - 1 do
+				widget.children[2].widget.markup =
+					helpers.colorizeText(widget.children[2].widget.markup .. " ●", bg)
 			end
 			widget:buttons(gears.table.join(
 				awful.button({}, 1, function()
