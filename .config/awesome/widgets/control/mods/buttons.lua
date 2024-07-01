@@ -133,7 +133,7 @@ local widget = wibox.widget({
 		createbutton(
 			"awesome-client 'dnd_toggle()' &",
 			"",
-			"󰍶 ",
+			"󱏧 ",
 			"Disturb",
 			"Don't Disturb Me",
 			"Disturb Me Please",
@@ -147,7 +147,7 @@ local widget = wibox.widget({
 			"awesome-client 'redshift_toggle()' &",
 			"",
 			"󰛨 ",
-			"Redshift",
+			"Night Light",
 			"Your Eyes Are Safe",
 			"Monitor Can Steal Your Eyes",
 			"redshift"

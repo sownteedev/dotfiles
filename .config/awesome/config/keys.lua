@@ -214,6 +214,7 @@ awful.mouse.append_global_mousebindings({
 		awesome.emit_signal("close::moment")
 		awesome.emit_signal("close::control")
 		awesome.emit_signal("close::music")
+		awesome.emit_signal("close::preview")
 	end),
 	awful.button({}, 3, function()
 		Menu.desktop:toggle()
@@ -227,4 +228,5 @@ client.connect_signal("button::press", function()
 	awesome.emit_signal("close::moment")
 	awesome.emit_signal("close::control")
 	awesome.emit_signal("close::music")
+	awesome.emit_signal("close::preview")
 end)

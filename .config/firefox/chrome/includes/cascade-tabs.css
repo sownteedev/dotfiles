@@ -30,6 +30,7 @@
 /* adaptive tab width */
 .tabbrowser-tab[selected][fadein]:not([pinned]) {
 	max-width: var(--uc-active-tab-width) !important;
+	font-style: italic !important;
 }
 
 .tabbrowser-tab[fadein]:not([selected]):not([pinned]) {

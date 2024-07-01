@@ -30,9 +30,8 @@ theme.yellow                                         = colors.yellow
 
 theme.wallpaper                                      = colors.wallpaper
 
--- Get resolution --
-theme.width                                          = awful.screen.focused().geometry.width
-theme.height                                         = awful.screen.focused().geometry.height
+theme.width                                          = 2560
+theme.height                                         = 1600
 theme.useless_gap                                    = 10
 
 theme.user                                           = os.getenv("USER")
@@ -95,5 +94,10 @@ theme.layout_floating                                = gears.color.recolor_image
 	theme.foreground)
 theme.layout_tile                                    = gears.color.recolor_image(themes_path .. "assets/tile.png",
 	theme.foreground)
+
+theme.snap_bg                                        = theme.foreground
+theme.snap_shape                                     = helpers.rrect(10)
+theme.snapper_gap                                    = 0
+theme.snap_border_width                              = 2
 
 return theme

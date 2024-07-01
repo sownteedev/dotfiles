@@ -145,7 +145,6 @@ awful.screen.connect_for_each_screen(function(s)
 												id = "songname",
 												font = beautiful.sans .. " Medium 20",
 												markup = "",
-												forced_height = 80,
 												widget = wibox.widget.textbox,
 												valign = "top",
 											},
