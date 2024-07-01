@@ -3,11 +3,12 @@ local wibox = require("wibox")
 local helpers = require("helpers")
 local beautiful = require("beautiful")
 local animation = require("modules.animation")
+local Launcher = require("widgets.launcher")
 
 return function(s)
 	local taglist = awful.widget.taglist({
 		layout = {
-			spacing = 10,
+			spacing = 5,
 			layout = wibox.layout.fixed.horizontal,
 		},
 		style = { shape = helpers.rrect(5) },
@@ -16,6 +17,10 @@ return function(s)
 		buttons = {
 			awful.button({}, 1, function(t)
 				t:view_only()
+			end),
+			awful.button({}, 3, function()
+				Launcher:close()
+				awesome.emit_signal("widget::preview")
 			end),
 		},
 		widget_template = {
@@ -50,8 +55,8 @@ return function(s)
 					layout = wibox.layout.fixed.horizontal,
 				},
 				widget = wibox.container.margin,
-				left = 20,
-				right = 20,
+				left = 15,
+				right = 15,
 			},
 			widget = wibox.container.background,
 			bg = beautiful.lighter,

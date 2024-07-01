@@ -102,6 +102,11 @@ local function firefox(theme)
 	]])
 end
 
+local function spotify(theme)
+	awful.spawn.with_shell([[
+		spicetify config color_scheme ]] .. theme .. [[ && spicetify apply &&
+	]])
+end
 function applyTheme(theme)
 	term(theme)
 	awesome(theme)
@@ -109,10 +114,8 @@ function applyTheme(theme)
 	discord(theme)
 	gtk(theme)
 	firefox(theme)
+	spotify(theme)
 	backup()
-	awful.spawn.with_shell([[
-		spicetify config color_scheme ]] .. theme .. [[ && spicetify apply &&
-	]])
 	awful.spawn.easy_async_with_shell("ls -1 /run/user/1000/ | grep nvim", function(stdout)
 		for line in stdout:gmatch("[^\n]+") do
 			awful.spawn.easy_async_with_shell(
@@ -133,12 +136,10 @@ function darkmode()
 		status = status:gsub("\n", "")
 		if status == "true" then
 			awful.spawn.with_shell(
-				[[bash -c "awesome-client 'applyTheme(\"yoru\")' && echo false > ~/.cache/darkmode"]]
-			)
+				[[bash -c "awesome-client 'applyTheme(\"yoru\")' && echo false > ~/.cache/darkmode"]])
 		else
 			awful.spawn.with_shell(
-				[[bash -c "awesome-client 'applyTheme(\"one_light\")' && echo true > ~/.cache/darkmode"]]
-			)
+				[[bash -c "awesome-client 'applyTheme(\"one_light\")' && echo true > ~/.cache/darkmode"]])
 		end
 	end)
 end

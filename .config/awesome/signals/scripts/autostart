@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-while pgrep picom > /dev/null; do
-	pkill picom
-done
-picom --config ~/.config/awesome/signals/scripts/Picom/picom_no_opacity.conf &
-
-xrdb -merge ~/.Xresources &
-xss-lock awesome-client 'awesome.emit_signal("toggle::lock")' &

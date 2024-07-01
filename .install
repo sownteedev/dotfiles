@@ -151,7 +151,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 
 	# Other
 	echo "[*] Installing other ..."
-	sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget xdotool && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi inotify-tools
+	sudo pacman -S --noconfirm devtools xsettingsd gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget xdotool && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi inotify-tools
 	echo "[*] Done."
 	clear
 	echo "[*] Install ibus"
@@ -177,7 +177,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 		echo "[*] Installing Spotify ..."
 		yay -S spotify --noconfirm
 	fi
-	yay -S --noconfirm spicetify-cli
+	yay -S --noconfirm spicetify-cli-git
 	sudo chmod a+wr /opt/spotify
 	sudo chmod a+wr /opt/spotify/Apps -R
 	spicetify config current_theme Tetify color_scheme one_light
@@ -283,7 +283,7 @@ echo "[*] Done."
 sleep 3 && clear
 
 # App for me
-read -p "[*] Do you want to install app for me(Recommend No, because it is for me)? (y/n): " choice
+read -p "[*] Do you want to install app(Recommend No, because it is for me)? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop easyeffects
 	yay -S --noconfirm notion-app-electron visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional docker-desktop ulauncher-git appimagelauncher-bin

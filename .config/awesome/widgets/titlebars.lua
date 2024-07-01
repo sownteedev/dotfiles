@@ -7,7 +7,7 @@ local getIcon = require("modules.getIcon")
 
 client.connect_signal("request::titlebars", function(c)
 	local top_titlebar = awful.titlebar(c, {
-		size = 50,
+		size = 55,
 	})
 
 	local close = wibox.widget({

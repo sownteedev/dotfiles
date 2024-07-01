@@ -12,6 +12,7 @@ local timedate = require(... .. ".mods.time")
 local layout = require(... .. ".mods.layout")
 local systray = require(... .. ".mods.systray")
 local notipower = require(... .. ".mods.notipower")
+require(... .. ".mods.preview")
 
 local pos = "float"
 local a = nil
