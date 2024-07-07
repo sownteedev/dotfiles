@@ -1,5 +1,4 @@
 local awful = require("awful")
-local naughty = require("naughty")
 
 local function emit_dnd_status()
 	awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/dnd'", function(stdout)
@@ -7,8 +6,8 @@ local function emit_dnd_status()
 		awesome.emit_signal("signal::dnd", status)
 	end)
 end
-
 emit_dnd_status()
+
 local subscribe = [[bash -c 'while (inotifywait -e modify ~/.cache/dnd -qq) do echo; done']]
 awful.spawn.easy_async({ "pkill", "--full", "--uid", os.getenv("USER"), "^inotifywait" }, function()
 	awful.spawn.with_line_callback(subscribe, {

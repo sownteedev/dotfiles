@@ -11,13 +11,11 @@ local timer = gears.timer
 local client = client
 awful.client = require("awful.client")
 
-local naughty = require("naughty")
 local string = string
-local tostring = tostring
-local tonumber = tonumber
 local debug = debug
 local pairs = pairs
 local unpack = unpack or table.unpack
+local getIcon = require("modules.getIcon")
 
 local surface = cairo.ImageSurface(cairo.Format.RGB24, 20, 20)
 local cr = cairo.Context(surface)
@@ -165,9 +163,9 @@ end
 
 function _M.createPreviewText(client)
 	if client.class then
-		return " - " .. client.class
+		return "  " .. client.class
 	else
-		return " - " .. client.name
+		return "  " .. client.name
 	end
 end
 
@@ -227,7 +225,7 @@ function _M.cycle(dir)
 	-- Switch to next client
 	_M.altTabIndex = _M.altTabIndex + dir
 	if _M.altTabIndex > #_M.altTabTable then
-		_M.altTabIndex = 1 -- wrap around
+		_M.altTabIndex = 1         -- wrap around
 	elseif _M.altTabIndex < 1 then
 		_M.altTabIndex = #_M.altTabTable -- wrap around
 	end
@@ -261,8 +259,8 @@ function _M.preview()
 	-- Make the wibox the right size, based on the number of clients
 	local n = math.max(7, #_M.altTabTable)
 	local W = screen[mouse.screen].geometry.width -- + 2 * _M.preview_wbox.border_width
-	local w = W / n -- widget width
-	local h = w * 0.75 -- widget height
+	local w = W / n                            -- widget width
+	local h = w * 0.75                         -- widget height
 	local textboxHeight = w * 0.125
 
 	local x = screen[mouse.screen].geometry.x - _M.preview_wbox.border_width
@@ -333,7 +331,7 @@ function _M.preview()
 		_M.preview_widgets[i].draw = function(preview_widget, preview_wbox, cr, width, height)
 			if width ~= 0 and height ~= 0 then
 				local a = 0.8
-				local overlay = 0.6
+				local overlay = 0.5
 				local fontSize = smallFont
 				if c == _M.altTabTable[_M.altTabIndex].client then
 					a = 0.9
@@ -344,31 +342,24 @@ function _M.preview()
 				local sx, sy, tx, ty
 
 				-- Icons
-				local icon
-				if c.icon == nil then
-					icon = gears.surface(gears.surface.load(_M.noicon))
-				else
-					icon = gears.surface(c.icon)
-				end
-
+				local icon = gears.surface(getIcon(c, c.name, c.class))
 				local iconboxWidth = 0.9 * textboxHeight
 				local iconboxHeight = iconboxWidth
 
 				-- Titles
-				cr:select_font_face(unpack(_M.settings.preview_box_title_font))
-				cr:set_font_face(cr:get_font_face())
-				cr:set_font_size(fontSize)
-
-				text = _M.createPreviewText(c)
-				textWidth = cr:text_extents(text).width
-				textHeight = cr:text_extents(text).height
-
+				-- cr:select_font_face(unpack(_M.settings.preview_box_title_font))
+				-- cr:set_font_face(cr:get_font_face())
+				-- cr:set_font_size(fontSize)
+				--
+				-- text = _M.createPreviewText(c)
+				-- textWidth = cr:text_extents(text).width
+				-- textHeight = cr:text_extents(text).height
+				--
 				local titleboxWidth = textWidth + iconboxWidth
-				local titleboxHeight = textboxHeight
 
 				-- Draw icons
 				tx = (w - titleboxWidth) / 2
-				ty = h
+				ty = h - 20
 				sx = iconboxWidth / icon.width
 				sy = iconboxHeight / icon.height
 
@@ -380,13 +371,13 @@ function _M.preview()
 				cr:translate(-tx, -ty)
 
 				-- Draw titles
-				tx = tx + iconboxWidth
-				ty = h + (textboxHeight + textHeight) / 2
-
-				cr:set_source_rgba(unpack(_M.settings.preview_box_title_color))
-				cr:move_to(tx, ty)
-				cr:show_text(text)
-				cr:stroke()
+				-- tx = tx + iconboxWidth
+				-- ty = h + (textboxHeight + textHeight) / 2 - 15
+				--
+				-- cr:set_source_rgba(unpack(_M.settings.preview_box_title_color))
+				-- cr:move_to(tx, ty)
+				-- cr:show_text(text)
+				-- cr:stroke()
 
 				-- Draw previews
 				local cg = c:geometry()

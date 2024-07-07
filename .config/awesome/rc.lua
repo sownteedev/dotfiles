@@ -17,3 +17,5 @@ require("gears").timer({
 ---@diagnostic disable: param-type-mismatch
 collectgarbage("setpause", 110)
 collectgarbage("setstepmul", 1000)
+
+awesome.emit_signal("live::reload")

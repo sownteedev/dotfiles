@@ -418,4 +418,21 @@ helpers.makeGradient = function(color1, color2, trans, height, width)
 	}
 end
 
+helpers.live = function(w, properties)
+	local widget = w()
+
+	for property, arg in pairs(properties) do
+		widget[property] = beautiful[arg]
+	end
+
+	awesome.connect_signal("live::reload", function()
+		for property, arg in pairs(properties) do
+			widget[property] = beautiful[arg]
+		end
+		widget:emit_signal("widget::redraw_needed")
+	end)
+
+	return widget
+end
+
 return helpers

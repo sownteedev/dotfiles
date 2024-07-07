@@ -127,7 +127,7 @@ function applyTheme(theme)
 				.. [[")<CR>']]
 			)
 		end
-		awful.spawn.easy_async_with_shell("awesome-client 'awesome.restart()'")
+		-- awful.spawn.easy_async_with_shell("awesome-client 'awesome.restart()'")
 	end)
 end
 

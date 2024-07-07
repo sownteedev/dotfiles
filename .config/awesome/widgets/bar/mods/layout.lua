@@ -40,11 +40,10 @@ local widget = {
 	{
 		{
 			layouts,
-			margins = 10,
+			margins = 12,
 			widget = wibox.container.margin,
 		},
 		bg = beautiful.lighter,
-		forced_height = 0,
 		shape = helpers.rrect(5),
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,

@@ -9,7 +9,6 @@ local playerctl = pctl.lib()
 local art = wibox.widget({
 	image = helpers.cropSurface(6.6, gears.surface.load_uncached(beautiful.songdefpicture)),
 	opacity = 0.8,
-	forced_width = 330,
 	widget = wibox.widget.imagebox,
 })
 
@@ -23,7 +22,11 @@ local player = wibox.widget({
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, album, new, player_name)
-	art.image = helpers.cropSurface(6.6, gears.surface.load_uncached(album_path))
+	awful.spawn.easy_async_with_shell(
+		"convert " .. album_path .. " -filter Gaussian -blur 0x3 ~/.cache/awesome/songdefpictures.jpg &", function()
+			local blurwall = gears.filesystem.get_cache_dir() .. "songdefpictures.jpg"
+			art.image = helpers.cropSurface(6.6, gears.surface.load_uncached(blurwall))
+		end)
 	if player_name == "spotify" then
 		player.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/music/spotify.png"
 		player.forced_width = 25
@@ -35,7 +38,7 @@ end)
 
 local next = wibox.widget({
 	font = beautiful.icon .. " 18",
-	markup = "󰒭",
+	markup = helpers.colorizeText("󰒭", beautiful.fg),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -46,7 +49,7 @@ local next = wibox.widget({
 
 local prev = wibox.widget({
 	font = beautiful.icon .. " 18",
-	markup = "󰒮",
+	markup = helpers.colorizeText("󰒮", beautiful.fg),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -56,7 +59,7 @@ local prev = wibox.widget({
 })
 local play = wibox.widget({
 	font = beautiful.icon .. " 18",
-	markup = "󰐊",
+	markup = helpers.colorizeText("󰐊", beautiful.fg),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -66,22 +69,13 @@ local play = wibox.widget({
 })
 
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
-	play.markup = playing and "󰏤" or "󰐊"
+	play.markup = playing and helpers.colorizeText("󰏤", beautiful.fg) or helpers.colorizeText("󰐊", beautiful.fg)
 end)
 
 local finalwidget = wibox.widget({
 	{
 		{
 			art,
-			{
-				bg = {
-					type = "linear",
-					from = { 0, 0 },
-					to = { 250, 0 },
-					stops = { { 0, beautiful.background .. "30" }, { 1, beautiful.background .. "30" } },
-				},
-				widget = wibox.container.background,
-			},
 			{
 				{
 					player,

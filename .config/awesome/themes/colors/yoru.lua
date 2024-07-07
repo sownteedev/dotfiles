@@ -11,4 +11,5 @@ return {
 	yellow = "#ecd28b",
 
 	wallpaper = "~/.walls/mountains.jpeg",
+	type = "dark",
 }

@@ -9,6 +9,7 @@ function brightness_emit()
 		end
 	)
 end
+
 brightness_emit()
 
 local function brightnesss()
@@ -17,8 +18,8 @@ local function brightnesss()
 		awesome.emit_signal("signal::brightnesss", status)
 	end)
 end
-
 brightnesss()
+
 local subscribe = [[bash -c 'while (inotifywait -e modify ~/.cache/brightness -qq) do echo; done']]
 awful.spawn.easy_async({ "pkill", "--full", "--uid", os.getenv("USER"), "^inotifywait" }, function()
 	awful.spawn.with_line_callback(subscribe, {

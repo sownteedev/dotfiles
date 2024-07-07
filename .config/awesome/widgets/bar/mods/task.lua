@@ -72,8 +72,28 @@ local M = {
 		{
 			count = 0,
 			pinned = true,
-			icon = getIcon(nil, "Notion", "Notion"),
+			icon = getIcon(nil, "Docker Desktop", "Docker Desktop"),
 			id = 7,
+			clients = {},
+			class = "docker desktop",
+			exec = "docker desktop",
+			name = "Containers - Docker Desktop",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "postman", "postman"),
+			id = 8,
+			clients = {},
+			class = "postman",
+			exec = "postman",
+			name = "Postman",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = getIcon(nil, "Notion", "Notion"),
+			id = 9,
 			clients = {},
 			class = "notion",
 			exec = "notion-app",
@@ -83,7 +103,7 @@ local M = {
 			count = 0,
 			pinned = true,
 			icon = getIcon(nil, "TelegramDesktop", "TelegramDesktop"),
-			id = 8,
+			id = 10,
 			clients = {},
 			class = "telegramdesktop",
 			exec = "telegram-desktop",
@@ -93,7 +113,7 @@ local M = {
 			count = 0,
 			pinned = true,
 			icon = getIcon(nil, "discord", "discord"),
-			id = 9,
+			id = 11,
 			clients = {},
 			class = "discord",
 			exec = "discord",
@@ -103,7 +123,7 @@ local M = {
 			count = 0,
 			pinned = true,
 			icon = getIcon(nil, "Spotify", "Spotify"),
-			id = 10,
+			id = 12,
 			clients = {},
 			class = "spotify",
 			exec = "spotify",
@@ -118,6 +138,8 @@ local M = {
 		"jetbrains-idea",
 		"jetbrains-webstorm",
 		"jetbrains-pycharm",
+		"docker desktop",
+		"postman",
 		"notion",
 		"telegramdesktop",
 		"discord",
@@ -196,12 +218,11 @@ function M:showMenu(data)
 					{
 						markup = j.name,
 						font = beautiful.sans .. " 11",
-						height = 16,
 						widget = wibox.widget.textbox,
 					},
-					widget = wibox.container.constraint,
 					width = 180,
 					height = 16,
+					widget = wibox.container.constraint,
 				},
 				nil,
 				{
@@ -229,21 +250,16 @@ function M:showMenu(data)
 					end
 					self.popup.visible = false
 				end),
-				awful.button({}, 3, function()
-					if client.focus and client.focus.class:lower() == j.class then
-						j.minimized = true
-					end
-					self.popup.visible = false
-				end),
 			},
+			bg = beautiful.background,
 			widget = wibox.container.background,
-			bg = j.minimized and beautiful.background,
 		})
 		M.popupWidget:connect_signal("mouse::leave", function()
 			self.popup.visible = false
 		end)
 		self.popupWidget:add(widget)
 	end
+
 	local addNew = wibox.widget({
 		{
 			{
@@ -251,16 +267,17 @@ function M:showMenu(data)
 				font = beautiful.sans .. " 11",
 				widget = wibox.widget.textbox,
 			},
-			widget = wibox.container.constraint,
 			width = 180,
+			widget = wibox.container.constraint,
 		},
 		buttons = {
 			awful.button({}, 1, function()
 				awful.spawn.easy_async_with_shell(data.exec .. " &")
+				self.popup.visible = false
 			end),
 		},
-		widget = wibox.container.background,
 		bg = beautiful.background,
+		widget = wibox.container.background,
 	})
 	local closeAll = wibox.widget({
 		{
@@ -273,10 +290,11 @@ function M:showMenu(data)
 				for i, j in ipairs(clients) do
 					j:kill()
 				end
+				self.popup.visible = false
 			end),
 		},
-		widget = wibox.container.background,
 		bg = beautiful.background,
+		widget = wibox.container.background,
 	})
 	self.popupWidget:add(addNew)
 	self.popupWidget:add(closeAll)
@@ -395,12 +413,18 @@ function M:genIcons()
 							client.focus = j.clients[j.count]
 							awful.client.movetotag(mouse.screen.selected_tag, j.clients[j.count])
 						end
-					else
+					elseif j.count > 1 and self.popup.visible == false then
 						self:showMenu(j)
+					else
+						self.popup.visible = false
 					end
 				end),
 				awful.button({}, 3, function()
-					self:showMenu(j)
+					if self.popup.visible == false then
+						self:showMenu(j)
+					else
+						self.popup.visible = false
+					end
 				end)
 			))
 			self.widget:add(widget)

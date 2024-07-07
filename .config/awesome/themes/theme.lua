@@ -2,33 +2,40 @@
 local colorscheme = "one_light"
 require("themes.toggle")
 ---------------------------------------------------------------------
-local switcher                                       = require("modules.awesome-switcher")
-local awful                                          = require("awful")
-local gears                                          = require("gears")
-local gfs                                            = require("gears.filesystem")
-local helpers                                        = require("helpers")
-local themes_path                                    = gfs.get_configuration_dir() .. "themes/"
+local switcher    = require("modules.awesome-switcher")
+local gears       = require("gears")
+local gfs         = require("gears.filesystem")
+local helpers     = require("helpers")
+local themes_path = gfs.get_configuration_dir() .. "themes/"
 
-local theme                                          = {}
+local theme       = {}
 
-theme.font                                           = "SF Pro Display 15"
-theme.sans                                           = "SF Pro Display"
-theme.icon                                           = "Material Design Icons"
+theme.font        = "SF Pro Display 15"
+theme.sans        = "SF Pro Display"
+theme.icon        = "Material Design Icons"
 
 -- colors --
-local colors                                         = require("themes.colors." .. colorscheme)
-theme.background                                     = colors.background
-theme.darker                                         = colors.darker
-theme.lighter                                        = colors.lighter
-theme.lighter1                                       = colors.lighter1
-theme.foreground                                     = colors.foreground
 
-theme.red                                            = colors.red
-theme.green                                          = colors.green
-theme.blue                                           = colors.blue
-theme.yellow                                         = colors.yellow
+local colors      = require("themes.colors." .. colorscheme)
+theme.background  = colors.background
+theme.darker      = colors.darker
+theme.lighter     = colors.lighter
+theme.lighter1    = colors.lighter1
+theme.foreground  = colors.foreground
 
-theme.wallpaper                                      = colors.wallpaper
+theme.red         = colors.red
+theme.green       = colors.green
+theme.blue        = colors.blue
+theme.yellow      = colors.yellow
+
+theme.wallpaper   = colors.wallpaper
+theme.type        = colors.type
+
+if theme.type == "dark" then
+	theme.fg = helpers.blend(theme.background, theme.foreground, 0.1)
+else
+	theme.fg = helpers.blend(theme.background, theme.foreground, 0.9)
+end
 
 theme.width                                          = 2560
 theme.height                                         = 1600
@@ -79,15 +86,10 @@ switcher.settings.preview_box_fps                    = 60
 switcher.settings.preview_box_delay                  = 0
 switcher.settings.preview_box_title_font             = { "SF Pro Display" }
 switcher.settings.preview_box_title_font_size_factor = 0.8
-switcher.settings.preview_box_title_color            = { 255, 255, 255, 1 }
+switcher.settings.preview_box_title_color            = { 0, 0, 0, 1 }
 switcher.settings.client_opacity                     = true
 switcher.settings.client_opacity_value               = 0.3
 switcher.settings.client_opacity_value_selected      = 1
-
--- Titlebar --
-theme.titlebar_bg                                    = theme.lighter
-theme.titlebar_bg_normal                             = theme.lighter
-theme.titlebar_bg_focus                              = theme.lighter
 
 -- Icon layout --
 theme.layout_floating                                = gears.color.recolor_image(themes_path .. "assets/floating.png",
@@ -98,6 +100,6 @@ theme.layout_tile                                    = gears.color.recolor_image
 theme.snap_bg                                        = theme.foreground
 theme.snap_shape                                     = helpers.rrect(10)
 theme.snapper_gap                                    = 0
-theme.snap_border_width                              = 2
+theme.snap_border_width                              = 3
 
 return theme

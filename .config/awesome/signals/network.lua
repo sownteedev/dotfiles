@@ -30,6 +30,7 @@ local function emit_network_status()
 		end
 	)
 end
+emit_network_status()
 
 gears.timer({
 	timeout = 5,

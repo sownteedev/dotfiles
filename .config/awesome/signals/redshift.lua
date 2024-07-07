@@ -6,8 +6,8 @@ local function light_emit()
 		awesome.emit_signal("signal::redshift", status)
 	end)
 end
-
 light_emit()
+
 local subscribe = [[bash -c 'while (inotifywait -e modify ~/.cache/redshift -qq) do echo; done']]
 awful.spawn.easy_async({ "pkill", "--full", "--uid", os.getenv("USER"), "^inotifywait" }, function()
 	awful.spawn.with_line_callback(subscribe, {

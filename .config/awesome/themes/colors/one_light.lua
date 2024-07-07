@@ -11,4 +11,5 @@ return {
 	yellow = "#c18401",
 
 	wallpaper = "~/.walls/dawn.png",
+	type = "light",
 }

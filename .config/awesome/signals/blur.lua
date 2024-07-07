@@ -6,8 +6,8 @@ local function blur_emit()
 		awesome.emit_signal("signal::blur", status)
 	end)
 end
-
 blur_emit()
+
 local subscribe = [[bash -c 'while (inotifywait -e modify ~/.cache/blur -qq) do echo; done']]
 awful.spawn.easy_async({ "pkill", "--full", "--uid", os.getenv("USER"), "^inotifywait" }, function()
 	awful.spawn.with_line_callback(subscribe, {
@@ -24,7 +24,8 @@ function blur_toggle()
 			local status = stdout:match("true")
 			if status then
 				awful.spawn.with_shell(
-					"picom --config ~/.config/awesome/signals/scripts/Picom/picom_no_opacity.conf -b &")
+					"picom --config ~/.config/awesome/signals/scripts/Picom/picom_no_opacity.conf -b &"
+				)
 				awful.spawn.with_shell("echo false > ~/.cache/blur")
 			else
 				awful.spawn.with_shell("picom --config ~/.config/awesome/signals/scripts/Picom/picom.conf -b &")
