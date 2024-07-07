@@ -38,7 +38,6 @@ local function init(s)
 			{
 				{
 					profile,
-					layout,
 					tags(s),
 					task.widget,
 					spacing = 15,
@@ -50,17 +49,20 @@ local function init(s)
 					music,
 					bluewifibat,
 					timedate,
+					layout,
 					notipower,
 					layout = wibox.layout.fixed.horizontal,
 					spacing = 15,
 				},
 				layout = wibox.layout.align.horizontal,
 			},
-			widget = wibox.container.background,
 			bg = beautiful.background,
 			shape = helpers.rrect(5),
 			shape_border_width = beautiful.border_width_custom,
 			shape_border_color = beautiful.border_color,
+			widget = helpers.live(wibox.container.background, {
+				bg = "background",
+			}),
 		},
 	})
 	return wibar

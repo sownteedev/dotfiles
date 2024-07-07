@@ -22,6 +22,8 @@ local function hovercursor(widget)
 	return widget
 end
 
+local getIcon = require("modules.getIcon")
+
 local function createpreview(t, s, geometry)
 	local clientlayout = wibox.layout.manual()
 	clientlayout.forced_height = geometry.height
@@ -30,40 +32,24 @@ local function createpreview(t, s, geometry)
 		if not c.hidden and not c.minimized then
 			local imagebox = wibox.widget {
 				resize = true,
+				image = getIcon(c, c.name, c.class),
 				forced_height = 150 * scale,
 				forced_width = 150 * scale,
 				widget = wibox.widget.imagebox
 			}
 
-			if not pcall(function() imagebox.image = gears.surface.load(c.icon) end) then
-				imagebox.image = beautiful.wallpaper
-			end
-
 			local clientbox = wibox.widget({
 				{
-					{
-						nil,
-						{
-							nil,
-							imagebox,
-							nil,
-							expand = "outside",
-							layout = wibox.layout.align.horizontal,
-						},
-						nil,
-						expand = "outside",
-						widget = wibox.layout.align.vertical,
-					},
-					forced_height = math.floor(c.height * scale),
-					forced_width = math.floor(c.width * scale) - 10,
-					bg = beautiful.background,
-					border_color = beautiful.foreground .. "55",
-					border_width = 1,
-					shape = helpers.rrect(5),
-					widget = wibox.container.background
+					imagebox,
+					widget = wibox.container.place
 				},
-				align = "center",
-				widget = wibox.container.place
+				forced_height = math.floor(c.height * scale),
+				forced_width = math.floor(c.width * scale) - 10,
+				bg = beautiful.background,
+				border_color = beautiful.foreground .. "55",
+				border_width = 1,
+				shape = helpers.rrect(5),
+				widget = wibox.container.background
 			})
 
 			clientbox.point = {

@@ -1,8 +1,8 @@
 return {
+	type = "light",
+
 	foreground = "#272f35",
 	background = "#fff9e8",
-	darker = "#f5efde",
-	lighter = "#F0EAD9",
 	red = "#c85552",
 	green = "#5da111",
 	blue = "#3a94c5",

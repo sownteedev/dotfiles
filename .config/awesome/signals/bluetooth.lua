@@ -14,6 +14,7 @@ local function emit_bluetooth_status()
 		end
 	)
 end
+emit_bluetooth_status()
 
 gears.timer({
 	timeout = 5,

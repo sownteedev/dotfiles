@@ -84,13 +84,14 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 					end
 				end)
 			else
-				helpers.gc(widget, "label").markup = helpers.colorizeText(labelconnected, beautiful.background)
+				helpers.gc(widget, "label"):set_markup_silently(helpers.colorizeText(labelconnected, beautiful
+					.background))
 			end
 		else
-			helpers.gc(widget, "back").bg = beautiful.lighter
+			helpers.gc(widget, "back"):set_bg(beautiful.lighter)
+			helpers.gc(widget, "label"):set_markup_silently(helpers.colorizeText(labeldisconnected, beautiful.foreground))
 			helpers.gc(widget, "icon"):set_markup_silently(helpers.colorizeText(icon, beautiful.foreground))
 			helpers.gc(widget, "name"):set_markup_silently(helpers.colorizeText(name, beautiful.foreground))
-			helpers.gc(widget, "label").markup = helpers.colorizeText(labeldisconnected, beautiful.foreground)
 		end
 	end)
 

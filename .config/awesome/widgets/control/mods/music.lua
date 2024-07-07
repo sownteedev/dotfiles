@@ -6,6 +6,12 @@ local pctl = require("modules.playerctl")
 local helpers = require("helpers")
 local playerctl = pctl.lib()
 
+local createHandle = function()
+	return function(cr)
+		gears.shape.rounded_rect(cr, 10, 10, 15)
+	end
+end
+
 local position = wibox.widget({
 	font = beautiful.sans .. " 12",
 	markup = "",
@@ -15,8 +21,10 @@ local position = wibox.widget({
 local slider = wibox.widget({
 	bar_color = beautiful.foreground .. "00",
 	bar_active_color = beautiful.foreground .. "00",
+	handle_color = beautiful.foreground .. "00",
+	handle_shape = createHandle(),
 	bar_height = 3,
-	forced_height = 3,
+	forced_height = 10,
 	widget = wibox.widget.slider,
 })
 
@@ -24,15 +32,17 @@ playerctl:connect_signal("position", function(_, a, b)
 	if b ~= 0 then
 		local pos = string.format("%02d:%02d", math.floor(a / 60), math.floor(a % 60))
 		local len = string.format("%02d:%02d", math.floor(b / 60), math.floor(b % 60))
-		position:set_markup_silently(helpers.colorizeText(pos .. " / " .. len, beautiful.foreground))
+		position:set_markup_silently(helpers.colorizeText(pos .. " / " .. len, beautiful.fg))
 		slider.value = a
 		slider.maximum = b
-		slider.bar_color = beautiful.foreground .. "66"
-		slider.bar_active_color = beautiful.foreground
+		slider.bar_color = beautiful.fg .. "66"
+		slider.bar_active_color = beautiful.fg
+		slider.handle_color = beautiful.fg
 	else
-		position:set_markup_silently(helpers.colorizeText("", beautiful.foreground))
+		position:set_markup_silently(helpers.colorizeText("", beautiful.foreground .. "00"))
 		slider.bar_color = beautiful.foreground .. "00"
 		slider.bar_active_color = beautiful.foreground .. "00"
+		slider.handle_color = beautiful.foreground .. "00"
 	end
 end)
 
@@ -98,45 +108,31 @@ awful.screen.connect_for_each_screen(function(s)
 				nil,
 				{
 					{
-						{
-							{
-								id = "art",
-								image = helpers.cropSurface(1.75, gears.surface.load_uncached(beautiful.songdefpicture)),
-								opacity = 1,
-								resize = true,
-								clip_shape = helpers.rrect(10),
-								widget = wibox.widget.imagebox,
-							},
-							{
-								id = "overlay",
-								bg = {
-									type = "linear",
-									from = { 0, 0 },
-									to = { 250, 0 },
-									stops = { { 0, beautiful.lighter .. "00" }, { 1, beautiful.lighter .. "00" } },
-								},
-								shape = helpers.rrect(10),
-								widget = wibox.container.background,
-							},
-							layout = wibox.layout.stack,
-						},
-						widget = wibox.container.background,
-						shape = helpers.rrect(10),
-						shape_border_width = beautiful.border_width_custom,
-						shape_border_color = beautiful.border_color,
+						id = "blur",
+						image = beautiful.songdefpicture,
+						horizontal_fit_policy = "fit",
+						vertical_fit_policy = "fit",
+						clip_shape = helpers.rrect(10),
+						widget = wibox.widget.imagebox,
 					},
 					{
 						{
 							{
 								{
-									id = "artt",
-									image = nil,
-									opacity = 1,
-									forced_height = 200,
-									forced_width = 200,
-									resize = true,
-									clip_shape = helpers.rrect(10),
-									widget = wibox.widget.imagebox,
+									{
+										id = "artt",
+										image = nil,
+										opacity = 1,
+										forced_height = 200,
+										forced_width = 200,
+										resize = true,
+										clip_shape = helpers.rrect(10),
+										widget = wibox.widget.imagebox,
+									},
+									shape_border_width = 5,
+									shape_border_color = beautiful.border_color,
+									shape = helpers.rrect(10),
+									widget = wibox.container.background,
 								},
 								{
 									{
@@ -146,7 +142,6 @@ awful.screen.connect_for_each_screen(function(s)
 												font = beautiful.sans .. " Medium 20",
 												markup = "",
 												widget = wibox.widget.textbox,
-												valign = "top",
 											},
 											{
 												id = "artist",
@@ -201,10 +196,10 @@ awful.screen.connect_for_each_screen(function(s)
 							right = 25,
 						},
 						shape = helpers.rrect(10),
-						widget = wibox.container.background,
 						bg = beautiful.lighter,
 						shape_border_width = beautiful.border_width_custom,
 						shape_border_color = beautiful.border_color,
+						widget = wibox.container.background,
 					},
 					widget = wibox.container.margin,
 					left = 15,
@@ -221,23 +216,26 @@ awful.screen.connect_for_each_screen(function(s)
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
 	})
-
 	playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _, player_name)
-		helpers.gc(music, "art"):set_image(helpers.cropSurface(1.75, gears.surface.load_uncached(album_path)))
-		helpers.gc(music, "art"):set_opacity(0.7)
-		helpers.gc(music, "overlay"):set_bg({
-			type = "linear",
-			from = { 0, 0 },
-			to = { 250, 0 },
-			stops = { { 0, beautiful.lighter .. "88" }, { 1, beautiful.lighter .. "88" } },
-		})
+		if not album_path then
+			album_path = beautiful.songdefpicture
+		end
+		awful.spawn.easy_async_with_shell(
+			"convert " .. album_path .. " -filter Gaussian -blur 0x8 ~/.cache/awesome/songdefpicture.jpg &", function()
+				local blurwall = gears.filesystem.get_cache_dir() .. "songdefpicture.jpg"
+				helpers.gc(music, "blur"):set_image(helpers.cropSurface(1,
+					gears.surface.load_uncached(blurwall)))
+			end)
 		helpers.gc(music, "artt"):set_image(helpers.cropSurface(1, gears.surface.load_uncached(album_path)))
-		helpers.gc(music, "songname"):set_markup_silently(helpers.colorizeText(title or "NO", beautiful.foreground))
-		helpers.gc(music, "artist"):set_markup_silently(helpers.colorizeText(artist or "HM", beautiful.foreground))
+		if string.len(title) >= 85 then
+			title = string.sub(title, 0, 85) .. "..."
+		end
+		helpers.gc(music, "songname"):set_markup_silently(helpers.colorizeText(title, beautiful.fg))
+		helpers.gc(music, "artist"):set_markup_silently(helpers.colorizeText(artist, beautiful.fg))
 		helpers.gc(music, "player"):set_markup_silently(
 			helpers.colorizeText(
 				"Playing On: " .. player_name:sub(1, 1):upper() .. player_name:sub(2),
-				beautiful.foreground
+				beautiful.fg
 			)
 		)
 	end)

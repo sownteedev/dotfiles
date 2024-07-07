@@ -16,45 +16,9 @@ local custom = {
 		to = "terminal",
 	},
 	{
-		name = "clearpad",
-		to = "terminal",
-	},
-	{
 		name = "ncmpcpppad",
 		to = "deepin-music-player",
 	},
-	{
-		name = "jetbrains-idea",
-		to = "intellij-idea-ultimate-edition",
-	},
-	{
-		name = "TelegramDesktop",
-		to = "telegram-desktop",
-	},
-	{
-		name = "neovide",
-		to = "neovim",
-	},
-	{
-		name = "libreoffice-writer",
-		to = "libreoffice-writer",
-	},
-	{
-		name = "libreoffice-calc",
-		to = "libreoffice-calc",
-	},
-	{
-		name = "libreoffice-impress",
-		to = "libreoffice-impress",
-	},
-	{
-		name = "Docker Desktop",
-		to = "docker",
-	},
-	{
-		name = "ptit-code-client",
-		to = "PTIT",
-	}
 }
 
 local function hasValue(str)

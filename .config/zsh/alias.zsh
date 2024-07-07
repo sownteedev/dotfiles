@@ -34,7 +34,7 @@ alias wal="$HOME/.local/bin/wal"
 
 bindkey -s ^n "nvims\n"
 bindkey -s ^o "startx\n"
-bindkey -s ^w "sudo mount -t ntfs-3g -o ro /dev/nvme0n1p3 $HOME/Windows\n"
+bindkey -s ^w "sudo mount -t ntfs-3g -o ro /dev/nvme0n1p2 $HOME/Windows\n"
 bindkey '^e' "autosuggest-accept"
 
 # vim:ft=zsh

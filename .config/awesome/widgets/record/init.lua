@@ -19,14 +19,16 @@ local getName = function()
 end
 
 local rec_mic = function(fps, file_name)
+	local default_mic_source = io.popen("pactl info | grep 'Default Source' | awk '{print $3}'"):read("*l")
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
 		"sleep 1.25 && ffmpeg -y -f x11grab "
-		.. "-r %s -i %s -f pulse -i 59 -c:v libx264 -qp 0 -profile:v main "
+		.. "-r %s -i %s -f pulse -i %s -c:v libx264 -qp 0 -profile:v main "
 		.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
 		.. "-c:a aac -b:a 64k -b:v 500k %s &",
 		fps,
 		display,
+		default_mic_source,
 		file_name
 	)
 	print(defCommand)
@@ -34,14 +36,16 @@ local rec_mic = function(fps, file_name)
 end
 
 local rec_audio = function(fps, file_name)
+	local speaker_input = "alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink.monitor"
 	local display = os.getenv("DISPLAY")
 	local defCommand = string.format(
 		"sleep 1.25 && ffmpeg -y -f x11grab "
-		.. "-r %s -i %s -f pulse -i 57 -c:v libx264 -qp 0 -profile:v main "
+		.. "-r %s -i %s  -f pulse -i %s -c:v libx264 -qp 0 -profile:v main "
 		.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
 		.. "-c:a aac -b:a 64k -b:v 500k %s &",
 		fps,
 		display,
+		speaker_input,
 		file_name
 	)
 	print(defCommand)
