@@ -1,0 +1,22 @@
+@import "includes/cascade-config-mouse.css";
+@import "includes/cascade-colours.css";
+
+@import "includes/cascade-layout.css";
+@import "includes/cascade-responsive.css";
+@import "includes/cascade-floating-panel.css";
+
+@import "includes/cascade-nav-bar.css";
+@import "includes/cascade-tabs.css";
+
+/* 0 Border radius context menu */
+.tab-background,
+#urlbar-background,
+#searchbar,
+menupopup,
+.menupopup-arrowscrollbox {
+	border-radius: 0 !important;
+}
+
+:root {
+	--arrowpanel-border-radius: 0px !important;
+}
