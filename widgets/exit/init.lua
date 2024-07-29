@@ -1,176 +1,80 @@
-local M = {}
-local wibox = require("wibox")
-local helpers = require("helpers")
 local awful = require("awful")
-local beautiful = require("beautiful")
+local wibox = require("wibox")
 local gears = require("gears")
+local beautiful = require("beautiful")
+local helpers = require("helpers")
 
-local bat = require(... .. ".mods.battery")
-local weather = require(... .. ".mods.weather")
-local top = require(... .. ".mods.topbar")
-local music = require(... .. ".mods.music")
-
-local exit = wibox({
-	screen = screen.primary,
-	width = beautiful.width,
-	height = beautiful.height,
-	bg = beautiful.background .. "00",
-	ontop = true,
-	visible = false,
-})
-
-local back = wibox.widget({
-	id = "bg",
-	image = beautiful.wallpaper,
-	widget = wibox.widget.imagebox,
-	forced_width = beautiful.width,
-	forced_height = beautiful.height,
-	horizontal_fit_policy = "fit",
-	vertical_fit_policy = "fit",
-})
-
-local overlay = wibox.widget({
-	widget = wibox.container.background,
-	forced_width = beautiful.width,
-	forced_height = beautiful.height,
-	bg = beautiful.background .. "c1",
-})
-local makeImage = function()
-	local cmd = "convert " .. beautiful.wallpaper .. " -filter Gaussian -blur 0x6 ~/.cache/awesome/exit.jpg &"
-	awful.spawn.easy_async_with_shell(cmd, function()
-		local blurwall = gears.filesystem.get_cache_dir() .. "exit.jpg"
-		back.image = blurwall
-	end)
-end
-
-makeImage()
-
-local createButton = function(path, cmd, color)
-	local widget = wibox.widget({
+local createButton = function(name, icon, cmd)
+	local button = wibox.widget({
 		{
 			{
 				{
-					id = "icon",
-					image = path,
+					image = icon,
 					resize = true,
-					forced_height = 120,
-					forced_width = 120,
-					valign = "center",
+					forced_height = 20,
+					forced_width = 20,
 					widget = wibox.widget.imagebox,
 				},
-				id = "margin",
-				widget = wibox.container.margin,
-				left = 110,
-				right = 110,
-				top = 90,
-				bottom = 90,
+				{
+					text = name,
+					font = beautiful.sans .. " 12",
+					widget = wibox.widget.textbox,
+				},
+				layout = wibox.layout.fixed.horizontal,
+				spacing = 10,
 			},
-			shape = helpers.rrect(20),
-			widget = wibox.container.background,
-			bg = beautiful.background,
-			id = "bg",
-			shape_border_color = color,
-			shape_border_width = 2,
+			margins = 20,
+			widget = wibox.container.margin,
 		},
-		buttons = {
-			awful.button({}, 1, function()
-				awesome.emit_signal("toggle::exit")
-				awful.spawn.easy_async_with_shell(cmd)
-			end),
-		},
-		layout = wibox.layout.fixed.vertical,
+		bg = beautiful.lighter,
+		shape = helpers.rrect(5),
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
+		widget = wibox.container.background,
+		buttons = awful.button({}, 1, function()
+			awful.spawn(cmd)
+		end),
 	})
-	helpers.addHoverBg(widget, "bg", beautiful.background, helpers.blend(color, beautiful.background, 0.1))
-	if
-		path == gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png"
-		or path == gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/sleep.png"
-	then
-		helpers.gc(widget, "icon").forced_width = 90
-		helpers.gc(widget, "icon").forced_height = 90
-		helpers.gc(widget, "margin").left = 125
-		helpers.gc(widget, "margin").right = 125
-		helpers.gc(widget, "margin").top = 105
-		helpers.gc(widget, "margin").bottom = 105
-	end
-	return widget
+	return button
 end
 
-local time = wibox.widget({
-	{
-		markup = helpers.colorizeText("󰀠 ", beautiful.blue),
-		font = beautiful.icon .. " 50",
-		widget = wibox.widget.textbox,
-	},
-	{
-		font = beautiful.sans .. " 25",
-		format = "%I:%M %p",
-		widget = wibox.widget.textclock,
-	},
-	layout = wibox.layout.fixed.horizontal,
-})
+awful.screen.connect_for_each_screen(function(s)
+	local exit = wibox({
+		screen = s,
+		width = beautiful.width / 12,
+		height = beautiful.height / 5.5,
+		ontop = true,
+		visible = false,
+	})
 
-local down = wibox.widget({
-	{
+	exit:setup({
 		{
-			music,
-			time,
-			bat,
-			weather,
-			layout = wibox.layout.fixed.horizontal,
-			spacing = 100,
+			{
+				createButton("Power Off", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png",
+					"poweroff"),
+				createButton("Reboot", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/restart.png",
+					"reboot"),
+				createButton("Lock", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/lock.png",
+					"betterlockscreen -l"),
+				createButton("Suspend", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/sleep.png",
+					"systemctl suspend"),
+				layout = wibox.layout.fixed.vertical,
+				spacing = 10,
+			},
+			widget = wibox.container.margin,
+			margins = 10,
 		},
-		widget = wibox.container.place,
-		valign = "bottom",
-	},
-	widget = wibox.container.margin,
-	bottom = 60,
-})
-
-local buttons = wibox.widget({
-	{
-		createButton(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png",
-			"poweroff &",
-			beautiful.red
-		),
-		createButton(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/restart.png",
-			"reboot &",
-			beautiful.green
-		),
-		createButton(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/lock.png",
-			"awesome-client \"awesome.emit_signal('toggle::lock')\" &",
-			beautiful.blue
-		),
-		createButton(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/sleep.png",
-			"systemctl suspend &",
-			helpers.makeColor("purple")
-		),
-		createButton(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/logout.png",
-			"loginctl kill-user $USER &",
-			beautiful.yellow
-		),
-		layout = wibox.layout.fixed.horizontal,
-		spacing = 40,
-	},
-	widget = wibox.container.place,
-})
-
-exit:setup({
-	back,
-	overlay,
-	top,
-	buttons,
-	down,
-	widget = wibox.layout.stack,
-})
-awful.placement.centered(exit)
-
-function M.toggle()
-	exit.visible = not exit.visible
-end
-
-return M
+		widget = wibox.container.background,
+		bg = beautiful.background,
+		shape = helpers.rrect(10),
+		shape_border_width = beautiful.border_width_custom,
+		shape_border_color = beautiful.border_color,
+	})
+	helpers.placeWidget(exit, "bottom_right", 0, 10, 0, 2)
+	awesome.connect_signal("toggle::exit", function()
+		exit.visible = not exit.visible
+	end)
+	awesome.connect_signal("close::exit", function()
+		exit.visible = false
+	end)
+end)

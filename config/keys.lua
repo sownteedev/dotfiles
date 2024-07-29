@@ -3,10 +3,8 @@ local beautiful = require("beautiful")
 local switcher = require("modules.awesome-switcher")
 local Launcher = require("widgets.launcher")
 local Menu = require("widgets.rightclick")
-local volume = require("widgets.notification.volume")
-local brightness = require("widgets.notification.brightness")
+local brivol = require("widgets.notification.brivol")
 local lock = require("widgets.lock")
-local exit = require("widgets.exit")
 local screenshot = require("widgets.screenshot")
 local screenshotarea = require("widgets.screenshot.mods")
 local record = require("widgets.record")
@@ -47,17 +45,17 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86AudioRaiseVolume", function()
 		awful.spawn.easy_async_with_shell("pamixer -i 2 &")
 		volume_emit()
-		volume.toggle()
+		brivol.toggle()
 	end),
 	awful.key({}, "XF86AudioLowerVolume", function()
 		awful.spawn.easy_async_with_shell("pamixer -d 2 &")
 		volume_emit()
-		volume.toggle()
+		brivol.toggle()
 	end),
 	awful.key({}, "XF86AudioMute", function()
 		awful.spawn.easy_async_with_shell("pamixer -t &")
 		volume_emit()
-		volume.toggle()
+		brivol.toggle()
 	end),
 	awful.key({}, "XF86AudioMicMute", function()
 		awful.spawn.easy_async_with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle &")
@@ -65,12 +63,12 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86MonBrightnessUp", function()
 		awful.spawn.easy_async_with_shell("brightnessctl s 5%+ &")
 		brightness_emit()
-		brightness.toggle()
+		brivol.toggle()
 	end),
 	awful.key({}, "XF86MonBrightnessDown", function()
 		awful.spawn.easy_async_with_shell("brightnessctl s 5%- &")
 		brightness_emit()
-		brightness.toggle()
+		brivol.toggle()
 	end),
 
 	awful.key({}, "Print", function()
@@ -89,7 +87,7 @@ awful.keyboard.append_global_keybindings({
 		if client.focus then
 			client.focus:kill()
 		else
-			exit:toggle()
+			awesome.emit_signal("toggle::exit")
 		end
 	end),
 	awful.key({ mod }, "l", function()
@@ -216,6 +214,7 @@ awful.mouse.append_global_mousebindings({
 		awesome.emit_signal("close::control")
 		awesome.emit_signal("close::music")
 		awesome.emit_signal("close::preview")
+		awesome.emit_signal("close::exit")
 	end),
 	awful.button({}, 3, function()
 		Menu.desktop:toggle()
@@ -230,4 +229,5 @@ client.connect_signal("button::press", function()
 	awesome.emit_signal("close::control")
 	awesome.emit_signal("close::music")
 	awesome.emit_signal("close::preview")
+	awesome.emit_signal("close::exit")
 end)

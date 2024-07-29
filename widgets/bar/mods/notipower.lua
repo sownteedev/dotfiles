@@ -30,7 +30,7 @@ local notipower = wibox.widget({
 				widget = wibox.widget.imagebox,
 				buttons = {
 					awful.button({}, 1, function()
-						exit:toggle()
+						awesome.emit_signal("toggle::exit")
 					end),
 				},
 			},

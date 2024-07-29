@@ -7,10 +7,9 @@ local createProgress = function(col, label, signal)
 	local widget = wibox.widget({
 		{
 			{
-				font = beautiful.sans .. " 15",
+				font = beautiful.sans .. " 13",
 				markup = helpers.colorizeText(label, beautiful.foreground),
 				widget = wibox.widget.textbox,
-				valign = "start",
 				align = "left",
 			},
 			widget = wibox.container.background,

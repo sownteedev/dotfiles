@@ -36,6 +36,7 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, albu
 	end
 	songname:set_markup_silently(helpers.colorizeText(title or "NO", beautiful.foreground))
 	art:set_image(helpers.cropSurface(1, gears.surface.load_uncached(album_path)))
+	collectgarbage('collect')
 end)
 
 return widget

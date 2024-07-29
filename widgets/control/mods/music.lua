@@ -6,6 +6,12 @@ local pctl = require("modules.playerctl")
 local helpers = require("helpers")
 local playerctl = pctl.lib()
 
+local position = wibox.widget({
+	font = beautiful.sans .. " 11",
+	markup = "",
+	widget = wibox.widget.textbox,
+	align = "right",
+})
 local slider = wibox.widget({
 	bar_color = beautiful.foreground .. "00",
 	bar_active_color = beautiful.foreground .. "00",
@@ -20,6 +26,9 @@ local slider = wibox.widget({
 
 playerctl:connect_signal("position", function(_, a, b)
 	if b ~= 0 then
+		local pos = string.format("%02d:%02d", math.floor(a / 60), math.floor(a % 60))
+		local len = string.format("%02d:%02d", math.floor(b / 60), math.floor(b % 60))
+		position:set_markup_silently(helpers.colorizeText(pos .. " / " .. len, beautiful.fg))
 		slider.value = a
 		slider.maximum = b
 		slider.bar_color = beautiful.fg .. "66"
@@ -35,12 +44,12 @@ end)
 awful.screen.connect_for_each_screen(function(s)
 	local music = wibox({
 		screen = s,
-		width = beautiful.width / 4,
+		width = beautiful.width / 4.5,
 		height = (beautiful.height / 3) * 0.6,
 		ontop = true,
 		visible = false,
 	})
-	helpers.placeWidget(music, "bottom_right", 0, 79, 0, 2)
+	helpers.placeWidget(music, "bottom_right", 0, 70, 0, 2)
 
 	music:setup({
 		{
@@ -48,9 +57,9 @@ awful.screen.connect_for_each_screen(function(s)
 				{
 					id = "blur",
 					image = beautiful.songdefpicture,
+					clip_shape = helpers.rrect(10),
 					horizontal_fit_policy = "fit",
 					vertical_fit_policy = "fit",
-					clip_shape = helpers.rrect(10),
 					widget = wibox.widget.imagebox,
 				},
 				{
@@ -61,7 +70,6 @@ awful.screen.connect_for_each_screen(function(s)
 						to = { 250, 0 },
 						stops = { { 0, beautiful.fg1 .. "00" }, { 1, beautiful.fg1 .. "00" } },
 					},
-					shape = helpers.rrect(10),
 					widget = wibox.container.background,
 				},
 				{
@@ -71,8 +79,8 @@ awful.screen.connect_for_each_screen(function(s)
 								{
 									id = "art",
 									image = nil,
-									forced_width = 210,
-									forced_height = 210,
+									forced_width = 200,
+									forced_height = 200,
 									resize = true,
 									clip_shape = helpers.rrect(10),
 									widget = wibox.widget.imagebox,
@@ -88,19 +96,19 @@ awful.screen.connect_for_each_screen(function(s)
 									{
 										{
 											id = "songname",
-											font = beautiful.sans .. " Medium 20",
+											font = beautiful.sans .. " Medium 18",
 											markup = "",
 											widget = wibox.widget.textbox,
 										},
 										{
 											id = "artist",
-											font = beautiful.sans .. " 15",
+											font = beautiful.sans .. " 13",
 											markup = "",
 											widget = wibox.widget.textbox,
 										},
 										{
 											id = "album",
-											font = beautiful.sans .. " 15",
+											font = beautiful.sans .. " 13",
 											markup = "",
 											widget = wibox.widget.textbox,
 										},
@@ -120,7 +128,7 @@ awful.screen.connect_for_each_screen(function(s)
 											{
 												{
 													id = "loop",
-													font = beautiful.sans .. " 14",
+													font = beautiful.sans .. " 13",
 													markup = "",
 													widget = wibox.widget.textbox,
 													buttons = {
@@ -134,7 +142,7 @@ awful.screen.connect_for_each_screen(function(s)
 											},
 											{
 												id = "previous",
-												font = beautiful.sans .. " 18",
+												font = beautiful.sans .. " 17",
 												markup = "",
 												widget = wibox.widget.textbox,
 												buttons = {
@@ -146,7 +154,7 @@ awful.screen.connect_for_each_screen(function(s)
 											},
 											{
 												id = "play",
-												font = beautiful.sans .. " 18",
+												font = beautiful.sans .. " 17",
 												markup = "",
 												widget = wibox.widget.textbox,
 												buttons = {
@@ -157,7 +165,7 @@ awful.screen.connect_for_each_screen(function(s)
 											},
 											{
 												id = "next",
-												font = beautiful.sans .. " 18",
+												font = beautiful.sans .. " 17",
 												markup = "",
 												widget = wibox.widget.textbox,
 												buttons = {
@@ -169,7 +177,7 @@ awful.screen.connect_for_each_screen(function(s)
 											},
 											{
 												id = "shuffle",
-												font = beautiful.sans .. " 15",
+												font = beautiful.sans .. " 13",
 												markup = "",
 												widget = wibox.widget.textbox,
 												buttons = {
@@ -195,7 +203,7 @@ awful.screen.connect_for_each_screen(function(s)
 							position,
 							slider,
 							layout = wibox.layout.fixed.vertical,
-							spacing = 5,
+							spacing = 10,
 						},
 						layout = wibox.layout.align.vertical,
 					},
@@ -209,7 +217,7 @@ awful.screen.connect_for_each_screen(function(s)
 		},
 		widget = wibox.container.background,
 		bg = beautiful.background,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
 	})
@@ -223,8 +231,8 @@ awful.screen.connect_for_each_screen(function(s)
 			end)
 		helpers.gc(music, "art"):set_image(helpers.cropSurface(1, gears.surface.load_uncached(album)))
 		helpers.gc(music, "border"):set_shape_border_color(beautiful.border_color)
-		if string.len(title) >= 55 then
-			title = string.sub(title, 0, 55) .. "..."
+		if string.len(title) >= 65 then
+			title = string.sub(title, 0, 65) .. "..."
 		end
 		helpers.gc(music, "songname"):set_markup_silently(helpers.colorizeText(title, beautiful.fg))
 		helpers.gc(music, "artist"):set_markup_silently(helpers.colorizeText("by ", beautiful.fg .. "AA") ..
@@ -248,6 +256,8 @@ awful.screen.connect_for_each_screen(function(s)
 		})
 		helpers.gc(music, "next"):set_markup_silently(helpers.colorizeText("󰒭", beautiful.fg))
 		helpers.gc(music, "previous"):set_markup_silently(helpers.colorizeText("󰒮", beautiful.fg))
+
+		collectgarbage('collect')
 	end)
 
 

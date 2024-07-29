@@ -75,7 +75,7 @@ local M = {
 			id = 7,
 			clients = {},
 			class = "docker desktop",
-			exec = "docker desktop",
+			exec = "systemctl --user start docker-desktop",
 			name = "Containers - Docker Desktop",
 		},
 		{
@@ -360,7 +360,7 @@ function M:genIcons()
 			local minimized = getMinimized(j.clients)
 			local bg = beautiful.darker
 			if minimized > 0 then
-				bg = beautiful.yellow
+				bg = beautiful.blue
 			end
 			if client.focus then
 				if client.focus.class:lower() == j.class then

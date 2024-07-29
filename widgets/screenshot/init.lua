@@ -45,7 +45,7 @@ local createButton = function(path, name, fn, col)
 		bg = beautiful.lighter,
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		id = "bg",
 		widget = wibox.container.background,
 		buttons = awful.button({}, 1, function()
@@ -59,7 +59,7 @@ end
 local scrotter = wibox({
 	width = 450,
 	height = 230,
-	shape = helpers.rrect(5),
+	shape = helpers.rrect(10),
 	bg = beautiful.background,
 	ontop = true,
 	visible = false,
@@ -128,7 +128,7 @@ scrotter:setup({
 			bg = beautiful.lighter,
 			shape_border_width = beautiful.border_width_custom,
 			shape_border_color = beautiful.border_color,
-			shape = helpers.rrect(5),
+			shape = helpers.rrect(10),
 		},
 		{
 			fullscreen,

@@ -10,25 +10,25 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 				{
 					markup = icon,
 					id = "icon",
-					font = beautiful.icon .. " 25",
+					font = beautiful.icon .. " 23",
 					widget = wibox.widget.textbox,
 				},
 				{
 					{
 						markup = name,
 						id = "name",
-						font = beautiful.sans .. " 15",
+						font = beautiful.sans .. " Medium 14",
 						widget = wibox.widget.textbox,
 					},
 					{
 						widget = wibox.container.scroll.horizontal,
 						step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
-						speed = 60,
+						speed = 40,
 						forced_width = 250,
 						{
 							markup = labelconnected,
 							id = "label",
-							font = beautiful.sans .. " 11",
+							font = beautiful.sans .. " 10",
 							forced_width = 230,
 							forced_height = 20,
 							widget = wibox.widget.textbox,
@@ -41,7 +41,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 				spacing = 15,
 			},
 			widget = wibox.container.margin,
-			margins = 25,
+			margins = 20,
 		},
 		widget = wibox.container.background,
 		id = "back",

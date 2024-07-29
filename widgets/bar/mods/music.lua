@@ -35,6 +35,7 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, albu
 	else
 		player.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/music/playing.png"
 	end
+	collectgarbage('collect')
 end)
 
 local next = wibox.widget({

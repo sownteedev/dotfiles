@@ -9,8 +9,8 @@ local L = {}
 
 local Conf = {
 	rows = 8,
-	entry_height = 100,
-	entry_width = 490,
+	entry_height = 80,
+	entry_width = 450,
 	popup_margins = 15,
 }
 
@@ -22,14 +22,14 @@ local createPowerButton = function(path, color, command)
 					id = "icon",
 					image = path,
 					resize = true,
-					forced_height = 40,
-					forced_width = 40,
+					forced_height = 30,
+					forced_width = 30,
 					halign = "center",
 					widget = wibox.widget.imagebox,
 				},
 				id = "margin",
 				widget = wibox.container.margin,
-				margins = 25,
+				margins = 20,
 			},
 			widget = wibox.container.background,
 			bg = color .. "22",
@@ -46,9 +46,9 @@ local createPowerButton = function(path, color, command)
 		},
 	})
 	if path == gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png" then
-		helpers.gc(buttons, "icon").forced_width = 30
-		helpers.gc(buttons, "icon").forced_height = 30
-		helpers.gc(buttons, "margin").margins = 30
+		helpers.gc(buttons, "icon").forced_width = 25
+		helpers.gc(buttons, "icon").forced_height = 25
+		helpers.gc(buttons, "margin").margins = 21
 	end
 	return buttons
 end
@@ -64,8 +64,8 @@ local sidebar = wibox.widget({
 				{
 					widget = wibox.widget.imagebox,
 					image = beautiful.profile,
-					forced_height = 80,
-					forced_width = 80,
+					forced_height = 60,
+					forced_width = 60,
 					resize = true,
 				},
 				widget = wibox.container.place,
@@ -104,7 +104,7 @@ local prompt = wibox.widget({
 	{
 		image = helpers.cropSurface(4, gears.surface.load_uncached(beautiful.wallpaper)),
 		opacity = 1,
-		forced_height = 130,
+		forced_height = 120,
 		clip_shape = helpers.rrect(10),
 		forced_width = Conf.entry_height,
 		widget = wibox.widget.imagebox,
@@ -117,14 +117,14 @@ local prompt = wibox.widget({
 						markup = "",
 						forced_height = 10,
 						id = "txt",
-						font = beautiful.sans .. " 15",
+						font = beautiful.sans .. " 12",
 						widget = wibox.widget.textbox,
 					},
 					{
 						markup = "Search...",
 						forced_height = 10,
 						id = "placeholder",
-						font = beautiful.sans .. " 15",
+						font = beautiful.sans .. " 12",
 						widget = wibox.widget.textbox,
 					},
 					layout = wibox.layout.stack,
@@ -133,7 +133,7 @@ local prompt = wibox.widget({
 				left = 20,
 			},
 			forced_width = Conf.entry_width - 200,
-			forced_height = 60,
+			forced_height = 55,
 			shape = helpers.rrect(10),
 			widget = wibox.container.background,
 			bg = beautiful.darker .. "50",
@@ -156,7 +156,7 @@ local entries_container = wibox.widget({
 local main_widget = wibox.widget({
 	widget = wibox.container.background,
 	bg = beautiful.lighter,
-	shape = helpers.rrect(5),
+	shape = helpers.rrect(10),
 	shape_border_width = beautiful.border_width_custom,
 	shape_border_color = beautiful.border_color,
 	forced_height = (Conf.entry_height * (Conf.rows + 1)) + Conf.popup_margins,
@@ -188,7 +188,7 @@ local popup_widget = awful.popup({
 		helpers.placeWidget(d, "bottom_left", 0, 2, 2, 0)
 	end,
 	maximum_width = Conf.entry_width + Conf.entry_height + Conf.popup_margins * 3,
-	shape = helpers.rrect(5),
+	shape = helpers.rrect(10),
 	widget = main_widget,
 })
 
@@ -270,7 +270,6 @@ local function filter(input)
 	for i, entry in ipairs(filtered) do
 		local entry_widget = wibox.widget({
 			shape = helpers.rrect(10),
-			forced_height = Conf.entry_height,
 			buttons = {
 				awful.button({}, 1, function()
 					if index_entry == i then
@@ -305,10 +304,9 @@ local function filter(input)
 						markup = entry.name,
 						id = "name",
 						widget = wibox.widget.textbox,
-						font = beautiful.sans .. " 15",
+						font = beautiful.sans .. " 13",
 					},
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 20,
 				},
 				left = 30,
 				top = 10,
@@ -322,9 +320,9 @@ local function filter(input)
 		end
 
 		if i == index_entry then
-			entry_widget.fg = beautiful.foreground
 			entry_widget.bg = beautiful.lighter1
 			entry_widget.shape_border_color = beautiful.border_color
+			helpers.gc(entry_widget, "name"):set_font(beautiful.sans .. " Medium 13")
 			helpers.gc(entry_widget, "name"):set_markup_silently(helpers.colorizeText(entry.name, beautiful.blue))
 		else
 			entry_widget.shape_border_color = beautiful.foreground .. "00"
