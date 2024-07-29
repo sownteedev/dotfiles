@@ -3,7 +3,7 @@
 	lighter:#161819;
 	darker:#0c0e0f;
 	foreground:#edeff0;
-	font: "SF Pro Display 15";
+	font: "SF Pro Display 13";
 }
 
 window {
@@ -22,7 +22,7 @@ window {
     enabled:                     true;
     margin:                      0px;
     padding:                     0px;
-    border:                      45px 2px 2px 2px solid;
+    border:                      60px 2px 2px 2px solid;
     border-radius:               0px;
     border-color:                @darker;
     cursor:                      "default";

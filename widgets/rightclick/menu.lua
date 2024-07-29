@@ -148,7 +148,7 @@ function menu.menu(widgets, width)
 		ontop = true,
 		minimum_width = width or 210,
 		maximum_width = width or 210,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		widget = wibox.layout.fixed.vertical,
 	})
 	gtable.crush(widget, menu, true)

@@ -8,20 +8,15 @@ local naughty = require("naughty")
 return function(icon, n)
 	local action_widget = {
 		{
-			{
-				id = "text_role",
-				align = "center",
-				font = beautiful.sans .. " 12",
-				widget = wibox.widget.textbox,
-			},
-			bg = beautiful.lighter1,
-			shape = helpers.rrect(10),
-			forced_height = 30,
-			widget = wibox.container.background,
+			id = "text_role",
+			align = "center",
+			font = beautiful.sans .. " 11",
+			widget = wibox.widget.textbox,
 		},
-		widget = wibox.container.margin,
-		left = 20,
-		right = 20,
+		bg = beautiful.lighter1,
+		shape = helpers.rrect(10),
+		forced_height = 30,
+		widget = wibox.container.background,
 	}
 	local actions = wibox.widget({
 		notification = n,
@@ -29,7 +24,6 @@ return function(icon, n)
 			spacing = 30,
 			layout = wibox.layout.flex.horizontal,
 		}),
-		align = "center",
 		widget_template = action_widget,
 		style = { underline_normal = false, underline_selected = true },
 		widget = naughty.list.actions,
@@ -54,7 +48,7 @@ return function(icon, n)
 			widget = wibox.widget.textbox,
 			text = n.title,
 			align = "left",
-			font = beautiful.sans .. " 20",
+			font = beautiful.sans .. " 18",
 			forced_width = 300,
 		},
 	})
@@ -63,14 +57,14 @@ return function(icon, n)
 		widget = wibox.widget.textbox,
 		text = os.date("%H:%M"),
 		align = "right",
-		font = beautiful.sans .. " 12",
+		font = beautiful.sans .. " 11",
 	})
 
 	local text_notif = wibox.widget({
 		markup = n.message,
 		align = "left",
 		forced_width = 165,
-		font = beautiful.sans .. " 13",
+		font = beautiful.sans .. " 12",
 		widget = wibox.widget.textbox,
 	})
 

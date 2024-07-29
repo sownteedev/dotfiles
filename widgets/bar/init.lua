@@ -18,7 +18,7 @@ awful.screen.connect_for_each_screen(function(s)
 	s.wibar = awful.wibar {
 		position = "bottom",
 		margins = { bottom = beautiful.useless_gap * 2 },
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		height = 70,
 		width = beautiful.width - 100,
 		bg = beautiful.background,

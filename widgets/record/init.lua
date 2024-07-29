@@ -104,7 +104,7 @@ local recorder = wibox({
 	width = 450,
 	height = 230,
 	bg = beautiful.background,
-	shape = helpers.rrect(5),
+	shape = helpers.rrect(10),
 	ontop = true,
 	visible = false,
 })
@@ -179,7 +179,7 @@ recorder:setup({
 			bg = beautiful.lighter,
 			shape_border_width = beautiful.border_width_custom,
 			shape_border_color = beautiful.border_color,
-			shape = helpers.rrect(5),
+			shape = helpers.rrect(10),
 		},
 		{
 			recaudio,

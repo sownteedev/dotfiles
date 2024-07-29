@@ -8,8 +8,8 @@ local widget = wibox.widget({
 		{
 			widget = wibox.widget.imagebox,
 			image = beautiful.profile,
-			forced_height = 70,
-			forced_width = 70,
+			forced_height = 50,
+			forced_width = 50,
 			opacity = 1,
 			resize = true,
 		},
@@ -18,18 +18,18 @@ local widget = wibox.widget({
 				{
 					widget = wibox.widget.textbox,
 					markup = helpers.colorizeText("Nguyen Thanh Son", beautiful.foreground),
-					font = beautiful.sans .. " Medium 15",
+					font = beautiful.sans .. " Medium 13",
 				},
 				{
 					widget = wibox.widget.textbox,
 					markup = helpers.colorizeText("@" .. beautiful.user, beautiful.foreground),
-					font = "azuki_font 15",
+					font = "azuki_font 13",
 				},
 				layout = wibox.layout.fixed.vertical,
 				spacing = 5,
 			},
 			widget = wibox.container.margin,
-			top = 10,
+			top = 5,
 		},
 		layout = wibox.layout.fixed.horizontal,
 		spacing = 20,
@@ -38,16 +38,15 @@ local widget = wibox.widget({
 	{
 		{
 			{
-				id = "icon",
-				widget = wibox.widget.textbox,
 				markup = "󰔎 ",
-				font = beautiful.sans .. " 25",
+				font = beautiful.sans .. " 23",
+				widget = wibox.widget.textbox,
 			},
 			widget = wibox.container.margin,
-			left = 25,
+			left = 20,
 			right = 10,
-			top = 15,
-			bottom = 15,
+			top = 10,
+			bottom = 10,
 		},
 		id = "back",
 		widget = wibox.container.background,
@@ -63,7 +62,5 @@ local widget = wibox.widget({
 	},
 	layout = wibox.layout.align.horizontal,
 })
-
-helpers.addHoverBg(widget, "back", beautiful.background, beautiful.lighter)
 
 return widget

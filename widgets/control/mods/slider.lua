@@ -4,18 +4,14 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local helpers = require("helpers")
 
-local createHandle = function()
-	return function(cr)
-		gears.shape.rounded_rect(cr, 20, 20, 15)
-	end
-end
-
 local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 	local slidSlider = wibox.widget({
 		bar_height = 3,
 		bar_color = beautiful.foreground .. "05",
 		bar_active_color = beautiful.foreground,
-		handle_shape = createHandle(),
+		handle_shape = function(cr)
+			gears.shape.rounded_rect(cr, 15, 15, 15)
+		end,
 		handle_color = beautiful.background,
 		handle_border_width = 3,
 		handle_margins = { top = 13, right = -5, left = 1 },
@@ -27,7 +23,7 @@ local createSlider = function(icon, signal, signal2, cmd, cmd2, command)
 	})
 
 	local slidIcon = wibox.widget({
-		font = beautiful.icon .. " 20",
+		font = beautiful.icon .. " 18",
 		markup = helpers.colorizeText(icon, beautiful.foreground),
 		widget = wibox.widget.textbox,
 	})
@@ -113,7 +109,7 @@ local widget = wibox.widget({
 		"pactl set-source-volume @DEFAULT_SOURCE@ %d%% &"
 	),
 	layout = wibox.layout.fixed.vertical,
-	spacing = 15,
+	spacing = 10,
 })
 
 return widget

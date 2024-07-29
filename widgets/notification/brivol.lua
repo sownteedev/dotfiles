@@ -1,5 +1,4 @@
 local M = {}
-
 local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
@@ -12,7 +11,7 @@ local info = wibox.widget({
 		{
 			widget = wibox.widget.textbox,
 			id = "icon",
-			font = beautiful.icon .. " 25",
+			font = beautiful.icon .. " 23",
 			markup = "",
 		},
 		{
@@ -21,7 +20,7 @@ local info = wibox.widget({
 			{
 				widget = wibox.widget.textbox,
 				id = "text",
-				font = beautiful.sans .. " 15",
+				font = beautiful.sans .. " 14",
 			},
 		},
 		{
@@ -36,8 +35,8 @@ local info = wibox.widget({
 				bar_shape = helpers.rrect(10),
 			},
 			widget = wibox.container.margin,
-			top = 25,
-			bottom = 25,
+			top = 28,
+			bottom = 28,
 		},
 		layout = wibox.layout.fixed.horizontal,
 		spacing = 10,
@@ -54,7 +53,7 @@ local osd = awful.popup({
 	minimum_height = 75,
 	maximum_height = 75,
 	forced_width = 0,
-	shape = helpers.rrect(5),
+	shape = helpers.rrect(10),
 	placement = function(d)
 		helpers.placeWidget(d, "bottom")
 	end,
@@ -69,7 +68,21 @@ local anim = animation:new({
 	end,
 })
 
--- volume --
+-- bright --
+awesome.connect_signal("signal::brightness", function(value)
+	anim:set(value)
+	helpers.gc(info, "text").text = value
+	if value > 90 then
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃠 ", beautiful.foreground))
+	elseif value > 60 then
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃝 ", beautiful.foreground))
+	elseif value > 30 then
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃟 ", beautiful.foreground))
+	elseif value > 10 then
+		helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃞 ", beautiful.foreground))
+	end
+end)
+
 awesome.connect_signal("signal::volume", function(value)
 	anim:set(value)
 	helpers.gc(info, "text").text = value

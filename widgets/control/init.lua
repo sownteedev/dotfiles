@@ -12,8 +12,8 @@ require(... .. ".mods.music")
 awful.screen.connect_for_each_screen(function(s)
 	local control = wibox({
 		screen = s,
-		width = beautiful.width / 4,
-		height = (beautiful.height / 3) * 1.41,
+		width = beautiful.width / 4.5,
+		height = beautiful.height / 2.4,
 		ontop = true,
 		visible = false,
 	})
@@ -33,7 +33,7 @@ awful.screen.connect_for_each_screen(function(s)
 		},
 		widget = wibox.container.background,
 		bg = beautiful.background,
-		shape = helpers.rrect(5),
+		shape = helpers.rrect(10),
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
 	})
