@@ -1,0 +1,38 @@
+{
+    "general": {
+        "voiceDisconnect": true,
+        "showToasts": true,
+        "mediaKeys": false,
+        "bdContextMenu": true
+    },
+    "addons": {
+        "addonErrors": true,
+        "editAction": "detached"
+    },
+    "customcss": {
+        "customcss": true,
+        "liveUpdate": true,
+        "openAction": "settings"
+    },
+    "editor": {
+        "lineNumbers": true,
+        "minimap": true,
+        "hover": true,
+        "quickSuggestions": true,
+        "fontSize": 14,
+        "renderWhitespace": "selection"
+    },
+    "window": {
+        "transparency": false,
+        "removeMinimumSize": false,
+        "frame": false
+    },
+    "developer": {
+        "debugLogs": false,
+        "devTools": true,
+        "debuggerHotkey": false,
+        "reactDevTools": false,
+        "inspectElement": false,
+        "devToolsWarning": false
+    }
+}

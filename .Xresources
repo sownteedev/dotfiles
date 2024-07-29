@@ -1,0 +1,31 @@
+Xcursor.theme: Light_Cursor
+Xcursor.size: 30
+Xft.dpi: 96
+
+st.borderpx: 40
+st.alpha: 1.0
+st.font: Liga SFMono Nerd Font:style:Regular:pixelsize=20
+st.chscale: 1.3
+st.cwscale: 1.0
+
+*foreground:#ffffff
+*background:#fafafa
+*cursorColor:#ff0000
+
+*color0:#EAEAEB
+*color1:#DF5B61
+*color2:#78B892
+*color3:#de8f78
+*color4:#6791c9
+*color5:#bc83e3
+*color6:#67AFC1
+*color7:#54555b
+
+*color8:#EAEAEB
+*color9:#e8646a
+*color10:#81c19b
+*color11:#e79881
+*color12:#709ad2
+*color13:#c58cec
+*color14:#70b8ca
+*color15:#54555b
