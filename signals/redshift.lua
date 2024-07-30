@@ -20,10 +20,7 @@ end)
 function redshift_toggle()
 	awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/redshift'", function(status)
 		status = status:gsub("\n", "")
-		if status == "true" then
-			awful.spawn.with_shell("bash -c 'redshift -x && echo false > ~/.cache/redshift'")
-		else
-			awful.spawn.with_shell("bash -c 'redshift -O 4000 && echo true > ~/.cache/redshift'")
-		end
+		awful.spawn.with_shell(status == "true" and "bash -c 'redshift -x && echo false > ~/.cache/redshift'" or
+		"bash -c 'redshift -O 4000 && echo true > ~/.cache/redshift'")
 	end)
 end
