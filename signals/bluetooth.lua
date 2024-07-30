@@ -14,7 +14,6 @@ local function emit_bluetooth_status()
 		end
 	)
 end
-emit_bluetooth_status()
 
 gears.timer({
 	timeout = 5,
@@ -28,10 +27,6 @@ gears.timer({
 function bluetooth_toggle()
 	awful.spawn.easy_async_with_shell("bash -c 'bluetoothctl show | grep Powered'", function(status)
 		status = status:match("yes")
-		if status then
-			awful.spawn.with_shell("bash -c 'bluetoothctl power off'")
-		else
-			awful.spawn.with_shell("bash -c 'bluetoothctl power on'")
-		end
+		awful.spawn.with_shell(status and "bash -c 'bluetoothctl power off'" or "bash -c 'bluetoothctl power on'")
 	end)
 end

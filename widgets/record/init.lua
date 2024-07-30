@@ -108,22 +108,6 @@ local recorder = wibox({
 	ontop = true,
 	visible = false,
 })
-local slide = animation:new({
-	duration = 1,
-	pos = 0 - recorder.height,
-	easing = animation.easing.inOutExpo,
-	update = function(_, pos)
-		recorder.y = pos
-	end,
-})
-
-local slide_end = gears.timer({
-	timeout = 1,
-	single_shot = true,
-	callback = function()
-		recorder.visible = false
-	end,
-})
 
 local recaudio = createButton(
 	gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recaudio.png",
@@ -193,6 +177,23 @@ recorder:setup({
 	},
 	widget = wibox.container.margin,
 	margins = 15,
+})
+
+local slide = animation:new({
+	duration = 1,
+	pos = 0 - recorder.height,
+	easing = animation.easing.inOutExpo,
+	update = function(_, pos)
+		recorder.y = pos
+	end,
+})
+
+local slide_end = gears.timer({
+	timeout = 1,
+	single_shot = true,
+	callback = function()
+		recorder.visible = false
+	end,
 })
 
 function M.close()

@@ -9,19 +9,17 @@ local themes_path = gfs.get_configuration_dir() .. "themes/"
 
 local theme       = {}
 
-theme.font        = "SF Pro Display 14"
+theme.font        = "SF Pro Display 13"
 theme.sans        = "SF Pro Display"
 theme.icon        = "Material Design Icons"
 
 -- colors --
-
 local colors      = require("themes.colors." .. colorscheme)
 theme.background  = colors.background
 theme.darker      = colors.darker
 theme.lighter     = colors.lighter
 theme.lighter1    = colors.lighter1
 theme.foreground  = colors.foreground
-
 theme.red         = colors.red
 theme.green       = colors.green
 theme.blue        = colors.blue
@@ -37,6 +35,8 @@ else
 	theme.fg = helpers.blend(theme.background, theme.foreground, 0.9)
 	theme.fg1 = helpers.blend(theme.background, theme.foreground, 0.1)
 end
+
+theme.autohidebar          = true
 
 theme.width                = 2560
 theme.height               = 1600

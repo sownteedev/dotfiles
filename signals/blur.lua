@@ -22,15 +22,11 @@ function blur_toggle()
 		awful.spawn.easy_async_with_shell("pkill picom", function()
 			awful.spawn.with_shell("while pgrep -u $UID -x picom >/dev/null; do sleep 0; done")
 			local status = stdout:match("true")
-			if status then
-				awful.spawn.with_shell(
-					"picom --config ~/.config/awesome/signals/scripts/Picom/picom_no_opacity.conf -b &"
-				)
-				awful.spawn.with_shell("echo false > ~/.cache/blur")
-			else
-				awful.spawn.with_shell("picom --config ~/.config/awesome/signals/scripts/Picom/picom.conf -b &")
-				awful.spawn.with_shell("echo true > ~/.cache/blur")
-			end
+			awful.spawn.with_shell(
+				status and "picom --config ~/.config/awesome/signals/scripts/Picom/picom_no_opacity.conf -b &" or
+				"picom --config ~/.config/awesome/signals/scripts/Picom/picom.conf -b &"
+			)
+			awful.spawn.with_shell(status and "echo false > ~/.cache/blur" or "echo true > ~/.cache/blur")
 		end)
 	end)
 end

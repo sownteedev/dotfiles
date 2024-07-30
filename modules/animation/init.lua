@@ -6,8 +6,8 @@
 local GLib = require("lgi").GLib
 local gobject = require("gears.object")
 local gtable = require("gears.table")
-local subscribable = require("modules.animation.subscribable")
-local tween = require("modules.animation.tween")
+local subscribable = require(... .. ".subscribable")
+local tween = require(... .. ".tween")
 local ipairs = ipairs
 local table = table
 local pairs = pairs

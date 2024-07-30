@@ -20,12 +20,8 @@ end)
 function dnd_toggle()
 	awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/dnd'", function(status)
 		status = status:gsub("\n", "")
-		if status == "true" then
-			awful.spawn.with_shell("awesome-client 'naughty = require(\"naughty\") naughty.toggle()' &")
-			awful.spawn.with_shell("bash -c 'echo false > ~/.cache/dnd'")
-		else
-			awful.spawn.with_shell("awesome-client 'naughty = require(\"naughty\") naughty.toggle()' &")
-			awful.spawn.with_shell("bash -c 'echo true > ~/.cache/dnd'")
-		end
+		awful.spawn.with_shell("awesome-client 'naughty = require(\"naughty\") naughty.toggle()' &")
+		awful.spawn.with_shell(status == "true" and "bash -c 'echo false > ~/.cache/dnd'" or
+		"bash -c 'echo true > ~/.cache/dnd'")
 	end)
 end

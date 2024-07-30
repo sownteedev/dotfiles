@@ -1,7 +1,9 @@
 local awful = require("awful")
 local wibox = require("wibox")
+local gears = require("gears")
 local beautiful = require("beautiful")
 local helpers = require("helpers")
+local animation = require("modules.animation")
 
 local profile = require(... .. ".mods.profile")
 local tags = require(... .. ".mods.tags")
@@ -53,4 +55,32 @@ awful.screen.connect_for_each_screen(function(s)
 			layout = wibox.layout.align.horizontal,
 		},
 	}
+
+	if beautiful.autohidebar then
+		local slide = animation:new({
+			duration = 1,
+			pos = 0 + beautiful.height,
+			easing = animation.easing.inOutExpo,
+			update = function(_, pos)
+				s.wibar.y = pos
+			end,
+		})
+
+		local slide_end = gears.timer({
+			timeout = 1,
+			single_shot = true,
+			callback = function()
+				s.wibar.visible = true
+			end,
+		})
+
+		s.wibar:connect_signal("mouse::enter", function()
+			slide_end:stop()
+			slide:set(0 + beautiful.height - s.wibar.height - beautiful.useless_gap * 2)
+		end)
+		s.wibar:connect_signal("mouse::leave", function()
+			slide_end:again()
+			slide:set(0 + beautiful.height - 1)
+		end)
+	end
 end)

@@ -3,29 +3,29 @@ local helpers = require("helpers")
 
 local function backup()
 	awful.spawn.easy_async_with_shell([[
-		declare -a config_folders=("awesome" "alacritty" "zsh" "ranger" "firefox" "gtk-3.0")
+		declare -a config_folders=("alacritty" "zsh" "ranger" "firefox" "gtk-3.0")
 		declare -a data_folders=("BetterDiscord/data/stable" "spicetify/Themes" "nvim/lua/custom")
 		declare -a dot_folders=("fonts" "icons" "themes" "walls") &&
 
-		rm -rf ~/dotfiles/{.config,.fonts,.icons,.themes,.walls,.local}
-		mkdir -p ~/dotfiles/{.config,.fonts,.icons,.themes,.walls,.local}
+		rm -rf ~/dotf/{.config,.fonts,.icons,.themes,.walls,.local}
+		mkdir -p ~/dotf/{.config,.fonts,.icons,.themes,.walls,.local}
 		
 		for folder in "${dot_folders[@]}"; do
-			cp -r ~/."$folder"/* ~/dotfiles/.${folder}/
+			cp -r ~/."$folder"/* ~/dotf/.${folder}/
 		done
 
 		for folder in "${config_folders[@]}"; do
-			cp -r ~/.config/"$folder" ~/dotfiles/.config/
+			cp -r ~/.config/"$folder" ~/dotf/.config/
 		done
 
 		for folder in "${data_folders[@]}"; do
-			mkdir -p ~/dotfiles/.config/"$folder"
-			cp -r ~/.config/"$folder"/* ~/dotfiles/.config/"$folder"
+			mkdir -p ~/dotf/.config/"$folder"
+			cp -r ~/.config/"$folder"/* ~/dotf/.config/"$folder"
 		done
 
-		cp -r ~/.local/other/ ~/dotfiles/.local/ && cp -r ~/.local/bin/ ~/dotfiles/.local/
-		rm -f ~/dotfiles/.Xresources && cp ~/.Xresources ~/dotfiles/
-		rm -f ~/dotfiles/.xinitrc && cp ~/.xinitrc ~/dotfiles/
+		cp -r ~/.local/other/ ~/dotf/.local/ && cp -r ~/.local/bin/ ~/dotf/.local/
+		rm -f ~/dotf/.Xresources && cp ~/.Xresources ~/dotf/
+		rm -f ~/dotf/.xinitrc && cp ~/.xinitrc ~/dotf/
 	]])
 end
 

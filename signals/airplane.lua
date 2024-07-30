@@ -20,10 +20,7 @@ end)
 function airplane_toggle()
 	awful.spawn.easy_async_with_shell("bash -c 'rfkill list | sed -n 5p'", function(status)
 		status = status:match("no")
-		if status then
-			awful.spawn.with_shell("bash -c 'rfkill block all && echo true > ~/.cache/airplane'")
-		else
-			awful.spawn.with_shell("bash -c 'rfkill unblock all && echo false > ~/.cache/airplane'")
-		end
+		awful.spawn.with_shell(status and "bash -c 'rfkill block all && echo true > ~/.cache/airplane'" or
+		"bash -c 'rfkill unblock all && echo false > ~/.cache/airplane'")
 	end)
 end

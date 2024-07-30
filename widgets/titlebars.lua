@@ -36,7 +36,12 @@ client.connect_signal("request::titlebars", function(c)
 		widget = wibox.widget.textbox,
 		buttons = {
 			awful.button({}, 1, function()
-				c.maximized = not c.maximized
+				if beautiful.autohidebar then
+					c.fullscreen = not c.fullscreen
+					c:raise()
+				else
+					c.maximized = not c.maximized
+				end
 			end),
 		},
 	})
