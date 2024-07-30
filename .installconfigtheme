@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+
+# Font
+sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm
+echo "[*] Copy fonts ..."
+mkdir -p ~/.fonts && cp -r ~/dotf/.fonts/* ~/.fonts
+fc-cache -fv
+echo "[*] Done."
+sleep 3 && clear
+
+# Icon theme && Cursor theme
+echo "[*] Copy icons ..."
+mkdir -p ~/.icons && cp -r ~/dotf/.icons/* ~/.icons
+echo "[*] Done."
+sleep 3 && clear
+
+# Themes
+echo "[*] Copy themes ..."
+mkdir -p ~/.themes && cp -r ~/dotf/.themes/* ~/.themes
+echo "[*] Done."
+sleep 3 && clear
+
+# Wallpaper
+echo "[*] Copy wallpaper ..."
+mkdir -p ~/.walls && cp -r ~/dotf/.walls/* ~/.walls
+echo "[*] Done."
+sleep 3 && clear
+
+# Config
+echo "[*] Copy config ..."
+if ! [ -d $HOME/.config ]; then
+	mkdir -p $HOME/.config
+fi
+cp -r ~/dotf/.config/* ~/.config
+echo "[*] Done."
+sleep 3 && clear
+
+# Local
+echo "[*] Copy local ..."
+if ! [ -d $HOME/.local ]; then
+	mkdir -p $HOME/.local
+fi
+cp -r ~/dotf/.local/* ~/.local
+echo "[*] Done."
+sleep 3 && clear
+
+# .Xresources
+echo "[*] Copy .Xresources ..."
+rm -f ~/.Xresources && cp ~/dotf/.Xresources ~/.Xresources
+echo "[*] Done."
+sleep 3 && clear
+
+
+
+##################### Install config WM #####################
+# AwesomeWM
+read -p "[*] Do you want to use my AwesomeWM configs? (y/n): " choice
+if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	echo "[*] Installing AwesomeWM ..."
+	rm -rf ~/.config/awesome
+	git clone https://github.com/sownteedev/dotfiles.git --branch=awesome ~/.config/awesome
+	echo "[*] Done."
+else
+	echo "[*] AwesomeWM installation skipped."
+fi
+sleep 3 && clear
+
+# AGS: Comming soon ^^
+
+
+
+######################################## MY CONFIG FOR CUSTOM APPS #######################################
+
+read -p "[*] Do you want to install custom application? (y/n): " choice
+if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	echo "[*] Installing custom apps ..."
+
+
+	# Spotify
+	read -p "[*] Do you want to install Spotify and get my custom? (y/n): " choice
+	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+		if pkg_installed spotify; then
+			echo "[*] Spotify installation skipped."
+		else
+			echo "[*] Installing Spotify ..."
+			yay -S spotify --noconfirm
+		fi
+		yay -S --noconfirm spicetify-cli-git
+		sudo chmod a+wr /opt/spotify
+		sudo chmod a+wr /opt/spotify/Apps -R
+		spicetify config current_theme Tetify color_scheme one_light
+		echo "[*] Done."
+	else
+		echo "[*] Spotify installation skipped."
+	fi
+	sleep 3 && clear
+
+	# Discord
+	read -p "[*] Do you want to install Discord and get my custom? (y/n): " choice
+	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+		echo "[*] Installing Discord ..."
+		yay -S --noconfirm discord betterdiscord-installer
+		echo "[*] Done."
+	else
+		echo "[*] Discord installation skipped."
+	fi
+	sleep 3 && clear
+
+	# Firefox
+	read -p "[*] Do you want to install Firefox and get my custom? (y/n): " choice
+	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+		echo "[*] Installing Firefox ..."
+		sudo pacman -S firefox --noconfirm
+		firefox &
+		sleep 3
+		pkill firefox
+		echo "[*] Done."
+	else
+		echo "[*] Firefox installation skipped."
+	fi
+	cp -r ~/dotf/.config/firefox/* ~/.mozilla/firefox/*.default-release/
+	sleep 3 && clear
+
+	# Grtub Theme
+	read -p "[*] Do you want to install Grub theme(Recommend No, because it is for me)? (y/n): " choice
+	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+		git clone https://github.com/MrVivekRajan/Grub-Themes.git
+		sudo cp -r Grub-Themes/* /boot/grub/themes/
+		sudo sed -i 's/#GRUB_THEME=.*/GRUB_THEME=\/boot\/grub\/themes\/Anime\/theme.txt/g' /etc/default/grub
+		sudo grub-mkconfig -o /boot/grub/grub.cfg
+		sudo rm -rf ~/Grub-Themes
+	else
+		echo "[*] Grub theme installation skipped."
+	fi
+	echo "[*] Done."
+	sleep 3 && clear
+
+	# Lightdm
+	read -p "[*] Do you want to install Lightdm(Recommend No, because it is for me)? (y/n): " choice
+	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+		yay -S --noconfirm lightdm lightdm-webkit2-greeter lightdm-webkit2-theme-glorious
+		sudo systemctl enable lightdm
+		sudo sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
+		sudo sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
+		sudo sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
+		sudo cp .walls/* /usr/share/backgrounds
+	else
+		echo "[*] Lightdm installation skipped."
+	fi
+	echo "[*] Done."
+	sleep 3 && clear
+
+	# Install TeVim
+	read -p "[*] Do you want to install TeVim(Awesome Neovim <3)? (y/n): " choice
+	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+		echo "[*] Installing TeVim ..."
+		sudo pacman -Rns neovim --noconfirm
+		yay -S --noconfirm lazygit xclip xsel fzf ripgrep neovim-nightly-bin
+		rm -rf ~/.config/nvim
+		git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
+		cp -r ~/dotf/.config/nvim/lua/custom ~/.config/nvim/lua/
+	else
+		echo "[*] TeVim installation skipped."
+	fi
+	echo "[*] Done."
+	sleep 3 && clear
+
+	sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+else
+	echo "[*] Custom apps installation skipped."
+fi
