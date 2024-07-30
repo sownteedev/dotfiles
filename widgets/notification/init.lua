@@ -194,45 +194,41 @@ naughty.connect_signal("request::display", function(n)
 				{
 					{
 						{
-							{
-								close,
-								nil,
-								notif_info,
-								layout = wibox.layout.align.horizontal,
-								expand = "none",
-							},
-							margins = 20,
-							widget = wibox.container.margin,
+							close,
+							nil,
+							notif_info,
+							layout = wibox.layout.align.horizontal,
+							expand = "none",
 						},
-						widget = wibox.container.background,
-						bg = beautiful.lighter,
+						margins = 20,
+						widget = wibox.container.margin,
 					},
-					layout = wibox.layout.fixed.vertical,
-				},
-				{
-					{
-						{
-							title_n,
-							message_n,
-							actions,
-							layout = wibox.layout.fixed.vertical,
-							spacing = 30,
-						},
-						nil,
-						{
-							image_n,
-							layout = wibox.container.margin,
-						},
-						layout = wibox.layout.align.horizontal,
-						expand = "none",
-					},
-					widget = wibox.container.margin,
-					margins = 30,
+					widget = wibox.container.background,
+					bg = beautiful.lighter,
 				},
 				layout = wibox.layout.fixed.vertical,
 			},
-			widget = wibox.container.background,
-			bg = beautiful.background,
+			{
+				{
+					{
+						title_n,
+						message_n,
+						actions,
+						layout = wibox.layout.fixed.vertical,
+						spacing = 30,
+					},
+					nil,
+					{
+						image_n,
+						layout = wibox.container.margin,
+					},
+					layout = wibox.layout.align.horizontal,
+					expand = "none",
+				},
+				widget = wibox.container.margin,
+				margins = 30,
+			},
+			layout = wibox.layout.fixed.vertical,
 		},
 	})
 

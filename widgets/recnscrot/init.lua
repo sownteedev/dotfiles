@@ -1,56 +1,12 @@
-local M = {}
 local wibox = require("wibox")
 local helpers = require("helpers")
 local awful = require("awful")
 local beautiful = require("beautiful")
 local gears = require("gears")
 local animation = require("modules.animation")
+local general = require(... .. ".mods")
 
-local checkFolder = function()
-	if not os.rename(os.getenv("HOME") .. "/Videos/Recordings", os.getenv("HOME") .. "/Videos/Recordings") then
-		os.execute("mkdir -p " .. os.getenv("HOME") .. "/Videos/Recordings")
-	end
-end
-
-local getName = function()
-	local string = "~/Videos/Recordings/" .. os.date("%d-%m-%Y-%H:%M:%S") .. ".mp4"
-	string = string:gsub("~", os.getenv("HOME"))
-	return string
-end
-
-local rec_mic = function(fps, file_name)
-	local default_mic_source = io.popen("pactl info | grep 'Default Source' | awk '{print $3}'"):read("*l")
-	local display = os.getenv("DISPLAY")
-	local defCommand = string.format(
-		"sleep 1.25 && ffmpeg -y -f x11grab "
-		.. "-r %s -i %s -f pulse -i %s -c:v libx264 -qp 0 -profile:v main "
-		.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
-		.. "-c:a aac -b:a 64k -b:v 500k %s &",
-		fps,
-		display,
-		default_mic_source,
-		file_name
-	)
-	print(defCommand)
-	awful.spawn.easy_async_with_shell(defCommand)
-end
-
-local rec_audio = function(fps, file_name)
-	local speaker_input = "alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink.monitor"
-	local display = os.getenv("DISPLAY")
-	local defCommand = string.format(
-		"sleep 1.25 && ffmpeg -y -f x11grab "
-		.. "-r %s -i %s -f pulse -i %s -c:v libx264 -qp 0 -profile:v main "
-		.. "-preset ultrafast -tune zerolatency -crf 28 -pix_fmt yuv420p "
-		.. "-c:a aac -b:a 64k -b:v 500k %s &",
-		fps,
-		display,
-		speaker_input,
-		file_name
-	)
-	print(defCommand)
-	awful.spawn.easy_async_with_shell(defCommand)
-end
+local M = {}
 
 local createButton = function(path, name, fn, col)
 	local button = wibox.widget({
@@ -113,10 +69,8 @@ local recaudio = createButton(
 	gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recaudio.png",
 	"Rec Audio",
 	function()
-		M.close()
-		checkFolder()
-		local name = getName()
-		rec_audio("60", name)
+		M.closeRecord()
+		general.rec_audio()
 	end,
 	beautiful.green
 )
@@ -125,10 +79,8 @@ local recmic = createButton(
 	gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recmic.png",
 	"Rec Mic",
 	function()
-		M.close()
-		checkFolder()
-		local name = getName()
-		rec_mic("60", name)
+		M.closeRecord()
+		general.rec_mic()
 	end,
 	beautiful.blue
 )
@@ -138,7 +90,37 @@ local stop = createButton(
 	"Finish",
 	function()
 		awful.spawn.easy_async_with_shell("killall ffmpeg &")
-		M.close()
+		M.closeRecord()
+	end,
+	beautiful.red
+)
+
+local fullscreen = createButton(
+	gears.filesystem.get_configuration_dir() .. "/themes/assets/screenshot/fullscreen.png",
+	"Fullscreen",
+	function()
+		M.closeScrot()
+		general.full({ notify = true })
+	end,
+	beautiful.green
+)
+
+local selection = createButton(
+	gears.filesystem.get_configuration_dir() .. "/themes/assets/screenshot/selection.png",
+	"Selection",
+	function()
+		M.closeScrot()
+		general.area({ notify = true })
+	end,
+	beautiful.blue
+)
+
+local window = createButton(
+	gears.filesystem.get_configuration_dir() .. "/themes/assets/screenshot/window.png",
+	"Window",
+	function()
+		M.closeScrot()
+		general.window({ notify = true })
 	end,
 	beautiful.red
 )
@@ -179,7 +161,65 @@ recorder:setup({
 	margins = 15,
 })
 
-local slide = animation:new({
+local scrotter = wibox({
+	width = 450,
+	height = 230,
+	shape = helpers.rrect(10),
+	bg = beautiful.background,
+	ontop = true,
+	visible = false,
+})
+
+scrotter:setup({
+	{
+		{
+			{
+				{
+					font = beautiful.sans .. " Bold 15",
+					markup = "Screenshotter",
+					align = "start",
+					widget = wibox.widget.textbox,
+				},
+				widget = wibox.container.margin,
+				margins = 15,
+			},
+			widget = wibox.container.background,
+			bg = beautiful.lighter,
+			shape_border_width = beautiful.border_width_custom,
+			shape_border_color = beautiful.border_color,
+			shape = helpers.rrect(10),
+		},
+		{
+			fullscreen,
+			selection,
+			window,
+			spacing = 15,
+			layout = wibox.layout.fixed.horizontal,
+		},
+		spacing = 15,
+		layout = wibox.layout.fixed.vertical,
+	},
+	widget = wibox.container.margin,
+	margins = 15,
+})
+
+local slideSc = animation:new({
+	duration = 1,
+	pos = 0 - scrotter.height,
+	easing = animation.easing.inOutExpo,
+	update = function(_, pos)
+		scrotter.y = pos
+	end,
+})
+local slide_end_sc = gears.timer({
+	timeout = 1,
+	single_shot = true,
+	callback = function()
+		scrotter.visible = false
+	end,
+})
+
+local slideRc = animation:new({
 	duration = 1,
 	pos = 0 - recorder.height,
 	easing = animation.easing.inOutExpo,
@@ -187,8 +227,7 @@ local slide = animation:new({
 		recorder.y = pos
 	end,
 })
-
-local slide_end = gears.timer({
+local slide_end_rc = gears.timer({
 	timeout = 1,
 	single_shot = true,
 	callback = function()
@@ -196,20 +235,36 @@ local slide_end = gears.timer({
 	end,
 })
 
-function M.close()
-	slide_end:again()
-	slide:set(0 - recorder.height)
+function M.closeRecord()
+	slide_end_rc:again()
+	slideRc:set(0 - recorder.height)
 end
 
-function M.toggle()
+function M.toggleRecord()
 	if recorder.visible then
-		slide_end:again()
-		slide:set(0 - recorder.height)
+		slide_end_rc:again()
+		slideRc:set(0 - recorder.height)
 	elseif not recorder.visible then
-		slide:set(beautiful.height / 2 - recorder.height / 2)
+		slideRc:set(beautiful.height / 2 - recorder.height / 2)
 		recorder.visible = true
 	end
 	awful.placement.centered(recorder)
+end
+
+function M.closeScrot()
+	slide_end_sc:again()
+	slideSc:set(0 - scrotter.height)
+end
+
+function M.toggleScrot()
+	if scrotter.visible then
+		slide_end_sc:again()
+		slideSc:set(0 - scrotter.height)
+	elseif not scrotter.visible then
+		slideSc:set(beautiful.height / 2 - scrotter.height / 2)
+		scrotter.visible = true
+	end
+	awful.placement.centered(scrotter)
 end
 
 return M

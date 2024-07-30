@@ -5,9 +5,8 @@ local Launcher = require("widgets.launcher")
 local Menu = require("widgets.rightclick")
 local brivol = require("widgets.notification.brivol")
 local lock = require("widgets.lock")
-local screenshot = require("widgets.screenshot")
-local screenshotarea = require("widgets.screenshot.mods")
-local record = require("widgets.record")
+local recnscrot = require("widgets.recnscrot")
+local screenshotarea = require("widgets.recnscrot.mods")
 
 local mod = "Mod4"
 local alt = "Mod1"
@@ -72,13 +71,13 @@ awful.keyboard.append_global_keybindings({
 	end),
 
 	awful.key({}, "Print", function()
-		screenshot:toggle()
+		recnscrot:toggleScrot()
 	end),
 	awful.key({ mod, shift }, "s", function()
 		screenshotarea.area({ notify = true })
 	end),
 	awful.key({ mod }, "Print", function()
-		record:toggle()
+		recnscrot:toggleRecord()
 	end),
 	awful.key({ alt }, "p", function()
 		awful.spawn.easy_async_with_shell("~/.local/bin/colorpicker &")
@@ -207,8 +206,8 @@ end)
 awful.mouse.append_global_mousebindings({
 	awful.button({}, 1, function()
 		Launcher:close()
-		screenshot:close()
-		record:close()
+		recnscrot:closeRecord()
+		recnscrot:closeScrot()
 		awesome.emit_signal("close::notify")
 		awesome.emit_signal("close::moment")
 		awesome.emit_signal("close::control")
@@ -222,8 +221,8 @@ awful.mouse.append_global_mousebindings({
 })
 client.connect_signal("button::press", function()
 	Launcher:close()
-	screenshot:close()
-	record:close()
+	recnscrot:closeRecord()
+	recnscrot:closeScrot()
 	awesome.emit_signal("close::notify")
 	awesome.emit_signal("close::moment")
 	awesome.emit_signal("close::control")

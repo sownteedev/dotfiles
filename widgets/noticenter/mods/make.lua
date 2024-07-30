@@ -30,13 +30,14 @@ return function(icon, n)
 	})
 
 	local icon_widget = wibox.widget({
-		widget = wibox.container.constraint,
 		{
 			widget = wibox.widget.imagebox,
 			image = helpers.cropSurface(1, gears.surface.load_uncached(icon)),
 			resize = true,
 			clip_shape = gears.shape.circle,
 		},
+		margins = 5,
+		widget = wibox.container.margin,
 	})
 
 	local title_widget = wibox.widget({
@@ -77,11 +78,10 @@ return function(icon, n)
 		shape_border_color = beautiful.border_color,
 		{
 			{
-				layout = wibox.layout.align.horizontal,
 				icon_widget,
 				{
 					widget = wibox.container.margin,
-					left = 40,
+					left = 20,
 					{
 						{
 							layout = wibox.layout.align.horizontal,
@@ -95,6 +95,7 @@ return function(icon, n)
 						spacing = 30,
 					},
 				},
+				layout = wibox.layout.align.horizontal,
 			},
 			widget = wibox.container.margin,
 			margins = 15,
