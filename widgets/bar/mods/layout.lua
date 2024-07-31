@@ -25,7 +25,7 @@ local layouts = awful.widget.layoutbox({
 local widget = {
 	{
 		layouts,
-		margins = 12,
+		margins = 14,
 		widget = wibox.container.margin,
 	},
 	bg = beautiful.lighter,

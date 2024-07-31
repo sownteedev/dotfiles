@@ -11,8 +11,8 @@ local notipower = wibox.widget({
 			{
 				image = gears.filesystem.get_configuration_dir() .. "/themes/assets/notify/bell.png",
 				resize = true,
-				forced_height = 23,
-				forced_width = 23,
+				forced_height = 22,
+				forced_width = 22,
 				valign = "center",
 				widget = wibox.widget.imagebox,
 				buttons = {
@@ -24,8 +24,8 @@ local notipower = wibox.widget({
 			{
 				image = gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png",
 				resize = true,
-				forced_height = 17,
-				forced_width = 17,
+				forced_height = 16,
+				forced_width = 16,
 				valign = "center",
 				widget = wibox.widget.imagebox,
 				buttons = {

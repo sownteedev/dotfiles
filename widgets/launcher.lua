@@ -296,8 +296,8 @@ local function filter(input)
 					{
 						image = entry.icon,
 						clip_shape = helpers.rrect(10),
-						forced_height = 70,
-						forced_width = 70,
+						forced_height = 51,
+						forced_width = 51,
 						widget = wibox.widget.imagebox,
 					},
 					{
@@ -306,6 +306,7 @@ local function filter(input)
 						widget = wibox.widget.textbox,
 						font = beautiful.sans .. " 13",
 					},
+					spacing = 20,
 					layout = wibox.layout.fixed.horizontal,
 				},
 				left = 30,
@@ -385,8 +386,6 @@ local prompt_grabber = awful.keygrabber({
 			local entry = filtered[index_entry]
 			if entry then
 				entry.appinfo:launch()
-			else
-				awful.spawn.easy_async_with_shell(helpers.gc(prompt, "txt").markup .. " &")
 			end
 			L:close()
 		elseif key == "Up" then
@@ -408,13 +407,6 @@ local prompt_grabber = awful.keygrabber({
 	end,
 })
 
-function L:open()
-	popup_widget.visible = true
-	unfiltered = gen()
-	filter("")
-	prompt_grabber:start()
-end
-
 function L:close()
 	popup_widget.visible = false
 	prompt_grabber:stop()
@@ -423,7 +415,10 @@ end
 
 function L:toggle()
 	if not popup_widget.visible then
-		self:open()
+		popup_widget.visible = true
+		unfiltered = gen()
+		filter("")
+		prompt_grabber:start()
 	else
 		self:close()
 	end

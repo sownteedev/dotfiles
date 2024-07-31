@@ -201,8 +201,8 @@ function menu.sub_menu_button(args)
 			helpers.randomColor()
 		),
 		resize = true,
-		forced_height = 20,
-		forced_width = 20,
+		forced_height = 15,
+		forced_width = 15,
 		valign = "center",
 		widget = wibox.widget.imagebox,
 	})
@@ -254,7 +254,7 @@ end
 
 function menu.button(args)
 	local icon = wibox.widget({
-		font = beautiful.icon .. " 17",
+		font = beautiful.icon .. " 15",
 		markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 		widget = wibox.widget.textbox,
 		halign = "start",

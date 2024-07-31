@@ -8,8 +8,8 @@ local helpers = require("helpers")
 local bluetooth = wibox.widget({
 	image = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-dis.png",
 	resize = true,
-	forced_height = 23,
-	forced_width = 23,
+	forced_height = 22,
+	forced_width = 22,
 	valign = "center",
 	widget = wibox.widget.imagebox,
 })
@@ -34,8 +34,8 @@ local wifi = wibox.widget({
 		beautiful.foreground .. "55"
 	),
 	resize = true,
-	forced_height = 23,
-	forced_width = 23,
+	forced_height = 22,
+	forced_width = 22,
 	valign = "center",
 	widget = wibox.widget.imagebox,
 })

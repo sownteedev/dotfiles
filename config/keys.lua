@@ -181,8 +181,12 @@ awful.keyboard.append_global_keybindings({
 client.connect_signal("request::default_keybindings", function()
 	awful.keyboard.append_client_keybindings({
 		awful.key({ mod }, "f", function(c)
-			c.fullscreen = not c.fullscreen
-			c:raise()
+			if beautiful.autohidebar then
+				c.fullscreen = not c.fullscreen
+				c:raise()
+			else
+				c.maximized = not c.maximized
+			end
 		end),
 		awful.key({ mod, shift }, "f", awful.client.floating.toggle),
 	})
