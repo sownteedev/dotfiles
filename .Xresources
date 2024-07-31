@@ -8,9 +8,9 @@ st.font: Liga SFMono Nerd Font:style:Regular:pixelsize=20
 st.chscale: 1.3
 st.cwscale: 1.0
 
-*foreground:#ffffff
+*foreground:#54555b
 *background:#fafafa
-*cursorColor:#ff0000
+*cursorColor:#eaeaeb
 
 *color0:#EAEAEB
 *color1:#DF5B61
