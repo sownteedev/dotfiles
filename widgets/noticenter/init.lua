@@ -4,9 +4,44 @@ local naughty = require("naughty")
 local helpers = require("helpers")
 local wibox = require("wibox")
 local gears = require("gears")
-local empty = require(... .. ".mods.empty")
 local make = require(... .. ".mods.make")
 local progs = require(... .. ".mods.progs")
+
+local empty = wibox.widget({
+	{
+		{
+			image = gears.filesystem.get_configuration_dir() .. "/themes/assets/notify/wedding-bells.png",
+			resize = true,
+			forced_height = 400,
+			halign = "center",
+			widget = wibox.widget.imagebox,
+		},
+		widget = wibox.container.place,
+		valign = "center",
+	},
+	widget = wibox.container.background,
+	forced_height = 800,
+})
+
+local title = wibox.widget({
+	font = "azuki_font Bold 15",
+	markup = helpers.colorizeText("Notification Center", beautiful.foreground),
+	widget = wibox.widget.textbox,
+})
+
+local clearButton = wibox.widget({
+	image = gears.filesystem.get_configuration_dir() .. "/themes/assets/notify/trash.png",
+	resize = true,
+	forced_height = 20,
+	forced_width = 20,
+	halign = "center",
+	widget = wibox.widget.imagebox,
+	buttons = {
+		awful.button({}, 1, function()
+			notif_center_reset_notifs_container()
+		end),
+	},
+})
 
 awful.screen.connect_for_each_screen(function(s)
 	local notify = wibox({
@@ -41,25 +76,6 @@ awful.screen.connect_for_each_screen(function(s)
 		end
 	end
 
-	local title = wibox.widget({
-		font = "azuki_font Bold 15",
-		markup = helpers.colorizeText("Notification Center", beautiful.foreground),
-		widget = wibox.widget.textbox,
-	})
-
-	local clearButton = wibox.widget({
-		image = gears.filesystem.get_configuration_dir() .. "/themes/assets/notify/trash.png",
-		resize = true,
-		forced_height = 20,
-		forced_width = 20,
-		halign = "center",
-		widget = wibox.widget.imagebox,
-		buttons = {
-			awful.button({}, 1, function()
-				notif_center_reset_notifs_container()
-			end),
-		},
-	})
 	naughty.connect_signal("request::display", function(n)
 		if #finalcontent.children == 1 and remove_notifs_empty then
 			finalcontent:reset(finalcontent)

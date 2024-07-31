@@ -68,7 +68,6 @@ local anim = animation:new({
 	end,
 })
 
--- bright --
 awesome.connect_signal("signal::brightness", function(value)
 	anim:set(value)
 	helpers.gc(info, "text").text = value

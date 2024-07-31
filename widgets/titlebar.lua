@@ -5,14 +5,15 @@ local beautiful = require("beautiful")
 local helpers = require("helpers")
 
 client.connect_signal("request::titlebars", function(c)
-	local top_titlebar = awful.titlebar(c, {
+	local titlebar = awful.titlebar(c, {
 		size = 55,
+		bg = beautiful.lighter,
 		bg_normal = beautiful.lighter,
 		bg_focus = beautiful.lighter,
 	})
 
 	local close = wibox.widget({
-		font = beautiful.icon .. " 18",
+		font = beautiful.icon .. " 16",
 		widget = wibox.widget.textbox,
 		buttons = {
 			awful.button({}, 1, function()
@@ -21,7 +22,7 @@ client.connect_signal("request::titlebars", function(c)
 		},
 	})
 	local minimize = wibox.widget({
-		font = beautiful.icon .. " 18",
+		font = beautiful.icon .. " 16",
 		widget = wibox.widget.textbox,
 		buttons = {
 			awful.button({}, 1, function()
@@ -32,7 +33,7 @@ client.connect_signal("request::titlebars", function(c)
 		},
 	})
 	local maximize = wibox.widget({
-		font = beautiful.icon .. " 18",
+		font = beautiful.icon .. " 16",
 		widget = wibox.widget.textbox,
 		buttons = {
 			awful.button({}, 1, function()
@@ -85,7 +86,7 @@ client.connect_signal("request::titlebars", function(c)
 		widget = wibox.container.place,
 	})
 
-	top_titlebar.widget = {
+	titlebar.widget = {
 		layout = wibox.layout.align.horizontal,
 		{
 			widget = wibox.container.margin,

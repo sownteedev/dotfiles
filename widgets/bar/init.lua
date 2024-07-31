@@ -59,28 +59,17 @@ awful.screen.connect_for_each_screen(function(s)
 	if beautiful.autohidebar then
 		local slide = animation:new({
 			duration = 1,
-			pos = 0 + beautiful.height,
+			pos = beautiful.height,
 			easing = animation.easing.inOutExpo,
 			update = function(_, pos)
 				s.wibar.y = pos
 			end,
 		})
-
-		local slide_end = gears.timer({
-			timeout = 1,
-			single_shot = true,
-			callback = function()
-				s.wibar.visible = true
-			end,
-		})
-
 		s.wibar:connect_signal("mouse::enter", function()
-			slide_end:stop()
-			slide:set(0 + beautiful.height - s.wibar.height - beautiful.useless_gap * 2)
+			slide:set(beautiful.height - s.wibar.height - beautiful.useless_gap * 2)
 		end)
 		s.wibar:connect_signal("mouse::leave", function()
-			slide_end:again()
-			slide:set(0 + beautiful.height - 1)
+			slide:set(beautiful.height - 1)
 		end)
 	end
 end)

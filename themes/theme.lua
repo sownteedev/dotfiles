@@ -13,7 +13,7 @@ theme.font        = "SF Pro Display 13"
 theme.sans        = "SF Pro Display"
 theme.icon        = "Material Design Icons"
 
--- colors --
+-- Colors --
 local colors      = require("themes.colors." .. colorscheme)
 theme.background  = colors.background
 theme.darker      = colors.darker
@@ -47,18 +47,18 @@ theme.profile              = themes_path .. "assets/sownteedev.png"
 theme.songdefpicture       = themes_path .. "assets/music/defsong.jpg"
 theme.lock                 = "$HOME/.walls/4028603.jpg"
 
--- default vars --
+-- Default vars --
 theme.bg_normal            = theme.background
 theme.fg_normal            = theme.foreground
 
--- borders --
+-- Borders --
 theme.border_width         = 0
 theme.border_width_custom  = 1
 theme.border_color         = theme.foreground .. "33"
 theme.border_color_normal  = theme.blue
 theme.border_color_active  = theme.foreground
 
--- taglist --
+-- Taglist --
 theme.taglist_bg           = theme.background .. "00"
 theme.taglist_bg_focus     = theme.lighter1
 theme.taglist_fg_focus     = theme.foreground
@@ -74,7 +74,7 @@ theme.taglist_disable_icon = true
 theme.bg_systray           = theme.lighter
 theme.systray_icon_spacing = 10
 
--- tooltips --
+-- Tooltips --
 theme.tooltip_bg           = theme.background
 theme.tooltip_fg           = theme.foreground
 theme.tooltip_border_width = theme.border_width
