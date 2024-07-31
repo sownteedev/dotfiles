@@ -4,84 +4,14 @@
 	color: @foreground;
 }
 
-window.background.chromium {
-	background: @lighter;
-	color: rgba(75, 70, 70, 0.87);
-}
-
-window.background.chromium button {
-	border: 1px solid @lighter;
-}
-
-window.background.chromium .titlebutton {
-	border: transparent;
-}
-
-window.background.chromium entry:focus {
-	border-color: @foreground;
-}
-
-window.background.chromium menu {
-	background: @lighter;
-}
-
-window.background.chromium menu menuitem {
-	color: rgba(75, 70, 70, 0.87);
-}
-
-window.background.chromium menu menuitem:hover {
-	background: rgba(75, 70, 70, 0.06);
-}
-
-window.background.chromium menu menuitem:disabled label {
-	color: rgba(75, 70, 70, 0.06);
-}
-
-window.background.chromium headerbar,
-window.background.chromium menubar {
-	background: @background;
-}
-
-window.background.chromium headerbar label,
-window.background.chromium menubar label {
-	color: rgba(75, 70, 70, 0.34);
-}
-
-window.background.chromium headerbar .titlebutton,
-window.background.chromium menubar .titlebutton {
-	padding: 100px 80px;
-}
-
-window.background.chromium scrollbar button {
-	background: rgba(75, 70, 70, 0.06);
-	color: rgba(75, 70, 70, 0.87);
-}
-
-window.background.chromium scrollbar trough {
-	background: transparent;
-}
-
-window.background.chromium scrollbar slider {
-	background: rgba(75, 70, 70, 0.06);
-}
-
-window.background.chromium scrollbar junction {
-	background: rgba(75, 70, 70, 0.06);
-}
-
-window.background.chromium textview {
-	background-color: @background;
-	color: rgba(75, 70, 70, 0.87);
-}
-
 #MozillaGtkWidget {
 	background: @background;
-	color: rgba(75, 70, 70, 0.87);
+	color: @foreground;
 }
 
 #MozillaGtkWidget menubar {
-	color: rgba(75, 70, 70, 0.34);
 	background: @background;
+	color: @foreground;
 }
 
 #MozillaGtkWidget text {
@@ -93,7 +23,7 @@ window.background.chromium textview {
 }
 
 #MozillaGtkWidget menu :disabled {
-	color: rgba(75, 70, 70, 0.06);
+	color: @foreground;
 }
 
 #MozillaGtkWidget menu separator {
@@ -107,18 +37,14 @@ window.background.chromium textview {
 actionbar {
 	padding: 0.6em;
 	background: @background;
-	border-top: 1px solid rgba(75, 70, 70, 0.06);
+	border-top: 1px solid @lighter;
 }
 
 button {
 	transition: background-color 100ms ease-in;
-	background: rgba(75, 70, 70, 0.06);
+	background: @lighter;
 	padding: 0.6em;
 	border-radius: 0.5em;
-}
-
-button:hover:not(:active) {
-	background: rgba(75, 70, 70, 0.14);
 }
 
 button:disabled {
@@ -128,7 +54,7 @@ button:disabled {
 button:checked,
 button.suggested-action {
 	background: @lighter1;
-	color: rgba(75, 70, 70, 0.87);
+	color: @foreground;
 }
 
 button:checked:hover:not(:active),
@@ -141,12 +67,12 @@ button.image-button:not(.text-button) {
 }
 
 button.destructive-action {
-	background: rgba(235, 140, 140, 0.6);
+	background: @lighter1;
 	color: @foreground;
 }
 
 button.destructive-action:hover:not(:active) {
-	background: rgba(235, 140, 140, 0.6);
+	background: @background;
 }
 
 button.circular {
@@ -159,20 +85,12 @@ button.flat {
 }
 
 button.flat:hover {
-	background: rgba(75, 70, 70, 0.06);
+	background: @lighter;
 }
 
 button.flat:active,
 button.flat:checked {
-	background: rgba(75, 70, 70, 0.14);
-}
-
-label+button {
-	margin-left: 0.6em;
-}
-
-button.small-button image:only-child {
-	padding: 0.3em;
+	background: @lighter1;
 }
 
 .linked.horizontal button:not(:first-child) {
@@ -208,7 +126,7 @@ check {
 }
 
 check:hover {
-	border-color: rgba(75, 70, 70, 0.14);
+	border-color: @lighter1;
 }
 
 check:active,
@@ -232,6 +150,41 @@ checkbutton label {
 
 checkbutton:disabled {
 	opacity: 0.3;
+}
+
+radio {
+	-gtk-icon-source: -gtk-recolor(url("../assets/symbolic/radio.symbolic.png"));
+	-gtk-icon-transform: scale(0);
+	color: @foreground;
+	border: 0.2em solid rgba(75, 70, 70, 0.06);
+	border-radius: 100%;
+	padding: 0.1em;
+	min-width: 0.6em;
+	min-height: 0.6em;
+	transition: -gtk-icon-transform 200ms;
+}
+
+radio:hover {
+	border-color: @lighter1;
+}
+
+radio:active,
+radio:checked {
+	background: @lighter1;
+}
+
+radio:checked {
+	-gtk-icon-transform: scale(0.7);
+	border-color: @lighter1;
+	background: @lighter1;
+}
+
+radiobutton label {
+	padding-left: 5px;
+}
+
+radiobutton:disabled {
+	opacity: 0.38;
 }
 
 combobox entry {
@@ -323,13 +276,13 @@ messagedialog filechooser treeview {
 entry {
 	padding: 0.4em;
 	border-radius: 0.5em;
-	border: 0.2em solid rgba(75, 70, 70, 0.06);
-	background: rgba(75, 70, 70, 0.06);
+	border: 0.2em solid @lighter;
+	background: @lighter;
 	background-clip: padding-box;
 }
 
 entry:focus {
-	border-color: rgba(235, 230, 225, 0.8);
+	border-color: @lighter1;
 }
 
 entry:disabled {
@@ -342,11 +295,6 @@ entry image.left {
 
 entry image.right {
 	margin-left: 0.6em;
-}
-
-entry selection {
-	color: rgba(75, 70, 70, 0.87);
-	background: rgba(75, 70, 70, 0.34);
 }
 
 .linked.horizontal entry:not(:first-child) {
@@ -369,27 +317,6 @@ entry selection {
 	border-bottom-right-radius: 0;
 }
 
-expander title {
-	color: rgba(75, 70, 70, 0.34);
-	padding: 0.6em;
-}
-
-expander title arrow {
-	-gtk-icon-source: -gtk-icontheme("go-next-symbolic");
-	min-width: 1em;
-	min-height: 1em;
-	margin-right: 0.6em;
-}
-
-expander title arrow:checked {
-	-gtk-icon-source: -gtk-icontheme("go-down-symbolic");
-	color: rgba(75, 70, 70, 0.87);
-}
-
-expander title arrow:checked+label {
-	color: rgba(75, 70, 70, 0.87);
-}
-
 frame>border,
 .frame {
 	border: 1px solid @lighter;
@@ -408,41 +335,6 @@ headerbar button.titlebutton {
 	padding: 0.8em;
 }
 
-headerbar button.titlebutton:not(.appmenu) {
-	background: transparent;
-}
-
-headerbar button.titlebutton:not(.appmenu).close {
-	color: #eb8c8c;
-}
-
-headerbar button.titlebutton:not(.appmenu).close:hover {
-	color: #eb8c8c;
-	background: rgba(235, 140, 140, 0.3);
-}
-
-headerbar button.titlebutton:not(.appmenu).minimize {
-	color: #f0cd96;
-}
-
-headerbar button.titlebutton:not(.appmenu).minimize:hover {
-	color: #f0cd96;
-	background: rgba(240, 205, 150, 0.3);
-}
-
-headerbar button.titlebutton:not(.appmenu).maximize {
-	color: #468264;
-}
-
-headerbar button.titlebutton:not(.appmenu).maximize:hover {
-	color: #468264;
-	background: rgba(70, 130, 100, 0.3);
-}
-
-headerbar button.titlebutton.appmenu:not(:active):not(:checked) {
-	background: transparent;
-}
-
 iconview {
 	background: @lighter;
 	padding: 0.3em;
@@ -455,25 +347,9 @@ iconview:selected {
 }
 
 infobar {
-	color: rgba(75, 70, 70, 0.87);
 	padding: 0.3em;
 	background: @background;
-}
-
-infobar.info {
-	background: rgba(155, 185, 240, 0.6);
-}
-
-infobar.warning {
-	background: rgba(240, 205, 150, 0.6);
-}
-
-infobar.error {
-	background: rgba(235, 140, 140, 0.6);
-}
-
-infobar.question {
-	background: rgba(235, 230, 225, 0.6);
+	color: @foreground;
 }
 
 label.dim-label,
@@ -483,7 +359,7 @@ label:disabled {
 
 label selection {
 	background: @lighter1;
-	color: rgba(202, 198, 198, 0.87);
+	color: @foreground;
 }
 
 levelbar trough block {
@@ -529,7 +405,7 @@ menu menuitem {
 }
 
 menu menuitem:hover {
-	background: rgba(75, 70, 70, 0.06);
+	background: @lighter1;
 }
 
 menubar {
@@ -541,7 +417,7 @@ menubar menuitem {
 }
 
 menubar menuitem:hover {
-	background: rgba(75, 70, 70, 0.06);
+	background: @lighter;
 }
 
 menubar menuitem check,
@@ -551,34 +427,6 @@ menubar menuitem radio {
 
 notebook stack:only-child {
 	background: transparent;
-}
-
-overshoot.top {
-	background-image: -gtk-gradient(radial, center top, 0, center top, 0.6, from(rgba(245, 240, 235, 0.2)), to(rgba(245, 240, 235, 0)));
-	background-size: 100% 60%;
-	background-repeat: no-repeat;
-	background-position: center top;
-}
-
-overshoot.bottom {
-	background-image: -gtk-gradient(radial, center bottom, 0, center bottom, 0.6, from(rgba(245, 240, 235, 0.2)), to(rgba(245, 240, 235, 0)));
-	background-size: 100% 60%;
-	background-repeat: no-repeat;
-	background-position: center bottom;
-}
-
-overshoot.left {
-	background-image: -gtk-gradient(radial, left center, 0, left center, 0.6, from(rgba(245, 240, 235, 0.2)), to(rgba(245, 240, 235, 0)));
-	background-size: 60% 100%;
-	background-repeat: no-repeat;
-	background-position: left center;
-}
-
-overshoot.right {
-	background-image: -gtk-gradient(radial, right center, 0, right center, 0.6, from(rgba(245, 240, 235, 0.2)), to(rgba(245, 240, 235, 0)));
-	background-size: 60% 100%;
-	background-repeat: no-repeat;
-	background-position: right center;
 }
 
 .linked.path-bar button image:not(:only-child) {
@@ -597,22 +445,6 @@ overshoot.right {
 
 placessidebar {
 	background: @background;
-}
-
-placessidebar list {
-	background: transparent;
-}
-
-placessidebar list row:hover {
-	background: rgba(75, 70, 70, 0.06);
-}
-
-placessidebar list row:active {
-	background: rgba(75, 70, 70, 0.14);
-}
-
-placessidebar list row:selected {
-	background: rgba(235, 230, 225, 0.6);
 }
 
 placessidebar list row .sidebar-icon {
@@ -651,41 +483,6 @@ progressbar trough {
 
 progressbar trough progress {
 	background: @lighter1;
-}
-
-radio {
-	-gtk-icon-source: -gtk-recolor(url("../assets/symbolic/radio.symbolic.png"));
-	-gtk-icon-transform: scale(0);
-	color: @foreground;
-	border: 0.2em solid rgba(75, 70, 70, 0.06);
-	border-radius: 100%;
-	padding: 0.1em;
-	min-width: 0.6em;
-	min-height: 0.6em;
-	transition: -gtk-icon-transform 200ms;
-}
-
-radio:hover {
-	border-color: rgba(75, 70, 70, 0.14);
-}
-
-radio:active,
-radio:checked {
-	background: rgba(75, 70, 70, 0.06);
-}
-
-radio:checked {
-	-gtk-icon-transform: scale(0.7);
-	border-color: @lighter1;
-	background: @lighter1;
-}
-
-radiobutton label {
-	padding-left: 5px;
-}
-
-radiobutton:disabled {
-	opacity: 0.38;
 }
 
 revealer frame.app-notification border {
@@ -757,11 +554,11 @@ scrollbar {
 scrollbar slider {
 	padding: 0.2em;
 	border-radius: 1em;
-	background: rgba(75, 70, 70, 0.06);
+	background: @lighter;
 }
 
 scrollbar slider:hover {
-	background: rgba(75, 70, 70, 0.14);
+	background: @lighter1;
 }
 
 scrollbar slider:active {
@@ -991,7 +788,7 @@ header tabs tab:hover:not(:checked) {
 }
 
 textview {
-	background: rgba(75, 70, 70, 0.06);
+	background: @lighter;
 	padding: 0.6em 0.3em;
 }
 
@@ -1000,7 +797,7 @@ textview:disabled {
 }
 
 textview selection {
-	background: rgba(75, 70, 70, 0.6);
+	background: @lighter1;
 	color: @foreground;
 }
 
@@ -1018,7 +815,7 @@ toolbar.osd,
 }
 
 tooltip {
-	background: @lighter1;
+	background: @lighter;
 }
 
 tooltip>* {
@@ -1033,22 +830,26 @@ tooltip grid image {
 	margin-right: 0.6em;
 }
 
+.sidebar .view {
+	color: @foreground;
+	background-color: @background;
+}
+
 treeview {
 	-GtkTreeView-expander-size: 16;
 	-GtkTreeView-grid-line-pattern: "";
 	-GtkTreeView-tree-line-pattern: "";
 	-GtkTreeView-horizontal-separator: 12;
 	-GtkTreeView-vertical-separator: 12;
-	border-left-color: rgba(75, 70, 70, 0.06);
-	border-top-color: rgba(75, 70, 70, 0.06);
 }
 
 treeview:hover {
-	background: rgba(75, 70, 70, 0.06);
+	color: @foreground;
+	background: @lighter;
 }
 
 treeview:selected {
-	background: rgba(235, 230, 225, 0.6);
+	background: @lighter1;
 	color: @foreground;
 }
 
@@ -1056,22 +857,21 @@ treeview header button {
 	padding: 0.6em;
 	background: @background;
 	border-radius: 0;
-	color: rgba(75, 70, 70, 0.34);
+	color: @foreground;
 }
 
 treeview header button:hover:not(:active) {
-	color: rgba(75, 70, 70, 0.87);
+	color: @foreground;
 	background: @background;
 }
 
 treeview header button:not(:last-child) {
-	border-right: 1px solid rgba(75, 70, 70, 0.06);
+	border-right: 1px solid @lighter;
 }
 
 window,
 assistant {
 	background: @background;
-	color: rgba(75, 70, 70, 0.87);
 }
 
 window.csd decoration {
