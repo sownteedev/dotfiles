@@ -466,10 +466,8 @@ helpers.mix = function(c1, c2, wt)
 end
 
 helpers.makeColor = function(name)
-	if name == "yellow" then
-		return helpers.mix(beautiful.red, beautiful.green, 0.5)
-	elseif name == "orange" then
-		return helpers.mix(beautiful.red, helpers.makeColor("yellow"), 0.5)
+	if name == "orange" then
+		return helpers.mix(beautiful.red, beautiful.yellow, 0.5)
 	elseif name == "cyan" then
 		return helpers.mix(beautiful.green, beautiful.blue, 0.5)
 	elseif name == "purple" then

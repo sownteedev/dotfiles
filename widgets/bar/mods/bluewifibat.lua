@@ -5,8 +5,21 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local helpers = require("helpers")
 
+local bluetooth_con
+local bluetooth_dis
+local bluetooth_discon
+if beautiful.type == "light" then
+	bluetooth_con = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth1.png"
+	bluetooth_dis = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-dis1.png"
+	bluetooth_discon = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-discon1.png"
+else
+	bluetooth_con = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth.png"
+	bluetooth_dis = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-dis.png"
+	bluetooth_discon = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-discon.png"
+end
+
 local bluetooth = wibox.widget({
-	image = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-dis.png",
+	image = bluetooth_discon,
 	resize = true,
 	forced_height = 22,
 	forced_width = 22,
@@ -17,14 +30,13 @@ awesome.connect_signal("signal::bluetooth", function(value, _)
 	if value then
 		awesome.connect_signal("signal::bluetooth", function(_, name)
 			if name ~= "" then
-				bluetooth.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth.png"
+				bluetooth.image = bluetooth_con
 			else
-				bluetooth.image = gears.filesystem.get_configuration_dir()
-					.. "/themes/assets/bluetooth/bluetooth-discon.png"
+				bluetooth.image = bluetooth_discon
 			end
 		end)
 	else
-		bluetooth.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-dis.png"
+		bluetooth.image = bluetooth_dis
 	end
 end)
 
@@ -34,8 +46,8 @@ local wifi = wibox.widget({
 		beautiful.foreground .. "55"
 	),
 	resize = true,
-	forced_height = 22,
-	forced_width = 22,
+	forced_height = 24,
+	forced_width = 24,
 	valign = "center",
 	widget = wibox.widget.imagebox,
 })
@@ -45,13 +57,17 @@ awesome.connect_signal("signal::network", function(_, _, quality)
 		wifi.forced_height = 20
 		wifi.forced_width = 20
 	elseif quality >= 75 then
-		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi4.png"
+		wifi.image = gears.color.recolor_image(
+			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi4.png", helpers.makeColor("yellow"))
 	elseif quality >= 50 then
-		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi3.png"
+		wifi.image = gears.color.recolor_image(
+			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi3.png", helpers.makeColor("yellow"))
 	elseif quality >= 25 then
-		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi2.png"
+		wifi.image = gears.color.recolor_image(
+			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi2.png", helpers.makeColor("yellow"))
 	elseif quality > 0 then
-		wifi.image = gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi1.png"
+		wifi.image = gears.color.recolor_image(
+			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi1.png", helpers.makeColor("yellow"))
 	else
 		wifi.image = gears.color.recolor_image(
 			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/nowifi.png",
@@ -129,10 +145,8 @@ end)
 awesome.connect_signal("signal::battery", function(_, status)
 	local b = helpers.gc(battery, "status")
 	if status then
-		b.image = gears.color.recolor_image(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/thunder.png",
-			"#000000"
-		)
+		b.image = gears.color.recolor_image(gears.filesystem.get_configuration_dir() .. "/themes/assets/thunder.png",
+			beautiful.background)
 	else
 		b.image = nil
 	end

@@ -2,7 +2,7 @@ local awful = require("awful")
 
 local function mic()
 	awful.spawn.easy_async_with_shell(
-		"bash -c \"pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\\b\\d+(?=%)' | head -n 1\"",
+		"bash -c \"pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\\b\\d+(?=%)' | head -n 1\" &",
 		function(stdout)
 			local mic_int = tonumber(stdout)
 			awesome.emit_signal("signal::mic", mic_int)
@@ -12,7 +12,7 @@ end
 mic()
 
 local function mic_mute()
-	awful.spawn.easy_async_with_shell("bash -c 'pactl get-source-mute @DEFAULT_SOURCE@'", function(value)
+	awful.spawn.easy_async_with_shell("bash -c 'pactl get-source-mute @DEFAULT_SOURCE@' &", function(value)
 		local boolen = value:match("yes")
 		awesome.emit_signal("signal::micmute", boolen)
 	end)

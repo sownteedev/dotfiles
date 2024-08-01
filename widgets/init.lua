@@ -1,5 +1,5 @@
 require(... .. ".bar")
-require(... .. ".titlebars")
+require(... .. ".titlebar")
 require(... .. ".notification")
 require(... .. ".noticenter")
 require(... .. ".moment")

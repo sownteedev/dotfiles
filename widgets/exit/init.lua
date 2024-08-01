@@ -21,7 +21,7 @@ local createButton = function(name, icon, cmd)
 					widget = wibox.widget.textbox,
 				},
 				layout = wibox.layout.fixed.horizontal,
-				spacing = 10,
+				spacing = 20,
 			},
 			margins = 20,
 			widget = wibox.container.margin,
@@ -42,7 +42,7 @@ awful.screen.connect_for_each_screen(function(s)
 	local exit = wibox({
 		screen = s,
 		width = beautiful.width / 12,
-		height = beautiful.height / 5.5,
+		height = beautiful.height / 4.5,
 		ontop = true,
 		visible = false,
 	})
@@ -50,14 +50,16 @@ awful.screen.connect_for_each_screen(function(s)
 	exit:setup({
 		{
 			{
-				createButton("Power Off", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png",
+				createButton("Shutdown", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/power.png",
 					"poweroff"),
 				createButton("Reboot", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/restart.png",
 					"reboot"),
 				createButton("Lock", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/lock.png",
-					"betterlockscreen -l"),
+					"awesome-client \"awesome.emit_signal('toggle::lock')\" &"),
 				createButton("Suspend", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/sleep.png",
 					"systemctl suspend"),
+				createButton("Logout", gears.filesystem.get_configuration_dir() .. "/themes/assets/buttons/logout.png",
+					"loginctl kill-user $USER"),
 				layout = wibox.layout.fixed.vertical,
 				spacing = 10,
 			},

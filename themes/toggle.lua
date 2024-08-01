@@ -134,12 +134,8 @@ end
 function darkmode()
 	awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/darkmode'", function(status)
 		status = status:gsub("\n", "")
-		if status == "true" then
-			awful.spawn.with_shell(
-				[[bash -c "awesome-client 'applyTheme(\"yoru\")' && echo false > ~/.cache/darkmode"]])
-		else
-			awful.spawn.with_shell(
-				[[bash -c "awesome-client 'applyTheme(\"one_light\")' && echo true > ~/.cache/darkmode"]])
-		end
+		awful.spawn.with_shell(status == "true" and
+			[[bash -c "awesome-client 'applyTheme(\"yoru\")' && echo false > ~/.cache/darkmode"]] or
+			[[bash -c "awesome-client 'applyTheme(\"one_light\")' && echo true > ~/.cache/darkmode"]])
 	end)
 end
