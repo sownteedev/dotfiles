@@ -2,7 +2,7 @@
 
 <details><summary>🌸</summary><blockquote>
 
-<h2>This is Guide for Dualboot Windowns + ArchLinux</h2>
+<h2>This is Guide for Dualboot Windows + ArchLinux</h2>
 
 ### Make you have Internet
 

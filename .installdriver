@@ -143,4 +143,3 @@ sleep 3 && clear
 sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop easyeffects zsh
 yay -S --noconfirm notion-app-electron visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional docker-desktop postman-bin ulauncher-git appimagelauncher-bin
 echo "[*] Done."
-sleep 3 && clear
