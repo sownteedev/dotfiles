@@ -10,7 +10,14 @@ naughty.connect_signal('request::display_error', function(message, startup)
 	})
 end)
 
+require("beautiful").init(require("gears").filesystem.get_configuration_dir() .. "themes/theme.lua")
+require("config")
+require("signals")
+require("widgets")
+
 collectgarbage("incremental", 110, 1000)
+collectgarbage("setpause", 110)
+collectgarbage("setstepmul", 1000)
 
 local memory_last_check_count = collectgarbage("count")
 local memory_last_run_time = os.time()
@@ -31,8 +38,3 @@ gtimer.start_new(5, function()
 	memory_last_check_count = collectgarbage("count")
 	return true
 end)
-
-require("beautiful").init(require("gears").filesystem.get_configuration_dir() .. "themes/theme.lua")
-require("config")
-require("signals")
-require("widgets")

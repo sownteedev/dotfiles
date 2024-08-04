@@ -17,7 +17,7 @@ local notipower = wibox.widget({
 				widget = wibox.widget.imagebox,
 				buttons = {
 					awful.button({}, 1, function()
-						awesome.emit_signal("toggle::notify")
+						awesome.emit_signal("toggle::noticenter")
 					end),
 				},
 			},

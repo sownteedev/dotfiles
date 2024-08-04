@@ -142,7 +142,7 @@ awesome.connect_signal("signal::battery", function(value)
 	end
 end)
 
-awesome.connect_signal("signal::battery", function(_, status)
+awesome.connect_signal("signal::batterystatus", function(status)
 	local b = helpers.gc(battery, "status")
 	if status then
 		b.image = gears.color.recolor_image(gears.filesystem.get_configuration_dir() .. "/themes/assets/thunder.png",

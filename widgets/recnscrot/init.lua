@@ -6,8 +6,6 @@ local gears = require("gears")
 local animation = require("modules.animation")
 local general = require(... .. ".mods")
 
-local M = {}
-
 local createButton = function(path, name, fn, col)
 	local button = wibox.widget({
 		{
@@ -69,7 +67,7 @@ local recaudio = createButton(
 	gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recaudio.png",
 	"Rec Audio",
 	function()
-		M.closeRecord()
+		awesome.emit_signal("close::record")
 		general.rec_audio()
 	end,
 	beautiful.green
@@ -79,7 +77,7 @@ local recmic = createButton(
 	gears.filesystem.get_configuration_dir() .. "/themes/assets/record/recmic.png",
 	"Rec Mic",
 	function()
-		M.closeRecord()
+		awesome.emit_signal("close::record")
 		general.rec_mic()
 	end,
 	beautiful.blue
@@ -90,7 +88,7 @@ local stop = createButton(
 	"Finish",
 	function()
 		awful.spawn.easy_async_with_shell("killall ffmpeg &")
-		M.closeRecord()
+		awesome.emit_signal("close::record")
 	end,
 	beautiful.red
 )
@@ -99,7 +97,7 @@ local fullscreen = createButton(
 	gears.filesystem.get_configuration_dir() .. "/themes/assets/screenshot/fullscreen.png",
 	"Fullscreen",
 	function()
-		M.closeScrot()
+		awesome.emit_signal("close::scrot")
 		general.full({ notify = true })
 	end,
 	beautiful.green
@@ -109,7 +107,7 @@ local selection = createButton(
 	gears.filesystem.get_configuration_dir() .. "/themes/assets/screenshot/selection.png",
 	"Selection",
 	function()
-		M.closeScrot()
+		awesome.emit_signal("close::scrot")
 		general.area({ notify = true })
 	end,
 	beautiful.blue
@@ -119,7 +117,7 @@ local window = createButton(
 	gears.filesystem.get_configuration_dir() .. "/themes/assets/screenshot/window.png",
 	"Window",
 	function()
-		M.closeScrot()
+		awesome.emit_signal("close::scrot")
 		general.window({ notify = true })
 	end,
 	beautiful.red
@@ -235,12 +233,12 @@ local slide_end_rc = gears.timer({
 	end,
 })
 
-function M.closeRecord()
+awesome.connect_signal("close::record", function()
 	slide_end_rc:again()
 	slideRc:set(0 - recorder.height)
-end
+end)
 
-function M.toggleRecord()
+awesome.connect_signal("toggle::record", function()
 	if recorder.visible then
 		slide_end_rc:again()
 		slideRc:set(0 - recorder.height)
@@ -249,14 +247,15 @@ function M.toggleRecord()
 		recorder.visible = true
 	end
 	awful.placement.centered(recorder)
-end
+end)
 
-function M.closeScrot()
+
+awesome.connect_signal("close::scrot", function()
 	slide_end_sc:again()
 	slideSc:set(0 - scrotter.height)
-end
+end)
 
-function M.toggleScrot()
+awesome.connect_signal("toggle::scrot", function()
 	if scrotter.visible then
 		slide_end_sc:again()
 		slideSc:set(0 - scrotter.height)
@@ -265,6 +264,4 @@ function M.toggleScrot()
 		scrotter.visible = true
 	end
 	awful.placement.centered(scrotter)
-end
-
-return M
+end)

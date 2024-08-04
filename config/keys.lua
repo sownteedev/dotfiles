@@ -1,12 +1,5 @@
 local awful = require("awful")
 local beautiful = require("beautiful")
-local switcher = require("modules.awesome-switcher")
-local Launcher = require("widgets.launcher")
-local Menu = require("widgets.rightclick")
-local brivol = require("widgets.notification.brivol")
-local lock = require("widgets.lock")
-local recnscrot = require("widgets.recnscrot")
-local screenshotarea = require("widgets.recnscrot.mods")
 
 local mod = "Mod4"
 local alt = "Mod1"
@@ -16,7 +9,7 @@ local shift = "Shift"
 awful.keyboard.append_global_keybindings({
 	-- Apps
 	awful.key({ mod }, "space", function()
-		Launcher:toggle()
+		awesome.emit_signal("toggle::launcher")
 	end),
 	awful.key({ alt }, "space", function()
 		awful.spawn.easy_async_with_shell("ulauncher-toggle &")
@@ -44,17 +37,17 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86AudioRaiseVolume", function()
 		awful.spawn.easy_async_with_shell("pamixer -i 2 &")
 		volume_emit()
-		brivol.toggle()
+		awesome.emit_signal("toggle::osd")
 	end),
 	awful.key({}, "XF86AudioLowerVolume", function()
 		awful.spawn.easy_async_with_shell("pamixer -d 2 &")
 		volume_emit()
-		brivol.toggle()
+		awesome.emit_signal("toggle::osd")
 	end),
 	awful.key({}, "XF86AudioMute", function()
 		awful.spawn.easy_async_with_shell("pamixer -t &")
 		volume_emit()
-		brivol.toggle()
+		awesome.emit_signal("toggle::osd")
 	end),
 	awful.key({}, "XF86AudioMicMute", function()
 		awful.spawn.easy_async_with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle &")
@@ -62,22 +55,22 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86MonBrightnessUp", function()
 		awful.spawn.easy_async_with_shell("brightnessctl s 5%+ &")
 		brightness_emit()
-		brivol.toggle()
+		awesome.emit_signal("toggle::osd")
 	end),
 	awful.key({}, "XF86MonBrightnessDown", function()
 		awful.spawn.easy_async_with_shell("brightnessctl s 5%- &")
 		brightness_emit()
-		brivol.toggle()
+		awesome.emit_signal("toggle::osd")
 	end),
 
 	awful.key({}, "Print", function()
-		recnscrot:toggleScrot()
+		awesome.emit_signal("toggle::scrot")
 	end),
 	awful.key({ mod, shift }, "s", function()
-		screenshotarea.area({ notify = true })
+		require("widgets.recnscrot.mods").area({ notify = true })
 	end),
 	awful.key({ mod }, "Print", function()
-		recnscrot:toggleRecord()
+		awesome.emit_signal("toggle::record")
 	end),
 	awful.key({ alt }, "p", function()
 		awful.spawn.easy_async_with_shell("~/.local/bin/colorpicker &")
@@ -90,7 +83,7 @@ awful.keyboard.append_global_keybindings({
 		end
 	end),
 	awful.key({ mod }, "l", function()
-		lock:open()
+		awesome.emit_signal("toggle::lock")
 	end),
 	awful.key({ mod, alt }, "w", function()
 		awful.spawn.easy_async_with_shell("feh -z --no-fehbg --bg-fill ~/.walls/" .. beautiful.type .. " &")
@@ -134,7 +127,7 @@ awful.keyboard.append_global_keybindings({
 
 	-- Client
 	awful.key({ alt }, "Tab", function()
-		switcher.switch(1, "Mod1", "Alt_L", "Shift", "Tab")
+		require("modules.awesome-switcher").switch(1, "Mod1", "Alt_L", "Shift", "Tab")
 	end),
 })
 
@@ -209,10 +202,10 @@ end)
 
 awful.mouse.append_global_mousebindings({
 	awful.button({}, 1, function()
-		Launcher:close()
-		recnscrot:closeRecord()
-		recnscrot:closeScrot()
-		awesome.emit_signal("close::notify")
+		awesome.emit_signal("close::record")
+		awesome.emit_signal("close::scrot")
+		awesome.emit_signal("close::launcher")
+		awesome.emit_signal("close::noticenter")
 		awesome.emit_signal("close::moment")
 		awesome.emit_signal("close::control")
 		awesome.emit_signal("close::music")
@@ -220,14 +213,14 @@ awful.mouse.append_global_mousebindings({
 		awesome.emit_signal("close::exit")
 	end),
 	awful.button({}, 3, function()
-		Menu.desktop:toggle()
+		awesome.emit_signal("toggle::menu")
 	end),
 })
 client.connect_signal("button::press", function()
-	Launcher:close()
-	recnscrot:closeRecord()
-	recnscrot:closeScrot()
-	awesome.emit_signal("close::notify")
+	awesome.emit_signal("close::record")
+	awesome.emit_signal("close::scrot")
+	awesome.emit_signal("close::launcher")
+	awesome.emit_signal("close::noticenter")
 	awesome.emit_signal("close::moment")
 	awesome.emit_signal("close::control")
 	awesome.emit_signal("close::music")

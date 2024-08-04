@@ -7,6 +7,7 @@ local ruled = require("ruled")
 local menubar = require("menubar")
 local gears = require("gears")
 local animation = require("modules.animation")
+require(... .. ".brivol")
 
 naughty.connect_signal("request::icon", function(n, context, hints)
 	if context ~= "app_icon" then

@@ -1,4 +1,3 @@
-local M = {}
 local wibox = require("wibox")
 local helpers = require("helpers")
 local awful = require("awful")
@@ -292,14 +291,7 @@ lock:setup({
 
 check_caps()
 
-function M.open()
-	visible(true)
-	grab()
-end
-
 awesome.connect_signal("toggle::lock", function()
 	visible(true)
 	grab()
 end)
-
-return M

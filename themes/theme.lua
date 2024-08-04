@@ -36,7 +36,7 @@ else
 	theme.fg1 = helpers.blend(theme.background, theme.foreground, 0.1)
 end
 
-theme.autohidebar          = false
+theme.autohidebar          = true
 
 theme.width                = 2560
 theme.height               = 1600
