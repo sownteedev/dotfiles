@@ -57,6 +57,7 @@ awful.screen.connect_for_each_screen(function(s)
 	}
 
 	if beautiful.autohidebar then
+		s.wibar.ontop = true
 		local slide = animation:new({
 			duration = 1,
 			pos = beautiful.height,

@@ -3,7 +3,6 @@ local beautiful = require("beautiful")
 local awful = require("awful")
 local helpers = require("helpers")
 local gears = require("gears")
-local Launcher = require("widgets.launcher")
 
 local profile = wibox.widget({
 	{
@@ -16,7 +15,7 @@ local profile = wibox.widget({
 			clip_shape = helpers.rrect(100),
 			buttons = {
 				awful.button({}, 1, function()
-					Launcher:toggle()
+					awesome.emit_signal("toggle::launcher")
 				end),
 			},
 		},

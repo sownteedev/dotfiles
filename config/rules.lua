@@ -1,6 +1,7 @@
 local awful = require("awful")
 local ruled = require("ruled")
 local helpers = require("helpers")
+local beautiful = require("beautiful")
 
 ruled.client.connect_signal("request::rules", function()
 	ruled.client.append_rule({
@@ -26,10 +27,17 @@ ruled.client.connect_signal("request::rules", function()
 		rule_any = { class = { "St", "Alacritty" } },
 		properties = { tag = "Terminal", switch_to_tags = true },
 	})
-	ruled.client.append_rule({
-		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
-		properties = { tag = "Browser", switch_to_tags = true },
-	})
+	if beautiful.autohidebar then
+		ruled.client.append_rule({
+			rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
+			properties = { tag = "Browser", switch_to_tags = true, hight = beautiful.height, maximized_horizontal = true },
+		})
+	else
+		ruled.client.append_rule({
+			rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
+			properties = { tag = "Browser", switch_to_tags = true, maximized = true },
+		})
+	end
 	ruled.client.append_rule({
 		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "jetbrains-pycharm", "Docker Desktop", "Postman", "neovide" } },
 		properties = { tag = "Develop" },

@@ -125,10 +125,10 @@ awful.screen.connect_for_each_screen(function(s)
 		shape_border_color = beautiful.border_color,
 	})
 	helpers.placeWidget(notify, "bottom_right", 0, 2, 0, 2)
-	awesome.connect_signal("toggle::notify", function()
+	awesome.connect_signal("toggle::noticenter", function()
 		notify.visible = not notify.visible
 	end)
-	awesome.connect_signal("close::notify", function()
+	awesome.connect_signal("close::noticenter", function()
 		notify.visible = false
 	end)
 end)

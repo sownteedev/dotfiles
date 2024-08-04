@@ -5,7 +5,6 @@ local iconTheme = require("lgi").require("Gtk", "3.0").IconTheme.get_default()
 local beautiful = require("beautiful")
 local gears = require("gears")
 local helpers = require("helpers")
-local L = {}
 
 local Conf = {
 	rows = 8,
@@ -40,7 +39,7 @@ local createPowerButton = function(path, color, command)
 		widget = wibox.container.place,
 		buttons = {
 			awful.button({}, 1, function()
-				L:close()
+				awesome.emit_signal("close::launcher")
 				awful.spawn.easy_async_with_shell(command)
 			end),
 		},
@@ -274,7 +273,7 @@ local function filter(input)
 				awful.button({}, 1, function()
 					if index_entry == i then
 						entry.appinfo:launch()
-						L:close()
+						awesome.emit_signal("close::launcher")
 					else
 						index_entry = i
 						filter(input)
@@ -375,7 +374,7 @@ local prompt_grabber = awful.keygrabber({
 	keypressed_callback = function(self, mod, key, command)
 		local addition = ""
 		if key == "Escape" then
-			L:close()
+			awesome.emit_signal("close::launcher")
 		elseif key == "BackSpace" then
 			helpers.gc(prompt, "txt"):set_markup_silently(helpers.gc(prompt, "txt").markup:sub(1, -2))
 			filter(helpers.gc(prompt, "txt").markup)
@@ -387,7 +386,7 @@ local prompt_grabber = awful.keygrabber({
 			if entry then
 				entry.appinfo:launch()
 			end
-			L:close()
+			awesome.emit_signal("close::launcher")
 		elseif key == "Up" then
 			back()
 		elseif key == "Down" then
@@ -407,21 +406,19 @@ local prompt_grabber = awful.keygrabber({
 	end,
 })
 
-function L:close()
+awesome.connect_signal("close::launcher", function()
 	popup_widget.visible = false
 	prompt_grabber:stop()
 	helpers.gc(prompt, "txt"):set_markup_silently("")
-end
+end)
 
-function L:toggle()
+awesome.connect_signal("toggle::launcher", function()
 	if not popup_widget.visible then
 		popup_widget.visible = true
 		unfiltered = gen()
 		filter("")
 		prompt_grabber:start()
 	else
-		self:close()
+		awesome.emit_signal("close::launcher")
 	end
-end
-
-return L
+end)

@@ -45,7 +45,7 @@ local function widget()
 			icon = { icon = " ", font = "Material Design Icons" },
 			text = "Terminal",
 			on_press = function()
-				awful.spawn("alacritty", false)
+				awful.spawn("alacritty", true)
 				awesome.emit_signal("close::menu")
 			end,
 		}),

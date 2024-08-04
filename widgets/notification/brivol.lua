@@ -1,4 +1,3 @@
-local M = {}
 local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
@@ -112,13 +111,11 @@ local osd_timer = gears.timer({
 	callback = hide,
 })
 
-function M.toggle()
+awesome.connect_signal("toggle::osd", function()
 	if not osd.visible then
 		osd.visible = true
 		osd_timer:start()
 	else
 		osd_timer:again()
 	end
-end
-
-return M
+end)

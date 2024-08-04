@@ -16,6 +16,5 @@ end)
 
 screen.connect_signal("request::desktop_decoration", function(s)
 	awful.tag({ "Terminal", "Browser", "Develop", "Media", "Other" }, s, awful.layout.layouts[1])
+	gears.wallpaper.maximized(beautiful.wallpaper)
 end)
-
-gears.wallpaper.maximized(beautiful.wallpaper)

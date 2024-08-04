@@ -44,7 +44,7 @@ return function(icon, n)
 		widget = wibox.container.scroll.horizontal,
 		step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
 		speed = 80,
-		forced_width = 200,
+		forced_width = 250,
 		{
 			widget = wibox.widget.textbox,
 			text = n.title,
