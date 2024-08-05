@@ -830,11 +830,6 @@ tooltip grid image {
 	margin-right: 0.6em;
 }
 
-.sidebar .view {
-	color: @foreground;
-	background-color: @background;
-}
-
 treeview {
 	-GtkTreeView-expander-size: 16;
 	-GtkTreeView-grid-line-pattern: "";
