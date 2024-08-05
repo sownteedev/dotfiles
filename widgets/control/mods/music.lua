@@ -97,7 +97,7 @@ awful.screen.connect_for_each_screen(function(s)
 									{
 										{
 											id = "songname",
-											font = beautiful.sans .. " Medium 18",
+											font = beautiful.sans .. " Medium 16",
 											markup = "",
 											widget = wibox.widget.textbox,
 										},
@@ -232,8 +232,8 @@ awful.screen.connect_for_each_screen(function(s)
 			end)
 		helpers.gc(music, "art"):set_image(helpers.cropSurface(1, gears.surface.load_uncached(album)))
 		helpers.gc(music, "border"):set_shape_border_color(beautiful.border_color)
-		if string.len(title) >= 65 then
-			title = string.sub(title, 0, 65) .. "..."
+		if string.len(title) >= 70 then
+			title = string.sub(title, 0, 70) .. "..."
 		end
 		helpers.gc(music, "songname"):set_markup_silently(helpers.colorizeText(title, beautiful.fg))
 		helpers.gc(music, "artist"):set_markup_silently(helpers.colorizeText("by ", beautiful.fg .. "AA") ..
