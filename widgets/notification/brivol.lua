@@ -10,7 +10,7 @@ local info = wibox.widget({
 		{
 			widget = wibox.widget.textbox,
 			id = "icon",
-			font = beautiful.icon .. " 23",
+			font = beautiful.icon .. " 18",
 			markup = "",
 		},
 		{
@@ -27,15 +27,15 @@ local info = wibox.widget({
 				widget = wibox.widget.progressbar,
 				id = "progressbar",
 				max_value = 100,
-				forced_width = 350,
+				forced_width = 300,
 				shape = helpers.rrect(10),
 				background_color = beautiful.foreground .. "11",
 				color = beautiful.foreground,
 				bar_shape = helpers.rrect(10),
 			},
 			widget = wibox.container.margin,
-			top = 28,
-			bottom = 28,
+			top = 25,
+			bottom = 25,
 		},
 		layout = wibox.layout.fixed.horizontal,
 		spacing = 10,
@@ -49,8 +49,8 @@ local osd = awful.popup({
 	visible = false,
 	ontop = true,
 	bg = beautiful.background,
-	minimum_height = 75,
-	maximum_height = 75,
+	minimum_height = 70,
+	maximum_height = 70,
 	forced_width = 0,
 	shape = helpers.rrect(10),
 	placement = function(d)
@@ -100,15 +100,12 @@ awesome.connect_signal("signal::volumemute", function(value)
 	end
 end)
 
-local function hide()
-	osd.visible = false
-	osd_timer:stop()
-end
-
 local osd_timer = gears.timer({
 	timeout = 4,
 	single_shot = true,
-	callback = hide,
+	callback = function()
+		osd.visible = false
+	end,
 })
 
 awesome.connect_signal("toggle::osd", function()

@@ -2,7 +2,6 @@ local awful = require("awful")
 local wibox = require("wibox")
 local helpers = require("helpers")
 local beautiful = require("beautiful")
-local Launcher = require("widgets.launcher")
 
 return function(s)
 	local taglist = awful.widget.taglist({
@@ -18,8 +17,7 @@ return function(s)
 				t:view_only()
 			end),
 			awful.button({}, 3, function()
-				Launcher:close()
-				awesome.emit_signal("widget::preview")
+				awesome.emit_signal("toggle::preview")
 			end),
 		},
 		widget_template = {

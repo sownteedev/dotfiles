@@ -5,23 +5,6 @@ local beautiful = require("beautiful")
 local helpers = require("helpers")
 local scale = 0.1
 
-local function hovercursor(widget)
-	local oldcursor, oldwibox
-	widget:connect_signal("mouse::enter", function()
-		local wb = mouse.current_wibox
-		if wb == nil then return end
-		oldcursor, oldwibox = wb.cursor, wb
-		wb.cursor = "hand2"
-	end)
-	widget:connect_signal("mouse::leave", function()
-		if oldwibox then
-			oldwibox.cursor = oldcursor
-			oldwibox = nil
-		end
-	end)
-	return widget
-end
-
 local function createpreview(t, s, geometry)
 	local clientlayout = wibox.layout.manual()
 	clientlayout.forced_height = geometry.height
@@ -120,7 +103,7 @@ local previewlist = wibox.widget {
 	layout = wibox.layout.grid
 }
 
-awesome.connect_signal("widget::preview", function()
+awesome.connect_signal("toggle::preview", function()
 	if previewbox.visible then
 		previewbox.visible = false
 		return
@@ -136,10 +119,10 @@ awesome.connect_signal("widget::preview", function()
 		numtags = i
 
 		local preview = wibox.widget {
-			hovercursor(createpreview(tag, tag.screen, geometry)),
+			createpreview(tag, tag.screen, geometry),
 			buttons = {
 				awful.button({}, 1, function()
-					awesome.emit_signal("widget::preview")
+					awesome.emit_signal("close::preview")
 					tag:view_only()
 				end)
 			},

@@ -171,40 +171,6 @@ M.popup:setup({
 	M.popupWidget,
 })
 
-local removeDup = function(arr)
-	local hash = {}
-	local res = {}
-
-	for _, v in ipairs(arr) do
-		if not hash[v] then
-			res[#res + 1] = v
-			hash[v] = true
-		end
-	end
-
-	return res
-end
-
-function M:getExecutable(class)
-	local class_1 = class:gsub("[%-]", "")
-	local class_2 = class:gsub("[%-]", ".")
-
-	local class_3 = class:match("(.-)-") or class
-	class_3 = class_3:match("(.-)%.") or class_3
-	class_3 = class_3:match("(.-)%s+") or class_3
-	local apps = Gio.AppInfo.get_all()
-	local possible_icon_names = { class, class_3, class_2, class_1 }
-	for _, app in ipairs(apps) do
-		local id = app:get_id():lower()
-		for _, possible_icon_name in ipairs(possible_icon_names) do
-			if id and id:find(possible_icon_name, 1, true) then
-				return app:get_executable()
-			end
-		end
-	end
-	return class:lower()
-end
-
 function M:showMenu(data)
 	local clients = data.clients
 	self.popup.x = mouse.coords().x - 100
@@ -298,6 +264,40 @@ function M:showMenu(data)
 	self.popupWidget:add(addNew)
 	self.popupWidget:add(closeAll)
 	self.popup.visible = true
+end
+
+local removeDup = function(arr)
+	local hash = {}
+	local res = {}
+
+	for _, v in ipairs(arr) do
+		if not hash[v] then
+			res[#res + 1] = v
+			hash[v] = true
+		end
+	end
+
+	return res
+end
+
+function M:getExecutable(class)
+	local class_1 = class:gsub("[%-]", "")
+	local class_2 = class:gsub("[%-]", ".")
+
+	local class_3 = class:match("(.-)-") or class
+	class_3 = class_3:match("(.-)%.") or class_3
+	class_3 = class_3:match("(.-)%s+") or class_3
+	local apps = Gio.AppInfo.get_all()
+	local possible_icon_names = { class, class_3, class_2, class_1 }
+	for _, app in ipairs(apps) do
+		local id = app:get_id():lower()
+		for _, possible_icon_name in ipairs(possible_icon_names) do
+			if id and id:find(possible_icon_name, 1, true) then
+				return app:get_executable()
+			end
+		end
+	end
+	return class:lower()
 end
 
 function M:genMetadata()

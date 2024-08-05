@@ -126,6 +126,23 @@ helpers.addHoverBg = function(element, id, bg, hbg)
 	end)
 end
 
+helpers.hovercursor = function(widget)
+	local oldcursor, oldwibox
+	widget:connect_signal("mouse::enter", function()
+		local wb = mouse.current_wibox
+		if wb == nil then return end
+		oldcursor, oldwibox = wb.cursor, wb
+		wb.cursor = "hand2"
+	end)
+	widget:connect_signal("mouse::leave", function()
+		if oldwibox then
+			oldwibox.cursor = oldcursor
+			oldwibox = nil
+		end
+	end)
+	return widget
+end
+
 helpers.placeWidget = function(widget, where, t, b, l, r)
 	if where == "top_right" then
 		awful.placement.top_right(widget, {

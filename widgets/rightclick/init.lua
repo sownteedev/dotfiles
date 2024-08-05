@@ -1,6 +1,5 @@
 local awful = require("awful")
 local menu = require(... .. ".menu")
-local Launcher = require("widgets.launcher")
 
 local function awesome_menu()
 	return menu({
@@ -37,7 +36,7 @@ local function widget()
 			icon = { icon = "󰍉 ", font = "Material Design Icons" },
 			text = "Applications",
 			on_press = function()
-				Launcher:toggle()
+				awesome.emit_signal("toggle::launcher")
 				awesome.emit_signal("close::menu")
 			end,
 		}),
