@@ -30,7 +30,7 @@
 /* adaptive tab width */
 .tabbrowser-tab[selected][fadein]:not([pinned]) {
 	max-width: var(--uc-active-tab-width) !important;
-	font-style: italic !important;
+	font-weight: 600 !important;
 }
 
 .tabbrowser-tab[fadein]:not([selected]):not([pinned]) {
@@ -95,7 +95,6 @@
 
 .tabbrowser-tab:not([image]) .tab-icon-overlay:not([pinned], [sharing], [crashed]) {
 	top: 0 !important;
-
 	padding: 0 !important;
 	margin-inline-end: 5.5px !important;
 	inset-inline-end: 0 !important;
