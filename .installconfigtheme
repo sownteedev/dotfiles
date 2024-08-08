@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+pkg_installed() {
+	local PKG=$1
+	if pacman -Qi $PKG &>/dev/null; then
+		return 0
+	else
+		return 1
+	fi
+}
+cd ~
+
 # Font
 sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm
 echo "[*] Copy fonts ..."
@@ -55,6 +65,7 @@ sleep 3 && clear
 read -p "[*] Do you want to use my WM configs? (1 for AwesomeWM/2 for AGS): " choice
 if [ "$choice" = "1" ]; then
 	echo "[*] Installing AwesomeWM ..."
+	yay -S awesome-git lua-pam-git --noconfirm
 	rm -rf ~/.config/awesome
 	git clone https://github.com/sownteedev/dotfiles.git --branch=awesome ~/.config/awesome
 	echo "[*] Done."
@@ -105,14 +116,11 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 		echo "[*] Installing Firefox ..."
 		sudo pacman -S firefox --noconfirm
-		firefox &
-		sleep 3
-		pkill firefox
 		echo "[*] Done."
 	else
 		echo "[*] Firefox installation skipped."
 	fi
-	cp -r ~/dotf/.config/firefox/* ~/.mozilla/firefox/*.default-release/
+	# cp -r ~/dotf/.config/firefox/* ~/.mozilla/firefox/*.default-release/
 	sleep 3 && clear
 
 	# Grtub Theme
@@ -137,7 +145,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 		sudo sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
 		sudo sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
 		sudo sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
-		sudo cp .walls/* /usr/share/backgrounds
+		sudo cp ~/.walls/4028603.jpg /usr/share/backgrounds
 	else
 		echo "[*] Lightdm installation skipped."
 	fi
