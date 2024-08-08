@@ -25,12 +25,12 @@ else
 	cd .. && rm -rf yay
 	echo "[*] Yay Installed."
 fi
+cd ~
 sleep 3 && clear
 
 # Install Dotf Branch
 echo "[*] Installing dotfiles ..."
-git clone https://github.com/sownteedev/dotfiles.git --branch=dotf dotf
-cd dotf
+git clone https://github.com/sownteedev/dotfiles.git --branch=dotf ~/dotf
 echo "[*] Done."
 sleep 3 && clear
 
@@ -118,7 +118,6 @@ makepkg -si
 cd .. && rm -rf ibus-bamboo
 sleep 3 && clear
 
-
 # Fix Driver audio (for me)
 sudo pacman -S rsync --noconfirm && cd ~
 mkdir -p ~/old-sof-backup
@@ -141,5 +140,7 @@ sleep 3 && clear
 
 # App for me
 sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop easyeffects zsh
-yay -S --noconfirm notion-app-electron visual-studio-code-bin intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional docker-desktop postman-bin ulauncher-git appimagelauncher-bin
+yay -S --noconfirm notion-app-electron intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional docker-desktop postman-bin ulauncher-git appimagelauncher-bin
+sudo pacman -Rns docker-desktop-debug --noconfirm
+yay -S visual-studio-code-bin --noconfirm
 echo "[*] Done."
