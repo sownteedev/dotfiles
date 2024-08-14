@@ -10,4 +10,12 @@ map(
 	{ desc = "Find Files Quick" }
 )
 
+map(
+	{ "n", "v" },
+	"<Leader>fp",
+	"<cmd>lua require('telescope').extensions.media.media()<cr>",
+	opts,
+	{ desc = "Find Media" }
+)
+
 vim.cmd([[imap <silent><script><expr> <C-a> copilot#Accept("\<CR>")]])
