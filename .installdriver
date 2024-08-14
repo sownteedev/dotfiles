@@ -55,58 +55,58 @@ sleep 3 && clear
 #################################################### INSTALL DRIVER AND APPS ####################################################
 # Install library
 echo "[*] Installing library ..."
-sudo pacman -S nodejs npm yarn python python-pip clang jdk-openjdk rustup cargo --noconfirm
+pacman -S nodejs npm yarn python python-pip clang jdk-openjdk rustup cargo --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Audio
 echo "[*] Installing audio & mic driver ..."
-sudo pacman -S pavucontrol pipewire pipewire-alsa pipewire-audio pipewire-pulse alsa-ucm-conf sof-firmware playerctl pamixer --noconfirm
+pacman -S pavucontrol pipewire pipewire-audio pipewire-pulse alsa-ucm-conf sof-firmware playerctl pamixer --noconfirm
 systemctl --user enable pipewire pipewire-pulse wireplumber
 echo "[*] Done."
 sleep 3 && clear
 
 # Brightness
 echo "[*] Installing brightness ..."
-sudo pacman -S brightnessctl xorg-xbacklight redshift --noconfirm
+pacman -S brightnessctl xorg-xbacklight redshift --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Battery
 echo "[*] Installing battery ..."
-sudo pacman -S acpi acpid --noconfirm
-sudo systemctl enable acpid
+pacman -S acpi acpid --noconfirm
+systemctl enable acpid
 echo "[*] Done."
 sleep 3 && clear
 
 # Network
 echo "[*] Installing network ..."
-sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools --noconfirm
-sudo systemctl enable NetworkManager dhcpcd
+pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools --noconfirm
+systemctl enable NetworkManager dhcpcd
 echo "[*] Done."
 sleep 3 && clear
 
 # Bluetooth
 echo "[*] Installing bluetooth driver ..."
-sudo pacman -S bluez bluez-utils bluez-tools bluez-libs --noconfirm
-sudo systemctl enable bluetooth.service
+pacman -S bluez bluez-utils bluez-tools bluez-libs --noconfirm
+systemctl enable bluetooth.service
 sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-sudo pacman -S thunar tumbler ranger ueberzug exa unzip unrar xdg-user-dirs gvfs vlc --noconfirm
+pacman -S thunar tumbler ranger ueberzug exa unzip unrar xdg-user-dirs gvfs vlc --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Monitor and Theme
 echo "[*] Installing monitor and theme ..."
-sudo pacman -S feh maim viewnior lxappearance imagemagick neofetch arandr --noconfirm
+pacman -S feh maim viewnior lxappearance imagemagick neofetch arandr --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Other
 echo "[*] Installing other ..."
-sudo pacman -S --noconfirm devtools xsettingsd gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget xdotool && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi inotify-tools
+pacman -S --noconfirm devtools xsettingsd gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget xdotool && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi inotify-tools
 echo "[*] Done."
 clear
 echo "[*] Install ibus"
@@ -119,28 +119,28 @@ cd .. && rm -rf ibus-bamboo
 sleep 3 && clear
 
 # Fix Driver audio (for me)
-sudo pacman -S rsync --noconfirm && cd ~
+pacman -S rsync --noconfirm && cd ~
 mkdir -p ~/old-sof-backup
-sudo mv /lib/firmware/intel/sof* ~/old-sof-backup
-sudo mv /usr/local/bin/sof-* ~/old-sof-backup
+mv /lib/firmware/intel/sof* ~/old-sof-backup
+mv /usr/local/bin/sof-* ~/old-sof-backup
 
 git clone https://github.com/thesofproject/sof-bin.git && cd sof-bin/v2.1.x
-sudo rsync -a sof*v2.1.1 /lib/firmware/intel/
-sudo ln -s sof-v2.1.1 /lib/firmware/intel/sof
-sudo ln -s sof-tplg-v2.1.1 /lib/firmware/intel/sof-tplg
-sudo rsync tools-v2.1.1/* /usr/local/bin
+rsync -a sof*v2.1.1 /lib/firmware/intel/
+ln -s sof-v2.1.1 /lib/firmware/intel/sof
+ln -s sof-tplg-v2.1.1 /lib/firmware/intel/sof-tplg
+rsync tools-v2.1.1/* /usr/local/bin
 
 cd ~ && git clone https://github.com/thesofproject/alsa-ucm-conf.git && cd alsa-ucm-conf
-sudo rm -r /usr/share/alsa/ucm
-sudo mv ./ucm /usr/share/alsa
+rm -r /usr/share/alsa/ucm
+mv ./ucm /usr/share/alsa
 
-cd ~ && sudo rm -rf sof-bin alsa-ucm-conf old-sof-backup
+cd ~ && rm -rf sof-bin alsa-ucm-conf old-sof-backup
 echo "[*] Done."
 sleep 3 && clear
 
 # App for me
-sudo pacman -S --noconfirm libreoffice-fresh telegram-desktop easyeffects zsh
+pacman -S --noconfirm libreoffice-fresh telegram-desktop easyeffects zsh
 yay -S --noconfirm notion-app-electron intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional docker-desktop postman-bin ulauncher-git appimagelauncher-bin
-sudo pacman -Rns docker-desktop-debug --noconfirm
+pacman -Rns docker-desktop-debug --noconfirm
 yay -S visual-studio-code-bin --noconfirm
 echo "[*] Done."
