@@ -33,7 +33,7 @@ awful.screen.connect_for_each_screen(function(s)
 		},
 		widget = wibox.container.background,
 		bg = beautiful.background,
-		shape = helpers.rrect(10),
+		shape = beautiful.radius,
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
 	})

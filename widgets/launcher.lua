@@ -32,7 +32,7 @@ local createPowerButton = function(path, color, command)
 			},
 			widget = wibox.container.background,
 			bg = color .. "22",
-			shape = helpers.rrect(10),
+			shape = beautiful.radius,
 			shape_border_width = beautiful.border_width_custom,
 			shape_border_color = color .. "99",
 		},
@@ -104,7 +104,7 @@ local prompt = wibox.widget({
 		image = helpers.cropSurface(4, gears.surface.load_uncached(beautiful.wallpaper)),
 		opacity = 1,
 		forced_height = 120,
-		clip_shape = helpers.rrect(10),
+		clip_shape = beautiful.radius,
 		forced_width = Conf.entry_height,
 		widget = wibox.widget.imagebox,
 	},
@@ -133,7 +133,7 @@ local prompt = wibox.widget({
 			},
 			forced_width = Conf.entry_width - 200,
 			forced_height = 55,
-			shape = helpers.rrect(10),
+			shape = beautiful.radius,
 			widget = wibox.container.background,
 			bg = beautiful.darker .. "50",
 			shape_border_width = beautiful.border_width_custom,
@@ -155,7 +155,7 @@ local entries_container = wibox.widget({
 local main_widget = wibox.widget({
 	widget = wibox.container.background,
 	bg = beautiful.lighter,
-	shape = helpers.rrect(10),
+	shape = beautiful.radius,
 	shape_border_width = beautiful.border_width_custom,
 	shape_border_color = beautiful.border_color,
 	forced_height = (Conf.entry_height * (Conf.rows + 1)) + Conf.popup_margins,
@@ -187,7 +187,7 @@ local popup_widget = awful.popup({
 		helpers.placeWidget(d, "bottom_left", 0, 2, 2, 0)
 	end,
 	maximum_width = Conf.entry_width + Conf.entry_height + Conf.popup_margins * 3,
-	shape = helpers.rrect(10),
+	shape = beautiful.radius,
 	widget = main_widget,
 })
 
@@ -268,7 +268,7 @@ local function filter(input)
 
 	for i, entry in ipairs(filtered) do
 		local entry_widget = wibox.widget({
-			shape = helpers.rrect(10),
+			shape = beautiful.radius,
 			buttons = {
 				awful.button({}, 1, function()
 					if index_entry == i then
@@ -294,7 +294,7 @@ local function filter(input)
 				{
 					{
 						image = entry.icon,
-						clip_shape = helpers.rrect(10),
+						clip_shape = beautiful.radius,
 						forced_height = 51,
 						forced_width = 51,
 						widget = wibox.widget.imagebox,

@@ -58,7 +58,7 @@ awful.screen.connect_for_each_screen(function(s)
 				{
 					id = "blur",
 					image = beautiful.songdefpicture,
-					clip_shape = helpers.rrect(10),
+					clip_shape = beautiful.radius,
 					horizontal_fit_policy = "fit",
 					vertical_fit_policy = "fit",
 					widget = wibox.widget.imagebox,
@@ -83,13 +83,13 @@ awful.screen.connect_for_each_screen(function(s)
 									forced_width = 200,
 									forced_height = 200,
 									resize = true,
-									clip_shape = helpers.rrect(10),
+									clip_shape = beautiful.radius,
 									widget = wibox.widget.imagebox,
 								},
 								id = "border",
 								shape_border_width = 5,
 								shape_border_color = beautiful.border_color .. "00",
-								shape = helpers.rrect(10),
+								shape = beautiful.radius,
 								widget = wibox.container.background,
 							},
 							{
@@ -218,7 +218,7 @@ awful.screen.connect_for_each_screen(function(s)
 		},
 		widget = wibox.container.background,
 		bg = beautiful.background,
-		shape = helpers.rrect(10),
+		shape = beautiful.radius,
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
 	})

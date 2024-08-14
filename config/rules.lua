@@ -1,6 +1,5 @@
 local awful = require("awful")
 local ruled = require("ruled")
-local helpers = require("helpers")
 local beautiful = require("beautiful")
 
 ruled.client.connect_signal("request::rules", function()
@@ -30,7 +29,7 @@ ruled.client.connect_signal("request::rules", function()
 	if beautiful.autohidebar then
 		ruled.client.append_rule({
 			rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
-			properties = { tag = "Browser", switch_to_tags = true, hight = beautiful.height, maximized_horizontal = true },
+			properties = { tag = "Browser", switch_to_tags = true, maximized_horizontal = true, height = beautiful.height, y = 0 },
 		})
 	else
 		ruled.client.append_rule({

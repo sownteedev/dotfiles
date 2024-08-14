@@ -50,7 +50,7 @@ local widget = wibox.widget({
 		},
 		id = "back",
 		widget = wibox.container.background,
-		shape = helpers.rrect(10),
+		shape = beautiful.radius,
 		bg = beautiful.lighter,
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,

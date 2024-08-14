@@ -48,7 +48,7 @@ awful.screen.connect_for_each_screen(function(s)
 		screen = s,
 		width = beautiful.width / 4.5,
 		height = beautiful.height / 1.3,
-		shape = helpers.rrect(5),
+		shape = beautiful.radius,
 		ontop = true,
 		visible = false,
 	})
@@ -120,7 +120,7 @@ awful.screen.connect_for_each_screen(function(s)
 			layout = wibox.layout.align.vertical,
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(10),
+		shape = beautiful.radius,
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
 	})

@@ -43,7 +43,7 @@ local createButton = function(path, name, fn, col)
 		bg = beautiful.lighter,
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
-		shape = helpers.rrect(5),
+		shape = beautiful.radius,
 		id = "bg",
 		widget = wibox.container.background,
 		buttons = awful.button({}, 1, function()
@@ -58,7 +58,7 @@ local recorder = wibox({
 	width = 450,
 	height = 230,
 	bg = beautiful.background,
-	shape = helpers.rrect(10),
+	shape = beautiful.radius,
 	ontop = true,
 	visible = false,
 })
@@ -143,7 +143,7 @@ recorder:setup({
 			bg = beautiful.lighter,
 			shape_border_width = beautiful.border_width_custom,
 			shape_border_color = beautiful.border_color,
-			shape = helpers.rrect(10),
+			shape = beautiful.radius,
 		},
 		{
 			recaudio,
@@ -162,7 +162,7 @@ recorder:setup({
 local scrotter = wibox({
 	width = 450,
 	height = 230,
-	shape = helpers.rrect(10),
+	shape = beautiful.radius,
 	bg = beautiful.background,
 	ontop = true,
 	visible = false,
@@ -185,7 +185,7 @@ scrotter:setup({
 			bg = beautiful.lighter,
 			shape_border_width = beautiful.border_width_custom,
 			shape_border_color = beautiful.border_color,
-			shape = helpers.rrect(10),
+			shape = beautiful.radius,
 		},
 		{
 			fullscreen,
