@@ -40,7 +40,7 @@ local widget = wibox.widget({
 				{
 					{
 						{
-							font = beautiful.sans .. " Bold 40",
+							font = beautiful.sans .. " Bold 45",
 							format = "%I : %M",
 							widget = wibox.widget.textclock,
 						},
@@ -61,10 +61,9 @@ local widget = wibox.widget({
 						id = "uptime",
 						align = "center",
 						font = beautiful.sans .. " 15",
-						text = "",
 						widget = wibox.widget.textbox,
 					},
-					spacing = 10,
+					spacing = 15,
 					layout = wibox.layout.fixed.vertical,
 				},
 				widget = wibox.container.place,
@@ -78,29 +77,18 @@ local widget = wibox.widget({
 		bottom = 20,
 		top = 20,
 	},
-	shape = helpers.rrect(10),
+	shape = beautiful.radius,
 	widget = wibox.container.background,
 	bg = beautiful.lighter,
 	shape_border_width = beautiful.border_width_custom,
 	shape_border_color = beautiful.border_color,
 })
 
-local updateTime = function()
+awesome.connect_signal("signal::uptime", function(v)
 	local time = os.date("*t")
 	helpers.gc(widget, "hour").value = time.hour
 	helpers.gc(widget, "minutes").value = time.min
-end
-awesome.connect_signal("signal::uptime", function(v)
 	helpers.gc(widget, "uptime").markup = v
 end)
-
-gears.timer({
-	timeout = 60,
-	call_now = true,
-	autostart = true,
-	callback = function()
-		updateTime()
-	end,
-})
 
 return widget

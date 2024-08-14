@@ -24,6 +24,7 @@ local function backup()
 		done
 
 		cp -r ~/.local/other/ ~/dotf/.local/ && cp -r ~/.local/bin/ ~/dotf/.local/
+		rm -f ~/dotf/.gtkrc-2.0 && cp ~/.gtkrc-2.0 ~/dotf/
 		rm -f ~/dotf/.Xresources && cp ~/.Xresources ~/dotf/
 		rm -f ~/dotf/.xinitrc && cp ~/.xinitrc ~/dotf/
 	]])
@@ -73,6 +74,9 @@ local function gtk(theme)
 			   -e "s/lighter .*/lighter ]] .. color.lighter .. [[;/"\
 			   -e "s/lighter1 .*/lighter1 ]] .. color.lighter1 .. [[;/"\
 			   -e "s/foreground .*/foreground ]] .. color.foreground .. [[;/" ~/.themes/tethemes/gtk-3.0/colors.css &&
+		sed -i -e 's/background:.*/background:]] .. color.background .. [["/'\
+			   -e 's/lighter:.*/lighter:]] .. color.lighter .. [["/'\
+			   -e 's/foreground:.*/foreground:]] .. color.foreground .. [["/' ~/.themes/tethemes/gtk-2.0/gtkrc &&
 	]])
 end
 

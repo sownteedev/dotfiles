@@ -146,9 +146,9 @@ function menu.menu(widgets, width)
 		type = "menu",
 		visible = false,
 		ontop = true,
-		minimum_width = width or 210,
-		maximum_width = width or 210,
-		shape = helpers.rrect(10),
+		minimum_width = width or 200,
+		maximum_width = width or 200,
+		shape = beautiful.radius,
 		widget = wibox.layout.fixed.vertical,
 	})
 	gtable.crush(widget, menu, true)
@@ -201,8 +201,8 @@ function menu.sub_menu_button(args)
 			helpers.randomColor()
 		),
 		resize = true,
-		forced_height = 15,
-		forced_width = 15,
+		forced_height = 14,
+		forced_width = 14,
 		valign = "center",
 		widget = wibox.widget.imagebox,
 	})
@@ -215,7 +215,7 @@ function menu.sub_menu_button(args)
 				{
 					icon,
 					{
-						font = beautiful.sans .. " 12",
+						font = beautiful.sans .. " 11",
 						markup = args.text,
 						widget = wibox.widget.textbox,
 						halign = "start",
@@ -225,7 +225,7 @@ function menu.sub_menu_button(args)
 				},
 				nil,
 				{
-					font = beautiful.icon .. " 12",
+					font = beautiful.icon .. " 11",
 					markup = "󰅂",
 					widget = wibox.widget.textbox,
 					halign = "left",
@@ -254,14 +254,14 @@ end
 
 function menu.button(args)
 	local icon = wibox.widget({
-		font = beautiful.icon .. " 15",
+		font = beautiful.icon .. " 14",
 		markup = helpers.colorizeText(args.icon.icon, helpers.randomColor()),
 		widget = wibox.widget.textbox,
 		halign = "start",
 	})
 
 	local text_widget = wibox.widget({
-		font = beautiful.sans .. " 12",
+		font = beautiful.sans .. " 11",
 		markup = args.text,
 		widget = wibox.widget.textbox,
 		halign = "start",

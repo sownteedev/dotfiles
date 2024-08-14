@@ -48,7 +48,7 @@ naughty.connect_signal("request::display", function(n)
 		},
 		bg = beautiful.lighter,
 		forced_height = 30,
-		shape = helpers.rrect(10),
+		shape = beautiful.radius,
 		widget = wibox.container.background,
 	}
 	local actions = wibox.widget({
@@ -189,7 +189,7 @@ naughty.connect_signal("request::display", function(n)
 
 	local widget = naughty.layout.box({
 		notification = n,
-		shape = helpers.rrect(5),
+		shape = beautiful.radius,
 		widget_template = {
 			{
 				{
@@ -221,6 +221,7 @@ naughty.connect_signal("request::display", function(n)
 					nil,
 					{
 						image_n,
+						left = 20,
 						layout = wibox.container.margin,
 					},
 					layout = wibox.layout.align.horizontal,

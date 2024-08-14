@@ -26,7 +26,7 @@ local widget = wibox.widget({
 					bar_shape = helpers.rrect(7),
 					color = beautiful.blue,
 					border_width = 1,
-					shape = helpers.rrect(10),
+					shape = beautiful.radius,
 					widget = wibox.widget.progressbar,
 				},
 				{
@@ -34,7 +34,7 @@ local widget = wibox.widget({
 						bg = beautiful.foreground .. "99",
 						forced_height = 10,
 						forced_width = 2,
-						shape = helpers.rrect(10),
+						shape = beautiful.radius,
 						widget = wibox.container.background,
 					},
 					widget = wibox.container.place,

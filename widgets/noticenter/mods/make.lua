@@ -14,7 +14,7 @@ return function(icon, n)
 			widget = wibox.widget.textbox,
 		},
 		bg = beautiful.lighter1,
-		shape = helpers.rrect(10),
+		shape = beautiful.radius,
 		forced_height = 30,
 		widget = wibox.container.background,
 	}
@@ -72,7 +72,7 @@ return function(icon, n)
 	local box = wibox.widget({
 		widget = wibox.container.background,
 		forced_height = 180,
-		shape = helpers.rrect(10),
+		shape = beautiful.radius,
 		bg = beautiful.lighter,
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,

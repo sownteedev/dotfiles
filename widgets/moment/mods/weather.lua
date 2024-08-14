@@ -108,7 +108,7 @@ local widget = wibox.widget({
 			)
 		),
 		widget = wibox.widget.imagebox,
-		clip_shape = helpers.rrect(10),
+		clip_shape = beautiful.radius,
 		opacity = 1,
 		resize = true,
 		horizontal_fit_policy = "fit",

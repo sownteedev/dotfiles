@@ -9,7 +9,7 @@ local themes_path = gfs.get_configuration_dir() .. "themes/"
 
 local theme       = {}
 
-theme.font        = "SF Pro Display 13"
+theme.font        = "SF Pro Display 12"
 theme.sans        = "SF Pro Display"
 theme.icon        = "Material Design Icons"
 
@@ -41,6 +41,7 @@ theme.autohidebar          = true
 theme.width                = 2560
 theme.height               = 1600
 theme.useless_gap          = 10
+theme.radius               = helpers.rrect(10)
 
 theme.user                 = os.getenv("USER")
 theme.profile              = themes_path .. "assets/sownteedev.png"
@@ -87,7 +88,7 @@ theme.layout_tile          = gears.color.recolor_image(themes_path .. "assets/ti
 
 -- Snap --
 theme.snap_bg              = theme.foreground
-theme.snap_shape           = helpers.rrect(10)
+theme.snap_shape           = theme.radius
 theme.snapper_gap          = 0
 theme.snap_border_width    = 3
 

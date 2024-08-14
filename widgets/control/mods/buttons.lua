@@ -45,7 +45,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 		},
 		widget = wibox.container.background,
 		id = "back",
-		shape = helpers.rrect(10),
+		shape = beautiful.radius,
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
 		buttons = {

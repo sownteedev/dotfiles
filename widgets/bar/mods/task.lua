@@ -383,7 +383,7 @@ function M:genIcons()
 				},
 				{
 					{
-						font = beautiful.icon .. " 6",
+						font = beautiful.icon .. " 4",
 						markup = helpers.colorizeText("●", bg),
 						widget = wibox.widget.textbox,
 						halign = "center",
