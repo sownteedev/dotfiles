@@ -12,7 +12,7 @@ pkg_installed() {
 }
 
 # Update
-sudo pacman -Syu --noconfirm
+pacman -Syu --noconfirm
 sleep 3 && clear
 
 # Yay
@@ -38,8 +38,8 @@ sleep 3 && clear
 echo "[*] Enable touchpad for laptop and set time to sleep ..."
 read -p "[*] Do you want? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-	sudo cp ~/dotf/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
-	sudo cp ~/dotf/.local/other/30-dpms.conf /etc/X11/xorg.conf.d/30-dpms.conf
+	cp ~/dotf/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
+	cp ~/dotf/.local/other/30-dpms.conf /etc/X11/xorg.conf.d/30-dpms.conf
 	echo "[*] Done."
 else
 	echo "[*] Skipped."
@@ -48,7 +48,7 @@ sleep 3 && clear
 
 # Xinitrc
 echo "[*] Override .xinitrc ..."
-sudo rm -f ~/.xinitrc && cp ~/dotf/.xinitrc ~/.xinitrc
+rm -f ~/.xinitrc && cp ~/dotf/.xinitrc ~/.xinitrc
 echo "[*] Done"
 sleep 3 && clear
 
