@@ -72,7 +72,7 @@ awful.screen.connect_for_each_screen(function(s)
 		shape_border_width = beautiful.border_width_custom,
 		shape_border_color = beautiful.border_color,
 	})
-	helpers.placeWidget(exit, "bottom_right", 0, 10, 0, 2)
+	helpers.placeWidget(exit, "bottom_right", 0, 2, 0, 2)
 	awesome.connect_signal("toggle::exit", function()
 		exit.visible = not exit.visible
 	end)

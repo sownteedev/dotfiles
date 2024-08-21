@@ -1,4 +1,4 @@
-require(... .. ".bar")
+require(... .. ".wibar")
 require(... .. ".titlebar")
 require(... .. ".notification")
 require(... .. ".noticenter")

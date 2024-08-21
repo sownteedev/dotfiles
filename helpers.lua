@@ -6,7 +6,7 @@ local cairo = require("lgi").cairo
 local gmatrix = require("gears.matrix")
 local json = require("modules.json")
 local icon_cache = {}
-local t = "/home/" .. os.getenv("USER") .. "/.icons/Reversal-Black/"
+local t = "/home/" .. os.getenv("USER") .. "/.icons/WhiteSur/"
 
 local helpers = {}
 
@@ -149,8 +149,6 @@ helpers.placeWidget = function(widget, where, t, b, l, r)
 			honor_workarea = true,
 			margins = {
 				top = beautiful.useless_gap * t,
-				bottom = beautiful.useless_gap * b,
-				left = beautiful.useless_gap * l,
 				right = beautiful.useless_gap * r,
 			},
 		})
@@ -158,9 +156,7 @@ helpers.placeWidget = function(widget, where, t, b, l, r)
 		awful.placement.bottom_right(widget, {
 			honor_workarea = true,
 			margins = {
-				top = beautiful.useless_gap * t,
 				bottom = beautiful.useless_gap * b,
-				left = beautiful.useless_gap * l,
 				right = beautiful.useless_gap * r,
 			},
 		})
@@ -169,25 +165,21 @@ helpers.placeWidget = function(widget, where, t, b, l, r)
 			honor_workarea = true,
 			margins = {
 				top = beautiful.useless_gap * t,
-				bottom = beautiful.useless_gap * b,
 				left = beautiful.useless_gap * l,
-				right = beautiful.useless_gap * r,
 			},
 		})
 	elseif where == "bottom_left" then
 		awful.placement.bottom_left(widget, {
 			honor_workarea = true,
 			margins = {
-				top = beautiful.useless_gap * t,
 				bottom = beautiful.useless_gap * b,
 				left = beautiful.useless_gap * l,
-				right = beautiful.useless_gap * r,
 			},
 		})
 	elseif where == "bottom" then
 		awful.placement.bottom(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
 	elseif where == "top" then
-		awful.placement.top(widget, { honor_workarea = true, margins = beautiful.useless_gap * 2 })
+		awful.placement.top(widget, { honor_workarea = true, margins = { top = beautiful.useless_gap * 2 } })
 	end
 end
 

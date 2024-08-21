@@ -1,8 +1,6 @@
 local awful = require("awful")
 local wibox = require("wibox")
-local gears = require("gears")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 local animation = require("modules.animation")
 
 local profile = require(... .. ".mods.profile")

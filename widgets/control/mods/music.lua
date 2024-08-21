@@ -5,7 +5,6 @@ local gears = require("gears")
 local pctl = require("modules.playerctl")
 local helpers = require("helpers")
 local playerctl = pctl.lib()
-local Cairo = require("lgi").cairo
 
 local position = wibox.widget({
 	font = beautiful.sans .. " 11",
