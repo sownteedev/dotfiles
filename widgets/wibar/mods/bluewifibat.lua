@@ -5,21 +5,9 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local helpers = require("helpers")
 
-local bluetooth_con
-local bluetooth_dis
-local bluetooth_discon
-if beautiful.type == "light" then
-	bluetooth_con = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth1.png"
-	bluetooth_dis = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-dis1.png"
-	bluetooth_discon = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-discon1.png"
-else
-	bluetooth_con = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth.png"
-	bluetooth_dis = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-dis.png"
-	bluetooth_discon = gears.filesystem.get_configuration_dir() .. "/themes/assets/bluetooth/bluetooth-discon.png"
-end
-
 local bluetooth = wibox.widget({
-	image = bluetooth_discon,
+	image = gears.filesystem.get_configuration_dir() ..
+		"/themes/assets/bluetooth/bluetooth-discon-" .. beautiful.type .. ".png",
 	resize = true,
 	forced_height = 22,
 	forced_width = 22,
@@ -30,13 +18,16 @@ awesome.connect_signal("signal::bluetooth", function(value, _)
 	if value then
 		awesome.connect_signal("signal::bluetooth", function(_, name)
 			if name ~= "" then
-				bluetooth.image = bluetooth_con
+				bluetooth.image = gears.filesystem.get_configuration_dir() ..
+					"/themes/assets/bluetooth/bluetooth-" .. beautiful.type .. ".png"
 			else
-				bluetooth.image = bluetooth_discon
+				bluetooth.image = gears.filesystem.get_configuration_dir() ..
+					"/themes/assets/bluetooth/bluetooth-discon-" .. beautiful.type .. ".png"
 			end
 		end)
 	else
-		bluetooth.image = bluetooth_dis
+		bluetooth.image = gears.filesystem.get_configuration_dir() ..
+			"/themes/assets/bluetooth/bluetooth-dis-" .. beautiful.type .. ".png"
 	end
 end)
 
@@ -58,16 +49,16 @@ awesome.connect_signal("signal::network", function(_, _, quality)
 		wifi.forced_width = 20
 	elseif quality >= 75 then
 		wifi.image = gears.color.recolor_image(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi4.png", helpers.makeColor("yellow"))
+			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi4.png", beautiful.yellow)
 	elseif quality >= 50 then
 		wifi.image = gears.color.recolor_image(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi3.png", helpers.makeColor("yellow"))
+			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi3.png", beautiful.yellow)
 	elseif quality >= 25 then
 		wifi.image = gears.color.recolor_image(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi2.png", helpers.makeColor("yellow"))
+			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi2.png", beautiful.yellow)
 	elseif quality > 0 then
 		wifi.image = gears.color.recolor_image(
-			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi1.png", helpers.makeColor("yellow"))
+			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/wifi1.png", beautiful.yellow)
 	else
 		wifi.image = gears.color.recolor_image(
 			gears.filesystem.get_configuration_dir() .. "/themes/assets/network/nowifi.png",

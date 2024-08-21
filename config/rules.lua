@@ -34,11 +34,11 @@ ruled.client.connect_signal("request::rules", function()
 	else
 		ruled.client.append_rule({
 			rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
-			properties = { tag = "Browser", switch_to_tags = true, maximized = true },
+			properties = { tag = "Browser", switch_to_tags = true, maximized_horizontal = true, height = beautiful.height - 90, y = 0 },
 		})
 	end
 	ruled.client.append_rule({
-		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "jetbrains-pycharm", "Docker Desktop", "Postman", "neovide" } },
+		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "jetbrains-pycharm", "jetbrains-datagrip", "Docker Desktop", "Postman", "neovide" } },
 		properties = { tag = "Develop" },
 	})
 	ruled.client.append_rule({

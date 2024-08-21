@@ -41,7 +41,7 @@ local M = {
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "jetbrains-idea", "jetbrains-idea"),
+			icon = helpers.getIcon(nil, "jetbrains-intellij", "jetbrains-intellij"),
 			id = 4,
 			clients = {},
 			class = "jetbrains-idea",
@@ -71,8 +71,18 @@ local M = {
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "Docker Desktop", "Docker Desktop"),
+			icon = helpers.getIcon(nil, "jetbrains-datagrip", "jetbrains-datagrip"),
 			id = 7,
+			clients = {},
+			class = "jetbrains-datagrip",
+			exec = "datagrip",
+			name = "datagrip",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = helpers.getIcon(nil, "Docker Desktop", "Docker Desktop"),
+			id = 8,
 			clients = {},
 			class = "docker desktop",
 			exec = "systemctl --user start docker-desktop",
@@ -82,7 +92,7 @@ local M = {
 			count = 0,
 			pinned = true,
 			icon = helpers.getIcon(nil, "postman", "postman"),
-			id = 8,
+			id = 9,
 			clients = {},
 			class = "postman",
 			exec = "postman",
@@ -92,7 +102,7 @@ local M = {
 			count = 0,
 			pinned = true,
 			icon = helpers.getIcon(nil, "Notion", "Notion"),
-			id = 9,
+			id = 10,
 			clients = {},
 			class = "notion",
 			exec = "notion-app",
@@ -101,8 +111,8 @@ local M = {
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "TelegramDesktop", "TelegramDesktop"),
-			id = 10,
+			icon = helpers.getIcon(nil, "telegram", "telegram"),
+			id = 11,
 			clients = {},
 			class = "telegramdesktop",
 			exec = "telegram-desktop",
@@ -112,7 +122,7 @@ local M = {
 			count = 0,
 			pinned = true,
 			icon = helpers.getIcon(nil, "discord", "discord"),
-			id = 11,
+			id = 12,
 			clients = {},
 			class = "discord",
 			exec = "discord",
@@ -122,14 +132,13 @@ local M = {
 			count = 0,
 			pinned = true,
 			icon = helpers.getIcon(nil, "Spotify", "Spotify"),
-			id = 12,
+			id = 13,
 			clients = {},
 			class = "spotify",
 			exec = "spotify",
 			name = "spotify",
 		},
 	},
-	entries = {},
 	classes = {
 		"alacritty",
 		"firefox",
@@ -137,6 +146,7 @@ local M = {
 		"jetbrains-idea",
 		"jetbrains-webstorm",
 		"jetbrains-pycharm",
+		"jetbrains-datagrip",
 		"docker desktop",
 		"postman",
 		"notion",
@@ -269,14 +279,12 @@ end
 local removeDup = function(arr)
 	local hash = {}
 	local res = {}
-
 	for _, v in ipairs(arr) do
 		if not hash[v] then
 			res[#res + 1] = v
 			hash[v] = true
 		end
 	end
-
 	return res
 end
 
@@ -336,9 +344,6 @@ function M:genMetadata()
 			j.clients = removeDup(j.clients)
 		end
 	end
-	table.sort(self.metadata, function(a, b)
-		return a.id < b.id
-	end)
 end
 
 local function getMinimized(clients)

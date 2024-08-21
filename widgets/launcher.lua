@@ -220,20 +220,15 @@ end
 
 local function gen()
 	local entries = {}
+	local t = "/home/" .. os.getenv("USER") .. "/.icons/Reversal-Black/"
 	for _, entry in ipairs(Gio.AppInfo.get_all()) do
 		if entry:should_show() then
 			local name = entry:get_name():gsub("&", "&amp;"):gsub("<", "&lt;"):gsub("'", "&#39;")
-			local icon = entry:get_icon()
-			local path
-			if icon then
-				path = icon:to_string()
-				if not path:find("/") then
-					local icon_info = iconTheme:lookup_icon(path, 48, 0)
-					local p = icon_info and icon_info:get_filename()
-					path = p
-				end
-			end
-			table.insert(entries, { name = name, appinfo = entry, icon = path or "" })
+			local path = entry:get_icon():to_string()
+			local icon_info = iconTheme:lookup_icon(path, 48, 0)
+			local p = icon_info and icon_info:get_filename() or helpers.getIcon(nil, name, name)
+			table.insert(entries,
+				{ name = name, appinfo = entry, icon = p or t .. "/apps/scalable/default-application.svg" })
 		end
 	end
 	return entries

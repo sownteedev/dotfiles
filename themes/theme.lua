@@ -36,7 +36,7 @@ else
 	theme.fg1 = helpers.blend(theme.background, theme.foreground, 0.1)
 end
 
-theme.autohidebar          = true
+theme.autohidebar          = false
 
 theme.width                = 2560
 theme.height               = 1600
@@ -64,11 +64,11 @@ theme.taglist_bg           = theme.background .. "00"
 theme.taglist_bg_focus     = theme.lighter1
 theme.taglist_fg_focus     = theme.foreground
 theme.taglist_bg_urgent    = theme.background .. "00"
-theme.taglist_fg_urgent    = theme.red .. "FF"
+theme.taglist_fg_urgent    = theme.red
 theme.taglist_bg_occupied  = theme.background .. "00"
-theme.taglist_fg_occupied  = theme.foreground .. "BB"
+theme.taglist_fg_occupied  = theme.foreground .. "AA"
 theme.taglist_bg_empty     = theme.background .. "00"
-theme.taglist_fg_empty     = theme.foreground .. "55"
+theme.taglist_fg_empty     = theme.foreground .. "88"
 theme.taglist_disable_icon = true
 
 -- Tray --

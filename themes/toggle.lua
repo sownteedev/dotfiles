@@ -27,6 +27,7 @@ local function backup()
 		rm -f ~/dotf/.gtkrc-2.0 && cp ~/.gtkrc-2.0 ~/dotf/
 		rm -f ~/dotf/.Xresources && cp ~/.Xresources ~/dotf/
 		rm -f ~/dotf/.xinitrc && cp ~/.xinitrc ~/dotf/
+		rm -f ~/dotf/.xsettingsd && cp ~/.xsettingsd ~/dotf/
 	]])
 end
 
@@ -112,6 +113,7 @@ local function spotify(theme)
 	]])
 end
 function applyTheme(theme)
+	os.execute("xsettingsd &")
 	term(theme)
 	awesome(theme)
 	rofi(theme)

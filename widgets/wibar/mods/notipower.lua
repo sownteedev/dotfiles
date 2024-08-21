@@ -3,7 +3,6 @@ local wibox = require("wibox")
 local beautiful = require("beautiful")
 local gears = require("gears")
 local helpers = require("helpers")
-local exit = require("widgets.exit")
 
 local notipower = wibox.widget({
 	{

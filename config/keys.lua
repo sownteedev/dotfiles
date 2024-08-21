@@ -67,7 +67,7 @@ awful.keyboard.append_global_keybindings({
 		awesome.emit_signal("toggle::scrot")
 	end),
 	awful.key({ mod, shift }, "s", function()
-		require("widgets.recnscrot.mods").area({ notify = true })
+		require("widgets.dynamic.recnscrot.mods").area({ notify = true })
 	end),
 	awful.key({ mod }, "Print", function()
 		awesome.emit_signal("toggle::record")
