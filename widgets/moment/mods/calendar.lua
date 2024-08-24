@@ -10,7 +10,7 @@ local datewidget = function(date, weekend, notIn)
 	weekend = weekend or false
 	if notIn then
 		return wibox.widget({
-			markup = helpers.colorizeText(date, beautiful.foreground),
+			markup = helpers.colorizeText(date, beautiful.foreground .. "55"),
 			align = "center",
 			font = beautiful.sans .. " 13",
 			widget = wibox.widget.textbox,
