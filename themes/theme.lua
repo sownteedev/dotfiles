@@ -1,6 +1,5 @@
 -- User config
 local colorscheme = "yoru"
-require("themes.toggle")
 ---------------------------------------------------------------------
 local gears       = require("gears")
 local gfs         = require("gears.filesystem")

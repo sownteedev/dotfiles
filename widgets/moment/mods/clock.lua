@@ -1,7 +1,6 @@
 local beautiful = require("beautiful")
 local helpers = require("helpers")
 local wibox = require("wibox")
-local gears = require("gears")
 
 local widget = wibox.widget({
 	{
