@@ -38,7 +38,11 @@ sleep 3 && clear
 echo "[*] Enable touchpad for laptop and set time to sleep ..."
 read -p "[*] Do you want? (y/n): " choice
 if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+	yay -S xf86-input-libinput libinput-gestures --noconfirm
 	cp ~/dotf/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
+	gpasswd -a sowntee input
+	libinput-gestures-setup stop desktop autostart start
+	cp ~/dotf/.config/libinput-gestures.conf ~/.config/libinput-gestures.conf
 	cp ~/dotf/.local/other/30-dpms.conf /etc/X11/xorg.conf.d/30-dpms.conf
 	echo "[*] Done."
 else
@@ -74,8 +78,8 @@ sleep 3 && clear
 
 # Battery
 echo "[*] Installing battery ..."
-pacman -S acpi acpid --noconfirm
-systemctl enable acpid
+pacman -S acpi acpid upower --noconfirm
+systemctl enable acpid upower
 echo "[*] Done."
 sleep 3 && clear
 
@@ -100,13 +104,14 @@ sleep 3 && clear
 
 # Monitor and Theme
 echo "[*] Installing monitor and theme ..."
-pacman -S feh maim viewnior lxappearance imagemagick neofetch arandr --noconfirm
+pacman -S feh maim viewnior lxappearance xsettingsd imagemagick neofetch arandr xss-lock --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Other
 echo "[*] Installing other ..."
-pacman -S --noconfirm devtools xsettingsd gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli xss-lock wget xdotool && yay -S --noconfirm auto-cpufreq picom-ftlabs-git rofi inotify-tools
+pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli wget xdotool && yay -S --noconfirm auto-cpufreq inotify-tools
+systemctl enable auto-cpufreq
 echo "[*] Done."
 clear
 echo "[*] Install ibus"
@@ -140,7 +145,7 @@ sleep 3 && clear
 
 # App for me
 pacman -S --noconfirm libreoffice-fresh telegram-desktop easyeffects zsh
-yay -S --noconfirm notion-app-electron intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional docker-desktop postman-bin ulauncher-git appimagelauncher-bin
+yay -S --noconfirm notion-app-electron intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional docker-desktop postman-bin ulauncher-git appimagelauncher-bin vmware-workstation caprine vesktop
 pacman -Rns docker-desktop-debug --noconfirm
 yay -S visual-studio-code-bin --noconfirm
 echo "[*] Done."

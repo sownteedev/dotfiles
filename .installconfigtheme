@@ -68,7 +68,7 @@ sleep 3 && clear
 
 ##################### Install config WM #####################
 # AwesomeWM
-read -p "[*] Do you want to use my WM configs? (1 for AwesomeWM/2 for AGS): " choice
+read -p "[*] Do you want to use my WM configs? (1 for AwesomeWM/2 for mAWMcos/3 for AGS): " choice
 if [ "$choice" = "1" ]; then
 	echo "[*] Installing AwesomeWM ..."
 	yay -S awesome-git lua-pam-git --noconfirm
@@ -76,6 +76,12 @@ if [ "$choice" = "1" ]; then
 	git clone https://github.com/sownteedev/dotfiles.git --branch=awesome ~/.config/awesome
 	echo "[*] Done."
 elif [ "$choice" = "2" ]; then
+	echo "[*] Installing mAWMcos ..."
+	yay -S awesome-git lua-pam-git --noconfirm
+	rm -rf ~/.config/awesome
+	git clone https://github.com/sownteedev/dotfiles.git --branch=mAWMcos ~/.config/awesome
+	echo "[*] Done."
+elif [ "$choice" = "3" ]; then
 	echo "[*] Config for AGS is comming soon ^^"
 fi
 sleep 3 && clear
@@ -99,21 +105,10 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 		yay -S --noconfirm spicetify-cli-git
 		chmod a+wr /opt/spotify
 		chmod a+wr /opt/spotify/Apps -R
-		spicetify config current_theme Tetify color_scheme one_light
+		spicetify config current_theme Tetify color_scheme dark
 		echo "[*] Done."
 	else
 		echo "[*] Spotify installation skipped."
-	fi
-	sleep 3 && clear
-
-	# Discord
-	read -p "[*] Do you want to install Discord and get my custom? (y/n): " choice
-	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-		echo "[*] Installing Discord ..."
-		yay -S --noconfirm discord betterdiscord-installer
-		echo "[*] Done."
-	else
-		echo "[*] Discord installation skipped."
 	fi
 	sleep 3 && clear
 
@@ -126,7 +121,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 	else
 		echo "[*] Firefox installation skipped."
 	fi
-	# cp -r ~/dotf/.config/firefox/* ~/.mozilla/firefox/*.default-release/
+	cp -r ~/dotf/.config/firefox/* ~/.mozilla/firefox/*.default-release/chrome
 	sleep 3 && clear
 
 	# Grtub Theme
@@ -151,7 +146,7 @@ if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
 		sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
 		sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
 		sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
-		cp ~/.walls/4028603.jpg /usr/share/backgrounds
+		cp ~/.walls/lockart.jpg /usr/share/backgrounds
 	else
 		echo "[*] Lightdm installation skipped."
 	fi
