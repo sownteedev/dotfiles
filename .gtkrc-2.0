@@ -2,8 +2,8 @@
 # Any customization should be done in ~/.gtkrc-2.0.mine instead.
 
 include "/home/sowntee/.gtkrc-2.0.mine"
-gtk-theme-name="tethemes"
-gtk-icon-theme-name="Reversal-Black"
+gtk-theme-name="WhiteSur-Dark"
+gtk-icon-theme-name="WhiteSur"
 gtk-font-name="SF Pro Display 12"
 gtk-cursor-theme-name="Light_Cursor"
 gtk-cursor-theme-size=0

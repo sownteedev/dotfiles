@@ -1,4 +1,4 @@
-import = [ '~/.config/alacritty/colors/yoru.toml' ]
+import = [ '~/.config/alacritty/colors/dark.toml' ]
 
 [font]
 size = 13.5
@@ -18,7 +18,7 @@ style = "Italic"
 
 [font.offset]
 x = 0
-y = 8
+y = 6
 
 [font.glyph_offset]
 x = 0
