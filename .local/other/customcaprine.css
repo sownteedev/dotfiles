@@ -1,0 +1,11 @@
+/*
+This is the custom styles file where you can add anything you want.
+The styles here will be injected into Caprine and will override default styles.
+If you want to disable styles but keep the config, just comment the lines that you don't want to be used.
+
+Press Command/Ctrl+R in Caprine to see your changes.
+*/
+html,
+body {
+	font-family: SF Pro Display !important;
+}
