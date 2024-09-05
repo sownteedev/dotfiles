@@ -1,4 +1,4 @@
-<h1>COMMING SOON</h1>
+<h1>IT JUST MY SHELL SCRIPT FOR INSTALL WHEN I REINSTALL OS</h1>
 
 <details><summary>🌸</summary><blockquote>
 

@@ -67,7 +67,6 @@ echo "[*] Done."
 sleep 3 && clear
 
 ##################### Install config WM #####################
-# AwesomeWM
 read -p "[*] Do you want to use my WM configs? (1 for AwesomeWM/2 for mAWMcos/3 for AGS): " choice
 if [ "$choice" = "1" ]; then
 	echo "[*] Installing AwesomeWM ..."
@@ -88,87 +87,49 @@ sleep 3 && clear
 
 ######################################## MY CONFIG FOR CUSTOM APPS #######################################
 
-read -p "[*] Do you want to install custom application? (y/n): " choice
-if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-	echo "[*] Installing custom apps ..."
+# Spotify
+yay -S spotify --noconfirm
+yay -S --noconfirm spicetify-cli-git
+chmod a+wr /opt/spotify
+chmod a+wr /opt/spotify/Apps -R
+spicetify config current_theme Tetify color_scheme dark
+echo "[*] Done."
+sleep 3 && clear
 
+# Firefox
+echo "[*] Installing Firefox ..."
+pacman -S firefox --noconfirm
+cp -r ~/dotf/.config/firefox/* ~/.mozilla/firefox/*.default-release/chrome
+echo "[*] Done."
+sleep 3 && clear
 
-	# Spotify
-	read -p "[*] Do you want to install Spotify and get my custom? (y/n): " choice
-	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-		if pkg_installed spotify; then
-			echo "[*] Spotify installation skipped."
-		else
-			echo "[*] Installing Spotify ..."
-			yay -S spotify --noconfirm
-		fi
-		yay -S --noconfirm spicetify-cli-git
-		chmod a+wr /opt/spotify
-		chmod a+wr /opt/spotify/Apps -R
-		spicetify config current_theme Tetify color_scheme dark
-		echo "[*] Done."
-	else
-		echo "[*] Spotify installation skipped."
-	fi
-	sleep 3 && clear
+# Grtub Theme
+git clone https://github.com/MrVivekRajan/Grub-Themes.git
+cp -r Grub-Themes/* /boot/grub/themes/
+sed -i 's/#GRUB_THEME=.*/GRUB_THEME=\/boot\/grub\/themes\/Anime\/theme.txt/g' /etc/default/grub
+grub-mkconfig -o /boot/grub/grub.cfg
+rm -rf ~/Grub-Themes
+echo "[*] Done."
+sleep 3 && clear
 
-	# Firefox
-	read -p "[*] Do you want to install Firefox and get my custom? (y/n): " choice
-	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-		echo "[*] Installing Firefox ..."
-		pacman -S firefox --noconfirm
-		echo "[*] Done."
-	else
-		echo "[*] Firefox installation skipped."
-	fi
-	cp -r ~/dotf/.config/firefox/* ~/.mozilla/firefox/*.default-release/chrome
-	sleep 3 && clear
+# Lightdm
+yay -S --noconfirm lightdm lightdm-webkit2-greeter lightdm-webkit2-theme-glorious
+systemctl enable lightdm
+sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
+sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
+sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
+cp ~/.walls/lockart.jpg /usr/share/backgrounds
+echo "[*] Done."
+sleep 3 && clear
 
-	# Grtub Theme
-	read -p "[*] Do you want to install Grub theme(Recommend No, because it is for me)? (y/n): " choice
-	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-		git clone https://github.com/MrVivekRajan/Grub-Themes.git
-		cp -r Grub-Themes/* /boot/grub/themes/
-		sed -i 's/#GRUB_THEME=.*/GRUB_THEME=\/boot\/grub\/themes\/Anime\/theme.txt/g' /etc/default/grub
-		grub-mkconfig -o /boot/grub/grub.cfg
-		rm -rf ~/Grub-Themes
-	else
-		echo "[*] Grub theme installation skipped."
-	fi
-	echo "[*] Done."
-	sleep 3 && clear
+# Install TeVim
+echo "[*] Installing TeVim ..."
+pacman -Rns neovim --noconfirm
+yay -S --noconfirm lazygit xclip xsel fzf ripgrep neovim-nightly-bin
+rm -rf ~/.config/nvim
+git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
+cp -r ~/dotf/.config/nvim/lua/custom ~/.config/nvim/lua/
+echo "[*] Done."
+sleep 3 && clear
 
-	# Lightdm
-	read -p "[*] Do you want to install Lightdm(Recommend No, because it is for me)? (y/n): " choice
-	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-		yay -S --noconfirm lightdm lightdm-webkit2-greeter lightdm-webkit2-theme-glorious
-		systemctl enable lightdm
-		sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
-		sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
-		sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
-		cp ~/.walls/lockart.jpg /usr/share/backgrounds
-	else
-		echo "[*] Lightdm installation skipped."
-	fi
-	echo "[*] Done."
-	sleep 3 && clear
-
-	# Install TeVim
-	read -p "[*] Do you want to install TeVim(Awesome Neovim <3)? (y/n): " choice
-	if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-		echo "[*] Installing TeVim ..."
-		pacman -Rns neovim --noconfirm
-		yay -S --noconfirm lazygit xclip xsel fzf ripgrep neovim-nightly-bin
-		rm -rf ~/.config/nvim
-		git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
-		cp -r ~/dotf/.config/nvim/lua/custom ~/.config/nvim/lua/
-	else
-		echo "[*] TeVim installation skipped."
-	fi
-	echo "[*] Done."
-	sleep 3 && clear
-
-	sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-else
-	echo "[*] Custom apps installation skipped."
-fi
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
