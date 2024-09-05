@@ -132,4 +132,13 @@ cp -r ~/dotf/.config/nvim/lua/custom ~/.config/nvim/lua/
 echo "[*] Done."
 sleep 3 && clear
 
+# App for me
+echo "[*] Installing apps for me ..."
+pacman -S --noconfirm libreoffice-fresh telegram-desktop easyeffects
+yay -S --noconfirm notion-app-electron intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional datagrip datagrip-jre docker-desktop postman-bin ulauncher-git appimagelauncher-bin vmware-workstation caprine vesktop
+pacman -Rns docker-desktop-debug --noconfirm
+yay -S visual-studio-code-bin --noconfirm
+echo "[*] Done."
+sleep 3 && clear
+
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"

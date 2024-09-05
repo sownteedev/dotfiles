@@ -104,7 +104,7 @@ sleep 3 && clear
 
 # Other
 echo "[*] Installing other ..."
-pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli wget xdotool && yay -S --noconfirm auto-cpufreq inotify-tools
+pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick btop github-cli wget xdotool zsh && yay -S --noconfirm auto-cpufreq inotify-tools
 systemctl enable auto-cpufreq
 echo "[*] Done."
 clear
@@ -137,9 +137,5 @@ cd ~ && rm -rf sof-bin alsa-ucm-conf old-sof-backup
 echo "[*] Done."
 sleep 3 && clear
 
-# App for me
-pacman -S --noconfirm libreoffice-fresh telegram-desktop easyeffects zsh
-yay -S --noconfirm notion-app-electron intellij-idea-ultimate-edition intellij-idea-ultimate-edition-jre webstorm webstorm-jre pycharm-professional docker-desktop postman-bin ulauncher-git appimagelauncher-bin vmware-workstation caprine vesktop
-pacman -Rns docker-desktop-debug --noconfirm
-yay -S visual-studio-code-bin --noconfirm
-echo "[*] Done."
+echo "[*] Done. Rebooting your system."
+sleep 3 && reboot
