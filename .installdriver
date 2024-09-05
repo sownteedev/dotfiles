@@ -36,18 +36,12 @@ sleep 3 && clear
 
 # Enable touchpad
 echo "[*] Enable touchpad for laptop and set time to sleep ..."
-read -p "[*] Do you want? (y/n): " choice
-if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-	yay -S xf86-input-libinput libinput-gestures --noconfirm
-	cp ~/dotf/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
-	gpasswd -a sowntee input
-	libinput-gestures-setup stop desktop autostart start
-	cp ~/dotf/.config/libinput-gestures.conf ~/.config/libinput-gestures.conf
-	cp ~/dotf/.local/other/30-dpms.conf /etc/X11/xorg.conf.d/30-dpms.conf
-	echo "[*] Done."
-else
-	echo "[*] Skipped."
-fi
+yay -S xf86-input-libinput libinput-gestures --noconfirm
+cp ~/dotf/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
+gpasswd -a sowntee input
+libinput-gestures-setup stop desktop autostart start
+cp ~/dotf/.config/libinput-gestures.conf ~/.config/libinput-gestures.conf
+cp ~/dotf/.local/other/30-dpms.conf /etc/X11/xorg.conf.d/30-dpms.conf
 sleep 3 && clear
 
 # Xinitrc
