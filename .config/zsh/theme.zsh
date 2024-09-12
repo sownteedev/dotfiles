@@ -25,14 +25,9 @@ function toggle_left_prompt() {
   toggle_prompt left
 }
 
-# Colors
-export bgl=#161819
-
 # FZF bases
 export FZF_DEFAULT_OPTS="
-  --color border:$bgl
-  --color gutter:$bgl
-  --color bg+:$bgl
+  --color=border:0,bg+:235,gutter:-1
   --prompt '  '
   --pointer ' '
   --border none
