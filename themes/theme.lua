@@ -12,6 +12,7 @@ theme.font       = "SF Pro Display 12"
 theme.sans       = "SF Pro Display"
 theme.icon       = "Material Design Icons"
 theme.icon_path  = gfs.get_configuration_dir() .. "themes/" .. "assets/"
+theme.iconsss    = "WhiteSur"
 
 -- Colors --
 local colors     = require("themes.colors." .. colorscheme)
@@ -56,6 +57,7 @@ theme.border_color_normal  = theme.foreground
 theme.border_color_active  = theme.foreground
 
 -- Taglist --
+theme.taglist_font         = theme.sans .. " Medium 12"
 theme.taglist_bg           = theme.background .. "00"
 theme.taglist_bg_focus     = theme.background .. "00"
 theme.taglist_fg_focus     = theme.foreground
@@ -68,7 +70,6 @@ theme.taglist_fg_empty     = theme.foreground .. "88"
 theme.taglist_disable_icon = true
 
 -- Tray --
-theme.bg_systray           = nil
 theme.systray_icon_spacing = 25
 
 -- Tooltips --

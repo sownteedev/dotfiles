@@ -5,19 +5,29 @@ local helpers = require("helpers")
 local wibox = require("wibox")
 local gears = require("gears")
 local make = require(... .. ".make")
-local animation = require("modules.animation")
 
 local empty = wibox.widget({
 	{
 		{
-			image = gears.filesystem.get_configuration_dir() .. "/themes/assets/notify/wedding-bells.png",
-			resize = true,
-			forced_height = 400,
-			halign = "center",
-			widget = wibox.widget.imagebox,
+			{
+				image = gears.color.recolor_image(beautiful.icon_path .. "awm/notification-empty.svg",
+					beautiful.foreground),
+				resize = true,
+				forced_height = 300,
+				halign = "center",
+				widget = wibox.widget.imagebox,
+			},
+			{
+				font = "azuki_font Bold 25",
+				markup = helpers.colorizeText("No Notifications", beautiful.foreground),
+				align = "center",
+				widget = wibox.widget.textbox,
+			},
+			spacing = 30,
+			layout = wibox.layout.fixed.vertical,
 		},
+		align = "center",
 		widget = wibox.container.place,
-		valign = "center",
 	},
 	widget = wibox.container.background,
 	forced_height = 800,
@@ -42,12 +52,13 @@ local clearButton = wibox.widget({
 		end),
 	},
 })
+helpers.hoverCursor(clearButton)
 
 return function(s)
 	local noticenter = wibox({
 		screen = s,
 		width = beautiful.width / 4.5,
-		height = beautiful.height / 1.5,
+		height = beautiful.height / 1.51,
 		shape = beautiful.radius,
 		ontop = true,
 		visible = false,
@@ -115,34 +126,9 @@ return function(s)
 		layout = wibox.layout.fixed.vertical,
 	})
 	helpers.placeWidget(noticenter, "top_right", 2, 0, 0, 2)
-	local slide = animation:new({
-		duration = 1,
-		pos = beautiful.width,
-		easing = animation.easing.inOutExpo,
-		update = function(_, pos)
-			noticenter.x = pos
-		end,
-	})
-	local slide_end = gears.timer({
-		timeout = 1,
-		single_shot = true,
-		callback = function()
-			noticenter.visible = false
-		end,
-	})
-	awesome.connect_signal("toggle::noticenter", function()
-		if noticenter.visible then
-			slide_end:start()
-			slide:set(beautiful.width)
-		else
-			noticenter.visible = true
-			slide:set(beautiful.width - noticenter.width - beautiful.useless_gap * 2)
-		end
-	end)
-	awesome.connect_signal("close::noticenter", function()
-		slide_end:start()
-		slide:set(beautiful.width)
-	end)
+	helpers.slideAnimation("toggle::noticenter", "close::noticenter", "right", noticenter, beautiful.width,
+		beautiful.width - noticenter.width - beautiful.useless_gap * 2)
+
 
 	return noticenter
 end

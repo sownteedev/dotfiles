@@ -5,7 +5,7 @@ local gears = require("gears")
 local helpers = require("helpers")
 
 local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
-	local name = wibox.widget({
+	local names = wibox.widget({
 		markup = helpers.colorizeText(name, beautiful.foreground),
 		font = beautiful.sans .. " Medium 14",
 		widget = wibox.widget.textbox,
@@ -34,11 +34,13 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 		markup = helpers.colorizeText(icon, beautiful.foreground),
 		widget = wibox.widget.textbox,
 	})
+	helpers.hoverCursor(slidIcon)
+	helpers.hoverCursor(slidSlider)
 
 	local slidScale = wibox.widget({
 		{
 			{
-				name,
+				names,
 				{
 					{
 						{

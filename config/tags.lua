@@ -20,10 +20,6 @@ client.connect_signal("request::titlebars", function(c)
 	require("widgets.titlebar")(c)
 end)
 
-naughty.connect_signal('request::display', function(n)
-	require("widgets.notification")(n)
-end)
-
 screen.connect_signal("request::desktop_decoration", function(s)
 	awful.tag({ "Terminal", "Browser", "Develop", "Media", "Other" }, s, awful.layout.layouts[1])
 	s.bar = require("widgets.topbar")(s)

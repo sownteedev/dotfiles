@@ -1,5 +1,5 @@
 return {
-	foreground = "#54555b",
+	foreground = "#000000",
 	background = "#fafafa",
 
 	red = "#d84a3d",
@@ -7,6 +7,6 @@ return {
 	blue = "#4078f2",
 	yellow = "#c18401",
 
-	wallpaper = "~/.walls/light/dawn.png",
+	wallpaper = "~/.walls/dark/macoswall1.jpg",
 	type = "light",
 }

@@ -48,6 +48,11 @@ local wifi = wibox.widget({
 	forced_width = 20,
 	valign = "center",
 	widget = wibox.widget.imagebox,
+	buttons = {
+		awful.button({}, 1, function()
+			awful.spawn.with_shell("awesome-client 'network_toggle()")
+		end),
+	}
 })
 awesome.connect_signal("signal::network", function(_, _, quality)
 	if quality == 101 then
@@ -84,9 +89,14 @@ local bluetooth = wibox.widget({
 	forced_width = 20,
 	valign = "center",
 	widget = wibox.widget.imagebox,
+	buttons = {
+		awful.button({}, 1, function()
+			awful.spawn.with_shell("awesome-client 'bluetooth_toggle()'")
+		end),
+	}
 })
-awesome.connect_signal("signal::bluetooth", function(value, _)
-	if value then
+awesome.connect_signal("signal::bluetooth", function(status, _)
+	if status then
 		awesome.connect_signal("signal::bluetooth", function(_, name)
 			if name ~= "" then
 				bluetooth.image = gears.color.recolor_image(beautiful.icon_path .. "bluetooth/bluetooth-macos.png",
@@ -159,7 +169,7 @@ awesome.connect_signal("signal::batterystatus", function(status)
 	local b = helpers.gc(battery, "status")
 	if status then
 		b.image = gears.color.recolor_image(beautiful.icon_path .. "popup/charge.svg",
-			beautiful.background)
+			beautiful.green)
 	else
 		b.image = nil
 	end
@@ -185,13 +195,14 @@ local layout = awful.widget.layoutbox({
 })
 local layouts = {
 	layout,
-	margins = 10,
+	top = 10,
+	bottom = 10,
 	widget = wibox.container.margin,
 }
 
 local systray = wibox.widget({
 	{
-		base_size = 22,
+		base_size = 25,
 		widget = wibox.widget.systray,
 	},
 	widget = wibox.container.place,
@@ -206,7 +217,7 @@ local widget = wibox.widget({
 	spotlight,
 	controlcenter,
 	layouts,
-	spacing = 25,
+	spacing = 30,
 	layout = wibox.layout.fixed.horizontal,
 })
 
@@ -266,5 +277,15 @@ awesome.connect_signal("signal::volumemute", function(value)
 		addedvolmuted = false
 	end
 end)
+
+helpers.hoverCursor(systray)
+helpers.hoverCursor(battery)
+helpers.hoverCursor(wifi)
+helpers.hoverCursor(bluetooth)
+helpers.hoverCursor(spotlight)
+helpers.hoverCursor(controlcenter)
+helpers.hoverCursor(layout)
+helpers.hoverCursor(volmuted)
+helpers.hoverCursor(micmuted)
 
 return widget

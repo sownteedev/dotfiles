@@ -140,6 +140,8 @@ local createButton = function(name, img, cmd1, cmd2)
 			end)
 		),
 	})
+	helpers.hoverCursor(buttons)
+
 	return buttons
 end
 

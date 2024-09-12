@@ -1,9 +1,8 @@
 local awful = require("awful")
-local gears = require("gears")
-local filesystem = gears.filesystem
 local json = require("modules.json")
-local icon_dir = filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
-local thumb_dir = filesystem.get_configuration_dir() .. "themes/assets/weather/images/"
+local beautiful = require("beautiful")
+local icon_dir = beautiful.icon_path .. "weather/icons/"
+local thumb_dir = beautiful.icon_path .. "weather/images/"
 
 local GET_FORECAST_CMD = [[bash -c "curl -s --show-error -X GET '%s'"]]
 
@@ -82,36 +81,40 @@ local url1 = (
 )
 
 awful.widget.watch(string.format(GET_FORECAST_CMD, url), 3600, function(_, stdout, stderr)
-	local result = json.decode(stdout)
-	local out = {
-		desc = result.current.weather[1].description:gsub("^%l", string.upper),
-		humidity = result.current.humidity,
-		temp = math.floor(result.current.temp),
-		feelsLike = math.floor(result.current.feels_like),
-		image = icon_dir .. icon_map[result.current.weather[1].icon] .. ".svg",
-		thumb = thumb_dir .. image_map[result.current.weather[1].icon] .. ".jpg",
-		hourly = {
-			result.hourly[1],
-			result.hourly[2],
-			result.hourly[3],
-			result.hourly[4],
-			result.hourly[5],
-			result.hourly[6],
-		},
-		daily = {
-			result.daily[1],
-			result.daily[2],
-			result.daily[3],
-			result.daily[4],
-			result.daily[5],
-			result.daily[6],
-		},
-	}
-	awesome.emit_signal("signal::weather", out)
+	if stdout ~= nil then
+		local result = json.decode(stdout)
+		local out = {
+			desc = result.current.weather[1].description:gsub("^%l", string.upper),
+			humidity = result.current.humidity,
+			temp = math.floor(result.current.temp),
+			feelsLike = math.floor(result.current.feels_like),
+			image = icon_dir .. icon_map[result.current.weather[1].icon] .. ".svg",
+			thumb = thumb_dir .. image_map[result.current.weather[1].icon] .. ".jpg",
+			hourly = {
+				result.hourly[1],
+				result.hourly[2],
+				result.hourly[3],
+				result.hourly[4],
+				result.hourly[5],
+				result.hourly[6],
+			},
+			daily = {
+				result.daily[1],
+				result.daily[2],
+				result.daily[3],
+				result.daily[4],
+				result.daily[5],
+				result.daily[6],
+			},
+		}
+		awesome.emit_signal("signal::weather", out)
+	end
 end)
 
 awful.widget.watch(string.format(GET_FORECAST_CMD, url1), 3600, function(_, stdout, stderr)
-	local result = json.decode(stdout)
-	local out = { namecountry = result[1].name .. ", " .. result[1].country }
-	awesome.emit_signal("signal::weather1", out)
+	if stdout ~= nil then
+		local result = json.decode(stdout)
+		local out = { namecountry = result[1].name .. ", " .. result[1].country }
+		awesome.emit_signal("signal::weather1", out)
+	end
 end)

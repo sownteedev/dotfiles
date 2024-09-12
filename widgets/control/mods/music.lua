@@ -7,20 +7,26 @@ local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local blur = wibox.widget({
-	image = helpers.cropSurface(6.6, gears.surface.load_uncached(gears.filesystem.get_cache_dir() ..
-		"blurdefault.jpg")),
-	clip_shape = beautiful.radius,
+	image = nil,
 	horizontal_fit_policy = "fit",
 	vertical_fit_policy = "fit",
 	widget = wibox.widget.imagebox,
 })
+local function convertBlur(image)
+	local cmd = "convert " .. image .. " -filter Gaussian -blur 0x5 ~/.cache/awesome/blurdefault.jpg"
+	awful.spawn.easy_async_with_shell(cmd, function()
+		local blurwall = gears.filesystem.get_cache_dir() .. "blurdefault.jpg"
+		blur.image = helpers.cropSurface(6.6, gears.surface.load_uncached(blurwall))
+	end)
+end
+convertBlur(beautiful.icon_path .. "music/blurdefault.jpg")
 
 local art = wibox.widget({
 	image = helpers.cropSurface(1, gears.surface.load_uncached(beautiful.songdefpicture)),
 	resize = true,
 	forced_height = 100,
 	forced_width = 100,
-	clip_shape = helpers.rrect(10),
+	clip_shape = beautiful.radius,
 	widget = wibox.widget.imagebox,
 })
 
@@ -77,8 +83,8 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _
 			blur.image = helpers.cropSurface(6.6, gears.surface.load_uncached(blurwall))
 		end)
 	art.image = helpers.cropSurface(1, gears.surface.load_uncached(album))
-	songname.text.markup = helpers.colorizeText(title, beautiful.fg)
-	artistname.text.markup = helpers.colorizeText(artist, beautiful.fg)
+	helpers.gc(songname, "text"):set_markup_silently(helpers.colorizeText(title, beautiful.fg))
+	helpers.gc(artistname, "text"):set_markup_silently(helpers.colorizeText(artist, beautiful.fg))
 	if player_name == "spotify" then
 		player_name = "spotify"
 	else
@@ -124,6 +130,9 @@ local play = wibox.widget({
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
 	play.markup = playing and helpers.colorizeText("󰏤", beautiful.fg) or helpers.colorizeText("󰐊", beautiful.fg)
 end)
+helpers.hoverCursor(next)
+helpers.hoverCursor(prev)
+helpers.hoverCursor(play)
 
 local finalwidget = wibox.widget({
 	{
@@ -174,7 +183,7 @@ local finalwidget = wibox.widget({
 		},
 		layout = wibox.layout.stack,
 	},
-	shape = helpers.rrect(10),
+	shape = beautiful.radius,
 	widget = wibox.container.background,
 })
 

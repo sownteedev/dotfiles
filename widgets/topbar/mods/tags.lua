@@ -1,10 +1,11 @@
 local awful = require("awful")
 local wibox = require("wibox")
+local helpers = require("helpers")
 
 return function(s)
 	local taglist = awful.widget.taglist({
 		layout = {
-			spacing = 10,
+			spacing = 30,
 			layout = wibox.layout.fixed.horizontal,
 		},
 		screen = s,
@@ -16,23 +17,15 @@ return function(s)
 		},
 		widget_template = {
 			{
-				{
-					markup = '',
-					id     = 'text_role',
-					widget = wibox.widget.textbox,
-				},
-				widget = wibox.container.margin,
-				left = 10,
-				right = 10,
+				id     = 'text_role',
+				widget = wibox.widget.textbox,
 			},
 			widget = wibox.container.place,
 			valign = 'center',
 		},
 	})
 
-	local tags = wibox.widget({
-		taglist,
-		layout = wibox.layout.fixed.horizontal,
-	})
-	return tags
+	helpers.hoverCursor(taglist)
+
+	return taglist
 end

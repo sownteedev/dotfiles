@@ -6,7 +6,7 @@ awful.spawn.with_shell("libinput-gestures-setup start")
 awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/blur'", function(stdout)
 	local status = stdout:match("true")
 	awful.spawn.with_shell(
-		not status and "bash -c 'picom --config ~/.config/awesome/signals/scripts/Picom/picom_no_opacity.conf -b'" or
-		"bash -c 'picom --config ~/.config/awesome/signals/scripts/Picom/picom.conf -b'"
+		not status and "bash -c 'picom --config ~/.config/picom/picom_no_opacity.conf -b'" or
+		"bash -c 'picom --config ~/.config/picom/picom.conf -b'"
 	)
 end)

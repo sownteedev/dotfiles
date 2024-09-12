@@ -50,14 +50,6 @@ _Utils.gobject_to_gearsobject = function(object)
 	return new_gobject
 end
 
-_Utils.override = function(target, source)
-	return gears.table.crush(target, source, false)
-end
-
-_Utils.capitalize = function(str)
-	return (str:gsub("^%l", string.upper))
-end
-
 _Utils.recolor_image = function(image, new_color, width, height)
 	if type(image) == "string" then
 		width = width or 16
@@ -112,12 +104,7 @@ _Utils.lookup_icon = function(args)
 		return
 	end
 
-	args = _Utils.override({
-		icon_name = "",
-		size = 128,
-		path = true,
-		recolor = nil,
-	}, args)
+	args = gears.table.crush({ icon_name = "", size = 128, path = true, recolor = nil, }, args, false)
 
 	local theme = Gtk.IconTheme.get_default()
 	local icon_info, path
@@ -126,7 +113,7 @@ _Utils.lookup_icon = function(args)
 		args.icon_name,
 		args.icon_name:lower(),
 		args.icon_name:upper(),
-		_Utils.capitalize(args.icon_name),
+		args.icon_name:gsub("^%l", string.upper)
 	}) do
 		icon_info = theme:lookup_icon(name, args.size, Gtk.IconLookupFlags.USE_BUILTIN)
 

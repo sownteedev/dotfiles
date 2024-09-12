@@ -104,14 +104,19 @@ return function(s)
 			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.red))
 		end
 	end)
+	awesome.connect_signal("signal::micmute", function(value)
+		if value then
+			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.red))
+		end
+	end)
 
 
 	local slide = animation:new({
 		duration = 1,
 		pos = beautiful.width + osd.width,
 		easing = animation.easing.inOutExpo,
-		update = function(_, pos)
-			osd.x = pos
+		update = function(_, poss)
+			osd.x = poss
 		end,
 	})
 

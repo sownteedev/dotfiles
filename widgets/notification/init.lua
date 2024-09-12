@@ -3,38 +3,8 @@ local beautiful = require("beautiful")
 local wibox = require("wibox")
 local awful = require("awful")
 local helpers = require("helpers")
-local ruled = require("ruled")
-local menubar = require("menubar")
 local gears = require("gears")
 local animation = require("modules.animation")
-
-naughty.connect_signal("request::icon", function(n, context, hints)
-	if context ~= "app_icon" then
-		return
-	end
-	local path = menubar.utils.lookup_icon(hints.app_icon) or menubar.utils.lookup_icon(hints.app_icon:lower())
-	if path then
-		n.icon = path
-	end
-end)
-
--- naughty config
-naughty.config.defaults.timeout = 10
-naughty.config.defaults.title = "Ding!"
-naughty.config.defaults.position = "top_right"
-naughty.config.defaults.screen = awful.screen.focused()
-beautiful.notification_spacing = 20
-
--- Timeouts
-naughty.config.presets.low.timeout = 10
-naughty.config.presets.critical.timeout = 0
-
-ruled.notification.connect_signal("request::rules", function()
-	ruled.notification.append_rule({
-		rule = {},
-		properties = { screen = awful.screen.preferred, implicit_timeout = 6 },
-	})
-end)
 
 return function(n)
 	local action_widget = {
@@ -65,7 +35,7 @@ return function(n)
 		{
 			{
 				image = n.icon and helpers.cropSurface(1, gears.surface.load_uncached(n.icon))
-					or gears.color.recolor_image(beautiful.icon_path .. "awm/awm.png", beautiful.foreground),
+					or gears.color.recolor_image(beautiful.icon_path .. "awm/awm.png", helpers.randomColor()),
 				resize = true,
 				clip_shape = helpers.rrect(50),
 				widget = wibox.widget.imagebox,
@@ -89,7 +59,7 @@ return function(n)
 		forced_height = 140,
 	})
 	local anim = animation:new({
-		duration = 6,
+		duration = 5,
 		target = 100,
 		reset_on_stop = false,
 		easing = animation.easing.linear,
@@ -97,39 +67,27 @@ return function(n)
 			helpers.gc(image_n, "arc"):set_value(pos)
 		end,
 	})
-	anim:connect_signal("ended", function()
-		n:destroy()
-	end)
 
 	local title_n = wibox.widget({
 		{
-			{
-				markup = n.title,
-				font = beautiful.sans .. " Medium 15",
-				align = "right",
-				widget = wibox.widget.textbox,
-			},
-			forced_width = 220,
-			widget = wibox.container.scroll.horizontal,
-			step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
-			speed = 40,
+			markup = n.title,
+			font = beautiful.sans .. " Medium 15",
+			halign = "left",
+			widget = wibox.widget.textbox,
 		},
-		widget = wibox.container.margin,
+		forced_width = 250,
+		widget = wibox.container.scroll.horizontal,
+		step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
+		speed = 40,
 	})
 
 	local message_n = wibox.widget({
-		{
-			{
-				markup = helpers.colorizeText("<span weight='normal'>" .. n.message .. "</span>", beautiful.foreground),
-				font = beautiful.sans .. " 12",
-				align = "left",
-				wrap = "char",
-				widget = wibox.widget.textbox,
-			},
-			forced_width = 300,
-			layout = wibox.layout.fixed.horizontal,
-		},
-		widget = wibox.container.margin,
+		markup = helpers.colorizeText("<span weight='normal'>" .. n.message .. "</span>", beautiful.foreground),
+		font = beautiful.sans .. " 12",
+		halign = "left",
+		wrap = "char",
+		widget = wibox.widget.textbox,
+		forced_width = 300,
 	})
 
 	local time_n = wibox.widget({
@@ -165,11 +123,35 @@ return function(n)
 			margins = 30,
 		},
 	})
+
+	local function find_client_and_tag(class_name)
+		for _, c in ipairs(client.get()) do
+			if c.class == class_name then
+				return c, c.first_tag
+			end
+		end
+		return nil, nil
+	end
+
+	local function focus_client_by_class(class_name)
+		local c, tag = find_client_and_tag(class_name)
+		if c and tag then
+			tag:view_only()
+			client.focus = c
+			c:raise()
+		end
+	end
+
 	anim:start()
 	notification:buttons(gears.table.join(awful.button({}, 1, function()
 		anim:stop()
+		focus_client_by_class(n.app_name)
 		n:destroy(naughty.notification_closed_reason.dismissed_by_user)
 	end)))
+	anim:connect_signal("ended", function()
+		n:destroy(naughty.notification_closed_reason.dismissed_by_user)
+	end)
+	helpers.hoverCursor(notification)
 
 	return notification
 end

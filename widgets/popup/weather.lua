@@ -3,7 +3,7 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local helpers = require("helpers")
 
-local icon_dir = gears.filesystem.get_configuration_dir() .. "themes/assets/weather/icons/"
+local icon_dir = beautiful.icon_path .. "weather/icons/"
 
 local icon_map = {
 	["01d"] = "weather-clear-sky",
@@ -53,7 +53,8 @@ local dayWeather = function()
 					font = beautiful.sans .. " 11",
 				},
 				{
-					markup = helpers.colorizeText("/", beautiful.blue),
+					id = "/",
+					markup = nil,
 					widget = wibox.widget.textbox,
 					font = beautiful.sans .. " 11",
 				},
@@ -82,6 +83,7 @@ local dayWeather = function()
 			return sp
 		end
 		helpers.gc(widget, "min").markup = helpers.colorizeText(getTemp(day.temp.night), "#ffffff")
+		helpers.gc(widget, "/").markup = helpers.colorizeText("/", beautiful.blue)
 		helpers.gc(widget, "max").markup = helpers.colorizeText(getTemp(day.temp.day), "#ffffff")
 	end
 	return widget
@@ -102,7 +104,7 @@ local widget = wibox.widget({
 		forced_height = 450,
 		forced_width = 600,
 		image = helpers.cropSurface(1,
-			gears.surface.load_uncached(beautiful.icon_path .. "weather/images/weather-clear-night.jpg")
+			gears.surface.load_uncached(beautiful.icon_path .. "weather/images/weather-clear-sky.jpg")
 		),
 		widget = wibox.widget.imagebox,
 		clip_shape = beautiful.radius,
@@ -116,7 +118,7 @@ local widget = wibox.widget({
 			type = "linear",
 			from = { 0, 0 },
 			to = { 250, 0 },
-			stops = { { 0, beautiful.fg1 .. "88" }, { 1, beautiful.fg1 .. "88" } },
+			stops = { { 0, "#00000066" }, { 1, "#00000066" } },
 		},
 		widget = wibox.container.background,
 	},

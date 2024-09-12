@@ -15,7 +15,7 @@ awful.keyboard.append_global_keybindings({
 		awful.spawn.with_shell("ulauncher-toggle &")
 	end),
 	awful.key({ mod }, "e", function()
-		awful.spawn.with_shell("thunar &")
+		awful.spawn.with_shell("nemo &")
 	end),
 	awful.key({ mod }, "Return", function()
 		awful.spawn.with_shell("alacritty &")
@@ -75,10 +75,10 @@ awful.keyboard.append_global_keybindings({
 		awesome.emit_signal("open::brivolmic")
 	end),
 
-	awful.key({}, "Print", function()
+	awful.key({ mod }, "Print", function()
 		record()
 	end),
-	awful.key({ mod }, "Print", function()
+	awful.key({ mod, shift }, "Print", function()
 		awful.spawn.with_shell("pkill -f ffmpeg")
 	end),
 	awful.key({ mod, shift }, "s", function()
@@ -132,7 +132,9 @@ awful.keyboard.append_global_keybindings({
 				current_index = #tagactive
 			end
 		end
-		awful.screen.focused().tags[tagactive_index[current_index % #tagactive + 1]]:view_only()
+		if current_index ~= nil then
+			awful.screen.focused().tags[tagactive_index[current_index % #tagactive + 1]]:view_only()
+		end
 	end),
 	awful.key({ mod, shift }, "Tab", function()
 		local current_tag = awful.screen.focused().selected_tag.name
@@ -145,8 +147,10 @@ awful.keyboard.append_global_keybindings({
 				current_index = #tagactive
 			end
 		end
-		awful.screen.focused().tags[tagactive_index[current_index - 1 == 0 and #tagactive or current_index - 1]]
-			:view_only()
+		if current_index ~= nil then
+			awful.screen.focused().tags[tagactive_index[current_index - 1 == 0 and #tagactive or current_index - 1]]
+				:view_only()
+		end
 	end),
 
 	-- Client
