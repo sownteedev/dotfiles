@@ -22,48 +22,41 @@ return function(s)
 	local profilepic = wibox.widget({
 		{
 			{
-				{
-					{
-						image = beautiful.profile,
-						clip_shape = gears.shape.rounded_rect,
-						halign = "center",
-						widget = wibox.widget.imagebox,
-					},
-					id = "arc",
-					widget = wibox.container.arcchart,
-					max_value = 100,
-					min_value = 0,
-					value = 0,
-					rounded_edge = false,
-					thickness = 3,
-					start_angle = 4.71238898,
-					bg = beautiful.foreground,
-					colors = { beautiful.foreground },
-					forced_width = 100,
-					forced_height = 100,
-				},
-				{
-					markup = beautiful.user .. "@" .. io.popen("uname -n"):read("*l"),
-					font = beautiful.sans .. " Medium 13",
-					widget = wibox.widget.textbox,
-				},
-				spacing = 20,
-				widget = wibox.layout.fixed.vertical,
+				image = beautiful.profile,
+				clip_shape = gears.shape.rounded_rect,
+				halign = "center",
+				widget = wibox.widget.imagebox,
 			},
+			id = "arc",
+			widget = wibox.container.arcchart,
+			max_value = 100,
+			min_value = 0,
+			value = 0,
+			rounded_edge = false,
+			thickness = 10,
+			start_angle = 4.71238898,
+			bg = beautiful.foreground .. "00",
+			colors = { beautiful.foreground },
+			forced_width = 120,
+			forced_height = 120,
 			halign = "center",
-			valign = "bottom",
-			layout = wibox.container.place,
 		},
-		bottom = 100,
-		widget = wibox.container.margin,
+		{
+			markup = beautiful.user .. "@" .. io.popen("uname -n"):read("*l"),
+			font = "azuki_font Bold 18",
+			halign = "center",
+			widget = wibox.widget.textbox,
+		},
+		spacing = 10,
+		widget = wibox.layout.fixed.vertical,
 	})
 
 	local slide = animation:new({
 		duration = 1,
 		pos = -lock.height,
 		easing = animation.easing.inOutExpo,
-		update = function(_, pos)
-			lock.y = pos
+		update = function(_, poss)
+			lock.y = poss
 		end,
 	})
 	local slide_end = gears.timer({
@@ -104,7 +97,7 @@ return function(s)
 				return
 			end
 			if #key == 1 then
-				helpers.gc(profilepic, "arc"):set_colors({ beautiful.blue })
+				helpers.gc(profilepic, "arc"):set_colors({ helpers.randomColor() })
 				helpers.gc(profilepic, "arc"):set_value(20)
 				helpers.gc(profilepic, "arc"):set_start_angle(getRandom())
 				if input == nil then
@@ -113,7 +106,7 @@ return function(s)
 				end
 				input = input .. key
 			elseif key == "BackSpace" then
-				helpers.gc(profilepic, "arc"):set_colors({ beautiful.blue })
+				helpers.gc(profilepic, "arc"):set_colors({ helpers.randomColor() })
 				helpers.gc(profilepic, "arc"):set_value(20)
 				helpers.gc(profilepic, "arc"):set_start_angle(getRandom())
 				input = input:sub(1, -2)
@@ -142,48 +135,47 @@ return function(s)
 
 	local background = wibox.widget({
 		image = nil,
-		forced_width = beautiful.width,
-		forced_height = beautiful.height,
 		horizontal_fit_policy = "fit",
 		vertical_fit_policy = "fit",
 		widget = wibox.widget.imagebox,
 	})
 	local makeImage = function()
-		local cmd = "convert " .. beautiful.lock .. " -filter Gaussian -blur 0x0 ~/.cache/awesome/lock.jpg &"
+		local cmd = "convert " .. beautiful.lock .. " ~/.cache/awesome/lock.jpg"
 		awful.spawn.easy_async_with_shell(cmd, function()
 			local blurwall = gears.filesystem.get_cache_dir() .. "lock.jpg"
 			background.image = blurwall
 		end)
 	end
-
 	makeImage()
+
 	local time = wibox.widget({
 		{
-			{
-				font = beautiful.sans .. " 35",
-				format = "%A, %B %d",
-				halign = "center",
-				widget = wibox.widget.textclock,
-			},
-			{
-				font = beautiful.sans .. " Bold 140",
-				format = "%H:%M",
-				halign = "center",
-				widget = wibox.widget.textclock,
-			},
-			layout = wibox.layout.fixed.vertical,
+			font = beautiful.sans .. " 35",
+			format = "%A, %B %d",
+			halign = "center",
+			widget = wibox.widget.textclock,
 		},
-		top = 100,
-		widget = wibox.container.margin,
+		{
+			font = beautiful.sans .. " Heavy 140",
+			format = "%H:%M",
+			halign = "center",
+			widget = wibox.widget.textclock,
+		},
+		layout = wibox.layout.fixed.vertical,
 	})
 
 	lock:setup({
 		background,
 		{
-			time,
-			nil,
-			profilepic,
-			layout = wibox.layout.align.vertical,
+			{
+				time,
+				nil,
+				profilepic,
+				layout = wibox.layout.align.vertical,
+			},
+			top = 100,
+			bottom = 100,
+			widget = wibox.container.margin,
 		},
 		layout = wibox.layout.stack,
 	})

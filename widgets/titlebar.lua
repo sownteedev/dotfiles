@@ -7,9 +7,8 @@ local helpers = require("helpers")
 return function(c)
 	local titlebar = awful.titlebar(c, {
 		size = 55,
-		bg = helpers.change_hex_lightness(beautiful.background, 4),
-		bg_normal = helpers.change_hex_lightness(beautiful.background, 4),
-		bg_focus = helpers.change_hex_lightness(beautiful.background, 4),
+		fg = beautiful.foreground,
+		bg = helpers.change_hex_lightness(beautiful.background, -4),
 	})
 
 	local close = wibox.widget({
@@ -58,19 +57,6 @@ return function(c)
 
 	awful.titlebar.enable_tooltip = false
 
-	local space = gears.table.join(
-		awful.button({}, 1, function()
-			client.focus = c
-			c:raise()
-			awful.mouse.client.move(c)
-		end),
-		awful.button({}, 3, function()
-			client.focus = c
-			c:raise()
-			awful.mouse.client.resize(c)
-		end)
-	)
-
 	local icon = wibox.widget({
 		{
 			widget = wibox.widget.imagebox,
@@ -82,7 +68,6 @@ return function(c)
 	})
 
 	titlebar.widget = {
-		layout = wibox.layout.align.horizontal,
 		{
 			widget = wibox.container.margin,
 			left = 50,
@@ -95,14 +80,36 @@ return function(c)
 			},
 		},
 		{
-			widget = wibox.container.background,
-			buttons = space,
+			{
+				awful.titlebar.widget.titlewidget(c),
+				left = 200,
+				right = 200,
+				top = 10,
+				bottom = 10,
+				widget = wibox.container.margin,
+			},
+			align = "center",
+			valign = "center",
+			widget = wibox.container.place,
+			buttons = gears.table.join(
+				awful.button({}, 1, function()
+					client.focus = c
+					c:raise()
+					awful.mouse.client.move(c)
+				end),
+				awful.button({}, 3, function()
+					client.focus = c
+					c:raise()
+					awful.mouse.client.resize(c)
+				end)
+			)
 		},
 		{
 			icon,
 			widget = wibox.container.margin,
 			right = 50,
 		},
+		layout = wibox.layout.align.horizontal,
 	}
 
 	return titlebar

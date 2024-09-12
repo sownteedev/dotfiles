@@ -22,8 +22,8 @@ function blur_toggle()
 		awful.spawn.easy_async_with_shell("bash -c 'pkill picom'", function()
 			local status = stdout:match("true")
 			awful.spawn.with_shell(
-				status and "bash -c 'picom --config ~/.config/awesome/signals/scripts/Picom/picom_no_opacity.conf -b'" or
-				"bash -c 'picom --config ~/.config/awesome/signals/scripts/Picom/picom.conf -b'"
+				status and "bash -c 'picom --config ~/.config/picom/picom_no_opacity.conf -b'" or
+				"bash -c 'picom --config ~/.config/picom/picom.conf -b'"
 			)
 			awful.spawn.with_shell(status and "bash -c 'echo false > ~/.cache/blur'" or
 				"bash -c 'echo true > ~/.cache/blur'")

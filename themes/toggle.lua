@@ -1,9 +1,8 @@
 local awful = require("awful")
-local helpers = require("helpers")
 
-local function backup()
-	awful.spawn.easy_async_with_shell([[
-		declare -a config_folders=("alacritty" "zsh" "ranger" "gtk-3.0")
+function backup()
+	awful.spawn.with_shell([[
+		declare -a config_folders=("alacritty" "zsh" "ranger" "gtk-3.0" "picom")
 		declare -a data_folders=("spicetify/Themes" "nvim/lua/custom")
 		declare -a dot_folders=("fonts" "icons" "themes" "walls") &&
 
@@ -17,16 +16,13 @@ local function backup()
 		for folder in "${config_folders[@]}"; do
 			cp -r ~/.config/"$folder" ~/dotf/.config/
 		done
-		cp ~/.config/libinput-gestures.conf ~/dotf/.config/
+		cp ~/.config/libinput-gestures.conf ~/dotf/.config/ &&
 		for folder in "${data_folders[@]}"; do
 			mkdir -p ~/dotf/.config/"$folder"
 			cp -r ~/.config/"$folder"/* ~/dotf/.config/"$folder"
 		done
 		
-		mkdir -p ~/dotf/.config/firefox &&
-		cp -r ~/.mozilla/firefox/*.default-release/chrome ~/dotf/.config/firefox/ &&
-
-		cp -r ~/.local/other/ ~/dotf/.local/ && cp -r ~/.local/bin/ ~/dotf/.local/
+		cp -r ~/.local/other/ ~/dotf/.local/ && cp -r ~/.local/bin/ ~/dotf/.local/ &&
 		cp ~/.config/Caprine/custom.css ~/dotf/.local/other/customcaprine.css &&
 		
 		rm -f ~/dotf/.gtkrc-2.0 && cp ~/.gtkrc-2.0 ~/dotf/
@@ -37,57 +33,25 @@ local function backup()
 end
 
 local function awesome(theme)
-	awful.spawn.easy_async_with_shell([[
+	awful.spawn.with_shell([[
 		sed -i "s/local colorscheme.*/local colorscheme = \"]] .. theme .. [[\"/" ~/.config/awesome/themes/theme.lua &&
 	]])
+	awful.spawn.with_shell("awesome-client 'awesome.restart()'")
 end
 
 local function term(theme)
-	local color = require("themes.colors." .. theme)
-	awful.spawn.easy_async_with_shell([[
+	awful.spawn.with_shell([[
 		sed -i "s#~/.config/alacritty/colors/.*\.toml#~/.config/alacritty/colors/"]] ..
 		theme .. [[".toml#" ~/.config/alacritty/alacritty.toml &&
-		sed -i "s/bgl=.*/bgl=]] .. color.lighter .. [[/" ~/.config/zsh/theme.zsh &&
 	]])
 end
 
 local function gtk(theme)
-	local color = require("themes.colors." .. theme)
-	awful.spawn.easy_async_with_shell([[
-		sed -i -e "s/background .*/background ]] .. color.background .. [[;/"\
-			   -e "s/lighter .*/lighter ]] .. color.lighter .. [[;/"\
-			   -e "s/lighter1 .*/lighter1 ]] .. color.lighter1 .. [[;/"\
-			   -e "s/foreground .*/foreground ]] .. color.foreground .. [[;/" ~/.themes/tethemes/gtk-3.0/colors.css &&
-		sed -i -e 's/background:.*/background:]] .. color.background .. [["/'\
-			   -e 's/lighter:.*/lighter:]] .. color.lighter .. [["/'\
-			   -e 's/foreground:.*/foreground:]] .. color.foreground .. [["/' ~/.themes/tethemes/gtk-2.0/gtkrc &&
-	]])
-end
-
-local function firefox(theme)
-	local color = require("themes.colors." .. theme)
-	awful.spawn.easy_async_with_shell([[
-		sed -i -e "s/background: .*/background: ]] .. color.background .. [[ !important;/"\
-			   -e "s/background-color: .*/background-color: ]] .. color.background .. [[ !important;/"\
-			   -e "s/color: .*/color: ]] ..
-		color.background .. [[ !important;/" ~/.mozilla/*.default-release/chrome/userContent.css &&
-
-		sed -i -e "s/--uc-base-colour: .*/--uc-base-colour: ]] .. color.lighter .. [[;/"\
-			   -e "s/--uc-highlight-colour: .*/--uc-highlight-colour: ]] .. color.background .. [[;/"\
-			   -e "s/--uc-inverted-colour: .*/--uc-inverted-colour: ]] .. color.foreground .. [[;/"\
-			   -e "s/--uc-identity-colour-red: .*/--uc-identity-colour-red: ]] .. color.red .. [[;/"\
-			   -e "s/--uc-identity-colour-green: .*/--uc-identity-colour-green: ]] .. color.green .. [[;/"\
-			   -e "s/--uc-identity-colour-blue: .*/--uc-identity-colour-blue: ]] .. color.blue .. [[;/"\
-			   -e "s/--uc-identity-colour-yellow: .*/--uc-identity-colour-yellow: ]] .. helpers.mix(
-			color.red,
-			color.green,
-			0.5
-		) .. [[;/"\
-			   -e "s/--uc-identity-colour-orange: .*/--uc-identity-colour-orange: ]] .. helpers.mix(
-			color.red,
-			helpers.mix(color.red, color.green, 0.5),
-			0.5
-		) .. [[;/" ~/.mozilla/*.default-release/chrome/includes/cascade-colours.css &&
+	theme = string.upper(string.sub(theme, 0, 1)) .. string.sub(theme, 2)
+	awful.spawn.with_shell([[
+		sed -i "s/gtk-theme-name=.*/gtk-theme-name=WhiteSur-]] .. theme .. [[/" ~/.config/gtk-3.0/settings.ini &&
+		sed -i 's/gtk-theme-name=.*/gtk-theme-name="WhiteSur-]] .. theme .. [["/' ~/.gtkrc-2.0 &&
+		sed -i 's/Net\/ThemeName.*/Net\/ThemeName "WhiteSur-]] .. theme .. [["/' ~/.xsettingsd &&
 	]])
 end
 
@@ -96,27 +60,25 @@ local function spotify(theme)
 		spicetify config color_scheme ]] .. theme .. [[ && spicetify apply &&
 	]])
 end
+
 function applyTheme(theme)
-	os.execute("xsettingsd &")
 	term(theme)
-	awesome(theme)
 	gtk(theme)
-	firefox(theme)
 	spotify(theme)
-	-- backup()
-	awful.spawn.easy_async_with_shell("ls -1 /run/user/1000/ | grep nvim", function(stdout)
-		for line in stdout:gmatch("[^\n]+") do
-			awful.spawn.easy_async_with_shell(
-				[[
-				nvim --server /run/user/1000/]]
-				.. line
-				.. [[ --remote-send ':lua require("tevim.themes.pick").setTheme("]]
-				.. theme
-				.. [[")<CR>']]
-			)
-		end
-		awful.spawn.easy_async_with_shell("awesome-client 'awesome.restart()'")
-	end)
+	awesome(theme)
+	awful.spawn.easy_async("xsettingsd")
+	-- awful.spawn.easy_async_with_shell("ls -1 /run/user/1000/ | grep nvim", function(stdout)
+	-- 	for line in stdout:gmatch("[^\n]+") do
+	-- 		awful.spawn.easy_async_with_shell(
+	-- 			[[
+	-- 			nvim --server /run/user/1000/]]
+	-- 			.. line
+	-- 			.. [[ --remote-send ':lua require("tevim.themes.pick").setTheme("]]
+	-- 			.. theme
+	-- 			.. [[")<CR>']]
+	-- 		)
+	-- 	end
+	-- end)
 end
 
 function darkmode()

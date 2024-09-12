@@ -12,11 +12,26 @@ local data = {
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "thunar", "thunar"),
+			icon = helpers.getIcon(nil, "nemo", "nemo"),
 			clients = {},
-			class = "Thunar",
-			exec = "thunar",
-			name = "thunar",
+			class = "Nemo",
+			exec = "nemo",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = helpers.getIcon(nil, "shotwell", "shotwell"),
+			clients = {},
+			class = "Shotwell",
+			exec = "shotwell",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = helpers.getIcon(nil, "thunderbird", "thunderbird"),
+			clients = {},
+			class = "thunderbird",
+			exec = "thunderbird",
 		},
 		{
 			count = 0,
@@ -25,7 +40,6 @@ local data = {
 			clients = {},
 			class = "Alacritty",
 			exec = "alacritty",
-			name = "alacritty",
 		},
 		{
 			count = 0,
@@ -34,7 +48,6 @@ local data = {
 			clients = {},
 			class = "firefox",
 			exec = "firefox",
-			name = "firefox",
 		},
 		{
 			count = 0,
@@ -43,7 +56,6 @@ local data = {
 			clients = {},
 			class = "Code",
 			exec = "code",
-			name = "code",
 		},
 		{
 			count = 0,
@@ -52,7 +64,6 @@ local data = {
 			clients = {},
 			class = "jetbrains-idea",
 			exec = "intellij-idea-ultimate-edition",
-			name = "jetbrains-idea",
 		},
 		{
 			count = 0,
@@ -61,7 +72,6 @@ local data = {
 			clients = {},
 			class = "jetbrains-webstorm",
 			exec = "webstorm",
-			name = "jetbrains-webstorm",
 		},
 		{
 			count = 0,
@@ -70,7 +80,6 @@ local data = {
 			clients = {},
 			class = "jetbrains-pycharm",
 			exec = "pycharm-professional",
-			name = "jetbrains-pycharm",
 		},
 		{
 			count = 0,
@@ -79,7 +88,6 @@ local data = {
 			clients = {},
 			class = "jetbrains-datagrip",
 			exec = "datagrip",
-			name = "datagrip",
 		},
 		{
 			count = 0,
@@ -88,7 +96,6 @@ local data = {
 			clients = {},
 			class = "Docker Desktop",
 			exec = "systemctl --user start docker-desktop",
-			name = "Containers - Docker Desktop",
 		},
 		{
 			count = 0,
@@ -97,16 +104,14 @@ local data = {
 			clients = {},
 			class = "Postman",
 			exec = "postman",
-			name = "Postman",
 		},
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "vmware", "vmware"),
+			icon = helpers.getIcon(nil, "vmware-workstation", "vmware"),
 			clients = {},
 			class = "Vmware",
 			exec = "vmware",
-			name = "Vmware",
 		},
 		{
 			count = 0,
@@ -115,7 +120,6 @@ local data = {
 			clients = {},
 			class = "Notion",
 			exec = "notion-app",
-			name = "notion",
 		},
 		{
 			count = 0,
@@ -124,7 +128,6 @@ local data = {
 			clients = {},
 			class = "TelegramDesktop",
 			exec = "telegram-desktop",
-			name = "telegramdesktop",
 		},
 		{
 			count = 0,
@@ -133,16 +136,14 @@ local data = {
 			clients = {},
 			class = "Caprine",
 			exec = "caprine",
-			name = "caprine",
 		},
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "discord", "discord"),
+			icon = helpers.getIcon(nil, "vesktop", "vesktop"),
 			clients = {},
-			class = "discord",
-			exec = "discord",
-			name = "discord",
+			class = "vesktop",
+			exec = "vesktop",
 		},
 		{
 			count = 0,
@@ -151,11 +152,12 @@ local data = {
 			clients = {},
 			class = "Spotify",
 			exec = "spotify",
-			name = "spotify",
 		},
 	},
 	classes = {
-		"thunar",
+		"nemo",
+		"shotwell",
+		"thunderbird",
 		"alacritty",
 		"firefox",
 		"code",
@@ -169,7 +171,7 @@ local data = {
 		"notion",
 		"telegramdesktop",
 		"caprine",
-		"discord",
+		"vesktop",
 		"spotify",
 	},
 }
@@ -234,11 +236,9 @@ local function genMetadata()
 				count = 1,
 				pinned = false,
 				icon = icon,
-				id = #data.classes + 1,
 				clients = { c },
 				class = class,
 				exec = exe,
-				name = c.name,
 			}
 			table.insert(data.metadata, toInsert)
 		end
@@ -291,11 +291,25 @@ local function genIcons()
 	print(inspect(data.metadata))
 	local added = false
 	for _, j in ipairs(data.metadata) do
-		if j.pinned then
+		if j.pinned or (not j.pinned and j.count > 0) then
+			if not j.pinned and added then
+				widget:add(wibox.widget({
+					{
+						widget = wibox.widget.separator,
+						orientation = "vertical",
+						forced_width = 1,
+						forced_height = 1,
+					},
+					top = 10,
+					bottom = 10,
+					widget = wibox.container.margin,
+				}))
+				added = false
+			end
 			local minimized = getMinimized(j.clients)
 			local bg = beautiful.background .. "01"
 			if minimized > 0 then
-				bg = beautiful.blue
+				bg = "#ffff00"
 			elseif client.focus then
 				if client.focus.class:lower() == j.class then
 					bg = beautiful.foreground
@@ -308,8 +322,8 @@ local function genIcons()
 					{
 						widget = wibox.widget.imagebox,
 						image = j.icon,
-						forced_height = 45,
-						forced_width = 45,
+						forced_height = 48,
+						forced_width = 48,
 						resize = true,
 					},
 					top = 5,
@@ -323,6 +337,7 @@ local function genIcons()
 				},
 				layout = wibox.layout.fixed.vertical,
 			})
+			helpers.hoverCursor(widgets)
 			for _ = 1, j.count - 1 do
 				widgets.children[2].markup =
 					helpers.colorizeText(widgets.children[2].markup .. " ●", bg)
@@ -349,84 +364,10 @@ local function genIcons()
 				end)
 			))
 			widget:add(widgets)
-		end
-		added = true
-	end
-	for _, j in ipairs(data.metadata) do
-		if not j.pinned and j.count > 0 then
-			if added then
-				widget:add(wibox.widget({
-					{
-						widget = wibox.widget.separator,
-						orientation = "vertical",
-						forced_width = 1,
-						forced_height = 1,
-					},
-					top = 10,
-					bottom = 10,
-					widget = wibox.container.margin,
-				}))
-				added = false
-			end
-			local minimized = getMinimized(j.clients)
-			local bg = beautiful.background .. "01"
-			if minimized > 0 then
-				bg = beautiful.blue
-			elseif client.focus then
-				if client.focus.class:lower() == j.class then
-					bg = beautiful.foreground
-				elseif j.count > 0 then
-					bg = beautiful.foreground .. "AA"
-				end
-			end
-			local widgets = wibox.widget({
-				{
-					{
-						widget = wibox.widget.imagebox,
-						image = j.icon,
-						forced_height = 45,
-						forced_width = 45,
-						resize = true,
-					},
-					top = 5,
-					widget = wibox.container.margin,
-				},
-				{
-					font = beautiful.icon .. " 4",
-					markup = helpers.colorizeText("●", bg),
-					widget = wibox.widget.textbox,
-					halign = "center",
-				},
-				layout = wibox.layout.fixed.vertical,
-			})
-			for _ = 1, j.count - 1 do
-				widgets.children[2].markup =
-					helpers.colorizeText(widgets.children[2].markup .. " ●", bg)
-			end
-			widgets:buttons(gears.table.join(
-				awful.button({}, 1, function()
-					if j.count == 0 then
-						awful.spawn.with_shell(j.exec .. " &")
-						client.focus = j.clients[1]
-					elseif j.count == 1 then
-						if j.clients[j.count].minimized then
-							j.clients[j.count].minimized = false
-							client.focus = j.clients[j.count]
-							awful.client.movetotag(mouse.screen.selected_tag, j.clients[j.count])
-						elseif client.focus and client.focus.class:lower() == j.class then
-							j.clients[j.count].minimized = true
-						elseif client.focus and client.focus.class:lower() ~= j.class then
-							client.focus = j.clients[j.count]
-							awful.client.movetotag(mouse.screen.selected_tag, j.clients[j.count])
-						end
-					end
-				end)
-			))
-			widget:add(widgets)
+			added = j.pinned
 		end
 	end
 end
-
 genIcons()
 
 return function(s)

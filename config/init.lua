@@ -1,4 +1,5 @@
 require(... .. ".autostart")
-require(... .. ".keys")
-require(... .. ".rules")
 require(... .. ".tags")
+require(... .. ".rules")
+require(... .. ".naughty")
+require(... .. ".keys")

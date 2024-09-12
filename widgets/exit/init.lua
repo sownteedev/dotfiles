@@ -2,7 +2,6 @@ local awful = require("awful")
 local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
-local animation = require("modules.animation")
 local helpers = require("helpers")
 
 local createButton = function(icon, name, cmd)
@@ -44,6 +43,8 @@ local createButton = function(icon, name, cmd)
 	})
 	helpers.addHoverBg(button, "bg", helpers.change_hex_lightness(beautiful.background, 4),
 		helpers.change_hex_lightness(beautiful.background, 6))
+	helpers.hoverCursor(button)
+
 	return button
 end
 
@@ -85,31 +86,6 @@ return function(s)
 	awesome.connect_signal("signal::uptime", function(v)
 		helpers.gc(exit, "uptime").markup = helpers.colorizeText("Up: " .. v, beautiful.foreground)
 	end)
-
-	local slide = animation:new({
-		duration = 1,
-		pos = -exit.width,
-		easing = animation.easing.inOutExpo,
-		update = function(_, pos)
-			exit.x = pos
-		end,
-	})
-	local slide_end = gears.timer({
-		timeout = 1,
-		single_shot = true,
-		callback = function()
-			exit.visible = false
-		end,
-	})
-	awesome.connect_signal("toggle::exit", function()
-		if exit.visible then
-			slide_end:start()
-			slide:set(-exit.width)
-		else
-			exit.visible = true
-			slide:set(beautiful.useless_gap * 2)
-		end
-	end)
-
+	helpers.slideAnimation("toggle::exit", "close::exit", "left", exit, -exit.width, beautiful.useless_gap * 2)
 	return exit
 end

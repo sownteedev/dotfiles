@@ -5,8 +5,9 @@ local dpi = beautiful.xresources.apply_dpi
 local cairo = require("lgi").cairo
 local gmatrix = require("gears.matrix")
 local json = require("modules.json")
+local animation = require("modules.animation")
 local icon_cache = {}
-local t = "/home/" .. os.getenv("USER") .. "/.icons/WhiteSur/"
+local icon_path = "/home/" .. os.getenv("USER") .. "/.icons/WhiteSur/"
 
 local helpers = {}
 
@@ -16,20 +17,21 @@ local custom = {
 	{ name = "St",                     to = "terminal" },
 	{ name = "ncmpcpppad",             to = "deepin-music-player" },
 }
-local function hasValue(str)
-	local f = false
-	local ind = 0
-	for i, j in ipairs(custom) do
-		if j.name == str then
-			f = true
-			ind = i
-			break
-		end
-	end
-	return f, ind
-end
 
 helpers.getIcon = function(client, program_string, class_string)
+	local function hasValue(str)
+		local f = false
+		local ind = 0
+		for i, j in ipairs(custom) do
+			if j.name == str then
+				f = true
+				ind = i
+				break
+			end
+		end
+		return f, ind
+	end
+
 	client = client or nil
 	program_string = program_string or nil
 	class_string = class_string or nil
@@ -48,7 +50,7 @@ helpers.getIcon = function(client, program_string, class_string)
 				if client.icon then
 					return client.icon
 				else
-					return t .. "/apps/scalable/default-application.svg"
+					return icon_path .. "/apps/scalable/default-application.svg"
 				end
 			end
 		else
@@ -59,41 +61,41 @@ helpers.getIcon = function(client, program_string, class_string)
 			end
 		end
 
-		for index, icon in ipairs(icon_cache) do
+		for _, icon in ipairs(icon_cache) do
 			if icon:match(clientName) then
 				return icon
 			end
 		end
 
-		local iconDir = t .. "/apps/scalable/"
+		local iconDir = icon_path .. "/apps/scalable/"
 		local ioStream = io.open(iconDir .. clientName, "r")
 		if ioStream ~= nil then
 			icon_cache[#icon_cache + 1] = iconDir .. clientName
 			return iconDir .. clientName
 		else
 			clientName = clientName:gsub("^%l", string.upper)
-			iconDir = t .. "/apps/scalable/"
+			iconDir = icon_path .. "/apps/scalable/"
 			ioStream = io.open(iconDir .. clientName, "r")
 			if ioStream ~= nil then
 				icon_cache[#icon_cache + 1] = iconDir .. clientName
 				return iconDir .. clientName
 			elseif not class_string then
-				return t .. "/apps/scalable/default-application.svg"
+				return icon_path .. "/apps/scalable/default-application.svg"
 			else
 				clientName = class_string .. ".svg"
-				iconDir = t .. "/apps/scalable/"
+				iconDir = icon_path .. "/apps/scalable/"
 				ioStream = io.open(iconDir .. clientName, "r")
 				if ioStream ~= nil then
 					icon_cache[#icon_cache + 1] = iconDir .. clientName
 					return iconDir .. clientName
 				else
-					return t .. "/apps/scalable/default-application.svg"
+					return icon_path .. "/apps/scalable/default-application.svg"
 				end
 			end
 		end
 	end
 	if client then
-		return t .. "/apps/scalable/default-application.svg"
+		return icon_path .. "/apps/scalable/default-application.svg"
 	end
 end
 
@@ -126,21 +128,71 @@ helpers.addHoverBg = function(element, id, bg, hbg)
 	end)
 end
 
-helpers.hovercursor = function(widget)
+helpers.hoverCursor = function(widget, id)
 	local oldcursor, oldwibox
-	widget:connect_signal("mouse::enter", function()
-		local wb = mouse.current_wibox
-		if wb == nil then return end
-		oldcursor, oldwibox = wb.cursor, wb
-		wb.cursor = "hand2"
-	end)
-	widget:connect_signal("mouse::leave", function()
-		if oldwibox then
-			oldwibox.cursor = oldcursor
-			oldwibox = nil
+	if id ~= nil then
+		helpers.gc(widget, id):connect_signal("mouse::enter", function()
+			local wb = mouse.current_wibox
+			if wb == nil then return end
+			oldcursor, oldwibox = wb.cursor, wb
+			wb.cursor = "hand2"
+		end)
+		helpers.gc(widget, id):connect_signal("mouse::leave", function()
+			if oldwibox then
+				oldwibox.cursor = oldcursor
+				oldwibox = nil
+			end
+		end)
+	else
+		widget:connect_signal("mouse::enter", function()
+			local wb = mouse.current_wibox
+			if wb == nil then return end
+			oldcursor, oldwibox = wb.cursor, wb
+			wb.cursor = "hand2"
+		end)
+		widget:connect_signal("mouse::leave", function()
+			if oldwibox then
+				oldwibox.cursor = oldcursor
+				oldwibox = nil
+			end
+		end)
+	end
+	return widget
+end
+
+helpers.slideAnimation = function(toggle, close, where, widget, pos, set)
+	local slide = animation:new({
+		duration = 1,
+		pos = pos,
+		easing = animation.easing.inOutExpo,
+		update = function(_, poss)
+			if where == "top" or where == "bottom" then
+				widget.y = poss
+			else
+				widget.x = poss
+			end
+		end,
+	})
+	local slide_end = gears.timer({
+		timeout = 1,
+		single_shot = true,
+		callback = function()
+			widget.visible = false
+		end,
+	})
+	awesome.connect_signal(toggle, function()
+		if widget.visible then
+			slide_end:start()
+			slide:set(pos)
+		else
+			widget.visible = true
+			slide:set(set)
 		end
 	end)
-	return widget
+	awesome.connect_signal(close, function()
+		slide_end:start()
+		slide:set(pos)
+	end)
 end
 
 helpers.placeWidget = function(widget, where, t, b, l, r)
@@ -262,6 +314,7 @@ end
 
 helpers.writeJson = function(PATH, DATA)
 	local w = assert(io.open(PATH, "w"))
+	---@diagnostic disable-next-line: redundant-parameter
 	w:write(json.encode(DATA, nil, { pretty = true, indent = "	", align_keys = false, array_newline = true }))
 	w:close()
 end
@@ -279,30 +332,16 @@ local function get_widget_geometry(_hierarchy, widget)
 		end
 	end
 end
+
 helpers.get_widget_geometry = function(wibox, widget)
 	return get_widget_geometry(wibox._drawable._widget_hierarchy, widget)
-end
-
-helpers.randomColor = function()
-	local accents = {
-		helpers.makeColor("orange"),
-		helpers.makeColor("cyan"),
-		helpers.makeColor("purple"),
-		helpers.makeColor("pink"),
-		beautiful.yellow,
-		beautiful.green,
-		beautiful.red,
-		beautiful.blue,
-	}
-	local i = math.random(1, #accents)
-	return accents[i]
 end
 
 helpers.gc = function(widget, id)
 	return widget:get_children_by_id(id)[1]
 end
 
--- Utils for colors --
+-------------------------- UTILS FOR COLOR -----------------------------------
 local hex2rgb = function(hex)
 	local hash = string.sub(hex, 1, 1) == "#"
 	if string.len(hex) ~= (7 - (hash and 0 or 1)) then
@@ -431,6 +470,9 @@ helpers.change_hex_saturation = function(hex, percent)
 end
 
 helpers.change_hex_lightness = function(hex, percent)
+	if beautiful.type == "light" and hex == beautiful.background then
+		percent = -percent
+	end
 	local h, s, l = hex2hsl(hex)
 	l = l + (percent / 100)
 	if l > 1 then
@@ -476,25 +518,16 @@ helpers.mix = function(c1, c2, wt)
 	return string.format("#%02X%02X%02X", nr, ng, nb)
 end
 
-helpers.makeColor = function(name)
-	if name == "orange" then
-		return helpers.mix(beautiful.red, beautiful.yellow, 0.5)
-	elseif name == "cyan" then
-		return helpers.mix(beautiful.green, beautiful.blue, 0.5)
-	elseif name == "purple" then
-		return helpers.mix(beautiful.red, beautiful.blue, 0.5)
-	elseif name == "pink" then
-		return helpers.mix(beautiful.red, "#ffffff", 0.5)
-	end
-end
-
-helpers.makeGradient = function(color1, color2, trans, height, width)
-	return {
-		type = "linear",
-		from = { 0, 0 },
-		to = { width, 0 },
-		stops = { { 0, color1 .. trans }, { 1, color2 .. trans } },
-	}
+helpers.randomColor = function()
+	local c = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" }
+	local c1 = math.random(1, #c)
+	local c2 = math.random(1, #c)
+	local c3 = math.random(1, #c)
+	local c4 = math.random(1, #c)
+	local c5 = math.random(1, #c)
+	local c6 = math.random(1, #c)
+	local color = "#" .. c[c1] .. c[c2] .. c[c3] .. c[c4] .. c[c5] .. c[c6]
+	return color
 end
 
 return helpers

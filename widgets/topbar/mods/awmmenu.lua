@@ -2,6 +2,7 @@ local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local gears = require("gears")
+local helpers = require("helpers")
 
 local awmmenu = wibox.widget({
 	{
@@ -20,5 +21,6 @@ local awmmenu = wibox.widget({
 		end),
 	},
 })
+helpers.hoverCursor(awmmenu)
 
 return awmmenu

@@ -20,7 +20,7 @@ return function(s)
 				{
 					awmmenu,
 					tags(s),
-					spacing = 25,
+					spacing = 30,
 					layout = wibox.layout.fixed.horizontal,
 				},
 				left = 30,
@@ -31,7 +31,7 @@ return function(s)
 				{
 					controlcenter,
 					time,
-					spacing = 25,
+					spacing = 30,
 					layout = wibox.layout.fixed.horizontal,
 				},
 				right = 30,

@@ -1,6 +1,12 @@
 local awful = require("awful")
 local ruled = require("ruled")
-local beautiful = require("beautiful")
+
+ruled.notification.connect_signal("request::rules", function()
+	ruled.notification.append_rule({
+		rule = {},
+		properties = { screen = awful.screen.preferred, implicit_timeout = 5 },
+	})
+end)
 
 ruled.client.connect_signal("request::rules", function()
 	ruled.client.append_rule({
@@ -39,7 +45,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { tag = "Media" },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "Thunar", "vlc", "libreoffice-impress", "libreoffice-writer", "libreoffice-calc" } },
+		rule_any = { class = { "Thunar", "Nemo", "vlc", "libreoffice-impress", "libreoffice-writer", "libreoffice-calc" } },
 		properties = { tag = "Other", switch_to_tags = true },
 	})
 end)

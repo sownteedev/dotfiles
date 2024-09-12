@@ -39,18 +39,15 @@ return function(icon, n)
 
 	local title_widget  = wibox.widget({
 		{
-			{
-				markup = n.title,
-				font = beautiful.sans .. " Medium 15",
-				align = "right",
-				widget = wibox.widget.textbox,
-			},
-			forced_width = 220,
-			widget = wibox.container.scroll.horizontal,
-			step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
-			speed = 40,
+			markup = n.title,
+			font = beautiful.sans .. " Medium 15",
+			align = "right",
+			widget = wibox.widget.textbox,
 		},
-		widget = wibox.container.margin,
+		forced_width = 250,
+		widget = wibox.container.scroll.horizontal,
+		step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
+		speed = 40,
 	})
 
 	local time_widget   = wibox.widget({
@@ -62,17 +59,14 @@ return function(icon, n)
 
 	local text_notif    = wibox.widget({
 		{
-			{
-				markup = helpers.colorizeText("<span weight='normal'>" .. n.message .. "</span>", beautiful.foreground),
-				font = beautiful.sans .. " 12",
-				align = "left",
-				wrap = "char",
-				widget = wibox.widget.textbox,
-			},
-			forced_width = 300,
-			layout = wibox.layout.fixed.horizontal,
+			markup = helpers.colorizeText("<span weight='normal'>" .. n.message .. "</span>", beautiful.foreground),
+			font = beautiful.sans .. " 12",
+			align = "left",
+			wrap = "char",
+			widget = wibox.widget.textbox,
 		},
-		widget = wibox.container.margin,
+		forced_width = 300,
+		layout = wibox.layout.fixed.horizontal,
 	})
 
 	local box           = wibox.widget({
@@ -106,6 +100,8 @@ return function(icon, n)
 	box:buttons(gears.table.join(awful.button({}, 1, function()
 		_G.notif_center_remove_notif(box)
 	end)))
+
+	helpers.hoverCursor(box)
 
 	return box
 end
