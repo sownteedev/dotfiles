@@ -40,7 +40,6 @@ yay -S xf86-input-libinput libinput-gestures --noconfirm
 cp ~/dotf/.local/other/30-touchpad.conf /etc/X11/xorg.conf.d/30-touchpad.conf
 gpasswd -a sowntee input
 libinput-gestures-setup stop desktop autostart start
-cp ~/dotf/.config/libinput-gestures.conf ~/.config/libinput-gestures.conf
 cp ~/dotf/.local/other/30-dpms.conf /etc/X11/xorg.conf.d/30-dpms.conf
 sleep 3 && clear
 
@@ -92,13 +91,13 @@ sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-pacman -S thunar tumbler ranger ueberzug exa unzip unrar xdg-user-dirs gvfs vlc --noconfirm
+pacman -S nemo tumbler ranger ueberzug exa unzip unrar xdg-user-dirs gvfs vlc --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Monitor and Theme
 echo "[*] Installing monitor and theme ..."
-pacman -S feh maim viewnior lxappearance xsettingsd imagemagick neofetch arandr xss-lock --noconfirm
+pacman -S feh maim viewnior shotwell lxappearance xsettingsd imagemagick neofetch arandr xss-lock --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
