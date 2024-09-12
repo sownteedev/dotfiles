@@ -4,29 +4,7 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local pctl = require("modules.playerctl")
 local helpers = require("helpers")
-local lgi = require("lgi")
-local cairo = lgi.cairo
 local playerctl = pctl.lib()
-
-local image_with_gradient = function(image)
-	local surf = gears.surface.load_uncached(image)
-
-	local cr = cairo.Context(surf)
-	local w, h = gears.surface.get_size(surf)
-	cr:rectangle(0, 0, w, h)
-
-	local pat_h = cairo.Pattern.create_linear(0, 0, w, 0)
-	pat_h:add_color_stop_rgba(0, gears.color.parse_color(beautiful.background .. "66"))
-	pat_h:add_color_stop_rgba(0.2, gears.color.parse_color(beautiful.background .. "88"))
-	pat_h:add_color_stop_rgba(0.4, gears.color.parse_color(beautiful.background .. "AA"))
-	pat_h:add_color_stop_rgba(0.6, gears.color.parse_color(beautiful.background .. "CC"))
-	pat_h:add_color_stop_rgba(0.8, gears.color.parse_color(beautiful.background .. "DD"))
-	pat_h:add_color_stop_rgba(1, gears.color.parse_color(beautiful.background .. "FF"))
-	cr:set_source(pat_h)
-	cr:fill()
-
-	return surf
-end
 
 local art = wibox.widget({
 	id = "art",
@@ -40,7 +18,7 @@ local function convertDefault(image)
 	local cmd = "convert " .. image .. " -resize 16:9! ~/.cache/awesome/songdefpicture.jpg"
 	awful.spawn.easy_async_with_shell(cmd, function()
 		local wall = gears.filesystem.get_cache_dir() .. "songdefpicture.jpg"
-		art.image = image_with_gradient(wall)
+		art.image = gears.surface.load_uncached(wall)
 	end)
 end
 convertDefault(beautiful.icon_path .. "music/artdefault.jpg")
@@ -57,7 +35,19 @@ return function(s)
 	helpers.placeWidget(music, "top_left", 76, 0, 2, 0)
 
 	music:setup({
-		art,
+		{
+			art,
+			{
+				bg = {
+					type = "linear",
+					from = { 0, 0 },
+					to = { 430, 0 },
+					stops = { { 0, beautiful.background .. "66" }, { 1, beautiful.background .. "FF" } },
+				},
+				widget = wibox.container.background,
+			},
+			layout = wibox.layout.stack,
+		},
 		{
 			{
 				{
@@ -168,7 +158,7 @@ return function(s)
 		awful.spawn.easy_async_with_shell(
 			"convert " .. album .. " -resize 16:9! ~/.cache/awesome/songdefpicture.jpg", function()
 				local artt = gears.filesystem.get_cache_dir() .. "songdefpicture.jpg"
-				helpers.gc(art, "art"):set_image(image_with_gradient(artt))
+				art.image = gears.surface.load_uncached(artt)
 			end)
 
 		if string.len(title) >= 60 then
