@@ -17,7 +17,6 @@ theme.iconsss    = "WhiteSur"
 -- Colors --
 local colors     = require("themes.colors." .. colorscheme)
 theme.background = colors.background
-theme.darker     = colors.darker
 theme.foreground = colors.foreground
 theme.red        = colors.red
 theme.green      = colors.green

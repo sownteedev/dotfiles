@@ -14,6 +14,9 @@ require("beautiful").init(require("gears").filesystem.get_configuration_dir() ..
 require("config")
 require("signals")
 
+--TODO: LIVE RELOAD
+awesome.emit_signal("live::reload")
+
 collectgarbage("incremental", 110, 1000)
 collectgarbage("setpause", 110)
 collectgarbage("setstepmul", 1000)
