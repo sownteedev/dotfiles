@@ -102,23 +102,21 @@ function area()
 end
 
 function record()
+	checkFolder("rec")
 	local speaker_input = "alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink.monitor"
-	local display = os.getenv("DISPLAY")
 	local name = getName("rec")
 	local defCommand = string.format(
-		"sleep 1.25 && ffmpeg -y -f x11grab -r 60 "
+		"sleep 1.25 && ffmpeg -y -r 60 "
 		-- display and audio
-		.. "-i %s -f pulse -i %s "
+		.. "-f x11grab -i :0.0 -f pulse -i %s "
 		-- video
-		.. "-c:v libx264 -crf 23 -preset fast -pix_fmt yuv420p "
+		.. "-c:v libx264 -crf 23 -preset veryfast -b:v 1M "
 		-- audio
-		.. "-c:a libvorbis -b:a 128k -b:v 10000k %s",
-		display,
+		.. "-c:a libvorbis -b:a 128k %s",
 		speaker_input,
 		name
 	)
 	print(defCommand)
-	checkFolder("rec")
 	awful.spawn.easy_async_with_shell(defCommand, function()
 		awesome.emit_signal("recording::done")
 		do_notify("rec", name)

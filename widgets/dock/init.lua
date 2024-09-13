@@ -400,13 +400,47 @@ return function(s)
 		shape_border_width = 1,
 		shape_border_color = beautiful.foreground .. "22",
 	})
+
+	local autohide = function(c)
+		local slide
+		local enter_func, leave_func
+		if c.maximized then
+			dock.ontop = true
+			dock.y = beautiful.height - 1
+			if not slide then
+				slide = animation:new({
+					duration = 0.5,
+					pos = beautiful.height - 1,
+					easing = animation.easing.inOutExpo,
+					update = function(_, pos)
+						dock.y = pos
+					end,
+				})
+			end
+			enter_func = function()
+				slide:set(beautiful.height - dock.height - beautiful.useless_gap * 2)
+			end
+			leave_func = function()
+				slide:set(beautiful.height - 1)
+			end
+
+			dock:connect_signal("mouse::enter", enter_func)
+			dock:connect_signal("mouse::leave", leave_func)
+		else
+			dock.ontop = false
+			dock.y = beautiful.height - dock.height - beautiful.useless_gap * 2
+			if enter_func and leave_func then
+				dock:disconnect_signal("mouse::enter", enter_func)
+				dock:disconnect_signal("mouse::leave", leave_func)
+			end
+			slide = nil
+		end
+	end
+
 	client.connect_signal("focus", function()
 		genIcons()
 	end)
 	client.connect_signal("property::minimized", function()
-		genIcons()
-	end)
-	client.connect_signal("property::maximized", function()
 		genIcons()
 	end)
 	client.connect_signal("manage", function()
@@ -415,26 +449,12 @@ return function(s)
 	client.connect_signal("unmanage", function()
 		genIcons()
 	end)
-	tag.connect_signal("property::selected", function()
-		genIcons()
+	tag.connect_signal("property::selected", function(c)
+		autohide(c)
 	end)
-	if beautiful.autohidedock then
-		dock.ontop = true
-		local slide = animation:new({
-			duration = 1,
-			pos = beautiful.height,
-			easing = animation.easing.inOutExpo,
-			update = function(_, pos)
-				dock.y = pos
-			end,
-		})
-		dock:connect_signal("mouse::enter", function()
-			slide:set(beautiful.height - dock.height - beautiful.useless_gap * 2)
-		end)
-		dock:connect_signal("mouse::leave", function()
-			slide:set(beautiful.height - 1)
-		end)
-	end
+	client.connect_signal("property::maximized", function(c)
+		autohide(c)
+	end)
 
 	return dock
 end
