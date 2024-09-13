@@ -82,7 +82,7 @@ awful.keyboard.append_global_keybindings({
 		awful.spawn.with_shell("pkill -f ffmpeg")
 	end),
 	awful.key({ mod, shift }, "s", function()
-		area({ notify = true })
+		area()
 	end),
 	awful.key({ alt }, "p", function()
 		awful.spawn.with_shell("~/.local/bin/colorpicker")
