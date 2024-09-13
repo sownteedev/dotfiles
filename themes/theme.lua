@@ -35,8 +35,6 @@ else
 	theme.fg1 = helpers.blend(theme.background, theme.foreground, 0.1)
 end
 
-theme.autohidedock         = false
-
 theme.width                = 2560
 theme.height               = 1600
 theme.useless_gap          = 10

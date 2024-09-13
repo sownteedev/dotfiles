@@ -52,7 +52,7 @@ return function(s)
 	})
 
 	local slide = animation:new({
-		duration = 1,
+		duration = 0.5,
 		pos = -lock.height,
 		easing = animation.easing.inOutExpo,
 		update = function(_, poss)

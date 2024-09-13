@@ -162,7 +162,7 @@ end
 
 helpers.slideAnimation = function(toggle, close, where, widget, pos, set)
 	local slide = animation:new({
-		duration = 1,
+		duration = 0.5,
 		pos = pos,
 		easing = animation.easing.inOutExpo,
 		update = function(_, poss)

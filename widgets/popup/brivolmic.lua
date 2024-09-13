@@ -112,7 +112,7 @@ return function(s)
 
 
 	local slide = animation:new({
-		duration = 1,
+		duration = 0.5,
 		pos = beautiful.width + osd.width,
 		easing = animation.easing.inOutExpo,
 		update = function(_, poss)
@@ -121,7 +121,7 @@ return function(s)
 	})
 
 	local slide_hide = gears.timer({
-		timeout = 1,
+		timeout = 0.5,
 		single_shot = true,
 		callback = function()
 			osd.visible = false
