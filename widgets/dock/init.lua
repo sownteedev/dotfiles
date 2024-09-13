@@ -401,9 +401,9 @@ return function(s)
 		shape_border_color = beautiful.foreground .. "22",
 	})
 
+	local slide
+	local enter_func, leave_func
 	local autohide = function(c)
-		local slide
-		local enter_func, leave_func
 		if c.maximized then
 			dock.ontop = true
 			dock.y = beautiful.height - 1
@@ -438,6 +438,9 @@ return function(s)
 	end
 
 	client.connect_signal("focus", function()
+		genIcons()
+	end)
+	client.connect_signal("unfocus", function()
 		genIcons()
 	end)
 	client.connect_signal("property::minimized", function()
