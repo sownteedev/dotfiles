@@ -2,37 +2,28 @@
 local colorscheme = "dark"
 require("themes.toggle")
 ---------------------------------------------------------------------
-local gears      = require("gears")
-local gfs        = require("gears.filesystem")
-local helpers    = require("helpers")
+local gears                = require("gears")
+local gfs                  = require("gears.filesystem")
+local helpers              = require("helpers")
 
-local theme      = {}
+local theme                = {}
 
-theme.font       = "SF Pro Display 12"
-theme.sans       = "SF Pro Display"
-theme.icon       = "Material Design Icons"
-theme.icon_path  = gfs.get_configuration_dir() .. "themes/" .. "assets/"
-theme.iconsss    = "WhiteSur"
+theme.font                 = "SF Pro Display 12"
+theme.sans                 = "SF Pro Display"
+theme.icon                 = "Material Design Icons"
+theme.icon_path            = gfs.get_configuration_dir() .. "themes/" .. "assets/"
 
 -- Colors --
-local colors     = require("themes.colors." .. colorscheme)
-theme.background = colors.background
-theme.foreground = colors.foreground
-theme.red        = colors.red
-theme.green      = colors.green
-theme.blue       = colors.blue
-theme.yellow     = colors.yellow
+local colors               = require("themes.colors." .. colorscheme)
+theme.background           = colors.background
+theme.foreground           = colors.foreground
+theme.red                  = colors.red
+theme.green                = colors.green
+theme.blue                 = colors.blue
+theme.yellow               = colors.yellow
 
-theme.wallpaper  = colors.wallpaper
-theme.type       = colors.type
-
-if theme.type == "dark" then
-	theme.fg = helpers.blend(theme.background, theme.foreground, 0.1)
-	theme.fg1 = helpers.blend(theme.background, theme.foreground, 0.9)
-else
-	theme.fg = helpers.blend(theme.background, theme.foreground, 0.9)
-	theme.fg1 = helpers.blend(theme.background, theme.foreground, 0.1)
-end
+theme.wallpaper            = colors.wallpaper
+theme.type                 = colors.type
 
 theme.width                = 2560
 theme.height               = 1600

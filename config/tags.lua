@@ -36,6 +36,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	s.weather = require("widgets.popup.weather")(s)
 	s.battery = require("widgets.popup.battery")(s)
 	s.brivol = require("widgets.popup.brivolmic")(s)
+	s.preview = require("widgets.popup.preview")(s)
 end)
 
 gears.wallpaper.maximized(beautiful.wallpaper)

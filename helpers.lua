@@ -229,9 +229,9 @@ helpers.placeWidget = function(widget, where, t, b, l, r)
 			},
 		})
 	elseif where == "bottom" then
-		awful.placement.bottom(widget, { honor_workarea = true, margins = beautiful.useless_gap * 10 })
+		awful.placement.bottom(widget, { honor_workarea = true, margins = beautiful.useless_gap * b })
 	elseif where == "top" then
-		awful.placement.top(widget, { honor_workarea = true, margins = { top = beautiful.useless_gap * 10 } })
+		awful.placement.top(widget, { honor_workarea = true, margins = { top = beautiful.useless_gap * t } })
 	elseif where == "center" then
 		awful.placement.centered(widget, { honor_workarea = true, honor_padding = true })
 	end

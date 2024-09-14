@@ -63,7 +63,7 @@ local data = {
 			icon = helpers.getIcon(nil, "jetbrains-intellij", "jetbrains-intellij"),
 			clients = {},
 			class = "jetbrains-idea",
-			exec = "intellij-idea-ultimate-edition",
+			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/intellij-idea-ultimate/bin/idea",
 		},
 		{
 			count = 0,
@@ -71,7 +71,7 @@ local data = {
 			icon = helpers.getIcon(nil, "jetbrains-webstorm", "jetbrains-webstorm"),
 			clients = {},
 			class = "jetbrains-webstorm",
-			exec = "webstorm",
+			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/webstorm/bin/webstorm",
 		},
 		{
 			count = 0,
@@ -79,7 +79,7 @@ local data = {
 			icon = helpers.getIcon(nil, "jetbrains-pycharm", "jetbrains-pycharm"),
 			clients = {},
 			class = "jetbrains-pycharm",
-			exec = "pycharm-professional",
+			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/pycharm-professional/bin/pycharm",
 		},
 		{
 			count = 0,
@@ -87,7 +87,7 @@ local data = {
 			icon = helpers.getIcon(nil, "jetbrains-datagrip", "jetbrains-datagrip"),
 			clients = {},
 			class = "jetbrains-datagrip",
-			exec = "datagrip",
+			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/datagrip/bin/datagrip",
 		},
 		{
 			count = 0,
