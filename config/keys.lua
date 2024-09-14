@@ -11,6 +11,9 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod }, "space", function()
 		-- awesome.emit_signal("toggle::launcher")
 	end),
+	awful.key({ mod, alt }, "space", function()
+		awesome.emit_signal("toggle::preview")
+	end),
 	awful.key({ alt }, "space", function()
 		awful.spawn.with_shell("ulauncher-toggle &")
 	end),
@@ -203,6 +206,11 @@ client.connect_signal("request::default_keybindings", function()
 	awful.keyboard.append_client_keybindings({
 		awful.key({ mod }, "f", function(c)
 			c.maximized = not c.maximized
+		end),
+		awful.key({ mod, shift }, "f", function(c)
+			if c.maximized then
+				c.maximized = false
+			end
 		end),
 		awful.key({ mod, shift }, "f", awful.client.floating.toggle),
 	})

@@ -38,7 +38,7 @@ local songname = wibox.widget({
 	{
 		id = "text",
 		font = beautiful.sans .. " Medium 14",
-		markup = helpers.colorizeText("Song Name", beautiful.fg),
+		markup = helpers.colorizeText("Song Name", beautiful.foreground),
 		widget = wibox.widget.textbox,
 	},
 })
@@ -51,7 +51,7 @@ local artistname = wibox.widget({
 	{
 		id = "text",
 		font = beautiful.sans .. " 11",
-		markup = helpers.colorizeText("Artist Name", beautiful.fg),
+		markup = helpers.colorizeText("Artist Name", beautiful.foreground),
 		widget = wibox.widget.textbox,
 	},
 })
@@ -83,8 +83,8 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _
 			blur.image = helpers.cropSurface(6.6, gears.surface.load_uncached(blurwall))
 		end)
 	art.image = helpers.cropSurface(1, gears.surface.load_uncached(album))
-	helpers.gc(songname, "text"):set_markup_silently(helpers.colorizeText(title, beautiful.fg))
-	helpers.gc(artistname, "text"):set_markup_silently(helpers.colorizeText(artist, beautiful.fg))
+	helpers.gc(songname, "text"):set_markup_silently(helpers.colorizeText(title, beautiful.foreground))
+	helpers.gc(artistname, "text"):set_markup_silently(helpers.colorizeText(artist, beautiful.foreground))
 	if player_name == "spotify" then
 		player_name = "spotify"
 	else
@@ -97,7 +97,7 @@ end)
 
 local next = wibox.widget({
 	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText("󰒭", beautiful.fg),
+	markup = helpers.colorizeText("󰒭", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -108,7 +108,7 @@ local next = wibox.widget({
 
 local prev = wibox.widget({
 	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText("󰒮", beautiful.fg),
+	markup = helpers.colorizeText("󰒮", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -119,7 +119,7 @@ local prev = wibox.widget({
 
 local play = wibox.widget({
 	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText("󰐊", beautiful.fg),
+	markup = helpers.colorizeText("󰐊", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -128,7 +128,8 @@ local play = wibox.widget({
 	},
 })
 playerctl:connect_signal("playback_status", function(_, playing, player_name)
-	play.markup = playing and helpers.colorizeText("󰏤", beautiful.fg) or helpers.colorizeText("󰐊", beautiful.fg)
+	play.markup = playing and helpers.colorizeText("󰏤", beautiful.foreground) or
+		helpers.colorizeText("󰐊", beautiful.foreground)
 end)
 helpers.hoverCursor(next)
 helpers.hoverCursor(prev)
@@ -142,7 +143,7 @@ local finalwidget = wibox.widget({
 				type = "linear",
 				from = { 0, 0 },
 				to = { 250, 0 },
-				stops = { { 0, beautiful.fg1 .. "AA" }, { 1, beautiful.fg1 .. "AA" } },
+				stops = { { 0, beautiful.background .. "AA" }, { 1, beautiful.background .. "AA" } },
 			},
 			widget = wibox.container.background,
 		},
