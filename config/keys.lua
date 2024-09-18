@@ -9,7 +9,7 @@ local shift = "Shift"
 awful.keyboard.append_global_keybindings({
 	-- Apps
 	awful.key({ mod }, "space", function()
-		-- awesome.emit_signal("toggle::launcher")
+		awesome.emit_signal("toggle::launcher")
 	end),
 	awful.key({ mod, alt }, "space", function()
 		awesome.emit_signal("toggle::preview")
@@ -108,51 +108,42 @@ awful.keyboard.append_global_keybindings({
 })
 
 local tagactive = {}
-local tagactive_index = {}
 local function update_tag_info()
 	tagactive = {}
-	tagactive_index = {}
-	for i, t in ipairs(screen.primary.tags) do
+	for _, t in ipairs(screen.primary.tags) do
 		if #t:clients() > 0 then
 			table.insert(tagactive, t.name)
-			table.insert(tagactive_index, i)
 		end
 	end
 end
-client.connect_signal("manage", update_tag_info)
-client.connect_signal("unmanage", update_tag_info)
+tag.connect_signal("property::selected", update_tag_info)
 
 awful.keyboard.append_global_keybindings({
 	-- Tag
 	awful.key({ mod }, "Tab", function()
 		local current_tag = awful.screen.focused().selected_tag.name
-		local current_index = nil
+		local tagname_next = nil
 		for i, tag in ipairs(tagactive) do
 			if tag == current_tag then
-				current_index = i
+				tagname_next = i == #tagactive and tagactive[1] or tagactive[i + 1]
 				break
-			else
-				current_index = #tagactive
 			end
 		end
-		if current_index ~= nil then
-			awful.screen.focused().tags[tagactive_index[current_index % #tagactive + 1]]:view_only()
+		if tagname_next ~= nil then
+			awful.tag.find_by_name(awful.screen.focused(), tagname_next):view_only()
 		end
 	end),
 	awful.key({ mod, shift }, "Tab", function()
 		local current_tag = awful.screen.focused().selected_tag.name
-		local current_index = nil
+		local tagname_next = nil
 		for i, tag in ipairs(tagactive) do
 			if tag == current_tag then
-				current_index = i
+				tagname_next = i == 1 and tagactive[#tagactive] or tagactive[i - 1]
 				break
-			else
-				current_index = #tagactive
 			end
 		end
-		if current_index ~= nil then
-			awful.screen.focused().tags[tagactive_index[current_index - 1 == 0 and #tagactive or current_index - 1]]
-				:view_only()
+		if tagname_next ~= nil then
+			awful.tag.find_by_name(awful.screen.focused(), tagname_next):view_only()
 		end
 	end),
 

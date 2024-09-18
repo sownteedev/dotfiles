@@ -69,3 +69,11 @@ awesome.connect_signal("startup", function()
 	end
 	file:close()
 end)
+
+local tag = require("awful.widget.taglist")
+local original_create = tag.taglist_label
+tag.taglist_label = function(t, args)
+	beautiful.taglist_font = t.selected and "SF Pro Display Bold 12" or "SF Pro Display Medium 12"
+	local result = original_create(t, args)
+	return result
+end

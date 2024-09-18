@@ -12,45 +12,117 @@ return function(c)
 	})
 
 	local close = wibox.widget({
-		font = beautiful.icon .. " 16",
-		widget = wibox.widget.textbox,
-		buttons = {
-			awful.button({}, 1, function()
-				c:kill()
-			end),
+		{
+			id = "iconbot",
+			font = beautiful.icon .. " 15",
+			widget = wibox.widget.textbox,
+			buttons = {
+				awful.button({}, 1, function()
+					c:kill()
+				end),
+			},
 		},
+		{
+			id = "icon",
+			font = beautiful.icon .. " 15",
+			widget = wibox.widget.textbox,
+			buttons = {
+				awful.button({}, 1, function()
+					c:kill()
+				end),
+			},
+		},
+		layout = wibox.layout.stack,
 	})
 	local minimize = wibox.widget({
-		font = beautiful.icon .. " 16",
-		widget = wibox.widget.textbox,
-		buttons = {
-			awful.button({}, 1, function()
-				gears.timer.delayed_call(function()
-					c.minimized = not c.minimized
-				end)
-			end),
+		{
+			id = "iconbot",
+			font = beautiful.icon .. " 15",
+			widget = wibox.widget.textbox,
+			buttons = {
+				awful.button({}, 1, function()
+					gears.timer.delayed_call(function()
+						c.minimized = not c.minimized
+					end)
+				end),
+			},
 		},
+		{
+			id = "icon",
+			font = beautiful.icon .. " 15",
+			widget = wibox.widget.textbox,
+			buttons = {
+				awful.button({}, 1, function()
+					gears.timer.delayed_call(function()
+						c.minimized = not c.minimized
+					end)
+				end),
+			},
+		},
+		layout = wibox.layout.stack,
 	})
 	local maximize = wibox.widget({
-		font = beautiful.icon .. " 16",
-		widget = wibox.widget.textbox,
-		buttons = {
-			awful.button({}, 1, function()
-				c.maximized = not c.maximized
-			end),
+		{
+			id = "iconbot",
+			font = beautiful.icon .. " 15",
+			widget = wibox.widget.textbox,
+			buttons = {
+				awful.button({}, 1, function()
+					c.maximized = not c.maximized
+				end),
+			},
 		},
+		{
+			id = "icon",
+			font = beautiful.icon .. " 15",
+			widget = wibox.widget.textbox,
+			buttons = {
+				awful.button({}, 1, function()
+					c.maximized = not c.maximized
+				end),
+			},
+		},
+		layout = wibox.layout.stack,
 	})
 	local function update_button_color()
 		if client.focus ~= c then
-			close.markup = helpers.colorizeText("󰅙 ", beautiful.background)
-			minimize.markup = helpers.colorizeText("󰍶 ", beautiful.background)
-			maximize.markup = helpers.colorizeText("󰿣 ", beautiful.background)
+			helpers.gc(close, "icon"):set_markup(helpers.colorizeText("󰅙 ", beautiful.background))
+			helpers.gc(minimize, "icon"):set_markup(helpers.colorizeText("󰍶 ", beautiful.background))
+			helpers.gc(maximize, "icon"):set_markup(helpers.colorizeText("󰿣 ", beautiful.background))
+			helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.background))
+			helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.background))
+			helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.background))
 		else
-			close.markup = helpers.colorizeText("󰅙 ", beautiful.red)
-			minimize.markup = helpers.colorizeText("󰍶 ", beautiful.yellow)
-			maximize.markup = helpers.colorizeText("󰿣 ", beautiful.green)
+			helpers.gc(close, "icon"):set_markup(helpers.colorizeText("󰅙 ", beautiful.red))
+			helpers.gc(minimize, "icon"):set_markup(helpers.colorizeText("󰍶 ", beautiful.yellow))
+			helpers.gc(maximize, "icon"):set_markup(helpers.colorizeText("󰿣 ", beautiful.green))
+			helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.red))
+			helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.yellow))
+			helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.green))
 		end
 	end
+
+	close:connect_signal("mouse::enter", function()
+		helpers.gc(close, "icon"):set_markup(helpers.colorizeText("󰅙 ", beautiful.red))
+		helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.background))
+	end)
+	close:connect_signal("mouse::leave", function()
+		update_button_color()
+	end)
+	minimize:connect_signal("mouse::enter", function()
+		helpers.gc(minimize, "icon"):set_markup(helpers.colorizeText("󰍶 ", beautiful.yellow))
+		helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.background))
+	end)
+	minimize:connect_signal("mouse::leave", function()
+		update_button_color()
+	end)
+	maximize:connect_signal("mouse::enter", function()
+		helpers.gc(maximize, "icon"):set_markup(helpers.colorizeText("󰿣 ", beautiful.green))
+		helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.background))
+	end)
+	maximize:connect_signal("mouse::leave", function()
+		update_button_color()
+	end)
 
 	c:connect_signal("focus", update_button_color)
 	c:connect_signal("unfocus", update_button_color)
@@ -70,7 +142,7 @@ return function(c)
 	titlebar.widget = {
 		{
 			widget = wibox.container.margin,
-			left = 50,
+			left = 40,
 			{
 				layout = wibox.layout.fixed.horizontal,
 				spacing = 5,
@@ -107,7 +179,7 @@ return function(c)
 		{
 			icon,
 			widget = wibox.container.margin,
-			right = 50,
+			right = 40,
 		},
 		layout = wibox.layout.align.horizontal,
 	}

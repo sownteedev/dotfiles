@@ -25,8 +25,8 @@ theme.yellow               = colors.yellow
 theme.wallpaper            = colors.wallpaper
 theme.type                 = colors.type
 
-theme.width                = 2560
-theme.height               = 1600
+theme.width                = screen.primary.geometry.width
+theme.height               = screen.primary.geometry.height
 theme.useless_gap          = 10
 theme.radius               = helpers.rrect(10)
 
@@ -45,16 +45,15 @@ theme.border_color_normal  = theme.foreground
 theme.border_color_active  = theme.foreground
 
 -- Taglist --
-theme.taglist_font         = theme.sans .. " Medium 12"
 theme.taglist_bg           = theme.background .. "00"
 theme.taglist_bg_focus     = theme.background .. "00"
 theme.taglist_fg_focus     = theme.foreground
 theme.taglist_bg_urgent    = theme.background .. "00"
 theme.taglist_fg_urgent    = theme.red
 theme.taglist_bg_occupied  = theme.background .. "00"
-theme.taglist_fg_occupied  = theme.foreground .. "AA"
+theme.taglist_fg_occupied  = theme.foreground
 theme.taglist_bg_empty     = theme.background .. "00"
-theme.taglist_fg_empty     = theme.foreground .. "88"
+theme.taglist_fg_empty     = theme.foreground .. "AA"
 theme.taglist_disable_icon = true
 
 -- Tray --
