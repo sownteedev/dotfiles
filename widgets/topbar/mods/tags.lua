@@ -5,7 +5,7 @@ local helpers = require("helpers")
 return function(s)
 	local taglist = awful.widget.taglist({
 		layout = {
-			spacing = 30,
+			spacing = 35,
 			layout = wibox.layout.fixed.horizontal,
 		},
 		screen = s,

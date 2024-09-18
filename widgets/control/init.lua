@@ -37,7 +37,7 @@ return function(s)
 		widget = wibox.container.margin,
 	})
 
-	helpers.placeWidget(control, "top_right", 3, 0, 0, 10)
+	helpers.placeWidget(control, "top_right", 3, 0, 0, 2)
 	helpers.slideAnimation("toggle::control", "close::control", "top", control, -control.height,
 		beautiful.useless_gap * 6)
 

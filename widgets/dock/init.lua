@@ -100,6 +100,14 @@ local data = {
 		{
 			count = 0,
 			pinned = true,
+			icon = helpers.getIcon(nil, "anydesk", "anydesk"),
+			clients = {},
+			class = "Anydesk",
+			exec = "anydesk",
+		},
+		{
+			count = 0,
+			pinned = true,
 			icon = helpers.getIcon(nil, "postman", "postman"),
 			clients = {},
 			class = "Postman",
@@ -166,6 +174,7 @@ local data = {
 		"jetbrains-pycharm",
 		"jetbrains-datagrip",
 		"docker desktop",
+		"anydesk",
 		"postman",
 		"vmware",
 		"notion",
@@ -322,8 +331,8 @@ local function genIcons()
 					{
 						widget = wibox.widget.imagebox,
 						image = j.icon,
-						forced_height = 48,
-						forced_width = 48,
+						forced_height = 50,
+						forced_width = 50,
 						resize = true,
 					},
 					top = 5,
