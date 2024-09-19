@@ -1,6 +1,7 @@
-local awful = require("awful")
-local gears = require("gears")
-local beautiful = require("beautiful")
+local awful          = require("awful")
+local gears          = require("gears")
+local beautiful      = require("beautiful")
+local helpers        = require("helpers")
 
 awful.layout.layouts = {
 	awful.layout.suit.floating,
@@ -46,6 +47,20 @@ awesome.connect_signal("exit", function(reason_restart)
 	if not reason_restart then
 		return
 	end
+
+	local window_positions = helpers.readJson(gears.filesystem.get_cache_dir() .. "window_positions.json")
+	for _, c in ipairs(client.get()) do
+		if c.class then
+			window_positions[c.class] = {
+				x = c:geometry().x,
+				y = c:geometry().y,
+				width = c:geometry().width,
+				height = c:geometry().height
+			}
+		end
+	end
+	helpers.writeJson(gears.filesystem.get_cache_dir() .. "window_positions.json", window_positions)
+
 	local file = io.open("/tmp/awesomewm-last-selected-tags", "w+")
 	for s in screen do
 		file:write(s.selected_tag.index, "\n")
@@ -54,20 +69,34 @@ awesome.connect_signal("exit", function(reason_restart)
 end)
 
 awesome.connect_signal("startup", function()
+	local window_positions = helpers.readJson(gears.filesystem.get_cache_dir() .. "window_positions.json")
+	for _, c in ipairs(client.get()) do
+		if c.class and window_positions[c.class] then
+			local geo = window_positions[c.class]
+			c:geometry({
+				x = geo.x,
+				y = geo.y,
+				width = geo.width,
+				height = geo.height
+			})
+		end
+	end
+
 	local file = io.open("/tmp/awesomewm-last-selected-tags", "r")
-	if not file then
-		return
+	if file then
+		local selected_tags = {}
+		for line in file:lines() do
+			table.insert(selected_tags, tonumber(line))
+		end
+		for s in screen do
+			local i = selected_tags[s.index]
+			local t = s.tags[i]
+			if t then
+				t:view_only()
+			end
+		end
+		file:close()
 	end
-	local selected_tags = {}
-	for line in file:lines() do
-		table.insert(selected_tags, tonumber(line))
-	end
-	for s in screen do
-		local i = selected_tags[s.index]
-		local t = s.tags[i]
-		t:view_only()
-	end
-	file:close()
 end)
 
 local tag = require("awful.widget.taglist")
