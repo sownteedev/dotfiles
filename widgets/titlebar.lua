@@ -16,73 +16,56 @@ return function(c)
 			id = "iconbot",
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
-			buttons = {
-				awful.button({}, 1, function()
-					c:kill()
-				end),
-			},
 		},
 		{
 			id = "icon",
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
-			buttons = {
-				awful.button({}, 1, function()
-					c:kill()
-				end),
-			},
 		},
 		layout = wibox.layout.stack,
+		buttons = {
+			awful.button({}, 1, function()
+				c:kill()
+			end),
+		},
 	})
 	local minimize = wibox.widget({
 		{
 			id = "iconbot",
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
-			buttons = {
-				awful.button({}, 1, function()
-					gears.timer.delayed_call(function()
-						c.minimized = not c.minimized
-					end)
-				end),
-			},
 		},
 		{
 			id = "icon",
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
-			buttons = {
-				awful.button({}, 1, function()
-					gears.timer.delayed_call(function()
-						c.minimized = not c.minimized
-					end)
-				end),
-			},
 		},
 		layout = wibox.layout.stack,
+		buttons = {
+			awful.button({}, 1, function()
+				gears.timer.delayed_call(function()
+					c.minimized = not c.minimized
+				end)
+			end),
+		},
 	})
 	local maximize = wibox.widget({
 		{
 			id = "iconbot",
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
-			buttons = {
-				awful.button({}, 1, function()
-					c.maximized = not c.maximized
-				end),
-			},
 		},
 		{
 			id = "icon",
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
-			buttons = {
-				awful.button({}, 1, function()
-					c.maximized = not c.maximized
-				end),
-			},
 		},
 		layout = wibox.layout.stack,
+		buttons = {
+			awful.button({}, 1, function()
+				c.maximized = not c.maximized
+			end),
+		},
 	})
 	local function update_button_color()
 		if client.focus ~= c then
