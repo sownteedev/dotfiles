@@ -52,30 +52,8 @@ ruled.client.connect_signal("request::rules", function()
 	})
 end)
 
-
 local save_file = gears.filesystem.get_cache_dir() .. "window_positions.json"
 local window_positions = helpers.readJson(save_file)
-
-local MIN_WIDTH = 301
-local MIN_HEIGHT = 351
-local function is_window_too_small(geo)
-	return geo.width < MIN_WIDTH or geo.height < MIN_HEIGHT
-end
-
-client.connect_signal("unmanage", function(c)
-	if c.class then
-		local geo = c:geometry()
-		if not is_window_too_small(geo) then
-			window_positions[c.class] = {
-				x = c:geometry().x,
-				y = c:geometry().y,
-				width = c:geometry().width,
-				height = c:geometry().height
-			}
-			helpers.writeJson(save_file, window_positions)
-		end
-	end
-end)
 
 client.connect_signal("manage", function(c)
 	if c.class and window_positions[c.class] then
@@ -86,5 +64,24 @@ client.connect_signal("manage", function(c)
 			width = geo.width,
 			height = geo.height
 		})
+	end
+end)
+
+client.connect_signal("unmanage", function(c)
+	if c.class then
+		if c.class == "vesktop" or c.class == "discord" or c.class == "armcord" then
+			window_positions[c.class] = {
+				x = c:geometry().x,
+				y = c:geometry().y,
+			}
+		else
+			window_positions[c.class] = {
+				x = c:geometry().x,
+				y = c:geometry().y,
+				width = c:geometry().width,
+				height = c:geometry().height
+			}
+		end
+		helpers.writeJson(save_file, window_positions)
 	end
 end)
