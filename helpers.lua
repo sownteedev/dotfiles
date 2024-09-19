@@ -12,10 +12,11 @@ local icon_path = "/home/" .. os.getenv("USER") .. "/.icons/WhiteSur/"
 local helpers = {}
 
 local custom = {
-	{ name = "org.wezfurlong.wezterm", to = "terminal" },
-	{ name = "Alacritty",              to = "terminal" },
-	{ name = "St",                     to = "terminal" },
-	{ name = "ncmpcpppad",             to = "deepin-music-player" },
+	{ name = "org.wezfurlong.wezterm",           to = "terminal",            type = "svg" },
+	{ name = "Alacritty",                        to = "terminal",            type = "svg" },
+	{ name = "St",                               to = "terminal",            type = "svg" },
+	{ name = "ncmpcpppad",                       to = "deepin-music-player", type = "svg" },
+	{ name = "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM", to = "SoundCloud",          type = "png" },
 }
 
 helpers.getIcon = function(client, program_string, class_string)
@@ -40,7 +41,11 @@ helpers.getIcon = function(client, program_string, class_string)
 		local clientName
 		local isCustom, pos = hasValue(class_string)
 		if isCustom == true then
-			clientName = custom[pos].to .. ".svg"
+			if custom[pos].type == "svg" then
+				clientName = custom[pos].to .. ".svg"
+			else
+				clientName = custom[pos].to .. ".png"
+			end
 		elseif client then
 			if client.class then
 				clientName = string.lower(client.class:gsub(" ", "")) .. ".svg"
@@ -291,6 +296,16 @@ helpers.split = function(inputstr, sep)
 		table.insert(t, str)
 	end
 	return t
+end
+
+helpers.file_exists = function(name)
+	local f = io.open(name, "r")
+	if f ~= nil then
+		io.close(f)
+		return true
+	else
+		return false
+	end
 end
 
 helpers.readFile = function(file)

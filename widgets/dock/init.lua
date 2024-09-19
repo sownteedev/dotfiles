@@ -161,6 +161,14 @@ local data = {
 			class = "Spotify",
 			exec = "spotify",
 		},
+		{
+			count = 0,
+			pinned = true,
+			icon = helpers.getIcon(nil, "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM", "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM"),
+			clients = {},
+			class = "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM",
+			exec = "/usr/bin/firefoxpwa site launch 01J82T1YF1C7RZ9ZD2WV6FZ7GM --protocol",
+		},
 	},
 	classes = {
 		"nemo",
@@ -182,6 +190,7 @@ local data = {
 		"caprine",
 		"vesktop",
 		"spotify",
+		"ffpwa-01j82t1yf1c7rz9zd2wv6fz7gm",
 	},
 }
 

@@ -1,5 +1,7 @@
 local awful = require("awful")
+local gears = require("gears")
 local ruled = require("ruled")
+local helpers = require("helpers")
 
 ruled.notification.connect_signal("request::rules", function()
 	ruled.notification.append_rule({
@@ -29,7 +31,7 @@ ruled.client.connect_signal("request::rules", function()
 	})
 
 	ruled.client.append_rule({
-		rule_any = { class = { "St", "Alacritty" } },
+		rule_any = { class = { "St", "Alacritty", "Kitty" } },
 		properties = { tag = "Terminal", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
@@ -48,4 +50,41 @@ ruled.client.connect_signal("request::rules", function()
 		rule_any = { class = { "Thunar", "Nemo", "vlc", "libreoffice-impress", "libreoffice-writer", "libreoffice-calc" } },
 		properties = { tag = "Other", switch_to_tags = true },
 	})
+end)
+
+
+local save_file = gears.filesystem.get_cache_dir() .. "window_positions.json"
+local window_positions = helpers.readJson(save_file)
+
+local MIN_WIDTH = 301
+local MIN_HEIGHT = 351
+local function is_window_too_small(geo)
+	return geo.width < MIN_WIDTH or geo.height < MIN_HEIGHT
+end
+
+client.connect_signal("unmanage", function(c)
+	if c.class then
+		local geo = c:geometry()
+		if not is_window_too_small(geo) then
+			window_positions[c.class] = {
+				x = c:geometry().x,
+				y = c:geometry().y,
+				width = c:geometry().width,
+				height = c:geometry().height
+			}
+			helpers.writeJson(save_file, window_positions)
+		end
+	end
+end)
+
+client.connect_signal("manage", function(c)
+	if c.class and window_positions[c.class] then
+		local geo = window_positions[c.class]
+		c:geometry({
+			x = geo.x,
+			y = geo.y,
+			width = geo.width,
+			height = geo.height
+		})
+	end
 end)

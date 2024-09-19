@@ -17,6 +17,7 @@ require("signals")
 --TODO: LIVE RELOAD
 awesome.emit_signal("live::reload")
 
+---@diagnostic disable: param-type-mismatch
 collectgarbage("incremental", 110, 1000)
 collectgarbage("setpause", 110)
 collectgarbage("setstepmul", 1000)
