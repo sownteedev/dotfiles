@@ -2,44 +2,25 @@ import = [ '~/.config/alacritty/colors/dark.toml' ]
 
 [font]
 size = 13.5
-
-[font.normal]
-family = "Liga SFMono Nerd Font"
-style = "Regular"
-
-[font.bold]
-style = "Bold"
-
-[font.bold_italic]
-style = "Bold Italic"
-
-[font.italic]
-style = "Italic"
-
-[font.offset]
-x = 0
-y = 6
-
-[font.glyph_offset]
-x = 0
-y = 4
-
-[window.padding]
-x = 40
-y = 40
+normal = { family = "Liga SFMono Nerd Font", style = "Regular" }
+bold = { family = "Liga SFMono Nerd Font", style = "Bold" }
+italic = { family = "Liga SFMono Nerd Font", style = "Italic" }
+bold_italic = { family = "Liga SFMono Nerd Font", style = "Bold Italic" }
+offset = { x = 0, y = 6 }
+glyph_offset = { x = 0, y = 4 }
 
 [window]
 decorations = "full"
 opacity = 1
+title = "Terminal"
 dynamic_title = true
+resize_increments = true
+padding = { x = 40, y = 40 }
 
 [selection]
 save_to_clipboard = false
 
-[cursor.style]
-shape = "Beam"
-blinking = "On"
-
 [cursor]
 unfocused_hollow = false
 blink_interval = 550
+style = { shape = "Beam", blinking = "Always" }
