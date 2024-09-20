@@ -68,18 +68,18 @@ client.connect_signal("manage", function(c)
 end)
 
 client.connect_signal("unmanage", function(c)
-	if c.class then
-		if c.class == "vesktop" or c.class == "discord" or c.class == "armcord" then
-			window_positions[c.class] = {
-				x = c:geometry().x,
-				y = c:geometry().y,
-			}
-		else
+	if c.class and not c.maximized then
+		if c.class == "Alacritty" then
 			window_positions[c.class] = {
 				x = c:geometry().x,
 				y = c:geometry().y,
 				width = c:geometry().width,
 				height = c:geometry().height
+			}
+		else
+			window_positions[c.class] = {
+				x = c:geometry().x,
+				y = c:geometry().y,
 			}
 		end
 		helpers.writeJson(save_file, window_positions)

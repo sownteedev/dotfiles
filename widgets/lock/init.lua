@@ -81,26 +81,24 @@ return function(s)
 	local grabber = awful.keygrabber({
 		auto_start = true,
 		stop_event = "release",
+		mask_event_callback = true,
 		keypressed_callback = function(_, _, key, _)
 			if key == "Escape" then
 				input = ""
 				star = ""
 				helpers.gc(prompt, "txt"):set_markup("Enter Password")
 				helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
-			end
-			if #key == 1 then
-				if input == nil then
-					input = key
-					return
-				end
+			elseif #key == 1 then
 				input = input .. key
 				star = star .. "󰧞"
 				helpers.gc(prompt, "txt"):set_markup(star)
 				helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 15")
 			elseif key == "BackSpace" then
 				input = input:sub(1, -2)
-				star = star:sub(1, -2)
+				star = star:sub(1, -5)
 				if #input == 0 then
+					input = ""
+					star = ""
 					helpers.gc(prompt, "txt"):set_markup("Enter Password")
 					helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
 				else

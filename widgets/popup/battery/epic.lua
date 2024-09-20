@@ -37,7 +37,7 @@ return function(icon_name)
 			widget = wibox.container.arcchart,
 			colors = { beautiful.green },
 			rounded_edge = true,
-			thickness = 5,
+			thickness = 8,
 			min_value = 0,
 			max_value = 100,
 			value = 25,
