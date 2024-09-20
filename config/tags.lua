@@ -50,14 +50,22 @@ awesome.connect_signal("exit", function(reason_restart)
 
 	local window_positions = helpers.readJson(gears.filesystem.get_cache_dir() .. "window_positions.json")
 	for _, c in ipairs(client.get()) do
-		if c.class then
-			window_positions[c.class] = {
-				x = c:geometry().x,
-				y = c:geometry().y,
-				width = c:geometry().width,
-				height = c:geometry().height
-			}
+		if c.class and not c.maximized then
+			if c.class == "Alacritty" then
+				window_positions[c.class] = {
+					x = c:geometry().x,
+					y = c:geometry().y,
+					width = c:geometry().width,
+					height = c:geometry().height
+				}
+			else
+				window_positions[c.class] = {
+					x = c:geometry().x,
+					y = c:geometry().y,
+				}
+			end
 		end
+		if c.maximized then c.maximized = false end
 	end
 	helpers.writeJson(gears.filesystem.get_cache_dir() .. "window_positions.json", window_positions)
 

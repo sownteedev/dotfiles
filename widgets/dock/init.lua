@@ -348,7 +348,7 @@ local function genIcons()
 					widget = wibox.container.margin,
 				},
 				{
-					font = beautiful.icon .. " 4",
+					font = beautiful.icon .. " 5",
 					markup = helpers.colorizeText("●", bg),
 					widget = wibox.widget.textbox,
 					halign = "center",

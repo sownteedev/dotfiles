@@ -122,6 +122,27 @@ return function(c)
 		widget = wibox.container.place,
 	})
 
+	local click_timer = nil
+	local move_initiated = false
+
+	local function handle_click(client)
+		if click_timer then
+			click_timer:stop()
+			click_timer = nil
+			client.maximized = not client.maximized
+			client:raise()
+		else
+			click_timer = gears.timer.start_new(0.5, function()
+				click_timer = nil
+				if not move_initiated then
+					client.focus = client
+					client:raise()
+				end
+				return false
+			end)
+		end
+	end
+
 	titlebar.widget = {
 		{
 			widget = wibox.container.margin,
@@ -148,9 +169,16 @@ return function(c)
 			widget = wibox.container.place,
 			buttons = gears.table.join(
 				awful.button({}, 1, function()
+					handle_click(c)
+				end),
+				awful.button({}, 1, function()
+					move_initiated = true
 					client.focus = c
 					c:raise()
 					awful.mouse.client.move(c)
+					move_initiated = false
+				end, function()
+					move_initiated = false
 				end),
 				awful.button({}, 3, function()
 					client.focus = c

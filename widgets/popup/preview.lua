@@ -62,7 +62,7 @@ local function createpreview(t, s, geometry)
 						align = "center",
 						widget = wibox.container.place
 					},
-					bg = beautiful.background .. "96",
+					bg = beautiful.background .. "AA",
 					widget = wibox.container.background
 				},
 				layout = wibox.layout.stack
@@ -134,14 +134,11 @@ return function(s)
 			previewlist:add(preview)
 		end
 
-		previewbox.width = geometry.width * scale * numtags + (numtags + 1) * 5 + 140
+		previewbox.width = geometry.width * scale * numtags + (numtags + 1) * 5 + 150
 		previewbox.height = geometry.height * scale + 60
 		previewbox.widget = wibox.widget {
 			previewlist,
-			top = 30,
-			bottom = 30,
-			left = 30,
-			right = 30,
+			margins = 30,
 			widget = wibox.container.margin
 		}
 		helpers.placeWidget(previewbox, "top", 2, 0, 0, 0)

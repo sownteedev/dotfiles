@@ -153,18 +153,6 @@ awful.keyboard.append_global_keybindings({
 	end),
 })
 
-client.connect_signal("request::default_keybindings", function()
-	awful.keyboard.append_client_keybindings({
-		awful.key({ mod }, "d", function(c)
-			c.minimized = true
-		end, { description = "minimize", group = "client" }),
-		awful.key({ mod }, "m", function(c)
-			c.maximized = not c.maximized
-			c:raise()
-		end, { description = "toggle maximize", group = "client" }),
-	})
-end)
-
 awful.keyboard.append_global_keybindings({
 	awful.key({
 		modifiers = { mod },
@@ -195,15 +183,12 @@ awful.keyboard.append_global_keybindings({
 
 client.connect_signal("request::default_keybindings", function()
 	awful.keyboard.append_client_keybindings({
+		awful.key({ mod }, "d", function(c)
+			c.minimized = true
+		end, { description = "minimize", group = "client" }),
 		awful.key({ mod }, "f", function(c)
 			c.maximized = not c.maximized
-		end),
-		awful.key({ mod, shift }, "f", function(c)
-			if c.maximized then
-				c.maximized = false
-			end
-		end),
-		awful.key({ mod, shift }, "f", awful.client.floating.toggle),
+		end, { description = "toggle maximized", group = "client" }),
 	})
 end)
 
@@ -224,13 +209,9 @@ end)
 
 awful.mouse.append_global_mousebindings({
 	awful.button({}, 1, function()
-		-- awesome.emit_signal("close::record")
-		-- awesome.emit_signal("close::scrot")
 		-- awesome.emit_signal("close::launcher")
 		-- awesome.emit_signal("close::noticenter")
-		-- awesome.emit_signal("close::moment")
 		-- awesome.emit_signal("close::control")
-		-- awesome.emit_signal("close::music")
 		-- awesome.emit_signal("close::preview")
 		-- awesome.emit_signal("close::exit")
 	end),
@@ -239,13 +220,9 @@ awful.mouse.append_global_mousebindings({
 	end),
 })
 client.connect_signal("button::press", function()
-	-- awesome.emit_signal("close::record")
-	-- awesome.emit_signal("close::scrot")
 	-- awesome.emit_signal("close::launcher")
 	-- awesome.emit_signal("close::noticenter")
-	-- awesome.emit_signal("close::moment")
 	-- awesome.emit_signal("close::control")
-	-- awesome.emit_signal("close::music")
 	-- awesome.emit_signal("close::preview")
 	-- awesome.emit_signal("close::exit")
 end)
