@@ -57,7 +57,7 @@ theme.taglist_fg_empty     = theme.foreground .. "AA"
 theme.taglist_disable_icon = true
 
 -- Tray --
-theme.systray_icon_spacing = 25
+theme.systray_icon_spacing = 28
 
 -- Tooltips --
 theme.tooltip_bg           = theme.background

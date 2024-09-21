@@ -17,12 +17,10 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 		bar_active_color = beautiful.foreground,
 		bar_shape = helpers.rrect(20),
 		handle_shape = function(cr)
-			gears.shape.rounded_rect(cr, 27, 27, 100)
+			gears.shape.rounded_rect(cr, 30, 30, 100)
 		end,
 		handle_color = helpers.change_hex_lightness(beautiful.foreground, -10),
-		handle_border_color = helpers.change_hex_lightness(beautiful.foreground, -10),
-		handle_border_width = 1,
-		handle_margins = { top = 9 },
+		handle_margins = { top = 7 },
 		forced_height = 0,
 		value = 25,
 		maximum = 100,
@@ -34,8 +32,6 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 		markup = helpers.colorizeText(icon, beautiful.foreground),
 		widget = wibox.widget.textbox,
 	})
-	helpers.hoverCursor(slidIcon)
-	helpers.hoverCursor(slidSlider)
 
 	local slidScale = wibox.widget({
 		{
@@ -79,6 +75,9 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 		bg = helpers.change_hex_lightness(beautiful.background, 4),
 		widget = wibox.container.background,
 	})
+	helpers.hoverCursor(slidSlider)
+	helpers.hoverCursor(slidScale, "margin")
+
 
 	awesome.connect_signal("signal::" .. signal, function(value)
 		slidSlider.value = value

@@ -110,8 +110,6 @@ return function(c)
 	c:connect_signal("focus", update_button_color)
 	c:connect_signal("unfocus", update_button_color)
 
-	awful.titlebar.enable_tooltip = false
-
 	local icon = wibox.widget({
 		{
 			widget = wibox.widget.imagebox,
@@ -123,14 +121,12 @@ return function(c)
 	})
 
 	local click_timer = nil
-	local used = false
 	local function handle_click()
 		if click_timer then
 			click_timer:stop()
 			click_timer = nil
 			c.maximized = not c.maximized
 			c:raise()
-			used = true
 		else
 			if c.maximized then
 				c.maximized = false
@@ -166,6 +162,7 @@ return function(c)
 				bottom = 10,
 				widget = wibox.container.margin,
 			},
+			id = "title",
 			align = "center",
 			valign = "center",
 			widget = wibox.container.place,
