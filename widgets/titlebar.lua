@@ -123,21 +123,23 @@ return function(c)
 	})
 
 	local click_timer = nil
-	local move_initiated = false
-
-	local function handle_click(client)
+	local used = false
+	local function handle_click()
 		if click_timer then
 			click_timer:stop()
 			click_timer = nil
-			client.maximized = not client.maximized
-			client:raise()
+			c.maximized = not c.maximized
+			c:raise()
+			used = true
 		else
-			click_timer = gears.timer.start_new(0.5, function()
+			if c.maximized then
+				c.maximized = false
+			end
+			client.focus = c
+			c:raise()
+			awful.mouse.client.move(c)
+			click_timer = gears.timer.start_new(0.3, function()
 				click_timer = nil
-				if not move_initiated then
-					client.focus = client
-					client:raise()
-				end
 				return false
 			end)
 		end
@@ -169,16 +171,7 @@ return function(c)
 			widget = wibox.container.place,
 			buttons = gears.table.join(
 				awful.button({}, 1, function()
-					handle_click(c)
-				end),
-				awful.button({}, 1, function()
-					move_initiated = true
-					client.focus = c
-					c:raise()
-					awful.mouse.client.move(c)
-					move_initiated = false
-				end, function()
-					move_initiated = false
+					handle_click()
 				end),
 				awful.button({}, 3, function()
 					client.focus = c
@@ -194,6 +187,4 @@ return function(c)
 		},
 		layout = wibox.layout.align.horizontal,
 	}
-
-	return titlebar
 end
