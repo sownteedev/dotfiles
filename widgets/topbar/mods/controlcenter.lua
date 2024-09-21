@@ -217,7 +217,7 @@ local widget = wibox.widget({
 	spotlight,
 	controlcenter,
 	layouts,
-	spacing = 30,
+	spacing = 25,
 	layout = wibox.layout.fixed.horizontal,
 })
 

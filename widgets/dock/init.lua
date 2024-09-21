@@ -313,10 +313,10 @@ local function genIcons()
 			if not j.pinned and added then
 				widget:add(wibox.widget({
 					{
-						widget = wibox.widget.separator,
-						orientation = "vertical",
-						forced_width = 1,
+						orientation   = "vertical",
+						forced_width  = 1,
 						forced_height = 1,
+						widget        = wibox.widget.separator,
 					},
 					top = 10,
 					bottom = 10,
@@ -329,7 +329,7 @@ local function genIcons()
 			if minimized > 0 then
 				bg = "#ffff00"
 			elseif client.focus then
-				if client.focus.class:lower() == j.class then
+				if client.focus.class:lower() == j.class:lower() then
 					bg = beautiful.foreground
 				elseif j.count > 0 then
 					bg = beautiful.foreground .. "AA"
