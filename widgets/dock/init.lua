@@ -425,6 +425,9 @@ return function(s)
 		if c.maximized then
 			dock.ontop = true
 			dock.y = beautiful.height - 1
+			gears.timer.start_new(0.5, function()
+				dock.opacity = 0
+			end)
 			if not slide then
 				slide = animation:new({
 					duration = 0.5,
@@ -437,9 +440,13 @@ return function(s)
 			end
 			enter_func = function()
 				slide:set(beautiful.height - dock.height - beautiful.useless_gap * 2)
+				dock.opacity = 1
 			end
 			leave_func = function()
 				slide:set(beautiful.height - 1)
+				gears.timer.start_new(0.5, function()
+					dock.opacity = 0
+				end)
 			end
 
 			dock:connect_signal("mouse::enter", enter_func)
@@ -447,6 +454,7 @@ return function(s)
 		else
 			dock.ontop = false
 			dock.y = beautiful.height - dock.height - beautiful.useless_gap * 2
+			dock.opacity = 1
 			if enter_func and leave_func then
 				dock:disconnect_signal("mouse::enter", enter_func)
 				dock:disconnect_signal("mouse::leave", leave_func)

@@ -38,7 +38,7 @@ local currwidget = function(day)
 	return wibox.widget({
 		markup = helpers.colorizeText(day, beautiful.blue),
 		align = "center",
-		font = beautiful.sans .. " Bold 10",
+		font = beautiful.sans .. " Bold 11",
 		widget = wibox.widget.textbox,
 	})
 end
