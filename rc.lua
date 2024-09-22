@@ -1,5 +1,6 @@
 pcall(require, "luarocks.loader")
 require("awful.autofocus")
+_User = require("user")
 
 local naughty = require('naughty')
 naughty.connect_signal('request::display_error', function(message, startup)

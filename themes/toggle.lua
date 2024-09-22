@@ -34,7 +34,7 @@ end
 
 local function awesome(theme)
 	awful.spawn.with_shell([[
-		sed -i "s/local colorscheme.*/local colorscheme = \"]] .. theme .. [[\"/" ~/.config/awesome/themes/theme.lua &&
+		sed -i "s/_User.Colorscheme.*/_User.Colorscheme     = \"]] .. theme .. [[\"/" ~/.config/awesome/user.lua &&
 	]])
 	awful.spawn.with_shell("awesome-client 'awesome.restart()'")
 end

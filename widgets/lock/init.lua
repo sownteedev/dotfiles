@@ -21,7 +21,7 @@ return function(s)
 
 	local profilepic = wibox.widget({
 		{
-			image = beautiful.profile,
+			image = _User.PFP,
 			clip_shape = gears.shape.rounded_rect,
 			halign = "center",
 			forced_width = 100,
@@ -29,7 +29,7 @@ return function(s)
 			widget = wibox.widget.imagebox,
 		},
 		{
-			markup = beautiful.user .. "@" .. io.popen("uname -n"):read("*l"),
+			markup = os.getenv("USER") .. "@" .. io.popen("uname -n"):read("*l"),
 			font = "azuki_font Bold 18",
 			halign = "center",
 			widget = wibox.widget.textbox,
@@ -126,19 +126,11 @@ return function(s)
 	})
 
 	local background = wibox.widget({
-		image = nil,
+		image = _User.LOCK,
 		horizontal_fit_policy = "fit",
 		vertical_fit_policy = "fit",
 		widget = wibox.widget.imagebox,
 	})
-	local makeImage = function()
-		local cmd = "convert " .. beautiful.lock .. " ~/.cache/awesome/lock.jpg"
-		awful.spawn.easy_async_with_shell(cmd, function()
-			local blurwall = gears.filesystem.get_cache_dir() .. "lock.jpg"
-			background.image = blurwall
-		end)
-	end
-	makeImage()
 
 	local time = wibox.widget({
 		{

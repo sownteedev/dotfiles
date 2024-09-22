@@ -31,12 +31,12 @@ return function(s)
 			{
 				{
 					{
-						markup = helpers.colorizeText("Nguyen Thanh Son", beautiful.foreground),
+						markup = helpers.colorizeText(_User.Name, beautiful.foreground),
 						font = "azuki_font Bold 15",
 						widget = wibox.widget.textbox,
 					},
 					{
-						markup = helpers.colorizeText("@sownteedev", beautiful.foreground),
+						markup = helpers.colorizeText(_User.Username, beautiful.foreground),
 						font = "azuki_font 12",
 						widget = wibox.widget.textbox,
 					},
