@@ -1,12 +1,12 @@
-local awful = require("awful")
-local json = require("modules.json")
-local beautiful = require("beautiful")
-local icon_dir = beautiful.icon_path .. "weather/icons/"
-local thumb_dir = beautiful.icon_path .. "weather/images/"
+local awful                = require("awful")
+local json                 = require("modules.json")
+local beautiful            = require("beautiful")
+local icon_dir             = beautiful.icon_path .. "weather/icons/"
+local thumb_dir            = beautiful.icon_path .. "weather/images/"
 
-local GET_FORECAST_CMD = [[bash -c "curl -s --show-error -X GET '%s'"]]
+local GET_FORECAST_CMD     = [[bash -c "curl -s --show-error -X GET '%s'"]]
 
-local icon_map = {
+local icon_map             = {
 	["01d"] = "weather-clear-sky",
 	["02d"] = "weather-few-clouds",
 	["04d"] = "weather-few-clouds",
@@ -27,7 +27,7 @@ local icon_map = {
 	["50n"] = "weather-fog",
 }
 
-local image_map = {
+local image_map            = {
 	["01d"] = "weather-clear-sky",
 	["02d"] = "weather-clouds",
 	["04d"] = "weather-clouds",
@@ -48,13 +48,13 @@ local image_map = {
 	["50n"] = "weather-fog",
 }
 
-local api_key = "702cd6f2a4f3450a3673e8bc3078525e"
-local coordinates = { "21.0245", "105.8412" }
+local api_key              = _User.API_KEY_WEATHER
+local coordinates          = _User.Coordinates
 local show_hourly_forecast = true
-local show_daily_forecast = true
-local units = "metric"
+local show_daily_forecast  = true
+local units                = "metric"
 
-local url = (
+local url                  = (
 	"https://api.openweathermap.org/data/2.5/onecall"
 	.. "?lat="
 	.. coordinates[1]
@@ -69,7 +69,7 @@ local url = (
 	.. (show_daily_forecast == false and ",daily" or "")
 )
 
-local url1 = (
+local url1                 = (
 	"https://api.openweathermap.org/geo/1.0/reverse"
 	.. "?lat="
 	.. coordinates[1]

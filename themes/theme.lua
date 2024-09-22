@@ -1,5 +1,4 @@
 -- User config
-local colorscheme = "dark"
 require("themes.toggle")
 ---------------------------------------------------------------------
 local gears                = require("gears")
@@ -11,17 +10,16 @@ local theme                = {}
 theme.font                 = "SF Pro Display 12"
 theme.sans                 = "SF Pro Display"
 theme.icon                 = "Material Design Icons"
-theme.icon_path            = gfs.get_configuration_dir() .. "themes/" .. "assets/"
+theme.icon_path            = gfs.get_configuration_dir() .. "themes/assets/"
 
 -- Colors --
-local colors               = require("themes.colors." .. colorscheme)
+local colors               = require("themes.colors." .. _User.Colorscheme)
 theme.background           = colors.background
 theme.foreground           = colors.foreground
 theme.red                  = colors.red
 theme.green                = colors.green
 theme.blue                 = colors.blue
 theme.yellow               = colors.yellow
-
 theme.wallpaper            = colors.wallpaper
 theme.type                 = colors.type
 
@@ -29,11 +27,6 @@ theme.width                = screen.primary.geometry.width
 theme.height               = screen.primary.geometry.height
 theme.useless_gap          = 10
 theme.radius               = helpers.rrect(10)
-
-theme.user                 = os.getenv("USER")
-theme.profile              = theme.icon_path .. "sownteedev.png"
-theme.songdefpicture       = theme.icon_path .. "music/artdefault.jpg"
-theme.lock                 = "$HOME/.walls/lockart.jpg"
 
 -- Default vars --
 theme.bg_normal            = theme.background

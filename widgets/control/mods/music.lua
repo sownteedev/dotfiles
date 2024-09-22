@@ -22,7 +22,7 @@ end
 convertBlur(beautiful.icon_path .. "music/blurdefault.jpg")
 
 local art = wibox.widget({
-	image = helpers.cropSurface(1, gears.surface.load_uncached(beautiful.songdefpicture)),
+	image = helpers.cropSurface(1, gears.surface.load_uncached(_User.SongDefPicture)),
 	resize = true,
 	forced_height = 100,
 	forced_width = 100,
@@ -76,7 +76,7 @@ local player = wibox.widget({
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _, player_name)
-	local album = not album_path or album_path == "" and beautiful.songdefpicture or album_path
+	local album = not album_path or album_path == "" and _User.SongDefPicture or album_path
 	awful.spawn.easy_async_with_shell(
 		"convert " .. album .. " -filter Gaussian -blur 0x5 ~/.cache/awesome/songdefpictures.jpg &", function()
 			local blurwall = gears.filesystem.get_cache_dir() .. "songdefpictures.jpg"

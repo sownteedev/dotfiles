@@ -7,23 +7,14 @@ local gmatrix = require("gears.matrix")
 local json = require("modules.json")
 local animation = require("modules.animation")
 local icon_cache = {}
-local icon_path = "/home/" .. os.getenv("USER") .. "/.icons/WhiteSur/"
 
 local helpers = {}
-
-local custom = {
-	{ name = "org.wezfurlong.wezterm",           to = "terminal",            type = "svg" },
-	{ name = "Alacritty",                        to = "terminal",            type = "svg" },
-	{ name = "St",                               to = "terminal",            type = "svg" },
-	{ name = "ncmpcpppad",                       to = "deepin-music-player", type = "svg" },
-	{ name = "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM", to = "SoundCloud",          type = "png" },
-}
 
 helpers.getIcon = function(client, program_string, class_string)
 	local function hasValue(str)
 		local f = false
 		local ind = 0
-		for i, j in ipairs(custom) do
+		for i, j in ipairs(_User.Custom_Icon) do
 			if j.name == str then
 				f = true
 				ind = i
@@ -41,10 +32,10 @@ helpers.getIcon = function(client, program_string, class_string)
 		local clientName
 		local isCustom, pos = hasValue(class_string)
 		if isCustom == true then
-			if custom[pos].type == "svg" then
-				clientName = custom[pos].to .. ".svg"
+			if _User.Custom_Icon[pos].type == "svg" then
+				clientName = _User.Custom_Icon[pos].to .. ".svg"
 			else
-				clientName = custom[pos].to .. ".png"
+				clientName = _User.Custom_Icon[pos].to .. ".png"
 			end
 		elseif client then
 			if client.class then
@@ -55,7 +46,7 @@ helpers.getIcon = function(client, program_string, class_string)
 				if client.icon then
 					return client.icon
 				else
-					return icon_path .. "/apps/scalable/default-application.svg"
+					return _User.PATH_Icon .. "/apps/scalable/default-application.svg"
 				end
 			end
 		else
@@ -72,35 +63,35 @@ helpers.getIcon = function(client, program_string, class_string)
 			end
 		end
 
-		local iconDir = icon_path .. "/apps/scalable/"
+		local iconDir = _User.PATH_Icon .. "/apps/scalable/"
 		local ioStream = io.open(iconDir .. clientName, "r")
 		if ioStream ~= nil then
 			icon_cache[#icon_cache + 1] = iconDir .. clientName
 			return iconDir .. clientName
 		else
 			clientName = clientName:gsub("^%l", string.upper)
-			iconDir = icon_path .. "/apps/scalable/"
+			iconDir = _User.PATH_Icon .. "/apps/scalable/"
 			ioStream = io.open(iconDir .. clientName, "r")
 			if ioStream ~= nil then
 				icon_cache[#icon_cache + 1] = iconDir .. clientName
 				return iconDir .. clientName
 			elseif not class_string then
-				return icon_path .. "/apps/scalable/default-application.svg"
+				return _User.PATH_Icon .. "/apps/scalable/default-application.svg"
 			else
 				clientName = class_string .. ".svg"
-				iconDir = icon_path .. "/apps/scalable/"
+				iconDir = _User.PATH_Icon .. "/apps/scalable/"
 				ioStream = io.open(iconDir .. clientName, "r")
 				if ioStream ~= nil then
 					icon_cache[#icon_cache + 1] = iconDir .. clientName
 					return iconDir .. clientName
 				else
-					return icon_path .. "/apps/scalable/default-application.svg"
+					return _User.PATH_Icon .. "/apps/scalable/default-application.svg"
 				end
 			end
 		end
 	end
 	if client then
-		return icon_path .. "/apps/scalable/default-application.svg"
+		return _User.PATH_Icon .. "/apps/scalable/default-application.svg"
 	end
 end
 
@@ -354,6 +345,16 @@ end
 
 helpers.gc = function(widget, id)
 	return widget:get_children_by_id(id)[1]
+end
+
+helpers.randomImage = function(dir)
+	local files = {}
+	for file in io.popen("ls " .. dir):lines() do
+		if file:match(".png$") or file:match(".jpg$") or file:match(".jpeg$") then
+			table.insert(files, file)
+		end
+	end
+	return dir .. files[math.random(#files)]
 end
 
 -------------------------- UTILS FOR COLOR -----------------------------------

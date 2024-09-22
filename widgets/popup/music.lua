@@ -154,7 +154,7 @@ return function(s)
 		layout = wibox.layout.stack,
 	})
 	playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _, _)
-		local album = not album_path or album_path == "" and beautiful.songdefpicture or album_path
+		local album = not album_path or album_path == "" and _User.SongDefPicture or album_path
 		awful.spawn.easy_async_with_shell(
 			"convert " .. album .. " -resize 16:9! ~/.cache/awesome/songdefpicture.jpg", function()
 				local artt = gears.filesystem.get_cache_dir() .. "songdefpicture.jpg"
