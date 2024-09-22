@@ -14,6 +14,9 @@ return function(s)
 			awful.button({}, 1, function(t)
 				t:view_only()
 			end),
+			awful.button({}, 3, function()
+				awesome.emit_signal("toggle::preview")
+			end),
 		},
 		widget_template = {
 			{

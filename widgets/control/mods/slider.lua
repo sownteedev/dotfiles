@@ -17,10 +17,12 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 		bar_active_color = beautiful.foreground,
 		bar_shape = helpers.rrect(20),
 		handle_shape = function(cr)
-			gears.shape.rounded_rect(cr, 30, 30, 100)
+			gears.shape.rounded_rect(cr, 28, 28, 100)
 		end,
 		handle_color = helpers.change_hex_lightness(beautiful.foreground, -10),
-		handle_margins = { top = 7 },
+		handle_margins = { top = 8 },
+		handle_border_color = beautiful.background .. "22",
+		handle_border_width = 1,
 		forced_height = 0,
 		value = 25,
 		maximum = 100,
