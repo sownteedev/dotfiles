@@ -79,7 +79,8 @@ sleep 3 && clear
 # Network
 echo "[*] Installing network ..."
 pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools --noconfirm
-systemctl enable NetworkManager dhcpcd
+yay -S cloudflare-warp-bin --noconfirm
+systemctl enable NetworkManager dhcpcd cloudflared warp-svc
 echo "[*] Done."
 sleep 3 && clear
 
