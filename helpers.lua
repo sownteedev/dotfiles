@@ -32,11 +32,7 @@ helpers.getIcon = function(client, program_string, class_string)
 		local clientName
 		local isCustom, pos = hasValue(class_string)
 		if isCustom == true then
-			if _User.Custom_Icon[pos].type == "svg" then
-				clientName = _User.Custom_Icon[pos].to .. ".svg"
-			else
-				clientName = _User.Custom_Icon[pos].to .. ".png"
-			end
+			clientName = _User.Custom_Icon[pos].to .. ".svg"
 		elseif client then
 			if client.class then
 				clientName = string.lower(client.class:gsub(" ", "")) .. ".svg"
