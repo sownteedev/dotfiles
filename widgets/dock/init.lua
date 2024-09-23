@@ -124,6 +124,30 @@ local data = {
 		{
 			count = 0,
 			pinned = true,
+			icon = helpers.getIcon(nil, "wps", "wps"),
+			clients = {},
+			class = "wps",
+			exec = "wps",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = helpers.getIcon(nil, "et", "et"),
+			clients = {},
+			class = "et",
+			exec = "et",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = helpers.getIcon(nil, "wpp", "wpp"),
+			clients = {},
+			class = "wpp",
+			exec = "wpp",
+		},
+		{
+			count = 0,
+			pinned = true,
 			icon = helpers.getIcon(nil, "Notion", "Notion"),
 			clients = {},
 			class = "Notion",
@@ -185,6 +209,9 @@ local data = {
 		"postman",
 		"anydesk",
 		"vmware",
+		"wps",
+		"et",
+		"wpp",
 		"notion",
 		"telegramdesktop",
 		"caprine",
@@ -325,16 +352,17 @@ local function genIcons()
 				added = false
 			end
 			local minimized = getMinimized(j.clients)
-			local bg = beautiful.background .. "01"
-			if minimized > 0 then
-				bg = "#ffff00"
-			elseif client.focus then
-				if client.focus.class:lower() == j.class:lower() then
-					bg = beautiful.foreground
-				elseif j.count > 0 then
-					bg = beautiful.foreground .. "AA"
-				end
-			end
+			local bg = beautiful.background .. "00"
+			local dot = wibox.widget({
+				{
+					bg            = bg,
+					widget        = wibox.container.background,
+					forced_width  = 0,
+					forced_height = 5,
+				},
+				spacing = 2,
+				layout = wibox.layout.fixed.horizontal,
+			})
 			local widgets = wibox.widget({
 				{
 					{
@@ -348,17 +376,35 @@ local function genIcons()
 					widget = wibox.container.margin,
 				},
 				{
-					font = beautiful.icon .. " 5",
-					markup = helpers.colorizeText("●", bg),
-					widget = wibox.widget.textbox,
+					dot,
 					halign = "center",
+					widget = wibox.container.place,
 				},
+				spacing = 2,
 				layout = wibox.layout.fixed.vertical,
 			})
 			helpers.hoverCursor(widgets)
-			for _ = 1, j.count - 1 do
-				widgets.children[2].markup =
-					helpers.colorizeText(widgets.children[2].markup .. " ●", bg)
+			if minimized > 0 then
+				bg = "#ffff00"
+			elseif j.count > 0 then
+				bg = beautiful.foreground
+			end
+			for _, c in ipairs(j.clients) do
+				if client.focus and c.window == client.focus.window then
+					dot:add({
+						bg           = bg,
+						shape        = helpers.rrect(2),
+						widget       = wibox.container.background,
+						forced_width = 12,
+					})
+				else
+					dot:add({
+						bg           = bg,
+						shape        = gears.shape.circle,
+						widget       = wibox.container.background,
+						forced_width = 5,
+					})
+				end
 			end
 			widgets:buttons(gears.table.join(
 				awful.button({}, 1, function()
@@ -425,9 +471,7 @@ return function(s)
 		if c.maximized then
 			dock.ontop = true
 			dock.y = beautiful.height - 1
-			gears.timer.start_new(0.5, function()
-				dock.opacity = 0
-			end)
+			dock.opacity = 0
 			if not slide then
 				slide = animation:new({
 					duration = 0.5,
@@ -444,7 +488,7 @@ return function(s)
 			end
 			leave_func = function()
 				slide:set(beautiful.height - 1)
-				gears.timer.start_new(0.5, function()
+				gears.timer.start_new(0.35, function()
 					dock.opacity = 0
 				end)
 			end

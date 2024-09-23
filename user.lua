@@ -14,6 +14,9 @@ _User.Custom_Icon     = {
 	{ name = "St",                               to = "terminal",            type = "svg" },
 	{ name = "ncmpcpppad",                       to = "deepin-music-player", type = "svg" },
 	{ name = "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM", to = "SoundCloud",          type = "png" },
+	{ name = "wps",                              to = "word",                type = "png" },
+	{ name = "et",                               to = "excel",               type = "png" },
+	{ name = "wpp",                              to = "powerpoint",          type = "png" }
 }
 
 _User.API_KEY_WEATHER = "702cd6f2a4f3450a3673e8bc3078525e"
