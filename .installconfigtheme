@@ -11,7 +11,7 @@ pkg_installed() {
 cd ~
 
 # Font
-pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm
+pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-ms-fonts --noconfirm
 echo "[*] Copy fonts ..."
 mkdir -p ~/.fonts && cp -r ~/dotf/.fonts/* ~/.fonts
 fc-cache -fv
@@ -137,8 +137,8 @@ sleep 3 && clear
 
 # App for me
 echo "[*] Installing apps for me ..."
-pacman -S --noconfirm libreoffice-fresh telegram-desktop easyeffects
-yay -S --noconfirm notion-app-electron jetbrains-toolbox docker-desktop postman-bin ulauncher-git appimagelauncher-bin vmware-workstation caprine vesktop kdenlive-git thunderbird
+pacman -S --noconfirm telegram-desktop easyeffects
+yay -S --noconfirm notion-app-electron jetbrains-toolbox docker-desktop postman-bin ulauncher-git appimagelauncher-bin vmware-workstation caprine vesktop kdenlive-git thunderbird wps-office
 pacman -Rns docker-desktop-debug --noconfirm
 yay -S visual-studio-code-bin --noconfirm
 echo "[*] Done."
