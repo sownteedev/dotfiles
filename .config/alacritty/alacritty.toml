@@ -10,17 +10,10 @@ offset = { x = 0, y = 6 }
 glyph_offset = { x = 0, y = 4 }
 
 [window]
-decorations = "full"
 opacity = 1
-title = "Terminal"
-dynamic_title = true
-resize_increments = true
+title = "sowntee@dev"
 padding = { x = 40, y = 40 }
 
-[selection]
-save_to_clipboard = false
-
 [cursor]
-unfocused_hollow = false
-blink_interval = 550
+blink_interval = 1000
 style = { shape = "Beam", blinking = "Always" }

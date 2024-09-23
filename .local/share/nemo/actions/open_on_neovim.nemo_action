@@ -1,0 +1,6 @@
+[Nemo Action]
+Name=Open on Neovim
+Exec=alacritty -e nvim %F
+Terminal=false
+Selection=s
+Extensions=any;
