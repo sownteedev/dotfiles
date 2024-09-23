@@ -9,14 +9,18 @@ _User.Colorscheme     = "dark"
 
 _User.PATH_Icon       = "/home/" .. os.getenv("USER") .. "/.icons/WhiteSur/"
 _User.Custom_Icon     = {
-	{ name = "org.wezfurlong.wezterm",           to = "terminal",            type = "svg" },
-	{ name = "Alacritty",                        to = "terminal",            type = "svg" },
-	{ name = "St",                               to = "terminal",            type = "svg" },
-	{ name = "ncmpcpppad",                       to = "deepin-music-player", type = "svg" },
-	{ name = "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM", to = "SoundCloud",          type = "png" },
-	{ name = "wps",                              to = "word",                type = "png" },
-	{ name = "et",                               to = "excel",               type = "png" },
-	{ name = "wpp",                              to = "powerpoint",          type = "png" }
+	{ name = "org.wezfurlong.wezterm",           to = "terminal" },
+	{ name = "Alacritty",                        to = "terminal" },
+	{ name = "St",                               to = "terminal" },
+	{ name = "ncmpcpppad",                       to = "deepin-music-player" },
+	{ name = "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM", to = "SoundCloud" },
+	{ name = "wps",                              to = "Word" },
+	{ name = "et",                               to = "Excel" },
+	{ name = "wpp",                              to = "PowerPoint" },
+	-- { name = "wps",                              to = "wps-office2019-wpsmain" },
+	-- { name = "et",                               to = "wps-office2019-etmain" },
+	-- { name = "wpp",                              to = "wps-office2019-wppmain" },
+	{ name = "pdf",                              to = "wps-office2019-pdfmain" },
 }
 
 _User.API_KEY_WEATHER = "702cd6f2a4f3450a3673e8bc3078525e"
