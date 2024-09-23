@@ -11,7 +11,7 @@ pkg_installed() {
 cd ~
 
 # Font
-pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-ms-fonts --noconfirm
+pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-ms-win11-auto --noconfirm
 echo "[*] Copy fonts ..."
 mkdir -p ~/.fonts && cp -r ~/dotf/.fonts/* ~/.fonts
 fc-cache -fv
