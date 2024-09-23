@@ -22,7 +22,7 @@ function backup()
 			cp -r ~/.config/"$folder"/* ~/dotf/.config/"$folder"
 		done
 		
-		cp -r ~/.local/other/ ~/dotf/.local/ && cp -r ~/.local/bin/ ~/dotf/.local/ &&
+		cp -r ~/.local/other/ ~/dotf/.local/ && cp -r ~/.local/bin/ ~/dotf/.local/ && mkdir -p ~/dotf/.local/share/nemo/ && cp -r ~/.local/share/nemo/actions/ ~/dotf/.local/share/nemo/
 		cp ~/.config/Caprine/custom.css ~/dotf/.local/other/customcaprine.css &&
 		
 		rm -f ~/dotf/.gtkrc-2.0 && cp ~/.gtkrc-2.0 ~/dotf/

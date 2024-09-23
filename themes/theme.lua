@@ -1,9 +1,7 @@
--- User config
+local gears   = require("gears")
+local gfs     = require("gears.filesystem")
+local helpers = require("helpers")
 require("themes.toggle")
----------------------------------------------------------------------
-local gears                = require("gears")
-local gfs                  = require("gears.filesystem")
-local helpers              = require("helpers")
 
 local theme                = {}
 

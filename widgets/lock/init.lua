@@ -69,6 +69,7 @@ return function(s)
 				halign = "center",
 				widget = wibox.container.place,
 			},
+			id = "bg",
 			forced_width = 200,
 			forced_height = 50,
 			shape = helpers.rrect(50),
@@ -118,8 +119,13 @@ return function(s)
 				else
 					input = ""
 					star = ""
-					helpers.gc(prompt, "txt"):set_markup("Incorrect Password")
+					helpers.gc(prompt, "txt"):set_markup(helpers.colorizeText("Incorrect Password", beautiful.background))
 					helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
+					helpers.gc(prompt, "bg"):set_bg(beautiful.red)
+					gears.timer.start_new(2, function()
+						helpers.gc(prompt, "txt"):set_markup("Enter Password")
+						helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "50")
+					end)
 				end
 			end
 		end,
