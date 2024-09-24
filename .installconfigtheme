@@ -99,6 +99,7 @@ sleep 3 && clear
 # Firefox
 echo "[*] Installing Firefox ..."
 pacman -S firefox --noconfirm
+xdg-settings set default-web-browser firefox.desktop
 git clone https://github.com/vinceliuice/WhiteSur-firefox-theme.git
 cd WhiteSur-firefox-theme
 ./install.sh -a
