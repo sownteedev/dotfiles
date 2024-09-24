@@ -223,7 +223,7 @@ local data = {
 
 local widget = wibox.widget({
 	layout = wibox.layout.fixed.horizontal,
-	spacing = 5,
+	spacing = 7,
 })
 
 local function getExecutable(class)
