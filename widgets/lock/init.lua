@@ -92,6 +92,7 @@ return function(s)
 			elseif #key == 1 then
 				input = input .. key
 				star = star .. "󰧞"
+				helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "50")
 				helpers.gc(prompt, "txt"):set_markup(star)
 				helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 15")
 			elseif key == "BackSpace" then
@@ -123,6 +124,9 @@ return function(s)
 					helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
 					helpers.gc(prompt, "bg"):set_bg(beautiful.red)
 					gears.timer.start_new(2, function()
+						if input ~= "" then
+							return false
+						end
 						helpers.gc(prompt, "txt"):set_markup("Enter Password")
 						helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "50")
 					end)
