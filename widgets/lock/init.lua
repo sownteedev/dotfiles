@@ -141,6 +141,9 @@ return function(s)
 		vertical_fit_policy = "fit",
 		widget = wibox.widget.imagebox,
 	})
+	awesome.connect_signal("lock::change", function()
+		background:set_image(_User.LOCK)
+	end)
 
 	local time = wibox.widget({
 		{
