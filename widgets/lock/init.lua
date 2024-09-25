@@ -136,13 +136,13 @@ return function(s)
 	})
 
 	local background = wibox.widget({
-		image = _User.LOCK,
+		image = _User.Lock,
 		horizontal_fit_policy = "fit",
 		vertical_fit_policy = "fit",
 		widget = wibox.widget.imagebox,
 	})
 	awesome.connect_signal("lock::change", function()
-		background:set_image(_User.LOCK)
+		background:set_image(_User.Lock)
 	end)
 
 	local time = wibox.widget({

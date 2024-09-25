@@ -1,20 +1,19 @@
 local awful = require("awful")
-local beautiful = require("beautiful")
+local config_file = os.getenv("HOME") .. "/.config/awesome/user.lua"
 
-function changewall(path, type)
-	local config_file = os.getenv("HOME") .. "/.config/awesome/themes/colors/" .. type .. ".lua"
-	local command = "sed -i 's|wallpaper = .*|wallpaper = \"" .. path .. "\",|' " .. config_file
+function changewall(path)
+	local command = "sed -i 's|_User.Wallpaper       = .*|_User.Wallpaper       = \"" ..
+		path .. "\"|' " .. config_file
 	awful.spawn.easy_async_with_shell(command, function()
-		beautiful.wallpaper = path
+		_User.Wallpaper = path
 		awesome.emit_signal("wallpaper::change")
 	end)
 end
 
 function changelockwall(path)
-	local config_file = os.getenv("HOME") .. "/.config/awesome/user.lua"
-	local command = "sed -i 's|_User.LOCK            = .*|_User.LOCK            = \"" .. path .. "\"|' " .. config_file
+	local command = "sed -i 's|_User.Lock            = .*|_User.Lock            = \"" .. path .. "\"|' " .. config_file
 	awful.spawn.easy_async_with_shell(command, function()
-		_User.LOCK = path
+		_User.Lock = path
 		awesome.emit_signal("lock::change")
 	end)
 end

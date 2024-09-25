@@ -438,8 +438,8 @@ return function(s)
 	local dock = awful.popup({
 		screen = s,
 		visible = true,
-		shape = helpers.rrect(15),
-		bg = beautiful.background .. "AA",
+		shape = helpers.rrect(20),
+		bg = beautiful.background .. "CC",
 		placement = function(c)
 			awful.placement.bottom(c, { margins = { bottom = beautiful.useless_gap * 2 } })
 		end,
@@ -460,7 +460,7 @@ return function(s)
 			right = 10,
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(15),
+		shape = helpers.rrect(20),
 		shape_border_width = 1,
 		shape_border_color = beautiful.foreground .. "22",
 	})
