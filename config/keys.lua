@@ -100,9 +100,6 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod }, "l", function()
 		awesome.emit_signal("toggle::lock")
 	end),
-	awful.key({ mod, alt }, "w", function()
-		awful.spawn.with_shell("feh -z --no-fehbg --bg-fill ~/.walls/" .. beautiful.type .. " ")
-	end),
 	awful.key({ mod, alt }, "r", awesome.restart),
 	awful.key({ mod, alt }, "q", awesome.quit),
 })
