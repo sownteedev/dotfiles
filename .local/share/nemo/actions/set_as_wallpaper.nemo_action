@@ -1,6 +1,6 @@
 [Nemo Action]
 Name=Set as wallpaper
-Exec=feh --bg-fill %F
+Exec=<"scripts/wall.sh" %F>
 Terminal=false
 Selection=s
 Extensions=png;jpg;jpeg;
