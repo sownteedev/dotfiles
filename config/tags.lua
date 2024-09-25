@@ -40,9 +40,9 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	s.preview = require("widgets.popup.preview")(s)
 end)
 
-gears.wallpaper.maximized(beautiful.wallpaper, nil, true)
+gears.wallpaper.maximized(_User.Wallpaper, nil, true)
 awesome.connect_signal("wallpaper::change", function()
-	gears.wallpaper.maximized(beautiful.wallpaper, nil, true)
+	gears.wallpaper.maximized(_User.Wallpaper, nil, true)
 end)
 
 ---@diagnostic disable: need-check-nil

@@ -47,7 +47,7 @@ local function createpreview(t, s, geometry)
 			{
 				{
 					image = gears.surface.crop_surface {
-						surface = gears.surface.load_uncached(beautiful.wallpaper),
+						surface = gears.surface.load_uncached(_User.Wallpaper),
 						ratio = s.geometry.width / s.geometry.height
 					},
 					widget = wibox.widget.imagebox
@@ -75,7 +75,7 @@ local function createpreview(t, s, geometry)
 			{
 				{
 					image = gears.surface.crop_surface {
-						surface = gears.surface.load_uncached(beautiful.wallpaper),
+						surface = gears.surface.load_uncached(_User.Wallpaper),
 						ratio = s.geometry.width / s.geometry.height
 					},
 					widget = wibox.widget.imagebox

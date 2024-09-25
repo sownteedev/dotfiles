@@ -12,14 +12,13 @@ theme.icon_path            = gfs.get_configuration_dir() .. "themes/assets/"
 
 -- Colors --
 local colors               = require("themes.colors." .. _User.Colorscheme)
+theme.type                 = colors.type
 theme.background           = colors.background
 theme.foreground           = colors.foreground
 theme.red                  = colors.red
 theme.green                = colors.green
 theme.blue                 = colors.blue
 theme.yellow               = colors.yellow
-theme.wallpaper            = colors.wallpaper
-theme.type                 = colors.type
 
 theme.width                = screen.primary.geometry.width
 theme.height               = screen.primary.geometry.height

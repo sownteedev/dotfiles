@@ -12,7 +12,7 @@ return function(s)
 		position = "top",
 		height = 40,
 		width = beautiful.width,
-		bg = beautiful.background .. "AA",
+		bg = beautiful.background .. "CC",
 		ontop = false,
 		screen = s,
 		widget = {
