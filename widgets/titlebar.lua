@@ -6,7 +6,7 @@ local helpers = require("helpers")
 
 return function(c)
 	local titlebar = awful.titlebar(c, {
-		size = 55,
+		size = 45,
 		fg = beautiful.foreground,
 		bg = helpers.change_hex_lightness(beautiful.background, -4),
 	})
@@ -110,6 +110,17 @@ return function(c)
 	c:connect_signal("focus", update_button_color)
 	c:connect_signal("unfocus", update_button_color)
 
+	local title = wibox.widget({
+		markup = c.name,
+		font = beautiful.sans .. " Medium 12",
+		align = "center",
+		valign = "center",
+		widget = wibox.widget.textbox,
+	})
+	c:connect_signal("property::name", function()
+		title.markup = c.name
+	end)
+
 	local icon = wibox.widget({
 		{
 			widget = wibox.widget.imagebox,
@@ -144,10 +155,10 @@ return function(c)
 	titlebar.widget = {
 		{
 			widget = wibox.container.margin,
-			left = 40,
+			left = 30,
 			{
 				layout = wibox.layout.fixed.horizontal,
-				spacing = 5,
+				spacing = 2,
 				close,
 				maximize,
 				minimize,
@@ -155,11 +166,11 @@ return function(c)
 		},
 		{
 			{
-				awful.titlebar.widget.titlewidget(c),
+				title,
+				top = 5,
+				bottom = 5,
 				left = 200,
 				right = 200,
-				top = 10,
-				bottom = 10,
 				widget = wibox.container.margin,
 			},
 			id = "title",
@@ -180,7 +191,7 @@ return function(c)
 		{
 			icon,
 			widget = wibox.container.margin,
-			right = 40,
+			right = 30,
 		},
 		layout = wibox.layout.align.horizontal,
 	}
