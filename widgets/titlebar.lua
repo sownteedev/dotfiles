@@ -86,22 +86,22 @@ return function(c)
 	end
 
 	close:connect_signal("mouse::enter", function()
-		helpers.gc(close, "icon"):set_markup(helpers.colorizeText("󰅙 ", beautiful.red))
-		helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.background))
+		helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ",
+			client.focus == c and beautiful.background or helpers.change_hex_lightness(beautiful.background, -4)))
 	end)
 	close:connect_signal("mouse::leave", function()
 		update_button_color()
 	end)
 	minimize:connect_signal("mouse::enter", function()
-		helpers.gc(minimize, "icon"):set_markup(helpers.colorizeText("󰍶 ", beautiful.yellow))
-		helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.background))
+		helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ",
+			client.focus == c and beautiful.background or helpers.change_hex_lightness(beautiful.background, -4)))
 	end)
 	minimize:connect_signal("mouse::leave", function()
 		update_button_color()
 	end)
 	maximize:connect_signal("mouse::enter", function()
-		helpers.gc(maximize, "icon"):set_markup(helpers.colorizeText("󰿣 ", beautiful.green))
-		helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.background))
+		helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ",
+			client.focus == c and beautiful.background or helpers.change_hex_lightness(beautiful.background, -4)))
 	end)
 	maximize:connect_signal("mouse::leave", function()
 		update_button_color()
@@ -112,7 +112,7 @@ return function(c)
 
 	local title = wibox.widget({
 		markup = c.name,
-		font = beautiful.sans .. " Medium 12",
+		font = beautiful.sans .. " 11",
 		align = "center",
 		valign = "center",
 		widget = wibox.widget.textbox,

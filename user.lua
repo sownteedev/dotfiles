@@ -28,7 +28,7 @@ _User.Coordinates     = { "21.0245", "105.8412" }
 
 _User.PFP             = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
 
-_User.LOCK            = os.getenv("HOME") .. "/.walls/lockart.jpg"
+_User.LOCK            = "/home/sowntee/.walls/lockart.jpg"
 
 _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artdefault.jpg"
 

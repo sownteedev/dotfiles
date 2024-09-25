@@ -7,6 +7,6 @@ return {
 	blue = "#6791c9",
 	yellow = "#ecd28b",
 
-	wallpaper = "~/.walls/dark/macos-pro-dark.jpg",
+	wallpaper = "/home/sowntee/.walls/dark/dark-purple.png",
 	type = "dark",
 }
