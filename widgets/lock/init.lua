@@ -21,7 +21,7 @@ return function(s)
 
 	local profilepic = wibox.widget({
 		{
-			image = _User.PFP,
+			image = _User.ProfilePicture,
 			clip_shape = gears.shape.rounded_rect,
 			halign = "center",
 			forced_width = 100,

@@ -6,6 +6,7 @@ local cairo = require("lgi").cairo
 local gmatrix = require("gears.matrix")
 local json = require("modules.json")
 local animation = require("modules.animation")
+local path_icon = "/home/" .. os.getenv("USER") .. "/.icons/" .. _User.IconName .. "/"
 local icon_cache = {}
 
 local helpers = {}
@@ -42,7 +43,7 @@ helpers.getIcon = function(client, program_string, class_string)
 				if client.icon then
 					return client.icon
 				else
-					return _User.PATH_Icon .. "/apps/scalable/default-application.svg"
+					return path_icon .. "/apps/scalable/default-application.svg"
 				end
 			end
 		else
@@ -59,35 +60,35 @@ helpers.getIcon = function(client, program_string, class_string)
 			end
 		end
 
-		local iconDir = _User.PATH_Icon .. "/apps/scalable/"
+		local iconDir = path_icon .. "/apps/scalable/"
 		local ioStream = io.open(iconDir .. clientName, "r")
 		if ioStream ~= nil then
 			icon_cache[#icon_cache + 1] = iconDir .. clientName
 			return iconDir .. clientName
 		else
 			clientName = clientName:gsub("^%l", string.upper)
-			iconDir = _User.PATH_Icon .. "/apps/scalable/"
+			iconDir = path_icon .. "/apps/scalable/"
 			ioStream = io.open(iconDir .. clientName, "r")
 			if ioStream ~= nil then
 				icon_cache[#icon_cache + 1] = iconDir .. clientName
 				return iconDir .. clientName
 			elseif not class_string then
-				return _User.PATH_Icon .. "/apps/scalable/default-application.svg"
+				return path_icon .. "/apps/scalable/default-application.svg"
 			else
 				clientName = class_string .. ".svg"
-				iconDir = _User.PATH_Icon .. "/apps/scalable/"
+				iconDir = path_icon .. "/apps/scalable/"
 				ioStream = io.open(iconDir .. clientName, "r")
 				if ioStream ~= nil then
 					icon_cache[#icon_cache + 1] = iconDir .. clientName
 					return iconDir .. clientName
 				else
-					return _User.PATH_Icon .. "/apps/scalable/default-application.svg"
+					return path_icon .. "/apps/scalable/default-application.svg"
 				end
 			end
 		end
 	end
 	if client then
-		return _User.PATH_Icon .. "/apps/scalable/default-application.svg"
+		return path_icon .. "/apps/scalable/default-application.svg"
 	end
 end
 

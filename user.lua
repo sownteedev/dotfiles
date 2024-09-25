@@ -7,7 +7,7 @@ _User.Username        = "@sownteedev"
 
 _User.Colorscheme     = "dark"
 
-_User.PATH_Icon       = "/home/" .. os.getenv("USER") .. "/.icons/WhiteSur/"
+_User.IconName        = "WhiteSur"
 _User.Custom_Icon     = {
 	{ name = "org.wezfurlong.wezterm",           to = "terminal" },
 	{ name = "Alacritty",                        to = "terminal" },
@@ -26,7 +26,7 @@ _User.Custom_Icon     = {
 _User.API_KEY_WEATHER = "702cd6f2a4f3450a3673e8bc3078525e"
 _User.Coordinates     = { "21.0245", "105.8412" }
 
-_User.PFP             = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
+_User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
 _User.Wallpaper       = "/home/sowntee/.walls/dark/dark-purple.png"
 _User.Lock            = "/home/sowntee/.walls/lockart.jpg"
 
