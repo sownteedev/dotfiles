@@ -1,6 +1,6 @@
 [Nemo Action]
 Name=Set as wallpaper
-Exec=<"scripts/wall.sh" %F>
+Exec=awesome-client 'changewall("%F")'
 Terminal=false
 Selection=s
 Extensions=png;jpg;jpeg;
