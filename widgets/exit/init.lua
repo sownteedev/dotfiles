@@ -43,7 +43,8 @@ local createButton = function(icon, name, cmd)
 		buttons = {
 			awful.button({}, 1, function()
 				prompt_grabber:stop()
-				exit.visible = false
+				slide_end:start()
+				slide:set(-exit.width)
 				awful.spawn(cmd)
 			end),
 		},
