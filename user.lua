@@ -27,7 +27,7 @@ _User.API_KEY_WEATHER = "702cd6f2a4f3450a3673e8bc3078525e"
 _User.Coordinates     = { "21.0245", "105.8412" }
 
 _User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
-_User.Wallpaper       = "/home/sowntee/.walls/dark/dark-purple.png"
+_User.Wallpaper       = "/home/sowntee/.walls/dark-purple.png"
 _User.Lock            = "/home/sowntee/.walls/lockart.jpg"
 
 _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artdefault.jpg"
