@@ -7,4 +7,9 @@ file:///home/sowntee/Templates Templates
 file:///home/sowntee/Public Public
 file:///home/sowntee/Windows Windows
 file:///home/sowntee/Code Code
+file:///home/sowntee/.local .local
+file:///home/sowntee/.config .config
 file:///home/sowntee/.walls .walls
+file:///home/sowntee/.fonts .fonts
+file:///home/sowntee/.themes .themes
+file:///home/sowntee/.icons .icons

@@ -56,8 +56,7 @@ stage {
   font-size: 0.818em;
 }
 
-.calendar .calendar-day-heading, .calendar .calendar-week-number, .calendar .calendar-day,
-.calendar .calendar-day-base {
+.calendar .calendar-day-heading, .calendar .calendar-week-number {
   font-weight: 400;
   font-size: 0.727em;
 }
@@ -642,8 +641,8 @@ StWidget.focused .app-well-app-running-dot {
 .calendar .calendar-day,
 .calendar .calendar-day-base {
   text-align: center;
-  width: 3em !important;
-  height: 3em !important;
+  width: 2.6em !important;
+  height: 2.6em !important;
   padding: 2px !important;
   margin: 2px !important;
   border-radius: 9999px;
@@ -745,7 +744,7 @@ StWidget.focused .app-well-app-running-dot {
 .calendar .calendar-week-number {
   width: 2em !important;
   height: 2em !important;
-  margin: 0.7em 0.7em 0.7em 0.2em !important;
+  margin: 0.6em 0.6em 0.6em 0.2em !important;
   padding: 2px !important;
   border-radius: 6px;
   background-color: rgba(255, 255, 255, 0.05);
@@ -950,7 +949,7 @@ StWidget.focused .app-well-app-running-dot {
 
 /* Modal Dialogs */
 .candidate-popup-content, .modal-dialog {
-  background-color: rgba(36, 36, 36, 0.95);
+  background-color: rgba(36, 36, 36, 0.96);
   border-radius: 16px;
   border: solid rgba(0, 0, 0, 0.75);
   border-width: 1px;
@@ -2794,7 +2793,7 @@ StEntry StLabel.hint-text {
   padding: 4px;
   box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.18);
   margin: 4px 12px 17px 12px;
-  background-color: rgba(36, 36, 36, 0.95);
+  background-color: rgba(36, 36, 36, 0.96);
   border-radius: 14px;
   border: solid rgba(0, 0, 0, 0.75);
   border-width: 1px;
@@ -3411,7 +3410,8 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   height: 5px;
   border-radius: 5px;
   background-color: rgba(255, 255, 255, 0.85);
-  margin-bottom: 6px;
+  margin-bottom: 0 !important;
+  offset-y: 6px;
 }
 
 StWidget.focused .app-grid-running-dot {
@@ -3616,7 +3616,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dash .dash-item-container .app-grid-running-dot {
-  offset-y: 0;
+  offset-y: -9px;
 }
 
 #dash .dash-separator {
@@ -3917,7 +3917,7 @@ StWidget.focused .app-grid-running-dot {
   margin: 8px;
   padding: 0.409em;
   color: #dedede;
-  background-color: rgba(51, 51, 51, 0.95);
+  background-color: rgba(51, 51, 51, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.75);
   text-shadow: none;
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
@@ -4308,7 +4308,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .quick-toggle-menu {
-  background-color: rgba(51, 51, 51, 0.95) !important;
+  background-color: rgba(51, 51, 51, 0.96) !important;
   color: #dadada !important;
   border-radius: 24px;
   padding: 12px;
@@ -4476,7 +4476,7 @@ StWidget.focused .app-grid-running-dot {
   margin-bottom: 4em;
   spacing: 12px;
   color: #d3d7df;
-  background-color: rgba(42, 42, 42, 0.95);
+  background-color: rgba(42, 42, 42, 0.96);
   border: 1px solid rgba(0, 0, 0, 0.75);
   box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.25);
 }
@@ -4605,7 +4605,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .screenshot-ui-window-selector {
-  background-color: rgba(42, 42, 42, 0.95);
+  background-color: rgba(42, 42, 42, 0.96);
 }
 
 .screenshot-ui-window-selector .screenshot-ui-window-selector-window-container {
@@ -4664,7 +4664,7 @@ StWidget.focused .app-grid-running-dot {
 
 .screenshot-ui-tooltip {
   color: #d3d7df;
-  background-color: rgba(42, 42, 42, 0.95);
+  background-color: rgba(42, 42, 42, 0.96);
   border-radius: 9999px;
   padding: 4px 8px;
   text-align: center;
@@ -4716,8 +4716,8 @@ StWidget.focused .app-grid-running-dot {
 
 .workspace-background {
   border-radius: 30px;
-  background-color: rgba(42, 42, 42, 0.95);
-  box-shadow: 0 4px 16px 4px rgba(0, 0, 0, 0.25);
+  background-color: rgba(42, 42, 42, 0.96);
+  box-shadow: 0 4px 16px 4px rgba(0, 0, 0, 0.26);
 }
 
 /* Workspace pager */

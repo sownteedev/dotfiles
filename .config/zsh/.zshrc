@@ -19,12 +19,6 @@ done
 
 export PATH=$PATH:~/.local/share/nvim/mason/bin
 
-# Ibus
-export GTK_IM_MODULE=ibus: warning
-export QT_IM_MODULE=ibus
-export XMODIFIERS=@im=ibus
-ibus-daemon -drx
-
 export VISUAL=nvim;
 export EDITOR=nvim;
 
