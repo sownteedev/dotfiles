@@ -56,7 +56,7 @@ local function createpreview(t, s, geometry)
 					{
 						{
 							widget = wibox.widget.textbox,
-							text = " ",
+							markup = helpers.colorizeText(" ", beautiful.red),
 							font = beautiful.icon .. " 30",
 						},
 						align = "center",
@@ -106,17 +106,17 @@ return function(s)
 		layout = wibox.layout.grid
 	}
 
-	awesome.connect_signal("toggle::preview", function()
+	local startpreview = function()
 		if previewbox.visible then
 			previewbox.visible = false
 			return
 		end
 
+		local geometry = awful.screen.focused():get_bounding_geometry()
+		local numtags
 		previewlist:reset()
 
-		local geometry = awful.screen.focused():get_bounding_geometry()
 		local tags = awful.screen.focused().tags
-		local numtags
 
 		for i, tag in ipairs(tags) do
 			numtags = i
@@ -144,6 +144,10 @@ return function(s)
 		helpers.placeWidget(previewbox, "top", 2, 0, 0, 0)
 		helpers.hoverCursor(previewbox)
 		previewbox.visible = true
+	end
+
+	awesome.connect_signal("toggle::preview", function()
+		startpreview()
 	end)
 
 	awesome.connect_signal("close::preview", function()

@@ -153,6 +153,54 @@ helpers.hoverCursor = function(widget, id)
 	return widget
 end
 
+helpers.popupOpacity = function(widget, opacity)
+	client.connect_signal("focus", function()
+		widget.opacity = opacity
+	end)
+	client.connect_signal("unmanage", function(c)
+		if c.screen and c.screen.selected_tag then
+			local all_clients = c.screen.selected_tag:clients()
+
+			if #all_clients == 0 then
+				widget.opacity = 1
+				return
+			end
+
+			local has_unminimized_client = false
+			for _, client in ipairs(all_clients) do
+				if not client.minimized then
+					has_unminimized_client = true
+					break
+				end
+			end
+			if not has_unminimized_client then
+				widget.opacity = 1
+			end
+		else
+			widget.opacity = 1
+		end
+	end)
+	client.connect_signal("unfocus", function(c)
+		if c.screen and c.screen.selected_tag then
+			local all_clients = c.screen.selected_tag:clients()
+
+			local has_unminimized_client = false
+			for _, client in ipairs(all_clients) do
+				if not client.minimized then
+					has_unminimized_client = true
+					break
+				end
+			end
+
+			if not has_unminimized_client then
+				widget.opacity = 1
+			end
+		else
+			widget.opacity = 1
+		end
+	end)
+end
+
 helpers.slideAnimation = function(toggle, close, where, widget, pos, set)
 	local slide = animation:new({
 		duration = 0.5,

@@ -20,20 +20,12 @@ local function brightnesss()
 end
 brightnesss()
 
-local subscribe = [[bash -c 'while (inotifywait -e modify ~/.cache/brightness -qq) do echo; done']]
-awful.spawn.easy_async({ "pkill", "--full", "--uid", os.getenv("USER"), "^inotifywait" }, function()
-	awful.spawn.with_line_callback(subscribe, {
-		stdout = function()
-			brightnesss()
-		end,
-	})
-end)
-
 function brightness_toggle()
 	awful.spawn.easy_async_with_shell("bash -c 'brightnessctl i | grep Current'", function(status)
 		status = status:match("25")
 		awful.spawn.with_shell(not status and
 			"bash -c 'brightnessctl s 25% && echo true > ~/.cache/brightness'" or
 			"bash -c 'brightnessctl s 75% && echo false > ~/.cache/brightness'")
+		awesome.emit_signal("signal::brightness", status and 75 or 25)
 	end)
 end

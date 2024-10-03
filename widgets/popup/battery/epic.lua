@@ -43,7 +43,7 @@ return function(icon_name)
 			value = 25,
 			forced_width = 90,
 			forced_height = 90,
-			bg = helpers.change_hex_lightness(beautiful.background, 4),
+			bg = beautiful.lighter,
 			start_angle = 4.7,
 		},
 		{

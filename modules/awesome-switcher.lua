@@ -21,16 +21,12 @@ local cr = cairo.Context(surface)
 
 local _M = {}
 
--- settings
-
 _M.settings = {
 	preview_box = true,
-	preview_box_bg = "#00000025",
-	preview_box_border = "#00000025",
+	preview_box_bg = "#000000AA",
+	preview_box_border = "#000000AA",
 	preview_box_fps = 60,
 	preview_box_delay = 0,
-	preview_box_title_font = { "SF Pro Display", "sans", "italic", "normal" },
-	preview_box_title_font_size_factor = 0.8,
 	preview_box_title_color = { 0, 0, 0, 1 },
 
 	client_opacity = true,
@@ -43,7 +39,7 @@ _M.settings = {
 
 -- Create a wibox to contain all the client-widgets
 _M.preview_wbox = wibox({ width = screen[mouse.screen].geometry.width })
-_M.preview_wbox.border_width = 3
+_M.preview_wbox.border_width = 0
 _M.preview_wbox.ontop = true
 _M.preview_wbox.visible = false
 
@@ -56,6 +52,7 @@ _M.altTabIndex = 1
 _M.source = string.sub(debug.getinfo(1, "S").source, 2)
 _M.path = string.sub(_M.source, 1, string.find(_M.source, "/[^/]*$"))
 _M.noicon = _M.path .. "noicon.png"
+
 
 -- simple function for counting the size of a table
 function _M.tableLength(T)
@@ -70,7 +67,6 @@ end
 function _M.getClients()
 	local clients = {}
 
-	-- Get focus history for current tag
 	local s = mouse.screen
 	local idx = 0
 	local c = awful.client.focus.history.get(s, idx)
@@ -82,16 +78,11 @@ function _M.getClients()
 		c = awful.client.focus.history.get(s, idx)
 	end
 
-	-- Minimized clients will not appear in the focus history
-	-- Find them by cycling through all clients, and adding them to the list
-	-- if not already there.
-	-- This will preserve the history AND enable you to focus on minimized clients
-
 	local t = s.selected_tag
 	local all = client.get(s)
 
 	for i = 1, #all do
-		local c = all[i]
+		c = all[i]
 		local ctags = c:tags()
 
 		-- check if the client is on the current tag
@@ -160,14 +151,6 @@ function _M.clientsHaveChanged()
 	return _M.tableLength(clients) ~= _M.tableLength(_M.altTabTable)
 end
 
-function _M.createPreviewText(client)
-	if client.class then
-		return "  " .. client.class
-	else
-		return "  " .. client.name
-	end
-end
-
 -- Preview is created here.
 function _M.clientOpacity()
 	if not _M.settings.client_opacity then
@@ -178,12 +161,11 @@ function _M.clientOpacity()
 	if opacity > 1 then
 		opacity = 1
 	end
-	for i, data in pairs(_M.altTabTable) do
+	for _, data in pairs(_M.altTabTable) do
 		data.client.opacity = opacity
 	end
 
 	if client.focus == _M.altTabTable[_M.altTabIndex].client then
-		-- Let's normalize the value up to 1.
 		local opacityFocusSelected = _M.settings.client_opacity_value_selected
 			+ _M.settings.client_opacity_value_in_focus
 		if opacityFocusSelected > 1 then
@@ -288,14 +270,10 @@ function _M.preview()
 		table.insert(leftRightTabToAltTabIndex, i)
 	end
 
-	-- determine fontsize -> find maximum classname-length
 	local text, textWidth, textHeight, maxText
 	local maxTextWidth = 0
 	local maxTextHeight = 0
-	local bigFont = textboxHeight / 2
-	cr:set_font_size(fontSize)
-	for i = 1, #leftRightTab do
-		text = _M.createPreviewText(leftRightTab[i])
+	for _ = 1, #leftRightTab do
 		textWidth = cr:text_extents(text).width
 		textHeight = cr:text_extents(text).height
 		if textWidth > maxTextWidth or textHeight > maxTextHeight then
@@ -306,36 +284,30 @@ function _M.preview()
 	end
 
 	while true do
-		cr:set_font_size(bigFont)
 		textWidth = cr:text_extents(maxText).width
 		textHeight = cr:text_extents(maxText).height
 
 		if textWidth < w - textboxHeight and textHeight < textboxHeight then
 			break
 		end
-
-		bigFont = bigFont - 1
 	end
-	local smallFont = bigFont * _M.settings.preview_box_title_font_size_factor
 
 	_M.preview_widgets = {}
 
 	-- create all the widgets
 	for i = 1, #leftRightTab do
 		_M.preview_widgets[i] = wibox.widget.base.make_widget()
-		_M.preview_widgets[i].fit = function(preview_widget, width, height)
+		_M.preview_widgets[i].fit = function()
 			return w, h
 		end
 		local c = leftRightTab[i]
-		_M.preview_widgets[i].draw = function(preview_widget, preview_wbox, cr, width, height)
+		_M.preview_widgets[i].draw = function(_, _, cr, width, height)
 			if width ~= 0 and height ~= 0 then
 				local a = 0.8
 				local overlay = 0.5
-				local fontSize = smallFont
 				if c == _M.altTabTable[_M.altTabIndex].client then
 					a = 0.9
 					overlay = 0
-					fontSize = bigFont
 				end
 
 				local sx, sy, tx, ty
@@ -344,16 +316,6 @@ function _M.preview()
 				local icon = gears.surface(helpers.getIcon(c, c.name, c.class))
 				local iconboxWidth = 0.9 * textboxHeight
 				local iconboxHeight = iconboxWidth
-
-				-- Titles
-				-- cr:select_font_face(unpack(_M.settings.preview_box_title_font))
-				-- cr:set_font_face(cr:get_font_face())
-				-- cr:set_font_size(fontSize)
-				--
-				-- text = _M.createPreviewText(c)
-				-- textWidth = cr:text_extents(text).width
-				-- textHeight = cr:text_extents(text).height
-				--
 				local titleboxWidth = textWidth + iconboxWidth
 
 				-- Draw icons
@@ -369,19 +331,10 @@ function _M.preview()
 				cr:scale(1 / sx, 1 / sy)
 				cr:translate(-tx, -ty)
 
-				-- Draw titles
-				-- tx = tx + iconboxWidth
-				-- ty = h + (textboxHeight + textHeight) / 2 - 15
-				--
-				-- cr:set_source_rgba(unpack(_M.settings.preview_box_title_color))
-				-- cr:move_to(tx, ty)
-				-- cr:show_text(text)
-				-- cr:stroke()
-
 				-- Draw previews
 				local cg = c:geometry()
 				if cg.width > cg.height then
-					sx = a * w / cg.width
+					sx = (a * w / cg.width)
 					sy = math.min(sx, a * h / cg.height)
 				else
 					sy = a * h / cg.height
@@ -407,21 +360,20 @@ function _M.preview()
 			end
 		end
 
-		-- Add mouse handler
 		_M.preview_widgets[i]:connect_signal("mouse::enter", function()
 			_M.cycle(leftRightTabToAltTabIndex[i] - _M.altTabIndex)
 		end)
+		helpers.hoverCursor(_M.preview_widgets[i])
 	end
 
 	-- Spacers left and right
 	local spacer = wibox.widget.base.make_widget()
-	spacer.fit = function(leftSpacer, width, height)
+	spacer.fit = function()
 		return (W - w * #_M.altTabTable) / 2, _M.preview_wbox.height
 	end
-	spacer.draw = function(preview_widget, preview_wbox, cr, width, height) end
 
 	--layout
-	preview_layout = wibox.layout.fixed.horizontal()
+	local preview_layout = wibox.layout.fixed.horizontal()
 
 	preview_layout:add(spacer)
 	for i = 1, #leftRightTab do
@@ -513,18 +465,15 @@ function _M.switch(dir, mod_key1, release_key, mod_key2, key_switch)
 				keygrabber.stop()
 			elseif key == key_switch and event == "press" then
 				if gears.table.hasitem(mod, mod_key2) then
-					-- Move to previous client on Shift-Tab
 					_M.cycle(-1)
 				else
-					-- Move to next client on each Tab-press
 					_M.cycle(1)
 				end
 			end
 		end
 	end)
 
-	-- switch to next client
 	_M.cycle(dir)
-end -- function altTab
+end
 
 return { switch = _M.switch, settings = _M.settings }

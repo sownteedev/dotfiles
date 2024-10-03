@@ -1,5 +1,4 @@
 local awful = require("awful")
-local beautiful = require("beautiful")
 
 local mod = "Mod4"
 local alt = "Mod1"
@@ -37,6 +36,7 @@ awful.keyboard.append_global_keybindings({
 	awful.key({}, "XF86AudioNext", function()
 		awful.spawn.with_shell("playerctl next")
 	end),
+
 	awful.key({}, "XF86AudioRaiseVolume", function()
 		awful.spawn.with_shell("pamixer -i 2")
 		volume_emit()
@@ -48,10 +48,9 @@ awful.keyboard.append_global_keybindings({
 		awesome.emit_signal("open::brivolmic")
 	end),
 	awful.key({}, "XF86AudioMute", function()
-		awful.spawn.with_shell("pamixer -t")
-		volume_emit()
-		awesome.emit_signal("open::brivolmic")
+		volume_toggle()
 	end),
+
 	awful.key({ mod }, "XF86AudioRaiseVolume", function()
 		awful.spawn.with_shell("pactl set-source-volume @DEFAULT_SOURCE@ +5%")
 		mic()
@@ -63,10 +62,9 @@ awful.keyboard.append_global_keybindings({
 		awesome.emit_signal("open::brivolmic")
 	end),
 	awful.key({}, "XF86AudioMicMute", function()
-		awful.spawn.with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle")
-		mic()
-		awesome.emit_signal("open::brivolmic")
+		mic_toggle()
 	end),
+
 	awful.key({}, "XF86MonBrightnessUp", function()
 		awful.spawn.with_shell("brightnessctl s 5%+")
 		brightness_emit()
@@ -104,7 +102,9 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod, alt }, "q", awesome.quit),
 })
 
+local tagdefault = { "Terminal", "Browser", "Develop", "Media", "Other" }
 local tagactive = {}
+
 local function update_tag_info()
 	tagactive = {}
 	for _, t in ipairs(screen.primary.tags) do
@@ -115,32 +115,38 @@ local function update_tag_info()
 end
 tag.connect_signal("property::selected", update_tag_info)
 
+local function get_next_tag(current_tag, direction)
+	local current_index = awful.util.table.hasitem(tagactive, current_tag)
+	if current_index then
+		local next_index = (current_index + direction - 1) % #tagactive + 1
+		return tagactive[next_index]
+	else
+		local default_index = awful.util.table.hasitem(tagdefault, current_tag) or 1
+		for i = default_index + direction, default_index + #tagdefault * direction, direction do
+			local mod_i = (i - 1) % #tagdefault + 1 -- Tính vòng lặp qua tagdefault
+			if awful.util.table.hasitem(tagactive, tagdefault[mod_i]) then
+				return tagdefault[mod_i]
+			end
+		end
+	end
+	return nil
+end
+
 awful.keyboard.append_global_keybindings({
 	-- Tag
 	awful.key({ mod }, "Tab", function()
 		local current_tag = awful.screen.focused().selected_tag.name
-		local tagname_next = nil
-		for i, tag in ipairs(tagactive) do
-			if tag == current_tag then
-				tagname_next = i == #tagactive and tagactive[1] or tagactive[i + 1]
-				break
-			end
-		end
-		if tagname_next ~= nil then
-			awful.tag.find_by_name(awful.screen.focused(), tagname_next):view_only()
+		local next_tag = get_next_tag(current_tag, 1)
+		if next_tag then
+			awful.tag.find_by_name(awful.screen.focused(), next_tag):view_only()
 		end
 	end),
+
 	awful.key({ mod, shift }, "Tab", function()
 		local current_tag = awful.screen.focused().selected_tag.name
-		local tagname_next = nil
-		for i, tag in ipairs(tagactive) do
-			if tag == current_tag then
-				tagname_next = i == 1 and tagactive[#tagactive] or tagactive[i - 1]
-				break
-			end
-		end
-		if tagname_next ~= nil then
-			awful.tag.find_by_name(awful.screen.focused(), tagname_next):view_only()
+		local next_tag = get_next_tag(current_tag, -1)
+		if next_tag then
+			awful.tag.find_by_name(awful.screen.focused(), next_tag):view_only()
 		end
 	end),
 

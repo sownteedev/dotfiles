@@ -1,6 +1,7 @@
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
+local helpers = require("helpers")
 
 local time = require(... .. ".mods.time")
 local tags = require(... .. ".mods.tags")
@@ -12,7 +13,7 @@ return function(s)
 		position = "top",
 		height = 40,
 		width = beautiful.width,
-		bg = beautiful.background .. "CC",
+		bg = helpers.blend("#ffffff", "#000000", 0.3) .. "22",
 		ontop = false,
 		screen = s,
 		widget = {

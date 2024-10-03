@@ -37,7 +37,7 @@ local createButton = function(icon, name, cmd)
 			widget = wibox.container.margin,
 		},
 		id = "bg",
-		bg = helpers.change_hex_lightness(beautiful.background, 4),
+		bg = beautiful.lighter,
 		shape = beautiful.radius,
 		widget = wibox.container.background,
 		buttons = {
@@ -45,7 +45,7 @@ local createButton = function(icon, name, cmd)
 				prompt_grabber:stop()
 				slide_end:start()
 				slide:set(-exit.width)
-				awful.spawn(cmd)
+				awful.spawn.with_shell(cmd)
 			end),
 		},
 	})
@@ -72,9 +72,9 @@ local function filter_entries()
 	entries_container:reset()
 	for i, button in ipairs(buttons) do
 		if i == index_entry then
-			helpers.gc(button, "bg").bg = helpers.change_hex_lightness(beautiful.background, 8)
+			helpers.gc(button, "bg").bg = beautiful.lighter1
 		else
-			helpers.gc(button, "bg").bg = helpers.change_hex_lightness(beautiful.background, 4)
+			helpers.gc(button, "bg").bg = beautiful.lighter
 		end
 		entries_container:add(button)
 	end
@@ -140,12 +140,14 @@ return function(s)
 				self:stop()
 				exit.visible = false
 				gears.timer.start_new(0.2, function()
-					awful.spawn(buttons[index_entry].cmd)
+					awful.spawn.with_shell(buttons[index_entry].cmd)
 				end)
 			elseif key == "Escape" then
 				self:stop()
 				slide_end:start()
 				slide:set(-exit.width)
+			else
+				self:stop()
 			end
 		end,
 	})

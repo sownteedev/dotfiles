@@ -9,12 +9,29 @@ local animation = require("modules.animation")
 return function(n)
 	local action_widget = {
 		{
-			id = "text_role",
+			{
+				{
+					{
+						id            = "icon_role",
+						forced_height = 1,
+						forced_width  = 1,
+						widget        = wibox.widget.imagebox
+					},
+					top = 5,
+					bottom = 5,
+					widget = wibox.container.margin,
+				},
+				{
+					id = "text_role",
+					font = beautiful.sans .. " 12",
+					widget = wibox.widget.textbox,
+				},
+				layout = wibox.layout.fixed.horizontal,
+			},
 			align = "center",
-			font = beautiful.sans .. " 12",
-			widget = wibox.widget.textbox,
+			widget = wibox.container.place,
 		},
-		bg = helpers.change_hex_lightness(beautiful.background, 4),
+		bg = beautiful.lighter1,
 		forced_height = 30,
 		shape = helpers.rrect(5),
 		widget = wibox.container.background,
@@ -37,7 +54,6 @@ return function(n)
 				image = n.icon and helpers.cropSurface(1, gears.surface.load_uncached(n.icon))
 					or gears.color.recolor_image(beautiful.icon_path .. "awm/awm.png", helpers.randomColor()),
 				resize = true,
-				clip_shape = helpers.rrect(50),
 				widget = wibox.widget.imagebox,
 			},
 			strategy = "exact",

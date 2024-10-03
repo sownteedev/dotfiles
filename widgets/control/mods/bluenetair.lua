@@ -22,7 +22,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 			},
 			id = "back",
 			shape = helpers.rrect(100),
-			bg = helpers.change_hex_lightness(beautiful.background, 8),
+			bg = beautiful.lighter1,
 			widget = wibox.container.background,
 			buttons = {
 				awful.button({}, 1, function()
@@ -92,7 +92,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 					.foreground))
 			end
 		else
-			helpers.gc(widget, "back"):set_bg(helpers.change_hex_lightness(beautiful.background, 8))
+			helpers.gc(widget, "back"):set_bg(beautiful.lighter1)
 			helpers.gc(widget, "icon"):set_image(
 				gears.color.recolor_image(
 					beautiful.icon_path .. icon,
@@ -125,7 +125,7 @@ local bluenetair = wibox.widget({
 	},
 	shape = helpers.rrect(10),
 	forced_width = 225,
-	bg = helpers.change_hex_lightness(beautiful.background, 4),
+	bg = beautiful.lighter,
 	widget = wibox.container.background,
 })
 

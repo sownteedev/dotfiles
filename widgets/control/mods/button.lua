@@ -27,8 +27,8 @@ end
 
 local function do_notify(which, tmp_path)
 	if which == "screenshot" then
-		local open = naughty.action({ name = "Open" })
-		local delete = naughty.action({ name = "Delete" })
+		local open = naughty.action({ name = "Open", icon = beautiful.icon_path .. "button/openimage.svg" })
+		local delete = naughty.action({ name = "Delete", icon = beautiful.icon_path .. "button/delete.svg" })
 
 		open:connect_signal("invoked", function()
 			awful.spawn.with_shell('xclip -sel clip -target image/png "' ..
@@ -64,8 +64,8 @@ local function do_notify(which, tmp_path)
 			},
 		})
 	elseif which == "rec" then
-		local open = naughty.action({ name = "Open" })
-		local delete = naughty.action({ name = "Delete" })
+		local open = naughty.action({ name = "Open", icon = beautiful.icon_path .. "button/openvideo.svg" })
+		local delete = naughty.action({ name = "Delete", icon = beautiful.icon_path .. "button/delete.svg" })
 
 		open:connect_signal("invoked", function()
 			awful.spawn.with_shell('xdg-open "' .. tmp_path .. '"')
@@ -96,7 +96,6 @@ function area()
 	checkFolder("screenshot")
 	local tmp_path = getName("screenshot")
 	awful.spawn.easy_async_with_shell('sleep 1.5 && maim --select "' .. tmp_path .. '"', function()
-		awesome.emit_signal("screenshot::done")
 		do_notify("screenshot", tmp_path)
 	end)
 end
@@ -118,7 +117,6 @@ function record()
 	)
 	print(defCommand)
 	awful.spawn.easy_async_with_shell(defCommand, function()
-		awesome.emit_signal("recording::done")
 		do_notify("rec", name)
 	end)
 end
@@ -152,7 +150,7 @@ local createButton = function(name, img, cmd1, cmd2)
 		},
 		forced_width = 225,
 		shape = beautiful.radius,
-		bg = helpers.change_hex_lightness(beautiful.background, 4),
+		bg = beautiful.lighter,
 		widget = wibox.container.background,
 		buttons = gears.table.join(
 			awful.button({}, 1, function()

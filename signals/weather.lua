@@ -55,7 +55,7 @@ local show_daily_forecast  = true
 local units                = "metric"
 
 local url                  = (
-	"https://api.openweathermap.org/data/2.5/onecall"
+	"https://api.openweathermap.org/data/3.0/onecall"
 	.. "?lat="
 	.. coordinates[1]
 	.. "&lon="
@@ -80,7 +80,7 @@ local url1                 = (
 	.. api_key
 )
 
-awful.widget.watch(string.format(GET_FORECAST_CMD, url), 3600, function(_, stdout, stderr)
+awful.widget.watch(string.format(GET_FORECAST_CMD, url), 300, function(_, stdout, stderr)
 	if stdout ~= nil then
 		local result = json.decode(stdout)
 		local out = {
@@ -111,7 +111,7 @@ awful.widget.watch(string.format(GET_FORECAST_CMD, url), 3600, function(_, stdou
 	end
 end)
 
-awful.widget.watch(string.format(GET_FORECAST_CMD, url1), 3600, function(_, stdout, stderr)
+awful.widget.watch(string.format(GET_FORECAST_CMD, url1), 300, function(_, stdout, stderr)
 	if stdout ~= nil then
 		local result = json.decode(stdout)
 		local out = { namecountry = result[1].name .. ", " .. result[1].country }

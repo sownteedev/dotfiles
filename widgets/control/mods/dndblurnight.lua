@@ -22,7 +22,7 @@ local focus = wibox.widget({
 		},
 		id = "backfocus",
 		shape = helpers.rrect(100),
-		bg = helpers.change_hex_lightness(beautiful.background, 8),
+		bg = beautiful.lighter1,
 		widget = wibox.container.background,
 		buttons = {
 			awful.button({}, 1, function()
@@ -53,14 +53,14 @@ local focus = wibox.widget({
 	spacing = 20,
 	layout = wibox.layout.fixed.horizontal,
 })
-awesome.connect_signal("signal::dnd", function(status, _, _)
+awesome.connect_signal("signal::dnd", function(status)
 	if status then
 		helpers.gc(focus, "backfocus"):set_bg(beautiful.blue)
 		helpers.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(beautiful.icon_path .. "focus.svg",
 			beautiful.background))
 		helpers.gc(focus, "labelfocus"):set_markup("On")
 	else
-		helpers.gc(focus, "backfocus"):set_bg(helpers.change_hex_lightness(beautiful.background, 8))
+		helpers.gc(focus, "backfocus"):set_bg(beautiful.lighter1)
 		helpers.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(beautiful.icon_path .. "focus.svg",
 			beautiful.foreground))
 		helpers.gc(focus, "labelfocus"):set_markup("Off")
@@ -87,7 +87,7 @@ local redshift = wibox.widget({
 			},
 			id = "backredshift",
 			shape = helpers.rrect(100),
-			bg = helpers.change_hex_lightness(beautiful.background, 8),
+			bg = beautiful.lighter1,
 			widget = wibox.container.background,
 			buttons = {
 				awful.button({}, 1, function()
@@ -107,14 +107,14 @@ local redshift = wibox.widget({
 	spacing = 15,
 	layout = wibox.layout.fixed.vertical,
 })
-awesome.connect_signal("signal::redshift", function(status, _, _)
+awesome.connect_signal("signal::redshift", function(status)
 	if status then
 		helpers.gc(redshift, "backredshift"):set_bg(beautiful.blue)
 		helpers.gc(redshift, "iconredshift"):set_image(gears.color.recolor_image(
 			beautiful.icon_path .. "nightshift.svg",
 			beautiful.background))
 	else
-		helpers.gc(redshift, "backredshift"):set_bg(helpers.change_hex_lightness(beautiful.background, 8))
+		helpers.gc(redshift, "backredshift"):set_bg(beautiful.lighter1)
 		helpers.gc(redshift, "iconredshift"):set_image(
 			gears.color.recolor_image(beautiful.icon_path .. "nightshift.svg",
 				beautiful.foreground
@@ -142,7 +142,7 @@ local blur = wibox.widget({
 			},
 			id = "backblur",
 			shape = helpers.rrect(100),
-			bg = helpers.change_hex_lightness(beautiful.background, 8),
+			bg = beautiful.lighter1,
 			widget = wibox.container.background,
 			buttons = {
 				awful.button({}, 1, function()
@@ -162,14 +162,14 @@ local blur = wibox.widget({
 	spacing = 15,
 	layout = wibox.layout.fixed.vertical,
 })
-awesome.connect_signal("signal::blur", function(status, _, _)
+awesome.connect_signal("signal::blur", function(status)
 	if status then
 		helpers.gc(blur, "backblur"):set_bg(beautiful.blue)
 		helpers.gc(blur, "iconblur"):set_image(
 			gears.color.recolor_image(beautiful.icon_path .. "blur.svg",
 				beautiful.background))
 	else
-		helpers.gc(blur, "backblur"):set_bg(helpers.change_hex_lightness(beautiful.background, 8))
+		helpers.gc(blur, "backblur"):set_bg(beautiful.lighter1)
 		helpers.gc(blur, "iconblur"):set_image(
 			gears.color.recolor_image(beautiful.icon_path .. "blur.svg",
 				beautiful.foreground))
@@ -189,7 +189,7 @@ local dndblurnight = wibox.widget({
 				widget = wibox.container.margin,
 			},
 			shape = helpers.rrect(10),
-			bg = helpers.change_hex_lightness(beautiful.background, 4),
+			bg = beautiful.lighter,
 			widget = wibox.container.background,
 		},
 		{
@@ -201,7 +201,7 @@ local dndblurnight = wibox.widget({
 				},
 				forced_width = 110,
 				shape = helpers.rrect(10),
-				bg = helpers.change_hex_lightness(beautiful.background, 4),
+				bg = beautiful.lighter,
 				widget = wibox.container.background,
 			},
 			{
@@ -212,7 +212,7 @@ local dndblurnight = wibox.widget({
 				},
 				forced_width = 110,
 				shape = helpers.rrect(10),
-				bg = helpers.change_hex_lightness(beautiful.background, 4),
+				bg = beautiful.lighter,
 				widget = wibox.container.background,
 			},
 			spacing = 15,

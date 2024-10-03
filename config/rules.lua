@@ -39,7 +39,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { tag = "Browser", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "jetbrains-pycharm", "jetbrains-datagrip", "Docker Desktop", "Postman", "neovide" } },
+		rule_any = { class = { "Code", "jetbrains-idea", "jetbrains-webstorm", "jetbrains-pycharm", "jetbrains-datagrip", "jetbrains-studio", "MongoDB Compass", "Mysql-workbench-bin", "Docker Desktop", "Postman", "neovide" } },
 		properties = { tag = "Develop" },
 	})
 	ruled.client.append_rule({

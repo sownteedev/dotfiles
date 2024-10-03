@@ -20,11 +20,10 @@ local function mic_mute()
 end
 mic_mute()
 
-local subscribe = [[bash -c "LANG=C pactl subscribe 2> /dev/null | grep --line-buffered \"Event 'change' on source\""]]
-awful.spawn.easy_async({ "pkill", "--full", "--uid", os.getenv("USER"), "^pactl subscribe" }, function()
-	awful.spawn.with_line_callback(subscribe, {
-		stdout = function()
-			mic_mute()
-		end,
-	})
-end)
+function mic_toggle()
+	awful.spawn.easy_async_with_shell("bash -c 'pactl get-source-mute @DEFAULT_SOURCE@'", function(stdout)
+		local status = stdout:match("yes")
+		awful.spawn.with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle")
+		awesome.emit_signal("signal::micmute", not status)
+	end)
+end

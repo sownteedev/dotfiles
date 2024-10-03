@@ -231,6 +231,7 @@ return function(s)
 		layout = wibox.layout.align.horizontal,
 	})
 	helpers.placeWidget(weather, "top_left", 13, 0, 2, 0)
+	helpers.popupOpacity(weather, 0.3)
 
 	return weather
 end

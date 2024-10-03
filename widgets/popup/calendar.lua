@@ -174,6 +174,7 @@ return function(s)
 		),
 	})
 	helpers.placeWidget(caca, "top_left", 103, 0, 2, 0)
+	helpers.popupOpacity(caca, 0.3)
 
 	return caca
 end
