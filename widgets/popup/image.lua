@@ -52,6 +52,7 @@ return function(s)
 		layout = wibox.layout.stack,
 	})
 	helpers.placeWidget(image, "top_left", 45, 0, 33, 0)
+	helpers.popupOpacity(image, 0.3)
 
 	return image
 end

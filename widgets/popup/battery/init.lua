@@ -45,6 +45,7 @@ return function(s)
 		widget = wibox.container.margin,
 	})
 	helpers.placeWidget(battery, "top_left", 45, 0, 2, 0)
+	helpers.popupOpacity(battery, 0.3)
 
 	return battery
 end

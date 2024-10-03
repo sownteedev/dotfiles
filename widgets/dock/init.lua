@@ -68,6 +68,14 @@ local data = {
 		{
 			count = 0,
 			pinned = true,
+			icon = helpers.getIcon(nil, "jetbrains-studio", "jetbrains-studio"),
+			clients = {},
+			class = "jetbrains-studio",
+			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/android-studio/bin/studio.sh",
+		},
+		{
+			count = 0,
+			pinned = true,
 			icon = helpers.getIcon(nil, "jetbrains-webstorm", "jetbrains-webstorm"),
 			clients = {},
 			class = "jetbrains-webstorm",
@@ -88,6 +96,22 @@ local data = {
 			clients = {},
 			class = "jetbrains-datagrip",
 			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/datagrip/bin/datagrip",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = helpers.getIcon(nil, "MongoDB Compass", "MongoDB Compass"),
+			clients = {},
+			class = "MongoDB Compass",
+			exec = "mongodb-compass",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = helpers.getIcon(nil, "Mysql-workbench-bin", "Mysql-workbench-bin"),
+			clients = {},
+			class = "Mysql-workbench-bin",
+			exec = "mysql-workbench",
 		},
 		{
 			count = 0,
@@ -202,9 +226,12 @@ local data = {
 		"firefox",
 		"code",
 		"jetbrains-idea",
+		"jetbrains-studio",
 		"jetbrains-webstorm",
 		"jetbrains-pycharm",
 		"jetbrains-datagrip",
+		"mongodb compass",
+		"mysql-workbench-bin",
 		"docker desktop",
 		"postman",
 		"anydesk",
@@ -293,16 +320,6 @@ local function genMetadata()
 	end
 end
 
-local function getMinimized(clients)
-	local a = 0
-	for _, j in ipairs(clients) do
-		if j.minimized then
-			a = a + 1
-		end
-	end
-	return a
-end
-
 local function client_exists(class_name)
 	for _, c in ipairs(client.get()) do
 		if c.class == class_name then
@@ -351,11 +368,9 @@ local function genIcons()
 				}))
 				added = false
 			end
-			local minimized = getMinimized(j.clients)
-			local bg = beautiful.background .. "00"
 			local dot = wibox.widget({
 				{
-					bg            = bg,
+					bg            = beautiful.background .. "00",
 					widget        = wibox.container.background,
 					forced_width  = 0,
 					forced_height = 5,
@@ -384,28 +399,32 @@ local function genIcons()
 				layout = wibox.layout.fixed.vertical,
 			})
 			helpers.hoverCursor(widgets)
-			if minimized > 0 then
-				bg = "#ffff00"
-			elseif j.count > 0 then
-				bg = beautiful.foreground
-			end
+
 			for _, c in ipairs(j.clients) do
 				if client.focus and c.window == client.focus.window then
 					dot:add({
-						bg           = bg,
+						bg           = beautiful.foreground,
 						shape        = helpers.rrect(2),
 						widget       = wibox.container.background,
 						forced_width = 12,
 					})
+				elseif c.minimized then
+					dot:add({
+						bg           = beautiful.yellow,
+						shape        = gears.shape.circle,
+						widget       = wibox.container.background,
+						forced_width = 5,
+					})
 				else
 					dot:add({
-						bg           = bg,
+						bg           = beautiful.foreground .. "AA",
 						shape        = gears.shape.circle,
 						widget       = wibox.container.background,
 						forced_width = 5,
 					})
 				end
 			end
+			j.current_client_index = j.current_client_index or 1
 			widgets:buttons(gears.table.join(
 				awful.button({}, 1, function()
 					if j.count == 0 and client_exists(j.class) then
@@ -424,6 +443,11 @@ local function genIcons()
 							client.focus = j.clients[j.count]
 							awful.client.movetotag(mouse.screen.selected_tag, j.clients[j.count])
 						end
+					else
+						client.focus = j.clients[j.current_client_index]
+						client.focus:raise()
+						awful.client.movetotag(mouse.screen.selected_tag, client.focus)
+						j.current_client_index = j.current_client_index % j.count + 1
 					end
 				end)
 			))
@@ -439,7 +463,7 @@ return function(s)
 		screen = s,
 		visible = true,
 		shape = helpers.rrect(20),
-		bg = beautiful.background .. "CC",
+		bg = helpers.blend("#ffffff", "#000000", 0.3) .. "44",
 		placement = function(c)
 			awful.placement.bottom(c, { margins = { bottom = beautiful.useless_gap * 2 } })
 		end,
@@ -483,18 +507,34 @@ return function(s)
 				})
 			end
 			enter_func = function()
-				slide:set(beautiful.height - dock.height - beautiful.useless_gap * 2)
-				dock.opacity = 1
+				if slide then
+					slide:set(beautiful.height - dock.height - beautiful.useless_gap * 2)
+					dock.opacity = 1
+				end
 			end
 			leave_func = function()
-				slide:set(beautiful.height - 1)
-				gears.timer.start_new(0.35, function()
-					dock.opacity = 0
-				end)
+				if slide then
+					slide:set(beautiful.height - 1)
+					gears.timer.start_new(0.35, function()
+						dock.opacity = 0
+					end)
+				end
 			end
 
 			dock:connect_signal("mouse::enter", enter_func)
 			dock:connect_signal("mouse::leave", leave_func)
+
+			c:connect_signal("unmanage", function()
+				if slide then
+					dock.ontop = false
+					dock.opacity = 1
+					if enter_func and leave_func then
+						dock:disconnect_signal("mouse::enter", enter_func)
+						dock:disconnect_signal("mouse::leave", leave_func)
+					end
+					slide = nil
+				end
+			end)
 		else
 			dock.ontop = false
 			dock.y = beautiful.height - dock.height - beautiful.useless_gap * 2
@@ -503,7 +543,9 @@ return function(s)
 				dock:disconnect_signal("mouse::enter", enter_func)
 				dock:disconnect_signal("mouse::leave", leave_func)
 			end
-			slide = nil
+			if slide then
+				slide = nil
+			end
 		end
 	end
 

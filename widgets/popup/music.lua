@@ -203,5 +203,7 @@ return function(s)
 	helpers.hoverCursor(music, "loop")
 	helpers.hoverCursor(music, "shuffle")
 
+	helpers.popupOpacity(music, 0.3)
+
 	return music
 end

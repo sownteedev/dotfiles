@@ -1,6 +1,7 @@
 local awful = require("awful")
 
 -- awful.spawn.with_shell("xrandr --auto --output DP-1 --mode 3840x2160 --primary --auto --right-of eDP-1 &")
+awful.spawn.with_shell("ibus-daemon -drx")
 awful.spawn.with_shell("xss-lock -l awesome-client 'awesome.emit_signal(\"toggle::lock\")'")
 awful.spawn.with_shell("libinput-gestures-setup start")
 awful.spawn.easy_async_with_shell("bash -c 'cat ~/.cache/blur'", function(stdout)

@@ -8,17 +8,19 @@ return function(c)
 	local titlebar = awful.titlebar(c, {
 		size = 45,
 		fg = beautiful.foreground,
-		bg = helpers.change_hex_lightness(beautiful.background, -4),
+		bg = beautiful.darker,
 	})
 
 	local close = wibox.widget({
 		{
 			id = "iconbot",
+			markup = helpers.colorizeText(" ", beautiful.background),
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
+			markup = helpers.colorizeText("󰅙 ", beautiful.background),
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
 		},
@@ -32,11 +34,13 @@ return function(c)
 	local minimize = wibox.widget({
 		{
 			id = "iconbot",
+			markup = helpers.colorizeText(" ", beautiful.background),
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
+			markup = helpers.colorizeText("󰍶 ", beautiful.background),
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
 		},
@@ -52,11 +56,13 @@ return function(c)
 	local maximize = wibox.widget({
 		{
 			id = "iconbot",
+			markup = helpers.colorizeText(" ", beautiful.background),
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
+			markup = helpers.colorizeText("󰿣 ", beautiful.background),
 			font = beautiful.icon .. " 15",
 			widget = wibox.widget.textbox,
 		},
@@ -87,21 +93,21 @@ return function(c)
 
 	close:connect_signal("mouse::enter", function()
 		helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ",
-			client.focus == c and beautiful.background or helpers.change_hex_lightness(beautiful.background, -4)))
+			client.focus == c and beautiful.background or beautiful.darker))
 	end)
 	close:connect_signal("mouse::leave", function()
 		update_button_color()
 	end)
 	minimize:connect_signal("mouse::enter", function()
 		helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ",
-			client.focus == c and beautiful.background or helpers.change_hex_lightness(beautiful.background, -4)))
+			client.focus == c and beautiful.background or beautiful.darker))
 	end)
 	minimize:connect_signal("mouse::leave", function()
 		update_button_color()
 	end)
 	maximize:connect_signal("mouse::enter", function()
 		helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ",
-			client.focus == c and beautiful.background or helpers.change_hex_lightness(beautiful.background, -4)))
+			client.focus == c and beautiful.background or beautiful.darker))
 	end)
 	maximize:connect_signal("mouse::leave", function()
 		update_button_color()
@@ -158,7 +164,7 @@ return function(c)
 			left = 30,
 			{
 				layout = wibox.layout.fixed.horizontal,
-				spacing = 2,
+				spacing = 3,
 				close,
 				maximize,
 				minimize,

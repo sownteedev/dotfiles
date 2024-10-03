@@ -40,19 +40,30 @@ local title = wibox.widget({
 })
 
 local clearButton = wibox.widget({
-	image = gears.color.recolor_image(beautiful.icon_path .. "awm/clear.svg", beautiful.foreground),
-	resize = true,
-	forced_height = 25,
-	forced_width = 25,
-	halign = "center",
-	widget = wibox.widget.imagebox,
-	buttons = {
-		awful.button({}, 1, function()
-			notif_center_reset_notifs_container()
-		end),
+	{
+		{
+			image = gears.color.recolor_image(beautiful.icon_path .. "awm/clear.svg", beautiful.foreground),
+			resize = true,
+			forced_height = 25,
+			forced_width = 25,
+			halign = "center",
+			widget = wibox.widget.imagebox,
+			buttons = {
+				awful.button({}, 1, function()
+					notif_center_reset_notifs_container()
+				end),
+			},
+		},
+		margins = 10,
+		widget = wibox.container.margin,
 	},
+	id = "bg",
+	bg = beautiful.lighter,
+	shape = gears.shape.circle,
+	widget = wibox.container.background,
 })
 helpers.hoverCursor(clearButton)
+helpers.addHoverBg(clearButton, "bg", beautiful.lighter, beautiful.lighter1)
 
 return function(s)
 	local noticenter = wibox({
@@ -109,10 +120,13 @@ return function(s)
 					clearButton,
 					widget = wibox.layout.align.horizontal,
 				},
+				top = 10,
+				bottom = 10,
+				left = 20,
+				right = 20,
 				widget = wibox.container.margin,
-				margins = 20,
 			},
-			bg = helpers.change_hex_lightness(beautiful.background, 4),
+			bg = beautiful.lighter,
 			widget = wibox.container.background,
 		},
 		{

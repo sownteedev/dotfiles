@@ -8,12 +8,29 @@ local naughty = require("naughty")
 return function(icon, n)
 	local action_widget = {
 		{
-			id = "text_role",
+			{
+				{
+					{
+						id            = "icon_role",
+						forced_height = 1,
+						forced_width  = 1,
+						widget        = wibox.widget.imagebox
+					},
+					top = 5,
+					bottom = 5,
+					widget = wibox.container.margin,
+				},
+				{
+					id = "text_role",
+					font = beautiful.sans .. " 12",
+					widget = wibox.widget.textbox,
+				},
+				layout = wibox.layout.fixed.horizontal,
+			},
 			align = "center",
-			font = beautiful.sans .. " 12",
-			widget = wibox.widget.textbox,
+			widget = wibox.container.place,
 		},
-		bg = helpers.change_hex_lightness(beautiful.background, 8),
+		bg = beautiful.lighter1,
 		forced_height = 30,
 		shape = helpers.rrect(5),
 		widget = wibox.container.background,
@@ -70,10 +87,11 @@ return function(icon, n)
 	})
 
 	local box           = wibox.widget({
+		id = "bg",
 		widget = wibox.container.background,
 		forced_height = 180,
 		shape = beautiful.radius,
-		bg = helpers.change_hex_lightness(beautiful.background, 4),
+		bg = beautiful.lighter,
 		{
 			{
 				icon_widget,
@@ -96,12 +114,31 @@ return function(icon, n)
 			margins = 20,
 		},
 	})
+	local function find_client_and_tag(class_name)
+		for _, c in ipairs(client.get()) do
+			if c.class == class_name then
+				return c, c.first_tag
+			end
+		end
+		return nil, nil
+	end
+
+	local function focus_client_by_class(class_name)
+		local c, tag = find_client_and_tag(class_name)
+		if c and tag then
+			tag:view_only()
+			client.focus = c
+			c:raise()
+		end
+	end
 
 	box:buttons(gears.table.join(awful.button({}, 1, function()
 		_G.notif_center_remove_notif(box)
+		focus_client_by_class(n.app_name)
 	end)))
 
 	helpers.hoverCursor(box)
+	helpers.addHoverBg(box, "bg", beautiful.lighter, beautiful.lighter1)
 
 	return box
 end

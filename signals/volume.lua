@@ -17,11 +17,10 @@ local function volume_mute()
 end
 volume_mute()
 
-local subscribe = [[bash -c "LANG=C pactl subscribe 2> /dev/null | grep --line-buffered \"Event 'change' on sink\""]]
-awful.spawn.easy_async({ "pkill", "--full", "--uid", os.getenv("USER"), "^pactl subscribe" }, function()
-	awful.spawn.with_line_callback(subscribe, {
-		stdout = function()
-			volume_mute()
-		end,
-	})
-end)
+function volume_toggle()
+	awful.spawn.easy_async_with_shell("bash -c 'pamixer --get-mute'", function(stdout)
+		local status = stdout:match("true")
+		awful.spawn.with_shell("pamixer -t")
+		awesome.emit_signal("signal::volumemute", not status)
+	end)
+end

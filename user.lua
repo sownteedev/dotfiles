@@ -21,9 +21,12 @@ _User.Custom_Icon     = {
 	-- { name = "et",                               to = "wps-office2019-etmain" },
 	-- { name = "wpp",                              to = "wps-office2019-wppmain" },
 	{ name = "pdf",                              to = "wps-office2019-pdfmain" },
+	{ name = "jetbrains-studio",                 to = "android-studio" },
+	{ name = "MongoDB Compass",                  to = "mongodb-compass" },
+	{ name = "Mysql-workbench-bin",              to = "mysql-workbench" },
 }
 
-_User.API_KEY_WEATHER = "702cd6f2a4f3450a3673e8bc3078525e"
+_User.API_KEY_WEATHER = ""
 _User.Coordinates     = { "21.0245", "105.8412" }
 
 _User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"

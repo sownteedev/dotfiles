@@ -71,6 +71,7 @@ return function(s)
 		helpers.gc(system, "disk").value = value
 	end)
 	helpers.placeWidget(system, "top_left", 103, 0, 33, 0)
+	helpers.popupOpacity(system, 0.3)
 
 	return system
 end

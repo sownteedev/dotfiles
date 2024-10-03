@@ -20,10 +20,15 @@ theme.green                = colors.green
 theme.blue                 = colors.blue
 theme.yellow               = colors.yellow
 
+theme.darker               = helpers.change_hex_lightness(theme.background, -3)
+theme.lighter              = helpers.change_hex_lightness(theme.background, 3)
+theme.lighter1             = helpers.change_hex_lightness(theme.background, 6)
+theme.lighter2             = helpers.change_hex_lightness(theme.background, 9)
+
 theme.width                = screen.primary.geometry.width
 theme.height               = screen.primary.geometry.height
-theme.useless_gap          = 10
 theme.radius               = helpers.rrect(10)
+theme.useless_gap          = 10
 
 -- Default vars --
 theme.bg_normal            = theme.background

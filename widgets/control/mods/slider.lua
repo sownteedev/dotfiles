@@ -51,7 +51,7 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 							bottom = 8,
 						},
 						id = "background_role",
-						bg = helpers.change_hex_lightness(beautiful.background, 8),
+						bg = beautiful.lighter1,
 						widget = wibox.container.background,
 						shape = helpers.rrect(30),
 						buttons = {
@@ -74,7 +74,7 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 			widget = wibox.container.margin,
 		},
 		shape = helpers.rrect(10),
-		bg = helpers.change_hex_lightness(beautiful.background, 4),
+		bg = beautiful.lighter,
 		widget = wibox.container.background,
 	})
 	helpers.hoverCursor(slidSlider)
@@ -88,17 +88,17 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 		if value then
 			helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
 			if signal2 == "micmute" then
-				slidIcon.markup = helpers.colorizeText(" ", helpers.change_hex_lightness(beautiful.background, 8))
+				slidIcon.markup = helpers.colorizeText(" ", beautiful.lighter1)
 			elseif signal2 == "volumemute" then
-				slidIcon.markup = helpers.colorizeText("󰖁 ", helpers.change_hex_lightness(beautiful.background, 8))
+				slidIcon.markup = helpers.colorizeText("󰖁 ", beautiful.lighter1)
 			elseif signal2 == "brightnesss" then
-				slidIcon.markup = helpers.colorizeText("󰃝 ", helpers.change_hex_lightness(beautiful.background, 8))
+				slidIcon.markup = helpers.colorizeText("󰃝 ", beautiful.lighter1)
 				helpers.gc(slidScale, "margin").left = 12
 				helpers.gc(slidScale, "margin").right = 3
 			end
 		else
 			slidIcon.markup = helpers.colorizeText(icon, beautiful.foreground)
-			helpers.gc(slidScale, "background_role"):set_bg(helpers.change_hex_lightness(beautiful.background, 8))
+			helpers.gc(slidScale, "background_role"):set_bg(beautiful.lighter1)
 			if signal2 == "brightnesss" then
 				helpers.gc(slidScale, "margin").left = 12
 				helpers.gc(slidScale, "margin").right = 5
@@ -107,6 +107,28 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 	end)
 	slidSlider:connect_signal("property::value", function(_, new_value)
 		awful.spawn.with_shell(string.format(command, new_value))
+		awesome.emit_signal("signal::" .. signal, new_value)
+		if signal2 == "brightnesss" then
+			awesome.emit_signal("signal::brightnesss", new_value == 25)
+		elseif signal2 == "volumemute" then
+			awful.spawn.easy_async_with_shell("bash -c 'pamixer --get-mute'", function(stdout)
+				local status = stdout:match("true")
+				if status or new_value == 0 then
+					awesome.emit_signal("signal::volumemute", true)
+				else
+					awesome.emit_signal("signal::volumemute", false)
+				end
+			end)
+		elseif signal2 == "micmute" then
+			awful.spawn.easy_async_with_shell("bash -c 'pamixer --source @DEFAULT_SOURCE@ --get-mute'", function(stdout)
+				local status = stdout:match("true")
+				if status or new_value == 0 then
+					awesome.emit_signal("signal::micmute", true)
+				else
+					awesome.emit_signal("signal::micmute", false)
+				end
+			end)
+		end
 	end)
 	return slidScale
 end
@@ -121,13 +143,14 @@ local widget = wibox.widget({
 		"",
 		"brightnessctl s %d%% &"
 	),
-	createSlider("Sound", "󰕾 ", "volume", "volumemute", "pamixer -t &", "pavucontrol &", "pamixer --set-volume %d &"),
+	createSlider("Sound", "󰕾 ", "volume", "volumemute", "awesome-client 'volume_toggle()' &", "pavucontrol &",
+		"pamixer --set-volume %d &"),
 	createSlider(
 		"Microphone",
 		" ",
 		"mic",
 		"micmute",
-		"pactl set-source-mute @DEFAULT_SOURCE@ toggle &",
+		"awesome-client 'mic_toggle()' &",
 		"pavucontrol &",
 		"pactl set-source-volume @DEFAULT_SOURCE@ %d%% &"
 	),

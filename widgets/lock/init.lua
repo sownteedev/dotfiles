@@ -79,11 +79,17 @@ return function(s)
 		widget = wibox.container.place,
 	})
 
+	local bottom = wibox.widget({
+		profilepic,
+		spacing = 20,
+		layout = wibox.layout.fixed.vertical,
+	})
+
 	local grabber = awful.keygrabber({
 		auto_start = true,
 		stop_event = "release",
 		mask_event_callback = true,
-		keypressed_callback = function(_, _, key, _)
+		keypressed_callback = function(self, _, key, _)
 			if key == "Escape" then
 				input = ""
 				star = ""
@@ -107,30 +113,46 @@ return function(s)
 					helpers.gc(prompt, "txt"):set_markup(star)
 					helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 15")
 				end
+			elseif key == "Return" then
+				if input ~= "" then
+					if auth(input) then
+						self:stop()
+						slide_end:start()
+						slide:set(-lock.height)
+						start_input:stop()
+						table.remove(bottom.children, 2)
+						input = ""
+						star = ""
+					else
+						input = ""
+						star = ""
+						helpers.gc(prompt, "txt"):set_markup(helpers.colorizeText("Incorrect Password",
+							beautiful.background))
+						helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
+						helpers.gc(prompt, "bg"):set_bg(beautiful.red)
+						gears.timer.start_new(2, function()
+							if input ~= "" then
+								return false
+							end
+							helpers.gc(prompt, "txt"):set_markup("Enter Password")
+							helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "50")
+						end)
+					end
+				end
 			end
 		end,
-		keyreleased_callback = function(self, _, key, _)
-			if key == "Return" then
-				if auth(input) then
-					self:stop()
-					slide_end:start()
-					slide:set(-lock.height)
-					input = ""
-					star = ""
-				else
-					input = ""
-					star = ""
-					helpers.gc(prompt, "txt"):set_markup(helpers.colorizeText("Incorrect Password", beautiful.background))
-					helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
-					helpers.gc(prompt, "bg"):set_bg(beautiful.red)
-					gears.timer.start_new(2, function()
-						if input ~= "" then
-							return false
-						end
-						helpers.gc(prompt, "txt"):set_markup("Enter Password")
-						helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "50")
-					end)
-				end
+	})
+
+	start_input = awful.keygrabber({
+		auto_start = true,
+		stop_event = "release",
+		keypressed_callback = function(self, _, key, _)
+			if key == "Return" or key == " " then
+				self:stop()
+				bottom:add(prompt)
+				grabber:start()
+				input = ""
+				star = ""
 			end
 		end,
 	})
@@ -167,12 +189,7 @@ return function(s)
 			{
 				time,
 				nil,
-				{
-					profilepic,
-					prompt,
-					spacing = 20,
-					layout = wibox.layout.fixed.vertical,
-				},
+				bottom,
 				layout = wibox.layout.align.vertical,
 			},
 			top = 100,
@@ -186,7 +203,7 @@ return function(s)
 		if not lock.visible then
 			lock.visible = true
 			slide:set(0)
-			grabber:start()
+			start_input:start()
 			helpers.gc(prompt, "txt"):set_markup("Enter Password")
 			helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
 		end

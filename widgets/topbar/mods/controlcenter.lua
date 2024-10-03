@@ -278,14 +278,8 @@ awesome.connect_signal("signal::volumemute", function(value)
 	end
 end)
 
-helpers.hoverCursor(systray)
-helpers.hoverCursor(battery)
-helpers.hoverCursor(wifi)
-helpers.hoverCursor(bluetooth)
-helpers.hoverCursor(spotlight)
-helpers.hoverCursor(controlcenter)
-helpers.hoverCursor(layout)
-helpers.hoverCursor(volmuted)
-helpers.hoverCursor(micmuted)
+for _, v in ipairs(widget.children) do
+	helpers.hoverCursor(v)
+end
 
 return widget
