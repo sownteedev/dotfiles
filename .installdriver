@@ -36,7 +36,7 @@ sleep 3 && clear
 
 # Enable touchpad
 echo "[*] Enable touchpad for laptop and set time to sleep ..."
-yay -S xf86-input-libinput libinput-gestures xdotool --noconfirm
+yay -S xf86-input-libinput libinput-gestures xdotool wmctrl --noconfirm
 cp ~/dotf/.local/other/xorg.conf /etc/X11/xorg.conf
 gpasswd -a sowntee input
 libinput-gestures-setup stop desktop autostart start
@@ -91,7 +91,8 @@ sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-pacman -S nemo tumbler ranger ueberzug exa unzip unrar xdg-user-dirs gvfs vlc --noconfirm
+pacman -S nemo tumbler ranger ueberzug exa zip gzip tar unzip unrar xdg-user-dirs gvfs vlc --noconfirm
+gsettings set org.nemo.desktop show-desktop-icons true
 echo "[*] Done."
 sleep 3 && clear
 
@@ -117,6 +118,7 @@ cd .. && rm -rf ibus-bamboo
 sleep 3 && clear
 
 # Fix Driver audio (for me)
+echo "[*] Fixing audio driver ..."
 pacman -S rsync --noconfirm && cd ~
 mkdir -p ~/old-sof-backup
 mv /lib/firmware/intel/sof* ~/old-sof-backup

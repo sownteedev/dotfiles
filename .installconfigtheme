@@ -138,8 +138,15 @@ sleep 3 && clear
 
 # App for me
 echo "[*] Installing apps for me ..."
-pacman -S --noconfirm telegram-desktop easyeffects
-yay -S --noconfirm notion-app-electron jetbrains-toolbox docker-desktop postman-bin ulauncher-git appimagelauncher-bin vmware-workstation caprine vesktop kdenlive-git thunderbird wps-office
+pacman -S --noconfirm telegram-desktop
+yay -S --noconfirm notion-app-electron jetbrains-toolbox mysql mysql-workbench mongodb-compass docker-desktop postman-bin ulauncher-git appimagelauncher-bin vmware-workstation caprine vesktop thunderbird  
+
+# Fix WPS
+yay -S --noconfirm wps-office libtiff5
+sed -i '3i export XMODIFIERS="@im=ibus" export QT_IM_MODULE="ibus"' /usr/bin/wps /usr/bin/et /usr/bin/wpp
+ln -s /usr/lib/libtiff.so.6 /usr/lib/libtiff.so.5
+chmod -x /usr/lib/office6/wpsoffice
+
 pacman -Rns docker-desktop-debug --noconfirm
 yay -S visual-studio-code-bin --noconfirm
 echo "[*] Done."
