@@ -4,7 +4,7 @@ local beautiful            = require("beautiful")
 local icon_dir             = beautiful.icon_path .. "weather/icons/"
 local thumb_dir            = beautiful.icon_path .. "weather/images/"
 
-local GET_FORECAST_CMD     = [[bash -c "curl -s --show-error -X GET '%s'"]]
+local GET_FORECAST_CMD     = [[sh -c "curl -s --show-error -X GET '%s'"]]
 
 local icon_map             = {
 	["01d"] = "weather-clear-sky",

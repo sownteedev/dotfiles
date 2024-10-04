@@ -78,7 +78,7 @@ local player = wibox.widget({
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _, player_name)
 	local album = not album_path or album_path == "" and _User.SongDefPicture or album_path
 	awful.spawn.easy_async_with_shell(
-		"convert " .. album .. " -filter Gaussian -blur 0x5 ~/.cache/awesome/songdefpictures.jpg &", function()
+		"convert " .. album .. " -filter Gaussian -blur 0x5 ~/.cache/awesome/songdefpictures.jpg", function()
 			local blurwall = gears.filesystem.get_cache_dir() .. "songdefpictures.jpg"
 			blur.image = helpers.cropSurface(6.6, gears.surface.load_uncached(blurwall))
 		end)

@@ -72,7 +72,7 @@ local function do_notify(which, tmp_path)
 		end)
 
 		delete:connect_signal("invoked", function()
-			awful.spawn.with_shell('rm -f "' .. tmp_path .. '" &')
+			awful.spawn.with_shell('rm -f "' .. tmp_path .. '"')
 			naughty.notify({
 				app_name = "Recording",
 				title = "Recording",
@@ -169,8 +169,8 @@ local createButton = function(name, img, cmd1, cmd2)
 end
 
 local button = wibox.widget({
-	createButton("Screenshot", beautiful.icon_path .. "button/screenshot.svg", "awesome-client 'area()' &", ""),
-	createButton("Record", beautiful.icon_path .. "button/record.svg", "awesome-client 'record()' &", "killall ffmpeg &"),
+	createButton("Screenshot", beautiful.icon_path .. "button/screenshot.svg", "awesome-client 'area()'", ""),
+	createButton("Record", beautiful.icon_path .. "button/record.svg", "awesome-client 'record()'", "killall ffmpeg"),
 	spacing = 15,
 	layout = wibox.layout.fixed.horizontal,
 })
