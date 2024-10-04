@@ -26,7 +26,7 @@ local focus = wibox.widget({
 		widget = wibox.container.background,
 		buttons = {
 			awful.button({}, 1, function()
-				awful.spawn.with_shell("awesome-client 'dnd_toggle()' &")
+				awful.spawn.with_shell("awesome-client 'dnd_toggle()'")
 			end),
 		}
 	},
@@ -91,7 +91,7 @@ local redshift = wibox.widget({
 			widget = wibox.container.background,
 			buttons = {
 				awful.button({}, 1, function()
-					awful.spawn.with_shell("awesome-client 'redshift_toggle()' &")
+					awful.spawn.with_shell("awesome-client 'redshift_toggle()'")
 				end),
 			}
 		},
@@ -146,7 +146,7 @@ local blur = wibox.widget({
 			widget = wibox.container.background,
 			buttons = {
 				awful.button({}, 1, function()
-					awful.spawn.with_shell("awesome-client 'blur_toggle()' &")
+					awful.spawn.with_shell("awesome-client 'blur_toggle()'")
 				end),
 			}
 		},

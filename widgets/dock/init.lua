@@ -36,18 +36,18 @@ local data = {
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "Alacritty", "Alacritty"),
-			clients = {},
-			class = "Alacritty",
-			exec = "alacritty",
-		},
-		{
-			count = 0,
-			pinned = true,
 			icon = helpers.getIcon(nil, "firefox", "firefox"),
 			clients = {},
 			class = "firefox",
 			exec = "firefox",
+		},
+		{
+			count = 0,
+			pinned = true,
+			icon = helpers.getIcon(nil, "Alacritty", "Alacritty"),
+			clients = {},
+			class = "Alacritty",
+			exec = "alacritty",
 		},
 		{
 			count = 0,
@@ -222,8 +222,8 @@ local data = {
 		"nemo",
 		"shotwell",
 		"thunderbird",
-		"alacritty",
 		"firefox",
+		"alacritty",
 		"code",
 		"jetbrains-idea",
 		"jetbrains-studio",
@@ -431,7 +431,7 @@ local function genIcons()
 						focus_client_by_class(j.class)
 						client.focus.minimized = false
 					elseif j.count == 0 then
-						awful.spawn.with_shell(j.exec .. " &")
+						awful.spawn(j.exec)
 					elseif j.count == 1 then
 						if j.clients[j.count].minimized then
 							j.clients[j.count].minimized = false

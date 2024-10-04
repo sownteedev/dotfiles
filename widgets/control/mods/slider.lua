@@ -59,7 +59,7 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 								awful.spawn.with_shell(cmd)
 							end),
 							awful.button({}, 3, function()
-								awful.spawn.with_shell(cmd2)
+								awful.spawn(cmd2)
 							end),
 						},
 					},
@@ -84,8 +84,8 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 	awesome.connect_signal("signal::" .. signal, function(value)
 		slidSlider.value = value
 	end)
-	awesome.connect_signal("signal::" .. signal2, function(value)
-		if value then
+	awesome.connect_signal("signal::" .. signal2, function(status)
+		if status then
 			helpers.gc(slidScale, "background_role"):set_bg(beautiful.blue)
 			if signal2 == "micmute" then
 				slidIcon.markup = helpers.colorizeText(" ", beautiful.lighter1)
@@ -108,27 +108,6 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 	slidSlider:connect_signal("property::value", function(_, new_value)
 		awful.spawn.with_shell(string.format(command, new_value))
 		awesome.emit_signal("signal::" .. signal, new_value)
-		if signal2 == "brightnesss" then
-			awesome.emit_signal("signal::brightnesss", new_value == 25)
-		elseif signal2 == "volumemute" then
-			awful.spawn.easy_async_with_shell("bash -c 'pamixer --get-mute'", function(stdout)
-				local status = stdout:match("true")
-				if status or new_value == 0 then
-					awesome.emit_signal("signal::volumemute", true)
-				else
-					awesome.emit_signal("signal::volumemute", false)
-				end
-			end)
-		elseif signal2 == "micmute" then
-			awful.spawn.easy_async_with_shell("bash -c 'pamixer --source @DEFAULT_SOURCE@ --get-mute'", function(stdout)
-				local status = stdout:match("true")
-				if status or new_value == 0 then
-					awesome.emit_signal("signal::micmute", true)
-				else
-					awesome.emit_signal("signal::micmute", false)
-				end
-			end)
-		end
 	end)
 	return slidScale
 end
@@ -139,20 +118,27 @@ local widget = wibox.widget({
 		"󰃠 ",
 		"brightness",
 		"brightnesss",
-		"awesome-client 'brightness_toggle()' &",
+		"awesome-client 'brightness_toggle()'",
 		"",
-		"brightnessctl s %d%% &"
+		"brightnessctl s %d%%"
 	),
-	createSlider("Sound", "󰕾 ", "volume", "volumemute", "awesome-client 'volume_toggle()' &", "pavucontrol &",
-		"pamixer --set-volume %d &"),
+	createSlider(
+		"Sound",
+		"󰕾 ",
+		"volume",
+		"volumemute",
+		"awesome-client 'volume_toggle()'",
+		"pavucontrol",
+		"pamixer --set-volume %d"
+	),
 	createSlider(
 		"Microphone",
 		" ",
 		"mic",
 		"micmute",
-		"awesome-client 'mic_toggle()' &",
-		"pavucontrol &",
-		"pactl set-source-volume @DEFAULT_SOURCE@ %d%% &"
+		"awesome-client 'mic_toggle()'",
+		"pavucontrol",
+		"pactl set-source-volume @DEFAULT_SOURCE@ %d%%"
 	),
 	layout = wibox.layout.fixed.vertical,
 	spacing = 15,

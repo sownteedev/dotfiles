@@ -2,6 +2,7 @@ local awful          = require("awful")
 local gears          = require("gears")
 local beautiful      = require("beautiful")
 local helpers        = require("helpers")
+local title          = require("widgets.titlebar")
 
 awful.layout.layouts = {
 	awful.layout.suit.floating,

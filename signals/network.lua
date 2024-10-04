@@ -3,7 +3,7 @@ local gears = require("gears")
 
 local function emit_network_status()
 	awful.spawn.easy_async_with_shell(
-		"bash -c 'iwgetid -r ; nmcli -t -f DEVICE,TYPE con show --active ; nmcli networking connectivity check ; iwconfig'",
+		"sh -c 'iwgetid -r ; nmcli -t -f DEVICE,TYPE con show --active ; nmcli networking connectivity check ; iwconfig'",
 		function(stdout)
 			local status = not stdout:match("none") and not stdout:match("limited")
 
@@ -43,8 +43,8 @@ gears.timer({
 })
 
 function network_toggle()
-	awful.spawn.easy_async_with_shell("bash -c \"nmcli | grep wlp0s20f3 | awk 'FNR == 1'\"", function(status)
+	awful.spawn.easy_async_with_shell("sh -c \"nmcli | grep wlp0s20f3 | awk 'FNR == 1'\"", function(status)
 		status = status:match("connected")
-		awful.spawn.with_shell(status and "bash -c 'nmcli networking off'" or "bash -c 'nmcli networking on'")
+		awful.spawn(status and "sh -c 'nmcli networking off'" or "sh -c 'nmcli networking on'")
 	end)
 end
