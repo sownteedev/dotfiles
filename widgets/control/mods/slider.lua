@@ -59,7 +59,7 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 								awful.spawn.with_shell(cmd)
 							end),
 							awful.button({}, 3, function()
-								awful.spawn(cmd2)
+								awful.spawn.with_shell(cmd2)
 							end),
 						},
 					},

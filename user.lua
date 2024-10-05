@@ -7,6 +7,7 @@ _User.Username        = "@sownteedev"
 
 _User.Colorscheme     = "dark"
 
+_User.AutoHideDock    = false
 _User.IconName        = "WhiteSur"
 _User.Custom_Icon     = {
 	{ name = "org.wezfurlong.wezterm",           to = "terminal" },

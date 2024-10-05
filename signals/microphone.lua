@@ -23,7 +23,7 @@ mic_mute()
 function mic_toggle()
 	awful.spawn.easy_async_with_shell("sh -c 'pactl get-source-mute @DEFAULT_SOURCE@'", function(stdout)
 		local status = stdout:match("yes")
-		awful.spawn("pactl set-source-mute @DEFAULT_SOURCE@ toggle")
+		awful.spawn.with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle")
 		awesome.emit_signal("signal::micmute", not status)
 	end)
 end

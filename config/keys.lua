@@ -14,36 +14,36 @@ awful.keyboard.append_global_keybindings({
 		awesome.emit_signal("toggle::preview")
 	end),
 	awful.key({ alt }, "space", function()
-		awful.spawn("ulauncher-toggle")
+		awful.spawn.with_shell("ulauncher-toggle")
 	end),
 	awful.key({ mod }, "e", function()
-		awful.spawn("nemo")
+		awful.spawn.with_shell("nemo")
 	end),
 	awful.key({ mod }, "Return", function()
-		awful.spawn("alacritty")
+		awful.spawn.with_shell("alacritty")
 	end),
 	awful.key({ ctrl, shift }, "Escape", function()
-		awful.spawn("alacritty -e btop")
+		awful.spawn.with_shell("alacritty -e btop")
 	end),
 
 	-- Volume and Brightness
 	awful.key({}, "XF86AudioPlay", function()
-		awful.spawn("playerctl play-pause")
+		awful.spawn.with_shell("playerctl play-pause")
 	end),
 	awful.key({}, "XF86AudioPrev", function()
-		awful.spawn("playerctl previous")
+		awful.spawn.with_shell("playerctl previous")
 	end),
 	awful.key({}, "XF86AudioNext", function()
-		awful.spawn("playerctl next")
+		awful.spawn.with_shell("playerctl next")
 	end),
 
 	awful.key({}, "XF86AudioRaiseVolume", function()
-		awful.spawn("pamixer -i 2")
+		awful.spawn.with_shell("pamixer -i 2")
 		volume_emit()
 		awesome.emit_signal("open::brivolmic")
 	end),
 	awful.key({}, "XF86AudioLowerVolume", function()
-		awful.spawn("pamixer -d 2")
+		awful.spawn.with_shell("pamixer -d 2")
 		volume_emit()
 		awesome.emit_signal("open::brivolmic")
 	end),
@@ -52,12 +52,12 @@ awful.keyboard.append_global_keybindings({
 	end),
 
 	awful.key({ mod }, "XF86AudioRaiseVolume", function()
-		awful.spawn("pactl set-source-volume @DEFAULT_SOURCE@ +5%")
+		awful.spawn.with_shell("pactl set-source-volume @DEFAULT_SOURCE@ +5%")
 		mic()
 		awesome.emit_signal("open::brivolmic")
 	end),
 	awful.key({ mod }, "XF86AudioLowerVolume", function()
-		awful.spawn("pactl set-source-volume @DEFAULT_SOURCE@ -5%")
+		awful.spawn.with_shell("pactl set-source-volume @DEFAULT_SOURCE@ -5%")
 		mic()
 		awesome.emit_signal("open::brivolmic")
 	end),
@@ -66,12 +66,12 @@ awful.keyboard.append_global_keybindings({
 	end),
 
 	awful.key({}, "XF86MonBrightnessUp", function()
-		awful.spawn("brightnessctl s 5%+")
+		awful.spawn.with_shell("brightnessctl s 5%+")
 		brightness_emit()
 		awesome.emit_signal("open::brivolmic")
 	end),
 	awful.key({}, "XF86MonBrightnessDown", function()
-		awful.spawn("brightnessctl s 5%-")
+		awful.spawn.with_shell("brightnessctl s 5%-")
 		brightness_emit()
 		awesome.emit_signal("open::brivolmic")
 	end),
@@ -80,13 +80,13 @@ awful.keyboard.append_global_keybindings({
 		record()
 	end),
 	awful.key({ mod, shift }, "Print", function()
-		awful.spawn("pkill -f ffmpeg")
+		awful.spawn.with_shell("pkill -f ffmpeg")
 	end),
 	awful.key({ mod, shift }, "s", function()
 		area()
 	end),
 	awful.key({ alt }, "p", function()
-		awful.spawn("~/.local/bin/colorpicker")
+		awful.spawn.with_shell("~/.local/bin/colorpicker")
 	end),
 	awful.key({ alt }, "F4", function()
 		if client.focus then

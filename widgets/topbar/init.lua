@@ -13,7 +13,7 @@ return function(s)
 		position = "top",
 		height = 40,
 		width = beautiful.width,
-		bg = helpers.blend("#ffffff", "#000000", 0.3) .. "22",
+		bg = helpers.blend("#ffffff", "#000000", 0.3) .. "33",
 		ontop = false,
 		screen = s,
 		widget = {

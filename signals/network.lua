@@ -45,6 +45,6 @@ gears.timer({
 function network_toggle()
 	awful.spawn.easy_async_with_shell("sh -c \"nmcli | grep wlp0s20f3 | awk 'FNR == 1'\"", function(status)
 		status = status:match("connected")
-		awful.spawn(status and "sh -c 'nmcli networking off'" or "sh -c 'nmcli networking on'")
+		awful.spawn.with_shell(status and "sh -c 'nmcli networking off'" or "sh -c 'nmcli networking on'")
 	end)
 end
