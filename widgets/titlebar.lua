@@ -14,13 +14,13 @@ return function(c)
 	local close = wibox.widget({
 		{
 			id = "iconbot",
-			markup = helpers.colorizeText(" ", beautiful.lighter1),
+			markup = helpers.colorizeText(" ", beautiful.lighter2),
 			font = beautiful.icon .. " 13",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
-			markup = helpers.colorizeText("󰅙 ", beautiful.lighter1),
+			markup = helpers.colorizeText("󰅙 ", beautiful.lighter2),
 			font = beautiful.icon .. " 13",
 			widget = wibox.widget.textbox,
 		},
@@ -34,13 +34,13 @@ return function(c)
 	local minimize = wibox.widget({
 		{
 			id = "iconbot",
-			markup = helpers.colorizeText(" ", beautiful.lighter1),
+			markup = helpers.colorizeText(" ", beautiful.lighter2),
 			font = beautiful.icon .. " 13",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
-			markup = helpers.colorizeText("󰍶 ", beautiful.lighter1),
+			markup = helpers.colorizeText("󰍶 ", beautiful.lighter2),
 			font = beautiful.icon .. " 13",
 			widget = wibox.widget.textbox,
 		},
@@ -56,13 +56,13 @@ return function(c)
 	local maximize = wibox.widget({
 		{
 			id = "iconbot",
-			markup = helpers.colorizeText(" ", beautiful.lighter1),
+			markup = helpers.colorizeText(" ", beautiful.lighter2),
 			font = beautiful.icon .. " 13",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
-			markup = helpers.colorizeText("󰿣 ", beautiful.lighter1),
+			markup = helpers.colorizeText("󰿣 ", beautiful.lighter2),
 			font = beautiful.icon .. " 13",
 			widget = wibox.widget.textbox,
 		},
@@ -75,12 +75,12 @@ return function(c)
 	})
 	local function update_button_color()
 		if client.focus ~= c then
-			helpers.gc(close, "icon"):set_markup(helpers.colorizeText("󰅙 ", beautiful.lighter1))
-			helpers.gc(minimize, "icon"):set_markup(helpers.colorizeText("󰍶 ", beautiful.lighter1))
-			helpers.gc(maximize, "icon"):set_markup(helpers.colorizeText("󰿣 ", beautiful.lighter1))
-			helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.lighter1))
-			helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.lighter1))
-			helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.lighter1))
+			helpers.gc(close, "icon"):set_markup(helpers.colorizeText("󰅙 ", beautiful.lighter2))
+			helpers.gc(minimize, "icon"):set_markup(helpers.colorizeText("󰍶 ", beautiful.lighter2))
+			helpers.gc(maximize, "icon"):set_markup(helpers.colorizeText("󰿣 ", beautiful.lighter2))
+			helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.lighter2))
+			helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.lighter2))
+			helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.lighter2))
 		else
 			helpers.gc(close, "icon"):set_markup(helpers.colorizeText("󰅙 ", beautiful.red))
 			helpers.gc(minimize, "icon"):set_markup(helpers.colorizeText("󰍶 ", beautiful.yellow))

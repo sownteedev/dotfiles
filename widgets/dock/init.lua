@@ -358,12 +358,15 @@ local function genIcons()
 				widget:add(wibox.widget({
 					{
 						orientation   = "vertical",
-						forced_width  = 1,
+						forced_width  = 4,
 						forced_height = 1,
+						shape         = gears.shape.rounded_rect,
 						widget        = wibox.widget.separator,
 					},
 					top = 10,
 					bottom = 10,
+					left = 5,
+					right = 5,
 					widget = wibox.container.margin,
 				}))
 				added = false
@@ -431,7 +434,7 @@ local function genIcons()
 						focus_client_by_class(j.class)
 						client.focus.minimized = false
 					elseif j.count == 0 then
-						awful.spawn(j.exec)
+						awful.spawn.with_shell(j.exec)
 					elseif j.count == 1 then
 						if j.clients[j.count].minimized then
 							j.clients[j.count].minimized = false
@@ -463,9 +466,9 @@ return function(s)
 		screen = s,
 		visible = true,
 		shape = helpers.rrect(20),
-		bg = helpers.blend("#ffffff", "#000000", 0.3) .. "44",
+		bg = helpers.blend("#ffffff", "#000000", 0.3) .. "55",
 		placement = function(c)
-			awful.placement.bottom(c, { margins = { bottom = beautiful.useless_gap * 2 } })
+			awful.placement.bottom(c, { margins = { bottom = beautiful.useless_gap } })
 		end,
 		widget = wibox.container.background,
 	})
@@ -555,21 +558,20 @@ return function(s)
 	client.connect_signal("unfocus", function()
 		genIcons()
 	end)
-	client.connect_signal("property::minimized", function()
-		genIcons()
-	end)
-	client.connect_signal("manage", function()
-		genIcons()
-	end)
 	client.connect_signal("unmanage", function()
 		genIcons()
 	end)
-	tag.connect_signal("property::selected", function(c)
-		autohide(c)
-	end)
-	client.connect_signal("property::maximized", function(c)
-		autohide(c)
-	end)
+	if _User.AutoHideDock then
+		client.connect_signal("property::maximized", function(c)
+			autohide(c)
+		end)
+	else
+		client.connect_signal("property::maximized", function(c)
+			if c.maximized then
+				c:geometry({ height = c:geometry().height - 90 })
+			end
+		end)
+	end
 
 	return dock
 end
