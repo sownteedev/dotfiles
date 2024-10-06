@@ -56,9 +56,7 @@ local save_file = gears.filesystem.get_cache_dir() .. "window_positions.json"
 local window_positions = helpers.readJson(save_file)
 
 client.connect_signal("manage", function(c)
-	if c.maximized then
-		c.maximized = false
-	end
+	if c.maximized then c.maximized = false end
 	if c.class and window_positions[c.class] then
 		local geo = window_positions[c.class]
 		c:geometry({

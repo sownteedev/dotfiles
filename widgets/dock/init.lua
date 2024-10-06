@@ -358,7 +358,7 @@ local function genIcons()
 				widget:add(wibox.widget({
 					{
 						orientation   = "vertical",
-						forced_width  = 4,
+						forced_width  = 2,
 						forced_height = 1,
 						shape         = gears.shape.rounded_rect,
 						widget        = wibox.widget.separator,
@@ -511,7 +511,7 @@ return function(s)
 			end
 			enter_func = function()
 				if slide then
-					slide:set(beautiful.height - dock.height - beautiful.useless_gap * 2)
+					slide:set(beautiful.height - dock.height - beautiful.useless_gap)
 					dock.opacity = 1
 				end
 			end
@@ -540,7 +540,7 @@ return function(s)
 			end)
 		else
 			dock.ontop = false
-			dock.y = beautiful.height - dock.height - beautiful.useless_gap * 2
+			dock.y = beautiful.height - dock.height - beautiful.useless_gap
 			dock.opacity = 1
 			if enter_func and leave_func then
 				dock:disconnect_signal("mouse::enter", enter_func)
@@ -568,7 +568,7 @@ return function(s)
 	else
 		client.connect_signal("property::maximized", function(c)
 			if c.maximized then
-				c:geometry({ height = c:geometry().height - 90 })
+				c:geometry({ height = c:geometry().height - beautiful.useless_gap - dock.height })
 			end
 		end)
 	end
