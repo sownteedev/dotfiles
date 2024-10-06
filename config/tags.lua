@@ -69,7 +69,6 @@ awesome.connect_signal("exit", function(reason_restart)
 				}
 			end
 		end
-		if c.maximized then c.maximized = false end
 	end
 	helpers.writeJson(gears.filesystem.get_cache_dir() .. "window_positions.json", window_positions)
 
