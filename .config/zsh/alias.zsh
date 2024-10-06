@@ -12,6 +12,9 @@ alias nvide="neovide"
 
 alias fzf="fzf --layout=reverse --prompt ' ' --pointer '=>' --preview='less {}' --bind shift-up:preview-page-up,shift-down:preview-page-down"
 
+alias pacman="sudo pacman --noconfirm"
+alias yay="yay --noconfirm"
+
 alias ..='cd ../'
 alias ...='cd ../../'
 alias ....='cd ../../../'

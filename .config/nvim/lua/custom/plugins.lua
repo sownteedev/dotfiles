@@ -1,10 +1,10 @@
 local overrides = require("custom.configs.overrides")
 
 return {
-	{
-		"github/copilot.vim",
-		lazy = false,
-	},
+	-- {
+	-- 	"github/copilot.vim",
+	-- 	lazy = false,
+	-- },
 	{
 		"williamboman/mason.nvim",
 		opts = overrides.mason,
