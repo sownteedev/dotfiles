@@ -5,37 +5,23 @@ local awful = require("awful")
 local wibox = require("wibox")
 local naughty = require("naughty")
 
-return function(icon, n)
+return function(n)
 	local action_widget = {
 		{
 			{
-				{
-					{
-						id            = "icon_role",
-						forced_height = 1,
-						forced_width  = 1,
-						widget        = wibox.widget.imagebox
-					},
-					top = 5,
-					bottom = 5,
-					widget = wibox.container.margin,
-				},
-				{
-					id = "text_role",
-					font = beautiful.sans .. " 12",
-					widget = wibox.widget.textbox,
-				},
-				layout = wibox.layout.fixed.horizontal,
+				id = "text_role",
+				font = beautiful.sans .. " 10",
+				widget = wibox.widget.textbox,
 			},
 			align = "center",
 			widget = wibox.container.place,
 		},
-		bg = beautiful.lighter1,
-		forced_height = 30,
+		bg = beautiful.lighter2,
+		forced_height = 25,
 		shape = helpers.rrect(5),
 		widget = wibox.container.background,
 	}
-	local actions       = wibox.widget({
+	local actions = wibox.widget({
 		notification = n,
 		base_layout = wibox.widget({
 			spacing = 30,
@@ -47,73 +33,152 @@ return function(icon, n)
 		widget = naughty.list.actions,
 	})
 
-	local icon_widget   = wibox.widget({
-		widget = wibox.widget.imagebox,
-		image = helpers.cropSurface(1, gears.surface.load_uncached(icon)),
+	local app_icon = wibox.widget({
+		image = helpers.getIcon(nil, n.app_name, n.app_name),
 		resize = true,
-		clip_shape = gears.shape.circle,
+		forced_height = 60,
+		forced_width = 60,
+		valign = "center",
+		widget = wibox.widget.imagebox,
 	})
 
-	local title_widget  = wibox.widget({
+	local image = wibox.widget({
+		image = n.icon,
+		resize = true,
+		clip_shape = beautiful.radius,
+		forced_height = 60,
+		forced_width = 60,
+		valign = "center",
+		widget = wibox.widget.imagebox,
+	})
+
+	local title_n = wibox.widget({
 		{
-			markup = n.title,
-			font = beautiful.sans .. " Medium 15",
-			align = "right",
-			widget = wibox.widget.textbox,
+			{
+				markup = n.title,
+				font = beautiful.sans .. " Medium 14",
+				halign = "left",
+				widget = wibox.widget.textbox,
+			},
+			widget = wibox.container.scroll.horizontal,
+			step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
+			speed = 40,
 		},
-		forced_width = 250,
-		widget = wibox.container.scroll.horizontal,
-		step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
-		speed = 40,
+		widget = wibox.container.constraint,
+		width = 320,
+		strategy = "max",
 	})
 
-	local time_widget   = wibox.widget({
-		markup = helpers.colorizeText(os.date("%H:%M"), beautiful.foreground .. "BF"),
-		font = beautiful.sans .. " Medium 11",
-		halign = "right",
-		widget = wibox.widget.textbox,
-	})
-
-	local text_notif    = wibox.widget({
+	local message_n = wibox.widget({
 		{
-			markup = helpers.colorizeText("<span weight='normal'>" .. n.message .. "</span>", beautiful.foreground),
+			markup = n.message,
 			font = beautiful.sans .. " 12",
-			align = "left",
+			halign = "left",
 			wrap = "char",
 			widget = wibox.widget.textbox,
 		},
-		forced_width = 300,
-		layout = wibox.layout.fixed.horizontal,
+		widget = wibox.container.constraint,
+		width = 320,
+		strategy = "max",
 	})
 
-	local box           = wibox.widget({
-		id = "bg",
-		widget = wibox.container.background,
-		forced_height = 180,
-		shape = beautiful.radius,
-		bg = beautiful.lighter,
+	local time = wibox.widget({
+		markup = "",
+		font = beautiful.sans .. " 11",
+		halign = "center",
+		widget = wibox.widget.textbox,
+	})
+
+	local function format_time_difference(start_time)
+		local current_time = os.time()
+		local diff = os.difftime(current_time, start_time)
+
+		if diff < 60 then
+			return "now"
+		elseif diff < 3600 then
+			local minutes = math.floor(diff / 60)
+			return minutes .. "m ago"
+		elseif diff < 7200 then
+			local hours = math.floor(diff / 3600)
+			return hours .. "h ago"
+		else
+			return os.date("%H:%M", start_time)
+		end
+	end
+
+	local function update_time_widget(start_time)
+		time.markup = helpers.colorizeText(format_time_difference(start_time), beautiful.foreground .. "AA")
+	end
+
+	local notification_time = os.time()
+
+	local notification_template = {
 		{
+			app_icon,
 			{
-				icon_widget,
 				{
 					{
-						title_widget,
-						nil,
-						time_widget,
-						layout = wibox.layout.align.horizontal,
+						title_n,
+						message_n,
+						spacing = 10,
+						layout = wibox.layout.fixed.vertical,
 					},
-					text_notif,
-					actions,
-					layout = wibox.layout.align.vertical,
+					spacing = 20,
+					layout = wibox.layout.fixed.vertical,
 				},
-				spacing = 30,
-				layout = wibox.layout.fixed.horizontal,
-				expand = "none",
+				valign = "center",
+				widget = wibox.container.place,
 			},
-			widget = wibox.container.margin,
-			margins = 20,
+			spacing = 20,
+			layout = wibox.layout.fixed.horizontal,
+			expand = "none",
 		},
+		nil,
+		{
+			{
+				time,
+				top = -5,
+				widget = wibox.container.margin,
+			},
+			image,
+			spacing = 5,
+			layout = wibox.layout.fixed.vertical,
+		},
+		layout = wibox.layout.align.horizontal,
+	}
+
+	if n.actions and #n.actions > 0 then
+		table.insert(notification_template[1][2][1], actions)
+	end
+
+	local box = wibox.widget({
+		{
+			id = "bg",
+			shape = beautiful.radius,
+			bg = beautiful.lighter,
+			shape_border_width = beautiful.border_width,
+			shape_border_color = beautiful.lighter1,
+			widget = wibox.container.background,
+			{
+				notification_template,
+				widget = wibox.container.margin,
+				margins = 20,
+			},
+		},
+		widget = wibox.container.constraint,
+		height = 300,
+		strategy = "max",
 	})
+
+	box.timer = gears.timer({
+		timeout = 60,
+		call_now = true,
+		autostart = true,
+		callback = function()
+			update_time_widget(notification_time)
+		end
+	})
+
 	local function find_client_and_tag(class_name)
 		for _, c in ipairs(client.get()) do
 			if c.class == class_name then

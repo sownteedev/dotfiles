@@ -23,7 +23,7 @@ awful.keyboard.append_global_keybindings({
 		awful.spawn.with_shell("alacritty")
 	end),
 	awful.key({ ctrl, shift }, "Escape", function()
-		awful.spawn.with_shell("alacritty -e btop")
+		awful.spawn.with_shell("xfce4-taskmanager")
 	end),
 
 	-- Volume and Brightness
@@ -123,7 +123,7 @@ local function get_next_tag(current_tag, direction)
 	else
 		local default_index = awful.util.table.hasitem(tagdefault, current_tag) or 1
 		for i = default_index + direction, default_index + #tagdefault * direction, direction do
-			local mod_i = (i - 1) % #tagdefault + 1 -- Tính vòng lặp qua tagdefault
+			local mod_i = (i - 1) % #tagdefault + 1
 			if awful.util.table.hasitem(tagactive, tagdefault[mod_i]) then
 				return tagdefault[mod_i]
 			end

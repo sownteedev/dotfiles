@@ -27,8 +27,8 @@ local function createpreview(t, s, geometry)
 				forced_height = math.floor(c.height * scale),
 				forced_width = math.floor(c.width * scale),
 				bg = beautiful.background .. "AA",
-				border_color = beautiful.foreground .. "55",
-				border_width = 1,
+				border_color = beautiful.foreground .. "33",
+				border_width = 0.5,
 				shape = helpers.rrect(5),
 				widget = wibox.container.background
 			})
@@ -43,7 +43,7 @@ local function createpreview(t, s, geometry)
 	end
 
 	if t:clients()[1] == nil then
-		return wibox.widget {
+		local tags = wibox.widget {
 			{
 				{
 					image = gears.surface.crop_surface {
@@ -68,10 +68,14 @@ local function createpreview(t, s, geometry)
 				layout = wibox.layout.stack
 			},
 			shape = beautiful.radius,
+			shape_border_width = beautiful.border_width,
+			shape_border_color = beautiful.lighter,
 			widget = wibox.container.background
 		}
+		helpers.hoverCursor(tags)
+		return tags
 	else
-		return wibox.widget {
+		local tags = wibox.widget {
 			{
 				{
 					image = gears.surface.crop_surface {
@@ -84,8 +88,12 @@ local function createpreview(t, s, geometry)
 				layout = wibox.layout.stack
 			},
 			shape = beautiful.radius,
+			shape_border_width = beautiful.border_width,
+			shape_border_color = beautiful.lighter,
 			widget = wibox.container.background
 		}
+		helpers.hoverCursor(tags)
+		return tags
 	end
 end
 
@@ -96,6 +104,8 @@ return function(s)
 		visible = false,
 		shape = beautiful.radius,
 		bg = beautiful.background .. "EE",
+		border_width = beautiful.border_width,
+		border_color = beautiful.lighter,
 		widget = wibox.container.background
 	}
 
@@ -142,7 +152,6 @@ return function(s)
 			widget = wibox.container.margin
 		}
 		helpers.placeWidget(previewbox, "top", 2, 0, 0, 0)
-		helpers.hoverCursor(previewbox)
 		previewbox.visible = true
 	end
 

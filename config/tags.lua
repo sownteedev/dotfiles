@@ -2,19 +2,11 @@ local awful          = require("awful")
 local gears          = require("gears")
 local beautiful      = require("beautiful")
 local helpers        = require("helpers")
-local title          = require("widgets.titlebar")
 
 awful.layout.layouts = {
 	awful.layout.suit.floating,
 	awful.layout.suit.tile,
 }
-
-client.connect_signal("request::manage", function(c)
-	if not awesome.startup then awful.client.setslave(c) end
-	if awesome.startup and not c.size_hints.user_position and not c.size_hints.program_position then
-		awful.placement.no_offscreen(c)
-	end
-end)
 
 client.connect_signal("request::titlebars", function(c)
 	if c.requests_no_titlebar then return end
@@ -47,12 +39,12 @@ awesome.connect_signal("wallpaper::change", function()
 end)
 
 ---@diagnostic disable: need-check-nil
+local window_positions = helpers.readJson(gears.filesystem.get_cache_dir() .. "window_positions.json")
 awesome.connect_signal("exit", function(reason_restart)
 	if not reason_restart then
 		return
 	end
 
-	local window_positions = helpers.readJson(gears.filesystem.get_cache_dir() .. "window_positions.json")
 	for _, c in ipairs(client.get()) do
 		if c.class and not c.maximized then
 			if c.class == "Alacritty" then
@@ -80,7 +72,6 @@ awesome.connect_signal("exit", function(reason_restart)
 end)
 
 awesome.connect_signal("startup", function()
-	local window_positions = helpers.readJson(gears.filesystem.get_cache_dir() .. "window_positions.json")
 	for _, c in ipairs(client.get()) do
 		if c.class and window_positions[c.class] then
 			local geo = window_positions[c.class]
@@ -113,7 +104,7 @@ end)
 local tag = require("awful.widget.taglist")
 local original_create = tag.taglist_label
 tag.taglist_label = function(t, args)
-	beautiful.taglist_font = t.selected and "SF Pro Display Bold 12" or "SF Pro Display Medium 12"
+	beautiful.taglist_font = t.selected and _User.Sans .. " Bold 12" or _User.Sans .. " Medium 12"
 	local result = original_create(t, args)
 	return result
 end

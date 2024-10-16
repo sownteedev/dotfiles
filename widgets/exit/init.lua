@@ -38,6 +38,8 @@ local createButton = function(icon, name, cmd)
 		},
 		id = "bg",
 		bg = beautiful.lighter,
+		shape_border_width = beautiful.border_width,
+		shape_border_color = beautiful.lighter1,
 		shape = beautiful.radius,
 		widget = wibox.container.background,
 		buttons = {
@@ -105,6 +107,8 @@ return function(s)
 		ontop = true,
 		shape = beautiful.radius,
 		bg = beautiful.background,
+		border_width = beautiful.border_width,
+		border_color = beautiful.lighter,
 		y = beautiful.useless_gap * 6,
 		visible = false,
 	})

@@ -21,7 +21,7 @@ local focus = wibox.widget({
 			widget = wibox.container.margin,
 		},
 		id = "backfocus",
-		shape = helpers.rrect(100),
+		shape = gears.shape.circle,
 		bg = beautiful.lighter1,
 		widget = wibox.container.background,
 		buttons = {
@@ -56,12 +56,14 @@ local focus = wibox.widget({
 awesome.connect_signal("signal::dnd", function(status)
 	if status then
 		helpers.gc(focus, "backfocus"):set_bg(beautiful.blue)
-		helpers.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(beautiful.icon_path .. "focus.svg",
+		helpers.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(
+			beautiful.icon_path .. "controlcenter/focus.svg",
 			beautiful.background))
 		helpers.gc(focus, "labelfocus"):set_markup("On")
 	else
 		helpers.gc(focus, "backfocus"):set_bg(beautiful.lighter1)
-		helpers.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(beautiful.icon_path .. "focus.svg",
+		helpers.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(
+			beautiful.icon_path .. "controlcenter/focus.svg",
 			beautiful.foreground))
 		helpers.gc(focus, "labelfocus"):set_markup("Off")
 	end
@@ -86,7 +88,7 @@ local redshift = wibox.widget({
 				widget = wibox.container.margin,
 			},
 			id = "backredshift",
-			shape = helpers.rrect(100),
+			shape = gears.shape.circle,
 			bg = beautiful.lighter1,
 			widget = wibox.container.background,
 			buttons = {
@@ -111,12 +113,12 @@ awesome.connect_signal("signal::redshift", function(status)
 	if status then
 		helpers.gc(redshift, "backredshift"):set_bg(beautiful.blue)
 		helpers.gc(redshift, "iconredshift"):set_image(gears.color.recolor_image(
-			beautiful.icon_path .. "nightshift.svg",
+			beautiful.icon_path .. "controlcenter/nightshift.svg",
 			beautiful.background))
 	else
 		helpers.gc(redshift, "backredshift"):set_bg(beautiful.lighter1)
 		helpers.gc(redshift, "iconredshift"):set_image(
-			gears.color.recolor_image(beautiful.icon_path .. "nightshift.svg",
+			gears.color.recolor_image(beautiful.icon_path .. "controlcenter/nightshift.svg",
 				beautiful.foreground
 			))
 	end
@@ -141,7 +143,7 @@ local blur = wibox.widget({
 				widget = wibox.container.margin,
 			},
 			id = "backblur",
-			shape = helpers.rrect(100),
+			shape = gears.shape.circle,
 			bg = beautiful.lighter1,
 			widget = wibox.container.background,
 			buttons = {
@@ -166,12 +168,12 @@ awesome.connect_signal("signal::blur", function(status)
 	if status then
 		helpers.gc(blur, "backblur"):set_bg(beautiful.blue)
 		helpers.gc(blur, "iconblur"):set_image(
-			gears.color.recolor_image(beautiful.icon_path .. "blur.svg",
+			gears.color.recolor_image(beautiful.icon_path .. "controlcenter/blur.svg",
 				beautiful.background))
 	else
 		helpers.gc(blur, "backblur"):set_bg(beautiful.lighter1)
 		helpers.gc(blur, "iconblur"):set_image(
-			gears.color.recolor_image(beautiful.icon_path .. "blur.svg",
+			gears.color.recolor_image(beautiful.icon_path .. "controlcenter/blur.svg",
 				beautiful.foreground))
 	end
 end)

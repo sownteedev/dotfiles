@@ -1,11 +1,9 @@
 return {
-	foreground = "#edeff0",
-	background = "#0c0e0f",
+	foreground = "#FFFFFF",
+	background = "#1E1E1E",
 
-	red = "#df5b61",
-	green = "#78b892",
-	blue = "#6791c9",
-	yellow = "#ecd28b",
-
-	type = "dark",
+	red = "#E06C75",
+	green = "#98C379",
+	blue = "#61AFEF",
+	yellow = "#E5C07B",
 }

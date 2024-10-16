@@ -4,35 +4,20 @@ local wibox = require("wibox")
 local awful = require("awful")
 local helpers = require("helpers")
 local gears = require("gears")
-local animation = require("modules.animation")
 
 return function(n)
 	local action_widget = {
 		{
 			{
-				{
-					{
-						id            = "icon_role",
-						forced_height = 1,
-						forced_width  = 1,
-						widget        = wibox.widget.imagebox
-					},
-					top = 5,
-					bottom = 5,
-					widget = wibox.container.margin,
-				},
-				{
-					id = "text_role",
-					font = beautiful.sans .. " 12",
-					widget = wibox.widget.textbox,
-				},
-				layout = wibox.layout.fixed.horizontal,
+				id = "text_role",
+				font = beautiful.sans .. " 10",
+				widget = wibox.widget.textbox,
 			},
 			align = "center",
 			widget = wibox.container.place,
 		},
 		bg = beautiful.lighter1,
-		forced_height = 30,
+		forced_height = 25,
 		shape = helpers.rrect(5),
 		widget = wibox.container.background,
 	}
@@ -48,95 +33,92 @@ return function(n)
 		widget = naughty.list.actions,
 	})
 
-	local image_n = wibox.widget({
-		{
-			{
-				image = n.icon and helpers.cropSurface(1, gears.surface.load_uncached(n.icon))
-					or gears.color.recolor_image(beautiful.icon_path .. "awm/awm.png", helpers.randomColor()),
-				resize = true,
-				widget = wibox.widget.imagebox,
-			},
-			strategy = "exact",
-			height = 140,
-			width = 140,
-			widget = wibox.container.constraint,
-		},
-		id = "arc",
-		widget = wibox.container.arcchart,
-		max_value = 100,
-		min_value = 0,
-		value = 100,
-		rounded_edge = true,
-		thickness = 4,
-		start_angle = 4.71238898,
-		bg = beautiful.blue,
-		colors = { beautiful.foreground },
-		forced_width = 140,
-		forced_height = 140,
+	local app_icon = wibox.widget({
+		image = helpers.getIcon(nil, n.app_name, n.app_name),
+		resize = true,
+		forced_height = 60,
+		forced_width = 60,
+		valign = "center",
+		widget = wibox.widget.imagebox,
 	})
-	local anim = animation:new({
-		duration = 5,
-		target = 100,
-		reset_on_stop = false,
-		easing = animation.easing.linear,
-		update = function(_, pos)
-			helpers.gc(image_n, "arc"):set_value(pos)
-		end,
+
+	local image = wibox.widget({
+		image = n.icon,
+		resize = true,
+		clip_shape = beautiful.radius,
+		forced_height = 60,
+		forced_width = 60,
+		valign = "center",
+		widget = wibox.widget.imagebox,
 	})
 
 	local title_n = wibox.widget({
 		{
-			markup = n.title,
-			font = beautiful.sans .. " Medium 15",
-			halign = "left",
-			widget = wibox.widget.textbox,
+			{
+				markup = n.title,
+				font = beautiful.sans .. " Medium 14",
+				halign = "left",
+				widget = wibox.widget.textbox,
+			},
+			widget = wibox.container.scroll.horizontal,
+			step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
+			speed = 40,
 		},
-		forced_width = 250,
-		widget = wibox.container.scroll.horizontal,
-		step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
-		speed = 40,
+		widget = wibox.container.constraint,
+		width = 300,
+		strategy = "max",
 	})
 
 	local message_n = wibox.widget({
-		markup = helpers.colorizeText("<span weight='normal'>" .. n.message .. "</span>", beautiful.foreground),
-		font = beautiful.sans .. " 12",
-		halign = "left",
-		wrap = "char",
-		widget = wibox.widget.textbox,
-		forced_width = 300,
+		{
+			markup = n.message,
+			font = beautiful.sans .. " 12",
+			halign = "left",
+			wrap = "char",
+			widget = wibox.widget.textbox,
+		},
+		widget = wibox.container.constraint,
+		width = 300,
+		strategy = "max",
 	})
 
-	local time_n = wibox.widget({
-		markup = helpers.colorizeText(os.date("%H:%M"), beautiful.foreground .. "BF"),
-		font = beautiful.sans .. " Medium 11",
-		halign = "right",
-		widget = wibox.widget.textbox,
-	})
+	local notification_template = {
+		app_icon,
+		{
+			{
+				title_n,
+				message_n,
+				spacing = 10,
+				layout = wibox.layout.fixed.vertical,
+			},
+			spacing = 20,
+			layout = wibox.layout.fixed.vertical,
+		},
+		spacing = 20,
+		layout = wibox.layout.fixed.horizontal,
+		expand = "none",
+	}
+
+	if n.actions and #n.actions > 0 then
+		table.insert(notification_template[2], actions)
+	end
+
+	if n.icon then
+		table.insert(notification_template, image)
+	end
 
 	local notification = naughty.layout.box({
-		notification = n,
-		shape = beautiful.radius,
-		bg = beautiful.background,
+		notification    = n,
+		shape           = beautiful.radius,
+		border_width    = beautiful.border_width,
+		border_color    = beautiful.lighter,
+		maximum_width   = 500,
+		bg              = beautiful.background,
+		cursor          = "hand2",
 		widget_template = {
-			{
-				image_n,
-				{
-					{
-						title_n,
-						nil,
-						time_n,
-						layout = wibox.layout.align.horizontal,
-					},
-					message_n,
-					actions,
-					layout = wibox.layout.align.vertical,
-				},
-				spacing = 30,
-				layout = wibox.layout.fixed.horizontal,
-				expand = "none",
-			},
+			notification_template,
 			widget = wibox.container.margin,
-			margins = 30,
+			margins = 20,
 		},
 	})
 
@@ -158,16 +140,10 @@ return function(n)
 		end
 	end
 
-	anim:start()
 	notification:buttons(gears.table.join(awful.button({}, 1, function()
-		anim:stop()
 		focus_client_by_class(n.app_name)
 		n:destroy(naughty.notification_closed_reason.dismissed_by_user)
 	end)))
-	anim:connect_signal("ended", function()
-		n:destroy(naughty.notification_closed_reason.dismissed_by_user)
-	end)
-	helpers.hoverCursor(notification)
 
 	return notification
 end

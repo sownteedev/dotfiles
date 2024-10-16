@@ -2,7 +2,7 @@ local awful = require("awful")
 
 function mic()
 	awful.spawn.easy_async_with_shell(
-		[[pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\d+%' | awk -F'%' '{print $1}' | head -n 1]],
+		"sh -c \"pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\\b\\d+(?=%)' | head -n 1\" &",
 		function(stdout)
 			local mic_int = tonumber(stdout)
 			awesome.emit_signal("signal::mic", mic_int)

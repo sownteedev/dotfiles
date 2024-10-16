@@ -34,8 +34,7 @@ local function do_notify(which, tmp_path)
 			awful.spawn.with_shell('xclip -sel clip -target image/png "' ..
 				tmp_path .. '" && viewnior "' .. tmp_path .. '"')
 			naughty.notify({
-				app_name = "Screenshot",
-				app_icon = tmp_path,
+				app_name = "photo",
 				icon = tmp_path,
 				title = "Screenshot",
 				text = "Screenshot copied successfully.",
@@ -46,15 +45,14 @@ local function do_notify(which, tmp_path)
 			awful.spawn.with_shell('xclip -sel clip -target image/png "' ..
 				tmp_path .. '" && rm -f "' .. tmp_path .. '"')
 			naughty.notify({
-				app_name = "Screenshot",
+				app_name = "photo",
 				title = "Screenshot",
 				text = "Screenshot copied and deleted successfully.",
 			})
 		end)
 
 		naughty.notify({
-			app_name = "Screenshot",
-			app_icon = tmp_path,
+			app_name = "photo",
 			icon = tmp_path,
 			title = "Screenshot",
 			text = "Screenshot saved successfully",
@@ -74,14 +72,14 @@ local function do_notify(which, tmp_path)
 		delete:connect_signal("invoked", function()
 			awful.spawn.with_shell('rm -f "' .. tmp_path .. '"')
 			naughty.notify({
-				app_name = "Recording",
+				app_name = "screenrecorder",
 				title = "Recording",
 				text = "Recording deleted successfully.",
 			})
 		end)
 
 		naughty.notify({
-			app_name = "Recording",
+			app_name = "screenrecorder",
 			title = "Recording",
 			text = "Recording saved successfully",
 			actions = {
