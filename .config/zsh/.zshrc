@@ -1,4 +1,4 @@
-[ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
+source /usr/share/nvm/init-nvm.sh
 
 while read file
 do 
@@ -10,10 +10,6 @@ alias
 opts
 prompt
 EOF
-
-for fun in ${(ok)functions[(I)[_][_][_][_][_]*]}; do 
-  eval "alias ${${fun:5}//_/-}=\"${fun}\""
-done
 
 [ -f "$greet_path" ] && eval "$greet_path" || default_greeter
 

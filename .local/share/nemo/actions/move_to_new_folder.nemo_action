@@ -1,0 +1,6 @@
+[Nemo Action]
+Name=Move to new folder
+Exec=sh -c 'folder_name=$(yad --entry --title="New Folder" --text="Enter new folder name:" --center) && [ ! -z "$folder_name" ] && mkdir -p "%P/$folder_name" && mv %F "%P/$folder_name"'
+Icon-Name=folder-black
+Selection=notnone
+Extensions=any;

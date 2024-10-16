@@ -1,0 +1,6 @@
+[Nemo Action]
+Name=Zip
+Exec=sh -c 'cd "%P" && mkdir -p Zip && cp -r %F Zip/ && zip -r Zip.zip Zip/* && rm -rf Zip'
+Icon-Name=package
+Selection=any
+Extensions=any;

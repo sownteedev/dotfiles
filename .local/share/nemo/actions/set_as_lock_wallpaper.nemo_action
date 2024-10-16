@@ -1,6 +1,6 @@
 [Nemo Action]
 Name=Set as lock wallpaper
 Exec=awesome-client 'changelockwall("%F")' 
-Terminal=false
+Icon-Name=lock_wallpaper
 Selection=s
 Extensions=png;jpg;jpeg;

@@ -1,0 +1,6 @@
+[Nemo Action]
+Name=Unzip
+Exec=unzip "%F" -d "%P"
+Icon-Name=extract
+Selection=s
+Extensions=zip;
