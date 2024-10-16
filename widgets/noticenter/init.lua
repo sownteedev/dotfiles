@@ -48,11 +48,6 @@ local clearButton = wibox.widget({
 			forced_width = 25,
 			halign = "center",
 			widget = wibox.widget.imagebox,
-			buttons = {
-				awful.button({}, 1, function()
-					notif_center_reset_notifs_container()
-				end),
-			},
 		},
 		margins = 10,
 		widget = wibox.container.margin,
@@ -61,6 +56,11 @@ local clearButton = wibox.widget({
 	bg = beautiful.lighter,
 	shape = gears.shape.circle,
 	widget = wibox.container.background,
+	buttons = {
+		awful.button({}, 1, function()
+			notif_center_reset_notifs_container()
+		end),
+	},
 })
 helpers.hoverCursor(clearButton)
 helpers.addHoverBg(clearButton, "bg", beautiful.lighter, beautiful.lighter1)
@@ -71,6 +71,8 @@ return function(s)
 		width = beautiful.width / 4.5,
 		height = beautiful.height / 1.51,
 		shape = beautiful.radius,
+		border_width = beautiful.border_width,
+		border_color = beautiful.lighter,
 		ontop = true,
 		visible = false,
 	})
@@ -85,12 +87,20 @@ return function(s)
 	local remove_notifs_empty = true
 
 	notif_center_reset_notifs_container = function()
+		for _, child in ipairs(finalcontent.children) do
+			if child.timer and child.timer.started then
+				child.timer:stop()
+			end
+		end
 		finalcontent:reset(finalcontent)
 		finalcontent:insert(1, empty)
 		remove_notifs_empty = true
 	end
 
 	notif_center_remove_notif = function(box)
+		if box.timer and box.timer.started then
+			box.timer:stop()
+		end
 		finalcontent:remove_widgets(box)
 		if #finalcontent.children == 0 then
 			finalcontent:insert(1, empty)
@@ -103,12 +113,7 @@ return function(s)
 			finalcontent:reset(finalcontent)
 			remove_notifs_empty = false
 		end
-
-		local appicon = n.icon or n.app_icon
-		if not appicon then
-			appicon = gears.color.recolor_image(beautiful.icon_path .. "awm/awm.png", helpers.randomColor())
-		end
-		finalcontent:insert(1, make(appicon, n))
+		finalcontent:insert(1, make(n))
 	end)
 
 	noticenter:setup({
@@ -142,7 +147,6 @@ return function(s)
 	helpers.placeWidget(noticenter, "top_right", 2, 0, 0, 2)
 	helpers.slideAnimation("toggle::noticenter", "close::noticenter", "right", noticenter, beautiful.width,
 		beautiful.width - noticenter.width - beautiful.useless_gap * 2)
-
 
 	return noticenter
 end

@@ -5,14 +5,13 @@ require("themes.toggle")
 
 local theme                = {}
 
-theme.font                 = "SF Pro Display 12"
-theme.sans                 = "SF Pro Display"
-theme.icon                 = "Material Design Icons"
+theme.font                 = _User.Font
+theme.sans                 = _User.Sans
+theme.icon                 = _User.Icon
 theme.icon_path            = gfs.get_configuration_dir() .. "themes/assets/"
 
 -- Colors --
 local colors               = require("themes.colors." .. _User.Colorscheme)
-theme.type                 = colors.type
 theme.background           = colors.background
 theme.foreground           = colors.foreground
 theme.red                  = colors.red
@@ -20,14 +19,14 @@ theme.green                = colors.green
 theme.blue                 = colors.blue
 theme.yellow               = colors.yellow
 
-theme.darker               = helpers.change_hex_lightness(theme.background, -3)
-theme.lighter              = helpers.change_hex_lightness(theme.background, 3)
-theme.lighter1             = helpers.change_hex_lightness(theme.background, 6)
-theme.lighter2             = helpers.change_hex_lightness(theme.background, 9)
+theme.darker               = helpers.change_hex_lightness(theme.background, -4)
+theme.lighter              = helpers.change_hex_lightness(theme.background, 4)
+theme.lighter1             = helpers.change_hex_lightness(theme.background, 8)
+theme.lighter2             = helpers.change_hex_lightness(theme.background, 12)
 
 theme.width                = screen.primary.geometry.width
 theme.height               = screen.primary.geometry.height
-theme.radius               = helpers.rrect(10)
+theme.radius               = helpers.rrect(_User.Radius)
 theme.useless_gap          = 10
 
 -- Default vars --
@@ -35,9 +34,9 @@ theme.bg_normal            = theme.background
 theme.fg_normal            = theme.foreground
 
 -- Borders --
-theme.border_width         = 0
-theme.border_color_normal  = theme.foreground
-theme.border_color_active  = theme.foreground
+theme.border_width         = _User.Border
+theme.border_color_normal  = theme.lighter1
+theme.border_color_active  = theme.lighter1
 
 -- Taglist --
 theme.taglist_bg           = theme.background .. "00"

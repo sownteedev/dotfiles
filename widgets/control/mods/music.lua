@@ -66,7 +66,7 @@ local player = wibox.widget({
 			resize = true,
 			widget = wibox.widget.imagebox,
 		},
-		shape = helpers.rrect(50),
+		shape = gears.shape.circle,
 		bg = beautiful.background,
 		widget = wibox.container.background,
 	},

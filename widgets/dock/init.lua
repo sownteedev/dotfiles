@@ -4,7 +4,6 @@ local helpers = require("helpers")
 local wibox = require("wibox")
 local gears = require("gears")
 local Gio = require("lgi").Gio
-local inspect = require("modules.inspect")
 local animation = require("modules.animation")
 
 local data = {
@@ -119,7 +118,7 @@ local data = {
 			icon = helpers.getIcon(nil, "Docker Desktop", "Docker Desktop"),
 			clients = {},
 			class = "Docker Desktop",
-			exec = "systemctl --user start docker-desktop",
+			exec = "/opt/docker-desktop/bin/docker-desktop",
 		},
 		{
 			count = 0,
@@ -212,10 +211,11 @@ local data = {
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM", "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM"),
+			icon = helpers.getIcon(nil, _User.Custom_Icon[5].name, _User.Custom_Icon[5].name),
 			clients = {},
-			class = "FFPWA-01J82T1YF1C7RZ9ZD2WV6FZ7GM",
-			exec = "/usr/bin/firefoxpwa site launch 01J82T1YF1C7RZ9ZD2WV6FZ7GM --protocol",
+			class = _User.Custom_Icon[5].name,
+			exec = "/usr/bin/firefoxpwa site launch " ..
+				string.sub(_User.Custom_Icon[5].name, 7) .. " --protocol",
 		},
 	},
 	classes = {
@@ -244,7 +244,7 @@ local data = {
 		"caprine",
 		"vesktop",
 		"spotify",
-		"ffpwa-01j82t1yf1c7rz9zd2wv6fz7gm",
+		string.lower(_User.Custom_Icon[5].name)
 	},
 }
 
@@ -350,7 +350,6 @@ end
 local function genIcons()
 	genMetadata()
 	widget:reset()
-	print(inspect(data.metadata))
 	local added = false
 	for _, j in ipairs(data.metadata) do
 		if j.pinned or (not j.pinned and j.count > 0) then
@@ -559,6 +558,9 @@ return function(s)
 		genIcons()
 	end)
 	client.connect_signal("unmanage", function()
+		genIcons()
+	end)
+	tag.connect_signal("property::selected", function()
 		genIcons()
 	end)
 	if _User.AutoHideDock then

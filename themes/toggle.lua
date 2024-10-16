@@ -3,7 +3,7 @@ local awful = require("awful")
 function backup()
 	awful.spawn.with_shell([[
 		declare -a config_folders=("alacritty" "zsh" "ranger" "gtk-3.0" "picom")
-		declare -a data_folders=("spicetify/Themes" "nvim/lua/custom")
+		declare -a data_folders=("nvim/lua/custom")
 		declare -a dot_folders=("fonts" "icons" "themes" "walls") &&
 
 		rm -rf ~/dotf/{.config,.fonts,.icons,.themes,.walls,.local}
@@ -24,6 +24,7 @@ function backup()
 		
 		cp -r ~/.local/other/ ~/dotf/.local/ && cp -r ~/.local/bin/ ~/dotf/.local/ && mkdir -p ~/dotf/.local/share/nemo/ && cp -r ~/.local/share/nemo/actions/ ~/dotf/.local/share/nemo/
 		cp ~/.config/Caprine/custom.css ~/dotf/.local/other/customcaprine.css &&
+		cp ~/.config/spicetify/Themes/Tetify/user.css ~/dotf/.local/other/customspotify.css &&
 		
 		rm -f ~/dotf/.gtkrc-2.0 && cp ~/.gtkrc-2.0 ~/dotf/
 		rm -f ~/dotf/.Xresources && cp ~/.Xresources ~/dotf/

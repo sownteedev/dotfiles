@@ -45,6 +45,8 @@ return function(s)
 		ontop = true,
 		bg = beautiful.background,
 		shape = beautiful.radius,
+		border_width = beautiful.border_width,
+		border_color = beautiful.lighter,
 		placement = function(d)
 			awful.placement.right(d, { margins = beautiful.useless_gap * 2, honor_workarea = true })
 		end,
@@ -54,7 +56,7 @@ return function(s)
 	local anim = animation:new {
 		duration = 0.3,
 		easing = animation.easing.linear,
-		update = function(self, pos)
+		update = function(_, pos)
 			info:get_children_by_id("progressbar")[1].value = pos
 		end,
 	}

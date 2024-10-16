@@ -21,7 +21,7 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 				widget = wibox.container.margin,
 			},
 			id = "back",
-			shape = helpers.rrect(100),
+			shape = gears.shape.circle,
 			bg = beautiful.lighter1,
 			widget = wibox.container.background,
 			buttons = {

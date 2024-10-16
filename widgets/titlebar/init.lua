@@ -6,7 +6,7 @@ local helpers = require("helpers")
 
 return function(c)
 	local titlebar = awful.titlebar(c, {
-		size = 35,
+		size = 40,
 		fg = beautiful.foreground,
 		bg = beautiful.lighter,
 	})
@@ -128,7 +128,7 @@ return function(c)
 		{
 			widget = wibox.widget.imagebox,
 			image = helpers.getIcon(c, c.class, c.class),
-			forced_width = 28,
+			forced_width = 30,
 			resize = true,
 		},
 		widget = wibox.container.place,
@@ -157,44 +157,49 @@ return function(c)
 
 	titlebar.widget = {
 		{
-			widget = wibox.container.margin,
-			left = 20,
 			{
-				layout = wibox.layout.fixed.horizontal,
-				spacing = 1,
-				close,
-				maximize,
-				minimize,
-			},
-		},
-		{
-			{
-				title,
-				top = 5,
-				bottom = 5,
-				left = 200,
-				right = 200,
 				widget = wibox.container.margin,
+				left = 20,
+				{
+					layout = wibox.layout.fixed.horizontal,
+					spacing = 1,
+					close,
+					maximize,
+					minimize,
+				},
 			},
-			align = "center",
-			valign = "center",
-			widget = wibox.container.place,
-			buttons = gears.table.join(
-				awful.button({}, 1, function()
-					handle_click()
-				end),
-				awful.button({}, 3, function()
-					client.focus = c
-					c:raise()
-					awful.mouse.client.resize(c)
-				end)
-			)
+			{
+				{
+					title,
+					top = 5,
+					bottom = 5,
+					left = 200,
+					right = 200,
+					widget = wibox.container.margin,
+				},
+				align = "center",
+				valign = "center",
+				widget = wibox.container.place,
+				buttons = gears.table.join(
+					awful.button({}, 1, function()
+						handle_click()
+					end),
+					awful.button({}, 3, function()
+						client.focus = c
+						c:raise()
+						awful.mouse.client.resize(c)
+					end)
+				)
+			},
+			{
+				icon,
+				widget = wibox.container.margin,
+				right = 20,
+			},
+			layout = wibox.layout.align.horizontal,
 		},
-		{
-			icon,
-			widget = wibox.container.margin,
-			right = 20,
-		},
-		layout = wibox.layout.align.horizontal,
+		bottom = beautiful.border_width,
+		color = beautiful.lighter1,
+		widget = wibox.container.margin
 	}
 end

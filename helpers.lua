@@ -199,6 +199,24 @@ helpers.popupOpacity = function(widget, opacity)
 			widget.opacity = 1
 		end
 	end)
+	tag.connect_signal("property::selected", function(t)
+		local all_clients = t:clients()
+		if #all_clients ~= 0 then
+			local all_minimized = true
+			for _, c in ipairs(all_clients) do
+				if not c.minimized then
+					widget.opacity = opacity
+					all_minimized = false
+					break
+				end
+			end
+			if all_minimized then
+				widget.opacity = 1
+			end
+		else
+			widget.opacity = 1
+		end
+	end)
 end
 
 helpers.slideAnimation = function(toggle, close, where, widget, pos, set)
@@ -531,7 +549,7 @@ helpers.change_hex_saturation = function(hex, percent)
 end
 
 helpers.change_hex_lightness = function(hex, percent)
-	if beautiful.type == "light" and hex == beautiful.background then
+	if _User.Colorscheme == "light" then
 		percent = -percent
 	end
 	local h, s, l = hex2hsl(hex)

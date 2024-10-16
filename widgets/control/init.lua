@@ -15,6 +15,8 @@ return function(s)
 		height = 910,
 		shape = beautiful.radius,
 		bg = beautiful.background,
+		border_width = beautiful.border_width,
+		border_color = beautiful.lighter,
 		ontop = true,
 		visible = false,
 	})
