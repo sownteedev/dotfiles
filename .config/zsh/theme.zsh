@@ -10,21 +10,6 @@ function default_greeter() {
   printf "$c1▇▇ $c2▇▇ $c3▇▇ $c4▇▇ $c5▇▇ $c6▇▇ $c7▇▇ $c8▇▇ $reset\n\n"
 }
 
-function toggle_prompt() {
-  case "$1" in
-    right) p10k display '*/right'=hide,show ;;
-    left) p10k display '*/left'=hide,show ;;
-  esac
-}
-
-function toggle_right_prompt() {
-  toggle_prompt right
-}
-
-function toggle_left_prompt() {
-  toggle_prompt left
-}
-
 # FZF bases
 export FZF_DEFAULT_OPTS="
   --color=border:0,bg+:235,gutter:-1

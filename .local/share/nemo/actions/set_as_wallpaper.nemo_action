@@ -1,6 +1,6 @@
 [Nemo Action]
 Name=Set as wallpaper
 Exec=awesome-client 'changewall("%F")'
-Terminal=false
+Icon-Name=wallpaper
 Selection=s
 Extensions=png;jpg;jpeg;

@@ -5,6 +5,7 @@ If you want to disable styles but keep the config, just comment the lines that y
 
 Press Command/Ctrl+R in Caprine to see your changes.
 */
+
 html,
 body {
 	font-family: SF Pro Display !important;
