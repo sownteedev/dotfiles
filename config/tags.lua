@@ -33,10 +33,10 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	s.preview = require("widgets.popup.previewtags")(s)
 end)
 
-gears.wallpaper.maximized(_User.Wallpaper, nil, true)
-awesome.connect_signal("wallpaper::change", function()
-	gears.wallpaper.maximized(_User.Wallpaper, nil, true)
-end)
+-- gears.wallpaper.maximized(_User.Wallpaper, nil, true)
+-- awesome.connect_signal("wallpaper::change", function()
+-- 	gears.wallpaper.maximized(_User.Wallpaper, nil, true)
+-- end)
 
 ---@diagnostic disable: need-check-nil
 local window_positions = helpers.readJson(gears.filesystem.get_cache_dir() .. "window_positions.json")

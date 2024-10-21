@@ -34,12 +34,12 @@ _User.Radius          = 15
 
 _User.AutoHideDock    = false
 
-_User.API_KEY_WEATHER = ""
+_User.API_KEY_WEATHER = "0187188eefff4d3ba6100addd927a24a"
 _User.Coordinates     = { "21.0245", "105.8412" }
 
 _User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
-_User.Wallpaper       = "/home/sowntee/.walls/dark-purple.png"
-_User.Lock            = "/home/sowntee/.walls/b.jpg"
+_User.Wallpaper       = "/home/sowntee/.walls/a.jpg"
+_User.Lock            = "/home/sowntee/.walls/a.jpg"
 
 _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artdefault.jpg"
 

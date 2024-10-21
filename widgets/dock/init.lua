@@ -59,6 +59,14 @@ local data = {
 		{
 			count = 0,
 			pinned = true,
+			icon = helpers.getIcon(nil, "cursor", "cursor"),
+			clients = {},
+			class = "Cursor",
+			exec = "cursor",
+		},
+		{
+			count = 0,
+			pinned = true,
 			icon = helpers.getIcon(nil, "jetbrains-intellij", "jetbrains-intellij"),
 			clients = {},
 			class = "jetbrains-idea",
@@ -225,6 +233,7 @@ local data = {
 		"firefox",
 		"alacritty",
 		"code",
+		"cursor",
 		"jetbrains-idea",
 		"jetbrains-studio",
 		"jetbrains-webstorm",

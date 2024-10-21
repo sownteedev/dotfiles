@@ -4,10 +4,10 @@ function backup()
 	awful.spawn.with_shell([[
 		declare -a config_folders=("alacritty" "zsh" "ranger" "gtk-3.0" "picom")
 		declare -a data_folders=("nvim/lua/custom")
-		declare -a dot_folders=("fonts" "icons" "themes" "walls") &&
+		declare -a dot_folders=("fonts" "icons" "themes" "walls" "root") &&
 
-		rm -rf ~/dotf/{.config,.fonts,.icons,.themes,.walls,.local}
-		mkdir -p ~/dotf/{.config,.fonts,.icons,.themes,.walls,.local}
+		rm -rf ~/dotf/{.config,.fonts,.icons,.themes,.walls,.root,.local}
+		mkdir -p ~/dotf/{.config,.fonts,.icons,.themes,.walls,.root,.local}
 		
 		for folder in "${dot_folders[@]}"; do
 			cp -r ~/."$folder"/* ~/dotf/.${folder}/

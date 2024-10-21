@@ -83,6 +83,7 @@ return function(icon_name)
 	if icon_name == "laptop-symbolic" then
 		battery = utils.gobject_to_gearsobject(upower:get_display_device())
 		local update = function(self)
+			chart.colors = self.percentage <= 20 and { beautiful.red } or { beautiful.green }
 			chart.value = self.percentage
 			textbox.text = math.floor(self.percentage) .. "%"
 		end
@@ -117,6 +118,7 @@ return function(icon_name)
 			battery:connect_signal("property::percentage", update)
 			battery:connect_signal("property::state", update)
 			battery:emit_signal("property::percentage")
+			battery:emit_signal("property::state")
 		end
 
 		local disconnect = function()

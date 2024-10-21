@@ -46,46 +46,38 @@ return function(n)
 		image = n.icon,
 		resize = true,
 		clip_shape = beautiful.radius,
-		forced_height = 60,
-		forced_width = 60,
+		forced_height = 50,
+		forced_width = 50,
 		valign = "center",
 		widget = wibox.widget.imagebox,
 	})
 
 	local title_n = wibox.widget({
 		{
-			{
-				markup = n.title,
-				font = beautiful.sans .. " Medium 14",
-				halign = "left",
-				widget = wibox.widget.textbox,
-			},
-			widget = wibox.container.scroll.horizontal,
-			step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
-			speed = 40,
+			markup = n.title,
+			font = beautiful.sans .. " Medium 13",
+			halign = "left",
+			widget = wibox.widget.textbox,
 		},
-		widget = wibox.container.constraint,
-		width = 320,
-		strategy = "max",
+		widget = wibox.container.scroll.horizontal,
+		step_function = wibox.container.scroll.step_functions.nonlinear_back_and_forth,
+		speed = 40,
+		forced_width = 340,
 	})
 
 	local message_n = wibox.widget({
-		{
-			markup = n.message,
-			font = beautiful.sans .. " 12",
-			halign = "left",
-			wrap = "char",
-			widget = wibox.widget.textbox,
-		},
-		widget = wibox.container.constraint,
-		width = 320,
-		strategy = "max",
+		markup = n.message,
+		font = beautiful.sans .. " 11",
+		halign = "left",
+		wrap = "char",
+		forced_width = 400,
+		widget = wibox.widget.textbox,
 	})
 
 	local time = wibox.widget({
 		markup = "",
 		font = beautiful.sans .. " 11",
-		halign = "center",
+		halign = "left",
 		widget = wibox.widget.textbox,
 	})
 
@@ -110,45 +102,72 @@ return function(n)
 		time.markup = helpers.colorizeText(format_time_difference(start_time), beautiful.foreground .. "AA")
 	end
 
-	local notification_time = os.time()
-
 	local notification_template = {
+		app_icon,
 		{
-			app_icon,
 			{
 				{
-					{
-						title_n,
-						message_n,
-						spacing = 10,
-						layout = wibox.layout.fixed.vertical,
-					},
-					spacing = 20,
-					layout = wibox.layout.fixed.vertical,
+					title_n,
+					nil,
+					time,
+					layout = wibox.layout.align.horizontal,
 				},
-				valign = "center",
-				widget = wibox.container.place,
+				message_n,
+				spacing = 10,
+				layout = wibox.layout.fixed.vertical,
 			},
 			spacing = 20,
-			layout = wibox.layout.fixed.horizontal,
-			expand = "none",
-		},
-		nil,
-		{
-			{
-				time,
-				top = -5,
-				widget = wibox.container.margin,
-			},
-			image,
-			spacing = 5,
 			layout = wibox.layout.fixed.vertical,
 		},
-		layout = wibox.layout.align.horizontal,
+		spacing = 20,
+		layout = wibox.layout.fixed.horizontal,
+		expand = "none",
 	}
 
+	if n.icon then
+		message_n.forced_width = 340
+		notification_template = {
+			{
+				app_icon,
+				{
+					{
+						{
+							title_n,
+							message_n,
+							spacing = 10,
+							layout = wibox.layout.fixed.vertical,
+						},
+						spacing = 20,
+						layout = wibox.layout.fixed.vertical,
+					},
+					valign = "center",
+					widget = wibox.container.place,
+				},
+				spacing = 20,
+				layout = wibox.layout.fixed.horizontal,
+				expand = "none",
+			},
+			nil,
+			{
+				{
+					time,
+					top = -10,
+					widget = wibox.container.margin,
+				},
+				image,
+				spacing = 5,
+				layout = wibox.layout.fixed.vertical,
+			},
+			layout = wibox.layout.align.horizontal,
+		}
+	end
+
 	if n.actions and #n.actions > 0 then
-		table.insert(notification_template[1][2][1], actions)
+		if n.icon then
+			table.insert(notification_template[1][2][1], actions)
+		else
+			table.insert(notification_template[2], actions)
+		end
 	end
 
 	local box = wibox.widget({
@@ -170,12 +189,29 @@ return function(n)
 		strategy = "max",
 	})
 
+	local function get_timer_timeout()
+		local current_time = os.time()
+		local diff = os.difftime(current_time, notification_time)
+		if diff >= 10800 then
+			return 1000000
+		elseif diff >= 3600 then
+			return 3600
+		else
+			return 60
+		end
+	end
+
+	local notification_time = os.time()
+	local initial_timeout = get_timer_timeout()
+	update_time_widget(notification_time)
+
 	box.timer = gears.timer({
-		timeout = 60,
-		call_now = true,
+		timeout = initial_timeout,
+		call_now = false,
 		autostart = true,
 		callback = function()
 			update_time_widget(notification_time)
+			box.timer.timeout = get_timer_timeout()
 		end
 	})
 
