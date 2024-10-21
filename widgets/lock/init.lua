@@ -111,6 +111,14 @@ return function(s)
 				helpers.gc(prompt, "txt"):set_markup(star)
 				helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 15")
 			elseif key == "BackSpace" then
+				if input == "" then
+					self:stop()
+					start_input:start()
+					bottom:reset()
+					bottom:add(profilepic)
+					input = ""
+					star = ""
+				end
 				input = input:sub(1, -2)
 				star = star:sub(1, -5)
 				if #input == 0 then
