@@ -11,7 +11,7 @@ pkg_installed() {
 cd ~
 
 # Font
-pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-ms-win11-auto --noconfirm
+sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm && yay -S ttf-ms-win11-auto --noconfirm
 echo "[*] Copy fonts ..."
 mkdir -p ~/.fonts && cp -r ~/dotf/.fonts/* ~/.fonts
 fc-cache -fv
@@ -54,6 +54,12 @@ cp -r ~/dotf/.local/* ~/.local
 echo "[*] Done."
 sleep 3 && clear
 
+# Root
+echo "[*] Copy root ..."
+mkdir -p ~/.root && cp -r ~/dotf/.root/* ~/.root
+echo "[*] Done."
+sleep 3 && clear
+
 # .Xresources
 echo "[*] Copy .Xresources ..."
 rm -f ~/.Xresources && cp ~/dotf/.Xresources ~/.Xresources
@@ -88,47 +94,48 @@ sleep 3 && clear
 ######################################## MY CONFIG FOR CUSTOM APPS #######################################
 
 # Spotify
+echo "[*] Installing Spotify ..."
 yay -S spotify --noconfirm
 yay -S --noconfirm spicetify-cli-git
-chmod a+wr /opt/spotify
-chmod a+wr /opt/spotify/Apps -R
-spicetify config current_theme Tetify color_scheme dark
+sudo chmod a+wr /opt/spotify
+sudo chmod a+wr /opt/spotify/Apps -R
+spicetify config current_theme Tetify
 echo "[*] Done."
 sleep 3 && clear
 
 # Firefox
 echo "[*] Installing Firefox ..."
-pacman -S firefox --noconfirm
+yay -S firefox firefox-pwa --noconfirm
 xdg-settings set default-web-browser firefox.desktop
 git clone https://github.com/vinceliuice/WhiteSur-firefox-theme.git
 cd WhiteSur-firefox-theme
 ./install.sh -a
-cd .. && rm -rf ~/WhiteSur-firefox-theme
+cd .. && rm -rf WhiteSur-firefox-theme
 echo "[*] Done."
 sleep 3 && clear
 
 # Grtub Theme
-git clone https://github.com/MrVivekRajan/Grub-Themes.git
-cp -r Grub-Themes/* /boot/grub/themes/
-sed -i 's/#GRUB_THEME=.*/GRUB_THEME=\/boot\/grub\/themes\/Anime\/theme.txt/g' /etc/default/grub
-grub-mkconfig -o /boot/grub/grub.cfg
-rm -rf ~/Grub-Themes
+echo "[*] Installing Grub Theme ..."
+sudo cp -r ~/.root/grub/themes/virtuaverse /boot/grub/themes/
+sudo sed -i 's/#GRUB_THEME=.*/GRUB_THEME=\/boot\/grub\/themes\/virtuaverse\/theme.txt/g' /etc/default/grub
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 echo "[*] Done."
 sleep 3 && clear
 
 # Lightdm
+echo "[*] Installing Lightdm ..."
 yay -S --noconfirm lightdm lightdm-webkit2-greeter lightdm-webkit2-theme-glorious
-systemctl enable lightdm
-sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
-sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
-sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
-cp ~/.walls/lockart.jpg /usr/share/backgrounds
+sudo systemctl enable lightdm
+sudo sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
+sudo sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
+sudo sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
+sudo cp ~/.walls/* /usr/share/backgrounds
 echo "[*] Done."
 sleep 3 && clear
 
 # Install TeVim
 echo "[*] Installing TeVim ..."
-pacman -Rns neovim --noconfirm
+sudo pacman -Rns neovim --noconfirm
 yay -S --noconfirm lazygit xclip xsel fzf ripgrep neovim-nightly-bin
 rm -rf ~/.config/nvim
 git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
@@ -138,16 +145,24 @@ sleep 3 && clear
 
 # App for me
 echo "[*] Installing apps for me ..."
-pacman -S --noconfirm telegram-desktop
-yay -S --noconfirm notion-app-electron jetbrains-toolbox mysql mysql-workbench mongodb-compass docker-desktop postman-bin ulauncher-git appimagelauncher-bin vmware-workstation caprine vesktop thunderbird  
+sudo pacman -S --noconfirm telegram-desktop
+yay -S --noconfirm notion-app-electron jetbrains-toolbox mysql-workbench docker-desktop postman-bin ulauncher-git appimagelauncher-bin caprine vesktop thunderbird anydesk-bin
+
+# MongoDB
+yay -S --noconfirm mongodb-bin mongodb-compass
+sudo systemctl enable mongodb
+
+# VMWare
+yay -S --noconfirm vmware-workstation
+sudo systemctl enable vmware-networks.service
 
 # Fix WPS
 yay -S --noconfirm wps-office libtiff5
-sed -i '3i export XMODIFIERS="@im=ibus" export QT_IM_MODULE="ibus"' /usr/bin/wps /usr/bin/et /usr/bin/wpp
-ln -s /usr/lib/libtiff.so.6 /usr/lib/libtiff.so.5
-chmod -x /usr/lib/office6/wpsoffice
+sudo sed -i '3i export XMODIFIERS="@im=ibus" export QT_IM_MODULE="ibus"' /usr/bin/wps /usr/bin/et /usr/bin/wpp
+sudo ln -s /usr/lib/libtiff.so.6 /usr/lib/libtiff.so.5
+sudo chmod -x /usr/lib/office6/wpsoffice
 
-pacman -Rns docker-desktop-debug --noconfirm
+sudo pacman -Rns docker-desktop-debug --noconfirm
 yay -S visual-studio-code-bin --noconfirm
 echo "[*] Done."
 sleep 3 && clear
