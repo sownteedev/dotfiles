@@ -189,9 +189,9 @@ return function(n)
 		strategy = "max",
 	})
 
-	local function get_timer_timeout()
+	local function get_timer_timeout(start_time)
 		local current_time = os.time()
-		local diff = os.difftime(current_time, notification_time)
+		local diff = os.difftime(current_time, start_time)
 		if diff >= 10800 then
 			return 1000000
 		elseif diff >= 3600 then
@@ -202,7 +202,7 @@ return function(n)
 	end
 
 	local notification_time = os.time()
-	local initial_timeout = get_timer_timeout()
+	local initial_timeout = get_timer_timeout(notification_time)
 	update_time_widget(notification_time)
 
 	box.timer = gears.timer({
