@@ -61,26 +61,39 @@ helpers.getIcon = function(client, program_string, class_string)
 		end
 
 		local iconDir = path_icon .. "/apps/scalable/"
-		local ioStream = io.open(iconDir .. clientName, "r")
-		if ioStream ~= nil then
-			icon_cache[#icon_cache + 1] = iconDir .. clientName
-			return iconDir .. clientName
-		else
-			clientName = clientName:gsub("^%l", string.upper)
-			iconDir = path_icon .. "/apps/scalable/"
-			ioStream = io.open(iconDir .. clientName, "r")
+		local function checkIcon(name)
+			local ioStream = io.open(iconDir .. name, "r")
 			if ioStream ~= nil then
-				icon_cache[#icon_cache + 1] = iconDir .. clientName
-				return iconDir .. clientName
-			elseif not class_string then
-				return path_icon .. "/apps/scalable/default-application.svg"
+				io.close(ioStream)
+				icon_cache[#icon_cache + 1] = iconDir .. name
+				return iconDir .. name
+			end
+			return nil
+		end
+
+		local icon = checkIcon(clientName) or checkIcon(clientName:gsub("^%l", string.upper))
+		if icon then
+			return icon
+		end
+
+		clientName = clientName:gsub("%.svg$", ".png")
+		icon = checkIcon(clientName) or checkIcon(clientName:gsub("^%l", string.upper))
+		if icon then
+			return icon
+		end
+
+		if not class_string then
+			return path_icon .. "/apps/scalable/default-application.svg"
+		else
+			clientName = class_string .. ".svg"
+			icon = checkIcon(clientName)
+			if icon then
+				return icon
 			else
-				clientName = class_string .. ".svg"
-				iconDir = path_icon .. "/apps/scalable/"
-				ioStream = io.open(iconDir .. clientName, "r")
-				if ioStream ~= nil then
-					icon_cache[#icon_cache + 1] = iconDir .. clientName
-					return iconDir .. clientName
+				clientName = class_string .. ".png"
+				icon = checkIcon(clientName)
+				if icon then
+					return icon
 				else
 					return path_icon .. "/apps/scalable/default-application.svg"
 				end

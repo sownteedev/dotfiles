@@ -164,6 +164,9 @@ local battery = wibox.widget({
 })
 awesome.connect_signal("signal::battery", function(value)
 	helpers.gc(battery, "prog").value = value
+	if value <= 20 then
+		helpers.gc(battery, "prog").color = beautiful.red
+	end
 end)
 awesome.connect_signal("signal::batterystatus", function(status)
 	local b = helpers.gc(battery, "status")
@@ -200,17 +203,7 @@ local layouts = {
 	widget = wibox.container.margin,
 }
 
-local systray = wibox.widget({
-	{
-		base_size = 25,
-		widget = wibox.widget.systray,
-	},
-	widget = wibox.container.place,
-	valign = "center",
-})
-
 local widget = wibox.widget({
-	systray,
 	battery,
 	wifi,
 	bluetooth,

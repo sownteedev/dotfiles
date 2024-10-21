@@ -1,19 +1,19 @@
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 
 local time = require(... .. ".mods.time")
 local tags = require(... .. ".mods.tags")
 local awmmenu = require(... .. ".mods.awmmenu")
 local controlcenter = require(... .. ".mods.controlcenter")
+local systray = require(... .. ".mods.systray")
 
 return function(s)
 	return awful.wibar {
 		position = "top",
 		height = 40,
 		width = beautiful.width,
-		bg = helpers.blend("#ffffff", "#000000", 0.3) .. "33",
+		bg = beautiful.background .. "33",
 		ontop = false,
 		screen = s,
 		widget = {
@@ -30,6 +30,7 @@ return function(s)
 			nil,
 			{
 				{
+					systray,
 					controlcenter,
 					time,
 					spacing = 30,

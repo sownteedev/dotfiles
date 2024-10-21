@@ -74,7 +74,7 @@ return function(s)
 			forced_height = 50,
 			shape = helpers.rrect(50),
 			widget = wibox.container.background,
-			bg = beautiful.background .. "50",
+			bg = beautiful.background .. "88",
 		},
 		widget = wibox.container.place,
 	})
@@ -91,14 +91,23 @@ return function(s)
 		mask_event_callback = true,
 		keypressed_callback = function(self, _, key, _)
 			if key == "Escape" then
-				input = ""
-				star = ""
-				helpers.gc(prompt, "txt"):set_markup("Enter Password")
-				helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
+				if input == "" then
+					self:stop()
+					start_input:start()
+					bottom:reset()
+					bottom:add(profilepic)
+					input = ""
+					star = ""
+				else
+					input = ""
+					star = ""
+					helpers.gc(prompt, "txt"):set_markup("Enter Password")
+					helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
+				end
 			elseif #key == 1 then
 				input = input .. key
 				star = star .. "󰧞"
-				helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "50")
+				helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "88")
 				helpers.gc(prompt, "txt"):set_markup(star)
 				helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 15")
 			elseif key == "BackSpace" then
@@ -135,7 +144,7 @@ return function(s)
 								return false
 							end
 							helpers.gc(prompt, "txt"):set_markup("Enter Password")
-							helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "50")
+							helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "88")
 						end)
 					end
 				end

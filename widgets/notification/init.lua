@@ -56,7 +56,7 @@ return function(n)
 		{
 			{
 				markup = n.title,
-				font = beautiful.sans .. " Medium 14",
+				font = beautiful.sans .. " Medium 13",
 				halign = "left",
 				widget = wibox.widget.textbox,
 			},
@@ -65,20 +65,20 @@ return function(n)
 			speed = 40,
 		},
 		widget = wibox.container.constraint,
-		width = 300,
+		width = 310,
 		strategy = "max",
 	})
 
 	local message_n = wibox.widget({
 		{
 			markup = n.message,
-			font = beautiful.sans .. " 12",
+			font = beautiful.sans .. " 11",
 			halign = "left",
 			wrap = "char",
 			widget = wibox.widget.textbox,
 		},
 		widget = wibox.container.constraint,
-		width = 300,
+		width = 310,
 		strategy = "max",
 	})
 
