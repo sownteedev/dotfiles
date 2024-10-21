@@ -1,6 +1,6 @@
 [Nemo Action]
 Name=Zip
-Exec=sh -c 'cd "%P" && mkdir -p Zip && cp -r %F Zip/ && zip -r Zip.zip Zip/* && rm -rf Zip'
+Exec=sh -c 'zip_name=$(yad --entry --text="Enter Zip name:"); [ -n "$zip_name" ] && cd "%P" && mkdir -p "$zip_name" && cp -r %F "$zip_name"/ && zip -r "$zip_name".zip "$zip_name"/* && rm -rf "$zip_name"'
 Icon-Name=package
 Selection=any
 Extensions=any;

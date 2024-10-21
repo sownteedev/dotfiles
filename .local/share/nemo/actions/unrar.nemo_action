@@ -1,0 +1,6 @@
+[Nemo Action]
+Name=Unrar
+Exec=sh -c 'folder_name="$(basename "%F" .rar)"; mkdir -p "%P/$folder_name" && unrar x "%F" "%P/$folder_name/"'
+Icon-Name=extract
+Selection=s
+Extensions=rar;
