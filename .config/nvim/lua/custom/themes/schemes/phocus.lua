@@ -1,0 +1,26 @@
+return {
+	type = "dark",
+
+	foreground = "#ffffff",
+	background = "#141414",
+	red = "#da5858",
+	green = "#3fc661",
+	blue = "#497ee9",
+
+	base00 = "#0a0a0a",
+	base01 = "#141414",
+	base02 = "#1c1c1c",
+	base03 = "#222222",
+	base04 = "#282828",
+	base05 = "#ffffff",
+	base06 = "#e0e0e1",
+	base07 = "#f2f4f5",
+	base08 = "#da5858",
+	base09 = "#e8ca5e",
+	base0A = "#ed9454",
+	base0B = "#3fc661",
+	base0C = "#497ee9",
+	base0D = "#5d8dee",
+	base0E = "#d56cc3",
+	base0F = "#e36d6d",
+}

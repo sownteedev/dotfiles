@@ -7,6 +7,13 @@ if [ $(command -v ripgrep) ]; then
     alias grep="ripgrep"
 fi
 
+usenvm() {
+	sed -i 's/^# source \/usr\/share\/nvm\/init-nvm.sh/source \/usr\/share\/nvm\/init-nvm.sh/' ~/.config/zsh/.zshrc
+	source ~/.config/zsh/.zshrc
+    nvm use "$1"
+	sed -i 's/^source \/usr\/share\/nvm\/init-nvm.sh/# source \/usr\/share\/nvm\/init-nvm.sh/' ~/.config/zsh/.zshrc
+}
+
 alias cls="clear"
 alias nvide="neovide"
 
