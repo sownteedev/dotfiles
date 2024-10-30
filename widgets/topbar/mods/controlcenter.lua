@@ -95,18 +95,16 @@ local bluetooth = wibox.widget({
 		end),
 	}
 })
-awesome.connect_signal("signal::bluetooth", function(status, _)
+awesome.connect_signal("signal::bluetooth", function(status, name)
 	if status then
-		awesome.connect_signal("signal::bluetooth", function(_, name)
-			if name ~= "" then
-				bluetooth.image = gears.color.recolor_image(beautiful.icon_path .. "bluetooth/bluetooth-macos.png",
-					beautiful.foreground)
-			else
-				bluetooth.image = gears.color.recolor_image(
-					beautiful.icon_path .. "bluetooth/bluetooth-discon-macos.png",
-					beautiful.foreground)
-			end
-		end)
+		if name ~= "" then
+			bluetooth.image = gears.color.recolor_image(beautiful.icon_path .. "bluetooth/bluetooth-macos.png",
+				beautiful.foreground)
+		else
+			bluetooth.image = gears.color.recolor_image(
+				beautiful.icon_path .. "bluetooth/bluetooth-discon-macos.png",
+				beautiful.foreground)
+		end
 	else
 		bluetooth.image = gears.color.recolor_image(beautiful.icon_path .. "bluetooth/bluetooth-dis-macos.png",
 			beautiful.foreground)
@@ -126,9 +124,9 @@ local battery = wibox.widget({
 				border_color = beautiful.foreground .. "99",
 				background_color = beautiful.background .. "00",
 				color = beautiful.foreground,
-				bar_shape = helpers.rrect(5),
+				bar_shape = helpers.rrect(3),
 				border_width = 1,
-				shape = helpers.rrect(7),
+				shape = helpers.rrect(5),
 				widget = wibox.widget.progressbar,
 			},
 			widget = wibox.container.margin,
@@ -166,6 +164,8 @@ awesome.connect_signal("signal::battery", function(value)
 	helpers.gc(battery, "prog").value = value
 	if value <= 20 then
 		helpers.gc(battery, "prog").color = beautiful.red
+	else
+		helpers.gc(battery, "prog").color = beautiful.foreground
 	end
 end)
 awesome.connect_signal("signal::batterystatus", function(status)

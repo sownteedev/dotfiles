@@ -405,6 +405,13 @@ function _M.switch(dir, mod_key1, release_key, mod_key2, key_switch)
 		_M.altTabTable[1].client.minimized = false
 		_M.altTabTable[1].client:raise()
 		return
+	elseif #_M.altTabTable == 2 then
+		local index = dir > 0 and 2 or 1
+		local c = _M.altTabTable[index].client
+		c.minimized = false
+		c:raise()
+		client.focus = c
+		return
 	end
 
 	-- reset index

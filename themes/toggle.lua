@@ -64,8 +64,8 @@ end
 
 function applyTheme(theme)
 	term(theme)
-	gtk(theme)
-	spotify(theme)
+	-- gtk(theme)
+	-- spotify(theme)
 	awesome(theme)
 	awful.spawn.easy_async("xsettingsd")
 	-- awful.spawn.easy_async_with_shell("ls -1 /run/user/1000/ | grep nvim", function(stdout)

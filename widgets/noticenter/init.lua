@@ -4,6 +4,7 @@ local naughty = require("naughty")
 local helpers = require("helpers")
 local wibox = require("wibox")
 local gears = require("gears")
+local animation = require("modules.animation")
 local make = require(... .. ".make")
 
 local empty = wibox.widget({
@@ -88,18 +89,22 @@ return function(s)
 
 	notif_center_reset_notifs_container = function()
 		for _, child in ipairs(finalcontent.children) do
-			if child.timer and child.timer.started then
+			if child.timer then
 				child.timer:stop()
+				child.timer = nil
 			end
 		end
-		finalcontent:reset(finalcontent)
+		finalcontent:reset()
 		finalcontent:insert(1, empty)
 		remove_notifs_empty = true
 	end
 
 	notif_center_remove_notif = function(box)
-		if box.timer and box.timer.started then
-			box.timer:stop()
+		if box.timer then
+			if box.timer.started then
+				box.timer:stop()
+			end
+			box.timer = nil
 		end
 		finalcontent:remove_widgets(box)
 		if #finalcontent.children == 0 then
@@ -109,8 +114,8 @@ return function(s)
 	end
 
 	naughty.connect_signal("request::display", function(n)
-		if #finalcontent.children == 1 and remove_notifs_empty then
-			finalcontent:reset(finalcontent)
+		if remove_notifs_empty and #finalcontent.children == 1 then
+			finalcontent:reset()
 			remove_notifs_empty = false
 		end
 		finalcontent:insert(1, make(n))
@@ -145,8 +150,42 @@ return function(s)
 		layout = wibox.layout.fixed.vertical,
 	})
 	helpers.placeWidget(noticenter, "top_right", 2, 0, 0, 2)
-	helpers.slideAnimation("toggle::noticenter", "close::noticenter", "right", noticenter, beautiful.width,
-		beautiful.width - noticenter.width - beautiful.useless_gap * 2)
+
+	local slide = animation:new({
+		duration = 0.5,
+		pos = beautiful.width + 10,
+		easing = animation.easing.inOutExpo,
+		update = function(_, pos)
+			noticenter.x = pos
+		end,
+	})
+
+	local slide_end = gears.timer({
+		timeout = 1,
+		single_shot = true,
+		callback = function()
+			noticenter.visible = false
+		end,
+	})
+
+	awesome.connect_signal("toggle::noticenter", function()
+		if noticenter.visible then
+			slide_end:start()
+			slide:set(beautiful.width + 10)
+		else
+			noticenter.visible = true
+			slide:set(beautiful.width - noticenter.width - beautiful.useless_gap * 2)
+		end
+	end)
+
+	awesome.connect_signal("close::noticenter", function()
+		slide_end:start()
+		slide:set(beautiful.width + 10)
+	end)
+
+	awesome.connect_signal("signal::blur", function(status)
+		noticenter.bg = not status and beautiful.background or beautiful.background .. "CC"
+	end)
 
 	return noticenter
 end

@@ -112,8 +112,8 @@ return function(n)
 		shape           = beautiful.radius,
 		border_width    = beautiful.border_width,
 		border_color    = beautiful.lighter,
-		maximum_width   = 500,
 		bg              = beautiful.background,
+		maximum_width   = 500,
 		cursor          = "hand2",
 		widget_template = {
 			notification_template,
@@ -122,21 +122,19 @@ return function(n)
 		},
 	})
 
-	local function find_client_and_tag(class_name)
-		for _, c in ipairs(client.get()) do
-			if c.class == class_name then
-				return c, c.first_tag
-			end
-		end
-		return nil, nil
-	end
-
 	local function focus_client_by_class(class_name)
-		local c, tag = find_client_and_tag(class_name)
-		if c and tag then
-			tag:view_only()
-			client.focus = c
-			c:raise()
+		local clients = client.get()
+		for i = 1, #clients do
+			local c = clients[i]
+			if c.class == class_name then
+				local tag = c.first_tag
+				if tag then
+					tag:view_only()
+					client.focus = c
+					c:raise()
+					return
+				end
+			end
 		end
 	end
 

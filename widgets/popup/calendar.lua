@@ -25,7 +25,7 @@ local datewidget = function(date, weekend, notIn)
 	end
 end
 
-local daywidget = function(day, weekend, notIn)
+local daywidget = function(day, weekend, _)
 	weekend = weekend or false
 	return wibox.widget({
 		markup = weekend and helpers.colorizeText(day, beautiful.red) or day,
@@ -36,10 +36,19 @@ local daywidget = function(day, weekend, notIn)
 end
 local currwidget = function(day)
 	return wibox.widget({
-		markup = helpers.colorizeText(day, beautiful.blue),
-		align = "center",
-		font = beautiful.sans .. " Bold 11",
-		widget = wibox.widget.textbox,
+		{
+			{
+				markup = helpers.colorizeText(day, beautiful.foreground),
+				align = "center",
+				font = beautiful.sans .. " Medium 10",
+				widget = wibox.widget.textbox,
+			},
+			margins = 5,
+			widget = wibox.container.margin,
+		},
+		shape  = gears.shape.circle,
+		bg     = beautiful.blue,
+		widget = wibox.container.background,
 	})
 end
 
@@ -47,7 +56,7 @@ local theGrid = wibox.widget({
 	forced_num_rows = 7,
 	forced_num_cols = 7,
 	vertical_spacing = 13,
-	horizontal_spacing = 18,
+	horizontal_spacing = 11,
 	min_rows_size = 20,
 	homogenous = true,
 	layout = wibox.layout.grid,
@@ -63,7 +72,7 @@ local title = wibox.widget({
 		halign = "left",
 		valign = "center",
 	},
-	left = 20,
+	left = 15,
 	widget = wibox.container.margin,
 })
 
@@ -129,7 +138,6 @@ return function(s)
 		screen = s,
 		width = 290,
 		height = 290,
-		bg = beautiful.background,
 		shape = beautiful.radius,
 		ontop = false,
 		visible = true,
@@ -143,7 +151,7 @@ return function(s)
 				widget = wibox.container.place,
 				halign = "center",
 			},
-			spacing = 20,
+			spacing = 15,
 			layout = wibox.layout.fixed.vertical,
 		},
 		widget = wibox.container.margin,
@@ -175,6 +183,9 @@ return function(s)
 	})
 	helpers.placeWidget(caca, "top_left", 103, 0, 2, 0)
 	helpers.popupOpacity(caca, 0.3)
+	awesome.connect_signal("signal::blur", function(status)
+		caca.bg = not status and beautiful.background or beautiful.background .. "88"
+	end)
 
 	return caca
 end

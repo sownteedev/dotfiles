@@ -1,120 +1,118 @@
-local awful                = require("awful")
-local json                 = require("modules.json")
-local beautiful            = require("beautiful")
-local icon_dir             = beautiful.icon_path .. "weather/icons/"
-local thumb_dir            = beautiful.icon_path .. "weather/images/"
+local awful = require("awful")
+local json = require("modules.json")
+local beautiful = require("beautiful")
 
-local GET_FORECAST_CMD     = [[sh -c "curl -s --show-error -X GET '%s'"]]
-
-local icon_map             = {
-	["01d"] = "weather-clear-sky",
-	["02d"] = "weather-few-clouds",
-	["04d"] = "weather-few-clouds",
-	["03d"] = "weather-clouds",
-	["09d"] = "weather-showers-scattered",
-	["09n"] = "weather-showers-scattered",
-	["10d"] = "weather-showers",
-	["11d"] = "weather-strom",
-	["13d"] = "weather-snow",
-	["50d"] = "weather-fog",
-	["01n"] = "weather-clear-night",
-	["02n"] = "weather-few-clouds-night",
-	["03n"] = "weather-clouds-night",
-	["04n"] = "weather-clouds-night",
-	["10n"] = "weather-showers",
-	["11n"] = "weather-strom",
-	["13n"] = "weather-snow",
-	["50n"] = "weather-fog",
+local PATHS = {
+	icons = beautiful.icon_path .. "weather/icons/",
+	thumbs = beautiful.icon_path .. "weather/images/"
 }
 
-local image_map            = {
-	["01d"] = "weather-clear-sky",
-	["02d"] = "weather-clouds",
-	["04d"] = "weather-clouds",
-	["03d"] = "weather-clouds",
-	["09d"] = "weather-showers-scattered",
-	["09n"] = "weather-showers-scattered",
-	["10d"] = "weather-showers",
-	["11d"] = "weather-strom",
-	["13d"] = "weather-snow",
-	["50d"] = "weather-fog",
-	["01n"] = "weather-clear-night",
-	["02n"] = "weather-clouds-night",
-	["03n"] = "weather-clouds-night",
-	["04n"] = "weather-clouds-night",
-	["10n"] = "weather-showers",
-	["11n"] = "weather-strom",
-	["13n"] = "weather-snow",
-	["50n"] = "weather-fog",
+local SETTINGS = {
+	api_key = _User.API_KEY_WEATHER,
+	coordinates = _User.Coordinates,
+	units = "metric",
+	update_interval = 300,
+	forecasts = {
+		hourly = true,
+		daily = true
+	}
 }
 
-local api_key              = _User.API_KEY_WEATHER
-local coordinates          = _User.Coordinates
-local show_hourly_forecast = true
-local show_daily_forecast  = true
-local units                = "metric"
+local WEATHER_MAPS = {
+	icons = {
+		["01d"] = "weather-clear-sky",
+		["02d"] = "weather-few-clouds",
+		["03d"] = "weather-clouds",
+		["04d"] = "weather-few-clouds",
+		["09d"] = "weather-showers-scattered",
+		["10d"] = "weather-showers",
+		["11d"] = "weather-strom",
+		["13d"] = "weather-snow",
+		["50d"] = "weather-fog",
+		["01n"] = "weather-clear-night",
+		["02n"] = "weather-few-clouds-night",
+		["03n"] = "weather-clouds-night",
+		["04n"] = "weather-clouds-night",
+		["09n"] = "weather-showers-scattered",
+		["10n"] = "weather-showers",
+		["11n"] = "weather-strom",
+		["13n"] = "weather-snow",
+		["50n"] = "weather-fog"
+	}
+}
+WEATHER_MAPS.images = WEATHER_MAPS.icons
 
-local url                  = (
-	"https://api.openweathermap.org/data/3.0/onecall"
-	.. "?lat="
-	.. coordinates[1]
-	.. "&lon="
-	.. coordinates[2]
-	.. "&appid="
-	.. api_key
-	.. "&units="
-	.. units
-	.. "&exclude=minutely"
-	.. (show_hourly_forecast == false and ",hourly" or "")
-	.. (show_daily_forecast == false and ",daily" or "")
+local function create_urls()
+	local base_url = "https://api.openweathermap.org"
+	local exclude = "minutely" ..
+		(not SETTINGS.forecasts.hourly and ",hourly" or "") ..
+		(not SETTINGS.forecasts.daily and ",daily" or "")
+
+	return {
+		forecast = string.format(
+			"%s/data/3.0/onecall?lat=%s&lon=%s&appid=%s&units=%s&exclude=%s",
+			base_url,
+			SETTINGS.coordinates[1],
+			SETTINGS.coordinates[2],
+			SETTINGS.api_key,
+			SETTINGS.units,
+			exclude
+		),
+		location = string.format(
+			"%s/geo/1.0/reverse?lat=%s&lon=%s&limit=1&appid=%s",
+			base_url,
+			SETTINGS.coordinates[1],
+			SETTINGS.coordinates[2],
+			SETTINGS.api_key
+		)
+	}
+end
+
+local function process_weather_data(stdout)
+	if not stdout then return end
+
+	local result = json.decode(stdout)
+	if not result or not result.current then return end
+
+	local weather = result.current.weather[1]
+	local icon_code = weather.icon
+
+	return {
+		desc = weather.description:gsub("^%l", string.upper),
+		humidity = result.current.humidity,
+		temp = math.floor(result.current.temp),
+		feelsLike = math.floor(result.current.feels_like),
+		image = PATHS.icons .. WEATHER_MAPS.icons[icon_code] .. ".svg",
+		thumb = PATHS.thumbs .. WEATHER_MAPS.images[icon_code] .. ".jpg",
+		hourly = { table.unpack(result.hourly, 1, 6) },
+		daily = { table.unpack(result.daily, 1, 6) }
+	}
+end
+
+local urls = create_urls()
+
+awful.widget.watch(
+	string.format('curl -s --show-error -X GET "%s"', urls.forecast),
+	SETTINGS.update_interval,
+	function(_, stdout)
+		local data = process_weather_data(stdout)
+		if data then
+			awesome.emit_signal("signal::weather", data)
+		end
+	end
 )
 
-local url1                 = (
-	"https://api.openweathermap.org/geo/1.0/reverse"
-	.. "?lat="
-	.. coordinates[1]
-	.. "&lon="
-	.. coordinates[2]
-	.. "&limit=1"
-	.. "&appid="
-	.. api_key
+awful.widget.watch(
+	string.format('curl -s --show-error -X GET "%s"', urls.location),
+	SETTINGS.update_interval,
+	function(_, stdout)
+		if stdout then
+			local result = json.decode(stdout)
+			if result and result[1] then
+				awesome.emit_signal("signal::weather1", {
+					namecountry = string.format("%s, %s", result[1].name, result[1].country)
+				})
+			end
+		end
+	end
 )
-
-awful.widget.watch(string.format(GET_FORECAST_CMD, url), 300, function(_, stdout, stderr)
-	if stdout ~= nil then
-		local result = json.decode(stdout)
-		local out = {
-			desc = result.current.weather[1].description:gsub("^%l", string.upper),
-			humidity = result.current.humidity,
-			temp = math.floor(result.current.temp),
-			feelsLike = math.floor(result.current.feels_like),
-			image = icon_dir .. icon_map[result.current.weather[1].icon] .. ".svg",
-			thumb = thumb_dir .. image_map[result.current.weather[1].icon] .. ".jpg",
-			hourly = {
-				result.hourly[1],
-				result.hourly[2],
-				result.hourly[3],
-				result.hourly[4],
-				result.hourly[5],
-				result.hourly[6],
-			},
-			daily = {
-				result.daily[1],
-				result.daily[2],
-				result.daily[3],
-				result.daily[4],
-				result.daily[5],
-				result.daily[6],
-			},
-		}
-		awesome.emit_signal("signal::weather", out)
-	end
-end)
-
-awful.widget.watch(string.format(GET_FORECAST_CMD, url1), 300, function(_, stdout, stderr)
-	if stdout ~= nil then
-		local result = json.decode(stdout)
-		local out = { namecountry = result[1].name .. ", " .. result[1].country }
-		awesome.emit_signal("signal::weather1", out)
-	end
-end)

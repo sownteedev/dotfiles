@@ -7,7 +7,7 @@ local animation = require("modules.animation")
 
 local exit, slide, slide_end, prompt_grabber
 
-local createButton = function(icon, name, cmd)
+local function createButton(icon, name, cmd)
 	local button = wibox.widget({
 		{
 			{
@@ -175,7 +175,7 @@ return function(s)
 	awesome.connect_signal("toggle::exit", function()
 		if exit.visible then
 			slide_end:start()
-			slide:set(-exit.width)
+			slide:set(-exit.width - 10)
 			prompt_grabber:stop()
 		else
 			index_entry = 1
@@ -184,6 +184,10 @@ return function(s)
 			exit.visible = true
 			slide:set(beautiful.useless_gap * 2)
 		end
+	end)
+
+	awesome.connect_signal("signal::blur", function(status)
+		exit.bg = not status and beautiful.background or beautiful.background .. "CC"
 	end)
 
 	return exit

@@ -35,7 +35,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { tag = "Terminal", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge" } },
+		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge", "zen-alpha" } },
 		properties = { tag = "Browser", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
@@ -55,40 +55,48 @@ end)
 local save_file = gears.filesystem.get_cache_dir() .. "window_positions.json"
 local window_positions = helpers.readJson(save_file)
 
+local function save_window_position(c)
+	if not (c.class and not c.maximized) then return end
+
+	local geometry = c:geometry()
+	window_positions[c.class] = {
+		x = geometry.x,
+		y = geometry.y,
+		width = c.class == "Alacritty" and geometry.width or nil,
+		height = c.class == "Alacritty" and geometry.height or nil
+	}
+
+	helpers.writeJson(save_file, window_positions)
+end
+
+local function apply_window_position(c)
+	if not (c.class and window_positions[c.class]) then return end
+
+	local geo = window_positions[c.class]
+	c:geometry({
+		x = geo.x,
+		y = geo.y,
+		width = geo.width,
+		height = geo.height
+	})
+end
+
 client.connect_signal("request::manage", function(c)
-	if not awesome.startup then awful.client.setslave(c) end
-	if awesome.startup and not c.size_hints.user_position and not c.size_hints.program_position then
-		awful.placement.no_offscreen(c)
+	if awesome.startup then
+		if not (c.size_hints.user_position or c.size_hints.program_position) then
+			awful.placement.no_offscreen(c)
+		end
+	else
+		awful.client.setslave(c)
 	end
+
 	if c.maximized then
 		c.maximized = false
 	end
-	if c.class and window_positions[c.class] then
-		local geo = window_positions[c.class]
-		c:geometry({
-			x = geo.x,
-			y = geo.y,
-			width = geo.width,
-			height = geo.height
-		})
-	end
+
+	apply_window_position(c)
 end)
 
 client.connect_signal("unmanage", function(c)
-	if c.class and not c.maximized then
-		if c.class == "Alacritty" then
-			window_positions[c.class] = {
-				x = c:geometry().x,
-				y = c:geometry().y,
-				width = c:geometry().width,
-				height = c:geometry().height
-			}
-		else
-			window_positions[c.class] = {
-				x = c:geometry().x,
-				y = c:geometry().y,
-			}
-		end
-		helpers.writeJson(save_file, window_positions)
-	end
+	save_window_position(c)
 end)

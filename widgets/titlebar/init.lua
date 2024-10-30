@@ -7,7 +7,6 @@ local helpers = require("helpers")
 return function(c)
 	local titlebar = awful.titlebar(c, {
 		size = 40,
-		fg = beautiful.foreground,
 		bg = beautiful.lighter,
 	})
 
@@ -73,45 +72,45 @@ return function(c)
 			end),
 		},
 	})
-	local function update_button_color()
-		if client.focus ~= c then
-			helpers.gc(close, "icon"):set_markup(helpers.colorizeText("󰅙 ", beautiful.lighter2))
-			helpers.gc(minimize, "icon"):set_markup(helpers.colorizeText("󰍶 ", beautiful.lighter2))
-			helpers.gc(maximize, "icon"):set_markup(helpers.colorizeText("󰿣 ", beautiful.lighter2))
-			helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.lighter2))
-			helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.lighter2))
-			helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.lighter2))
-		else
-			helpers.gc(close, "icon"):set_markup(helpers.colorizeText("󰅙 ", beautiful.red))
-			helpers.gc(minimize, "icon"):set_markup(helpers.colorizeText("󰍶 ", beautiful.yellow))
-			helpers.gc(maximize, "icon"):set_markup(helpers.colorizeText("󰿣 ", beautiful.green))
-			helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.red))
-			helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.yellow))
-			helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.green))
+
+	local function set_button_colors(focused)
+		local icon_color = focused and {
+			close = beautiful.red,
+			minimize = beautiful.yellow,
+			maximize = beautiful.green
+		} or {
+			close = beautiful.lighter2,
+			minimize = beautiful.lighter2,
+			maximize = beautiful.lighter2
+		}
+
+		local buttons = {
+			{ widget = close, icon = "󰅙 ", color = icon_color.close },
+			{ widget = minimize, icon = "󰍶 ", color = icon_color.minimize },
+			{ widget = maximize, icon = "󰿣 ", color = icon_color.maximize }
+		}
+
+		for _, btn in ipairs(buttons) do
+			helpers.gc(btn.widget, "icon"):set_markup(helpers.colorizeText(btn.icon, btn.color))
+			helpers.gc(btn.widget, "iconbot"):set_markup(helpers.colorizeText(" ", btn.color))
 		end
 	end
 
-	close:connect_signal("mouse::enter", function()
-		helpers.gc(close, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.darker))
-	end)
-	close:connect_signal("mouse::leave", function()
-		update_button_color()
-	end)
-	minimize:connect_signal("mouse::enter", function()
-		helpers.gc(minimize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.darker))
-	end)
-	minimize:connect_signal("mouse::leave", function()
-		update_button_color()
-	end)
-	maximize:connect_signal("mouse::enter", function()
-		helpers.gc(maximize, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.darker))
-	end)
-	maximize:connect_signal("mouse::leave", function()
-		update_button_color()
-	end)
+	local function setup_button_hover(button)
+		button:connect_signal("mouse::enter", function()
+			helpers.gc(button, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.darker))
+		end)
+		button:connect_signal("mouse::leave", function()
+			set_button_colors(client.focus == c)
+		end)
+	end
 
-	c:connect_signal("focus", update_button_color)
-	c:connect_signal("unfocus", update_button_color)
+	for _, button in ipairs({ close, minimize, maximize }) do
+		setup_button_hover(button)
+	end
+
+	c:connect_signal("focus", function() set_button_colors(true) end)
+	c:connect_signal("unfocus", function() set_button_colors(false) end)
 
 	local title = wibox.widget({
 		markup = c.name,
@@ -139,14 +138,14 @@ return function(c)
 		if click_timer then
 			click_timer:stop()
 			click_timer = nil
-			c.maximized = not c.maximized
+			c.maximized = true
 			c:raise()
 		else
+			client.focus = c
+			c:raise()
 			if c.maximized then
 				c.maximized = false
 			end
-			client.focus = c
-			c:raise()
 			awful.mouse.client.move(c)
 			click_timer = gears.timer.start_new(0.3, function()
 				click_timer = nil

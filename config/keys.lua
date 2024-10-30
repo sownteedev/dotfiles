@@ -102,52 +102,66 @@ awful.keyboard.append_global_keybindings({
 	awful.key({ mod, alt }, "q", awesome.quit),
 })
 
+local table_insert = table.insert
+local hasitem = awful.util.table.hasitem
+local screen_focused = awful.screen.focused
+local tag_find_by_name = awful.tag.find_by_name
 local tagdefault = { "Terminal", "Browser", "Develop", "Media", "Other" }
 local tagactive = {}
+local tagdefault_count = #tagdefault
 
 local function update_tag_info()
 	tagactive = {}
-	for _, t in ipairs(screen.primary.tags) do
+	local primary_tags = screen.primary.tags
+	for _, t in ipairs(primary_tags) do
 		if #t:clients() > 0 then
-			table.insert(tagactive, t.name)
+			table_insert(tagactive, t.name)
 		end
 	end
 end
 tag.connect_signal("property::selected", update_tag_info)
 
 local function get_next_tag(current_tag, direction)
-	local current_index = awful.util.table.hasitem(tagactive, current_tag)
+	local current_index = hasitem(tagactive, current_tag)
+
 	if current_index then
-		local next_index = (current_index + direction - 1) % #tagactive + 1
+		local tagactive_count = #tagactive
+		local next_index = (current_index + direction - 1) % tagactive_count + 1
 		return tagactive[next_index]
-	else
-		local default_index = awful.util.table.hasitem(tagdefault, current_tag) or 1
-		for i = default_index + direction, default_index + #tagdefault * direction, direction do
-			local mod_i = (i - 1) % #tagdefault + 1
-			if awful.util.table.hasitem(tagactive, tagdefault[mod_i]) then
-				return tagdefault[mod_i]
-			end
+	end
+
+	local default_index = hasitem(tagdefault, current_tag) or 1
+	local start = default_index + direction
+	local limit = default_index + tagdefault_count * direction
+
+	for i = start, limit, direction do
+		local mod_i = (i - 1) % tagdefault_count + 1
+		if hasitem(tagactive, tagdefault[mod_i]) then
+			return tagdefault[mod_i]
 		end
 	end
+
 	return nil
 end
 
+local function switch_to_tag(direction)
+	local current_screen = screen_focused()
+	local current_tag = current_screen.selected_tag.name
+	local next_tag = get_next_tag(current_tag, direction)
+
+	if next_tag then
+		tag_find_by_name(current_screen, next_tag):view_only()
+	end
+end
+
 awful.keyboard.append_global_keybindings({
-	-- Tag
+	-- Tags
 	awful.key({ mod }, "Tab", function()
-		local current_tag = awful.screen.focused().selected_tag.name
-		local next_tag = get_next_tag(current_tag, 1)
-		if next_tag then
-			awful.tag.find_by_name(awful.screen.focused(), next_tag):view_only()
-		end
+		switch_to_tag(1)
 	end),
 
 	awful.key({ mod, shift }, "Tab", function()
-		local current_tag = awful.screen.focused().selected_tag.name
-		local next_tag = get_next_tag(current_tag, -1)
-		if next_tag then
-			awful.tag.find_by_name(awful.screen.focused(), next_tag):view_only()
-		end
+		switch_to_tag(-1)
 	end),
 
 	-- Client

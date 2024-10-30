@@ -34,11 +34,11 @@ _User.Radius          = 15
 
 _User.AutoHideDock    = false
 
-_User.API_KEY_WEATHER = "0187188eefff4d3ba6100addd927a24a"
+_User.API_KEY_WEATHER = ""
 _User.Coordinates     = { "21.0245", "105.8412" }
 
 _User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
-_User.Wallpaper       = "/home/sowntee/.walls/a.jpg"
+_User.Wallpaper       = "/home/sowntee/.walls/desert-doom-sand-dunes-dark.jpg"
 _User.Lock            = "/home/sowntee/.walls/a.jpg"
 
 _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artdefault.jpg"
@@ -46,8 +46,6 @@ _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artd
 _User.AutoStart       = {
 	-- "xrandr --auto --output DP-1 --mode 3840x2160 --primary --auto --right-of eDP-1"
 	"ibus-daemon -drx",
-	"pamixer",
-	"pactl",
 	"xss-lock -l awesome-client 'awesome.emit_signal(\"toggle::lock\")'",
 	"libinput-gestures-setup start",
 }
