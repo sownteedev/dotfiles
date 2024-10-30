@@ -1,4 +1,4 @@
-source /usr/share/nvm/init-nvm.sh
+# source /usr/share/nvm/init-nvm.sh
 
 while read file
 do 
@@ -17,5 +17,3 @@ export PATH=$PATH:~/.local/share/nvim/mason/bin
 
 export VISUAL=nvim;
 export EDITOR=nvim;
-
-# vim:ft=zsh:nowrap

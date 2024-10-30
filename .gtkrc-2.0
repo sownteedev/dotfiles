@@ -1,18 +1,19 @@
-# DO NOT EDIT! This file will be overwritten by LXAppearance.
+# DO NOT EDIT! This file will be overwritten by nwg-look.
 # Any customization should be done in ~/.gtkrc-2.0.mine instead.
 
 include "/home/sowntee/.gtkrc-2.0.mine"
-gtk-theme-name="WhiteSur-Dark"
+gtk-theme-name="paradise"
 gtk-icon-theme-name="WhiteSur"
-gtk-font-name="SF Pro Display 12"
+gtk-font-name="SF Pro Display 11"
 gtk-cursor-theme-name="Light_Cursor"
-gtk-cursor-theme-size=0
+gtk-cursor-theme-size=25
 gtk-toolbar-style=GTK_TOOLBAR_BOTH
 gtk-toolbar-icon-size=GTK_ICON_SIZE_LARGE_TOOLBAR
 gtk-button-images=1
 gtk-menu-images=1
 gtk-enable-event-sounds=1
-gtk-enable-input-feedback-sounds=1
+gtk-enable-input-feedback-sounds=0
 gtk-xft-antialias=1
 gtk-xft-hinting=1
-gtk-xft-hintstyle="hintslight"
+gtk-xft-hintstyle="hintfull"
+gtk-xft-rgba="rgb"

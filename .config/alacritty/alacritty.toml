@@ -1,7 +1,7 @@
-import = [ '~/.config/alacritty/colors/dark.toml' ]
+general.import = [ '~/.config/alacritty/colors/dark.toml' ]
 
 [font]
-size = 13.5
+size = 12.5
 normal = { family = "Liga SFMono Nerd Font", style = "Regular" }
 bold = { family = "Liga SFMono Nerd Font", style = "Bold" }
 italic = { family = "Liga SFMono Nerd Font", style = "Italic" }
