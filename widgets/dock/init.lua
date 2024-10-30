@@ -35,10 +35,10 @@ local data = {
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "firefox", "firefox"),
+			icon = helpers.getIcon(nil, "zen-alpha", "zen-alpha"),
 			clients = {},
-			class = "firefox",
-			exec = "firefox",
+			class = "zen-alpha",
+			exec = "zen-browser",
 		},
 		{
 			count = 0,
@@ -155,31 +155,7 @@ local data = {
 		{
 			count = 0,
 			pinned = true,
-			icon = helpers.getIcon(nil, "wps", "wps"),
-			clients = {},
-			class = "wps",
-			exec = "wps",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "et", "et"),
-			clients = {},
-			class = "et",
-			exec = "et",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "wpp", "wpp"),
-			clients = {},
-			class = "wpp",
-			exec = "wpp",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "Notion", "Notion"),
+			icon = helpers.getIcon(nil, "notion", "notion"),
 			clients = {},
 			class = "Notion",
 			exec = "notion-app",
@@ -230,7 +206,7 @@ local data = {
 		"nemo",
 		"shotwell",
 		"thunderbird",
-		"firefox",
+		"zen-alpha",
 		"alacritty",
 		"code",
 		"cursor",
@@ -245,15 +221,15 @@ local data = {
 		"postman",
 		"anydesk",
 		"vmware",
-		"wps",
-		"et",
-		"wpp",
 		"notion",
 		"telegramdesktop",
 		"caprine",
 		"vesktop",
 		"spotify",
 		string.lower(_User.Custom_Icon[5].name)
+	},
+	exclude = {
+		"Ulauncher",
 	},
 }
 
@@ -262,33 +238,39 @@ local widget = wibox.widget({
 	spacing = 7,
 })
 
+local executable_cache = {}
 local function getExecutable(class)
-	local class_1 = class:gsub("[%-]", "")
-	local class_2 = class:gsub("[%-]", ".")
-	local class_3 = class:match("(.-)-") or class
-
-	class_3 = class_3:match("(.-)%.") or class_3
-	class_3 = class_3:match("(.-)%s+") or class_3
+	if executable_cache[class] then
+		return executable_cache[class]
+	end
+	local class_variants = {
+		class,
+		class:match("(.-)-") or class,
+		class:gsub("[%-]", ""),
+		class:gsub("[%-]", ".")
+	}
 	local apps = Gio.AppInfo.get_all()
-	local possible_icon_names = { class, class_3, class_2, class_1 }
 	for _, app in ipairs(apps) do
 		local id = app:get_id():lower()
-		for _, possible_icon_name in ipairs(possible_icon_names) do
-			if id and id:find(possible_icon_name, 1, true) then
-				return app:get_executable()
+		for _, variant in ipairs(class_variants) do
+			if type(variant) == "string" and id:find(variant:lower(), 1, true) then
+				executable_cache[class] = app:get_executable()
+				return executable_cache[class]
 			end
 		end
 	end
-	return class:lower()
+	executable_cache[class] = class:lower()
+	return executable_cache[class]
 end
 
-local removeDup = function(arr)
-	local hash = {}
+
+local function removeDup(arr)
+	local set = {}
 	local res = {}
 	for _, v in ipairs(arr) do
-		if not hash[v] then
+		if not set[v] then
 			res[#res + 1] = v
-			hash[v] = true
+			set[v] = true
 		end
 	end
 	return res
@@ -296,24 +278,37 @@ end
 
 local function genMetadata()
 	local clients = mouse.screen.selected_tag and mouse.screen.selected_tag:clients() or {}
+	local class_lookup = {}
+	local new_metadata = {}
+
+	local exclude_lookup = {}
+	for _, class in ipairs(data.exclude) do
+		exclude_lookup[class:lower()] = true
+	end
+
 	for _, j in pairs(data.metadata) do
 		j.count = 0
 		j.clients = {}
+		if j.pinned then
+			class_lookup[j.class:lower()] = j
+		end
 	end
+
 	for _, c in ipairs(clients) do
-		local icon = helpers.getIcon(c, c.class, c.class)
-		local class = string.lower(c.class or "default")
-		local exe = getExecutable(c.class)
-		if helpers.inTable(data.classes, class) then
-			for _, j in pairs(data.metadata) do
-				if j.class:lower() == class:lower() then
-					table.insert(j.clients, c)
-					j.count = j.count + 1
-				end
-			end
+		local class = (c.class or "default"):lower()
+
+		if exclude_lookup[class] then
+			goto continue
+		end
+
+		local metadata = class_lookup[class]
+		if metadata then
+			table.insert(metadata.clients, c)
+			metadata.count = metadata.count + 1
 		else
-			table.insert(data.classes, class)
-			local toInsert = {
+			local icon = helpers.getIcon(c, c.class, c.class)
+			local exe = getExecutable(c.class)
+			local new_entry = {
 				count = 1,
 				pinned = false,
 				icon = icon,
@@ -321,38 +316,44 @@ local function genMetadata()
 				class = class,
 				exec = exe,
 			}
-			table.insert(data.metadata, toInsert)
+			table.insert(new_metadata, new_entry)
+			class_lookup[class] = new_entry
 		end
-		for _, j in pairs(data.metadata) do
+
+		::continue::
+	end
+
+	-- Add new unpinned apps
+	for _, entry in ipairs(new_metadata) do
+		table.insert(data.metadata, entry)
+		table.insert(data.classes, entry.class)
+	end
+
+	-- Remove duplicates from client lists
+	for _, j in pairs(data.metadata) do
+		if j.count > 0 then
 			j.clients = removeDup(j.clients)
 		end
 	end
 end
 
 local function client_exists(class_name)
-	for _, c in ipairs(client.get()) do
-		if c.class == class_name then
-			return true
-		end
-	end
-	return false
-end
-
-local function find_client_and_tag(class_name)
-	for _, c in ipairs(client.get()) do
-		if c.class == class_name then
-			return c, c.first_tag
-		end
-	end
-	return nil, nil
+	return awful.client.iterate(function(c) return c.class == class_name end)() ~= nil
 end
 
 local function focus_client_by_class(class_name)
-	local c, tag = find_client_and_tag(class_name)
-	if c and tag then
-		tag:view_only()
-		client.focus = c
-		c:raise()
+	local clients = client.get()
+	for i = 1, #clients do
+		local c = clients[i]
+		if c.class == class_name then
+			local tag = c.first_tag
+			if tag then
+				tag:view_only()
+				client.focus = c
+				c:raise()
+				return
+			end
+		end
 	end
 end
 
@@ -459,6 +460,11 @@ local function genIcons()
 						client.focus:raise()
 						awful.client.movetotag(mouse.screen.selected_tag, client.focus)
 						j.current_client_index = j.current_client_index % j.count + 1
+					end
+				end),
+				awful.button({}, 2, function()
+					for _, c in ipairs(j.clients) do
+						c:kill()
 					end
 				end)
 			))

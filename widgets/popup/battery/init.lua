@@ -15,7 +15,6 @@ return function(s)
 		width = 290,
 		height = 290,
 		shape = beautiful.radius,
-		bg = beautiful.background,
 		ontop = false,
 		visible = true,
 	})
@@ -46,6 +45,9 @@ return function(s)
 	})
 	helpers.placeWidget(battery, "top_left", 45, 0, 2, 0)
 	helpers.popupOpacity(battery, 0.3)
+	awesome.connect_signal("signal::blur", function(status)
+		battery.bg = not status and beautiful.background or beautiful.background .. "88"
+	end)
 
 	return battery
 end

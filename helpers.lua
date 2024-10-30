@@ -5,104 +5,91 @@ local dpi = beautiful.xresources.apply_dpi
 local cairo = require("lgi").cairo
 local gmatrix = require("gears.matrix")
 local json = require("modules.json")
-local animation = require("modules.animation")
+
 local path_icon = "/home/" .. os.getenv("USER") .. "/.icons/" .. _User.IconName .. "/"
 local icon_cache = {}
+local DEFAULT_ICON = path_icon .. "/apps/scalable/default-application.svg"
+local ICON_DIR = path_icon .. "/apps/scalable/"
 
 local helpers = {}
 
+local function findCustomIcon(str)
+	if not str then return false, 0 end
+
+	for i, icon in ipairs(_User.Custom_Icon) do
+		if icon.name == str then
+			return true, i
+		end
+	end
+	return false, 0
+end
+
+local function findInCache(clientName)
+	for _, icon in ipairs(icon_cache) do
+		if icon:match(clientName) then
+			return icon
+		end
+	end
+	return nil
+end
+
+local function checkIcon(name)
+	if not name then return nil end
+
+	local fullPath = ICON_DIR .. name
+	local file = io.open(fullPath, "r")
+
+	if file then
+		file:close()
+		icon_cache[#icon_cache + 1] = fullPath
+		return fullPath
+	end
+	return nil
+end
+
 helpers.getIcon = function(client, program_string, class_string)
-	local function hasValue(str)
-		local f = false
-		local ind = 0
-		for i, j in ipairs(_User.Custom_Icon) do
-			if j.name == str then
-				f = true
-				ind = i
-				break
-			end
-		end
-		return f, ind
+	if not (client or program_string or class_string) then
+		return client and DEFAULT_ICON
 	end
 
-	client = client or nil
-	program_string = program_string or nil
-	class_string = class_string or nil
+	local clientName
+	local isCustom, pos = findCustomIcon(class_string)
 
-	if client or program_string or class_string then
-		local clientName
-		local isCustom, pos = hasValue(class_string)
-		if isCustom == true then
-			clientName = _User.Custom_Icon[pos].to .. ".svg"
-		elseif client then
-			if client.class then
-				clientName = string.lower(client.class:gsub(" ", "")) .. ".svg"
-			elseif client.name then
-				clientName = string.lower(client.name:gsub(" ", "")) .. ".svg"
-			else
-				if client.icon then
-					return client.icon
-				else
-					return path_icon .. "/apps/scalable/default-application.svg"
-				end
-			end
+	if isCustom then
+		clientName = _User.Custom_Icon[pos].to .. ".svg"
+	elseif client then
+		if client.class then
+			clientName = string.lower(client.class:gsub(" ", "")) .. ".svg"
+		elseif client.name then
+			clientName = string.lower(client.name:gsub(" ", "")) .. ".svg"
 		else
-			if program_string then
-				clientName = program_string .. ".svg"
-			else
-				clientName = class_string .. ".svg"
-			end
+			return client.icon or DEFAULT_ICON
 		end
-
-		for _, icon in ipairs(icon_cache) do
-			if icon:match(clientName) then
-				return icon
-			end
-		end
-
-		local iconDir = path_icon .. "/apps/scalable/"
-		local function checkIcon(name)
-			local ioStream = io.open(iconDir .. name, "r")
-			if ioStream ~= nil then
-				io.close(ioStream)
-				icon_cache[#icon_cache + 1] = iconDir .. name
-				return iconDir .. name
-			end
-			return nil
-		end
-
-		local icon = checkIcon(clientName) or checkIcon(clientName:gsub("^%l", string.upper))
-		if icon then
-			return icon
-		end
-
-		clientName = clientName:gsub("%.svg$", ".png")
-		icon = checkIcon(clientName) or checkIcon(clientName:gsub("^%l", string.upper))
-		if icon then
-			return icon
-		end
-
-		if not class_string then
-			return path_icon .. "/apps/scalable/default-application.svg"
-		else
-			clientName = class_string .. ".svg"
-			icon = checkIcon(clientName)
-			if icon then
-				return icon
-			else
-				clientName = class_string .. ".png"
-				icon = checkIcon(clientName)
-				if icon then
-					return icon
-				else
-					return path_icon .. "/apps/scalable/default-application.svg"
-				end
-			end
-		end
+	else
+		clientName = (program_string or class_string) .. ".svg"
 	end
-	if client then
-		return path_icon .. "/apps/scalable/default-application.svg"
+
+	local cachedIcon = findInCache(clientName)
+	if cachedIcon then return cachedIcon end
+
+	local icon = checkIcon(clientName) or
+		checkIcon(clientName:gsub("^%l", string.upper))
+	if icon then return icon end
+
+	local pngName = clientName:gsub("%.svg$", ".png")
+	icon = checkIcon(pngName) or
+		checkIcon(pngName:gsub("^%l", string.upper))
+	if icon then return icon end
+
+	if class_string then
+		icon = checkIcon(class_string .. ".svg")
+		if icon then return icon end
+
+		icon = checkIcon(class_string .. ".png")
+		if icon then return icon end
 	end
+
+	return DEFAULT_ICON
 end
 
 helpers.centered_client_placement = function(c)
@@ -167,103 +154,44 @@ helpers.hoverCursor = function(widget, id)
 end
 
 helpers.popupOpacity = function(widget, opacity)
+	local function check_clients_state(clients)
+		if #clients == 0 then
+			return true
+		end
+		for _, c in ipairs(clients) do
+			if not c.minimized then
+				return false
+			end
+		end
+		return true
+	end
+
+	local function update_opacity(should_be_visible)
+		widget.opacity = should_be_visible and 1 or opacity
+	end
+
+	local function handle_screen_clients(s)
+		if not s or not s.selected_tag then
+			update_opacity(true)
+			return
+		end
+		update_opacity(check_clients_state(s.selected_tag:clients()))
+	end
+
 	client.connect_signal("focus", function()
-		widget.opacity = opacity
+		update_opacity(false)
 	end)
+
 	client.connect_signal("unmanage", function(c)
-		if c.screen and c.screen.selected_tag then
-			local all_clients = c.screen.selected_tag:clients()
-
-			if #all_clients == 0 then
-				widget.opacity = 1
-				return
-			end
-
-			local has_unminimized_client = false
-			for _, client in ipairs(all_clients) do
-				if not client.minimized then
-					has_unminimized_client = true
-					break
-				end
-			end
-			if not has_unminimized_client then
-				widget.opacity = 1
-			end
-		else
-			widget.opacity = 1
-		end
+		handle_screen_clients(c.screen)
 	end)
+
 	client.connect_signal("unfocus", function(c)
-		if c.screen and c.screen.selected_tag then
-			local all_clients = c.screen.selected_tag:clients()
-
-			local has_unminimized_client = false
-			for _, client in ipairs(all_clients) do
-				if not client.minimized then
-					has_unminimized_client = true
-					break
-				end
-			end
-
-			if not has_unminimized_client then
-				widget.opacity = 1
-			end
-		else
-			widget.opacity = 1
-		end
+		handle_screen_clients(c.screen)
 	end)
+
 	tag.connect_signal("property::selected", function(t)
-		local all_clients = t:clients()
-		if #all_clients ~= 0 then
-			local all_minimized = true
-			for _, c in ipairs(all_clients) do
-				if not c.minimized then
-					widget.opacity = opacity
-					all_minimized = false
-					break
-				end
-			end
-			if all_minimized then
-				widget.opacity = 1
-			end
-		else
-			widget.opacity = 1
-		end
-	end)
-end
-
-helpers.slideAnimation = function(toggle, close, where, widget, pos, set)
-	local slide = animation:new({
-		duration = 0.5,
-		pos = pos,
-		easing = animation.easing.inOutExpo,
-		update = function(_, poss)
-			if where == "top" or where == "bottom" then
-				widget.y = poss
-			else
-				widget.x = poss
-			end
-		end,
-	})
-	local slide_end = gears.timer({
-		timeout = 1,
-		single_shot = true,
-		callback = function()
-			widget.visible = false
-		end,
-	})
-	awesome.connect_signal(toggle, function()
-		if widget.visible then
-			slide_end:start()
-			slide:set(pos)
-		else
-			widget.visible = true
-			slide:set(set)
-		end
-	end)
-	awesome.connect_signal(close, function()
-		slide_end:start()
-		slide:set(pos)
+		update_opacity(check_clients_state(t:clients()))
 	end)
 end
 
@@ -318,22 +246,21 @@ helpers.colorizeText = function(txt, fg)
 end
 
 helpers.cropSurface = function(ratio, surf)
-	local old_w, old_h = gears.surface.get_size(surf)
-	local old_ratio = old_w / old_h
-	if old_ratio == ratio then
-		return surf
-	end
+	if not surf then return nil end
 
-	local new_h = old_h
-	local new_w = old_w
-	local offset_h, offset_w = 0, 0
-	-- quick mafs
+	local old_w, old_h = gears.surface.get_size(surf)
+	if old_w == 0 or old_h == 0 then return surf end
+
+	local old_ratio = old_w / old_h
+	if old_ratio == ratio then return surf end
+
+	local new_w, new_h, offset_w, offset_h = old_w, old_h, 0, 0
 	if old_ratio < ratio then
-		new_h = math.ceil(old_w * (1 / ratio))
-		offset_h = math.ceil((old_h - new_h) / 2)
+		new_h = math.ceil(old_w / ratio)
+		offset_h = math.ceil((old_h - new_h) * 0.5)
 	else
 		new_w = math.ceil(old_h * ratio)
-		offset_w = math.ceil((old_w - new_w) / 2)
+		offset_w = math.ceil((old_w - new_w) * 0.5)
 	end
 
 	local out_surf = cairo.ImageSurface(cairo.Format.ARGB32, new_w, new_h)
@@ -383,22 +310,42 @@ helpers.readFile = function(file)
 end
 
 helpers.readJson = function(DATA)
-	if helpers.file_exists(DATA) then
-		local f = assert(io.open(DATA, "rb"))
-		local lines = f:read("*all")
-		f:close()
-		local data = json.decode(lines)
-		return data
-	else
+	if not helpers.file_exists(DATA) then
 		return {}
 	end
+	local success, f = pcall(io.open, DATA, "rb")
+	if not success or not f then
+		return {}
+	end
+	local content = f:read("*all")
+	f:close()
+	local success, data = pcall(json.decode, content)
+	if not success then
+		return {}
+	end
+	return data
 end
 
 helpers.writeJson = function(PATH, DATA)
-	local w = assert(io.open(PATH, "w"))
-	---@diagnostic disable-next-line: redundant-parameter
-	w:write(json.encode(DATA, nil, { pretty = true, indent = "	", align_keys = false, array_newline = true }))
+	local success, w = pcall(io.open, PATH, "w")
+	if not success or not w then
+		return false
+	end
+	local json_opts = {
+		pretty = true,
+		indent = "\t",
+		align_keys = false,
+		array_newline = true
+	}
+	local success, encoded = pcall(json.encode, DATA, nil, json_opts)
+	if not success then
+		w:close()
+		return false
+	end
+
+	w:write(encoded)
 	w:close()
+	return true
 end
 
 local function get_widget_geometry(_hierarchy, widget)
@@ -424,12 +371,20 @@ helpers.gc = function(widget, id)
 end
 
 helpers.randomImage = function(dir)
+	local IMAGE_PATTERN = "%.([jp][pn][gg]?)$"
 	local files = {}
-	for file in io.popen("ls " .. dir):lines() do
-		if file:match(".png$") or file:match(".jpg$") or file:match(".jpeg$") then
-			table.insert(files, file)
+	local success, command = pcall(io.popen, "ls " .. dir)
+	if not success or not command then
+		return nil
+	end
+	for file in command:lines() do
+		if file:match(IMAGE_PATTERN) then
+			files[#files + 1] = file
 		end
 	end
+	command:close()
+	if #files == 0 then return nil end
+
 	return dir .. files[math.random(#files)]
 end
 

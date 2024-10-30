@@ -3,7 +3,6 @@ local beautiful = require("beautiful")
 local gears = require("gears")
 local upower = require("modules.upower.upower")
 local utils = require("modules.upower.utils")
-local helpers = require("helpers")
 
 return function(icon_name)
 	local my_charging_icon = {

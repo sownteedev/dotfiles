@@ -82,51 +82,73 @@ return function(n)
 	})
 
 	local function format_time_difference(start_time)
-		local current_time = os.time()
-		local diff = os.difftime(current_time, start_time)
+		local diff = os.difftime(os.time(), start_time)
 
-		if diff < 60 then
-			return "now"
-		elseif diff < 3600 then
-			local minutes = math.floor(diff / 60)
-			return minutes .. "m ago"
-		elseif diff < 7200 then
-			local hours = math.floor(diff / 3600)
-			return hours .. "h ago"
-		else
-			return os.date("%H:%M", start_time)
-		end
+		return diff < 60 and "now"
+			or diff < 3600 and math.floor(diff / 60) .. "m ago"
+			or diff < 7200 and math.floor(diff / 3600) .. "h ago"
+			or os.date("%H:%M", start_time)
 	end
 
 	local function update_time_widget(start_time)
 		time.markup = helpers.colorizeText(format_time_difference(start_time), beautiful.foreground .. "AA")
 	end
 
-	local notification_template = {
-		app_icon,
-		{
-			{
-				{
-					title_n,
-					nil,
-					time,
-					layout = wibox.layout.align.horizontal,
-				},
-				message_n,
-				spacing = 10,
-				layout = wibox.layout.fixed.vertical,
-			},
-			spacing = 20,
-			layout = wibox.layout.fixed.vertical,
-		},
-		spacing = 20,
-		layout = wibox.layout.fixed.horizontal,
-		expand = "none",
-	}
+	local function get_timer_timeout(start_time)
+		local diff = os.difftime(os.time(), start_time)
+		return diff >= 10800 and 1000000
+			or diff >= 3600 and 3600
+			or 60
+	end
 
-	if n.icon then
+	local notification_time = os.time()
+	local initial_timeout = get_timer_timeout(notification_time)
+	update_time_widget(notification_time)
+
+	local function focus_client_by_class(class_name)
+		local clients = client.get()
+		for i = 1, #clients do
+			local c = clients[i]
+			if c.class == class_name then
+				local tag = c.first_tag
+				if tag then
+					tag:view_only()
+					client.focus = c
+					c:raise()
+					return
+				end
+			end
+		end
+	end
+
+	local function create_notification_template(n, app_icon, title_n, message_n, time, image, actions)
+		if not n.icon then
+			return {
+				app_icon,
+				{
+					{
+						{
+							title_n,
+							nil,
+							time,
+							layout = wibox.layout.align.horizontal,
+						},
+						message_n,
+						actions and actions or nil,
+						spacing = 10,
+						layout = wibox.layout.fixed.vertical,
+					},
+					spacing = 20,
+					layout = wibox.layout.fixed.vertical,
+				},
+				spacing = 20,
+				layout = wibox.layout.fixed.horizontal,
+				expand = "none",
+			}
+		end
+
 		message_n.forced_width = 340
-		notification_template = {
+		return {
 			{
 				app_icon,
 				{
@@ -134,6 +156,7 @@ return function(n)
 						{
 							title_n,
 							message_n,
+							actions and actions or nil,
 							spacing = 10,
 							layout = wibox.layout.fixed.vertical,
 						},
@@ -162,6 +185,8 @@ return function(n)
 		}
 	end
 
+	local notification_template = create_notification_template(n, app_icon, title_n, message_n, time, image, actions)
+
 	if n.actions and #n.actions > 0 then
 		if n.icon then
 			table.insert(notification_template[1][2][1], actions)
@@ -189,22 +214,6 @@ return function(n)
 		strategy = "max",
 	})
 
-	local function get_timer_timeout(start_time)
-		local current_time = os.time()
-		local diff = os.difftime(current_time, start_time)
-		if diff >= 10800 then
-			return 1000000
-		elseif diff >= 3600 then
-			return 3600
-		else
-			return 60
-		end
-	end
-
-	local notification_time = os.time()
-	local initial_timeout = get_timer_timeout(notification_time)
-	update_time_widget(notification_time)
-
 	box.timer = gears.timer({
 		timeout = initial_timeout,
 		call_now = false,
@@ -214,24 +223,6 @@ return function(n)
 			box.timer.timeout = get_timer_timeout()
 		end
 	})
-
-	local function find_client_and_tag(class_name)
-		for _, c in ipairs(client.get()) do
-			if c.class == class_name then
-				return c, c.first_tag
-			end
-		end
-		return nil, nil
-	end
-
-	local function focus_client_by_class(class_name)
-		local c, tag = find_client_and_tag(class_name)
-		if c and tag then
-			tag:view_only()
-			client.focus = c
-			c:raise()
-		end
-	end
 
 	box:buttons(gears.table.join(awful.button({}, 1, function()
 		_G.notif_center_remove_notif(box)

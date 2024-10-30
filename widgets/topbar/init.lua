@@ -9,11 +9,11 @@ local controlcenter = require(... .. ".mods.controlcenter")
 local systray = require(... .. ".mods.systray")
 
 return function(s)
-	return awful.wibar {
+	local wibar = awful.wibar {
 		position = "top",
 		height = 40,
 		width = beautiful.width,
-		bg = beautiful.background .. "33",
+		bg = beautiful.background,
 		ontop = false,
 		screen = s,
 		widget = {
@@ -42,4 +42,10 @@ return function(s)
 			layout = wibox.layout.align.horizontal,
 		}
 	}
+
+	awesome.connect_signal("signal::blur", function(status)
+		wibar.bg = not status and beautiful.background .. "CC" or beautiful.background .. "88"
+	end)
+
+	return wibar
 end

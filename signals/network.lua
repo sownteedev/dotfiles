@@ -1,50 +1,69 @@
 local awful = require("awful")
 local gears = require("gears")
 
-local function emit_network_status()
-	awful.spawn.easy_async_with_shell(
-		"sh -c 'iwgetid -r ; nmcli -t -f DEVICE,TYPE con show --active ; nmcli networking connectivity check ; iwconfig'",
-		function(stdout)
-			local status = not stdout:match("none") and not stdout:match("limited")
+local last_pid = nil
 
-			local name = nil
-			if stdout:match("Error:") then
-				name = "Error Network"
-			elseif stdout:match("full") and stdout:match("ethernet") then
-				name = "Ethernet"
-			elseif stdout:match("limited") then
-				name = "No Network"
-			else
-				name = stdout
-			end
-
-			local quality = nil
-			if stdout:match("ethernet") then
-				quality = 101
-			elseif stdout:match("Quality") then
-				local qua = stdout:match("Quality=(%d+)")
-				quality = (qua * 10) / 7
-			else
-				quality = 0
-			end
-
-			awesome.emit_signal("signal::network", status, name, quality)
-		end
-	)
+local function kill_last_process()
+	if last_pid then
+		awful.spawn.easy_async("sh -c 'kill " .. last_pid .. " 2>/dev/null'", function()
+			last_pid = nil
+		end)
+	end
 end
 
-gears.timer({
-	timeout = 5,
-	call_now = true,
-	autostart = true,
-	callback = function()
-		emit_network_status()
-	end,
+local function emit_network_status()
+	kill_last_process()
+
+	awful.spawn.easy_async_with_shell([[
+        sh -c '
+        echo $$ > /tmp/network_status_pid
+        iwgetid -r
+        nmcli -t -f DEVICE,TYPE con show --active
+        nmcli networking connectivity check
+        iwconfig
+        rm -f /tmp/network_status_pid
+        ']], function(stdout)
+		awful.spawn.easy_async("cat /tmp/network_status_pid", function(pid)
+			last_pid = pid:gsub("%s+", "")
+		end)
+
+		local status = not stdout:match("none") and not stdout:match("limited")
+
+		local name = stdout:match("Error:") and "Error Network"
+			or (stdout:match("full") and stdout:match("ethernet") and "Ethernet")
+			or (stdout:match("limited") and "No Network")
+			or stdout:match("^[^\n]+") or ""
+
+		local quality = stdout:match("ethernet") and 101
+			or (stdout:match("Quality") and ((stdout:match("Quality=(%d+)") * 10) / 7))
+			or 0
+
+		awesome.emit_signal("signal::network", status, name, quality)
+	end)
+end
+
+local update_timer = gears.timer({
+	timeout = 10,
+	autostart = false,
+	callback = emit_network_status
 })
 
+awesome.connect_signal("exit", function()
+	kill_last_process()
+	update_timer:stop()
+end)
+
+update_timer:start()
+emit_network_status()
+
 function network_toggle()
-	awful.spawn.easy_async_with_shell("sh -c \"nmcli | grep wlp0s20f3 | awk 'FNR == 1'\"", function(status)
-		status = status:match("connected")
-		awful.spawn.with_shell(status and "sh -c 'nmcli networking off'" or "sh -c 'nmcli networking on'")
-	end)
+	awful.spawn.easy_async_with_shell(
+		"nmcli | grep wlp0s20f3 | awk 'FNR == 1'",
+		function(status)
+			local is_connected = status:match("connected")
+			awful.spawn.with_shell(
+				is_connected and "nmcli networking off" or "nmcli networking on"
+			)
+		end
+	)
 end

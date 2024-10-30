@@ -1,19 +1,32 @@
 local awful = require("awful")
 
+local DND_CACHE = os.getenv("HOME") .. "/.cache/dnd"
+local NAUGHTY_TOGGLE = "awesome-client 'naughty = require(\"naughty\") naughty.toggle()'"
+
+local function get_dnd_state_cmd(state)
+	return string.format("echo %s > %s", state and "true" or "false", DND_CACHE)
+end
+
 local function emit_dnd_status()
-	awful.spawn.easy_async_with_shell("sh -c 'cat ~/.cache/dnd'", function(stdout)
-		local status = stdout:match("true")
-		awesome.emit_signal("signal::dnd", status)
+	awful.spawn.easy_async_with_shell("cat " .. DND_CACHE, function(stdout)
+		awesome.emit_signal("signal::dnd", stdout:match("true"))
 	end)
 end
-emit_dnd_status()
 
 function dnd_toggle()
-	awful.spawn.easy_async_with_shell("sh -c 'cat ~/.cache/dnd'", function(stdout)
-		local status = stdout:match("true")
-		awful.spawn.with_shell("awesome-client 'naughty = require(\"naughty\") naughty.toggle()'")
-		awful.spawn.with_shell(status and "sh -c 'echo false > ~/.cache/dnd'" or
-			"sh -c 'echo true > ~/.cache/dnd'")
-		awesome.emit_signal("signal::dnd", not status)
+	awful.spawn.easy_async_with_shell("cat " .. DND_CACHE, function(stdout)
+		local current_status = stdout:match("true")
+		local new_status = not current_status
+
+		local commands = table.concat({
+			NAUGHTY_TOGGLE,
+			get_dnd_state_cmd(new_status)
+		}, " && ")
+
+		awful.spawn.easy_async_with_shell(commands, function()
+			awesome.emit_signal("signal::dnd", new_status)
+		end)
 	end)
 end
+
+emit_dnd_status()

@@ -5,6 +5,50 @@ local beautiful = require("beautiful")
 local animation = require("modules.animation")
 local helpers = require("helpers")
 
+local ICONS = {
+	brightness = {
+		[90] = "󰃠 ",
+		[60] = "󰃝 ",
+		[30] = "󰃟 ",
+		[10] = "󰃞 ",
+	},
+	volume = {
+		high = " ",
+		medium = "󰕾 ",
+		low = " ",
+		muted = "󰖁 "
+	},
+	mic = {
+		on = " ",
+		off = " "
+	}
+}
+
+local COLORS = {
+	brightness = beautiful.blue,
+	volume = beautiful.red,
+	mic = beautiful.green
+}
+
+local function get_icon_markup(icon, is_muted)
+	return helpers.colorizeText(icon, is_muted and beautiful.red or beautiful.foreground)
+end
+
+local function update_progressbar(widget, color)
+	local bar = helpers.gc(widget, "progressbar")
+	bar:set_color(color)
+	bar:set_background_color(color .. '22')
+end
+
+local function get_brightness_icon(value)
+	for threshold, icon in pairs(ICONS.brightness) do
+		if value > threshold then
+			return icon
+		end
+	end
+	return ICONS.brightness[10]
+end
+
 return function(s)
 	local info = wibox.widget {
 		margins = 20,
@@ -18,10 +62,10 @@ return function(s)
 					bar_shape = beautiful.radius,
 					widget = wibox.widget.progressbar,
 				},
-				forced_width  = 5,
+				forced_width = 5,
 				forced_height = 200,
-				direction     = 'east',
-				layout        = wibox.container.rotate,
+				direction = 'east',
+				layout = wibox.container.rotate,
 			},
 			{
 				{
@@ -43,103 +87,100 @@ return function(s)
 		visible = false,
 		screen = s,
 		ontop = true,
-		bg = beautiful.background,
+		bg = beautiful.background .. "EE",
 		shape = beautiful.radius,
 		border_width = beautiful.border_width,
 		border_color = beautiful.lighter,
 		placement = function(d)
-			awful.placement.right(d, { margins = beautiful.useless_gap * 2, honor_workarea = true })
+			awful.placement.right(d, {
+				margins = beautiful.useless_gap * 2,
+				honor_workarea = true
+			})
 		end,
 		widget = info,
 	}
 
 	local anim = animation:new {
-		duration = 0.3,
+		duration = 0.33,
 		easing = animation.easing.linear,
 		update = function(_, pos)
-			info:get_children_by_id("progressbar")[1].value = pos
+			helpers.gc(info, "progressbar").value = pos
 		end,
 	}
 
 	awesome.connect_signal("signal::brightness", function(value)
 		anim:set(value)
-		helpers.gc(info, "progressbar"):set_color(beautiful.blue)
-		helpers.gc(info, "progressbar"):set_background_color(beautiful.blue .. '22')
-		if value > 90 then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃠 ", beautiful.foreground))
-		elseif value > 60 then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃝 ", beautiful.foreground))
-		elseif value > 30 then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃟 ", beautiful.foreground))
-		elseif value > 10 then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰃞 ", beautiful.foreground))
-		end
+		update_progressbar(info, COLORS.brightness)
+		helpers.gc(info, "icon"):set_markup_silently(
+			get_icon_markup(get_brightness_icon(value))
+		)
 	end)
 
 	awesome.connect_signal("signal::volume", function(value)
 		anim:set(value)
-		helpers.gc(info, "progressbar"):set_color(beautiful.red)
-		helpers.gc(info, "progressbar"):set_background_color(beautiful.red .. '22')
-		if value > 66 then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.foreground))
-		elseif value > 33 then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰕾 ", beautiful.foreground))
-		elseif value > 0 then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.foreground))
-		else
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.red))
-		end
+		update_progressbar(info, COLORS.volume)
+		local icon = value > 66 and ICONS.volume.high
+			or value > 33 and ICONS.volume.medium
+			or value > 0 and ICONS.volume.low
+			or ICONS.volume.muted
+		helpers.gc(info, "icon"):set_markup_silently(
+			get_icon_markup(icon, value == 0)
+		)
 	end)
+
 	awesome.connect_signal("signal::volumemute", function(value)
 		if value then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText("󰖁 ", beautiful.red))
+			helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(ICONS.volume.muted, true))
+		else
+			local current_volume = helpers.gc(info, "progressbar").value
+			local icon = current_volume > 66 and ICONS.volume.high
+				or current_volume > 33 and ICONS.volume.medium
+				or current_volume > 0 and ICONS.volume.low
+				or ICONS.volume.muted
+			helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(icon, false))
 		end
 	end)
 
 	awesome.connect_signal("signal::mic", function(value)
 		anim:set(value)
-		helpers.gc(info, "progressbar"):set_color(beautiful.green)
-		helpers.gc(info, "progressbar"):set_background_color(beautiful.green .. '22')
-		if value > 0 then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.foreground))
-		else
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.red))
-		end
+		update_progressbar(info, COLORS.mic)
+		helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(value > 0 and ICONS.mic.on or ICONS.mic.off,
+			value == 0))
 	end)
+
 	awesome.connect_signal("signal::micmute", function(value)
 		if value then
-			helpers.gc(info, "icon"):set_markup_silently(helpers.colorizeText(" ", beautiful.red))
+			helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(ICONS.mic.off, true))
+		else
+			helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(ICONS.mic.on, false))
 		end
 	end)
 
-
-	local slide = animation:new({
+	local slide = animation:new {
 		duration = 0.5,
 		pos = beautiful.width + osd.width,
 		easing = animation.easing.inOutExpo,
-		update = function(_, poss)
-			osd.x = poss
+		update = function(_, pos)
+			osd.x = pos
 		end,
-	})
+	}
 
-	local slide_hide = gears.timer({
+	local slide_hide = gears.timer {
 		timeout = 0.5,
 		single_shot = true,
 		callback = function()
 			osd.visible = false
 		end,
-	})
+	}
 
-	local function osd_hide()
-		slide_hide:start()
-		slide:set(beautiful.width + osd.width)
-	end
-
-	local slide_end = gears.timer({
+	local slide_end = gears.timer {
 		timeout = 2,
 		single_shot = true,
-		callback = osd_hide,
-	})
+		callback = function()
+			slide_hide:start()
+			slide:set(beautiful.width + osd.width)
+		end,
+	}
 
 	awesome.connect_signal("open::brivolmic", function()
 		if osd.visible then

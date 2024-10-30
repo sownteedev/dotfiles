@@ -6,6 +6,12 @@ local beautiful = require("beautiful")
 local pam = require("liblua_pam")
 local animation = require("modules.animation")
 
+local os_getenv = os.getenv
+local cache = {
+	user = os_getenv("USER"),
+	hostname = io.popen("uname -n"):read("*l")
+}
+
 local auth = function(password)
 	return pam.auth_current_user(password)
 end
@@ -29,7 +35,7 @@ return function(s)
 			widget = wibox.widget.imagebox,
 		},
 		{
-			markup = os.getenv("USER") .. "@" .. io.popen("uname -n"):read("*l"),
+			markup = cache.user .. "@" .. cache.hostname,
 			font = "azuki_font Bold 18",
 			halign = "center",
 			widget = wibox.widget.textbox,
@@ -170,6 +176,14 @@ return function(s)
 				grabber:start()
 				input = ""
 				star = ""
+			elseif key == "XF86AudioRaiseVolume" then
+				awful.spawn.with_shell("pamixer -i 2")
+				volume_emit()
+			elseif key == "XF86AudioLowerVolume" then
+				awful.spawn.with_shell("pamixer -d 2")
+				volume_emit()
+			elseif key == "XF86AudioMute" then
+				volume_toggle()
 			end
 		end,
 	})

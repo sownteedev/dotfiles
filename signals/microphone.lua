@@ -1,29 +1,32 @@
 local awful = require("awful")
 
+local MIC_VOLUME_CMD = "pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\\b\\d+(?=%)' | head -n 1"
+local MIC_MUTE_CMD = "pactl get-source-mute @DEFAULT_SOURCE@"
+local MIC_TOGGLE_CMD = "pactl set-source-mute @DEFAULT_SOURCE@ toggle"
+
 function mic()
-	awful.spawn.easy_async_with_shell(
-		"sh -c \"pactl get-source-volume @DEFAULT_SOURCE@ | grep -oP '\\b\\d+(?=%)' | head -n 1\" &",
-		function(stdout)
-			local mic_int = tonumber(stdout)
-			awesome.emit_signal("signal::mic", mic_int)
+	awful.spawn.easy_async_with_shell(MIC_VOLUME_CMD, function(stdout)
+		local volume = tonumber(stdout)
+		if volume then
+			awesome.emit_signal("signal::mic", volume)
 		end
-	)
+	end)
+end
+
+local function mic_mute()
+	awful.spawn.easy_async_with_shell(MIC_MUTE_CMD, function(stdout)
+		awesome.emit_signal("signal::micmute", stdout:match("yes"))
+	end)
+end
+
+function mic_toggle()
+	awful.spawn.easy_async_with_shell(MIC_MUTE_CMD, function(stdout)
+		local current_status = stdout:match("yes")
+		awful.spawn.easy_async_with_shell(MIC_TOGGLE_CMD, function()
+			awesome.emit_signal("signal::micmute", not current_status)
+		end)
+	end)
 end
 
 mic()
-
-local function mic_mute()
-	awful.spawn.easy_async_with_shell("sh -c 'pactl get-source-mute @DEFAULT_SOURCE@'", function(value)
-		local boolen = value:match("yes")
-		awesome.emit_signal("signal::micmute", boolen)
-	end)
-end
 mic_mute()
-
-function mic_toggle()
-	awful.spawn.easy_async_with_shell("sh -c 'pactl get-source-mute @DEFAULT_SOURCE@'", function(stdout)
-		local status = stdout:match("yes")
-		awful.spawn.with_shell("pactl set-source-mute @DEFAULT_SOURCE@ toggle")
-		awesome.emit_signal("signal::micmute", not status)
-	end)
-end

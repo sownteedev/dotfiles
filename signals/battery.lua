@@ -5,6 +5,8 @@ local beautiful = require("beautiful")
 local naughty = require("naughty")
 local helpers = require("helpers")
 
+local charging = false
+
 local function battery_emit()
 	awful.spawn.easy_async_with_shell("sh -c 'cat /sys/class/power_supply/BAT0/capacity'",
 		function(stdout)
@@ -20,6 +22,7 @@ local function battery_status()
 	awful.spawn.easy_async_with_shell("sh -c 'cat /sys/class/power_supply/BAT0/status'",
 		function(stdout)
 			local status = not stdout:match("Discharging")
+			charging = status
 			if status ~= last_status then
 				awesome.emit_signal("signal::batterystatus", status)
 				last_status = status
@@ -35,7 +38,7 @@ battery:connect_signal("property::state", battery_status)
 
 local last_notification = nil
 awesome.connect_signal("signal::battery", function(level)
-	if (level == 20 or level == 10) and last_notification ~= level then
+	if (level == 20 or level == 10) and last_notification ~= level and not charging then
 		last_notification = level
 		naughty.notify({
 			app_name = "default",
