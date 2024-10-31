@@ -53,17 +53,23 @@ awesome.connect_signal("exit", function()
 	update_timer:stop()
 end)
 
-update_timer:start()
-emit_network_status()
-
 function network_toggle()
 	awful.spawn.easy_async_with_shell(
 		"nmcli | grep wlp0s20f3 | awk 'FNR == 1'",
 		function(status)
 			local is_connected = status:match("connected")
-			awful.spawn.with_shell(
-				is_connected and "nmcli networking off" or "nmcli networking on"
+			awful.spawn.easy_async_with_shell(
+				is_connected and "nmcli networking off" or "nmcli networking on",
+				function()
+					gears.timer.start_new(1, function()
+						emit_network_status()
+						return false
+					end)
+				end
 			)
 		end
 	)
 end
+
+update_timer:start()
+emit_network_status()

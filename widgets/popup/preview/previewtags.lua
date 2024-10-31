@@ -166,7 +166,9 @@ return function(s)
 
 	awesome.connect_signal("toggle::preview", startpreview)
 	awesome.connect_signal("close::preview", function()
-		previewbox.visible = false
+		if previewbox.visible then
+			previewbox.visible = false
+		end
 	end)
 
 	return previewbox

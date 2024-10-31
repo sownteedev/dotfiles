@@ -68,8 +68,10 @@ return function(s)
 		end
 	end)
 	awesome.connect_signal("close::control", function()
-		slide_end:start()
-		slide:set(-control.height - 10)
+		if control.visible then
+			slide_end:start()
+			slide:set(-control.height - 10)
+		end
 	end)
 
 	awesome.connect_signal("signal::blur", function(status)
