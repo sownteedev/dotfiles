@@ -166,7 +166,7 @@ awful.keyboard.append_global_keybindings({
 
 	-- Client
 	awful.key({ alt }, "Tab", function()
-		require("modules.awesome-switcher").switch(1, "Mod1", "Alt_L", "Shift", "Tab")
+		require("widgets.popup.preview.previewclients").switch(1, "Mod1", "Alt_L", "Shift", "Tab")
 	end),
 })
 
@@ -226,20 +226,18 @@ end)
 
 awful.mouse.append_global_mousebindings({
 	awful.button({}, 1, function()
-		-- awesome.emit_signal("close::launcher")
-		-- awesome.emit_signal("close::noticenter")
-		-- awesome.emit_signal("close::control")
-		-- awesome.emit_signal("close::preview")
-		-- awesome.emit_signal("close::exit")
+		awesome.emit_signal("close::noticenter")
+		awesome.emit_signal("close::control")
+		awesome.emit_signal("close::preview")
+		awesome.emit_signal("close::exit")
 	end),
 	awful.button({}, 3, function()
 		-- awesome.emit_signal("toggle::menu")
 	end),
 })
 client.connect_signal("button::press", function()
-	-- awesome.emit_signal("close::launcher")
-	-- awesome.emit_signal("close::noticenter")
-	-- awesome.emit_signal("close::control")
-	-- awesome.emit_signal("close::preview")
-	-- awesome.emit_signal("close::exit")
+	awesome.emit_signal("close::noticenter")
+	awesome.emit_signal("close::control")
+	awesome.emit_signal("close::preview")
+	awesome.emit_signal("close::exit")
 end)

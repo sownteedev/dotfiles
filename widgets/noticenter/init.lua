@@ -179,8 +179,10 @@ return function(s)
 	end)
 
 	awesome.connect_signal("close::noticenter", function()
-		slide_end:start()
-		slide:set(beautiful.width + 10)
+		if noticenter.visible then
+			slide_end:start()
+			slide:set(beautiful.width + 10)
+		end
 	end)
 
 	awesome.connect_signal("signal::blur", function(status)

@@ -186,6 +186,14 @@ return function(s)
 		end
 	end)
 
+	awesome.connect_signal("close::exit", function()
+		if exit.visible then
+			slide_end:start()
+			slide:set(-exit.width - 10)
+			prompt_grabber:stop()
+		end
+	end)
+
 	awesome.connect_signal("signal::blur", function(status)
 		exit.bg = not status and beautiful.background or beautiful.background .. "CC"
 	end)

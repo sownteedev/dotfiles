@@ -42,17 +42,23 @@ awesome.connect_signal("exit", function()
 	update_timer:stop()
 end)
 
-update_timer:start()
-emit_bluetooth_status()
-
 function bluetooth_toggle()
 	awful.spawn.easy_async_with_shell(
 		"bluetoothctl show | grep -i powered:",
 		function(stdout)
 			local is_powered = stdout:match("yes")
-			awful.spawn.with_shell(
-				is_powered and "bluetoothctl power off" or "bluetoothctl power on"
+			awful.spawn.easy_async_with_shell(
+				is_powered and "bluetoothctl power off" or "bluetoothctl power on",
+				function()
+					gears.timer.start_new(1, function()
+						emit_bluetooth_status()
+						return false
+					end)
+				end
 			)
 		end
 	)
 end
+
+update_timer:start()
+emit_bluetooth_status()
