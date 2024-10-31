@@ -55,7 +55,7 @@ end
 local theGrid = wibox.widget({
 	forced_num_rows = 7,
 	forced_num_cols = 7,
-	vertical_spacing = 10,
+	vertical_spacing = 8,
 	horizontal_spacing = 15,
 	min_rows_size = 20,
 	homogenous = true,
