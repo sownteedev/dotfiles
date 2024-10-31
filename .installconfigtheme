@@ -104,13 +104,9 @@ echo "[*] Done."
 sleep 3 && clear
 
 # Firefox
-echo "[*] Installing Firefox ..."
-yay -S firefox firefox-pwa --noconfirm
-xdg-settings set default-web-browser firefox.desktop
-git clone https://github.com/vinceliuice/WhiteSur-firefox-theme.git
-cd WhiteSur-firefox-theme
-./install.sh -a
-cd .. && rm -rf WhiteSur-firefox-theme
+echo "[*] Installing Zen Browser ..."
+yay -S  zen-browser-bin firefox-pwa --noconfirm
+xdg-settings set default-web-browser zen-alpha.desktop
 echo "[*] Done."
 sleep 3 && clear
 
@@ -146,21 +142,24 @@ sleep 3 && clear
 # App for me
 echo "[*] Installing apps for me ..."
 sudo pacman -S --noconfirm telegram-desktop
-yay -S --noconfirm notion-app-electron jetbrains-toolbox mysql-workbench docker-desktop postman-bin ulauncher-git appimagelauncher-bin caprine vesktop thunderbird anydesk-bin
+yay -S --noconfirm notion-app-electron jetbrains-toolbox docker-desktop postman-bin ulauncher-git appimagelauncher-bin caprine vesktop thunderbird anydesk-bin
 
 # MongoDB
-yay -S --noconfirm mongodb-bin mongodb-compass
-sudo systemctl enable mongodb
+# yay -S --noconfirm mongodb-bin mongodb-compass
+# sudo systemctl enable mongodb
+
+# My SQL
+# yay -S --noconfirm mysql-workbench
 
 # VMWare
 yay -S --noconfirm vmware-workstation
 sudo systemctl enable vmware-networks.service
 
 # Fix WPS
-yay -S --noconfirm wps-office libtiff5
-sudo sed -i '3i export XMODIFIERS="@im=ibus" export QT_IM_MODULE="ibus"' /usr/bin/wps /usr/bin/et /usr/bin/wpp
-sudo ln -s /usr/lib/libtiff.so.6 /usr/lib/libtiff.so.5
-sudo chmod -x /usr/lib/office6/wpsoffice
+# yay -S --noconfirm wps-office libtiff5
+# sudo sed -i '3i export XMODIFIERS="@im=ibus" export QT_IM_MODULE="ibus"' /usr/bin/wps /usr/bin/et /usr/bin/wpp
+# sudo ln -s /usr/lib/libtiff.so.6 /usr/lib/libtiff.so.5
+# sudo chmod -x /usr/lib/office6/wpsoffice
 
 sudo pacman -Rns docker-desktop-debug --noconfirm
 yay -S visual-studio-code-bin --noconfirm

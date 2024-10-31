@@ -36,9 +36,9 @@ sleep 3 && clear
 
 # Enable touchpad
 echo "[*] Enable touchpad for laptop and set time to sleep ..."
-yay -S xf86-input-libinput libinput-gestures xdotool wmctrl --noconfirm
+yay -S xf86-input-libinput xf86-input-synaptics libinput-gestures xdotool wmctrl --noconfirm
 sudo cp -r ~/dotf/.root/xorg.conf.d /etc/X11
-sudo gpasswd -a sowntee input
+sudo gpasswd -a $USER input
 libinput-gestures-setup stop desktop autostart start
 sleep 3 && clear
 
@@ -97,7 +97,7 @@ sleep 3 && clear
 
 # Monitor and Theme
 echo "[*] Installing monitor and theme ..."
-sudo pacman -S maim viewnior shotwell lxappearance xsettingsd imagemagick neofetch arandr xss-lock --noconfirm
+sudo pacman -S maim viewnior shotwell nwg-look xsettingsd imagemagick neofetch arandr xss-lock --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
