@@ -6,7 +6,7 @@ local cairo = require("lgi").cairo
 local gmatrix = require("gears.matrix")
 local json = require("modules.json")
 
-local path_icon = "/home/" .. os.getenv("USER") .. "/.icons/" .. _User.IconName .. "/"
+local path_icon = os.getenv("HOME") .. "/.icons/" .. _User.IconName .. "/"
 local icon_cache = {}
 local DEFAULT_ICON = path_icon .. "/apps/scalable/default-application.svg"
 local ICON_DIR = path_icon .. "/apps/scalable/"

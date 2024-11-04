@@ -112,7 +112,7 @@ return function(n)
 		shape           = beautiful.radius,
 		border_width    = beautiful.border_width,
 		border_color    = beautiful.lighter,
-		bg              = beautiful.background,
+		bg              = beautiful.background .. "EE",
 		maximum_width   = 500,
 		cursor          = "hand2",
 		widget_template = {

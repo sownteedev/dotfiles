@@ -150,8 +150,6 @@ return function(s)
 				self:stop()
 				slide_end:start()
 				slide:set(-exit.width)
-			else
-				self:stop()
 			end
 		end,
 	})

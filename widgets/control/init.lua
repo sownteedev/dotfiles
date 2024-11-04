@@ -52,7 +52,7 @@ return function(s)
 		end,
 	})
 	local slide_end = gears.timer({
-		timeout = 1,
+		timeout = 0.5,
 		single_shot = true,
 		callback = function()
 			control.visible = false
