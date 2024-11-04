@@ -5,233 +5,84 @@ local wibox = require("wibox")
 local gears = require("gears")
 local Gio = require("lgi").Gio
 local animation = require("modules.animation")
+local HOME = os.getenv("HOME")
 
-local data = {
-	metadata = {
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "nemo", "nemo"),
-			clients = {},
-			class = "Nemo",
-			exec = "nemo",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "shotwell", "shotwell"),
-			clients = {},
-			class = "Shotwell",
-			exec = "shotwell",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "thunderbird", "thunderbird"),
-			clients = {},
-			class = "thunderbird",
-			exec = "thunderbird",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "zen-alpha", "zen-alpha"),
-			clients = {},
-			class = "zen-alpha",
-			exec = "zen-browser",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "Alacritty", "Alacritty"),
-			clients = {},
-			class = "Alacritty",
-			exec = "alacritty",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "visual-studio-code", "visual-studio-code"),
-			clients = {},
-			class = "Code",
-			exec = "code",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "cursor", "cursor"),
-			clients = {},
-			class = "Cursor",
-			exec = "cursor",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "jetbrains-intellij", "jetbrains-intellij"),
-			clients = {},
-			class = "jetbrains-idea",
-			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/intellij-idea-ultimate/bin/idea",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "jetbrains-studio", "jetbrains-studio"),
-			clients = {},
-			class = "jetbrains-studio",
-			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/android-studio/bin/studio.sh",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "jetbrains-webstorm", "jetbrains-webstorm"),
-			clients = {},
-			class = "jetbrains-webstorm",
-			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/webstorm/bin/webstorm",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "jetbrains-pycharm", "jetbrains-pycharm"),
-			clients = {},
-			class = "jetbrains-pycharm",
-			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/pycharm-professional/bin/pycharm",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "jetbrains-datagrip", "jetbrains-datagrip"),
-			clients = {},
-			class = "jetbrains-datagrip",
-			exec = os.getenv("HOME") .. "/.local/share/JetBrains/Toolbox/apps/datagrip/bin/datagrip",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "MongoDB Compass", "MongoDB Compass"),
-			clients = {},
-			class = "MongoDB Compass",
-			exec = "mongodb-compass",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "Mysql-workbench-bin", "Mysql-workbench-bin"),
-			clients = {},
-			class = "Mysql-workbench-bin",
-			exec = "mysql-workbench",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "Docker Desktop", "Docker Desktop"),
-			clients = {},
-			class = "Docker Desktop",
-			exec = "/opt/docker-desktop/bin/docker-desktop",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "postman", "postman"),
-			clients = {},
-			class = "Postman",
-			exec = "postman",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "anydesk", "anydesk"),
-			clients = {},
-			class = "Anydesk",
-			exec = "anydesk",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "vmware-workstation", "vmware"),
-			clients = {},
-			class = "Vmware",
-			exec = "vmware",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "notion", "notion"),
-			clients = {},
-			class = "Notion",
-			exec = "notion-app",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "telegram", "telegram"),
-			clients = {},
-			class = "TelegramDesktop",
-			exec = "telegram-desktop",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "caprine", "caprine"),
-			clients = {},
-			class = "Caprine",
-			exec = "caprine",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "vesktop", "vesktop"),
-			clients = {},
-			class = "vesktop",
-			exec = "vesktop",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, "Spotify", "Spotify"),
-			clients = {},
-			class = "Spotify",
-			exec = "spotify",
-		},
-		{
-			count = 0,
-			pinned = true,
-			icon = helpers.getIcon(nil, _User.Custom_Icon[5].name, _User.Custom_Icon[5].name),
-			clients = {},
-			class = _User.Custom_Icon[5].name,
-			exec = "/usr/bin/firefoxpwa site launch " ..
-				string.sub(_User.Custom_Icon[5].name, 7) .. " --protocol",
-		},
-	},
-	classes = {
-		"nemo",
-		"shotwell",
-		"thunderbird",
-		"zen-alpha",
-		"alacritty",
-		"code",
-		"cursor",
-		"jetbrains-idea",
-		"jetbrains-studio",
-		"jetbrains-webstorm",
-		"jetbrains-pycharm",
-		"jetbrains-datagrip",
-		"mongodb compass",
-		"mysql-workbench-bin",
-		"docker desktop",
-		"postman",
-		"anydesk",
-		"vmware",
-		"notion",
-		"telegramdesktop",
-		"caprine",
-		"vesktop",
-		"spotify",
-		string.lower(_User.Custom_Icon[5].name)
-	},
-	exclude = {
-		"Ulauncher",
+local base_apps = {
+	{ name = "nemo",        class = "Nemo",        exec = "nemo" },
+	{ name = "shotwell",    class = "Shotwell",    exec = "shotwell" },
+	{ name = "thunderbird", class = "thunderbird", exec = "thunderbird" },
+	{ name = "zen-alpha",   class = "zen-alpha",   exec = "zen-browser" },
+}
+
+local dev_apps = {
+	{ name = "Alacritty",          class = "Alacritty",          exec = "alacritty" },
+	{ name = "visual-studio-code", class = "Code",               exec = "code" },
+	{ name = "cursor",             class = "Cursor",             exec = "cursor" },
+	{ name = "jetbrains-intellij", class = "jetbrains-idea",     exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/intellij-idea-ultimate/bin/idea" },
+	{ name = "jetbrains-studio",   class = "jetbrains-studio",   exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/android-studio/bin/studio.sh" },
+	{ name = "jetbrains-webstorm", class = "jetbrains-webstorm", exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/webstorm/bin/webstorm" },
+	{ name = "jetbrains-pycharm",  class = "jetbrains-pycharm",  exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/pycharm-professional/bin/pycharm" },
+	{ name = "jetbrains-datagrip", class = "jetbrains-datagrip", exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/datagrip/bin/datagrip" },
+}
+
+local dev_tools = {
+	-- { name = "MongoDB Compass",     class = "MongoDB Compass",     exec = "mongodb-compass" },
+	-- { name = "Mysql-workbench-bin", class = "Mysql-workbench-bin", exec = "mysql-workbench" },
+	{ name = "Docker Desktop", class = "Docker Desktop", exec = "/opt/docker-desktop/bin/docker-desktop" },
+	{ name = "postman",        class = "Postman",        exec = "postman" },
+}
+
+local utility_apps = {
+	{ name = "anydesk", class = "Anydesk", exec = "anydesk" },
+	{ name = "vmware",  class = "Vmware",  exec = "vmware" },
+	{ name = "notion",  class = "Notion",  exec = "notion-app" },
+}
+
+local social_apps = {
+	{ name = "telegram", class = "TelegramDesktop", exec = "telegram-desktop" },
+	{ name = "caprine",  class = "Caprine",         exec = "caprine" },
+	{ name = "vesktop",  class = "vesktop",         exec = "vesktop" },
+	{ name = "Spotify",  class = "Spotify",         exec = "spotify" },
+}
+
+local custom_apps = {
+	{
+		name = _User.Custom_Icon[5].name,
+		class = _User.Custom_Icon[5].name,
+		exec = "/usr/bin/firefoxpwa site launch " .. string.sub(_User.Custom_Icon[5].name, 7) .. " --protocol"
 	},
 }
+
+local function create_metadata_entry(app)
+	return {
+		count = 0,
+		pinned = true,
+		icon = helpers.getIcon(nil, app.name, app.name),
+		clients = {},
+		class = app.class,
+		exec = app.exec
+	}
+end
+
+local data = {
+	metadata = {},
+	classes = {},
+	exclude = { "Ulauncher" },
+}
+
+local function populate_data(apps)
+	for _, app in ipairs(apps) do
+		table.insert(data.metadata, create_metadata_entry(app))
+		table.insert(data.classes, string.lower(app.class))
+	end
+end
+
+populate_data(base_apps)
+populate_data(dev_apps)
+populate_data(dev_tools)
+populate_data(utility_apps)
+populate_data(social_apps)
+populate_data(custom_apps)
 
 local widget = wibox.widget({
 	layout = wibox.layout.fixed.horizontal,
@@ -323,13 +174,11 @@ local function genMetadata()
 		::continue::
 	end
 
-	-- Add new unpinned apps
 	for _, entry in ipairs(new_metadata) do
 		table.insert(data.metadata, entry)
 		table.insert(data.classes, entry.class)
 	end
 
-	-- Remove duplicates from client lists
 	for _, j in pairs(data.metadata) do
 		if j.count > 0 then
 			j.clients = removeDup(j.clients)
@@ -482,7 +331,7 @@ return function(s)
 		shape = helpers.rrect(20),
 		bg = helpers.blend("#ffffff", "#000000", 0.3) .. "55",
 		placement = function(c)
-			awful.placement.bottom(c, { margins = { bottom = beautiful.useless_gap } })
+			awful.placement.bottom(c, { margins = { bottom = beautiful.useless_gap * 2 } })
 		end,
 		widget = wibox.container.background,
 	})
@@ -495,10 +344,10 @@ return function(s)
 				widget = wibox.container.place,
 			},
 			widget = wibox.container.margin,
-			top = 5,
+			top = 7,
 			bottom = 5,
-			left = 10,
-			right = 10,
+			left = 12,
+			right = 12,
 		},
 		widget = wibox.container.background,
 		shape = helpers.rrect(20),
@@ -585,7 +434,7 @@ return function(s)
 	else
 		client.connect_signal("property::maximized", function(c)
 			if c.maximized then
-				c:geometry({ height = c:geometry().height - beautiful.useless_gap - dock.height })
+				c:geometry({ height = c:geometry().height - beautiful.useless_gap * 2 - dock.height })
 			end
 		end)
 	end

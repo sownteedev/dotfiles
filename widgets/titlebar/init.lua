@@ -14,13 +14,13 @@ return function(c)
 		{
 			id = "iconbot",
 			markup = helpers.colorizeText(" ", beautiful.lighter2),
-			font = beautiful.icon .. " 13",
+			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
 			markup = helpers.colorizeText("󰅙 ", beautiful.lighter2),
-			font = beautiful.icon .. " 13",
+			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
 		layout = wibox.layout.stack,
@@ -34,13 +34,13 @@ return function(c)
 		{
 			id = "iconbot",
 			markup = helpers.colorizeText(" ", beautiful.lighter2),
-			font = beautiful.icon .. " 13",
+			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
 			markup = helpers.colorizeText("󰍶 ", beautiful.lighter2),
-			font = beautiful.icon .. " 13",
+			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
 		layout = wibox.layout.stack,
@@ -56,13 +56,13 @@ return function(c)
 		{
 			id = "iconbot",
 			markup = helpers.colorizeText(" ", beautiful.lighter2),
-			font = beautiful.icon .. " 13",
+			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
 			markup = helpers.colorizeText("󰿣 ", beautiful.lighter2),
-			font = beautiful.icon .. " 13",
+			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
 		layout = wibox.layout.stack,
@@ -161,10 +161,9 @@ return function(c)
 				left = 20,
 				{
 					layout = wibox.layout.fixed.horizontal,
-					spacing = 1,
 					close,
-					maximize,
 					minimize,
+					maximize,
 				},
 			},
 			{

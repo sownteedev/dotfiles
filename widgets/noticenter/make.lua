@@ -121,7 +121,7 @@ return function(n)
 		end
 	end
 
-	local function create_notification_template(n, app_icon, title_n, message_n, time, image, actions)
+	local function create_notification_template(n, app_icon, title_n, message_n, time, image)
 		if not n.icon then
 			return {
 				app_icon,
@@ -134,7 +134,6 @@ return function(n)
 							layout = wibox.layout.align.horizontal,
 						},
 						message_n,
-						actions and actions or nil,
 						spacing = 10,
 						layout = wibox.layout.fixed.vertical,
 					},
@@ -156,7 +155,6 @@ return function(n)
 						{
 							title_n,
 							message_n,
-							actions and actions or nil,
 							spacing = 10,
 							layout = wibox.layout.fixed.vertical,
 						},
@@ -185,7 +183,7 @@ return function(n)
 		}
 	end
 
-	local notification_template = create_notification_template(n, app_icon, title_n, message_n, time, image, actions)
+	local notification_template = create_notification_template(n, app_icon, title_n, message_n, time, image)
 
 	if n.actions and #n.actions > 0 then
 		if n.icon then
