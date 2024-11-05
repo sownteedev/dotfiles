@@ -62,6 +62,7 @@ return function(s)
 
 	local input = ""
 	local star = ""
+	local swiped = false
 	local prompt = wibox.widget({
 		{
 			{
@@ -146,6 +147,7 @@ return function(s)
 						table.remove(bottom.children, 2)
 						input = ""
 						star = ""
+						swiped = false
 					else
 						input = ""
 						star = ""
@@ -193,6 +195,29 @@ return function(s)
 		horizontal_fit_policy = "fit",
 		vertical_fit_policy = "fit",
 		widget = wibox.widget.imagebox,
+		buttons = gears.table.join(
+			awful.button({}, 4, function()
+				if swiped then
+					grabber:stop()
+					start_input:start()
+					bottom:reset()
+					bottom:add(profilepic)
+					input = ""
+					star = ""
+					swiped = false
+				end
+			end),
+			awful.button({}, 5, function()
+				if not swiped then
+					start_input:stop()
+					bottom:add(prompt)
+					grabber:start()
+					input = ""
+					star = ""
+					swiped = true
+				end
+			end)
+		),
 	})
 	awesome.connect_signal("lock::change", function()
 		background:set_image(_User.Lock)
