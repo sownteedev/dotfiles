@@ -66,6 +66,24 @@ local clearButton = wibox.widget({
 helpers.hoverCursor(clearButton)
 helpers.addHoverBg(clearButton, "bg", beautiful.lighter, beautiful.lighter1)
 
+local titleNotificenter = wibox.widget({
+	{
+		{
+			title,
+			nil,
+			clearButton,
+			widget = wibox.layout.align.horizontal,
+		},
+		top = 10,
+		bottom = 10,
+		left = 20,
+		right = 20,
+		widget = wibox.container.margin,
+	},
+	bg = beautiful.lighter,
+	widget = wibox.container.background,
+})
+
 return function(s)
 	local noticenter = wibox({
 		screen = s,
@@ -122,23 +140,7 @@ return function(s)
 	end)
 
 	noticenter:setup({
-		{
-			{
-				{
-					title,
-					nil,
-					clearButton,
-					widget = wibox.layout.align.horizontal,
-				},
-				top = 10,
-				bottom = 10,
-				left = 20,
-				right = 20,
-				widget = wibox.container.margin,
-			},
-			bg = beautiful.lighter,
-			widget = wibox.container.background,
-		},
+		titleNotificenter,
 		{
 			{
 				finalcontent,
@@ -186,7 +188,8 @@ return function(s)
 	end)
 
 	awesome.connect_signal("signal::blur", function(status)
-		noticenter.bg = not status and beautiful.background or beautiful.background .. "CC"
+		titleNotificenter.bg = not status and beautiful.lighter or beautiful.lighter .. "DD"
+		noticenter.bg = not status and beautiful.background or beautiful.background .. "DD"
 	end)
 
 	return noticenter

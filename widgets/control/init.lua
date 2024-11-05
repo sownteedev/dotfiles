@@ -75,7 +75,7 @@ return function(s)
 	end)
 
 	awesome.connect_signal("signal::blur", function(status)
-		control.bg = not status and beautiful.background or beautiful.background .. "CC"
+		control.bg = not status and beautiful.background or beautiful.background .. "DD"
 	end)
 
 	return control

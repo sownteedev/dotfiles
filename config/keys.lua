@@ -166,6 +166,10 @@ awful.keyboard.append_global_keybindings({
 
 	-- Client
 	awful.key({ alt }, "Tab", function()
+		if opened_preview then
+			awesome.emit_signal("close::preview")
+			return
+		end
 		require("widgets.popup.preview.previewclients").switch(1, "Mod1", "Alt_L", "Shift", "Tab")
 	end),
 })

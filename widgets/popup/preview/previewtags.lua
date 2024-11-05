@@ -4,6 +4,7 @@ local gears = require("gears")
 local beautiful = require("beautiful")
 local helpers = require("helpers")
 local scale = 0.18
+opened_preview = false
 
 local function create_empty_tag_widget(s)
 	return wibox.widget {
@@ -132,6 +133,7 @@ return function(s)
 	local function startpreview()
 		if previewbox.visible then
 			previewbox.visible = false
+			opened_preview = false
 			return
 		end
 
@@ -162,12 +164,14 @@ return function(s)
 		}
 		helpers.placeWidget(previewbox, "top", 2, 0, 0, 0)
 		previewbox.visible = true
+		opened_preview = true
 	end
 
 	awesome.connect_signal("toggle::preview", startpreview)
 	awesome.connect_signal("close::preview", function()
 		if previewbox.visible then
 			previewbox.visible = false
+			opened_preview = false
 		end
 	end)
 
