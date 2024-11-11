@@ -78,13 +78,13 @@ if [ "$choice" = "1" ]; then
 	echo "[*] Installing AwesomeWM ..."
 	yay -S awesome-git lua-pam-git --noconfirm
 	rm -rf ~/.config/awesome
-	git clone https://github.com/sownteedev/dotfiles.git --branch=awesome ~/.config/awesome
+	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=awesome ~/.config/awesome
 	echo "[*] Done."
 elif [ "$choice" = "2" ]; then
 	echo "[*] Installing mAWMcos ..."
 	yay -S awesome-git lua-pam-git --noconfirm
 	rm -rf ~/.config/awesome
-	git clone https://github.com/sownteedev/dotfiles.git --branch=mAWMcos ~/.config/awesome
+	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=mAWMcos ~/.config/awesome
 	echo "[*] Done."
 elif [ "$choice" = "3" ]; then
 	echo "[*] Config for AGS is comming soon ^^"

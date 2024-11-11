@@ -30,7 +30,7 @@ sleep 3 && clear
 
 # Install Dotf Branch
 echo "[*] Installing dotfiles ..."
-git clone https://github.com/sownteedev/dotfiles.git --branch=dotf ~/dotf
+git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf ~/dotf
 echo "[*] Done."
 sleep 3 && clear
 
@@ -64,20 +64,20 @@ sleep 3 && clear
 
 # Brightness
 echo "[*] Installing brightness ..."
-sudo pacman -S brightnessctl xorg-xbacklight redshift --noconfirm
+sudo pacman -S brightnessctl redshift --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Battery
 echo "[*] Installing battery ..."
-sudo pacman -S acpi acpid upower --noconfirm
+sudo pacman -S acpi acpid upower power-profiles-daemon --noconfirm
 sudo systemctl enable acpid upower
 echo "[*] Done."
 sleep 3 && clear
 
 # Network
 echo "[*] Installing network ..."
-sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools --noconfirm
+sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools network-manager-applet --noconfirm
 sudo systemctl enable NetworkManager dhcpcd
 echo "[*] Done."
 sleep 3 && clear
@@ -90,7 +90,7 @@ sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-sudo pacman -S nemo tumbler yad ranger ueberzug exa zip gzip tar unzip unrar xdg-user-dirs gvfs vlc --noconfirm
+sudo pacman -S nemo tumbler yad ranger ueberzug exa zip gzip tar peazip unzip unrar xdg-user-dirs gvfs vlc evince --noconfirm
 gsettings set org.nemo.desktop show-desktop-icons true
 echo "[*] Done."
 sleep 3 && clear
@@ -103,8 +103,7 @@ sleep 3 && clear
 
 # Other
 echo "[*] Installing other ..."
-sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick github-cli wget zsh && yay -S --noconfirm picom-git auto-cpufreq inotify-tools
-sudo systemctl enable auto-cpufreq
+sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick github-cli wget zsh && yay -S --noconfirm picom-git inotify-tools
 echo "[*] Done."
 clear
 echo "[*] Install ibus"
