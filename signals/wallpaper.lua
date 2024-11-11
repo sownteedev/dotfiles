@@ -46,7 +46,7 @@ local AWESOME_SETTINGS = {
 	spacing = 15
 }
 
-local function create_awesome_wallpaper()
+function create_awesome_wallpaper()
 	local word_widget = wibox.layout.fixed.horizontal()
 	word_widget.spacing = AWESOME_SETTINGS.spacing
 
@@ -75,5 +75,3 @@ local function create_awesome_wallpaper()
 		}
 	end)
 end
-
--- create_awesome_wallpaper()

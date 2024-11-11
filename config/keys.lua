@@ -156,6 +156,13 @@ end
 
 awful.keyboard.append_global_keybindings({
 	-- Tags
+	awful.key({ ctrl }, "Right", function()
+		switch_to_tag(1)
+	end),
+
+	awful.key({ ctrl }, "Left", function()
+		switch_to_tag(-1)
+	end),
 	awful.key({ mod }, "Tab", function()
 		switch_to_tag(1)
 	end),
