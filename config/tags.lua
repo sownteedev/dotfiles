@@ -33,9 +33,22 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	s.preview = require("widgets.popup.preview.previewtags")(s)
 end)
 
-gears.wallpaper.maximized(_User.Wallpaper, nil, true)
+local function wallpaper()
+	awful.spawn.easy_async_with_shell(
+		"test -f " .. _User.Wallpaper .. " && echo '1' || echo '0'",
+		function(stdout)
+			if stdout:match("1") then
+				gears.wallpaper.maximized(_User.Wallpaper, nil, true)
+			else
+				create_awesome_wallpaper()
+			end
+		end
+	)
+end
+wallpaper()
+
 awesome.connect_signal("wallpaper::change", function()
-	gears.wallpaper.maximized(_User.Wallpaper, nil, true)
+	wallpaper()
 end)
 
 local CACHE_DIR = gears.filesystem.get_cache_dir()

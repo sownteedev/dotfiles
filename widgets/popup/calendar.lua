@@ -43,7 +43,7 @@ local currwidget = function(day)
 				font = beautiful.sans .. " Medium 10",
 				widget = wibox.widget.textbox,
 			},
-			margins = 8,
+			margins = 5,
 			widget = wibox.container.margin,
 		},
 		shape  = gears.shape.circle,
@@ -55,7 +55,7 @@ end
 local theGrid = wibox.widget({
 	forced_num_rows = 7,
 	forced_num_cols = 7,
-	vertical_spacing = 8,
+	vertical_spacing = 9,
 	horizontal_spacing = 15,
 	min_rows_size = 20,
 	homogenous = true,
