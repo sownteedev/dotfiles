@@ -1,5 +1,4 @@
 local awful = require("awful")
-local upower = require("modules.upower.upower")
 local beautiful = require("beautiful")
 local naughty = require("naughty")
 
@@ -30,7 +29,7 @@ local function battery_status()
 end
 battery_status()
 
-local battery = _Utils.upower.gobject_to_gearsobject(upower:get_display_device())
+local battery = _Utils.upower.gobject_to_gearsobject(_Utils.upower.upowers:get_display_device())
 battery:connect_signal("property::percentage", battery_emit)
 battery:connect_signal("property::state", battery_status)
 
