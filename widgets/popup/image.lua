@@ -1,7 +1,6 @@
 local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 
 return function(s)
 	local image = wibox({
@@ -31,12 +30,12 @@ return function(s)
 			{
 				{
 					{
-						markup = helpers.colorizeText(_User.Name, beautiful.foreground),
+						markup = _Utils.widget.colorizeText(_User.Name, beautiful.foreground),
 						font = "azuki_font Bold 15",
 						widget = wibox.widget.textbox,
 					},
 					{
-						markup = helpers.colorizeText(_User.Username, beautiful.foreground),
+						markup = _Utils.widget.colorizeText(_User.Username, beautiful.foreground),
 						font = "azuki_font 12",
 						widget = wibox.widget.textbox,
 					},
@@ -51,8 +50,8 @@ return function(s)
 		},
 		layout = wibox.layout.stack,
 	})
-	helpers.placeWidget(image, "top_left", 45, 0, 33, 0)
-	helpers.popupOpacity(image, 0.3)
+	_Utils.widget.placeWidget(image, "top_left", 45, 0, 33, 0)
+	_Utils.widget.popupOpacity(image, 0.3)
 
 	return image
 end

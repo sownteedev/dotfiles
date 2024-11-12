@@ -1,7 +1,6 @@
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local gears = require("gears")
-local helpers = require("helpers")
 
 local icon_dir = beautiful.icon_path .. "weather/icons/"
 
@@ -76,15 +75,15 @@ local dayWeather = function()
 
 	widget.update = function(out, i)
 		local day = out.daily[i]
-		helpers.gc(widget, "icon").image = icon_dir .. icon_map[day.weather[1].icon] .. ".svg"
-		helpers.gc(widget, "day").markup = helpers.colorizeText(os.date("%a", tonumber(day.dt)), "#ffffff")
+		_Utils.widget.gc(widget, "icon").image = icon_dir .. icon_map[day.weather[1].icon] .. ".svg"
+		_Utils.widget.gc(widget, "day").markup = _Utils.widget.colorizeText(os.date("%a", tonumber(day.dt)), "#ffffff")
 		local getTemp = function(temp)
-			local sp = helpers.split(temp, ".")[1]
+			local sp = _Utils.widget.split(temp, ".")[1]
 			return sp
 		end
-		helpers.gc(widget, "min").markup = helpers.colorizeText(getTemp(day.temp.night), "#ffffff")
-		helpers.gc(widget, "/").markup = helpers.colorizeText("/", beautiful.blue)
-		helpers.gc(widget, "max").markup = helpers.colorizeText(getTemp(day.temp.day), "#ffffff")
+		_Utils.widget.gc(widget, "min").markup = _Utils.widget.colorizeText(getTemp(day.temp.night), "#ffffff")
+		_Utils.widget.gc(widget, "/").markup = _Utils.widget.colorizeText("/", beautiful.blue)
+		_Utils.widget.gc(widget, "max").markup = _Utils.widget.colorizeText(getTemp(day.temp.day), "#ffffff")
 	end
 	return widget
 end
@@ -103,7 +102,7 @@ local widget = wibox.widget({
 		id = "image",
 		forced_height = 450,
 		forced_width = 600,
-		image = helpers.cropSurface(1,
+		image = _Utils.image.cropSurface(1,
 			gears.surface.load_uncached(beautiful.icon_path .. "weather/images/weather-clear-sky.jpg")
 		),
 		widget = wibox.widget.imagebox,
@@ -199,19 +198,19 @@ local widget = wibox.widget({
 })
 
 awesome.connect_signal("signal::weather", function(out)
-	helpers.gc(widget, "image").image = helpers.cropSurface(1, gears.surface.load_uncached(out.thumb))
-	helpers.gc(widget, "icon").image = out.image
-	helpers.gc(widget, "temp").markup = helpers.colorizeText(out.temp .. "°C", "#ffffff")
-	helpers.gc(widget, "desc").markup = helpers.colorizeText(out.desc, "#ffffff")
-	helpers.gc(widget, "humid").markup = helpers.colorizeText("Humidity: " .. out.humidity .. "%", "#ffffff")
-	helpers.gc(widget, "fl").markup = helpers.colorizeText("Feels Like " .. out.temp .. "°C", "#ffffff")
+	_Utils.widget.gc(widget, "image").image = _Utils.image.cropSurface(1, gears.surface.load_uncached(out.thumb))
+	_Utils.widget.gc(widget, "icon").image = out.image
+	_Utils.widget.gc(widget, "temp").markup = _Utils.widget.colorizeText(out.temp .. "°C", "#ffffff")
+	_Utils.widget.gc(widget, "desc").markup = _Utils.widget.colorizeText(out.desc, "#ffffff")
+	_Utils.widget.gc(widget, "humid").markup = _Utils.widget.colorizeText("Humidity: " .. out.humidity .. "%", "#ffffff")
+	_Utils.widget.gc(widget, "fl").markup = _Utils.widget.colorizeText("Feels Like " .. out.temp .. "°C", "#ffffff")
 	for i, j in ipairs(daylist) do
 		j.update(out, i)
 	end
 end)
 
 awesome.connect_signal("signal::weather1", function(out)
-	helpers.gc(widget, "city").markup = helpers.colorizeText(out.namecountry, "#ffffff")
+	_Utils.widget.gc(widget, "city").markup = _Utils.widget.colorizeText(out.namecountry, "#ffffff")
 end)
 
 
@@ -230,8 +229,8 @@ return function(s)
 		widget,
 		layout = wibox.layout.align.horizontal,
 	})
-	helpers.placeWidget(weather, "top_left", 13, 0, 2, 0)
-	helpers.popupOpacity(weather, 0.3)
+	_Utils.widget.placeWidget(weather, "top_left", 13, 0, 2, 0)
+	_Utils.widget.popupOpacity(weather, 0.3)
 
 	return weather
 end

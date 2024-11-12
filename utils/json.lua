@@ -75,8 +75,7 @@ local function encode_table(val, stack)
 		if n ~= #val then
 			error("invalid table: sparse array")
 		end
-		-- Encode
-		for i, v in ipairs(val) do
+		for _, v in ipairs(val) do
 			table.insert(res, encode(v, stack))
 		end
 		stack[val] = nil
@@ -366,6 +365,45 @@ function json.decode(str)
 		decode_error(str, idx, "trailing garbage")
 	end
 	return res
+end
+
+json.readJson = function(DATA)
+	if not _Utils.file.file_exists(DATA) then
+		return {}
+	end
+	local success, f = pcall(io.open, DATA, "rb")
+	if not success or not f then
+		return {}
+	end
+	local content = f:read("*all")
+	f:close()
+	local successs, data = pcall(json.decode, content)
+	if not successs then
+		return {}
+	end
+	return data
+end
+
+json.writeJson = function(PATH, DATA)
+	local success, w = pcall(io.open, PATH, "w")
+	if not success or not w then
+		return false
+	end
+	local json_opts = {
+		pretty = true,
+		indent = "\t",
+		align_keys = false,
+		array_newline = true
+	}
+	local successs, encoded = pcall(json.encode, DATA, nil, json_opts)
+	if not successs then
+		w:close()
+		return false
+	end
+
+	w:write(encoded)
+	w:close()
+	return true
 end
 
 return json

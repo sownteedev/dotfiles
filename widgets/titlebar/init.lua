@@ -2,7 +2,6 @@ local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 
 return function(c)
 	local titlebar = awful.titlebar(c, {
@@ -13,13 +12,13 @@ return function(c)
 	local close = wibox.widget({
 		{
 			id = "iconbot",
-			markup = helpers.colorizeText(" ", beautiful.lighter2),
+			markup = _Utils.widget.colorizeText(" ", beautiful.lighter2),
 			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
-			markup = helpers.colorizeText("󰅙 ", beautiful.lighter2),
+			markup = _Utils.widget.colorizeText("󰅙 ", beautiful.lighter2),
 			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
@@ -33,13 +32,13 @@ return function(c)
 	local minimize = wibox.widget({
 		{
 			id = "iconbot",
-			markup = helpers.colorizeText(" ", beautiful.lighter2),
+			markup = _Utils.widget.colorizeText(" ", beautiful.lighter2),
 			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
-			markup = helpers.colorizeText("󰍶 ", beautiful.lighter2),
+			markup = _Utils.widget.colorizeText("󰍶 ", beautiful.lighter2),
 			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
@@ -55,13 +54,13 @@ return function(c)
 	local maximize = wibox.widget({
 		{
 			id = "iconbot",
-			markup = helpers.colorizeText(" ", beautiful.lighter2),
+			markup = _Utils.widget.colorizeText(" ", beautiful.lighter2),
 			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
 		{
 			id = "icon",
-			markup = helpers.colorizeText("󰿣 ", beautiful.lighter2),
+			markup = _Utils.widget.colorizeText("󰿣 ", beautiful.lighter2),
 			font = beautiful.icon .. " 14",
 			widget = wibox.widget.textbox,
 		},
@@ -91,14 +90,14 @@ return function(c)
 		}
 
 		for _, btn in ipairs(buttons) do
-			helpers.gc(btn.widget, "icon"):set_markup(helpers.colorizeText(btn.icon, btn.color))
-			helpers.gc(btn.widget, "iconbot"):set_markup(helpers.colorizeText(" ", btn.color))
+			_Utils.widget.gc(btn.widget, "icon"):set_markup(_Utils.widget.colorizeText(btn.icon, btn.color))
+			_Utils.widget.gc(btn.widget, "iconbot"):set_markup(_Utils.widget.colorizeText(" ", btn.color))
 		end
 	end
 
 	local function setup_button_hover(button)
 		button:connect_signal("mouse::enter", function()
-			helpers.gc(button, "iconbot"):set_markup(helpers.colorizeText(" ", beautiful.darker))
+			_Utils.widget.gc(button, "iconbot"):set_markup(_Utils.widget.colorizeText(" ", beautiful.darker))
 		end)
 		button:connect_signal("mouse::leave", function()
 			set_button_colors(client.focus == c)
@@ -126,7 +125,7 @@ return function(c)
 	local icon = wibox.widget({
 		{
 			widget = wibox.widget.imagebox,
-			image = helpers.getIcon(c, c.class, c.class),
+			image = _Utils.icon.getIcon(c, c.class, c.class),
 			forced_width = 30,
 			resize = true,
 		},

@@ -1,9 +1,7 @@
 local awful = require("awful")
 local upower = require("modules.upower.upower")
-local utils = require("modules.upower.utils")
 local beautiful = require("beautiful")
 local naughty = require("naughty")
-local helpers = require("helpers")
 
 local charging = false
 
@@ -32,7 +30,7 @@ local function battery_status()
 end
 battery_status()
 
-local battery = utils.gobject_to_gearsobject(upower:get_display_device())
+local battery = _Utils.upower.gobject_to_gearsobject(upower:get_display_device())
 battery:connect_signal("property::percentage", battery_emit)
 battery:connect_signal("property::state", battery_status)
 
@@ -43,7 +41,7 @@ awesome.connect_signal("signal::battery", function(level)
 		naughty.notify({
 			app_name = "default",
 			icon = beautiful.icon_path .. "awm/battery-low.svg",
-			title = helpers.colorizeText("Low Battery", beautiful.red),
+			title = _Utils.widget.colorizeText("Low Battery", beautiful.red),
 			text = "Your battery percentage is lower than " ..
 				level .. "%. Please connect your Laptop to the charger!",
 		})
@@ -56,7 +54,7 @@ awesome.connect_signal("signal::batterystatus", function(status)
 		local stt = status and "Your laptop has just been plugged in!" or "The laptop charger has just been unplugged!"
 		naughty.notify({
 			app_name = "battery",
-			title = helpers.colorizeText("Battery Status", beautiful.yellow),
+			title = _Utils.widget.colorizeText("Battery Status", beautiful.yellow),
 			text = stt,
 		})
 	else

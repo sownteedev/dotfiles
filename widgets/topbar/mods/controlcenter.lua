@@ -2,7 +2,6 @@ local awful = require("awful")
 local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 
 local controlcenter = wibox.widget({
 	image = gears.color.recolor_image(
@@ -124,9 +123,9 @@ local battery = wibox.widget({
 				border_color = beautiful.foreground .. "99",
 				background_color = beautiful.background .. "00",
 				color = beautiful.foreground,
-				bar_shape = helpers.rrect(3),
+				bar_shape = _Utils.widget.rrect(3),
 				border_width = 1,
-				shape = helpers.rrect(5),
+				shape = _Utils.widget.rrect(5),
 				widget = wibox.widget.progressbar,
 			},
 			widget = wibox.container.margin,
@@ -161,15 +160,15 @@ local battery = wibox.widget({
 	layout = wibox.layout.stack,
 })
 awesome.connect_signal("signal::battery", function(value)
-	helpers.gc(battery, "prog").value = value
+	_Utils.widget.gc(battery, "prog").value = value
 	if value <= 20 then
-		helpers.gc(battery, "prog").color = beautiful.red
+		_Utils.widget.gc(battery, "prog").color = beautiful.red
 	else
-		helpers.gc(battery, "prog").color = beautiful.foreground
+		_Utils.widget.gc(battery, "prog").color = beautiful.foreground
 	end
 end)
 awesome.connect_signal("signal::batterystatus", function(status)
-	local b = helpers.gc(battery, "status")
+	local b = _Utils.widget.gc(battery, "status")
 	if status then
 		b.image = gears.color.recolor_image(beautiful.icon_path .. "popup/charge.svg",
 			beautiful.green)
@@ -272,7 +271,7 @@ awesome.connect_signal("signal::volumemute", function(value)
 end)
 
 for _, v in ipairs(widget.children) do
-	helpers.hoverCursor(v)
+	_Utils.widget.hoverCursor(v)
 end
 
 return widget

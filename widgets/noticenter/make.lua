@@ -1,4 +1,3 @@
-local helpers = require("helpers")
 local beautiful = require("beautiful")
 local gears = require("gears")
 local awful = require("awful")
@@ -18,7 +17,7 @@ return function(n)
 		},
 		bg = beautiful.lighter2,
 		forced_height = 25,
-		shape = helpers.rrect(5),
+		shape = _Utils.widget.rrect(5),
 		widget = wibox.container.background,
 	}
 	local actions = wibox.widget({
@@ -34,7 +33,7 @@ return function(n)
 	})
 
 	local app_icon = wibox.widget({
-		image = helpers.getIcon(nil, n.app_name, n.app_name),
+		image = _Utils.icon.getIcon(nil, n.app_name, n.app_name),
 		resize = true,
 		forced_height = 60,
 		forced_width = 60,
@@ -91,7 +90,7 @@ return function(n)
 	end
 
 	local function update_time_widget(start_time)
-		time.markup = helpers.colorizeText(format_time_difference(start_time), beautiful.foreground .. "AA")
+		time.markup = _Utils.widget.colorizeText(format_time_difference(start_time), beautiful.foreground .. "AA")
 	end
 
 	local function get_timer_timeout(start_time)
@@ -227,8 +226,8 @@ return function(n)
 		focus_client_by_class(n.app_name)
 	end)))
 
-	helpers.hoverCursor(box)
-	helpers.addHoverBg(box, "bg", beautiful.lighter, beautiful.lighter1)
+	_Utils.widget.hoverCursor(box)
+	_Utils.widget.addHoverBg(box, "bg", beautiful.lighter, beautiful.lighter1)
 
 	return box
 end

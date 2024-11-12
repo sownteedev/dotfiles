@@ -1,5 +1,4 @@
 local wibox = require("wibox")
-local helpers = require("helpers")
 local gears = require("gears")
 local awful = require("awful")
 local beautiful = require("beautiful")
@@ -79,7 +78,7 @@ return function(s)
 			id = "bg",
 			forced_width = 200,
 			forced_height = 50,
-			shape = helpers.rrect(50),
+			shape = _Utils.widget.rrect(50),
 			widget = wibox.container.background,
 			bg = beautiful.background .. "88",
 		},
@@ -108,15 +107,15 @@ return function(s)
 				else
 					input = ""
 					star = ""
-					helpers.gc(prompt, "txt"):set_markup("Enter Password")
-					helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
+					_Utils.widget.gc(prompt, "txt"):set_markup("Enter Password")
+					_Utils.widget.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
 				end
 			elseif #key == 1 then
 				input = input .. key
 				star = star .. "󰧞"
-				helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "88")
-				helpers.gc(prompt, "txt"):set_markup(star)
-				helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 15")
+				_Utils.widget.gc(prompt, "bg"):set_bg(beautiful.background .. "88")
+				_Utils.widget.gc(prompt, "txt"):set_markup(star)
+				_Utils.widget.gc(prompt, "txt"):set_font(beautiful.sans .. " 15")
 			elseif key == "BackSpace" then
 				if input == "" then
 					self:stop()
@@ -131,11 +130,11 @@ return function(s)
 				if #input == 0 then
 					input = ""
 					star = ""
-					helpers.gc(prompt, "txt"):set_markup("Enter Password")
-					helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
+					_Utils.widget.gc(prompt, "txt"):set_markup("Enter Password")
+					_Utils.widget.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
 				else
-					helpers.gc(prompt, "txt"):set_markup(star)
-					helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 15")
+					_Utils.widget.gc(prompt, "txt"):set_markup(star)
+					_Utils.widget.gc(prompt, "txt"):set_font(beautiful.sans .. " 15")
 				end
 			elseif key == "Return" then
 				if input ~= "" then
@@ -151,16 +150,16 @@ return function(s)
 					else
 						input = ""
 						star = ""
-						helpers.gc(prompt, "txt"):set_markup(helpers.colorizeText("Incorrect Password",
+						_Utils.widget.gc(prompt, "txt"):set_markup(_Utils.widget.colorizeText("Incorrect Password",
 							beautiful.background))
-						helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
-						helpers.gc(prompt, "bg"):set_bg(beautiful.red)
+						_Utils.widget.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
+						_Utils.widget.gc(prompt, "bg"):set_bg(beautiful.red)
 						gears.timer.start_new(2, function()
 							if input ~= "" then
 								return false
 							end
-							helpers.gc(prompt, "txt"):set_markup("Enter Password")
-							helpers.gc(prompt, "bg"):set_bg(beautiful.background .. "88")
+							_Utils.widget.gc(prompt, "txt"):set_markup("Enter Password")
+							_Utils.widget.gc(prompt, "bg"):set_bg(beautiful.background .. "88")
 						end)
 					end
 				end
@@ -260,8 +259,8 @@ return function(s)
 			lock.visible = true
 			slide:set(0)
 			start_input:start()
-			helpers.gc(prompt, "txt"):set_markup("Enter Password")
-			helpers.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
+			_Utils.widget.gc(prompt, "txt"):set_markup("Enter Password")
+			_Utils.widget.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
 		end
 	end)
 

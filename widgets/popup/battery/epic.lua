@@ -2,7 +2,6 @@ local wibox = require("wibox")
 local beautiful = require("beautiful")
 local gears = require("gears")
 local upower = require("modules.upower.upower")
-local utils = require("modules.upower.utils")
 
 return function(icon_name)
 	local my_charging_icon = {
@@ -17,7 +16,7 @@ return function(icon_name)
 
 	local my_icon = {
 		id = "my_icon",
-		image = utils.lookup_icon({ icon_name = icon_name, recolor = beautiful.foreground }) or
+		image = _Utils.icon.lookup_icon({ icon_name = icon_name, recolor = beautiful.foreground }) or
 			gears.color.recolor_image(beautiful.icon_path .. "/popup/" .. icon_name .. ".svg",
 				beautiful.foreground),
 		widget = wibox.widget.imagebox,
@@ -36,7 +35,7 @@ return function(icon_name)
 			widget = wibox.container.arcchart,
 			colors = { beautiful.green },
 			rounded_edge = true,
-			thickness = 8,
+			thickness = 10,
 			min_value = 0,
 			max_value = 100,
 			value = 25,
@@ -80,7 +79,7 @@ return function(icon_name)
 	local battery
 
 	if icon_name == "laptop-symbolic" then
-		battery = utils.gobject_to_gearsobject(upower:get_display_device())
+		battery = _Utils.upower.gobject_to_gearsobject(upower:get_display_device())
 		local update = function(self)
 			chart.colors = self.percentage <= 20 and { beautiful.red } or { beautiful.green }
 			chart.value = self.percentage
@@ -128,7 +127,7 @@ return function(icon_name)
 
 		for _, dev in pairs(upower:get_devices()) do
 			if type(string.find(dev.model, "mouse")) == "number" then
-				battery = utils.gobject_to_gearsobject(dev)
+				battery = _Utils.upower.gobject_to_gearsobject(dev)
 				connect()
 				update()
 			end
@@ -136,7 +135,7 @@ return function(icon_name)
 
 		upower:connect_signal("device-added", function(_, dev)
 			if type(string.find(dev.model, "mouse")) == "number" then
-				battery = utils.gobject_to_gearsobject(dev)
+				battery = _Utils.upower.gobject_to_gearsobject(dev)
 				connect()
 				update()
 			end

@@ -2,7 +2,6 @@ local wibox = require("wibox")
 local awful = require("awful")
 local beautiful = require("beautiful")
 local gears = require("gears")
-local helpers = require("helpers")
 
 local M = {}
 
@@ -10,14 +9,14 @@ local datewidget = function(date, weekend, notIn)
 	weekend = weekend or false
 	if notIn then
 		return wibox.widget({
-			markup = helpers.colorizeText(date, beautiful.foreground .. "55"),
+			markup = _Utils.widget.colorizeText(date, beautiful.foreground .. "55"),
 			align = "center",
 			font = beautiful.sans .. " Medium 10",
 			widget = wibox.widget.textbox,
 		})
 	else
 		return wibox.widget({
-			markup = weekend and helpers.colorizeText(date, beautiful.foreground) or date,
+			markup = weekend and _Utils.widget.colorizeText(date, beautiful.foreground) or date,
 			align = "center",
 			font = beautiful.sans .. " Medium 10",
 			widget = wibox.widget.textbox,
@@ -28,7 +27,7 @@ end
 local daywidget = function(day, weekend, _)
 	weekend = weekend or false
 	return wibox.widget({
-		markup = weekend and helpers.colorizeText(day, beautiful.red) or day,
+		markup = weekend and _Utils.widget.colorizeText(day, beautiful.red) or day,
 		align = "center",
 		font = beautiful.sans .. " Bold 11",
 		widget = wibox.widget.textbox,
@@ -38,7 +37,7 @@ local currwidget = function(day)
 	return wibox.widget({
 		{
 			{
-				markup = helpers.colorizeText(day, beautiful.foreground),
+				markup = _Utils.widget.colorizeText(day, beautiful.foreground),
 				align = "center",
 				font = beautiful.sans .. " Medium 10",
 				widget = wibox.widget.textbox,
@@ -77,7 +76,8 @@ local title = wibox.widget({
 })
 
 M.updateCalendar = function(date)
-	helpers.gc(title, "text").markup = helpers.colorizeText(string.upper(os.date("%B %Y", os.time(date))), beautiful.red)
+	_Utils.widget.gc(title, "text").markup = _Utils.widget.colorizeText(string.upper(os.date("%B %Y", os.time(date))),
+		beautiful.red)
 	theGrid:reset()
 	for _, w in ipairs({ "S", "M", "T", "W", "T", "F", "S" }) do
 		if w == "S" then
@@ -181,8 +181,8 @@ return function(s)
 			end)
 		),
 	})
-	helpers.placeWidget(caca, "top_left", 103, 0, 2, 0)
-	helpers.popupOpacity(caca, 0.3)
+	_Utils.widget.placeWidget(caca, "top_left", 103, 0, 2, 0)
+	_Utils.widget.popupOpacity(caca, 0.3)
 	awesome.connect_signal("signal::blur", function(status)
 		caca.bg = not status and beautiful.background or beautiful.background .. "88"
 	end)

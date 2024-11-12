@@ -3,7 +3,6 @@ local beautiful = require("beautiful")
 local wibox = require("wibox")
 local gears = require("gears")
 local naughty = require("naughty")
-local helpers = require("helpers")
 
 local checkFolder = function(type)
 	if type == "rec" and not os.rename(os.getenv("HOME") .. "/Videos/Recordings", os.getenv("HOME") .. "/Videos/Recordings") then
@@ -161,7 +160,7 @@ local createButton = function(name, img, cmd1, cmd2)
 			end)
 		),
 	})
-	helpers.hoverCursor(buttons)
+	_Utils.widget.hoverCursor(buttons)
 
 	return buttons
 end

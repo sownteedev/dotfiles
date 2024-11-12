@@ -1,7 +1,6 @@
 local awful = require("awful")
 local gears = require("gears")
 local ruled = require("ruled")
-local helpers = require("helpers")
 
 ruled.notification.connect_signal("request::rules", function()
 	ruled.notification.append_rule({
@@ -53,7 +52,7 @@ ruled.client.connect_signal("request::rules", function()
 end)
 
 local save_file = gears.filesystem.get_cache_dir() .. "window_positions.json"
-local window_positions = helpers.readJson(save_file)
+local window_positions = _Utils.json.readJson(save_file)
 
 local function save_window_position(c)
 	if not (c.class and not c.maximized) then return end
@@ -66,7 +65,7 @@ local function save_window_position(c)
 		height = c.class == "Alacritty" and geometry.height or nil
 	}
 
-	helpers.writeJson(save_file, window_positions)
+	_Utils.json.writeJson(save_file, window_positions)
 end
 
 local function apply_window_position(c)

@@ -1,7 +1,6 @@
 local awful          = require("awful")
 local gears          = require("gears")
 local beautiful      = require("beautiful")
-local helpers        = require("helpers")
 
 awful.layout.layouts = {
 	awful.layout.suit.floating,
@@ -15,22 +14,23 @@ end)
 
 screen.connect_signal("request::desktop_decoration", function(s)
 	awful.tag({ "Terminal", "Browser", "Develop", "Media", "Other" }, s, awful.layout.layouts[1])
-	s.bar = require("widgets.topbar")(s)
+	s.bar        = require("widgets.topbar")(s)
 
-	s.dock = require("widgets.dock")(s)
-	s.control = require("widgets.control")(s)
-	s.exit = require("widgets.exit")(s)
+	s.dock       = require("widgets.dock")(s)
+	s.control    = require("widgets.control")(s)
+	s.exit       = require("widgets.exit")(s)
 	s.noticenter = require("widgets.noticenter")(s)
-	s.lock = require("widgets.lock")(s)
+	s.lock       = require("widgets.lock")(s)
 
-	s.calendar = require("widgets.popup.calendar")(s)
-	s.image = require("widgets.popup.image")(s)
-	s.music = require("widgets.popup.music")(s)
-	s.system = require("widgets.popup.system")(s)
-	s.weather = require("widgets.popup.weather")(s)
-	s.battery = require("widgets.popup.battery")(s)
-	s.brivol = require("widgets.popup.brivolmic")(s)
-	s.preview = require("widgets.popup.preview.previewtags")(s)
+	s.calendar   = require("widgets.popup.calendar")(s)
+	s.image      = require("widgets.popup.image")(s)
+	s.music      = require("widgets.popup.music")(s)
+	s.system     = require("widgets.popup.system")(s)
+	s.weather    = require("widgets.popup.weather")(s)
+	s.battery    = require("widgets.popup.battery")(s)
+	s.brivol     = require("widgets.popup.brivolmic")(s)
+	s.preview    = require("widgets.popup.preview.previewtags")(s)
+	s.clock      = require("widgets.popup.clock")(s)
 end)
 
 local function wallpaper()
@@ -53,7 +53,7 @@ end)
 
 local CACHE_DIR = gears.filesystem.get_cache_dir()
 local TAGS_FILE = "/tmp/awesomewm-last-selected-tags"
-local window_positions = helpers.readJson(CACHE_DIR .. "window_positions.json")
+local window_positions = _Utils.json.readJson(CACHE_DIR .. "window_positions.json")
 
 local function save_window_positions()
 	for _, c in ipairs(client.get()) do
@@ -67,7 +67,7 @@ local function save_window_positions()
 			}
 		end
 	end
-	helpers.writeJson(CACHE_DIR .. "window_positions.json", window_positions)
+	_Utils.json.writeJson(CACHE_DIR .. "window_positions.json", window_positions)
 end
 
 local function save_selected_tags()

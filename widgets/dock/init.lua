@@ -1,6 +1,5 @@
 local awful = require("awful")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 local wibox = require("wibox")
 local gears = require("gears")
 local Gio = require("lgi").Gio
@@ -57,7 +56,7 @@ local function create_metadata_entry(app)
 	return {
 		count = 0,
 		pinned = true,
-		icon = helpers.getIcon(nil, app.name, app.name),
+		icon = _Utils.icon.getIcon(nil, app.name, app.name),
 		clients = {},
 		class = app.class,
 		exec = app.exec
@@ -157,7 +156,7 @@ local function genMetadata()
 			table.insert(metadata.clients, c)
 			metadata.count = metadata.count + 1
 		else
-			local icon = helpers.getIcon(c, c.class, c.class)
+			local icon = _Utils.icon.getIcon(c, c.class, c.class)
 			local exe = getExecutable(c.class)
 			local new_entry = {
 				count = 1,
@@ -259,13 +258,13 @@ local function genIcons()
 				spacing = 2,
 				layout = wibox.layout.fixed.vertical,
 			})
-			helpers.hoverCursor(widgets)
+			_Utils.widget.hoverCursor(widgets)
 
 			for _, c in ipairs(j.clients) do
 				if client.focus and c.window == client.focus.window then
 					dot:add({
 						bg           = beautiful.foreground,
-						shape        = helpers.rrect(2),
+						shape        = _Utils.widget.rrect(2),
 						widget       = wibox.container.background,
 						forced_width = 12,
 					})
@@ -328,8 +327,8 @@ return function(s)
 	local dock = awful.popup({
 		screen = s,
 		visible = true,
-		shape = helpers.rrect(20),
-		bg = helpers.blend("#ffffff", "#000000", 0.3) .. "55",
+		shape = _Utils.widget.rrect(20),
+		bg = _Utils.color.blend("#ffffff", "#000000", 0.3) .. "55",
 		placement = function(c)
 			awful.placement.bottom(c, { margins = { bottom = beautiful.useless_gap * 2 } })
 		end,
@@ -350,7 +349,7 @@ return function(s)
 			right = 12,
 		},
 		widget = wibox.container.background,
-		shape = helpers.rrect(20),
+		shape = _Utils.widget.rrect(20),
 		shape_border_width = 1,
 		shape_border_color = beautiful.foreground .. "22",
 	})

@@ -2,7 +2,6 @@ local awful = require("awful")
 local gears = require("gears")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 
 local focus = wibox.widget({
 	{
@@ -55,17 +54,17 @@ local focus = wibox.widget({
 })
 awesome.connect_signal("signal::dnd", function(status)
 	if status then
-		helpers.gc(focus, "backfocus"):set_bg(beautiful.blue)
-		helpers.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(
+		_Utils.widget.gc(focus, "backfocus"):set_bg(beautiful.blue)
+		_Utils.widget.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(
 			beautiful.icon_path .. "controlcenter/focus.svg",
 			beautiful.background))
-		helpers.gc(focus, "labelfocus"):set_markup("On")
+		_Utils.widget.gc(focus, "labelfocus"):set_markup("On")
 	else
-		helpers.gc(focus, "backfocus"):set_bg(beautiful.lighter1)
-		helpers.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(
+		_Utils.widget.gc(focus, "backfocus"):set_bg(beautiful.lighter1)
+		_Utils.widget.gc(focus, "iconfocus"):set_image(gears.color.recolor_image(
 			beautiful.icon_path .. "controlcenter/focus.svg",
 			beautiful.foreground))
-		helpers.gc(focus, "labelfocus"):set_markup("Off")
+		_Utils.widget.gc(focus, "labelfocus"):set_markup("Off")
 	end
 end)
 
@@ -111,13 +110,13 @@ local redshift = wibox.widget({
 })
 awesome.connect_signal("signal::redshift", function(status)
 	if status then
-		helpers.gc(redshift, "backredshift"):set_bg(beautiful.blue)
-		helpers.gc(redshift, "iconredshift"):set_image(gears.color.recolor_image(
+		_Utils.widget.gc(redshift, "backredshift"):set_bg(beautiful.blue)
+		_Utils.widget.gc(redshift, "iconredshift"):set_image(gears.color.recolor_image(
 			beautiful.icon_path .. "controlcenter/nightshift.svg",
 			beautiful.background))
 	else
-		helpers.gc(redshift, "backredshift"):set_bg(beautiful.lighter1)
-		helpers.gc(redshift, "iconredshift"):set_image(
+		_Utils.widget.gc(redshift, "backredshift"):set_bg(beautiful.lighter1)
+		_Utils.widget.gc(redshift, "iconredshift"):set_image(
 			gears.color.recolor_image(beautiful.icon_path .. "controlcenter/nightshift.svg",
 				beautiful.foreground
 			))
@@ -166,21 +165,21 @@ local blur = wibox.widget({
 })
 awesome.connect_signal("signal::blur", function(status)
 	if status then
-		helpers.gc(blur, "backblur"):set_bg(beautiful.blue)
-		helpers.gc(blur, "iconblur"):set_image(
+		_Utils.widget.gc(blur, "backblur"):set_bg(beautiful.blue)
+		_Utils.widget.gc(blur, "iconblur"):set_image(
 			gears.color.recolor_image(beautiful.icon_path .. "controlcenter/blur.svg",
 				beautiful.background))
 	else
-		helpers.gc(blur, "backblur"):set_bg(beautiful.lighter1)
-		helpers.gc(blur, "iconblur"):set_image(
+		_Utils.widget.gc(blur, "backblur"):set_bg(beautiful.lighter1)
+		_Utils.widget.gc(blur, "iconblur"):set_image(
 			gears.color.recolor_image(beautiful.icon_path .. "controlcenter/blur.svg",
 				beautiful.foreground))
 	end
 end)
 
-helpers.hoverCursor(focus, "backfocus")
-helpers.hoverCursor(redshift, "backredshift")
-helpers.hoverCursor(blur, "backblur")
+_Utils.widget.hoverCursor(focus, "backfocus")
+_Utils.widget.hoverCursor(redshift, "backredshift")
+_Utils.widget.hoverCursor(blur, "backblur")
 
 local dndblurnight = wibox.widget({
 	{
@@ -190,7 +189,7 @@ local dndblurnight = wibox.widget({
 				margins = 25,
 				widget = wibox.container.margin,
 			},
-			shape = helpers.rrect(10),
+			shape = _Utils.widget.rrect(10),
 			bg = beautiful.lighter,
 			widget = wibox.container.background,
 		},
@@ -202,7 +201,7 @@ local dndblurnight = wibox.widget({
 					widget = wibox.container.margin,
 				},
 				forced_width = 110,
-				shape = helpers.rrect(10),
+				shape = _Utils.widget.rrect(10),
 				bg = beautiful.lighter,
 				widget = wibox.container.background,
 			},
@@ -213,7 +212,7 @@ local dndblurnight = wibox.widget({
 					widget = wibox.container.margin,
 				},
 				forced_width = 110,
-				shape = helpers.rrect(10),
+				shape = _Utils.widget.rrect(10),
 				bg = beautiful.lighter,
 				widget = wibox.container.background,
 			},

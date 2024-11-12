@@ -2,7 +2,6 @@ local naughty = require("naughty")
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local awful = require("awful")
-local helpers = require("helpers")
 local gears = require("gears")
 
 return function(n)
@@ -18,7 +17,7 @@ return function(n)
 		},
 		bg = beautiful.lighter1,
 		forced_height = 25,
-		shape = helpers.rrect(5),
+		shape = _Utils.widget.rrect(5),
 		widget = wibox.container.background,
 	}
 	local actions = wibox.widget({
@@ -34,7 +33,7 @@ return function(n)
 	})
 
 	local app_icon = wibox.widget({
-		image = helpers.getIcon(nil, n.app_name, n.app_name),
+		image = _Utils.icon.getIcon(nil, n.app_name, n.app_name),
 		resize = true,
 		forced_height = 60,
 		forced_width = 60,

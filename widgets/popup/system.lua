@@ -1,6 +1,5 @@
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 
 return function(s)
 	local system = wibox({
@@ -25,8 +24,8 @@ return function(s)
 					rounded_edge = true,
 					thickness = 25,
 					start_angle = math.random(250, 870) * math.pi / 180,
-					colors = { helpers.change_hex_lightness(beautiful.red, -10) },
-					bg = helpers.change_hex_lightness(beautiful.red, 10),
+					colors = { _Utils.color.change_hex_lightness(beautiful.red, -10) },
+					bg = _Utils.color.change_hex_lightness(beautiful.red, 10),
 					forced_width = 40,
 					forced_height = 40,
 				},
@@ -38,8 +37,8 @@ return function(s)
 				rounded_edge = true,
 				thickness = 25,
 				start_angle = math.random(250, 870) * math.pi / 180,
-				colors = { helpers.change_hex_lightness(beautiful.blue, -10) },
-				bg = helpers.change_hex_lightness(beautiful.blue, 10),
+				colors = { _Utils.color.change_hex_lightness(beautiful.blue, -10) },
+				bg = _Utils.color.change_hex_lightness(beautiful.blue, 10),
 				forced_width = 130,
 				forced_height = 130,
 			},
@@ -51,8 +50,8 @@ return function(s)
 			rounded_edge = true,
 			thickness = 25,
 			start_angle = math.random(250, 870) * math.pi / 180,
-			colors = { helpers.change_hex_lightness(beautiful.green, -10) },
-			bg = helpers.change_hex_lightness(beautiful.green, 10),
+			colors = { _Utils.color.change_hex_lightness(beautiful.green, -10) },
+			bg = _Utils.color.change_hex_lightness(beautiful.green, 10),
 			forced_width = 150,
 			forced_height = 150,
 		},
@@ -61,16 +60,16 @@ return function(s)
 	})
 
 	awesome.connect_signal("signal::cpu", function(value)
-		helpers.gc(system, "cpu").value = value
+		_Utils.widget.gc(system, "cpu").value = value
 	end)
 	awesome.connect_signal("signal::memory", function(value)
-		helpers.gc(system, "memory").value = value
+		_Utils.widget.gc(system, "memory").value = value
 	end)
 	awesome.connect_signal("signal::disk", function(value)
-		helpers.gc(system, "disk").value = value
+		_Utils.widget.gc(system, "disk").value = value
 	end)
-	helpers.placeWidget(system, "top_left", 103, 0, 33, 0)
-	helpers.popupOpacity(system, 0.3)
+	_Utils.widget.placeWidget(system, "top_left", 103, 0, 33, 0)
+	_Utils.widget.popupOpacity(system, 0.3)
 	awesome.connect_signal("signal::blur", function(status)
 		system.bg = not status and beautiful.background or beautiful.background .. "88"
 	end)

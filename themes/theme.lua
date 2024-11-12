@@ -1,6 +1,5 @@
-local gears   = require("gears")
-local gfs     = require("gears.filesystem")
-local helpers = require("helpers")
+local gears = require("gears")
+local gfs   = require("gears.filesystem")
 require("themes.toggle")
 
 local theme                = {}
@@ -19,14 +18,14 @@ theme.green                = colors.green
 theme.blue                 = colors.blue
 theme.yellow               = colors.yellow
 
-theme.darker               = helpers.change_hex_lightness(theme.background, -4)
-theme.lighter              = helpers.change_hex_lightness(theme.background, 4)
-theme.lighter1             = helpers.change_hex_lightness(theme.background, 8)
-theme.lighter2             = helpers.change_hex_lightness(theme.background, 12)
+theme.darker               = _Utils.color.change_hex_lightness(theme.background, -4)
+theme.lighter              = _Utils.color.change_hex_lightness(theme.background, 4)
+theme.lighter1             = _Utils.color.change_hex_lightness(theme.background, 8)
+theme.lighter2             = _Utils.color.change_hex_lightness(theme.background, 12)
 
 theme.width                = screen.primary.geometry.width
 theme.height               = screen.primary.geometry.height
-theme.radius               = helpers.rrect(_User.Radius)
+theme.radius               = _Utils.widget.rrect(_User.Radius)
 theme.useless_gap          = 10
 
 -- Default vars --

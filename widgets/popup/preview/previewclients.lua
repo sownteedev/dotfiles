@@ -13,7 +13,6 @@ awful.client = require("awful.client")
 local string = string
 local debug = debug
 local pairs = pairs
-local helpers = require("helpers")
 
 local _M = {}
 
@@ -197,7 +196,7 @@ function _M.preview()
 			local alpha = is_selected and 0.9 or 0.8
 			local overlay = is_selected and 0 or 0.5
 
-			local icon = gears.surface(helpers.getIcon(clients, clients.name, clients.class))
+			local icon = gears.surface(_Utils.icon.getIcon(clients, clients.name, clients.class))
 			local icon_size = 0.9 * textboxHeight
 			local icon_x = (w - icon_size) / 2
 			local icon_y = h - 20
@@ -242,7 +241,7 @@ function _M.preview()
 		widget:connect_signal("mouse::enter", function()
 			_M.cycle(index - _M.altTabIndex)
 		end)
-		helpers.hoverCursor(widget)
+		_Utils.widget.hoverCursor(widget)
 
 		return widget
 	end
