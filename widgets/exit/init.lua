@@ -4,35 +4,19 @@ local gears = require("gears")
 local beautiful = require("beautiful")
 local animation = require("modules.animation")
 
-local exit, slide, slide_end, prompt_grabber
+local exit, slide, prompt_grabber
 
-local function createButton(icon, name, cmd)
+local function createButton(icon, cmd)
 	local button = wibox.widget({
 		{
 			{
-				{
-					{
-						image = gears.color.recolor_image(beautiful.icon_path .. icon, beautiful.foreground),
-						forced_height = 20,
-						forced_width = 20,
-						resize = true,
-						widget = wibox.widget.imagebox,
-					},
-					{
-						text = name,
-						font = beautiful.sans .. " 12",
-						widget = wibox.widget.textbox,
-					},
-					spacing = 15,
-					layout = wibox.layout.fixed.horizontal,
-				},
-				halign = "left",
-				valign = "center",
-				widget = wibox.container.place,
+				image = gears.color.recolor_image(beautiful.icon_path .. icon, beautiful.foreground),
+				forced_height = 30,
+				forced_width = 30,
+				resize = true,
+				widget = wibox.widget.imagebox,
 			},
-			top = 15,
-			bottom = 15,
-			left = 40,
+			margins = 15,
 			widget = wibox.container.margin,
 		},
 		id = "bg",
@@ -44,8 +28,7 @@ local function createButton(icon, name, cmd)
 		buttons = {
 			awful.button({}, 1, function()
 				prompt_grabber:stop()
-				slide_end:start()
-				slide:set(-exit.width)
+				exit.visible = false
 				awful.spawn.with_shell(cmd)
 			end),
 		},
@@ -57,15 +40,15 @@ end
 
 local entries_container = wibox.widget({
 	spacing = 15,
-	layout = wibox.layout.fixed.vertical,
+	layout = wibox.layout.fixed.horizontal,
 })
 
 local buttons = {
-	createButton("power/poweroff.svg", "Shutdown", "poweroff"),
-	createButton("power/restart.svg", "Reboot", "reboot"),
-	createButton("power/lock.svg", "Lock", "awesome-client \"awesome.emit_signal('toggle::lock')\""),
-	createButton("power/suspend.svg", "Suspend", "systemctl suspend"),
-	createButton("power/logout.svg", "Logout", "loginctl kill-user $USER"),
+	createButton("power/poweroff.svg", "poweroff"),
+	createButton("power/restart.svg", "reboot"),
+	createButton("power/lock.svg", "awesome-client \"awesome.emit_signal('toggle::lock')\""),
+	createButton("power/suspend.svg", "systemctl suspend"),
+	createButton("power/logout.svg", "loginctl kill-user $USER"),
 }
 
 local index_entry = 1
@@ -101,14 +84,13 @@ end
 return function(s)
 	exit = wibox({
 		screen = s,
-		width = 250,
-		height = 380,
+		width = 390,
+		height = 130,
 		ontop = true,
 		shape = beautiful.radius,
 		bg = beautiful.background,
 		border_width = beautiful.border_width,
 		border_color = beautiful.lighter,
-		y = beautiful.useless_gap * 6,
 		visible = false,
 	})
 
@@ -146,47 +128,37 @@ return function(s)
 					awful.spawn.with_shell(buttons[index_entry].cmd)
 				end)
 			elseif key == "Escape" then
+				exit.visible = false
 				self:stop()
-				slide_end:start()
-				slide:set(-exit.width)
 			end
 		end,
 	})
 
 	slide = animation:new({
-		duration = 0.5,
-		pos = -exit.width,
+		duration = 1,
+		pos = 0,
 		easing = animation.easing.inOutExpo,
 		update = function(_, poss)
-			exit.x = poss
-		end,
-	})
-	slide_end = gears.timer({
-		timeout = 1,
-		single_shot = true,
-		callback = function()
-			exit.visible = false
+			exit.opactity = poss
 		end,
 	})
 
 	awesome.connect_signal("toggle::exit", function()
 		if exit.visible then
-			slide_end:start()
-			slide:set(-exit.width - 10)
+			exit.visible = false
 			prompt_grabber:stop()
 		else
 			index_entry = 1
 			filter_entries()
 			prompt_grabber:start()
 			exit.visible = true
-			slide:set(beautiful.useless_gap * 2)
+			slide:set(1)
 		end
 	end)
 
 	awesome.connect_signal("close::exit", function()
 		if exit.visible then
-			slide_end:start()
-			slide:set(-exit.width - 10)
+			exit.visible = false
 			prompt_grabber:stop()
 		end
 	end)
@@ -194,6 +166,7 @@ return function(s)
 	awesome.connect_signal("signal::blur", function(status)
 		exit.bg = not status and beautiful.background or beautiful.background .. "DD"
 	end)
+	_Utils.widget.placeWidget(exit, "center")
 
 	return exit
 end

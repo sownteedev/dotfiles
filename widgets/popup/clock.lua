@@ -1,6 +1,7 @@
 local wibox      = require("wibox")
 local beautiful  = require("beautiful")
 local timer      = require("gears.timer")
+local cairo      = require("lgi").cairo
 
 local _run       = {}
 _run.timer_table = {}
@@ -33,8 +34,6 @@ M_clocl_sys  = {
 		return imagebox
 	end,
 	make_clock_canvas = function()
-		local cairo = require("lgi").cairo
-
 		local surface = cairo.ImageSurface.create(cairo.Format.ARGB32, 200, 200)
 		local cr = cairo.Context(surface)
 
