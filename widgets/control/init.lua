@@ -8,12 +8,13 @@ local dndblurnight = require(... .. ".mods.dndblurnight")
 local slider = require(... .. ".mods.slider")
 local music = require(... .. ".mods.music")
 local button = require(... .. ".mods.button")
+local powerndark = require(... .. ".mods.powerndark")
 
 return function(s)
 	local control = wibox({
 		screen = s,
 		width = 500,
-		height = 910,
+		height = 1010,
 		shape = beautiful.radius,
 		bg = beautiful.background,
 		border_width = beautiful.border_width,
@@ -30,6 +31,7 @@ return function(s)
 				spacing = 15,
 				layout = wibox.layout.fixed.horizontal,
 			},
+			powerndark,
 			slider,
 			music,
 			button,

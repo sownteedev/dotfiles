@@ -29,6 +29,26 @@ local function battery_status()
 end
 battery_status()
 
+local function get_power_mode()
+	awful.spawn.easy_async_with_shell("sh -c 'powerprofilesctl get'", function(stdout)
+		local mode = stdout:match("power") and "power-saver" or stdout:match("balanced") and "balanced" or "performance"
+		awesome.emit_signal("signal::powermode", mode)
+	end)
+end
+
+function switch_power_mode()
+	awful.spawn.easy_async_with_shell("sh -c 'powerprofilesctl get'", function(stdout)
+		local current_mode = stdout:match("power") and "power-saver" or stdout:match("balanced") and "balanced" or
+			"performance"
+		local next_mode = current_mode == "power-saver" and "balanced" or current_mode == "balanced" and "performance" or
+			"power-saver"
+		awful.spawn.with_shell("sh -c 'powerprofilesctl set " .. next_mode .. "'")
+		awesome.emit_signal("signal::powermode", next_mode)
+	end)
+end
+
+get_power_mode()
+
 local battery = _Utils.upower.gobject_to_gearsobject(_Utils.upower.upowers:get_display_device())
 battery:connect_signal("property::percentage", battery_emit)
 battery:connect_signal("property::state", battery_status)
