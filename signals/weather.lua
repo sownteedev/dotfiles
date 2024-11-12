@@ -1,5 +1,4 @@
 local awful = require("awful")
-local json = require("modules.json")
 local beautiful = require("beautiful")
 
 local PATHS = {
@@ -71,7 +70,7 @@ end
 local function process_weather_data(stdout)
 	if not stdout then return end
 
-	local result = json.decode(stdout)
+	local result = _Utils.json.decode(stdout)
 	if not result or not result.current then return end
 
 	local weather = result.current.weather[1]
@@ -107,7 +106,7 @@ awful.widget.watch(
 	SETTINGS.update_interval,
 	function(_, stdout)
 		if stdout then
-			local result = json.decode(stdout)
+			local result = _Utils.json.decode(stdout)
 			if result and result[1] then
 				awesome.emit_signal("signal::weather1", {
 					namecountry = string.format("%s, %s", result[1].name, result[1].country)

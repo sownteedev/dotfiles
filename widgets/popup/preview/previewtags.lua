@@ -2,7 +2,6 @@ local awful = require("awful")
 local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 local scale = 0.18
 opened_preview = false
 
@@ -20,7 +19,7 @@ local function create_empty_tag_widget(s)
 				{
 					{
 						widget = wibox.widget.textbox,
-						markup = helpers.colorizeText(" ", beautiful.red),
+						markup = _Utils.widget.colorizeText(" ", beautiful.red),
 						font = beautiful.icon .. " 30",
 					},
 					align = "center",
@@ -41,7 +40,7 @@ end
 local function create_client_preview(c, geometry)
 	local imagebox = wibox.widget {
 		resize = true,
-		image = helpers.getIcon(c, c.name, c.class),
+		image = _Utils.icon.getIcon(c, c.name, c.class),
 		forced_height = 150 * scale,
 		forced_width = 150 * scale,
 		widget = wibox.widget.imagebox
@@ -57,7 +56,7 @@ local function create_client_preview(c, geometry)
 		bg = beautiful.background .. "AA",
 		border_color = beautiful.foreground .. "33",
 		border_width = 0.5,
-		shape = helpers.rrect(5),
+		shape = _Utils.widget.rrect(5),
 		widget = wibox.container.background
 	})
 
@@ -77,7 +76,7 @@ local function createpreview(t, s, geometry)
 	local clients = t:clients()
 	if #clients == 0 then
 		local tags = create_empty_tag_widget(s)
-		helpers.hoverCursor(tags)
+		_Utils.widget.hoverCursor(tags)
 		return tags
 	end
 
@@ -105,7 +104,7 @@ local function createpreview(t, s, geometry)
 		widget = wibox.container.background
 	}
 
-	helpers.hoverCursor(tags)
+	_Utils.widget.hoverCursor(tags)
 	return tags
 end
 
@@ -162,7 +161,7 @@ return function(s)
 			margins = 30,
 			widget = wibox.container.margin
 		}
-		helpers.placeWidget(previewbox, "top", 2, 0, 0, 0)
+		_Utils.widget.placeWidget(previewbox, "top", 2, 0, 0, 0)
 		previewbox.visible = true
 		opened_preview = true
 	end

@@ -2,7 +2,6 @@ local wibox = require("wibox")
 local beautiful = require("beautiful")
 local gears = require("gears")
 local awful = require("awful")
-local helpers = require("helpers")
 
 local timedate = wibox.widget({
 	{
@@ -25,6 +24,6 @@ local timedate = wibox.widget({
 		end)
 	),
 })
-helpers.hoverCursor(timedate)
+_Utils.widget.hoverCursor(timedate)
 
 return timedate

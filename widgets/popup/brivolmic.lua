@@ -3,7 +3,6 @@ local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local animation = require("modules.animation")
-local helpers = require("helpers")
 
 local ICONS = {
 	brightness = {
@@ -31,11 +30,11 @@ local COLORS = {
 }
 
 local function get_icon_markup(icon, is_muted)
-	return helpers.colorizeText(icon, is_muted and beautiful.red or beautiful.foreground)
+	return _Utils.widget.colorizeText(icon, is_muted and beautiful.red or beautiful.foreground)
 end
 
 local function update_progressbar(widget, color)
-	local bar = helpers.gc(widget, "progressbar")
+	local bar = _Utils.widget.gc(widget, "progressbar")
 	bar:set_color(color)
 	bar:set_background_color(color .. '22')
 end
@@ -104,14 +103,14 @@ return function(s)
 		duration = 0.33,
 		easing = animation.easing.linear,
 		update = function(_, pos)
-			helpers.gc(info, "progressbar").value = pos
+			_Utils.widget.gc(info, "progressbar").value = pos
 		end,
 	}
 
 	awesome.connect_signal("signal::brightness", function(value)
 		anim:set(value)
 		update_progressbar(info, COLORS.brightness)
-		helpers.gc(info, "icon"):set_markup_silently(
+		_Utils.widget.gc(info, "icon"):set_markup_silently(
 			get_icon_markup(get_brightness_icon(value))
 		)
 	end)
@@ -123,36 +122,36 @@ return function(s)
 			or value > 33 and ICONS.volume.medium
 			or value > 0 and ICONS.volume.low
 			or ICONS.volume.muted
-		helpers.gc(info, "icon"):set_markup_silently(
+		_Utils.widget.gc(info, "icon"):set_markup_silently(
 			get_icon_markup(icon, value == 0)
 		)
 	end)
 
 	awesome.connect_signal("signal::volumemute", function(value)
 		if value then
-			helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(ICONS.volume.muted, true))
+			_Utils.widget.gc(info, "icon"):set_markup_silently(get_icon_markup(ICONS.volume.muted, true))
 		else
-			local current_volume = helpers.gc(info, "progressbar").value
+			local current_volume = _Utils.widget.gc(info, "progressbar").value
 			local icon = current_volume > 66 and ICONS.volume.high
 				or current_volume > 33 and ICONS.volume.medium
 				or current_volume > 0 and ICONS.volume.low
 				or ICONS.volume.muted
-			helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(icon, false))
+			_Utils.widget.gc(info, "icon"):set_markup_silently(get_icon_markup(icon, false))
 		end
 	end)
 
 	awesome.connect_signal("signal::mic", function(value)
 		anim:set(value)
 		update_progressbar(info, COLORS.mic)
-		helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(value > 0 and ICONS.mic.on or ICONS.mic.off,
+		_Utils.widget.gc(info, "icon"):set_markup_silently(get_icon_markup(value > 0 and ICONS.mic.on or ICONS.mic.off,
 			value == 0))
 	end)
 
 	awesome.connect_signal("signal::micmute", function(value)
 		if value then
-			helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(ICONS.mic.off, true))
+			_Utils.widget.gc(info, "icon"):set_markup_silently(get_icon_markup(ICONS.mic.off, true))
 		else
-			helpers.gc(info, "icon"):set_markup_silently(get_icon_markup(ICONS.mic.on, false))
+			_Utils.widget.gc(info, "icon"):set_markup_silently(get_icon_markup(ICONS.mic.on, false))
 		end
 	end)
 

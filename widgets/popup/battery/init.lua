@@ -1,6 +1,5 @@
 local beautiful = require("beautiful")
 local wibox = require("wibox")
-local helpers = require("helpers")
 
 local charge = require(... .. ".epic")
 
@@ -43,8 +42,8 @@ return function(s)
 		margins = 20,
 		widget = wibox.container.margin,
 	})
-	helpers.placeWidget(battery, "top_left", 45, 0, 2, 0)
-	helpers.popupOpacity(battery, 0.3)
+	_Utils.widget.placeWidget(battery, "top_left", 45, 0, 2, 0)
+	_Utils.widget.popupOpacity(battery, 0.3)
 	awesome.connect_signal("signal::blur", function(status)
 		battery.bg = not status and beautiful.background or beautiful.background .. "88"
 	end)

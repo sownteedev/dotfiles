@@ -2,7 +2,6 @@ local awful = require("awful")
 local gears = require("gears")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 
 local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisconnected, signal)
 	local widget = wibox.widget({
@@ -58,47 +57,48 @@ local createbutton = function(cmd1, cmd2, icon, name, labelconnected, labeldisco
 		layout = wibox.layout.fixed.horizontal,
 	})
 
-	awesome.connect_signal("signal::" .. signal, function(status, name, _)
+	awesome.connect_signal("signal::" .. signal, function(status, names, _)
 		if status then
-			helpers.gc(widget, "back"):set_bg(beautiful.blue)
-			helpers.gc(widget, "icon"):set_image(
+			_Utils.widget.gc(widget, "back"):set_bg(beautiful.blue)
+			_Utils.widget.gc(widget, "icon"):set_image(
 				gears.color.recolor_image(
 					beautiful.icon_path .. icon,
 					beautiful.background
 				)
 			)
 			if signal == "network" then
-				if name ~= "" then
-					helpers
+				if names ~= "" then
+					_Utils.widget
 						.gc(widget, "label")
-						:set_markup_silently(helpers.colorizeText(name, beautiful.foreground))
+						:set_markup_silently(_Utils.widget.colorizeText(names, beautiful.foreground))
 				end
 			elseif signal == "bluetooth" then
-				if name ~= "" then
-					helpers
+				if names ~= "" then
+					_Utils.widget
 						.gc(widget, "label")
-						:set_markup_silently(helpers.colorizeText(name, beautiful.foreground))
+						:set_markup_silently(_Utils.widget.colorizeText(names, beautiful.foreground))
 				else
-					helpers
+					_Utils.widget
 						.gc(widget, "label")
-						:set_markup_silently(helpers.colorizeText("No Device", beautiful.foreground))
+						:set_markup_silently(_Utils.widget.colorizeText("No Device", beautiful.foreground))
 				end
 			else
-				helpers.gc(widget, "label"):set_markup_silently(helpers.colorizeText(labelconnected, beautiful
+				_Utils.widget.gc(widget, "label"):set_markup_silently(_Utils.colorizeText(labelconnected, beautiful
 					.foreground))
 			end
 		else
-			helpers.gc(widget, "back"):set_bg(beautiful.lighter1)
-			helpers.gc(widget, "icon"):set_image(
+			_Utils.widget.gc(widget, "back"):set_bg(beautiful.lighter1)
+			_Utils.widget.gc(widget, "icon"):set_image(
 				gears.color.recolor_image(
 					beautiful.icon_path .. icon,
 					beautiful.foreground
 				)
 			)
-			helpers.gc(widget, "label"):set_markup_silently(helpers.colorizeText(labeldisconnected, beautiful.foreground))
+			_Utils.widget.gc(widget, "label"):set_markup_silently(_Utils.widget.colorizeText(labeldisconnected,
+				beautiful.foreground))
 		end
 	end)
-	helpers.hoverCursor(widget, "back")
+	_Utils.widget.hoverCursor(widget, "back")
 
 	return widget
 end
@@ -119,7 +119,7 @@ local bluenetair = wibox.widget({
 		margins = 20,
 		widget = wibox.container.margin,
 	},
-	shape = helpers.rrect(10),
+	shape = _Utils.widget.rrect(10),
 	forced_width = 225,
 	bg = beautiful.lighter,
 	widget = wibox.container.background,

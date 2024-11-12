@@ -1,5 +1,4 @@
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 local wibox = require("wibox")
 local gears = require("gears")
 local animation = require("modules.animation")
@@ -41,7 +40,7 @@ return function(s)
 		widget = wibox.container.margin,
 	})
 
-	helpers.placeWidget(control, "top_right", 3, 0, 0, 2)
+	_Utils.widget.placeWidget(control, "top_right", 3, 0, 0, 2)
 
 	local slide = animation:new({
 		duration = 0.5,

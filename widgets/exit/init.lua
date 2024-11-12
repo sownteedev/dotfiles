@@ -2,7 +2,6 @@ local awful = require("awful")
 local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
-local helpers = require("helpers")
 local animation = require("modules.animation")
 
 local exit, slide, slide_end, prompt_grabber
@@ -52,7 +51,7 @@ local function createButton(icon, name, cmd)
 		},
 	})
 	button.cmd = cmd
-	helpers.hoverCursor(button)
+	_Utils.widget.hoverCursor(button)
 	return button
 end
 
@@ -74,9 +73,9 @@ local function filter_entries()
 	entries_container:reset()
 	for i, button in ipairs(buttons) do
 		if i == index_entry then
-			helpers.gc(button, "bg").bg = beautiful.lighter1
+			_Utils.widget.gc(button, "bg").bg = beautiful.lighter1
 		else
-			helpers.gc(button, "bg").bg = beautiful.lighter
+			_Utils.widget.gc(button, "bg").bg = beautiful.lighter
 		end
 		entries_container:add(button)
 	end
@@ -129,7 +128,7 @@ return function(s)
 	})
 
 	awesome.connect_signal("signal::uptime", function(v)
-		helpers.gc(exit, "uptime").markup = helpers.colorizeText("Up: " .. v, beautiful.foreground)
+		_Utils.widget.gc(exit, "uptime").markup = _Utils.widget.colorizeText("Up: " .. v, beautiful.foreground)
 	end)
 
 	prompt_grabber = awful.keygrabber({

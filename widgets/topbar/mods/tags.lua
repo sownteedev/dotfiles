@@ -1,6 +1,5 @@
 local awful = require("awful")
 local wibox = require("wibox")
-local helpers = require("helpers")
 
 return function(s)
 	local taglist = awful.widget.taglist({
@@ -28,7 +27,7 @@ return function(s)
 		},
 	})
 
-	helpers.hoverCursor(taglist)
+	_Utils.widget.hoverCursor(taglist)
 
 	return taglist
 end

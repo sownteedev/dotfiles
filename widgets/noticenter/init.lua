@@ -1,7 +1,6 @@
 local awful = require("awful")
 local beautiful = require("beautiful")
 local naughty = require("naughty")
-local helpers = require("helpers")
 local wibox = require("wibox")
 local gears = require("gears")
 local animation = require("modules.animation")
@@ -20,7 +19,7 @@ local empty = wibox.widget({
 			},
 			{
 				font = "azuki_font Bold 25",
-				markup = helpers.colorizeText("No Notifications", beautiful.foreground),
+				markup = _Utils.widget.colorizeText("No Notifications", beautiful.foreground),
 				align = "center",
 				widget = wibox.widget.textbox,
 			},
@@ -36,7 +35,7 @@ local empty = wibox.widget({
 
 local title = wibox.widget({
 	font = beautiful.sans .. " Medium 15",
-	markup = helpers.colorizeText("Notification Center", beautiful.foreground),
+	markup = _Utils.widget.colorizeText("Notification Center", beautiful.foreground),
 	widget = wibox.widget.textbox,
 })
 
@@ -63,8 +62,8 @@ local clearButton = wibox.widget({
 		end),
 	},
 })
-helpers.hoverCursor(clearButton)
-helpers.addHoverBg(clearButton, "bg", beautiful.lighter, beautiful.lighter1)
+_Utils.widget.hoverCursor(clearButton)
+_Utils.widget.addHoverBg(clearButton, "bg", beautiful.lighter, beautiful.lighter1)
 
 local titleNotificenter = wibox.widget({
 	{
@@ -151,7 +150,7 @@ return function(s)
 		},
 		layout = wibox.layout.fixed.vertical,
 	})
-	helpers.placeWidget(noticenter, "top_right", 2, 0, 0, 2)
+	_Utils.widget.placeWidget(noticenter, "top_right", 2, 0, 0, 2)
 
 	local slide = animation:new({
 		duration = 0.5,

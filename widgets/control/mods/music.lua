@@ -3,7 +3,6 @@ local awful = require("awful")
 local beautiful = require("beautiful")
 local gears = require("gears")
 local pctl = require("modules.playerctl")
-local helpers = require("helpers")
 local playerctl = pctl.lib()
 
 local blur = wibox.widget({
@@ -16,13 +15,13 @@ local function convertBlur(image)
 	local cmd = "convert " .. image .. " -filter Gaussian -blur 0x5 ~/.cache/awesome/blurdefault.jpg"
 	awful.spawn.easy_async_with_shell(cmd, function()
 		local blurwall = gears.filesystem.get_cache_dir() .. "blurdefault.jpg"
-		blur.image = helpers.cropSurface(6.6, gears.surface.load_uncached(blurwall))
+		blur.image = _Utils.image.cropSurface(6.6, gears.surface.load_uncached(blurwall))
 	end)
 end
 convertBlur(beautiful.icon_path .. "music/blurdefault.jpg")
 
 local art = wibox.widget({
-	image = helpers.cropSurface(1, gears.surface.load_uncached(_User.SongDefPicture)),
+	image = _Utils.image.cropSurface(1, gears.surface.load_uncached(_User.SongDefPicture)),
 	resize = true,
 	forced_height = 100,
 	forced_width = 100,
@@ -38,7 +37,7 @@ local songname = wibox.widget({
 	{
 		id = "text",
 		font = beautiful.sans .. " Medium 14",
-		markup = helpers.colorizeText("Song Name", beautiful.foreground),
+		markup = _Utils.widget.colorizeText("Song Name", beautiful.foreground),
 		widget = wibox.widget.textbox,
 	},
 })
@@ -51,7 +50,7 @@ local artistname = wibox.widget({
 	{
 		id = "text",
 		font = beautiful.sans .. " 11",
-		markup = helpers.colorizeText("Artist Name", beautiful.foreground),
+		markup = _Utils.widget.colorizeText("Artist Name", beautiful.foreground),
 		widget = wibox.widget.textbox,
 	},
 })
@@ -60,7 +59,7 @@ local player = wibox.widget({
 	{
 		{
 			id = "player",
-			image = helpers.cropSurface(1, gears.surface.load_uncached(beautiful.icon_path .. "music/default.png")),
+			image = _Utils.image.cropSurface(1, gears.surface.load_uncached(beautiful.icon_path .. "music/default.png")),
 			forced_width = 20,
 			forced_height = 20,
 			resize = true,
@@ -80,24 +79,24 @@ playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _
 	awful.spawn.easy_async_with_shell(
 		"convert " .. album .. " -filter Gaussian -blur 0x5 ~/.cache/awesome/songdefpictures.jpg", function()
 			local blurwall = gears.filesystem.get_cache_dir() .. "songdefpictures.jpg"
-			blur.image = helpers.cropSurface(6.6, gears.surface.load_uncached(blurwall))
+			blur.image = _Utils.image.cropSurface(6.6, gears.surface.load_uncached(blurwall))
 		end)
-	art.image = helpers.cropSurface(1, gears.surface.load_uncached(album))
-	helpers.gc(songname, "text"):set_markup_silently(helpers.colorizeText(title, beautiful.foreground))
-	helpers.gc(artistname, "text"):set_markup_silently(helpers.colorizeText(artist, beautiful.foreground))
+	art.image = _Utils.image.cropSurface(1, gears.surface.load_uncached(album))
+	_Utils.widget.gc(songname, "text"):set_markup_silently(_Utils.widget.colorizeText(title, beautiful.foreground))
+	_Utils.widget.gc(artistname, "text"):set_markup_silently(_Utils.widget.colorizeText(artist, beautiful.foreground))
 	if player_name == "spotify" then
 		player_name = "spotify"
 	else
 		player_name = "playing"
 	end
-	helpers.gc(player, "player"):set_image(helpers.cropSurface(1,
+	_Utils.widget.gc(player, "player"):set_image(_Utils.image.cropSurface(1,
 		gears.surface.load_uncached(beautiful.icon_path .. "music/" .. player_name .. ".png")))
 	collectgarbage('collect')
 end)
 
 local next = wibox.widget({
 	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText("󰒭", beautiful.foreground),
+	markup = _Utils.widget.colorizeText("󰒭", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -108,7 +107,7 @@ local next = wibox.widget({
 
 local prev = wibox.widget({
 	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText("󰒮", beautiful.foreground),
+	markup = _Utils.widget.colorizeText("󰒮", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -119,7 +118,7 @@ local prev = wibox.widget({
 
 local play = wibox.widget({
 	font = beautiful.icon .. " 20",
-	markup = helpers.colorizeText("󰐊", beautiful.foreground),
+	markup = _Utils.widget.colorizeText("󰐊", beautiful.foreground),
 	widget = wibox.widget.textbox,
 	buttons = {
 		awful.button({}, 1, function()
@@ -127,13 +126,13 @@ local play = wibox.widget({
 		end),
 	},
 })
-playerctl:connect_signal("playback_status", function(_, playing, player_name)
-	play.markup = playing and helpers.colorizeText("󰏤", beautiful.foreground) or
-		helpers.colorizeText("󰐊", beautiful.foreground)
+playerctl:connect_signal("playback_status", function(_, playing, _)
+	play.markup = playing and _Utils.widget.colorizeText("󰏤", beautiful.foreground) or
+		_Utils.widget.colorizeText("󰐊", beautiful.foreground)
 end)
-helpers.hoverCursor(next)
-helpers.hoverCursor(prev)
-helpers.hoverCursor(play)
+_Utils.widget.hoverCursor(next)
+_Utils.widget.hoverCursor(prev)
+_Utils.widget.hoverCursor(play)
 
 local finalwidget = wibox.widget({
 	{
