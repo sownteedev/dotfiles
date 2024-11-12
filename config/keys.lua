@@ -95,6 +95,9 @@ awful.keyboard.append_global_keybindings({
 			awesome.emit_signal("toggle::exit")
 		end
 	end),
+	awful.key({ mod }, "d", function()
+		_Utils.keys.toggle_show_desktop()
+	end),
 	awful.key({ mod }, "l", function()
 		awesome.emit_signal("toggle::lock")
 	end),
@@ -211,12 +214,9 @@ awful.keyboard.append_global_keybindings({
 
 client.connect_signal("request::default_keybindings", function()
 	awful.keyboard.append_client_keybindings({
-		awful.key({ mod }, "d", function(c)
-			c.minimized = true
-		end, { description = "minimize", group = "client" }),
 		awful.key({ mod }, "f", function(c)
 			c.maximized = not c.maximized
-		end, { description = "toggle maximized", group = "client" }),
+		end),
 	})
 end)
 
