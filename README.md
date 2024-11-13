@@ -62,6 +62,9 @@ Whether you are a fan of MacOS aesthetics or simply looking for a fresh take on 
 
   - `networkmanager` `bluetoothctl`
 
+- **Font**: `SF Pro Display` `azuki_font` `Material Design Icons`
+- **Icon**: `WhiteSur`
+
 ## Usage 
 
 - Backup your config
