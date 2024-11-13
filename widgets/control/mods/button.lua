@@ -135,7 +135,7 @@ local function newtimer(name, timeout, fun, nostart, stoppable)
 	return stoppable and _run.timer_table[name]
 end
 
-local createButton = function(name, desc, img, cmd1, cmd2)
+local createButton = function(name, desc, img, cmd1)
 	local bg_container = wibox.container.background()
 	local name_widget = wibox.widget({
 		markup = name,
@@ -157,6 +157,8 @@ local createButton = function(name, desc, img, cmd1, cmd2)
 	})
 
 	local elapsed_time = 0
+	local clicked = false
+	local recording_timer = nil
 	local function update_desc()
 		elapsed_time = elapsed_time + 1
 		local minutes = math.floor(elapsed_time / 60)
@@ -164,7 +166,6 @@ local createButton = function(name, desc, img, cmd1, cmd2)
 		desc_widget.markup = _Utils.widget.colorizeText(string.format("Recording... [%02d:%02d]", minutes, seconds),
 			beautiful.lighter)
 	end
-	local recording_timer = nil
 
 	local buttons = wibox.widget({
 		{
@@ -192,26 +193,30 @@ local createButton = function(name, desc, img, cmd1, cmd2)
 		widget = bg_container,
 		buttons = gears.table.join(
 			awful.button({}, 1, function()
-				awful.spawn.with_shell(cmd1)
 				if name == "Recorder" then
-					bg_container.bg = beautiful.red
-					img_widget.image = gears.color.recolor_image(img, beautiful.lighter)
-					name_widget.markup = _Utils.widget.colorizeText(name, beautiful.lighter)
-					elapsed_time = 0
-					recording_timer = newtimer("recording_timer", 1, update_desc, false, true)
-				end
-				awesome.emit_signal("close::control")
-			end),
-			awful.button({}, 3, function()
-				awful.spawn.with_shell(cmd2)
-				bg_container.bg = beautiful.lighter
-				img_widget.image = gears.color.recolor_image(img, beautiful.foreground)
-				name_widget.markup = _Utils.widget.colorizeText(name, beautiful.foreground)
-				desc_widget.markup = _Utils.widget.colorizeText(desc, beautiful.foreground)
-				if recording_timer then
-					recording_timer:stop()
-					_run.timer_table["recording_timer"] = nil
-					recording_timer = nil
+					if not clicked then
+						awful.spawn.with_shell(cmd1)
+						bg_container.bg = beautiful.red
+						img_widget.image = gears.color.recolor_image(img, beautiful.lighter)
+						name_widget.markup = _Utils.widget.colorizeText(name, beautiful.lighter)
+						elapsed_time = 0
+						recording_timer = newtimer("recording_timer", 1, update_desc, false, true)
+						clicked = true
+					else
+						awful.spawn.with_shell("killall ffmpeg")
+						bg_container.bg = beautiful.lighter
+						img_widget.image = gears.color.recolor_image(img, beautiful.foreground)
+						name_widget.markup = _Utils.widget.colorizeText(name, beautiful.foreground)
+						desc_widget.markup = _Utils.widget.colorizeText(desc, beautiful.foreground)
+						if recording_timer then
+							recording_timer:stop()
+							_run.timer_table["recording_timer"] = nil
+							recording_timer = nil
+						end
+						clicked = false
+					end
+				else
+					awful.spawn.with_shell(cmd1)
 				end
 				awesome.emit_signal("close::control")
 			end)
@@ -223,10 +228,8 @@ local createButton = function(name, desc, img, cmd1, cmd2)
 end
 
 local button = wibox.widget({
-	createButton("Screenshot", "Take Area", beautiful.icon_path .. "button/screenshot.svg", "awesome-client 'area()'", ""),
-	createButton("Recorder", "Is Resting", beautiful.icon_path .. "button/record.svg",
-		"awesome-client 'record()'",
-		"killall ffmpeg"),
+	createButton("Screenshot", "Take Area", beautiful.icon_path .. "button/screenshot.svg", "awesome-client 'area()'"),
+	createButton("Recorder", "Is Resting", beautiful.icon_path .. "button/record.svg", "awesome-client 'record()'"),
 	spacing = 15,
 	layout = wibox.layout.fixed.horizontal,
 })
