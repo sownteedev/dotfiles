@@ -21,13 +21,13 @@ local createButton = function(signal, name, desc, img, cmd1)
 						{
 							id = "name",
 							markup = name,
-							font = beautiful.font,
+							font = beautiful.sans .. " Medium 12",
 							widget = wibox.widget.textbox,
 						},
 						{
 							id = "desc",
 							markup = desc,
-							font = beautiful.sans .. " 10",
+							font = beautiful.sans .. " 9",
 							widget = wibox.widget.textbox,
 						},
 						spacing = 5,
@@ -67,17 +67,17 @@ local createButton = function(signal, name, desc, img, cmd1)
 			if stdout == "power-saver" then
 				bg = beautiful.yellow
 				icon = beautiful.lighter
-				names = "Power Save"
+				names = "Powermode"
 				descs = "Power Save"
 			elseif stdout == "balanced" then
 				bg = beautiful.lighter
 				icon = beautiful.foreground
-				names = "Balanced"
+				names = "Powermode"
 				descs = "Balanced"
 			else
 				bg = beautiful.blue
 				icon = beautiful.lighter
-				names = "Perfomance"
+				names = "Powermode"
 				descs = "Perfomance"
 			end
 			updateWidget(bg, icon, names, descs)

@@ -39,7 +39,7 @@ _User.Coordinates     = { "21.0245", "105.8412" }
 
 _User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
 _User.Wallpaper       = "/usr/share/backgrounds/budgie/piazza-gae-aulenti.jpg"
-_User.Lock            = "/home/sowntee/.walls/dark-purple.png"
+_User.Lock            = "/usr/share/backgrounds/budgie/saturnian-profile.jpg"
 
 _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artdefault.jpg"
 

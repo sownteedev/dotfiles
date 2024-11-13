@@ -48,12 +48,12 @@ M_clocl_sys  = {
 		cr:set_source_rgb(0, 0, 0)
 		for i = 1, 12 do
 			local angle = math.pi / 6 * i
-			local x1, y1 = cx + (radius - 10) * math.sin(angle),
+			local x1, y1 = cx + (radius - 15) * math.sin(angle),
 				cy - (radius - 15) * math.cos(angle)
 			local x2, y2 = cx + radius * math.sin(angle), cy - radius * math.cos(angle)
 			cr:move_to(x1, y1)
 			cr:line_to(x2, y2)
-			cr:set_line_width(5)
+			cr:set_line_width(3)
 			cr:stroke()
 
 			local text_angle = math.pi / 6 * i
@@ -62,6 +62,7 @@ M_clocl_sys  = {
 				text_extents.x_bearing
 			local y = cy - (radius - 30) * math.cos(text_angle) - text_extents.height / 2 -
 				text_extents.y_bearing
+			cr:select_font_face("SF Pro Display", cairo.FontSlant.NORMAL, cairo.FontWeight.NORMAL)
 			cr:set_font_size(15)
 			cr:move_to(x, y)
 			cr:show_text(tostring(i))

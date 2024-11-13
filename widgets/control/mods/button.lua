@@ -1,8 +1,9 @@
-local awful = require("awful")
-local beautiful = require("beautiful")
-local wibox = require("wibox")
-local gears = require("gears")
-local naughty = require("naughty")
+local awful       = require("awful")
+local beautiful   = require("beautiful")
+local wibox       = require("wibox")
+local gears       = require("gears")
+local timer       = require("gears.timer")
+local naughty     = require("naughty")
 
 local checkFolder = function(type)
 	if type == "rec" and not os.rename(os.getenv("HOME") .. "/Videos/Recordings", os.getenv("HOME") .. "/Videos/Recordings") then
@@ -12,7 +13,7 @@ local checkFolder = function(type)
 	end
 end
 
-local getName = function(type)
+local getName     = function(type)
 	---@diagnostic disable: param-type-mismatch
 	local string = ""
 	if type == "rec" then
@@ -118,25 +119,65 @@ function record()
 	end)
 end
 
-local createButton = function(name, img, cmd1, cmd2)
+local _run       = {}
+_run.timer_table = {}
+local function newtimer(name, timeout, fun, nostart, stoppable)
+	if not name or #name == 0 then return end
+	name = (stoppable and name) or timeout
+	if not _run.timer_table[name] then
+		_run.timer_table[name] = timer({ timeout = timeout })
+		_run.timer_table[name]:start()
+	end
+	_run.timer_table[name]:connect_signal("timeout", fun)
+	if not nostart then
+		_run.timer_table[name]:emit_signal("timeout")
+	end
+	return stoppable and _run.timer_table[name]
+end
+
+local createButton = function(name, desc, img, cmd1, cmd2)
+	local bg_container = wibox.container.background()
+	local name_widget = wibox.widget({
+		markup = name,
+		font = beautiful.sans .. " Medium 12",
+		widget = wibox.widget.textbox,
+	})
+	local desc_widget = wibox.widget({
+		markup = desc,
+		font = beautiful.sans .. " 9",
+		widget = wibox.widget.textbox,
+	})
+	local img_widget = wibox.widget({
+		image = gears.color.recolor_image(img, beautiful.foreground),
+		resize = true,
+		valign = "center",
+		forced_height = name == "Screenshot" and 35 or 25,
+		forced_width = name == "Screenshot" and 35 or 25,
+		widget = wibox.widget.imagebox,
+	})
+
+	local elapsed_time = 0
+	local function update_desc()
+		elapsed_time = elapsed_time + 1
+		local minutes = math.floor(elapsed_time / 60)
+		local seconds = elapsed_time % 60
+		desc_widget.markup = _Utils.widget.colorizeText(string.format("Recording... [%02d:%02d]", minutes, seconds),
+			beautiful.lighter)
+	end
+	local recording_timer = nil
+
 	local buttons = wibox.widget({
 		{
 			{
 				{
+					img_widget,
 					{
-						image = gears.color.recolor_image(img,
-							beautiful.foreground),
-						resize = true,
-						forced_height = 35,
-						forced_width = 35,
-						widget = wibox.widget.imagebox,
+						name_widget,
+						desc_widget,
+						spacing = 5,
+						layout = wibox.layout.fixed.vertical,
 					},
-					{
-						markup = name,
-						font = beautiful.font,
-						widget = wibox.widget.textbox,
-					},
-					spacing = 10,
+					spacing = name == "Screenshot" and 10 or 20,
 					layout = wibox.layout.fixed.horizontal,
 				},
 				align = "center",
@@ -148,14 +189,30 @@ local createButton = function(name, img, cmd1, cmd2)
 		forced_width = 225,
 		shape = beautiful.radius,
 		bg = beautiful.lighter,
-		widget = wibox.container.background,
+		widget = bg_container,
 		buttons = gears.table.join(
 			awful.button({}, 1, function()
 				awful.spawn.with_shell(cmd1)
+				if name == "Recorder" then
+					bg_container.bg = beautiful.red
+					img_widget.image = gears.color.recolor_image(img, beautiful.lighter)
+					name_widget.markup = _Utils.widget.colorizeText(name, beautiful.lighter)
+					elapsed_time = 0
+					recording_timer = newtimer("recording_timer", 1, update_desc, false, true)
+				end
 				awesome.emit_signal("close::control")
 			end),
 			awful.button({}, 3, function()
 				awful.spawn.with_shell(cmd2)
+				bg_container.bg = beautiful.lighter
+				img_widget.image = gears.color.recolor_image(img, beautiful.foreground)
+				name_widget.markup = _Utils.widget.colorizeText(name, beautiful.foreground)
+				desc_widget.markup = _Utils.widget.colorizeText(desc, beautiful.foreground)
+				if recording_timer then
+					recording_timer:stop()
+					_run.timer_table["recording_timer"] = nil
+					recording_timer = nil
+				end
 				awesome.emit_signal("close::control")
 			end)
 		),
@@ -166,8 +223,10 @@ local createButton = function(name, img, cmd1, cmd2)
 end
 
 local button = wibox.widget({
-	createButton("Screenshot", beautiful.icon_path .. "button/screenshot.svg", "awesome-client 'area()'", ""),
-	createButton("Record", beautiful.icon_path .. "button/record.svg", "awesome-client 'record()'", "killall ffmpeg"),
+	createButton("Screenshot", "Take Area", beautiful.icon_path .. "button/screenshot.svg", "awesome-client 'area()'", ""),
+	createButton("Recorder", "Is Resting", beautiful.icon_path .. "button/record.svg",
+		"awesome-client 'record()'",
+		"killall ffmpeg"),
 	spacing = 15,
 	layout = wibox.layout.fixed.horizontal,
 })

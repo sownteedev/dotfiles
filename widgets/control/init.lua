@@ -14,7 +14,7 @@ return function(s)
 	local control = wibox({
 		screen = s,
 		width = 500,
-		height = 1010,
+		height = 1015,
 		shape = beautiful.radius,
 		bg = beautiful.background,
 		border_width = beautiful.border_width,
