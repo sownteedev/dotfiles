@@ -54,8 +54,8 @@ end
 local theGrid = wibox.widget({
 	forced_num_rows = 7,
 	forced_num_cols = 7,
-	vertical_spacing = 9,
-	horizontal_spacing = 15,
+	vertical_spacing = 8,
+	horizontal_spacing = 13,
 	min_rows_size = 20,
 	homogenous = true,
 	layout = wibox.layout.grid,
@@ -80,14 +80,10 @@ M.updateCalendar = function(date)
 		beautiful.red)
 	theGrid:reset()
 	for _, w in ipairs({ "S", "M", "T", "W", "T", "F", "S" }) do
-		if w == "S" then
-			theGrid:add(daywidget(w, true, false))
-		else
-			theGrid:add(daywidget(w, false, false))
-		end
+		theGrid:add(daywidget(w, w == "S", false))
 	end
 	local firstDate = os.date("*t", os.time({ day = 1, month = date.month, year = date.year }))
-	local lastDate = os.date("*t", os.time({ day = 0, month = date.month + 1, year = date.year }))
+	local lastDate = os.date("*t", os.time({ day = 1, month = date.month + 1, year = date.year }) - 86400)
 	local days_to_add_at_month_start = firstDate.wday - 1
 	local days_to_add_at_month_end = 42 - lastDate.day - days_to_add_at_month_start
 
@@ -95,7 +91,7 @@ M.updateCalendar = function(date)
 	local row = 2
 	local col = firstDate.wday
 
-	for day = previous_month_last_day - days_to_add_at_month_start, previous_month_last_day - 1, 1 do
+	for day = previous_month_last_day - days_to_add_at_month_start + 1, previous_month_last_day do
 		theGrid:add(datewidget(day, false, true))
 	end
 

@@ -2,10 +2,14 @@ local awful = require("awful")
 local beautiful = require("beautiful")
 local naughty = require("naughty")
 
+local BATTERY_PER = "cat /sys/class/power_supply/BAT0/capacity"
+local BATTERY_STATUS = "cat /sys/class/power_supply/BAT0/status"
+local POWERMODE_GET = "powerprofilesctl get"
+local POWERMODE_SET = "powerprofilesctl set"
 local charging = false
 
 local function battery_emit()
-	awful.spawn.easy_async_with_shell("sh -c 'cat /sys/class/power_supply/BAT0/capacity'",
+	awful.spawn.easy_async_with_shell(BATTERY_PER,
 		function(stdout)
 			local level = tonumber(string.match(stdout:match("(%d+)"), "(%d+)"))
 			awesome.emit_signal("signal::battery", level)
@@ -16,7 +20,7 @@ battery_emit()
 
 local last_status = nil
 local function battery_status()
-	awful.spawn.easy_async_with_shell("sh -c 'cat /sys/class/power_supply/BAT0/status'",
+	awful.spawn.easy_async_with_shell(BATTERY_STATUS,
 		function(stdout)
 			local status = not stdout:match("Discharging")
 			charging = status
@@ -30,20 +34,23 @@ end
 battery_status()
 
 local function get_power_mode()
-	awful.spawn.easy_async_with_shell("sh -c 'powerprofilesctl get'", function(stdout)
+	awful.spawn.easy_async_with_shell(POWERMODE_GET, function(stdout)
 		local mode = stdout:match("power") and "power-saver" or stdout:match("balanced") and "balanced" or "performance"
 		awesome.emit_signal("signal::powermode", mode)
 	end)
 end
 
 function switch_power_mode()
-	awful.spawn.easy_async_with_shell("sh -c 'powerprofilesctl get'", function(stdout)
+	awful.spawn.easy_async_with_shell(POWERMODE_GET, function(stdout)
 		local current_mode = stdout:match("power") and "power-saver" or stdout:match("balanced") and "balanced" or
 			"performance"
 		local next_mode = current_mode == "power-saver" and "balanced" or current_mode == "balanced" and "performance" or
 			"power-saver"
-		awful.spawn.with_shell("sh -c 'powerprofilesctl set " .. next_mode .. "'")
-		awesome.emit_signal("signal::powermode", next_mode)
+		awful.spawn.easy_async_with_shell(POWERMODE_SET .. " " .. next_mode,
+			function()
+				awesome.emit_signal("signal::powermode", next_mode)
+			end
+		)
 	end)
 end
 

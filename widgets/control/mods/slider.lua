@@ -44,8 +44,8 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 							slidIcon,
 							id = "margin",
 							widget = wibox.container.margin,
-							left = 15,
-							right = 2,
+							left = signal2 == "brightnesss" and 12 or 15,
+							right = signal2 == "brightnesss" and 5 or 2,
 							top = 8,
 							bottom = 8,
 						},
@@ -79,7 +79,6 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 	_Utils.widget.hoverCursor(slidSlider)
 	_Utils.widget.hoverCursor(slidScale, "margin")
 
-
 	awesome.connect_signal("signal::" .. signal, function(value)
 		slidSlider.value = value
 	end)
@@ -92,16 +91,10 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 				slidIcon.markup = _Utils.widget.colorizeText("󰖁 ", beautiful.lighter1)
 			elseif signal2 == "brightnesss" then
 				slidIcon.markup = _Utils.widget.colorizeText("󰃝 ", beautiful.lighter1)
-				_Utils.widget.gc(slidScale, "margin").left = 12
-				_Utils.widget.gc(slidScale, "margin").right = 3
 			end
 		else
 			slidIcon.markup = _Utils.widget.colorizeText(icon, beautiful.foreground)
 			_Utils.widget.gc(slidScale, "background_role"):set_bg(beautiful.lighter1)
-			if signal2 == "brightnesss" then
-				_Utils.widget.gc(slidScale, "margin").left = 12
-				_Utils.widget.gc(slidScale, "margin").right = 5
-			end
 		end
 	end)
 	slidSlider:connect_signal("property::value", function(_, new_value)
