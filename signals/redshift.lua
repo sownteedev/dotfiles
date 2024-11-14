@@ -1,6 +1,6 @@
 local awful = require("awful")
 
-local REDSHIFT_CACHE = os.getenv("HOME") .. "/.cache/redshift"
+local REDSHIFT_CACHE = os.getenv("HOME") .. "/.cache/awesome/redshift"
 local REDSHIFT_RESET = "redshift -x"
 local REDSHIFT_ENABLE = "redshift -O 4000"
 

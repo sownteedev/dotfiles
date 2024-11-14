@@ -82,7 +82,7 @@ local createButton = function(signal, name, desc, img, cmd1)
 			end
 			updateWidget(bg, icon, names, descs)
 		end)
-	else
+	elseif signal == "darkmode" then
 		awesome.connect_signal("signal::darkmode", function(stdout)
 			local bg, icon, names, descs
 			if stdout then

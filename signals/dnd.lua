@@ -1,6 +1,6 @@
 local awful = require("awful")
 
-local DND_CACHE = os.getenv("HOME") .. "/.cache/dnd"
+local DND_CACHE = os.getenv("HOME") .. "/.cache/awesome/dnd"
 local NAUGHTY_TOGGLE = "awesome-client 'naughty = require(\"naughty\") naughty.toggle()'"
 
 local function get_dnd_state_cmd(state)
