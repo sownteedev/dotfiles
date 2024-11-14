@@ -74,6 +74,7 @@ local function for_signal(theme)
 end
 
 function applyTheme(theme)
+	backup()
 	term(theme)
 	-- gtk(theme)
 	spotify(theme)

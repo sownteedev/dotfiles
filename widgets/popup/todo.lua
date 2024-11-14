@@ -33,7 +33,7 @@ local writeData = function(d)
 end
 
 local grabber = {}
-function grabber:init(finalWidget, fn, cl)
+function grabber:init(finalWidget, open, close)
 	local exclude = {
 		"Shift_R",
 		"Shift_L",
@@ -61,12 +61,12 @@ function grabber:init(finalWidget, fn, cl)
 			local addition = ''
 			if key == "Escape" or key == "Super_L" then
 				grabber:stop()
-				cl()
+				close()
 			elseif key == "BackSpace" then
 				_Utils.widget.gc(finalWidget, "input").markup = _Utils.widget.gc(finalWidget, "input").markup:sub(1, -2)
 			elseif key == "Return" then
 				if string.len(_Utils.widget.gc(finalWidget, "input").markup) > 0 then
-					fn(_Utils.widget.gc(finalWidget, "input").markup)
+					open(_Utils.widget.gc(finalWidget, "input").markup)
 					_Utils.widget.gc(finalWidget, "input").markup = ''
 					grabber:stop()
 				end
@@ -277,6 +277,24 @@ local function refresh()
 	end
 end
 
+local function addTodoItem()
+	local w, pop = getPop('Enter New Todo')
+	grabber:init(w, function(input)
+		if input and input ~= "" then
+			local new = {
+				completed = false,
+				name = input
+			}
+			makeData(new)
+			refresh()
+		end
+		pop.visible = false
+	end, function()
+		pop.visible = false
+	end)
+	grabber:start()
+end
+
 return function(s)
 	local todo = wibox({
 		screen = s,
@@ -312,17 +330,12 @@ return function(s)
 								margins = 3,
 								widget = wibox.container.margin
 							},
-							bg = beautiful.yellow,
+							bg = beautiful.blue,
 							shape = gears.shape.circle,
 							widget = wibox.container.background,
 							buttons = {
 								awful.button({}, 1, function()
-									local data = {
-										completed = false,
-										name = "New Todo! Click to change"
-									}
-									makeData(data)
-									refresh()
+									addTodoItem()
 								end),
 							},
 						},
