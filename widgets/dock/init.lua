@@ -328,7 +328,7 @@ return function(s)
 		screen = s,
 		visible = true,
 		shape = _Utils.widget.rrect(20),
-		bg = _Utils.color.blend("#ffffff", "#000000", 0.3) .. "55",
+		bg = _Utils.color.change_hex_lightness(beautiful.background, 8) .. "AA",
 		placement = function(c)
 			awful.placement.bottom(c, { margins = { bottom = beautiful.useless_gap * 2 } })
 		end,

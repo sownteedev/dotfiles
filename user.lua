@@ -30,7 +30,7 @@ _User.Custom_Icon     = {
 }
 
 _User.Border          = 1
-_User.Radius          = 15
+_User.Radius          = 10
 
 _User.AutoHideDock    = false
 
@@ -38,7 +38,7 @@ _User.API_KEY_WEATHER = ""
 _User.Coordinates     = { "21.0245", "105.8412" }
 
 _User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
-_User.Wallpaper       = "/usr/share/backgrounds/budgie/default.jpg"
+_User.Wallpaper       = "/usr/share/backgrounds/budgie/piazza-gae-aulenti.jpg"
 _User.Lock            = "/home/sowntee/.walls/a.jpg"
 
 _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artdefault.jpg"
