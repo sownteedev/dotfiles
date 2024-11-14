@@ -178,10 +178,10 @@ return function(s)
 				input = ""
 				star = ""
 			elseif key == "XF86AudioRaiseVolume" then
-				awful.spawn.with_shell("pamixer -i 2")
+				awful.spawn.with_shell("pactl set-sink-volume @DEFAULT_SINK@ +2%")
 				volume_emit()
 			elseif key == "XF86AudioLowerVolume" then
-				awful.spawn.with_shell("pamixer -d 2")
+				awful.spawn.with_shell("pactl set-sink-volume @DEFAULT_SINK@ -2%")
 				volume_emit()
 			elseif key == "XF86AudioMute" then
 				volume_toggle()

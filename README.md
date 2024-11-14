@@ -52,7 +52,7 @@ Whether you are a fan of MacOS aesthetics or simply looking for a fresh take on 
 - **Picom** for animations and transparency effects
 
 - **Other Dependencies**:
-  - `playerctl` `pamixer`
+  - `playerctl` `pipewire`
 
   - `inotify-tools`
 
@@ -84,7 +84,7 @@ Whether you are a fan of MacOS aesthetics or simply looking for a fresh take on 
 
 | <b>Desktop and Widgets</b>                                                                                               |
 | ------------------------------------------------------------------------------------------------------------------ |
-| <a href="#--------"><img src="https://github.com/user-attachments/assets/5377de5d-266a-4024-80f8-2a28a9dc867c" alt="bottom panel preview"></a>|
+| <a href="#--------"><img src="https://github.com/user-attachments/assets/06a63639-4cd2-4e08-8832-c2e78a291d4f" alt="bottom panel preview"></a>|
 
 | <b>Control Center</b>                                                                              |
 | ------------------------------------------------------------------------------------------------------------------ |
@@ -100,7 +100,7 @@ Whether you are a fan of MacOS aesthetics or simply looking for a fresh take on 
 
 | <b>Preview Workspace</b>                                                                            |
 | ------------------------------------------------------------------------------------------------------------------ |
-| <a href="#--------"><img src="https://github.com/user-attachments/assets/586ab6ce-a229-4264-9362-8bb97887ac56" alt="bottom panel preview"></a>|
+| <a href="#--------"><img src="https://github.com/user-attachments/assets/bed7a237-c57e-4b95-aa78-73948cdd66b1" alt="bottom panel preview"></a>|
 
 | <b>Titlebar and Widget flexibility</b>                                                                            |
 | ------------------------------------------------------------------------------------------------------------------ |

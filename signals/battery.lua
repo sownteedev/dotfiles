@@ -49,6 +49,13 @@ function switch_power_mode()
 		awful.spawn.easy_async_with_shell(POWERMODE_SET .. " " .. next_mode,
 			function()
 				awesome.emit_signal("signal::powermode", next_mode)
+				local power_mode_value = (next_mode == "power-saver" and 0) or (next_mode == "balanced" and 2) or 1
+				-- awful.spawn.with_shell("nvidia-settings -a '[GPU:0]/GPUPowerMizerMode=" .. power_mode_value .. "'")
+				awful.spawn.easy_async_with_shell("sed -i '/^\\[GPU:0\\]\\/GPUPowerMizerMode=/s/=.*/=" ..
+					power_mode_value .. "/' ~/.nvidia-settings-rc", function()
+						awful.spawn.with_shell("nvidia-settings --load-config-only")
+					end
+				)
 			end
 		)
 	end)

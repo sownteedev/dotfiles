@@ -38,12 +38,12 @@ awful.keyboard.append_global_keybindings({
 	end),
 
 	awful.key({}, "XF86AudioRaiseVolume", function()
-		awful.spawn.with_shell("pamixer -i 2")
+		awful.spawn.with_shell("pactl set-sink-volume @DEFAULT_SINK@ +2%")
 		volume_emit()
 		awesome.emit_signal("open::brivolmic")
 	end),
 	awful.key({}, "XF86AudioLowerVolume", function()
-		awful.spawn.with_shell("pamixer -d 2")
+		awful.spawn.with_shell("pactl set-sink-volume @DEFAULT_SINK@ -2%")
 		volume_emit()
 		awesome.emit_signal("open::brivolmic")
 	end),

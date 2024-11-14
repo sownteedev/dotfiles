@@ -114,7 +114,7 @@ return function(s)
 		ontop = true,
 		visible = false,
 		shape = beautiful.radius,
-		bg = beautiful.background .. "88",
+		bg = beautiful.background .. "AA",
 		border_width = beautiful.border_width,
 		border_color = beautiful.lighter,
 		widget = wibox.container.background

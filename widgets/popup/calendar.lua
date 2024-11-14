@@ -180,7 +180,7 @@ return function(s)
 	_Utils.widget.placeWidget(caca, "top_left", 103, 0, 2, 0)
 	_Utils.widget.popupOpacity(caca, 0.3)
 	awesome.connect_signal("signal::blur", function(status)
-		caca.bg = not status and beautiful.background or beautiful.background .. "88"
+		caca.bg = not status and beautiful.background or beautiful.background .. "AA"
 	end)
 
 	return caca
