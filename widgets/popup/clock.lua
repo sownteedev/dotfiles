@@ -102,6 +102,16 @@ M_clocl_sys  = {
 		cr:set_line_width(1)
 		cr:stroke()
 
+		cr:set_source_rgb(0, 0, 0)
+		cr:select_font_face("SF Pro Display", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
+		cr:set_font_size(12)
+		local gmt_text = "GMT +7"
+		local text_extents = cr:text_extents(gmt_text)
+		local x = cx - text_extents.width / 2
+		local y = cy + radius / 2 - 8
+		cr:move_to(x, y)
+		cr:show_text(gmt_text)
+
 		local img = surface:create_similar(cairo.Content.COLOR_ALPHA, 200, 200)
 		local cr2 = cairo.Context(img)
 		cr2:set_source_surface(surface)
@@ -130,7 +140,7 @@ return function(s)
 	_Utils.widget.placeWidget(clock, "top_right", 13, 0, 0, 2)
 	_Utils.widget.popupOpacity(clock, 0.3)
 	awesome.connect_signal("signal::blur", function(status)
-		clock.bg = not status and beautiful.background or beautiful.background .. "88"
+		clock.bg = not status and beautiful.background or beautiful.background .. "AA"
 	end)
 
 	return clock

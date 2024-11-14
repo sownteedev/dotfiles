@@ -31,6 +31,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	s.brivol     = require("widgets.popup.brivolmic")(s)
 	s.preview    = require("widgets.popup.preview.previewtags")(s)
 	s.clock      = require("widgets.popup.clock")(s)
+	s.todo       = require("widgets.popup.todo")(s)
 end)
 
 local function wallpaper()

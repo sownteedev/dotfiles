@@ -121,7 +121,7 @@ local widget = wibox.widget({
 		"volumemute",
 		"awesome-client 'volume_toggle()'",
 		"pavucontrol",
-		"pamixer --set-volume %d"
+		"pactl set-sink-volume @DEFAULT_SINK@ %d%%"
 	),
 	createSlider(
 		"Microphone",
