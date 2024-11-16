@@ -1,0 +1,55 @@
+@use 'sass:color';
+@use '../colors';
+@use '../config';
+
+headerbar {
+  background: colors.$surface-moderate;
+  padding: config.$spacing-small + 0.0025em;
+
+  button.titlebutton {
+    padding: calc(config.$spacing-medium);
+  }
+
+  button.titlebutton:not(.appmenu) {
+    background: transparent;
+
+    &.close {
+      color: colors.$red-normal;
+      background: colors.$red-normal;
+      border-radius: 1em;
+      padding: 0.1em;
+
+      &:hover {
+        color: colors.$surface-moderate;
+      }
+    }
+
+    &.minimize {
+      color: colors.$yellow-normal;
+      background: colors.$yellow-normal;
+      border-radius: 1em;
+      padding: 0.1em;
+
+      &:hover {
+        color: colors.$surface-moderate;
+      }
+    }
+
+    &.maximize {
+      color: colors.$green-normal;
+      background: colors.$green-normal;
+      border-radius: 1em;
+      padding: 0.1em;
+
+      &:hover {
+        color: colors.$surface-moderate;
+      }
+    }
+  }
+
+  button.titlebutton.appmenu {
+    &:not(:active):not(:checked) {
+      background: transparent;
+    }
+  }
+}
