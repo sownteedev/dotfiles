@@ -1,7 +1,7 @@
 general.import = [ '~/.config/alacritty/colors/dark.toml' ]
 
 [font]
-size = 6
+size = 12
 normal = { family = "Liga SFMono Nerd Font", style = "Regular" }
 bold = { family = "Liga SFMono Nerd Font", style = "Bold" }
 italic = { family = "Liga SFMono Nerd Font", style = "Italic" }
@@ -12,7 +12,7 @@ glyph_offset = { x = 0, y = 4 }
 [window]
 opacity = 1
 title = "sowntee@dev"
-padding = { x = 20, y = 20 }
+padding = { x = 30, y = 30 }
 
 [cursor]
 blink_interval = 1000
