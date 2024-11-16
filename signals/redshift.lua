@@ -15,11 +15,9 @@ local function get_redshift_cmd(enable)
 	}, " && ")
 end
 
-local function light_emit()
-	awful.spawn.easy_async_with_shell("cat " .. REDSHIFT_CACHE, function(stdout)
-		awesome.emit_signal("signal::redshift", stdout:match("true"))
-	end)
-end
+awful.spawn.easy_async_with_shell("cat " .. REDSHIFT_CACHE, function(stdout)
+	awesome.emit_signal("signal::redshift", stdout:match("true"))
+end)
 
 function redshift_toggle()
 	awful.spawn.easy_async_with_shell("cat " .. REDSHIFT_CACHE, function(stdout)
@@ -34,5 +32,3 @@ function redshift_toggle()
 		)
 	end)
 end
-
-light_emit()

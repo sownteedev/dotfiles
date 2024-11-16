@@ -13,11 +13,9 @@ local function get_toggle_cmd(enable)
 	)
 end
 
-local function airplane_emit()
-	awful.spawn.easy_async_with_shell(AIRPLANE_STATUS_CMD, function(stdout)
-		awesome.emit_signal("signal::airplane", stdout == "true\n")
-	end)
-end
+awful.spawn.easy_async_with_shell(AIRPLANE_STATUS_CMD, function(stdout)
+	awesome.emit_signal("signal::airplane", stdout == "true\n")
+end)
 
 function airplane_toggle()
 	awful.spawn.easy_async_with_shell(RFKILL_STATUS_CMD, function(stdout)
@@ -30,5 +28,3 @@ function airplane_toggle()
 		)
 	end)
 end
-
-airplane_emit()

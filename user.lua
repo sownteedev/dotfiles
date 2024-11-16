@@ -12,11 +12,8 @@ _User.Sans            = "SF Pro Display"
 _User.Icon            = "Material Design Icons"
 _User.IconName        = "WhiteSur"
 _User.Custom_Icon     = {
-	{ name = "org.wezfurlong.wezterm",           to = "terminal" },
-	{ name = "Alacritty",                        to = "terminal" },
-	{ name = "St",                               to = "terminal" },
-	{ name = "ncmpcpppad",                       to = "deepin-music-player" },
 	{ name = "FFPWA-01J9K7824YX3HRKD9K1ZG34PZZ", to = "SoundCloud" },
+	{ name = "Alacritty",                        to = "terminal" },
 	{ name = "wps",                              to = "Word" },
 	{ name = "et",                               to = "Excel" },
 	{ name = "wpp",                              to = "PowerPoint" },
@@ -32,6 +29,8 @@ _User.Custom_Icon     = {
 _User.Border          = 1
 _User.Radius          = 10
 
+_User.Tag             = { "Terminal", "Browser", "Develop", "Media", "Other" }
+
 _User.AutoHideDock    = false
 
 _User.API_KEY_WEATHER = ""
@@ -46,7 +45,6 @@ _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artd
 _User.AutoStart       = {
 	-- "xrandr --auto --output DP-1 --mode 3840x2160 --primary --auto --right-of eDP-1"
 	"ibus-daemon -drx",
-	"xss-lock -l awesome-client 'awesome.emit_signal(\"toggle::lock\")'",
 	"libinput-gestures-setup start",
 }
 

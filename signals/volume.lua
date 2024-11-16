@@ -13,11 +13,9 @@ function volume_emit()
 	end)
 end
 
-local function volume_mute()
-	awful.spawn.easy_async_with_shell(MUTE_CMD, function(stdout)
-		awesome.emit_signal("signal::volumemute", stdout:match("yes"))
-	end)
-end
+awful.spawn.easy_async_with_shell(MUTE_CMD, function(stdout)
+	awesome.emit_signal("signal::volumemute", stdout:match("yes"))
+end)
 
 function volume_toggle()
 	awful.spawn.easy_async_with_shell(MUTE_CMD, function(stdout)
@@ -29,4 +27,3 @@ function volume_toggle()
 end
 
 volume_emit()
-volume_mute()

@@ -1,6 +1,7 @@
 local gears = require("gears")
 
-local gobject_to_gearsobject = function(object)
+local upower = {}
+upower.gobject_to_gearsobject = function(object)
 	local new_gobject = gears.object({})
 
 	new_gobject._class = object
@@ -47,17 +48,14 @@ end
 local UPowerGlib = require("lgi").require("UPowerGlib", "1.0")
 
 ---@class upower: GearsObject_GObject, UPowerGlib.Client
-local upowers = gobject_to_gearsobject(UPowerGlib.Client.new())
+upower.upower = upower.gobject_to_gearsobject(UPowerGlib.Client.new())
 
-upowers._class.on_device_added = function(_, ...)
-	return upowers:emit_signal("device-added", ...)
+upower.upower._class.on_device_added = function(_, ...)
+	return upower.upower:emit_signal("device-added", ...)
 end
 
-upowers._class.on_device_removed = function(_, ...)
-	return upowers:emit_signal("device-removed", ...)
+upower.upower._class.on_device_removed = function(_, ...)
+	return upower.upower:emit_signal("device-removed", ...)
 end
 
-return {
-	upowers = upowers,
-	gobject_to_gearsobject = gobject_to_gearsobject
-}
+return upower

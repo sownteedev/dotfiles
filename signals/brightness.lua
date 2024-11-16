@@ -25,11 +25,9 @@ function brightness_emit()
 	end)
 end
 
-local function brightnesss()
-	awful.spawn.easy_async_with_shell("cat " .. BRIGHTNESS_CACHE, function(stdout)
-		awesome.emit_signal("signal::brightnesss", stdout:match("true"))
-	end)
-end
+awful.spawn.easy_async_with_shell("cat " .. BRIGHTNESS_CACHE, function(stdout)
+	awesome.emit_signal("signal::brightnesss", stdout:match("true"))
+end)
 
 function brightness_toggle()
 	awful.spawn.easy_async_with_shell("brightnessctl i | grep Current", function(stdout)
@@ -46,4 +44,3 @@ function brightness_toggle()
 end
 
 brightness_emit()
-brightnesss()

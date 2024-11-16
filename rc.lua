@@ -6,18 +6,14 @@ _Utils = require("utils")
 local naughty = require('naughty')
 naughty.connect_signal('request::display_error', function(message, startup)
 	naughty.notification({
-		urgency = 'critical',
-		title   = 'Oops, an error happened' .. (startup and ' during startup!' or '!'),
-		message = message
+		urgency  = 'critical',
+		app_name = "Awesome",
+		title    = 'Oops, an error happened' .. (startup and ' during startup!' or '!'),
+		message  = message,
+		ontop    = true,
+		timeout  = 0,
 	})
 end)
-
-require("beautiful").init(require("gears").filesystem.get_configuration_dir() .. "themes/theme.lua")
-require("config")
-require("signals")
-
---TODO: LIVE RELOAD
-awesome.emit_signal("live::reload")
 
 ---@diagnostic disable: param-type-mismatch
 collectgarbage("incremental", 120, 1000)
@@ -42,3 +38,10 @@ require("gears.timer").start_new(15, function()
 	memory_last_check_count = math.max(memory_last_check_count, collectgarbage("count"))
 	return true
 end)
+
+require("beautiful").init(require("gears").filesystem.get_configuration_dir() .. "themes/theme.lua")
+require("config")
+require("signals")
+
+--TODO: LIVE RELOAD
+awesome.emit_signal("live::reload")

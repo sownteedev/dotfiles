@@ -78,7 +78,7 @@ return function(icon_name)
 	local battery
 
 	if icon_name == "laptop-symbolic" then
-		battery = _Utils.upower.gobject_to_gearsobject(_Utils.upower.upowers:get_display_device())
+		battery = _Utils.upower.gobject_to_gearsobject(_Utils.upower.upower:get_display_device())
 		local update = function(self)
 			chart.colors = self.percentage <= 20 and { beautiful.red } or { beautiful.green }
 			chart.value = self.percentage
@@ -124,7 +124,7 @@ return function(icon_name)
 			battery = nil
 		end
 
-		for _, dev in pairs(_Utils.upower.upowers:get_devices()) do
+		for _, dev in pairs(_Utils.upower.upower:get_devices()) do
 			if type(string.find(dev.model, "mouse")) == "number" then
 				battery = _Utils.upower.gobject_to_gearsobject(dev)
 				connect()
@@ -132,7 +132,7 @@ return function(icon_name)
 			end
 		end
 
-		_Utils.upower.upowers:connect_signal("device-added", function(_, dev)
+		_Utils.upower.upower:connect_signal("device-added", function(_, dev)
 			if type(string.find(dev.model, "mouse")) == "number" then
 				battery = _Utils.upower.gobject_to_gearsobject(dev)
 				connect()
@@ -140,7 +140,7 @@ return function(icon_name)
 			end
 		end)
 
-		_Utils.upower.upowers:connect_signal("device-removed", function(_, path)
+		_Utils.upower.upower:connect_signal("device-removed", function(_, path)
 			if battery and battery:get_object_path() == path then
 				disconnect()
 				update()
