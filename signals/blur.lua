@@ -12,11 +12,9 @@ local function get_blur_state_cmd(state)
 	return string.format("echo %s > %s", state and "true" or "false", BLUR_CACHE)
 end
 
-local function blur_emit()
-	awful.spawn.easy_async_with_shell("cat " .. BLUR_CACHE, function(stdout)
-		awesome.emit_signal("signal::blur", stdout:match("true"))
-	end)
-end
+awful.spawn.easy_async_with_shell("cat " .. BLUR_CACHE, function(stdout)
+	awesome.emit_signal("signal::blur", stdout:match("true"))
+end)
 
 function blur_toggle()
 	awful.spawn.easy_async_with_shell("cat " .. BLUR_CACHE, function(stdout)
@@ -32,5 +30,3 @@ function blur_toggle()
 		end)
 	end)
 end
-
-blur_emit()

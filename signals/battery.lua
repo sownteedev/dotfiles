@@ -24,6 +24,8 @@ local function battery_status()
 		function(stdout)
 			local status = not stdout:match("Discharging")
 			charging = status
+			awful.spawn.with_shell(status and "pkill xss-lock" or
+				[[xss-lock -l awesome-client 'awesome.emit_signal(\"toggle::lock\")']])
 			if status ~= last_status then
 				awesome.emit_signal("signal::batterystatus", status)
 				last_status = status
@@ -33,12 +35,10 @@ local function battery_status()
 end
 battery_status()
 
-local function get_power_mode()
-	awful.spawn.easy_async_with_shell(POWERMODE_GET, function(stdout)
-		local mode = stdout:match("power") and "power-saver" or stdout:match("balanced") and "balanced" or "performance"
-		awesome.emit_signal("signal::powermode", mode)
-	end)
-end
+awful.spawn.easy_async_with_shell(POWERMODE_GET, function(stdout)
+	local mode = stdout:match("power") and "power-saver" or stdout:match("balanced") and "balanced" or "performance"
+	awesome.emit_signal("signal::powermode", mode)
+end)
 
 function switch_power_mode()
 	awful.spawn.easy_async_with_shell(POWERMODE_GET, function(stdout)
@@ -50,7 +50,6 @@ function switch_power_mode()
 			function()
 				awesome.emit_signal("signal::powermode", next_mode)
 				local power_mode_value = (next_mode == "power-saver" and 0) or (next_mode == "balanced" and 2) or 1
-				-- awful.spawn.with_shell("nvidia-settings -a '[GPU:0]/GPUPowerMizerMode=" .. power_mode_value .. "'")
 				awful.spawn.easy_async_with_shell("sed -i '/^\\[GPU:0\\]\\/GPUPowerMizerMode=/s/=.*/=" ..
 					power_mode_value .. "/' ~/.nvidia-settings-rc", function()
 						awful.spawn.with_shell("nvidia-settings --load-config-only")
@@ -61,9 +60,7 @@ function switch_power_mode()
 	end)
 end
 
-get_power_mode()
-
-local battery = _Utils.upower.gobject_to_gearsobject(_Utils.upower.upowers:get_display_device())
+local battery = _Utils.upower.gobject_to_gearsobject(_Utils.upower.upower:get_display_device())
 battery:connect_signal("property::percentage", battery_emit)
 battery:connect_signal("property::state", battery_status)
 

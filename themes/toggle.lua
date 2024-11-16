@@ -2,7 +2,7 @@ local awful = require("awful")
 
 function backup()
 	awful.spawn.with_shell([[
-		declare -a config_folders=("alacritty" "zsh" "ranger" "gtk-3.0" "picom")
+		declare -a config_folders=("alacritty" "zsh" "ranger" "gtk-3.0" "gtk-4.0" "picom")
 		declare -a data_folders=("nvim/lua/custom" "spicetify/Themes")
 		declare -a dot_folders=("fonts" "icons" "themes" "walls" "root") &&
 

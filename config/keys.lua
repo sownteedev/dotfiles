@@ -109,9 +109,8 @@ local table_insert = table.insert
 local hasitem = awful.util.table.hasitem
 local screen_focused = awful.screen.focused
 local tag_find_by_name = awful.tag.find_by_name
-local tagdefault = { "Terminal", "Browser", "Develop", "Media", "Other" }
 local tagactive = {}
-local tagdefault_count = #tagdefault
+local tagdefault_count = #_User.Tag
 
 local function update_tag_info()
 	tagactive = {}
@@ -133,14 +132,14 @@ local function get_next_tag(current_tag, direction)
 		return tagactive[next_index]
 	end
 
-	local default_index = hasitem(tagdefault, current_tag) or 1
+	local default_index = hasitem(_User.Tag, current_tag) or 1
 	local start = default_index + direction
 	local limit = default_index + tagdefault_count * direction
 
 	for i = start, limit, direction do
 		local mod_i = (i - 1) % tagdefault_count + 1
-		if hasitem(tagactive, tagdefault[mod_i]) then
-			return tagdefault[mod_i]
+		if hasitem(tagactive, _User.Tag[mod_i]) then
+			return _User.Tag[mod_i]
 		end
 	end
 

@@ -13,11 +13,9 @@ function mic()
 	end)
 end
 
-local function mic_mute()
-	awful.spawn.easy_async_with_shell(MIC_MUTE_CMD, function(stdout)
-		awesome.emit_signal("signal::micmute", stdout:match("yes"))
-	end)
-end
+awful.spawn.easy_async_with_shell(MIC_MUTE_CMD, function(stdout)
+	awesome.emit_signal("signal::micmute", stdout:match("yes"))
+end)
 
 function mic_toggle()
 	awful.spawn.easy_async_with_shell(MIC_MUTE_CMD, function(stdout)
@@ -29,4 +27,3 @@ function mic_toggle()
 end
 
 mic()
-mic_mute()

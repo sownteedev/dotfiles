@@ -46,9 +46,9 @@ local social_apps = {
 
 local custom_apps = {
 	{
-		name = _User.Custom_Icon[5].name,
-		class = _User.Custom_Icon[5].name,
-		exec = "/usr/bin/firefoxpwa site launch " .. string.sub(_User.Custom_Icon[5].name, 7) .. " --protocol"
+		name = _User.Custom_Icon[1].name,
+		class = _User.Custom_Icon[1].name,
+		exec = "/usr/bin/firefoxpwa site launch " .. string.sub(_User.Custom_Icon[1].name, 7) .. " --protocol"
 	},
 }
 

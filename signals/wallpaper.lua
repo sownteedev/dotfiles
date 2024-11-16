@@ -1,10 +1,11 @@
-local awful = require("awful")
-local wibox = require('wibox')
-local beautiful = require("beautiful")
+local awful              = require("awful")
+local gears              = require("gears")
+local wibox              = require('wibox')
+local beautiful          = require("beautiful")
 
-local CONFIG_FILE = os.getenv("HOME") .. "/.config/awesome/user.lua"
+local CONFIG_FILE        = os.getenv("HOME") .. "/.config/awesome/user.lua"
 local WALLPAPER_TEMPLATE = '_User.Wallpaper       = "%s"'
-local LOCK_TEMPLATE = '_User.Lock            = "%s"'
+local LOCK_TEMPLATE      = '_User.Lock            = "%s"'
 
 local function create_sed_command(template, path)
 	return string.format(
@@ -46,7 +47,7 @@ local AWESOME_SETTINGS = {
 	spacing = 15
 }
 
-function create_awesome_wallpaper()
+local function create_awesome_wallpaper()
 	local word_widget = wibox.layout.fixed.horizontal()
 	word_widget.spacing = AWESOME_SETTINGS.spacing
 
@@ -75,3 +76,21 @@ function create_awesome_wallpaper()
 		}
 	end)
 end
+
+local function wallpaper()
+	awful.spawn.easy_async_with_shell(
+		"test -f " .. _User.Wallpaper .. " && echo '1' || echo '0'",
+		function(stdout)
+			if stdout:match("1") then
+				gears.wallpaper.maximized(_User.Wallpaper, nil, true)
+			else
+				create_awesome_wallpaper()
+			end
+		end
+	)
+end
+wallpaper()
+
+awesome.connect_signal("wallpaper::change", function()
+	wallpaper()
+end)

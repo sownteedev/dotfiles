@@ -22,7 +22,7 @@ local function createButton(icon, cmd)
 		id = "bg",
 		bg = beautiful.lighter,
 		shape_border_width = beautiful.border_width,
-		shape_border_color = beautiful.lighter1,
+		shape_border_color = _Utils.color.change_hex_lightness(beautiful.background, 16),
 		shape = beautiful.radius,
 		widget = wibox.container.background,
 		buttons = {

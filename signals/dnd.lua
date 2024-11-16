@@ -7,11 +7,9 @@ local function get_dnd_state_cmd(state)
 	return string.format("echo %s > %s", state and "true" or "false", DND_CACHE)
 end
 
-local function emit_dnd_status()
-	awful.spawn.easy_async_with_shell("cat " .. DND_CACHE, function(stdout)
-		awesome.emit_signal("signal::dnd", stdout:match("true"))
-	end)
-end
+awful.spawn.easy_async_with_shell("cat " .. DND_CACHE, function(stdout)
+	awesome.emit_signal("signal::dnd", stdout:match("true"))
+end)
 
 function dnd_toggle()
 	awful.spawn.easy_async_with_shell("cat " .. DND_CACHE, function(stdout)
@@ -28,5 +26,3 @@ function dnd_toggle()
 		end)
 	end)
 end
-
-emit_dnd_status()
