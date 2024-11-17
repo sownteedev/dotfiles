@@ -3,18 +3,6 @@ require("awful.autofocus")
 _User = require("user")
 _Utils = require("utils")
 
-local naughty = require('naughty')
-naughty.connect_signal('request::display_error', function(message, startup)
-	naughty.notification({
-		urgency  = 'critical',
-		app_name = "Awesome",
-		title    = 'Oops, an error happened' .. (startup and ' during startup!' or '!'),
-		message  = message,
-		ontop    = true,
-		timeout  = 0,
-	})
-end)
-
 ---@diagnostic disable: param-type-mismatch
 collectgarbage("incremental", 120, 1000)
 collectgarbage("setpause", 150)

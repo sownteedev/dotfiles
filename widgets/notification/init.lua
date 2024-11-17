@@ -73,7 +73,6 @@ return function(n)
 			markup = n.message,
 			font = beautiful.sans .. " 11",
 			halign = "left",
-			wrap = "char",
 			widget = wibox.widget.textbox,
 		},
 		widget = wibox.container.constraint,

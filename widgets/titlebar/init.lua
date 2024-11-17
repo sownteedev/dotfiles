@@ -4,11 +4,6 @@ local wibox = require("wibox")
 local beautiful = require("beautiful")
 
 return function(c)
-	local titlebar = awful.titlebar(c, {
-		size = 40,
-		bg = beautiful.lighter,
-	})
-
 	local close = wibox.widget({
 		{
 			id = "iconbot",
@@ -153,50 +148,48 @@ return function(c)
 		end
 	end
 
-	titlebar.widget = {
+	awful.titlebar(c, {
+		size = 40,
+		bg = beautiful.lighter,
+	}):setup {
+		{
+			widget = wibox.container.margin,
+			left = 20,
+			{
+				layout = wibox.layout.fixed.horizontal,
+				close,
+				minimize,
+				maximize,
+			},
+		},
 		{
 			{
+				title,
+				top = 5,
+				bottom = 5,
+				left = 200,
+				right = 200,
 				widget = wibox.container.margin,
-				left = 20,
-				{
-					layout = wibox.layout.fixed.horizontal,
-					close,
-					minimize,
-					maximize,
-				},
 			},
-			{
-				{
-					title,
-					top = 5,
-					bottom = 5,
-					left = 200,
-					right = 200,
-					widget = wibox.container.margin,
-				},
-				align = "center",
-				valign = "center",
-				widget = wibox.container.place,
-				buttons = gears.table.join(
-					awful.button({}, 1, function()
-						handle_click()
-					end),
-					awful.button({}, 3, function()
-						client.focus = c
-						c:raise()
-						awful.mouse.client.resize(c)
-					end)
-				)
-			},
-			{
-				icon,
-				widget = wibox.container.margin,
-				right = 20,
-			},
-			layout = wibox.layout.align.horizontal,
+			align = "center",
+			valign = "center",
+			widget = wibox.container.place,
+			buttons = gears.table.join(
+				awful.button({}, 1, function()
+					handle_click()
+				end),
+				awful.button({}, 3, function()
+					client.focus = c
+					c:raise()
+					awful.mouse.client.resize(c)
+				end)
+			)
 		},
-		bottom = beautiful.border_width,
-		color = beautiful.lighter1,
-		widget = wibox.container.margin
+		{
+			icon,
+			widget = wibox.container.margin,
+			right = 20,
+		},
+		layout = wibox.layout.align.horizontal,
 	}
 end

@@ -251,9 +251,13 @@ local function genIcons()
 					widget = wibox.container.margin,
 				},
 				{
-					dot,
-					halign = "center",
-					widget = wibox.container.place,
+					{
+						dot,
+						halign = "center",
+						widget = wibox.container.place,
+					},
+					forced_width = 50,
+					widget       = wibox.container.background,
 				},
 				spacing = 2,
 				layout = wibox.layout.fixed.vertical,
@@ -266,7 +270,7 @@ local function genIcons()
 						bg           = beautiful.foreground,
 						shape        = _Utils.widget.rrect(2),
 						widget       = wibox.container.background,
-						forced_width = 12,
+						forced_width = 15,
 					})
 				elseif c.minimized then
 					dot:add({
@@ -277,7 +281,7 @@ local function genIcons()
 					})
 				else
 					dot:add({
-						bg           = beautiful.foreground .. "AA",
+						bg           = beautiful.foreground,
 						shape        = gears.shape.circle,
 						widget       = wibox.container.background,
 						forced_width = 5,

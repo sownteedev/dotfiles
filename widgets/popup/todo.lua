@@ -185,7 +185,7 @@ local function makeElement(i, n)
 							font = beautiful.sans .. " 12",
 							markup = i.completed and "<s>" .. i.name .. "</s>" or i.name,
 							valign = "center",
-							align = "center",
+							halign = "left",
 							widget = wibox.widget.textbox,
 						},
 						widget = wibox.container.constraint,

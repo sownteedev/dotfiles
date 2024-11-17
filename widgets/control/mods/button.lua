@@ -6,23 +6,26 @@ local timer       = require("gears.timer")
 local naughty     = require("naughty")
 
 local checkFolder = function(type)
-	if type == "rec" and not os.rename(os.getenv("HOME") .. "/Videos/Recordings", os.getenv("HOME") .. "/Videos/Recordings") then
-		os.execute("mkdir -p " .. os.getenv("HOME") .. "/Videos/Recordings")
-	elseif type == "screenshot" and not os.rename(os.getenv("HOME") .. "/Pictures/Screenshots/", os.getenv("HOME") .. "/Pictures/Screenshots") then
-		os.execute("mkdir -p " .. os.getenv("HOME") .. "/Pictures/Screenshots")
+	local base_path = os.getenv("HOME")
+	if type == "rec" then
+		local recordings_path = base_path .. "/Videos/Recordings"
+		if not os.rename(recordings_path, recordings_path) then
+			os.execute("mkdir -p " .. recordings_path)
+		end
+	elseif type == "screenshot" then
+		local screenshots_path = base_path .. "/Pictures/Screenshots"
+		if not os.rename(screenshots_path, screenshots_path) then
+			os.execute("mkdir -p " .. screenshots_path)
+		end
 	end
 end
 
 local getName     = function(type)
 	---@diagnostic disable: param-type-mismatch
-	local string = ""
-	if type == "rec" then
-		string = "~/Videos/Recordings/" .. os.date("%d-%m-%Y-%H:%M:%S") .. ".mp4"
-	elseif type == "screenshot" then
-		string = "~/Pictures/Screenshots/" .. os.date("%d-%m-%Y-%H:%M:%S") .. ".png"
-	end
-	string = string:gsub("~", os.getenv("HOME"))
-	return string
+	local file_extension = (type == "rec") and ".mkv" or ".png"
+	local folder_path = (type == "rec") and "~/Videos/Recordings/" or "~/Pictures/Screenshots/"
+	local filename = folder_path .. os.date("%d-%m-%Y-%H:%M:%S") .. file_extension
+	return filename:gsub("~", os.getenv("HOME"))
 end
 
 local function do_notify(which, tmp_path)
@@ -104,10 +107,12 @@ function record()
 	local name = getName("rec")
 	local defCommand = string.format(
 		"sleep 1.25 && ffmpeg -y -r 60 "
-		-- display and audio
-		.. "-f x11grab -i :0.0 -f pulse -i %s "
+		-- display
+		.. "-f x11grab -s 2560x1600 -i :0.0 "
+		-- audio
+		.. "-f pulse -i %s "
 		-- video
-		.. "-c:v libx264 -crf 23 -preset veryfast -b:v 1M "
+		.. "-c:v libx264 -preset superfast -crf 23 "
 		-- audio
 		.. "-c:a libvorbis -b:a 128k %s",
 		speaker_input,
