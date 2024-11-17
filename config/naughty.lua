@@ -2,6 +2,18 @@ local awful = require("awful")
 local naughty = require("naughty")
 local beautiful = require("beautiful")
 
+naughty.connect_signal('request::display_error', function(message, startup)
+	naughty.notification({
+		urgency  = 'critical',
+		app_name = "Awesome",
+		title    = _Utils.widget.colorizeText('Oops, an error happened' .. (startup and ' during startup!' or '!'),
+			beautiful.red),
+		message  = message,
+		ontop    = true,
+		timeout  = 0,
+	})
+end)
+
 -- naughty config
 naughty.config.defaults.position = "top_right"
 naughty.config.defaults.timeout = 10
