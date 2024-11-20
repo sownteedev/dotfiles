@@ -238,18 +238,16 @@ local function genIcons()
 				spacing = 2,
 				layout = wibox.layout.fixed.horizontal,
 			})
+			local icon = wibox.widget({
+				widget = wibox.widget.imagebox,
+				image = j.icon,
+				forced_height = 50,
+				forced_width = 50,
+				resize = true,
+			})
+
 			local widgets = wibox.widget({
-				{
-					{
-						widget = wibox.widget.imagebox,
-						image = j.icon,
-						forced_height = 50,
-						forced_width = 50,
-						resize = true,
-					},
-					top = 5,
-					widget = wibox.container.margin,
-				},
+				icon,
 				{
 					{
 						dot,
@@ -347,7 +345,7 @@ return function(s)
 				widget = wibox.container.place,
 			},
 			widget = wibox.container.margin,
-			top = 7,
+			top = 12,
 			bottom = 5,
 			left = 12,
 			right = 12,

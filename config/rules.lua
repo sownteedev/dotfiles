@@ -20,7 +20,6 @@ ruled.client.connect_signal("request::rules", function()
 		},
 	})
 
-	-- Titlebars
 	ruled.client.append_rule({
 		id = "titlebars",
 		rule_any = { type = { "normal", "dialog" } },
@@ -40,7 +39,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { tag = "Develop" },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "discord", "armcord", "vesktop", "Caprine", "Telegram", "Spotify", "Notion" } },
+		rule_any = { class = { "discord", "armcord", "vesktop", "Caprine", "Zalo", "Telegram", "Spotify", "Notion" } },
 		properties = { tag = "Media" },
 	})
 	ruled.client.append_rule({

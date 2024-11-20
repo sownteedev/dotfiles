@@ -45,6 +45,7 @@ _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artd
 _User.AutoStart       = {
 	-- "xrandr --auto --output DP-1 --mode 3840x2160 --primary --auto --right-of eDP-1"
 	"ibus-daemon -drx",
+	"xsettingsd",
 	"libinput-gestures-setup start",
 }
 
