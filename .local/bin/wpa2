@@ -1,0 +1,86 @@
+#!/bin/bash
+
+pkg_installed() {
+    local PKG=$1
+    if command -v pacman &>/dev/null; then
+        if pacman -Qi "$PKG" &>/dev/null; then
+            return 0
+        fi
+    elif command -v apt &>/dev/null; then
+        if dpkg-query -W -f='${Status}' "$PKG" 2>/dev/null | grep -q "install ok installed"; then
+            return 0
+        fi
+    elif command -v yum &>/dev/null || command -v dnf &>/dev/null; then
+        if yum list installed "$PKG" &>/dev/null || dnf list installed "$PKG" &>/dev/null; then
+            return 0
+        fi
+    elif command -v zypper &>/dev/null; then
+        if zypper se --installed-only "$PKG" &>/dev/null; then
+            return 0
+        fi
+    else
+        echo "Can't find package!"
+        return 1
+    fi
+    return 1
+}
+
+if pkg_installed networkmanager; then
+    echo "NetworkManager installed"
+else
+    echo "NetworkManager didn't install. Installing..."
+    if command -v pacman &>/dev/null; then
+        sudo pacman -S NetworkManager
+    elif command -v apt &>/dev/null; then
+        sudo apt install NetworkManager
+    elif command -v yum &>/dev/null; then
+        sudo yum install NetworkManager
+    elif command -v dnf &>/dev/null; then
+        sudo dnf install NetworkManager
+    elif command -v zypper &>/dev/null; then
+        sudo zypper install NetworkManager
+    else
+        echo "Can't install."
+    fi
+fi
+
+wifi="$1"
+if [[ -z "$wifi" ]]; then
+	read -r -p "Enter WIFI name: " wifi
+fi
+read -r -p "Enter ACCOUNT: " account
+read -r -p "Enter PASS: " pass
+
+file="/etc/NetworkManager/system-connections/$wifi.nmconnection"
+
+echo '''
+[wifi-security]
+key-mgmt=wpa-eap
+
+[connection]
+id='''"$wifi"'''
+uuid='''"$(uuidgen)"'''
+type=wifi
+
+[ipv6]
+method=auto
+
+[wifi]
+ssid='''"$wifi"'''
+mode=infrastructure
+security=802-11-wireless-security
+
+[802-1x]
+eap=peap
+identity='''"$account"'''
+phase2-auth=mschapv2
+password='''"$pass"'''
+
+[ipv4]
+method=auto
+''' | sudo tee -a "$file" &>/dev/null
+
+sudo chown root "$file"
+sudo chmod 600 "$file"
+
+sudo systemctl restart NetworkManager
