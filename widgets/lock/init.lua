@@ -65,15 +65,12 @@ return function(s)
 	local prompt = wibox.widget({
 		{
 			{
-				{
-					id = "txt",
-					markup = "Enter Password",
-					font = beautiful.sans .. " 12",
-					widget = wibox.widget.textbox,
-				},
+				id = "txt",
+				markup = "Enter Password",
+				font = beautiful.sans .. " 12",
 				align = "center",
 				halign = "center",
-				widget = wibox.container.place,
+				widget = wibox.widget.textbox,
 			},
 			id = "bg",
 			forced_width = 200,

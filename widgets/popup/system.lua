@@ -15,6 +15,33 @@ return function(s)
 		{
 			{
 				{
+					{
+						{
+							id = "temp_gpu",
+							widget = wibox.container.arcchart,
+							max_value = 100,
+							min_value = 0,
+							padding = 0,
+							value = 50,
+							rounded_edge = true,
+							thickness = 20,
+							start_angle = math.random(250, 870) * math.pi / 180,
+							colors = { _Utils.color.change_hex_lightness(_Utils.color.mix(beautiful.red, beautiful.blue, 0.5), -10) },
+							bg = _Utils.color.change_hex_lightness(_Utils.color.mix(beautiful.red, beautiful.blue, 0.5),
+								10),
+						},
+						id = "temp_cpu",
+						widget = wibox.container.arcchart,
+						max_value = 100,
+						min_value = 0,
+						padding = 0,
+						value = 50,
+						rounded_edge = true,
+						thickness = 20,
+						start_angle = math.random(250, 870) * math.pi / 180,
+						colors = { _Utils.color.change_hex_lightness(beautiful.yellow, -10) },
+						bg = _Utils.color.change_hex_lightness(beautiful.yellow, 10),
+					},
 					id = "disk",
 					widget = wibox.container.arcchart,
 					max_value = 100,
@@ -22,12 +49,10 @@ return function(s)
 					padding = 0,
 					value = 50,
 					rounded_edge = true,
-					thickness = 25,
+					thickness = 20,
 					start_angle = math.random(250, 870) * math.pi / 180,
 					colors = { _Utils.color.change_hex_lightness(beautiful.red, -10) },
 					bg = _Utils.color.change_hex_lightness(beautiful.red, 10),
-					forced_width = 40,
-					forced_height = 40,
 				},
 				id = "memory",
 				widget = wibox.container.arcchart,
@@ -35,12 +60,10 @@ return function(s)
 				min_value = 0,
 				value = 50,
 				rounded_edge = true,
-				thickness = 25,
+				thickness = 20,
 				start_angle = math.random(250, 870) * math.pi / 180,
 				colors = { _Utils.color.change_hex_lightness(beautiful.blue, -10) },
 				bg = _Utils.color.change_hex_lightness(beautiful.blue, 10),
-				forced_width = 130,
-				forced_height = 130,
 			},
 			id = "cpu",
 			widget = wibox.container.arcchart,
@@ -48,14 +71,12 @@ return function(s)
 			min_value = 0,
 			value = 50,
 			rounded_edge = true,
-			thickness = 25,
+			thickness = 20,
 			start_angle = math.random(250, 870) * math.pi / 180,
 			colors = { _Utils.color.change_hex_lightness(beautiful.green, -10) },
 			bg = _Utils.color.change_hex_lightness(beautiful.green, 10),
-			forced_width = 150,
-			forced_height = 150,
 		},
-		margins = 20,
+		margins = 15,
 		layout = wibox.container.margin,
 	})
 
@@ -68,6 +89,13 @@ return function(s)
 	awesome.connect_signal("signal::disk", function(value)
 		_Utils.widget.gc(system, "disk").value = value
 	end)
+	awesome.connect_signal("signal::temp_cpu", function(value)
+		_Utils.widget.gc(system, "temp_cpu").value = value
+	end)
+	awesome.connect_signal("signal::temp_gpu", function(value)
+		_Utils.widget.gc(system, "temp_gpu").value = value
+	end)
+
 	_Utils.widget.placeWidget(system, "top_left", 103, 0, 33, 0)
 	_Utils.widget.popupOpacity(system, 0.3)
 	awesome.connect_signal("signal::blur", function(status)
