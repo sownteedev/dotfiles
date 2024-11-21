@@ -18,12 +18,9 @@ return function(s)
 			end),
 		},
 		widget_template = {
-			{
-				id     = 'text_role',
-				widget = wibox.widget.textbox,
-			},
-			widget = wibox.container.place,
+			id     = 'text_role',
 			valign = 'center',
+			widget = wibox.widget.textbox,
 		},
 	})
 

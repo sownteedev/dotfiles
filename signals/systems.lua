@@ -3,13 +3,17 @@ local awful = require("awful")
 local COMMANDS = {
 	cpu = [[sh -c "vmstat 1 2 | tail -1 | awk '{printf \"%d\", $15}'"]],
 	ram = [[sh -c "free -m | grep 'Mem:' | awk '{printf \"%d@@%d\", $7, $2}'"]],
-	disk = [[sh -c "df -h | grep '/$' | awk '{printf \"%d\", $5}'"]]
+	disk = [[sh -c "df -h | grep '/$' | awk '{printf \"%d\", $5}'"]],
+	temp_cpu = [[sh -c "sensors | grep 'CPU:'"]],
+	temp_gpu = [[sh -c "sensors | grep 'Video:'"]]
 }
 
 local INTERVALS = {
 	cpu = 10,
 	ram = 10,
 	disk = 86400,
+	temp_cpu = 10,
+	temp_gpu = 10
 }
 
 local function trim(str)
@@ -38,5 +42,19 @@ awful.widget.watch(COMMANDS.disk, INTERVALS.disk, function(_, stdout)
 	local value = tonumber(trim(stdout))
 	if value then
 		awesome.emit_signal("signal::disk", value)
+	end
+end)
+
+awful.widget.watch(COMMANDS.temp_cpu, INTERVALS.temp_cpu, function(_, stdout)
+	local temp = string.match(stdout, "CPU:%s*+(%d+)")
+	if temp then
+		awesome.emit_signal("signal::temp_cpu", tonumber(temp))
+	end
+end)
+
+awful.widget.watch(COMMANDS.temp_gpu, INTERVALS.temp_gpu, function(_, stdout)
+	local temp = string.match(stdout, "Video:%s*+(%d+)")
+	if temp then
+		awesome.emit_signal("signal::temp_gpu", tonumber(temp))
 	end
 end)

@@ -17,13 +17,10 @@ local function create_empty_tag_widget(s)
 			},
 			{
 				{
-					{
-						widget = wibox.widget.textbox,
-						markup = _Utils.widget.colorizeText(" ", beautiful.red),
-						font = beautiful.icon .. " 30",
-					},
+					widget = wibox.widget.textbox,
+					markup = _Utils.widget.colorizeText(" ", beautiful.red),
 					align = "center",
-					widget = wibox.container.place
+					font = beautiful.icon .. " 30",
 				},
 				bg = beautiful.background .. "AA",
 				widget = wibox.container.background

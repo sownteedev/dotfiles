@@ -80,11 +80,10 @@ local function process_weather_data(stdout)
 		desc = weather.description:gsub("^%l", string.upper),
 		humidity = result.current.humidity,
 		temp = math.floor(result.current.temp),
-		feelsLike = math.floor(result.current.feels_like),
+		wind_speed = math.floor(result.current.wind_speed) * 3.6,
 		image = PATHS.icons .. WEATHER_MAPS.icons[icon_code] .. ".svg",
 		thumb = PATHS.thumbs .. WEATHER_MAPS.images[icon_code] .. ".jpg",
-		hourly = { table.unpack(result.hourly, 1, 6) },
-		daily = { table.unpack(result.daily, 1, 6) }
+		daily = { table.unpack(result.daily, 2, 7) }
 	}
 end
 
@@ -94,6 +93,9 @@ awful.widget.watch(
 	string.format('curl -s --show-error -X GET "%s"', urls.forecast),
 	SETTINGS.update_interval,
 	function(_, stdout)
+		if stdout:find("Could not resolve host") then
+			return
+		end
 		local data = process_weather_data(stdout)
 		if data then
 			awesome.emit_signal("signal::weather", data)
@@ -105,13 +107,13 @@ awful.widget.watch(
 	string.format('curl -s --show-error -X GET "%s"', urls.location),
 	SETTINGS.update_interval,
 	function(_, stdout)
-		if stdout then
-			local result = _Utils.json.decode(stdout)
-			if result and result[1] then
-				awesome.emit_signal("signal::weather1", {
-					namecountry = string.format("%s, %s", result[1].name, result[1].country)
-				})
-			end
+		if stdout:find("Could not resolve host") then
+			return
 		end
+		local result = _Utils.json.decode(stdout)
+		awesome.emit_signal("signal::weather1", {
+			city = result[1].name,
+			country = string.lower(result[1].country)
+		})
 	end
 )

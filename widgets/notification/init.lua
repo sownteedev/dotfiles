@@ -7,13 +7,10 @@ local gears = require("gears")
 return function(n)
 	local action_widget = {
 		{
-			{
-				id = "text_role",
-				font = beautiful.sans .. " 10",
-				widget = wibox.widget.textbox,
-			},
+			id = "text_role",
+			font = beautiful.sans .. " 10",
 			align = "center",
-			widget = wibox.container.place,
+			widget = wibox.widget.textbox,
 		},
 		bg = beautiful.lighter1,
 		forced_height = 25,
