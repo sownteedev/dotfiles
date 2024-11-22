@@ -67,26 +67,6 @@ local function create_urls()
 	}
 end
 
-local function process_weather_data(stdout)
-	if not stdout then return end
-
-	local result = _Utils.json.decode(stdout)
-	if not result or not result.current then return end
-
-	local weather = result.current.weather[1]
-	local icon_code = weather.icon
-
-	return {
-		desc = weather.description:gsub("^%l", string.upper),
-		humidity = result.current.humidity,
-		temp = math.floor(result.current.temp),
-		wind_speed = math.floor(result.current.wind_speed) * 3.6,
-		image = PATHS.icons .. WEATHER_MAPS.icons[icon_code] .. ".svg",
-		thumb = PATHS.thumbs .. WEATHER_MAPS.images[icon_code] .. ".jpg",
-		daily = { table.unpack(result.daily, 2, 7) }
-	}
-end
-
 local urls = create_urls()
 
 awful.widget.watch(
@@ -96,10 +76,21 @@ awful.widget.watch(
 		if stdout:find("Could not resolve host") then
 			return
 		end
-		local data = process_weather_data(stdout)
-		if data then
-			awesome.emit_signal("signal::weather", data)
+		local result = _Utils.json.decode(stdout)
+		local weather = result.current.weather[1]
+		local daily_data = {}
+		for i = 2, math.min(#result.daily, 7) do
+			table.insert(daily_data, result.daily[i])
 		end
+		awesome.emit_signal("signal::weather", {
+			desc = weather.description:gsub("^%l", string.upper),
+			humidity = result.current.humidity,
+			temp = math.floor(result.current.temp),
+			wind_speed = math.floor(result.current.wind_speed) * 3.6,
+			image = PATHS.icons .. WEATHER_MAPS.icons[weather.icon] .. ".svg",
+			thumb = PATHS.thumbs .. WEATHER_MAPS.images[weather.icon] .. ".jpg",
+			daily = daily_data
+		})
 	end
 )
 

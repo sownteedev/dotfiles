@@ -37,7 +37,6 @@ local dayWeather = function()
 		{
 			id = "icon",
 			resize = true,
-			opacity = 1,
 			halign = "center",
 			forced_height = 40,
 			forced_width = 40,
@@ -97,174 +96,6 @@ local day6 = dayWeather()
 
 local daylist = { day1, day2, day3, day4, day5, day6 }
 
-local widget = wibox.widget({
-	{
-		id = "image",
-		forced_height = 450,
-		forced_width = 600,
-		image = _Utils.image.cropSurface(1,
-			gears.surface.load_uncached(beautiful.icon_path .. "weather/images/weather-clear-sky.jpg")
-		),
-		widget = wibox.widget.imagebox,
-		clip_shape = beautiful.radius,
-		opacity = 1,
-		resize = true,
-		horizontal_fit_policy = "fit",
-	},
-	{
-		id = "overlay",
-		bg = "#00000066",
-		widget = wibox.container.background,
-	},
-	{
-		{
-			{
-				{
-					{
-						{
-							image = beautiful.icon_path .. "weather/location.svg",
-							opacity = 1,
-							forced_height = 20,
-							forced_width = 20,
-							valign = "center",
-							widget = wibox.widget.imagebox,
-						},
-						{
-							id = "city",
-							font = beautiful.sans .. " Medium 15",
-							markup = "",
-							widget = wibox.widget.textbox,
-						},
-						{
-							{
-								id = "country",
-								image = nil,
-								opacity = 1,
-								forced_height = 15,
-								forced_width = 15,
-								valign = "center",
-								widget = wibox.widget.imagebox,
-							},
-							top = 5,
-							widget = wibox.container.margin,
-						},
-						spacing = 8,
-						layout = wibox.layout.fixed.horizontal,
-					},
-					{
-						id = "icon",
-						image = beautiful.icon_path .. "weather/icons/weather-fog.svg",
-						opacity = 1,
-						forced_height = 70,
-						forced_width = 70,
-						widget = wibox.widget.imagebox,
-					},
-					{
-						id = "desc",
-						font = beautiful.sans .. " 13",
-						markup = "",
-						widget = wibox.widget.textbox,
-					},
-					spacing = 15,
-					layout = wibox.layout.fixed.vertical,
-					halign = "left",
-				},
-				nil,
-				{
-					{
-						{
-							id = "temp",
-							font = beautiful.sans .. " Medium 30",
-							markup = "",
-							widget = wibox.widget.textbox,
-						},
-						left = 5,
-						widget = wibox.container.margin,
-					},
-					{
-						{
-							image = gears.color.recolor_image(beautiful.icon_path .. "weather/windspeed.svg",
-								beautiful.yellow),
-							opacity = 1,
-							forced_height = 25,
-							forced_width = 25,
-							valign = "center",
-							widget = wibox.widget.imagebox,
-						},
-						{
-							id = "fl",
-							font = beautiful.sans .. " 13",
-							markup = "",
-							widget = wibox.widget.textbox,
-						},
-						spacing = 8,
-						layout = wibox.layout.fixed.horizontal,
-					},
-					{
-						{
-							image = gears.color.recolor_image(beautiful.icon_path .. "weather/humidity.svg",
-								beautiful.blue),
-							opacity = 1,
-							forced_height = 25,
-							forced_width = 25,
-							valign = "center",
-							widget = wibox.widget.imagebox,
-						},
-						{
-							id = "humid",
-							font = beautiful.sans .. " 13",
-							markup = "",
-							widget = wibox.widget.textbox,
-						},
-						spacing = 8,
-						layout = wibox.layout.fixed.horizontal,
-					},
-					spacing = 15,
-					layout = wibox.layout.fixed.vertical,
-				},
-				layout = wibox.layout.align.horizontal,
-			},
-			nil,
-			{
-				day1,
-				day2,
-				day3,
-				day4,
-				day5,
-				day6,
-				layout = require("modules.overflow").horizontal,
-				scrollbar_width = 0,
-				spacing = 15,
-			},
-			layout = wibox.layout.align.vertical,
-		},
-		widget = wibox.container.margin,
-		left = 25,
-		right = 25,
-		top = 20,
-		bottom = 20,
-	},
-	layout = wibox.layout.stack,
-})
-
-awesome.connect_signal("signal::weather", function(out)
-	_Utils.widget.gc(widget, "image").image = _Utils.image.cropSurface(1, gears.surface.load_uncached(out.thumb))
-	_Utils.widget.gc(widget, "icon").image = out.image
-	_Utils.widget.gc(widget, "temp").markup = _Utils.widget.colorizeText(out.temp .. "°C", "#ffffff")
-	_Utils.widget.gc(widget, "desc").markup = _Utils.widget.colorizeText(out.desc, "#ffffff")
-	_Utils.widget.gc(widget, "humid").markup = _Utils.widget.colorizeText(out.humidity .. "%", "#ffffff")
-	_Utils.widget.gc(widget, "fl").markup = _Utils.widget.colorizeText(out.wind_speed .. " km/h", "#ffffff")
-	for i, j in ipairs(daylist) do
-		j.update(out, i)
-	end
-end)
-
-awesome.connect_signal("signal::weather1", function(out)
-	_Utils.widget.gc(widget, "city").markup = _Utils.widget.colorizeText(out.city, "#ffffff")
-	_Utils.widget.gc(widget, "country").image = beautiful.icon_path .. "weather/flag/" .. out.country .. ".svg"
-end)
-
-
 return function(s)
 	local weather = wibox({
 		screen = s,
@@ -277,9 +108,173 @@ return function(s)
 	})
 
 	weather:setup({
-		widget,
-		layout = wibox.layout.align.horizontal,
+		{
+			id = "image",
+			forced_height = 450,
+			forced_width = 600,
+			image = _Utils.image.cropSurface(1,
+				gears.surface.load_uncached(beautiful.icon_path .. "weather/images/weather-clear-sky.jpg")
+			),
+			widget = wibox.widget.imagebox,
+			clip_shape = beautiful.radius,
+			resize = true,
+			horizontal_fit_policy = "fit",
+		},
+		{
+			id = "overlay",
+			bg = "#00000066",
+			widget = wibox.container.background,
+		},
+		{
+			{
+				{
+					{
+						{
+							{
+								{
+									{
+										image = beautiful.icon_path .. "weather/location.svg",
+										forced_height = 25,
+										forced_width = 25,
+										valign = "top",
+										widget = wibox.widget.imagebox,
+									},
+									{
+										{
+											id = "country",
+											image = nil,
+											forced_height = 5,
+											forced_width = 5,
+											valign = "bottom",
+											widget = wibox.widget.imagebox,
+										},
+										margins = 6,
+										widget = wibox.container.margin
+									},
+									layout = wibox.layout.stack,
+								},
+								forced_height = 45,
+								widget = wibox.container.background,
+							},
+							{
+								id = "city",
+								font = beautiful.sans .. " Medium 18",
+								markup = "",
+								widget = wibox.widget.textbox,
+							},
+							spacing = 8,
+							layout = wibox.layout.fixed.horizontal,
+						},
+						{
+							id = "icon",
+							image = beautiful.icon_path .. "weather/icons/weather-fog.svg",
+							forced_height = 65,
+							forced_width = 65,
+							widget = wibox.widget.imagebox,
+						},
+						{
+							id = "desc",
+							font = beautiful.sans .. " 13",
+							markup = "",
+							widget = wibox.widget.textbox,
+						},
+						spacing = 10,
+						layout = wibox.layout.fixed.vertical,
+						halign = "left",
+					},
+					nil,
+					{
+						{
+							{
+								id = "temp",
+								font = beautiful.sans .. " Medium 30",
+								markup = "",
+								widget = wibox.widget.textbox,
+							},
+							left = 5,
+							widget = wibox.container.margin,
+						},
+						{
+							{
+								image = gears.color.recolor_image(beautiful.icon_path .. "weather/windspeed.svg",
+									beautiful.yellow),
+								forced_height = 20,
+								forced_width = 20,
+								valign = "center",
+								widget = wibox.widget.imagebox,
+							},
+							{
+								id = "fl",
+								font = beautiful.sans .. " 13",
+								markup = "",
+								widget = wibox.widget.textbox,
+							},
+							spacing = 8,
+							layout = wibox.layout.fixed.horizontal,
+						},
+						{
+							{
+								image = gears.color.recolor_image(beautiful.icon_path .. "weather/humidity.svg",
+									beautiful.blue),
+								forced_height = 20,
+								forced_width = 20,
+								valign = "center",
+								widget = wibox.widget.imagebox,
+							},
+							{
+								id = "humid",
+								font = beautiful.sans .. " 13",
+								markup = "",
+								widget = wibox.widget.textbox,
+							},
+							spacing = 8,
+							layout = wibox.layout.fixed.horizontal,
+						},
+						spacing = 15,
+						layout = wibox.layout.fixed.vertical,
+					},
+					layout = wibox.layout.align.horizontal,
+				},
+				nil,
+				{
+					day1,
+					day2,
+					day3,
+					day4,
+					day5,
+					day6,
+					layout = require("modules.overflow").horizontal,
+					scrollbar_width = 0,
+					spacing = 15,
+				},
+				layout = wibox.layout.align.vertical,
+			},
+			widget = wibox.container.margin,
+			left = 25,
+			right = 25,
+			top = 20,
+			bottom = 20,
+		},
+		layout = wibox.layout.stack,
 	})
+
+	awesome.connect_signal("signal::weather", function(out)
+		_Utils.widget.gc(weather, "image").image = _Utils.image.cropSurface(1, gears.surface.load_uncached(out.thumb))
+		_Utils.widget.gc(weather, "icon").image = out.image
+		_Utils.widget.gc(weather, "temp").markup = _Utils.widget.colorizeText(out.temp .. "°C", "#ffffff")
+		_Utils.widget.gc(weather, "desc").markup = _Utils.widget.colorizeText(out.desc, "#ffffff")
+		_Utils.widget.gc(weather, "humid").markup = _Utils.widget.colorizeText(out.humidity .. "%", "#ffffff")
+		_Utils.widget.gc(weather, "fl").markup = _Utils.widget.colorizeText(out.wind_speed .. " km/h", "#ffffff")
+		for i, j in ipairs(daylist) do
+			j.update(out, i)
+		end
+	end)
+
+	awesome.connect_signal("signal::weather1", function(out)
+		_Utils.widget.gc(weather, "city").markup = _Utils.widget.colorizeText(out.city, "#ffffff")
+		_Utils.widget.gc(weather, "country").image = beautiful.icon_path .. "weather/flag/" .. out.country .. ".svg"
+	end)
+
 	_Utils.widget.placeWidget(weather, "top_left", 13, 0, 2, 0)
 	_Utils.widget.popupOpacity(weather, 0.3)
 
