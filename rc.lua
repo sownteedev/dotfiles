@@ -4,7 +4,6 @@ _User = require("user")
 _Utils = require("utils")
 
 ---@diagnostic disable: param-type-mismatch
-collectgarbage("incremental", 120, 1000)
 collectgarbage("setpause", 150)
 collectgarbage("setstepmul", 500)
 
