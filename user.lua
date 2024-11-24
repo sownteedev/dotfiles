@@ -34,7 +34,7 @@ _User.Tag             = { "Terminal", "Browser", "Develop", "Media", "Other" }
 _User.AutoHideDock    = false
 
 _User.API_KEY_WEATHER = ""
-_User.Coordinates     = { "21.0245", "105.8412" }
+_User.Coordinates     = { "21.0294498", "105.8544441" }
 
 _User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
 _User.Wallpaper       = "/home/sowntee/.walls/mikasa.jpg"

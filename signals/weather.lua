@@ -86,7 +86,7 @@ awful.widget.watch(
 			desc = weather.description:gsub("^%l", string.upper),
 			humidity = result.current.humidity,
 			temp = math.floor(result.current.temp),
-			wind_speed = math.floor(result.current.wind_speed) * 3.6,
+			wind_speed = math.floor(result.current.wind_speed * 3.6),
 			image = PATHS.icons .. WEATHER_MAPS.icons[weather.icon] .. ".svg",
 			thumb = PATHS.thumbs .. WEATHER_MAPS.images[weather.icon] .. ".jpg",
 			daily = daily_data
