@@ -222,16 +222,29 @@ return function(s)
 	end)
 
 	playerctl:connect_signal("position", function(_, interval_sec, length_sec)
+		internal_update                         = true
+		previous_value                          = interval_sec
+		_Utils.widget.gc(music, "slider").value = interval_sec
 		if length_sec ~= 0 then
-			internal_update                                    = true
-			previous_value                                     = interval_sec
-			_Utils.widget.gc(music, "slider").value            = interval_sec
-			_Utils.widget.gc(music, "slider").maximum          = length_sec
 			_Utils.widget.gc(music, "slider").bar_active_color = beautiful.foreground .. "33"
 		else
 			_Utils.widget.gc(music, "slider").bar_active_color = beautiful.foreground .. "00"
 		end
 	end)
+
+	awful.spawn.with_line_callback("playerctl -F metadata -f '{{mpris:length}}'", {
+		stdout = function(line)
+			if line == " " then
+				local position = 100
+				_Utils.widget.gc(music, "slider").maximum = position
+			else
+				local position = tonumber(line)
+				if position ~= nil then
+					_Utils.widget.gc(music, "slider").maximum = position / 1000000 or nil
+				end
+			end
+		end
+	})
 
 	_Utils.widget.hoverCursor(music, "next")
 	_Utils.widget.hoverCursor(music, "previous")

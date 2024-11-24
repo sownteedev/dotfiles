@@ -76,13 +76,9 @@ local dayWeather = function()
 		local day = out.daily[i]
 		_Utils.widget.gc(widget, "icon").image = icon_dir .. icon_map[day.weather[1].icon] .. ".svg"
 		_Utils.widget.gc(widget, "day").markup = _Utils.widget.colorizeText(os.date("%a", tonumber(day.dt)), "#ffffff")
-		local getTemp = function(temp)
-			local sp = _Utils.widget.split(temp, ".")[1]
-			return sp
-		end
-		_Utils.widget.gc(widget, "min").markup = _Utils.widget.colorizeText(getTemp(day.temp.min), "#ffffff")
+		_Utils.widget.gc(widget, "min").markup = _Utils.widget.colorizeText(math.floor(day.temp.min), "#ffffff")
 		_Utils.widget.gc(widget, "/").markup = _Utils.widget.colorizeText("/", beautiful.blue)
-		_Utils.widget.gc(widget, "max").markup = _Utils.widget.colorizeText(getTemp(day.temp.max), "#ffffff")
+		_Utils.widget.gc(widget, "max").markup = _Utils.widget.colorizeText(math.floor(day.temp.max), "#ffffff")
 	end
 	return widget
 end
@@ -153,7 +149,7 @@ return function(s)
 									},
 									layout = wibox.layout.stack,
 								},
-								forced_height = 45,
+								forced_height = 43,
 								widget = wibox.container.background,
 							},
 							{

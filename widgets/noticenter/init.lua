@@ -3,7 +3,6 @@ local beautiful = require("beautiful")
 local naughty = require("naughty")
 local wibox = require("wibox")
 local gears = require("gears")
-local animation = require("modules.animation")
 local make = require(... .. ".make")
 
 local empty = wibox.widget({
@@ -152,37 +151,13 @@ return function(s)
 	})
 	_Utils.widget.placeWidget(noticenter, "top_right", 2, 0, 0, 2)
 
-	local slide = animation:new({
-		duration = 0.5,
-		pos = beautiful.width + 10,
-		easing = animation.easing.inOutExpo,
-		update = function(_, pos)
-			noticenter.x = pos
-		end,
-	})
-
-	local slide_end = gears.timer({
-		timeout = 1,
-		single_shot = true,
-		callback = function()
-			noticenter.visible = false
-		end,
-	})
-
 	awesome.connect_signal("toggle::noticenter", function()
-		if noticenter.visible then
-			slide_end:start()
-			slide:set(beautiful.width + 10)
-		else
-			noticenter.visible = true
-			slide:set(beautiful.width - noticenter.width - beautiful.useless_gap * 2)
-		end
+		noticenter.visible = not noticenter.visible
 	end)
 
 	awesome.connect_signal("close::noticenter", function()
 		if noticenter.visible then
-			slide_end:start()
-			slide:set(beautiful.width + 10)
+			noticenter.visible = false
 		end
 	end)
 

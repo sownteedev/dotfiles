@@ -2,9 +2,8 @@ local awful = require("awful")
 local wibox = require("wibox")
 local gears = require("gears")
 local beautiful = require("beautiful")
-local animation = require("modules.animation")
 
-local exit, slide, prompt_grabber
+local exit, prompt_grabber
 
 local function createButton(icon, cmd)
 	local button = wibox.widget({
@@ -134,15 +133,6 @@ return function(s)
 		end,
 	})
 
-	slide = animation:new({
-		duration = 1,
-		pos = 0,
-		easing = animation.easing.inOutExpo,
-		update = function(_, poss)
-			exit.opactity = poss
-		end,
-	})
-
 	awesome.connect_signal("toggle::exit", function()
 		if exit.visible then
 			exit.visible = false
@@ -152,7 +142,6 @@ return function(s)
 			filter_entries()
 			prompt_grabber:start()
 			exit.visible = true
-			slide:set(1)
 		end
 	end)
 

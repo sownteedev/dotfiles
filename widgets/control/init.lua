@@ -1,7 +1,5 @@
 local beautiful = require("beautiful")
 local wibox = require("wibox")
-local gears = require("gears")
-local animation = require("modules.animation")
 
 local bluenetair = require(... .. ".mods.bluenetair")
 local dndblurnight = require(... .. ".mods.dndblurnight")
@@ -44,34 +42,12 @@ return function(s)
 
 	_Utils.widget.placeWidget(control, "top_right", 3, 0, 0, 2)
 
-	local slide = animation:new({
-		duration = 0.5,
-		pos = -control.height - 10,
-		easing = animation.easing.inOutExpo,
-		update = function(_, poss)
-			control.y = poss
-		end,
-	})
-	local slide_end = gears.timer({
-		timeout = 0.5,
-		single_shot = true,
-		callback = function()
-			control.visible = false
-		end,
-	})
 	awesome.connect_signal("toggle::control", function()
-		if control.visible then
-			slide_end:start()
-			slide:set(-control.height - 10)
-		else
-			control.visible = true
-			slide:set(beautiful.useless_gap * 6)
-		end
+		control.visible = not control.visible
 	end)
 	awesome.connect_signal("close::control", function()
 		if control.visible then
-			slide_end:start()
-			slide:set(-control.height - 10)
+			control.visible = false
 		end
 	end)
 
