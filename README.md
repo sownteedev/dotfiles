@@ -77,8 +77,8 @@
 
 ###  Wifi
 
-	sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools
-	sudo systemctl enable NetworkManager dhcpcd
+	sudo pacman -S networkmanager wpa_supplicant wireless_tools
+	sudo systemctl enable NetworkManager
 
 ## GRUB
 
@@ -114,7 +114,7 @@
     sudo nvim /etc/pacman.conf
     Uncomment: [multilib]
                Include = /etc/pacman.d/mirrorlist
-    sudo pacman -S --needed nvidia nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime --noconfirm
+    sudo pacman -S --needed nvidia-open nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime --noconfirm
 
     sudo nvim /etc/default/grub
     Add: nvidia_drm.modeset=1 on GRUB_CMDLINE_LINUX_DEFAULT

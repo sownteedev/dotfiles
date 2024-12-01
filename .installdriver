@@ -28,23 +28,23 @@ fi
 cd ~
 sleep 3 && clear
 
-# Install Dotf Branch
+# Install Dotf
 echo "[*] Installing dotfiles ..."
-git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf ~/dotf
+git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf ~/Dotfiles
 echo "[*] Done."
 sleep 3 && clear
 
 # Enable touchpad
 echo "[*] Enable touchpad for laptop and set time to sleep ..."
 yay -S xf86-input-libinput xf86-input-synaptics libinput-gestures xdotool wmctrl --noconfirm
-sudo cp -r ~/dotf/.root/xorg.conf.d /etc/X11
+sudo ln -s ~/Dotfiles/dotf/.root/xorg.conf.d /etc/X11/xorg.conf.d
 sudo gpasswd -a $USER input
 libinput-gestures-setup stop desktop autostart start
 sleep 3 && clear
 
 # Xinitrc
 echo "[*] Override .xinitrc ..."
-rm -f ~/.xinitrc && cp ~/dotf/.xinitrc ~/.xinitrc
+rm -f ~/.xinitrc && ln -s ~/Dotfiles/dotf/.xinitrc ~/.xinitrc
 echo "[*] Done"
 sleep 3 && clear
 
@@ -57,7 +57,7 @@ sleep 3 && clear
 
 # Audio
 echo "[*] Installing audio & mic driver ..."
-sudo pacman -S pavucontrol pipewire pipewire-audio pipewire-pulse alsa-ucm-conf sof-firmware playerctl pamixer --noconfirm
+sudo pacman -S pavucontrol pipewire pipewire-audio pipewire-pulse alsa-ucm-conf sof-firmware playerctl --noconfirm
 sudo systemctl --user enable pipewire pipewire-pulse wireplumber
 echo "[*] Done."
 sleep 3 && clear
@@ -71,20 +71,20 @@ sleep 3 && clear
 # Battery
 echo "[*] Installing battery ..."
 sudo pacman -S acpi acpid upower power-profiles-daemon --noconfirm
-sudo systemctl enable acpid upower
+sudo systemctl enable acpid upower power-profiles-daemon
 echo "[*] Done."
 sleep 3 && clear
 
 # Network
 echo "[*] Installing network ..."
-sudo pacman -S netctl networkmanager ifplugd dhcpcd dialog wpa_supplicant wireless_tools network-manager-applet --noconfirm
-sudo systemctl enable NetworkManager dhcpcd
+sudo pacman -S networkmanager wpa_supplicant wireless_tools network-manager-applet --noconfirm
+sudo systemctl enable NetworkManager
 echo "[*] Done."
 sleep 3 && clear
 
 # Bluetooth
 echo "[*] Installing bluetooth driver ..."
-sudo pacman -S bluez bluez-utils bluez-tools bluez-libs blueman --noconfirm
+sudo pacman -S bluez bluez-utils bluez-libs blueman --noconfirm
 sudo systemctl enable bluetooth.service
 sleep 3 && clear
 
@@ -103,7 +103,7 @@ sleep 3 && clear
 
 # Other
 echo "[*] Installing other ..."
-sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick github-cli wget zsh && yay -S --noconfirm picom-git inotify-tools
+sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick github-cli wget zsh && yay -S --noconfirm picom-git inotify-tools xfce4-taskmanager-git
 echo "[*] Done."
 clear
 echo "[*] Install ibus"
