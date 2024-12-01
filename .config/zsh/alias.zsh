@@ -1,21 +1,12 @@
-if [ $(command -v exa) ]; then
-    alias ll="exa --all --long --icons --group --git"
-    alias ls="exa --icons"
-fi
-
-if [ $(command -v ripgrep) ]; then
-    alias grep="ripgrep"
-fi
-
 usenvm() {
-	sed -i 's/^# source \/usr\/share\/nvm\/init-nvm.sh/source \/usr\/share\/nvm\/init-nvm.sh/' ~/.config/zsh/.zshrc
+	sed -i 's/^# source \/usr\/share\/nvm\/init-nvm.sh/source \/usr\/share\/nvm\/init-nvm.sh/' ~/Dotfiles/dotf/.config/zsh/.zshrc
 	source ~/.config/zsh/.zshrc
     nvm use "$1"
-	sed -i 's/^source \/usr\/share\/nvm\/init-nvm.sh/# source \/usr\/share\/nvm\/init-nvm.sh/' ~/.config/zsh/.zshrc
+	sed -i 's/^source \/usr\/share\/nvm\/init-nvm.sh/# source \/usr\/share\/nvm\/init-nvm.sh/' ~/Dotfiles/dotf/.config/zsh/.zshrc
 }
 
-alias cls="clear"
-alias nvide="neovide"
+alias ll="exa --all --long --icons --group --git"
+alias ls="exa --icons"
 
 alias fzf="fzf --layout=reverse --prompt ' ' --pointer '=>' --preview='less {}' --bind shift-up:preview-page-up,shift-down:preview-page-down"
 
