@@ -16,7 +16,6 @@ compinit
 use romkatv/powerlevel10k 
 use Aloxaf/fzf-tab
 use zdharma-continuum/fast-syntax-highlighting
-use zsh-users/zsh-completions
 use zsh-users/zsh-autosuggestions
 use hlissner/zsh-autopair
 load zdharma-continuum/history-search-multi-word
