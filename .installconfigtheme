@@ -11,28 +11,22 @@ pkg_installed() {
 cd ~
 
 # Font
-sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm && yay -S ttf-ms-win11-auto --noconfirm
+sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm && yay -S ttf-ms-win11-auto ttf-ms-win11-auto-japanese ttf-ms-win11-auto-korean ttf-ms-win11-auto-zh_cn --noconfirm
 echo "[*] Copy fonts ..."
-mkdir -p ~/.fonts && cp -r ~/dotf/.fonts/* ~/.fonts
+ln -s ~/Dotfiles/dotf/.fonts ~/.fonts
 fc-cache -fv
 echo "[*] Done."
 sleep 3 && clear
 
 # Icon theme && Cursor theme
 echo "[*] Copy icons ..."
-mkdir -p ~/.icons && cp -r ~/dotf/.icons/* ~/.icons
+ln -s ~/Dotfiles/dotf/.icons ~/.icons
 echo "[*] Done."
 sleep 3 && clear
 
 # Themes
 echo "[*] Copy themes ..."
-mkdir -p ~/.themes && cp -r ~/dotf/.themes/* ~/.themes
-echo "[*] Done."
-sleep 3 && clear
-
-# Wallpaper
-echo "[*] Copy wallpaper ..."
-mkdir -p ~/.walls && cp -r ~/dotf/.walls/* ~/.walls
+ln -s ~/Dotfiles/dotf/.themes ~/.themes
 echo "[*] Done."
 sleep 3 && clear
 
@@ -41,7 +35,13 @@ echo "[*] Copy config ..."
 if ! [ -d $HOME/.config ]; then
 	mkdir -p $HOME/.config
 fi
-cp -r ~/dotf/.config/* ~/.config
+ln -s ~/Dotfiles/dotf/.config/alacritty ~/.config/alacritty
+ln -s ~/Dotfiles/dotf/.config/zsh ~/.config/zsh
+ln -s ~/Dotfiles/dotf/.config/ranger ~/.config/ranger
+ln -s ~/Dotfiles/dotf/.config/gtk-3.0 ~/.config/gtk-3.0
+ln -s ~/Dotfiles/dotf/.config/gtk-4.0 ~/.config/gtk-4.0
+ln -s ~/Dotfiles/dotf/.config/picom ~/.config/picom
+ln -s ~/Dotfiles/dotf/.config/libinput-gestures.conf ~/.config/libinput-gestures.conf
 echo "[*] Done."
 sleep 3 && clear
 
@@ -50,25 +50,21 @@ echo "[*] Copy local ..."
 if ! [ -d $HOME/.local ]; then
 	mkdir -p $HOME/.local
 fi
-cp -r ~/dotf/.local/* ~/.local
-echo "[*] Done."
-sleep 3 && clear
-
-# Root
-echo "[*] Copy root ..."
-mkdir -p ~/.root && cp -r ~/dotf/.root/* ~/.root
+ln -s ~/Dotfiles/dotf/.local/bin ~/.local/bin
+ln -s ~/Dotfiles/dotf/.local/other/customcaprine.css ~/.config/Caprine/custom.css
+ln -s ~/Dotfiles/dotf/.local/share/nemo ~/.local/share/nemo
 echo "[*] Done."
 sleep 3 && clear
 
 # .Xresources
 echo "[*] Copy .Xresources ..."
-rm -f ~/.Xresources && cp ~/dotf/.Xresources ~/.Xresources
+rm -f ~/.Xresources && ln -s ~/Dotfiles/dotf/.Xresources ~/.Xresources
 echo "[*] Done."
 sleep 3 && clear
 
 # .gtkrc-2.0
 echo "[*] Copy .gtkrc-2.0 ..."
-rm -f ~/.gtkrc-2.0 && cp ~/dotf/.gtkrc-2.0 ~/.gtkrc-2.0
+rm -f ~/.gtkrc-2.0 && ln -s ~/Dotfiles/dotf/.gtkrc-2.0 ~/.gtkrc-2.0
 echo "[*] Done."
 sleep 3 && clear
 
@@ -76,15 +72,17 @@ sleep 3 && clear
 read -p "[*] Do you want to use my WM configs? (1 for AwesomeWM/2 for mAWMcos/3 for AGS): " choice
 if [ "$choice" = "1" ]; then
 	echo "[*] Installing AwesomeWM ..."
-	yay -S awesome-git lua-pam-git --noconfirm
+	yay -S awesome-luajit-git lua-pam-git --noconfirm
 	rm -rf ~/.config/awesome
-	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=awesome ~/.config/awesome
+	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=awesome ~/Dotfiles
+	ln -s ~/Dotfiles/awesome ~/.config/awesome
 	echo "[*] Done."
 elif [ "$choice" = "2" ]; then
 	echo "[*] Installing mAWMcos ..."
 	yay -S awesome-git lua-pam-git --noconfirm
 	rm -rf ~/.config/awesome
-	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=mAWMcos ~/.config/awesome
+	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=mAWMcos ~/Dotfiles
+	ln -s ~/Dotfiles/mAWMcos ~/.config/awesome
 	echo "[*] Done."
 elif [ "$choice" = "3" ]; then
 	echo "[*] Config for AGS is comming soon ^^"
@@ -97,9 +95,13 @@ sleep 3 && clear
 echo "[*] Installing Spotify ..."
 yay -S spotify --noconfirm
 yay -S --noconfirm spicetify-cli-git
+spotify & 
+sleep 5 && killall spotify
 sudo chmod a+wr /opt/spotify
 sudo chmod a+wr /opt/spotify/Apps -R
-spicetify config current_theme Tetify
+ln -s ~/Dotfiles/dotf/.config/spicetify/Themes/Comfy ~/.config/spicetify/Themes/Comfy
+spicetify config current_theme Comfy color_scheme Lunar inject_css 1 replace_colors 1 overwrite_assets 1 inject_theme_js 1
+spicetify apply
 echo "[*] Done."
 sleep 3 && clear
 
@@ -112,7 +114,7 @@ sleep 3 && clear
 
 # Grtub Theme
 echo "[*] Installing Grub Theme ..."
-sudo cp -r ~/.root/grub/themes/virtuaverse /boot/grub/themes/
+sudo cp -r ~/Dotfiles/dotf/.root/grub/themes/virtuaverse /boot/grub/themes/
 sudo sed -i 's/#GRUB_THEME=.*/GRUB_THEME=\/boot\/grub\/themes\/virtuaverse\/theme.txt/g' /etc/default/grub
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 echo "[*] Done."
@@ -125,7 +127,7 @@ sudo systemctl enable lightdm
 sudo sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
 sudo sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
 sudo sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
-sudo cp ~/.walls/* /usr/share/backgrounds
+sudo ln -s ~/Dotfiles/dotf/.walls /usr/share/backgrounds/walls
 echo "[*] Done."
 sleep 3 && clear
 
@@ -135,7 +137,7 @@ sudo pacman -Rns neovim --noconfirm
 yay -S --noconfirm lazygit xclip xsel fzf ripgrep neovim-nightly-bin
 rm -rf ~/.config/nvim
 git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
-cp -r ~/dotf/.config/nvim/lua/custom ~/.config/nvim/lua/
+ln -s ~/Dotfiles/dotf/.config/nvim/lua/custom ~/.config/nvim/lua/custom
 echo "[*] Done."
 sleep 3 && clear
 
@@ -143,6 +145,9 @@ sleep 3 && clear
 echo "[*] Installing apps for me ..."
 sudo pacman -S --noconfirm telegram-desktop
 yay -S --noconfirm notion-app-electron jetbrains-toolbox docker-desktop postman-bin ulauncher-git appimagelauncher-bin caprine vesktop thunderbird anydesk-bin
+
+# Zalo
+sh -c "$(curl -sSL https://raw.githubusercontent.com/realdtn2/zalo-linux-unofficial/main/install_curl.sh)"
 
 # MongoDB
 # yay -S --noconfirm mongodb-bin mongodb-compass
