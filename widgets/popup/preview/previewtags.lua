@@ -1,6 +1,7 @@
 local awful = require("awful")
 local wibox = require("wibox")
 local gears = require("gears")
+local cairo = require("lgi").cairo
 local beautiful = require("beautiful")
 local scale = 0.18
 opened_preview = false
@@ -34,56 +35,78 @@ local function create_empty_tag_widget(s)
 	}
 end
 
-local function create_client_preview(c, geometry)
-	local imagebox = wibox.widget {
-		resize = true,
-		image = _Utils.icon.getIcon(c, c.name, c.class),
-		forced_height = 150 * scale,
-		forced_width = 150 * scale,
-		widget = wibox.widget.imagebox
-	}
+local function draw_widget(t, s, geo)
+	local client_list = wibox.layout.manual()
+	client_list.forced_height = geo.height
+	client_list.forced_width = geo.width
 
-	local clientbox = wibox.widget({
-		{
-			imagebox,
-			widget = wibox.container.place
-		},
-		forced_height = math.floor(c.height * scale),
-		forced_width = math.floor(c.width * scale),
-		bg = beautiful.background .. "AA",
-		border_color = beautiful.foreground .. "33",
-		border_width = 0.5,
-		shape = _Utils.widget.rrect(5),
-		widget = wibox.container.background
-	})
-
-	clientbox.point = {
-		x = math.floor((c.x - geometry.x) * scale),
-		y = math.floor((c.y - geometry.y) * scale),
-	}
-
-	return clientbox
-end
-
-local function createpreview(t, s, geometry)
-	local clientlayout = wibox.layout.manual()
-	clientlayout.forced_height = geometry.height
-	clientlayout.forced_width = geometry.width
-
-	local clients = t:clients()
-	if #clients == 0 then
-		local tags = create_empty_tag_widget(s)
-		_Utils.widget.hoverCursor(tags)
-		return tags
+	if #t:clients() == 0 then
+		return create_empty_tag_widget(s)
 	end
 
-	for _, c in ipairs(clients) do
+	for _, c in ipairs(t:clients()) do
 		if not c.hidden and not c.minimized then
-			clientlayout:add(create_client_preview(c, geometry))
+			local img_box = wibox.widget({
+				resize = true,
+				image = _Utils.icon.getIcon(c, c.name, c.class),
+				forced_height = 150 * scale,
+				forced_width = 150 * scale,
+				widget = wibox.widget.imagebox,
+			})
+
+			if s and (c.prev_content or t.selected) then
+				local content = t.selected and gears.surface(c.content) or gears.surface(c.prev_content)
+				local cr = cairo.Context(content)
+				local x, y, w, h = cr:clip_extents()
+				local img = cairo.ImageSurface.create(cairo.Format.ARGB32, w - x, h - y)
+				cr = cairo.Context(img)
+				cr:set_source_surface(content, 0, 0)
+				cr.operator = cairo.Operator.SOURCE
+				cr:paint()
+
+				img_box = wibox.widget({
+					image = gears.surface.load(img),
+					resize = true,
+					opacity = 1,
+					forced_height = math.floor(c.height * scale),
+					forced_width = math.floor(c.width * scale),
+					widget = wibox.widget.imagebox,
+				})
+			end
+
+			local client_box = wibox.widget({
+				{
+					nil,
+					{
+						nil,
+						img_box,
+						nil,
+						expand = "outside",
+						layout = wibox.layout.align.horizontal,
+					},
+					nil,
+					expand = "outside",
+					widget = wibox.layout.align.vertical,
+				},
+				forced_height = math.floor(c.height * scale - 6),
+				forced_width = math.floor(c.width * scale),
+				bg = beautiful.background .. "AA",
+				border_color = beautiful.foreground .. "33",
+				border_width = 0.5,
+				shape = _Utils.widget.rrect(5),
+				widget = wibox.container.background,
+			})
+
+			client_box.point = {
+				x = math.floor((c.x - geo.x) * scale),
+				y = math.floor((c.y - geo.y) * scale),
+			}
+
+			client_list:add(client_box)
 		end
 	end
 
-	local tags = wibox.widget {
+	local a = wibox.widget {
 		{
 			{
 				image = gears.surface.crop_surface {
@@ -92,7 +115,12 @@ local function createpreview(t, s, geometry)
 				},
 				widget = wibox.widget.imagebox
 			},
-			clientlayout,
+			{
+				client_list,
+				forced_height = geo.height,
+				forced_width = geo.width,
+				widget = wibox.container.place,
+			},
 			layout = wibox.layout.stack
 		},
 		shape = beautiful.radius,
@@ -101,8 +129,9 @@ local function createpreview(t, s, geometry)
 		widget = wibox.container.background
 	}
 
-	_Utils.widget.hoverCursor(tags)
-	return tags
+	_Utils.widget.hoverCursor(a)
+
+	return a
 end
 
 return function(s)
@@ -139,11 +168,12 @@ return function(s)
 
 		for _, tag in ipairs(tags) do
 			local preview = wibox.widget {
-				createpreview(tag, tag.screen, screen_geometry),
+				draw_widget(tag, tag.screen, screen_geometry),
 				buttons = {
 					awful.button({}, 1, function()
 						awesome.emit_signal("close::preview")
 						tag:view_only()
+						collectgarbage("collect")
 					end)
 				},
 				widget = wibox.container.background
@@ -168,6 +198,7 @@ return function(s)
 		if previewbox.visible then
 			previewbox.visible = false
 			opened_preview = false
+			collectgarbage("collect")
 		end
 	end)
 

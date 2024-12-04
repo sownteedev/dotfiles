@@ -1,38 +1,5 @@
 local awful = require("awful")
 
-function backup()
-	awful.spawn.with_shell([[
-		declare -a config_folders=("alacritty" "zsh" "ranger" "gtk-3.0" "gtk-4.0" "picom")
-		declare -a data_folders=("nvim/lua/custom" "spicetify/Themes")
-		declare -a dot_folders=("fonts" "icons" "themes" "walls" "root") &&
-
-		rm -rf ~/dotf/{.config,.fonts,.icons,.themes,.walls,.root,.local}
-		mkdir -p ~/dotf/{.config,.fonts,.icons,.themes,.walls,.root,.local}
-		
-		for folder in "${dot_folders[@]}"; do
-			cp -r ~/."$folder"/* ~/dotf/.${folder}/
-		done
-
-		for folder in "${config_folders[@]}"; do
-			cp -r ~/.config/"$folder" ~/dotf/.config/
-		done
-		cp ~/.config/libinput-gestures.conf ~/dotf/.config/ &&
-		for folder in "${data_folders[@]}"; do
-			mkdir -p ~/dotf/.config/"$folder"
-			cp -r ~/.config/"$folder"/* ~/dotf/.config/"$folder"
-		done
-		
-		cp -r ~/.local/other/ ~/dotf/.local/ && cp -r ~/.local/bin/ ~/dotf/.local/ && mkdir -p ~/dotf/.local/share/nemo/ && cp -r ~/.local/share/nemo/actions/ ~/dotf/.local/share/nemo/
-		cp ~/.config/Caprine/custom.css ~/dotf/.local/other/customcaprine.css &&
-		cp ~/.config/spicetify/Themes/Tetify/user.css ~/dotf/.local/other/customspotify.css &&
-		
-		rm -f ~/dotf/.gtkrc-2.0 && cp ~/.gtkrc-2.0 ~/dotf/
-		rm -f ~/dotf/.Xresources && cp ~/.Xresources ~/dotf/
-		rm -f ~/dotf/.xinitrc && cp ~/.xinitrc ~/dotf/
-		rm -f ~/dotf/.xsettingsd && cp ~/.xsettingsd ~/dotf/
-	]])
-end
-
 local function awesomewm(theme)
 	awful.spawn.with_shell([[
 		sed -i "s/_User.Colorscheme.*/_User.Colorscheme     = \"]] .. theme .. [[\"/" ~/.config/awesome/user.lua &&
