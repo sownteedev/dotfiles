@@ -92,9 +92,10 @@ sleep 3 && clear
 ######################################## MY CONFIG FOR CUSTOM APPS #######################################
 
 # Spotify
-echo "[*] Installing Spotify ..."
+echo "[*] Installing Spotify and Youtube Music ..."
 yay -S spotify --noconfirm
-yay -S --noconfirm spicetify-cli-git
+yay -S spicetify-cli-git --noconfirm
+yay -S youtube-music --noconfirm
 spotify & 
 sleep 5 && killall spotify
 sudo chmod a+wr /opt/spotify
@@ -135,7 +136,6 @@ sleep 3 && clear
 echo "[*] Installing TeVim ..."
 sudo pacman -Rns neovim --noconfirm
 yay -S --noconfirm lazygit xclip xsel fzf ripgrep neovim-nightly-bin
-rm -rf ~/.config/nvim
 git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
 ln -s ~/Dotfiles/dotf/.config/nvim/lua/custom ~/.config/nvim/lua/custom
 echo "[*] Done."
