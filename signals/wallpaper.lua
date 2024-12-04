@@ -81,10 +81,10 @@ local function wallpaper()
 	awful.spawn.easy_async_with_shell(
 		"test -f " .. _User.Wallpaper .. " && echo '1' || echo '0'",
 		function(stdout)
-			if stdout:match("1") then
-				gears.wallpaper.maximized(_User.Wallpaper, nil, true)
-			else
+			if stdout:match("0") or _User.Wallpaper == "" then
 				create_awesome_wallpaper()
+			else
+				gears.wallpaper.maximized(_User.Wallpaper, nil, true)
 			end
 		end
 	)

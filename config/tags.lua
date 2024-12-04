@@ -8,7 +8,7 @@ awful.layout.layouts = {
 
 client.connect_signal("request::titlebars", function(c)
 	if c.requests_no_titlebar then return end
-	require("widgets.titlebar")(c)
+	require("widgets.titlebar.gtk")(c)
 end)
 
 screen.connect_signal("request::desktop_decoration", function(s)

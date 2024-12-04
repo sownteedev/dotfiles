@@ -18,7 +18,7 @@ local dev_apps = {
 	{ name = "visual-studio-code", class = "Code",               exec = "code" },
 	{ name = "cursor",             class = "Cursor",             exec = "cursor" },
 	{ name = "jetbrains-intellij", class = "jetbrains-idea",     exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/intellij-idea-ultimate/bin/idea" },
-	{ name = "jetbrains-studio",   class = "jetbrains-studio",   exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/android-studio/bin/studio.sh" },
+	-- { name = "jetbrains-studio",   class = "jetbrains-studio",   exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/android-studio/bin/studio.sh" },
 	{ name = "jetbrains-webstorm", class = "jetbrains-webstorm", exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/webstorm/bin/webstorm" },
 	{ name = "jetbrains-pycharm",  class = "jetbrains-pycharm",  exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/pycharm-professional/bin/pycharm" },
 	{ name = "jetbrains-datagrip", class = "jetbrains-datagrip", exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/datagrip/bin/datagrip" },
@@ -29,6 +29,7 @@ local dev_tools = {
 	-- { name = "Mysql-workbench-bin", class = "Mysql-workbench-bin", exec = "mysql-workbench" },
 	{ name = "Docker Desktop", class = "Docker Desktop", exec = "/opt/docker-desktop/bin/docker-desktop" },
 	{ name = "postman",        class = "Postman",        exec = "postman" },
+	{ name = "GitHub Desktop", class = "GitHub Desktop", exec = "github-desktop" },
 }
 
 local utility_apps = {
@@ -38,10 +39,11 @@ local utility_apps = {
 }
 
 local social_apps = {
-	{ name = "telegram", class = "TelegramDesktop", exec = "telegram-desktop" },
-	{ name = "caprine",  class = "Caprine",         exec = "caprine" },
-	{ name = "vesktop",  class = "vesktop",         exec = "vesktop" },
-	{ name = "Spotify",  class = "Spotify",         exec = "spotify" },
+	{ name = "telegram",      class = "TelegramDesktop", exec = "telegram-desktop" },
+	{ name = "caprine",       class = "Caprine",         exec = "caprine" },
+	{ name = "vesktop",       class = "vesktop",         exec = "vesktop" },
+	{ name = "Spotify",       class = "Spotify",         exec = "spotify" },
+	{ name = "YouTube Music", class = "YouTube Music",   exec = "youtube-music" }
 }
 
 local custom_apps = {

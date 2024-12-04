@@ -24,6 +24,8 @@ _User.Custom_Icon     = {
 	{ name = "jetbrains-studio",                 to = "android-studio" },
 	{ name = "MongoDB Compass",                  to = "mongodb-compass" },
 	{ name = "Mysql-workbench-bin",              to = "mysql-workbench" },
+	{ name = "YouTube Music",                    to = "youtube-music-desktop-app" },
+	{ name = "GitHub Desktop",                   to = "github-desktop" }
 }
 
 _User.Border          = 1
@@ -37,7 +39,7 @@ _User.API_KEY_WEATHER = ""
 _User.Coordinates     = { "21.0294498", "105.8544441" }
 
 _User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
-_User.Wallpaper       = "/home/sowntee/.walls/mikasa.jpg"
+_User.Wallpaper       = "/home/sowntee/Dotfiles/dotf/.walls/a_group_of_purple_flowers.png"
 _User.Lock            = "/home/sowntee/.walls/a.jpg"
 
 _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artdefault.jpg"
@@ -45,6 +47,7 @@ _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artd
 _User.AutoStart       = {
 	-- "xrandr --auto --output DP-1 --mode 3840x2160 --primary --auto --right-of eDP-1"
 	"ibus-daemon -drx",
+	"xinput --set-prop 14 'Device Accel Constant Deceleration' 1.5",
 	"xsettingsd",
 	"libinput-gestures-setup start",
 }

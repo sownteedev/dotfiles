@@ -70,99 +70,6 @@ function grabber:init(finalWidget, open, close)
 	})
 end
 
-local function getPop(tit)
-	local pop = wibox({
-		type = "dock",
-		height = 155,
-		width = 400,
-		ontop = true,
-		shape = beautiful.radius,
-		visible = true,
-		bg = beautiful.background
-	})
-	awful.placement.centered(pop)
-	local widget = wibox.widget {
-		{
-			{
-				{
-					{
-						{
-							{
-								font = beautiful.icon .. " 12",
-								markup = _Utils.widget.colorizeText("󰅖", beautiful.background),
-								valign = "center",
-								align = "center",
-								widget = wibox.widget.textbox
-							},
-							margins = 3,
-							widget = wibox.container.margin
-						},
-						bg = beautiful.red,
-						shape = gears.shape.circle,
-						widget = wibox.container.background,
-						buttons = {
-							awful.button({}, 1, function()
-								grabber.main:stop()
-								pop.visible = false
-							end),
-						},
-					},
-					{
-						font = beautiful.sans .. " Medium 11",
-						markup = tit,
-						align = "center",
-						valign = "center",
-						widget = wibox.widget.textbox,
-					},
-					nil,
-					layout = wibox.layout.align.horizontal
-				},
-				top = 10,
-				bottom = 10,
-				left = 20,
-				right = 20,
-				widget = wibox.container.margin,
-			},
-			bg = beautiful.lighter,
-			widget = wibox.container.background,
-		},
-		{
-			{
-				{
-					{
-						id = "input",
-						font = beautiful.sans .. " 12",
-						markup = "",
-						forced_height = 35,
-						valign = "center",
-						align = "start",
-						widget = wibox.widget.textbox,
-					},
-					left = 20,
-					right = 20,
-					top = 10,
-					bottom = 10,
-					widget = wibox.container.margin,
-				},
-				widget = wibox.container.background,
-				shape = _Utils.widget.rrect(10),
-				border_width = beautiful.border_width,
-				border_color = beautiful.lighter2,
-				bg = beautiful.background .. "00"
-			},
-			margins = 15,
-			widget = wibox.container.margin,
-		},
-		spacing = 15,
-		layout = wibox.layout.fixed.vertical
-	}
-	pop:setup {
-		widget,
-		widget = wibox.container.margin,
-	}
-	return widget, pop
-end
-
 local function makeElement(i, n)
 	awful.screen.connect_for_each_screen(function()
 		local widget = wibox.widget {
@@ -184,9 +91,12 @@ local function makeElement(i, n)
 							id = "input",
 							font = beautiful.sans .. " 12",
 							markup = i.completed and "<s>" .. i.name .. "</s>" or i.name,
+							text = i.name,
 							valign = "center",
 							halign = "left",
 							widget = wibox.widget.textbox,
+							editable = true,
+							editing = false,
 						},
 						widget = wibox.container.constraint,
 						width = 200,
@@ -212,10 +122,7 @@ local function makeElement(i, n)
 								local data = _Utils.json.readJson(DATA)
 								data[n] = new
 								writeData(data)
-								todo_list:reset()
-								for k, l in ipairs(data) do
-									makeElement(l, k)
-								end
+								refresh()
 							end),
 						},
 					},
@@ -250,26 +157,43 @@ local function makeElement(i, n)
 			forced_width = 260,
 			data = i
 		}
-		_Utils.widget.gc(widget, "input"):add_button(awful.button({}, 1, function()
-			local w, pop = getPop('Enter New Name')
-			grabber:init(w, function(string)
-				pop.visible = false
-				local new = {
-					completed = i.completed,
-					name = string
-				}
-				local data = _Utils.json.readJson(DATA)
-				data[n] = new
-				writeData(data)
-				todo_list:reset()
-				for k, l in ipairs(data) do
-					makeElement(l, k)
-				end
-			end, function()
-				pop.visible = false
-			end)
-			grabber.main:start()
-		end))
+		_Utils.widget.gc(widget, "input"):connect_signal("button::press", function(w, _, _, button)
+			if not w.editing and button == 1 then
+				w.editing = true
+				widget.bg = beautiful.lighter
+				w.text = i.name
+				grabber.main = awful.keygrabber({
+					auto_start = true,
+					stop_event = "release",
+					keypressed_callback = function(_, _, key, _)
+						if key == "Return" then
+							w.editing = false
+							widget.bg = nil
+							grabber.main:stop()
+							local data = _Utils.json.readJson(DATA)
+							data[n] = {
+								completed = i.completed,
+								name = w.text
+							}
+							writeData(data)
+							refresh()
+						elseif key == "Escape" then
+							w.editing = false
+							widget.bg = nil
+							grabber.main:stop()
+							w.markup = i.completed and "<s>" .. i.name .. "</s>" or i.name
+						elseif key == "BackSpace" then
+							w.text = string.sub(w.text, 1, -2)
+						else
+							if #key == 1 then
+								w.text = w.text .. key
+							end
+						end
+					end
+				})
+				grabber.main:start()
+			end
+		end)
 		todo_list:add(widget)
 	end)
 end
@@ -280,7 +204,7 @@ local makeData = function(d)
 	writeData(data)
 end
 
-local function refresh()
+function refresh()
 	todo_list:reset()
 	local data = _Utils.json.readJson(DATA)
 	if #data == 0 then
@@ -292,21 +216,65 @@ local function refresh()
 end
 
 local function addTodoItem()
-	local w, pop = getPop('Enter New Todo')
-	grabber:init(w, function(input)
-		if input and input ~= "" then
-			local new = {
-				completed = false,
-				name = input
-			}
-			makeData(new)
-			refresh()
-		end
-		pop.visible = false
-	end, function()
-		pop.visible = false
-	end)
-	grabber.main:start()
+	local new = {
+		completed = false,
+		name = ""
+	}
+	makeData(new)
+	refresh()
+
+	local lastWidget = todo_list.children[#todo_list.children]
+	if lastWidget then
+		-- Trigger edit mode immediately
+		local input = _Utils.widget.gc(lastWidget, "input")
+		input.editing = true
+		input.text = ""
+		lastWidget.bg = beautiful.lighter
+
+		grabber.main = awful.keygrabber({
+			auto_start = true,
+			stop_event = "release",
+			keypressed_callback = function(_, _, key, _)
+				if key == "Return" then
+					input.editing = false
+					lastWidget.bg = nil
+					grabber.main:stop()
+					if #input.text == 0 then
+						-- Remove if empty
+						local data = _Utils.json.readJson(DATA)
+						table.remove(data)
+						writeData(data)
+						refresh()
+					else
+						-- Save the changes
+						local data = _Utils.json.readJson(DATA)
+						data[#data] = {
+							completed = false,
+							name = input.text
+						}
+						writeData(data)
+						refresh()
+					end
+				elseif key == "Escape" then
+					input.editing = false
+					lastWidget.bg = nil
+					grabber.main:stop()
+					-- Remove the empty todo if cancelled
+					local data = _Utils.json.readJson(DATA)
+					table.remove(data)
+					writeData(data)
+					refresh()
+				elseif key == "BackSpace" then
+					input.text = string.sub(input.text, 1, -2)
+				else
+					if #key == 1 then
+						input.text = input.text .. key
+					end
+				end
+			end
+		})
+		grabber.main:start()
+	end
 end
 
 return function(s)
@@ -392,11 +360,7 @@ return function(s)
 			widget = wibox.container.background,
 		},
 		{
-			{
-				todo_list,
-				widget = wibox.container.place,
-				valign = 'top'
-			},
+			todo_list,
 			margins = 15,
 			widget = wibox.container.margin
 		},

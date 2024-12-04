@@ -39,7 +39,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { tag = "Develop" },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "discord", "armcord", "vesktop", "Caprine", "Zalo", "Telegram", "Spotify", "Notion" } },
+		rule_any = { class = { "Notion", "discord", "armcord", "vesktop", "Caprine", "Zalo", "Telegram", "Spotify", "YouTube Music", _User.Custom_Icon[1].name } },
 		properties = { tag = "Media" },
 	})
 	ruled.client.append_rule({
