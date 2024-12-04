@@ -1,5 +1,13 @@
 <h1>IT JUST MY SHELL SCRIPT FOR INSTALL WHEN I REINSTALL OS</h1>
 
+```zsh
+sh -c "$(curl -sSL https://raw.githubusercontent.com/sownteedev/dotfiles/main/.installdriver)"
+```
+
+```zsh
+sh -c "$(curl -sSL https://raw.githubusercontent.com/sownteedev/dotfiles/main/.installconfigtheme)"
+```
+
 <details><summary>🌸</summary><blockquote>
 
 <h2>This is Guide for Dualboot Windows + ArchLinux</h2>
