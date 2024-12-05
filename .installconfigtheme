@@ -51,7 +51,6 @@ if ! [ -d $HOME/.local ]; then
 	mkdir -p $HOME/.local
 fi
 ln -s ~/Dotfiles/dotf/.local/bin ~/.local/bin
-ln -s ~/Dotfiles/dotf/.local/other/customcaprine.css ~/.config/Caprine/custom.css
 ln -s ~/Dotfiles/dotf/.local/share/nemo ~/.local/share/nemo
 echo "[*] Done."
 sleep 3 && clear
@@ -74,14 +73,14 @@ if [ "$choice" = "1" ]; then
 	echo "[*] Installing AwesomeWM ..."
 	yay -S awesome-luajit-git lua-pam-git --noconfirm
 	rm -rf ~/.config/awesome
-	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=awesome ~/Dotfiles
+	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=awesome ~/Dotfiles/awesome
 	ln -s ~/Dotfiles/awesome ~/.config/awesome
 	echo "[*] Done."
 elif [ "$choice" = "2" ]; then
 	echo "[*] Installing mAWMcos ..."
-	yay -S awesome-git lua-pam-git --noconfirm
+	yay -S awesome-luajit-git lua-pam-git --noconfirm
 	rm -rf ~/.config/awesome
-	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=mAWMcos ~/Dotfiles
+	git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=mAWMcos ~/Dotfiles/mAWMcos
 	ln -s ~/Dotfiles/mAWMcos ~/.config/awesome
 	echo "[*] Done."
 elif [ "$choice" = "3" ]; then
@@ -96,10 +95,11 @@ echo "[*] Installing Spotify and Youtube Music ..."
 yay -S spotify --noconfirm
 yay -S spicetify-cli-git --noconfirm
 yay -S youtube-music --noconfirm
-spotify & 
+spotify &
 sleep 5 && killall spotify
 sudo chmod a+wr /opt/spotify
 sudo chmod a+wr /opt/spotify/Apps -R
+mkdir -p ~/.config/spicetify/Themes
 ln -s ~/Dotfiles/dotf/.config/spicetify/Themes/Comfy ~/.config/spicetify/Themes/Comfy
 spicetify config current_theme Comfy color_scheme Lunar inject_css 1 replace_colors 1 overwrite_assets 1 inject_theme_js 1
 spicetify apply
@@ -142,9 +142,13 @@ echo "[*] Done."
 sleep 3 && clear
 
 # App for me
-echo "[*] Installing apps for me ..."
-sudo pacman -S --noconfirm telegram-desktop
-yay -S --noconfirm notion-app-electron jetbrains-toolbox docker-desktop postman-bin ulauncher-git appimagelauncher-bin caprine vesktop thunderbird anydesk-bin
+# echo "[*] Installing apps for me ..."
+# sudo pacman -S --noconfirm telegram-desktop
+# yay -S --noconfirm notion-app-electron jetbrains-toolbox docker-desktop postman-bin ulauncher-git appimagelauncher-bin vesktop thunderbird anydesk-bin
+
+# Caprine
+yay -S --noconfirm caprine
+ln -s ~/Dotfiles/dotf/.local/other/customcaprine.css ~/.config/Caprine/custom.css
 
 # Zalo
 sh -c "$(curl -sSL https://raw.githubusercontent.com/realdtn2/zalo-linux-unofficial/main/install_curl.sh)"
@@ -157,17 +161,17 @@ sh -c "$(curl -sSL https://raw.githubusercontent.com/realdtn2/zalo-linux-unoffic
 # yay -S --noconfirm mysql-workbench
 
 # VMWare
-yay -S --noconfirm vmware-workstation
-sudo systemctl enable vmware-networks.service
+# yay -S --noconfirm vmware-workstation
+# sudo systemctl enable vmware-networks.service
 
-# Fix WPS
+# WPS
 # yay -S --noconfirm wps-office libtiff5
 # sudo sed -i '3i export XMODIFIERS="@im=ibus" export QT_IM_MODULE="ibus"' /usr/bin/wps /usr/bin/et /usr/bin/wpp
 # sudo ln -s /usr/lib/libtiff.so.6 /usr/lib/libtiff.so.5
 # sudo chmod -x /usr/lib/office6/wpsoffice
 
-sudo pacman -Rns docker-desktop-debug --noconfirm
-yay -S visual-studio-code-bin --noconfirm
+# sudo pacman -Rns docker-desktop-debug --noconfirm
+# yay -S visual-studio-code-bin --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
