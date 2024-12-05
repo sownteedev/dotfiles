@@ -30,7 +30,7 @@ sleep 3 && clear
 
 # Install Dotf
 echo "[*] Installing dotfiles ..."
-git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf ~/Dotfiles
+git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf ~/Dotfiles/dotf
 echo "[*] Done."
 sleep 3 && clear
 
@@ -90,7 +90,7 @@ sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-sudo pacman -S nemo tumbler yad ranger ueberzug exa zip gzip tar peazip unzip unrar xdg-user-dirs gvfs vlc evince --noconfirm
+sudo pacman -S nemo tumbler yad ranger ueberzug exa zip gzip tar peazip unzip unrar xdg-user-dirs gvfs vlc evince glib2 dconf --noconfirm
 gsettings set org.nemo.desktop show-desktop-icons true
 echo "[*] Done."
 sleep 3 && clear
