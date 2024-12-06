@@ -12,7 +12,6 @@ ping -c 3 archlinux.org || { echo "Không có kết nối Internet!"; exit 1; }
 echo ">>> Đồng bộ thời gian và thiết lập bàn phím..."
 timedatectl set-ntp true
 timedatectl set-timezone Asia/Ho_Chi_Minh
-loadkey us
 
 # Cập nhật mirrorlist
 echo ">>> Cập nhật mirrorlist..."
