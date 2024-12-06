@@ -115,7 +115,7 @@ sleep 3 && clear
 
 # Grtub Theme
 echo "[*] Installing Grub Theme ..."
-sudo cp -r ~/Dotfiles/dotf/.root/grub/themes/virtuaverse /boot/grub/themes/
+sudo cp -r ~/Dotfiles/dotf/.root/grub/themes/virtuaverse /boot/grub/themes/virtuaverse
 sudo sed -i 's/#GRUB_THEME=.*/GRUB_THEME=\/boot\/grub\/themes\/virtuaverse\/theme.txt/g' /etc/default/grub
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 echo "[*] Done."
@@ -128,7 +128,7 @@ sudo systemctl enable lightdm
 sudo sed -i 's/#greeter-session=[^ ]*/greeter-session=lightdm-webkit2-greeter/' /etc/lightdm/lightdm.conf
 sudo sed -i 's/^webkit_theme\s*=\s*\(.*\)/webkit_theme = glorious #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
 sudo sed -i 's/^debug_mode\s*=\s*\(.*\)/debug_mode = true #\1/g' /etc/lightdm/lightdm-webkit2-greeter.conf
-sudo ln -s ~/Dotfiles/dotf/.walls /usr/share/backgrounds/walls
+sudo cp -r ~/Dotfiles/dotf/.walls /usr/share/backgrounds/walls
 echo "[*] Done."
 sleep 3 && clear
 
@@ -142,9 +142,9 @@ echo "[*] Done."
 sleep 3 && clear
 
 # App for me
-# echo "[*] Installing apps for me ..."
-# sudo pacman -S --noconfirm telegram-desktop
-# yay -S --noconfirm notion-app-electron jetbrains-toolbox docker-desktop postman-bin ulauncher-git appimagelauncher-bin vesktop thunderbird anydesk-bin
+echo "[*] Installing apps for me ..."
+sudo pacman -S --noconfirm telegram-desktop alacritty
+yay -S --noconfirm notion-app-electron jetbrains-toolbox docker-desktop postman-bin github-desktop-bin ulauncher-git appimagelauncher-bin vesktop thunderbird anydesk-bin
 
 # Caprine
 yay -S --noconfirm caprine
@@ -170,8 +170,8 @@ sh -c "$(curl -sSL https://raw.githubusercontent.com/realdtn2/zalo-linux-unoffic
 # sudo ln -s /usr/lib/libtiff.so.6 /usr/lib/libtiff.so.5
 # sudo chmod -x /usr/lib/office6/wpsoffice
 
-# sudo pacman -Rns docker-desktop-debug --noconfirm
-# yay -S visual-studio-code-bin --noconfirm
+sudo pacman -Rns docker-desktop-debug --noconfirm
+yay -S visual-studio-code-bin cursor-bin --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
