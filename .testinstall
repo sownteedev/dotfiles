@@ -10,6 +10,7 @@ ping -c 3 archlinux.org || { echo "Không có kết nối Internet!"; exit 1; }
 
 # Đồng bộ thời gian và thiết lập bàn phím
 echo ">>> Đồng bộ thời gian và thiết lập bàn phím..."
+loadkeys i386/qwerty/us.map.gz
 timedatectl set-ntp true
 timedatectl set-timezone Asia/Ho_Chi_Minh
 
@@ -34,6 +35,9 @@ mount /dev/nvme0n1p5 /mnt
 mkdir -p /mnt/boot
 mount /dev/nvme0n1p3 /mnt/boot
 
+lsblk /dev/nvme0n1
+sleep 5 && clear
+
 # Cài đặt hệ thống cơ bản
 echo ">>> Cài đặt hệ thống cơ bản..."
 pacstrap /mnt base base-devel linux linux-firmware linux-headers sbctl neovim
@@ -51,21 +55,32 @@ locale-gen
 echo LANG=en_US.UTF-8 > /etc/locale.conf
 
 # Cấu hình hostname và hosts
-echo arch > /etc/hostname
+echo "Nhập hostname:"
+read hostname
+echo $hostname > /etc/hostname
 cat << EOL >> /etc/hosts
 127.0.0.1	localhost
 ::1		localhost
-127.0.1.1	arch.localdomain	arch
+127.0.1.1	$hostname.localdomain	$hostname
 EOL
 
 # Cài đặt mật khẩu root
 echo ">>> Đặt mật khẩu root..."
 passwd
 
-# Thêm người dùng
-useradd -m sowntee
-passwd sowntee
-usermod -aG wheel,audio,video,optical,storage,power sowntee
+# Tạo user và thiết lập mật khẩu
+echo "Nhập mật khẩu root:"
+read -s rootpassword
+echo "root:$rootpassword" | chpasswd
+
+echo "Setting up user..."
+echo "Nhập username:"
+read username
+useradd -m $username
+echo "Nhập mật khẩu user sowntee:"
+read -s userpassword
+echo "$username:$userpassword" | chpasswd
+usermod -aG wheel,audio,video,optical,storage,power $username
 
 # Cấu hình sudo
 echo ">>> Cấu hình sudo..."
@@ -84,12 +99,12 @@ grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 
 # Secure Boot (tuỳ chọn)
-# echo ">>> Cấu hình Secure Boot..."
-# sbctl create-keys
-# sbctl sign -s /boot/EFI/GRUB/grubx64.efi
-# sbctl sign -s /boot/EFI/Boot/bootx64.efi
-# sbctl sign -s /boot/vmlinuz-linux
-# sbctl enroll-keys -mi
+echo ">>> Cấu hình Secure Boot..."
+sbctl create-keys
+sbctl sign -s /boot/EFI/GRUB/grubx64.efi
+sbctl sign -s /boot/EFI/Boot/bootx64.efi
+sbctl sign -s /boot/vmlinuz-linux
+sbctl enroll-keys -mi
 
 EOF
 
