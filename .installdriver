@@ -15,6 +15,18 @@ pkg_installed() {
 sudo sudo pacman -Syu --noconfirm
 sleep 3 && clear
 
+# Xorg
+sudo pacman -S xorg xorg-xinit --noconfirm
+
+# Git
+echo "[*] Installing git ..."
+if pkg_installed git; then
+	echo "[*] Git already installed, skipping ..."
+else
+	sudo pacman -S git --noconfirm
+	echo "[*] Yay Installed."
+fi
+
 # Yay
 echo "[*] Installing AUR helper(yay) ..."
 if pkg_installed yay; then
@@ -37,6 +49,7 @@ sleep 3 && clear
 # Enable touchpad
 echo "[*] Enable touchpad for laptop and set time to sleep ..."
 yay -S xf86-input-libinput xf86-input-synaptics libinput-gestures xdotool wmctrl --noconfirm
+sudo rm -rf /etc/X11/xorg.conf.d
 sudo ln -s ~/Dotfiles/dotf/.root/xorg.conf.d /etc/X11/xorg.conf.d
 sudo gpasswd -a $USER input
 libinput-gestures-setup stop desktop autostart start
@@ -90,7 +103,7 @@ sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-sudo pacman -S nemo tumbler yad ranger ueberzug exa zip gzip tar peazip unzip unrar xdg-user-dirs gvfs vlc evince glib2 dconf --noconfirm
+sudo pacman -S nemo tumbler yad ranger ueberzug exa zip gzip tar unzip unrar xdg-user-dirs gvfs vlc evince glib2 dconf --noconfirm && yay -S peazip --noconfirm
 gsettings set org.nemo.desktop show-desktop-icons true
 echo "[*] Done."
 sleep 3 && clear
