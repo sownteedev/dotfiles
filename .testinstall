@@ -45,7 +45,18 @@ pacstrap /mnt base base-devel linux linux-firmware linux-headers sbctl neovim
 # Tạo fstab và chuyển vào môi trường chroot
 echo ">>> Tạo fstab và chuyển vào môi trường chroot..."
 genfstab -U /mnt >> /mnt/etc/fstab
-arch-chroot /mnt /bin/bash << "EOF"
+
+# Nhập thông tin trước khi chuyển vào chroot
+echo "Nhập hostname:"
+read hostname
+echo "Nhập mật khẩu root:"
+read -s rootpassword
+echo "Nhập username:"
+read username
+echo "Nhập mật khẩu user $username:"
+read -s userpassword
+
+arch-chroot /mnt /bin/bash << EOF
 
 # Cấu hình thời gian và ngôn ngữ
 ln -sf /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime
@@ -55,30 +66,18 @@ locale-gen
 echo LANG=en_US.UTF-8 > /etc/locale.conf
 
 # Cấu hình hostname và hosts
-echo "Nhập hostname:"
-read hostname
-echo $hostname > /etc/hostname
-cat << EOL >> /etc/hosts
+echo "$hostname" > /etc/hostname
+cat << EOL > /etc/hosts
 127.0.0.1	localhost
 ::1		localhost
 127.0.1.1	$hostname.localdomain	$hostname
 EOL
 
-# Cài đặt mật khẩu root
-echo ">>> Đặt mật khẩu root..."
-passwd
-
-# Tạo user và thiết lập mật khẩu
-echo "Nhập mật khẩu root:"
-read -s rootpassword
+# Đặt mật khẩu root
 echo "root:$rootpassword" | chpasswd
 
-echo "Setting up user..."
-echo "Nhập username:"
-read username
+# Tạo user và thiết lập mật khẩu
 useradd -m $username
-echo "Nhập mật khẩu user sowntee:"
-read -s userpassword
 echo "$username:$userpassword" | chpasswd
 usermod -aG wheel,audio,video,optical,storage,power $username
 
@@ -99,12 +98,12 @@ grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 
 # Secure Boot (tuỳ chọn)
-echo ">>> Cấu hình Secure Boot..."
-sbctl create-keys
-sbctl sign -s /boot/EFI/GRUB/grubx64.efi
-sbctl sign -s /boot/EFI/Boot/bootx64.efi
-sbctl sign -s /boot/vmlinuz-linux
-sbctl enroll-keys -mi
+# echo ">>> Cấu hình Secure Boot..."
+# sbctl create-keys
+# sbctl sign -s /boot/EFI/GRUB/grubx64.efi
+# sbctl sign -s /boot/EFI/Boot/bootx64.efi
+# sbctl sign -s /boot/vmlinuz-linux
+# sbctl enroll-keys -mi
 
 EOF
 
