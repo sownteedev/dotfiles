@@ -103,7 +103,7 @@ sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-sudo pacman -S nemo tumbler yad ranger ueberzug exa zip gzip tar unzip unrar xdg-user-dirs gvfs vlc evince glib2 dconf --noconfirm && yay -S peazip --noconfirm
+sudo pacman -S nemo nemo-fileroller tumbler yad ranger ueberzug exa zip gzip tar unzip unrar xdg-user-dirs gvfs vlc evince glib2 dconf --noconfirm
 gsettings set org.nemo.desktop show-desktop-icons true
 echo "[*] Done."
 sleep 3 && clear

@@ -8,30 +8,68 @@ echo ">>> Check Internet..."
 ping -c 3 archlinux.org || { echo "Not Found Internet!"; exit 1; }
 
 echo ">>> Sync time and set keyboard..."
-loadkeys i386/qwerty/us.map.gz
-timedatectl set-ntp true
-timedatectl set-timezone Asia/Ho_Chi_Minh
+# Load keyboard layout
+if loadkeys i386/qwerty/us.map.gz; then
+  echo "Keyboard layout set successfully."
+else
+  echo "Failed to set keyboard layout. Please check the file path."
+  exit 1
+fi
+# Synchronize time
+if timedatectl set-ntp true; then
+  echo "Time synchronization enabled."
+else
+  echo "Failed to enable time synchronization."
+  exit 1
+fi
+# Set timezone
+if timedatectl set-timezone Asia/Ho_Chi_Minh; then
+  echo "Timezone set to Asia/Ho_Chi_Minh."
+else
+  echo "Failed to set timezone."
+  exit 1
+fi
 
 echo ">>> Update mirrorlist..."
 pacman -Sy reflector archlinux-keyring --noconfirm
-reflector -c Vietnam -c Singapore -c Japan -c India -a 12 --sort rate --save /etc/pacman.d/mirrorlist
+if reflector -c Vietnam -c Singapore -c Japan -c India -a 12 --sort rate --save /etc/pacman.d/mirrorlist; then
+  echo "Mirrorlist updated successfully."
+else
+  echo "Failed to update mirrorlist. Please check reflector settings."
+  exit 1
+fi
 
-cfdisk /dev/nvme0n1 || { echo "Check disk."; exit 1; }
 
-lsblk /dev/nvme0n1
+# DISK
+read -p "Enter the disk you want to partition (e.g., sda or nvme0n1): " disk
+
+if [ ! -e "/dev/$disk" ]; then
+  echo "Disk /dev/$disk not found. Exiting..."
+  exit 1
+fi
+
+cfdisk /dev/$disk || { echo "Check disk."; exit 1; }
+
+lsblk /dev/$disk
 read -p "All right? Press Enter to continue..."
 
-mkswap /dev/nvme0n1p6
-swapon /dev/nvme0n1p6
+read -p "Enter the partition number for swap (e.g., 6 for /dev/${disk}p6): " swap_part
+read -p "Enter the partition number for file system (e.g., 5 for /dev/${disk}p5): " fs_part
+read -p "Enter the partition number for boot (e.g., 3 for /dev/${disk}p3): " boot_part
 
-mkfs.ext4 /dev/nvme0n1p5
-mount /dev/nvme0n1p5 /mnt
+mkswap /dev/${disk}p${swap_part}
+swapon /dev/${disk}p${swap_part}
+
+mkfs.ext4 /dev/${disk}p${fs_part}
+mount /dev/${disk}p${fs_part} /mnt
+
 mkdir -p /mnt/boot
-mount /dev/nvme0n1p3 /mnt/boot
+mount /dev/${disk}p${boot_part} /mnt/boot
 
-lsblk /dev/nvme0n1
+lsblk /dev/$disk
 sleep 5 && clear
 
+# Chroot
 echo ">>> Basic install..."
 pacstrap /mnt base base-devel linux linux-firmware linux-headers sbctl neovim
 
@@ -39,14 +77,12 @@ echo ">>> Create fstab and go to chroot..."
 genfstab -U /mnt >> /mnt/etc/fstab
 
 # Type all information before go to chroot
-echo "Type hostname:"
-read hostname
-echo "Type root password:"
-read -s rootpassword
-echo "Type username:"
-read username
-echo "Type password $username:"
-read -s userpassword
+read -p "Type hostname: " hostname
+read -s -p "Type root password: " rootpassword
+echo
+read -p "Type username: " username
+read -s -p "Type password for $username: " userpassword
+echo
 
 arch-chroot /mnt /bin/bash << EOF
 
