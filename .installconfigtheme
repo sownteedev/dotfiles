@@ -109,7 +109,9 @@ setup_env() {
         fi
     else
         echo "[*] Installing Hyprland ..."
-        yay -S hyprland hyprpaper-git hyprpicker-git hypridle-git hyprpolkitagent-git xdg-desktop-portal-hyprland-git grim slurp wf-recorder wl-clipboard --noconfirm
+        yay -S hyprland --noconfirm
+		yay -S hyprpaper-git hyprpicker-git hypridle-git hyprpolkitagent-git xdg-desktop-portal-hyprland-git --noconfirm
+		yay -S grim slurp wf-recorder wl-clipboard --noconfirm
         yay -S fcitx5-bamboo fcitx5-configtool fcitx5-gtk --noconfirm
         rm -rf ~/.config/hypr
         ln -s ~/Dotfiles/dotf/.config/hypr ~/.config/hypr
@@ -145,8 +147,7 @@ install_workspace() {
 	read -p "[*] Type theme you want use: " THEME_NAME
 	THEME_DIR="/usr/share/grub/themes"
     sudo ln -s ~/Dotfiles/dotf/.root/grub/themes/${THEME_NAME} ${THEME_DIR}/${THEME_NAME}
-	grep "GRUB_THEME=" /etc/default/grub 2>&1 >/dev/null && sed -i '/GRUB_THEME=/d' /etc/default/grub
-	echo "GRUB_THEME=\"${THEME_DIR}/${THEME_NAME}/theme.txt\"" >> /etc/default/grub
+	sudo sed -i "s|#GRUB_THEME=.*|GRUB_THEME=${THEME_DIR}/${THEME_NAME}/theme.txt|g" /etc/default/grub
     sudo grub-mkconfig -o /boot/grub/grub.cfg
     echo "[*] Grub Theme setup done."
     sleep 3 && clear
@@ -186,9 +187,6 @@ install_workspace() {
 
     echo "[*] Installing Other Applications..."
     yay -S --noconfirm ulauncher-git appimagelauncher-bin vesktop thunderbird anydesk-bin notion-app-electron telegram-desktop
-
-    yay -S --noconfirm caprine
-    ln -s ~/Dotfiles/dotf/.local/other/customcaprine.css ~/.config/Caprine/custom.css
 
     sh -c "$(curl -sSL https://raw.githubusercontent.com/realdtn2/zalo-linux-unofficial/main/install_curl.sh)"
 
@@ -242,19 +240,19 @@ securebootanddriver() {
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --install_workspace)
+        --workspace)
             install_workspace
             exit 0
             ;;
-        --setup_env)
+        --env)
 			setup_env
             exit 0
             ;;
-        --setup_dotfiles)
+        --dots)
 			setup_dotfiles
             exit 0
             ;;
-		--securebootanddriver)
+		--bootndriver)
 			securebootanddriver
 			exit 0
 			;;
