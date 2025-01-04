@@ -1,6 +1,7 @@
 @use '../colors';
 
-frame > border, .frame {
+frame>border,
+.frame {
   border: 1px solid colors.$surface-moderate;
 }
 

@@ -519,11 +519,11 @@ scrolledwindow viewport.frame {
 
 headerbar {
 	background: #151515;
-	padding: 0.3em;
+	padding: 0.4em;
 }
 
 headerbar button.titlebutton {
-	padding: 0.6em;
+	padding: 0.5em;
 }
 
 headerbar button.titlebutton:not(.appmenu) {
@@ -532,35 +532,29 @@ headerbar button.titlebutton:not(.appmenu) {
 
 headerbar button.titlebutton:not(.appmenu).close {
 	color: #B66467;
-	background: #B66467;
-	border-radius: 1em;
-	padding: 0.1em;
 }
 
 headerbar button.titlebutton:not(.appmenu).close:hover {
-	color: #151515;
+	color: #be7578;
+	background: rgba(182, 100, 103, 0.3);
 }
 
 headerbar button.titlebutton:not(.appmenu).minimize {
 	color: #D9BC8C;
-	background: #D9BC8C;
-	border-radius: 1em;
-	padding: 0.1em;
 }
 
 headerbar button.titlebutton:not(.appmenu).minimize:hover {
-	color: #151515;
+	color: #dfc79f;
+	background: rgba(217, 188, 140, 0.3);
 }
 
 headerbar button.titlebutton:not(.appmenu).maximize {
 	color: #8C977D;
-	background: #8C977D;
-	border-radius: 1em;
-	padding: 0.1em;
 }
 
 headerbar button.titlebutton:not(.appmenu).maximize:hover {
-	color: #151515;
+	color: #99a28b;
+	background: rgba(140, 151, 125, 0.3);
 }
 
 headerbar button.titlebutton.appmenu:not(:active):not(:checked) {

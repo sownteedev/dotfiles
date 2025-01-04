@@ -4,10 +4,10 @@
 
 headerbar {
   background: colors.$surface-moderate;
-  padding: config.$spacing-small + 0.0025em;
+  padding: config.$spacing-small + 0.1em;
 
   button.titlebutton {
-    padding: calc(config.$spacing-medium);
+    padding: calc(config.$spacing-small + 0.2em);
   }
 
   button.titlebutton:not(.appmenu) {
@@ -15,34 +15,28 @@ headerbar {
 
     &.close {
       color: colors.$red-normal;
-      background: colors.$red-normal;
-      border-radius: 1em;
-      padding: 0.1em;
 
       &:hover {
-        color: colors.$surface-moderate;
+        color: colors.$red-light;
+        background: color.change(colors.$red-normal, $alpha: config.$tint-weak);
       }
     }
 
     &.minimize {
       color: colors.$yellow-normal;
-      background: colors.$yellow-normal;
-      border-radius: 1em;
-      padding: 0.1em;
 
       &:hover {
-        color: colors.$surface-moderate;
+        color: colors.$yellow-light;
+        background: color.change(colors.$yellow-normal, $alpha: config.$tint-weak);
       }
     }
 
     &.maximize {
       color: colors.$green-normal;
-      background: colors.$green-normal;
-      border-radius: 1em;
-      padding: 0.1em;
 
       &:hover {
-        color: colors.$surface-moderate;
+        color: colors.$green-light;
+        background: color.change(colors.$green-normal, $alpha: config.$tint-weak);
       }
     }
   }

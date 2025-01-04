@@ -10,14 +10,13 @@ alias ls="exa --icons"
 
 alias fzf="fzf --layout=reverse --prompt ' ' --pointer '=>' --preview='less {}' --bind shift-up:preview-page-up,shift-down:preview-page-down"
 
-alias pacman="sudo pacman --noconfirm"
-alias yay="yay --noconfirm"
-
 alias ..='cd ../'
 alias ...='cd ../../'
 alias ....='cd ../../../'
 alias .....='cd ../../../../'
 alias ......='cd ../../../../../'
+
+alias awesomewm="sed -i 's/dbus-run-session .*/dbus-run-session awesome/' ~/.xinitrc && startx"
 
 alias rm='rm -i'
 alias cp='cp -i'
@@ -27,7 +26,6 @@ alias dotpush='git add . && git commit -m ":>" && git push'
 alias syncfont='sudo fc-cache -fv'
 
 bindkey -s ^o "startx\n"
-bindkey -s ^w "sudo mount -t ntfs-3g -o ro /dev/nvme0n1p2 $HOME/Windows\n"
 bindkey '^e' "autosuggest-accept"
 
 # vim:ft=zsh
