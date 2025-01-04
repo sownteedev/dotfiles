@@ -1,6 +1,0 @@
-[Nemo Action]
-Name=Unzip
-Exec=sh -c 'unzip "%F" -d "%P"'
-Icon-Name=extract
-Selection=s
-Extensions=zip;

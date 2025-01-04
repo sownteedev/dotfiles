@@ -1,6 +1,0 @@
-[Nemo Action]
-Name=Unrar
-Exec=tar -xf %F
-Icon-Name=extract
-Selection=s
-Extensions=tar;

@@ -2,10 +2,10 @@ general.import = [ '~/.config/alacritty/colors/dark.toml' ]
 
 [font]
 size = 12
-normal = { family = "Liga SFMono Nerd Font", style = "Regular" }
-bold = { family = "Liga SFMono Nerd Font", style = "Bold" }
-italic = { family = "Liga SFMono Nerd Font", style = "Italic" }
-bold_italic = { family = "Liga SFMono Nerd Font", style = "Bold Italic" }
+normal = { family = "monospace", style = "Regular" }
+bold = { family = "monospace", style = "Bold" }
+italic = { family = "monospace", style = "Italic" }
+bold_italic = { family = "monospace", style = "Bold Italic" }
 offset = { x = 0, y = 6 }
 glyph_offset = { x = 0, y = 4 }
 
