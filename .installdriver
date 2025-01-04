@@ -15,9 +15,6 @@ pkg_installed() {
 sudo sudo pacman -Syu --noconfirm
 sleep 3 && clear
 
-# Xorg
-sudo pacman -S xorg xorg-xinit --noconfirm
-
 # Git
 echo "[*] Installing git ..."
 if pkg_installed git; then
@@ -46,21 +43,6 @@ git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf ~/D
 echo "[*] Done."
 sleep 3 && clear
 
-# Enable touchpad
-echo "[*] Enable touchpad for laptop and set time to sleep ..."
-yay -S xf86-input-libinput xf86-input-synaptics libinput-gestures xdotool wmctrl --noconfirm
-sudo rm -rf /etc/X11/xorg.conf.d
-sudo ln -s ~/Dotfiles/dotf/.root/xorg.conf.d /etc/X11/xorg.conf.d
-sudo gpasswd -a $USER input
-libinput-gestures-setup stop desktop autostart start
-sleep 3 && clear
-
-# Xinitrc
-echo "[*] Override .xinitrc ..."
-rm -f ~/.xinitrc && ln -s ~/Dotfiles/dotf/.xinitrc ~/.xinitrc
-echo "[*] Done"
-sleep 3 && clear
-
 #################################################### INSTALL DRIVER AND APPS ####################################################
 # Install library
 echo "[*] Installing library ..."
@@ -77,7 +59,7 @@ sleep 3 && clear
 
 # Brightness
 echo "[*] Installing brightness ..."
-sudo pacman -S brightnessctl redshift --noconfirm
+sudo pacman -S brightnessctl --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
@@ -92,6 +74,9 @@ sleep 3 && clear
 echo "[*] Installing network ..."
 sudo pacman -S networkmanager wpa_supplicant wireless_tools network-manager-applet --noconfirm
 sudo systemctl enable NetworkManager
+LOC="/etc/NetworkManager/conf.d/wifi-powersave.conf"
+echo -e "The following has been added to $LOC.\n"
+echo -e "[connection]\nwifi.powersave = 2" | sudo tee -a $LOC
 echo "[*] Done."
 sleep 3 && clear
 
@@ -103,29 +88,21 @@ sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-sudo pacman -S nemo nemo-fileroller tumbler yad ranger ueberzug exa zip gzip tar unzip unrar xdg-user-dirs gvfs vlc evince glib2 dconf --noconfirm
+sudo pacman -S nemo nemo-fileroller tumbler ranger ueberzug exa zip gzip tar unzip unrar xdg-user-dirs gvfs vlc evince glib2 dconf --noconfirm
 gsettings set org.nemo.desktop show-desktop-icons true
 echo "[*] Done."
 sleep 3 && clear
 
 # Monitor and Theme
 echo "[*] Installing monitor and theme ..."
-sudo pacman -S maim viewnior shotwell nwg-look xsettingsd imagemagick neofetch arandr xss-lock --noconfirm
+sudo pacman -S viewnior shotwell nwg-look imagemagick neofetch --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Other
 echo "[*] Installing other ..."
-sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib gpick github-cli wget zsh && yay -S --noconfirm picom-git inotify-tools xfce4-taskmanager-git
+sudo pacman -S --noconfirm devtools gnome-keyring polkit-gnome libgnome-keyring seahorse pacman-contrib github-cli wget zsh && yay -s --noconfirm inotify-tools xfce4-taskmanager-git
 echo "[*] Done."
-clear
-echo "[*] Install ibus"
-yay -S ibus ibus-bamboo --noconfirm
-env DCONF_PROFILE=ibus dconf write /desktop/ibus/general/preload-engines "['xkb:us::eng', 'Bamboo']" && gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'Bamboo')]"
-mkdir ibus-bamboo && cd ibus-bamboo
-wget "https://raw.githubusercontent.com/BambooEngine/ibus-bamboo/master/archlinux/PKGBUILD-$VER" -O PKGBUILD
-makepkg -si
-cd .. && rm -rf ibus-bamboo
 sleep 3 && clear
 
 # Fix Driver audio (for me)

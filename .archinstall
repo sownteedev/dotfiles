@@ -5,50 +5,55 @@ set -u
 set -o pipefail
 
 echo ">>> Check Internet..."
-ping -c 3 archlinux.org || { echo "Not Found Internet!"; exit 1; }
+ping -c 3 archlinux.org || {
+    echo "Not Found Internet!"
+    exit 1
+}
 
 echo ">>> Sync time and set keyboard..."
 # Load keyboard layout
 if loadkeys i386/qwerty/us.map.gz; then
-  echo "Keyboard layout set successfully."
+    echo "Keyboard layout set successfully."
 else
-  echo "Failed to set keyboard layout. Please check the file path."
-  exit 1
+    echo "Failed to set keyboard layout. Please check the file path."
+    exit 1
 fi
 # Synchronize time
 if timedatectl set-ntp true; then
-  echo "Time synchronization enabled."
+    echo "Time synchronization enabled."
 else
-  echo "Failed to enable time synchronization."
-  exit 1
+    echo "Failed to enable time synchronization."
+    exit 1
 fi
 # Set timezone
 if timedatectl set-timezone Asia/Ho_Chi_Minh; then
-  echo "Timezone set to Asia/Ho_Chi_Minh."
+    echo "Timezone set to Asia/Ho_Chi_Minh."
 else
-  echo "Failed to set timezone."
-  exit 1
+    echo "Failed to set timezone."
+    exit 1
 fi
 
 echo ">>> Update mirrorlist..."
 pacman -Sy reflector archlinux-keyring --noconfirm
 if reflector -c Vietnam -c Singapore -c Japan -c India -a 12 --sort rate --save /etc/pacman.d/mirrorlist; then
-  echo "Mirrorlist updated successfully."
+    echo "Mirrorlist updated successfully."
 else
-  echo "Failed to update mirrorlist. Please check reflector settings."
-  exit 1
+    echo "Failed to update mirrorlist. Please check reflector settings."
+    exit 1
 fi
-
 
 # DISK
 read -p "Enter the disk you want to partition (e.g., sda or nvme0n1): " disk
 
 if [ ! -e "/dev/$disk" ]; then
-  echo "Disk /dev/$disk not found. Exiting..."
-  exit 1
+    echo "Disk /dev/$disk not found. Exiting..."
+    exit 1
 fi
 
-cfdisk /dev/$disk || { echo "Check disk."; exit 1; }
+cfdisk /dev/$disk || {
+    echo "Check disk."
+    exit 1
+}
 
 lsblk /dev/$disk
 read -p "All right? Press Enter to continue..."
