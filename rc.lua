@@ -29,6 +29,3 @@ end)
 require("beautiful").init(require("gears").filesystem.get_configuration_dir() .. "themes/theme.lua")
 require("config")
 require("signals")
-
---TODO: LIVE RELOAD
-awesome.emit_signal("live::reload")

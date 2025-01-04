@@ -10,7 +10,7 @@ local base_apps = {
 	{ name = "nemo",        class = "Nemo",        exec = "nemo" },
 	{ name = "shotwell",    class = "Shotwell",    exec = "shotwell" },
 	{ name = "thunderbird", class = "thunderbird", exec = "thunderbird" },
-	{ name = "zen-alpha",   class = "zen-alpha",   exec = "zen-browser" },
+	{ name = "zen-beta",    class = "zen-beta",    exec = "zen-browser" },
 }
 
 local dev_apps = {
@@ -39,11 +39,11 @@ local utility_apps = {
 }
 
 local social_apps = {
-	{ name = "telegram",      class = "TelegramDesktop", exec = "telegram-desktop" },
-	{ name = "caprine",       class = "Caprine",         exec = "caprine" },
-	{ name = "vesktop",       class = "vesktop",         exec = "vesktop" },
-	{ name = "Spotify",       class = "Spotify",         exec = "spotify" },
-	{ name = "YouTube Music", class = "YouTube Music",   exec = "youtube-music" }
+	{ name = "telegram",                       class = "TelegramDesktop",                exec = "telegram-desktop" },
+	{ name = "caprine",                        class = "Caprine",                        exec = "caprine" },
+	{ name = "vesktop",                        class = "vesktop",                        exec = "vesktop" },
+	{ name = "Spotify",                        class = "Spotify",                        exec = "spotify" },
+	{ name = "com.github.th_ch.youtube_music", class = "com.github.th_ch.youtube_music", exec = "youtube-music" }
 }
 
 local custom_apps = {
@@ -334,7 +334,7 @@ return function(s)
 		shape = _Utils.widget.rrect(20),
 		bg = _Utils.color.change_hex_lightness(beautiful.background, 8) .. "AA",
 		placement = function(c)
-			awful.placement.bottom(c, { margins = { bottom = beautiful.useless_gap * 2 } })
+			awful.placement.bottom(c, { margins = { bottom = 15 } })
 		end,
 		widget = wibox.container.background,
 	})
@@ -437,7 +437,7 @@ return function(s)
 	else
 		client.connect_signal("property::maximized", function(c)
 			if c.maximized then
-				c:geometry({ height = c:geometry().height - beautiful.useless_gap * 2 - dock.height })
+				c:geometry({ height = c:geometry().height - 15 - dock.height })
 			end
 		end)
 	end

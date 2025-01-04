@@ -150,20 +150,20 @@ return function(s)
 			margins = 25,
 			widget = wibox.container.margin,
 		},
-		{
-			{
-				id = "slider",
-				bar_color = beautiful.foreground .. "00",
-				bar_active_color = beautiful.foreground .. "00",
-				handle_color = beautiful.foreground .. "00",
-				bar_height = 10,
-				forced_height = 10,
-				opacity = 0.5,
-				widget = wibox.widget.slider,
-			},
-			valign = "bottom",
-			widget = wibox.container.place,
-		},
+		-- {
+		-- 	{
+		-- 		id = "slider",
+		-- 		bar_color = beautiful.foreground .. "00",
+		-- 		bar_active_color = beautiful.foreground .. "00",
+		-- 		handle_color = beautiful.foreground .. "00",
+		-- 		bar_height = 10,
+		-- 		forced_height = 10,
+		-- 		opacity = 0.5,
+		-- 		widget = wibox.widget.slider,
+		-- 	},
+		-- 	valign = "bottom",
+		-- 	widget = wibox.container.place,
+		-- },
 		layout = wibox.layout.stack,
 	})
 	playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _, _)
@@ -212,46 +212,46 @@ return function(s)
 			shuff and beautiful.green or beautiful.foreground))
 	end)
 
-	local previous_value = 0
-	local internal_update = false
-	_Utils.widget.gc(music, "slider"):connect_signal("property::value", function(_, new_value)
-		if internal_update and new_value ~= previous_value then
-			playerctl:set_position(new_value)
-			previous_value = new_value
-		end
-	end)
-
-	playerctl:connect_signal("position", function(_, interval_sec, length_sec)
-		internal_update                         = true
-		previous_value                          = interval_sec
-		_Utils.widget.gc(music, "slider").value = interval_sec
-		if length_sec ~= 0 then
-			_Utils.widget.gc(music, "slider").bar_active_color = beautiful.foreground .. "33"
-		else
-			_Utils.widget.gc(music, "slider").bar_active_color = beautiful.foreground .. "00"
-		end
-	end)
-
-	awful.spawn.with_line_callback("playerctl -F metadata -f '{{mpris:length}}'", {
-		stdout = function(line)
-			if line == " " then
-				local position = 100
-				_Utils.widget.gc(music, "slider").maximum = position
-			else
-				local position = tonumber(line)
-				if position ~= nil then
-					_Utils.widget.gc(music, "slider").maximum = position / 1000000 or nil
-				end
-			end
-		end
-	})
+	-- local previous_value = 0
+	-- local internal_update = false
+	-- _Utils.widget.gc(music, "slider"):connect_signal("property::value", function(_, new_value)
+	-- 	if internal_update and new_value ~= previous_value then
+	-- 		playerctl:set_position(new_value)
+	-- 		previous_value = new_value
+	-- 	end
+	-- end)
+	--
+	-- playerctl:connect_signal("position", function(_, interval_sec, length_sec)
+	-- 	internal_update                         = true
+	-- 	previous_value                          = interval_sec
+	-- 	_Utils.widget.gc(music, "slider").value = interval_sec
+	-- 	if length_sec ~= 0 then
+	-- 		_Utils.widget.gc(music, "slider").bar_active_color = beautiful.foreground .. "33"
+	-- 	else
+	-- 		_Utils.widget.gc(music, "slider").bar_active_color = beautiful.foreground .. "00"
+	-- 	end
+	-- end)
+	--
+	-- awful.spawn.with_line_callback("playerctl -F metadata -f '{{mpris:length}}'", {
+	-- 	stdout = function(line)
+	-- 		if line == " " then
+	-- 			local position = 100
+	-- 			_Utils.widget.gc(music, "slider").maximum = position
+	-- 		else
+	-- 			local position = tonumber(line)
+	-- 			if position ~= nil then
+	-- 				_Utils.widget.gc(music, "slider").maximum = position / 1000000 or nil
+	-- 			end
+	-- 		end
+	-- 	end
+	-- })
 
 	_Utils.widget.hoverCursor(music, "next")
 	_Utils.widget.hoverCursor(music, "previous")
 	_Utils.widget.hoverCursor(music, "play")
 	_Utils.widget.hoverCursor(music, "loop")
 	_Utils.widget.hoverCursor(music, "shuffle")
-	_Utils.widget.hoverCursor(music, "slider")
+	-- _Utils.widget.hoverCursor(music, "slider")
 
 	_Utils.widget.popupOpacity(music, 0.3)
 

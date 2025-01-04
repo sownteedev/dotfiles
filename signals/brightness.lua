@@ -1,6 +1,7 @@
 local awful = require("awful")
+local gears = require("gears")
 
-local BRIGHTNESS_CACHE = os.getenv("HOME") .. "/.cache/awesome/brightness"
+local BRIGHTNESS_CACHE = gears.filesystem.get_cache_dir() .. "brightness"
 local BACKLIGHT_PATH = "/sys/class/backlight/*"
 local BRIGHTNESS_CMD = string.format(
 	"echo $(($(cat %s/brightness) * 100 / $(cat %s/max_brightness)))",

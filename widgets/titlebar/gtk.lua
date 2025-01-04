@@ -7,20 +7,16 @@ local function create_button(icon, color, action)
 	local button = wibox.widget({
 		{
 			{
-				{
-					image = gears.color.recolor_image(icon, color),
-					resize = true,
-					widget = wibox.widget.imagebox,
-				},
-				margins = 9,
-				widget = wibox.container.margin,
+				image = gears.color.recolor_image(icon, color),
+				resize = true,
+				widget = wibox.widget.imagebox,
 			},
-			id = "bg",
-			shape = _Utils.widget.rrect(5),
-			widget = wibox.container.background,
+			margins = 9,
+			widget = wibox.container.margin,
 		},
-		margins = 5,
-		widget = wibox.container.margin,
+		id = "bg",
+		shape = _Utils.widget.rrect(5),
+		widget = wibox.container.background,
 		buttons = {
 			awful.button({}, 1, action),
 		},
@@ -117,14 +113,13 @@ return function(c)
 		},
 		{
 			{
-				spacing = -5,
 				layout = wibox.layout.fixed.horizontal,
 				buttons.minimize,
 				buttons.maximize,
 				buttons.close,
 			},
+			margins = 5,
 			widget = wibox.container.margin,
-			right = 5,
 		},
 		layout = wibox.layout.align.horizontal,
 	}

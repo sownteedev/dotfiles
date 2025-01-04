@@ -31,7 +31,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { tag = "Terminal", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge", "zen-alpha" } },
+		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge", "zen-beta" } },
 		properties = { tag = "Browser", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
@@ -39,7 +39,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { tag = "Develop" },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "Notion", "discord", "armcord", "vesktop", "Caprine", "Zalo", "Telegram", "Spotify", "YouTube Music", _User.Custom_Icon[1].name } },
+		rule_any = { class = { "Notion", "discord", "armcord", "vesktop", "Caprine", "Zalo", "Telegram", "Spotify", "com.github.th_ch.youtube_music", _User.Custom_Icon[1].name } },
 		properties = { tag = "Media" },
 	})
 	ruled.client.append_rule({

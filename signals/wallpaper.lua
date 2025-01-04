@@ -3,7 +3,7 @@ local gears              = require("gears")
 local wibox              = require('wibox')
 local beautiful          = require("beautiful")
 
-local CONFIG_FILE        = os.getenv("HOME") .. "/.config/awesome/user.lua"
+local CONFIG_FILE        = gears.filesystem.get_configuration_dir() .. "user.lua"
 local WALLPAPER_TEMPLATE = '_User.Wallpaper       = "%s"'
 local LOCK_TEMPLATE      = '_User.Lock            = "%s"'
 

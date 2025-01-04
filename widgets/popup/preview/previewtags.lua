@@ -55,7 +55,7 @@ local function draw_widget(t, s, geo)
 			})
 
 			if s and (c.prev_content or t.selected) then
-				local content = t.selected and gears.surface(c.content) or gears.surface(c.prev_content)
+				local content = t.selected and gears.surface(c.content)
 				local cr = cairo.Context(content)
 				local x, y, w, h = cr:clip_extents()
 				local img = cairo.ImageSurface.create(cairo.Format.ARGB32, w - x, h - y)

@@ -1,6 +1,7 @@
 local awful = require("awful")
+local gears = require("gears")
 
-local AIRPLANE_CACHE = os.getenv("HOME") .. "/.cache/awesome/airplane"
+local AIRPLANE_CACHE = gears.filesystem.get_cache_dir() .. "airplane"
 local AIRPLANE_STATUS_CMD = "cat " .. AIRPLANE_CACHE
 local RFKILL_STATUS_CMD = "rfkill list | sed -n 5p"
 

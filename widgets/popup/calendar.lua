@@ -29,7 +29,7 @@ local daywidget = function(day, weekend, _)
 	return wibox.widget({
 		markup = weekend and _Utils.widget.colorizeText(day, beautiful.red) or day,
 		align = "center",
-		font = beautiful.sans .. " Bold 11",
+		font = beautiful.sans .. " Bold 10",
 		widget = wibox.widget.textbox,
 	})
 end
@@ -42,7 +42,7 @@ local currwidget = function(day)
 				font = beautiful.sans .. " Medium 10",
 				widget = wibox.widget.textbox,
 			},
-			margins = 8,
+			margins = 6,
 			widget = wibox.container.margin,
 		},
 		shape  = gears.shape.circle,
@@ -54,8 +54,8 @@ end
 local theGrid = wibox.widget({
 	forced_num_rows = 7,
 	forced_num_cols = 7,
-	vertical_spacing = 1,
-	horizontal_spacing = 15,
+	vertical_spacing = 5,
+	horizontal_spacing = 10,
 	homogenous = true,
 	layout = wibox.layout.grid,
 })
