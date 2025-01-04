@@ -1,6 +1,7 @@
 local awful = require("awful")
+local gears = require("gears")
 
-local BLUR_CACHE = os.getenv("HOME") .. "/.cache/awesome/blur"
+local BLUR_CACHE = gears.filesystem.get_cache_dir() .. "blur"
 local PICOM_NORMAL = os.getenv("HOME") .. "/.config/picom/picom.conf"
 local PICOM_NO_OPACITY = os.getenv("HOME") .. "/.config/picom/picom_no_opacity.conf"
 

@@ -6,8 +6,58 @@ local path_icon = os.getenv("HOME") .. "/.icons/" .. _User.IconName .. "/"
 local icon_cache = {}
 local DEFAULT_ICON = path_icon .. "/apps/scalable/default-application.svg"
 local ICON_DIR = path_icon .. "/apps/scalable/"
+local desktop_cache = {}
 
-local icons = {}
+local function cache_desktop_files_from_dir(dir)
+	local p = io.popen("ls " .. dir .. "*.desktop 2>/dev/null")
+	if p then
+		for file in p:lines() do
+			local name = file:match("([^/]+)%.desktop$")
+			if name then
+				desktop_cache[name:lower()] = file
+			end
+		end
+		p:close()
+	end
+end
+cache_desktop_files_from_dir("/usr/share/applications/")
+cache_desktop_files_from_dir(os.getenv("HOME") .. "/.local/share/applications/")
+
+local function findDesktopIcon(class_string)
+	if not class_string then return nil end
+
+	local file_path = desktop_cache[class_string:lower()]
+	if file_path then
+		local file = io.open(file_path, "r")
+		if file then
+			for line in file:lines() do
+				local icon = line:match("^Icon=(.+)$")
+				if icon then
+					file:close()
+					if not icon:match("/") then
+						local svg_icon = "/usr/share/pixmaps/" .. icon .. ".svg"
+						local png_icon = "/usr/share/pixmaps/" .. icon .. ".png"
+
+						local svg_open = io.open(svg_icon, "r")
+						local png_open = io.open(svg_icon, "r")
+						if svg_open then
+							svg_open:close()
+							icon = svg_icon
+						elseif png_open then
+							icon = png_icon
+						else
+							icon = nil
+						end
+					end
+					return icon
+				end
+			end
+			file:close()
+		end
+	end
+
+	return nil
+end
 
 local function findCustomIcon(str)
 	if not str then return false, 0 end
@@ -42,6 +92,8 @@ local function checkIcon(name)
 	end
 	return nil
 end
+
+local icons = {}
 
 icons.getIcon = function(client, program_string, class_string)
 	if not (client or program_string or class_string) then
@@ -78,11 +130,8 @@ icons.getIcon = function(client, program_string, class_string)
 	if icon then return icon end
 
 	if class_string then
-		icon = checkIcon(class_string .. ".svg")
-		if icon then return icon end
-
-		icon = checkIcon(class_string .. ".png")
-		if icon then return icon end
+		local desktop_icon = findDesktopIcon(class_string)
+		if desktop_icon ~= nil then return desktop_icon end
 	end
 
 	return DEFAULT_ICON

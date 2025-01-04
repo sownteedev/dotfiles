@@ -62,7 +62,7 @@ M_clocl_sys  = {
 				text_extents.x_bearing
 			local y = cy - (radius - 30) * math.cos(text_angle) - text_extents.height / 2 -
 				text_extents.y_bearing
-			cr:select_font_face("SF Pro Display", cairo.FontSlant.NORMAL, cairo.FontWeight.NORMAL)
+			-- cr:select_font_face("sans", cairo.FontSlant.NORMAL, cairo.FontWeight.NORMAL)
 			cr:set_font_size(15)
 			cr:move_to(x, y)
 			cr:show_text(tostring(i))
@@ -103,7 +103,7 @@ M_clocl_sys  = {
 		cr:stroke()
 
 		cr:set_source_rgb(0, 0, 0)
-		cr:select_font_face("SF Pro Display", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
+		cr:select_font_face("sans", cairo.FontSlant.NORMAL, cairo.FontWeight.BOLD)
 		cr:set_font_size(12)
 		local gmt_text = "GMT +7"
 		local text_extents = cr:text_extents(gmt_text)

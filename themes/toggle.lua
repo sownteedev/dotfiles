@@ -1,4 +1,5 @@
 local awful = require("awful")
+local gears = require("gears")
 
 local function awesomewm(theme)
 	awful.spawn.with_shell([[
@@ -34,14 +35,13 @@ local function for_signal(theme)
 	local status = theme == "dark" and 1 or 0
 	local status1 = theme == "dark" and "true" or "false"
 	awful.spawn.easy_async_with_shell(
-		string.format("echo %s > %s", status1, os.getenv("HOME") .. "/.cache/awesome/dark"),
+		string.format("echo %s > %s", status1, gears.filesystem.get_cache_dir() .. "dark"),
 		function()
 			awesome.emit_signal("signal::darkmode", status)
 		end)
 end
 
 function applyTheme(theme)
-	backup()
 	term(theme)
 	-- gtk(theme)
 	spotify(theme)
@@ -69,7 +69,7 @@ function toggle_darkmode()
 	applyTheme(scheme)
 end
 
-awful.spawn.easy_async_with_shell("cat " .. os.getenv('HOME') .. '/.cache/awesome/dark', function(status)
+awful.spawn.easy_async_with_shell("cat " .. gears.filesystem.get_cache_dir() .. 'dark', function(status)
 	status = status:match("true")
 	awesome.emit_signal("signal::darkmode", status)
 end)

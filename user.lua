@@ -1,18 +1,18 @@
 local gfs             = require("gears.filesystem")
-
+local beautiful       = require("beautiful")
 local _User           = {}
 
 _User.Name            = "Nguyen Thanh Son"
 _User.Username        = "@sownteedev"
 
 _User.Colorscheme     = "dark"
-_User.Font            = "SF Pro Display 12"
-_User.Sans            = "SF Pro Display"
+_User.Font            = ""
+_User.Sans            = ""
 
 _User.Icon            = "Material Design Icons"
 _User.IconName        = "WhiteSur"
 _User.Custom_Icon     = {
-	{ name = "FFPWA-01J9K7824YX3HRKD9K1ZG34PZZ", to = "SoundCloud" },
+	{ name = "FFPWA-01JEEVC7KHDEE6E0P8975W60RK", to = "SoundCloud" },
 	{ name = "Alacritty",                        to = "terminal" },
 	{ name = "wps",                              to = "Word" },
 	{ name = "et",                               to = "Excel" },
@@ -24,7 +24,7 @@ _User.Custom_Icon     = {
 	{ name = "jetbrains-studio",                 to = "android-studio" },
 	{ name = "MongoDB Compass",                  to = "mongodb-compass" },
 	{ name = "Mysql-workbench-bin",              to = "mysql-workbench" },
-	{ name = "YouTube Music",                    to = "youtube-music-desktop-app" },
+	{ name = "com.github.th_ch.youtube_music",   to = "youtube-music-desktop-app" },
 	{ name = "GitHub Desktop",                   to = "github-desktop" }
 }
 
@@ -39,14 +39,16 @@ _User.API_KEY_WEATHER = ""
 _User.Coordinates     = { "21.0294498", "105.8544441" }
 
 _User.ProfilePicture  = gfs.get_configuration_dir() .. "themes/assets/sownteedev.png"
-_User.Wallpaper       = "/home/sowntee/Dotfiles/dotf/.walls/a_group_of_purple_flowers.png"
-_User.Lock            = "/home/sowntee/.walls/a.jpg"
+_User.Wallpaper       = "/home/sowntee/Dotfiles/dotf/.walls/mori.jpg"
+_User.Lock            = "/home/sowntee/Dotfiles/dotf/.walls/b.jpg"
 
 _User.SongDefPicture  = gfs.get_configuration_dir() .. "themes/assets/music/artdefault.jpg"
 
 _User.AutoStart       = {
 	-- "xrandr --auto --output DP-1 --mode 3840x2160 --primary --auto --right-of eDP-1"
+	"xrdb -merge ~/.Xresources",
 	"ibus-daemon -drx",
+	"/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 || /usr/libexec/polkit-gnome-authentication-agent-1",
 	"xinput --set-prop 14 'Device Accel Constant Deceleration' 1.5",
 	"xsettingsd",
 	"libinput-gestures-setup start",

@@ -1,6 +1,7 @@
 local awful = require("awful")
+local gears = require("gears")
 
-local REDSHIFT_CACHE = os.getenv("HOME") .. "/.cache/awesome/redshift"
+local REDSHIFT_CACHE = gears.filesystem.get_cache_dir() .. "redshift"
 local REDSHIFT_RESET = "redshift -x"
 local REDSHIFT_ENABLE = "redshift -O 4000"
 

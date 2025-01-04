@@ -228,6 +228,12 @@ client.connect_signal("request::default_mousebindings", function()
 		awful.button({ mod }, 1, function(c)
 			c:activate({ context = "mouse_click", action = "mouse_move" })
 		end),
+		awful.button({ mod }, 4, function()
+			switch_to_tag(1)
+		end),
+		awful.button({ mod }, 5, function()
+			switch_to_tag(-1)
+		end),
 		awful.button({ mod }, 3, function(c)
 			c:activate({ context = "mouse_click", action = "mouse_resize" })
 		end),
