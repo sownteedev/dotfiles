@@ -21,7 +21,7 @@ if pkg_installed git; then
 	echo "[*] Git already installed, skipping ..."
 else
 	sudo pacman -S git --noconfirm
-	echo "[*] Yay Installed."
+	echo "[*] Git Installed."
 fi
 
 # Yay
@@ -40,6 +40,8 @@ sleep 3 && clear
 # Install Dotf
 echo "[*] Installing dotfiles ..."
 git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf ~/Dotfiles/dotf
+clear
+git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=main ~/Dotfiles/main
 echo "[*] Done."
 sleep 3 && clear
 

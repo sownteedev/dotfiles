@@ -110,8 +110,8 @@ setup_env() {
     else
         echo "[*] Installing Hyprland ..."
         yay -S hyprland --noconfirm
-		yay -S hyprpaper-git hyprpicker-git hypridle-git hyprpolkitagent-git xdg-desktop-portal-hyprland-git --noconfirm
-		yay -S grim slurp wf-recorder wl-clipboard --noconfirm
+	    yay -S hyprpaper-git hyprpicker-git hypridle-git hyprpolkitagent-git xdg-desktop-portal-hyprland-git --noconfirm
+	    yay -S grim slurp wf-recorder wl-clipboard --noconfirm
         yay -S fcitx5-bamboo fcitx5-configtool fcitx5-gtk --noconfirm
         rm -rf ~/.config/hypr
         ln -s ~/Dotfiles/dotf/.config/hypr ~/.config/hypr
@@ -164,8 +164,7 @@ install_workspace() {
 	# sleep 3 && clear
 
     echo "[*] Installing TeVim ..."
-    sudo pacman -Rns neovim --noconfirm
-    yay -S --noconfirm lazygit xclip xsel fzf ripgrep neovim-nightly-bin
+    yay -S --noconfirm lazygit xclip xsel fzf ripgrep neovim
     git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
     ln -s ~/Dotfiles/dotf/.config/nvim/lua/custom ~/.config/nvim/lua/custom
     echo "[*] TeVim setup done."
@@ -231,7 +230,7 @@ securebootanddriver() {
 	sudo pacman -S --needed nvidia-open nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime --noconfirm
 
 	# Add nvidia_drm.modeset=1 on GRUB
-	sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="nvidia_drm.modeset=1 /' /etc/default/grub
+	sudo sed -i 's/loglevel=3 quiet/nvidia_drm.modeset=1 quiet/' /etc/default/grub
 	sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 	echo ">>> SUCCESS. REBOOTING..."
