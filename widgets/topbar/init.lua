@@ -47,5 +47,7 @@ return function(s)
 		wibar.bg = not status and beautiful.background .. "CC" or beautiful.background .. "88"
 	end)
 
+	-- awesome.register_xproperty("WM_NAME", "string");
+	-- wibar:set_xproperty("WM_NAME", "topbar")
 	return wibar
 end

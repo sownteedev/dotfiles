@@ -116,9 +116,9 @@ return function(s)
 		auto_start = true,
 		stop_event = "release",
 		keypressed_callback = function(self, _, key, _)
-			if key == "Up" then
+			if key == "Left" then
 				prev()
-			elseif key == "Down" or key == "Tab" then
+			elseif key == "Right" or key == "Tab" then
 				next()
 			elseif key == "Return" then
 				self:stop()

@@ -10,14 +10,14 @@ local base_apps = {
 	{ name = "nemo",        class = "Nemo",        exec = "nemo" },
 	{ name = "shotwell",    class = "Shotwell",    exec = "shotwell" },
 	{ name = "thunderbird", class = "thunderbird", exec = "thunderbird" },
-	{ name = "zen-beta",    class = "zen-beta",    exec = "zen-browser" },
+	{ name = "zen",         class = "zen",         exec = "zen-browser" },
 }
 
 local dev_apps = {
 	{ name = "Alacritty",          class = "Alacritty",          exec = "alacritty" },
 	{ name = "visual-studio-code", class = "Code",               exec = "code" },
 	{ name = "cursor",             class = "Cursor",             exec = "cursor" },
-	{ name = "jetbrains-intellij", class = "jetbrains-idea",     exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/intellij-idea-ultimate/bin/idea" },
+	{ name = "jetbrains-idea",     class = "jetbrains-idea",     exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/intellij-idea-ultimate/bin/idea" },
 	-- { name = "jetbrains-studio",   class = "jetbrains-studio",   exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/android-studio/bin/studio.sh" },
 	{ name = "jetbrains-webstorm", class = "jetbrains-webstorm", exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/webstorm/bin/webstorm" },
 	{ name = "jetbrains-pycharm",  class = "jetbrains-pycharm",  exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/pycharm-professional/bin/pycharm" },
@@ -40,7 +40,7 @@ local utility_apps = {
 
 local social_apps = {
 	{ name = "telegram",                       class = "TelegramDesktop",                exec = "telegram-desktop" },
-	{ name = "caprine",                        class = "Caprine",                        exec = "caprine" },
+	-- { name = "caprine",                        class = "Caprine",                        exec = "caprine" },
 	{ name = "vesktop",                        class = "vesktop",                        exec = "vesktop" },
 	{ name = "Spotify",                        class = "Spotify",                        exec = "spotify" },
 	{ name = "com.github.th_ch.youtube_music", class = "com.github.th_ch.youtube_music", exec = "youtube-music" }

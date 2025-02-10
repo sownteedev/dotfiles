@@ -173,7 +173,6 @@ return function(s)
 					awful.button({}, 1, function()
 						awesome.emit_signal("close::preview")
 						tag:view_only()
-						collectgarbage("collect")
 					end)
 				},
 				widget = wibox.container.background
