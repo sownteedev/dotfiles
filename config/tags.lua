@@ -31,6 +31,7 @@ screen.connect_signal("request::desktop_decoration", function(s)
 	s.preview    = require("widgets.popup.preview.previewtags")(s)
 	s.clock      = require("widgets.popup.clock")(s)
 	s.todo       = require("widgets.popup.todo")(s)
+	s.launcher   = require("widgets.popup.launcher")
 end)
 
 local TAGS_FILE = "/tmp/awesomewm-last-selected-tags"

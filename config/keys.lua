@@ -7,14 +7,11 @@ local shift = "Shift"
 
 awful.keyboard.append_global_keybindings({
 	-- Apps
-	awful.key({ mod }, "space", function()
-		awesome.emit_signal("toggle::launcher")
-	end),
 	awful.key({ mod, alt }, "space", function()
 		awesome.emit_signal("toggle::preview")
 	end),
 	awful.key({ alt }, "space", function()
-		awful.spawn.with_shell("ulauncher-toggle")
+		awesome.emit_signal("toggle::launcher")
 	end),
 	awful.key({ mod }, "e", function()
 		awful.spawn.with_shell("nemo")

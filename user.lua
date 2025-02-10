@@ -1,5 +1,4 @@
 local gfs             = require("gears.filesystem")
-local beautiful       = require("beautiful")
 local _User           = {}
 
 _User.Name            = "Nguyen Thanh Son"

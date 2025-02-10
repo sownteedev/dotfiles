@@ -11,9 +11,9 @@ local empty = wibox.widget {
 		resize = true,
 		forced_height = 150,
 		forced_width = 150,
-		valign = "center",
 		widget = wibox.widget.imagebox,
 	},
+	left = 50,
 	top = 25,
 	widget = wibox.container.margin,
 }

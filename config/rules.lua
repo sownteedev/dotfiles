@@ -31,7 +31,7 @@ ruled.client.connect_signal("request::rules", function()
 		properties = { tag = "Terminal", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
-		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge", "zen-beta" } },
+		rule_any = { class = { "Google-chrome", "firefox", "Microsoft-edge", "zen" } },
 		properties = { tag = "Browser", switch_to_tags = true },
 	})
 	ruled.client.append_rule({
