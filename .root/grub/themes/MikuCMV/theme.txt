@@ -4,7 +4,7 @@
 # Global Property
 title-text: ""
 title-color: "#3ec6ae"
-terminal-font: "Terminus Regular Bold 14"
+terminal-font: "SF Pro Display Bold 14"
 terminal-left: "0"
 terminal-top: "0"
 terminal-width: "100%"
@@ -12,7 +12,7 @@ terminal-height: "100%"
 terminal-border: "0"
 desktop-image: "background.png"
 desktop-color: "#fba8c2"
-message-font: "Terminus Regular Bold 14"
+message-font: "SF Pro Display Bold 14"
 message-color: "#fd262e"
 
 # Show the boot menu
@@ -21,7 +21,7 @@ message-color: "#fd262e"
   top = 36%
   width = 50%
   height = 58%
-  item_font = "Terminus Regular Bold 14"
+  item_font = "SF Pro Display Bold 14"
   item_color = "#000000"
   selected_item_color = "#ffffff"
   icon_width = 32
@@ -39,7 +39,7 @@ message-color: "#fd262e"
   top = 93%
   height = 30
   width = 67%+7
-  font = "Terminus Regular 16"
+  font = "SF Pro Display 16"
   id = "__timeout__"
   text = "Automatically booting in %d seconds"
   text_color = "gainsboro"
