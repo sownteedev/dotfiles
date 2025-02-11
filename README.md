@@ -7,11 +7,3 @@ sh -c "$(curl -sSL https://raw.githubusercontent.com/sownteedev/dotfiles/main/.a
 ```zsh
 sh -c "$(curl -sSL https://raw.githubusercontent.com/sownteedev/dotfiles/main/.installdriver)"
 ```
-
-```zsh
-sh -c "$(curl -sSL https://raw.githubusercontent.com/sownteedev/dotfiles/main/.installconfigtheme)"
-```
-
-```zsh
-sh -c "$(curl -sSL https://raw.githubusercontent.com/sownteedev/dotfiles/main/.installother)"
-```
