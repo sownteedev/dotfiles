@@ -5,20 +5,15 @@ local iconTheme = require("lgi").require("Gtk", "3.0").IconTheme.get_default()
 local beautiful = require("beautiful")
 local gears = require("gears")
 
-local Conf = {
-	rows = 4,
-	entry_height = 90,
-	entry_width = 450,
-	popup_margins = 15,
-}
+local numberOfResult = 5
 
 local prompt = wibox.widget({
 	{
 		image = _Utils.image.cropSurface(4, gears.surface.load_uncached(_User.Wallpaper)),
 		opacity = 1,
-		forced_height = 120,
+		forced_height = 125,
 		clip_shape = beautiful.radius,
-		forced_width = Conf.entry_height,
+		forced_width = 500,
 		widget = wibox.widget.imagebox,
 	},
 	{
@@ -44,7 +39,7 @@ local prompt = wibox.widget({
 				widget = wibox.container.margin,
 				left = 20,
 			},
-			forced_width = Conf.entry_width - 200,
+			forced_width = 250,
 			forced_height = 55,
 			shape = beautiful.radius,
 			widget = wibox.container.background,
@@ -62,29 +57,13 @@ local entries_container = wibox.widget({
 	homogeneous = false,
 	expand = true,
 	forced_num_cols = 1,
-	forced_width = Conf.entry_width,
+	forced_width = 450,
 })
 
-local main_widget = wibox.widget({
-	widget = wibox.container.background,
-	bg = beautiful.lighter,
-	shape = beautiful.radius,
-	shape_border_width = beautiful.border_width_custom,
-	shape_border_color = beautiful.border_color,
-	forced_height = (Conf.entry_height * (Conf.rows + 1)) + Conf.popup_margins,
-	{
-		{
-			layout = wibox.layout.fixed.vertical,
-			spacing = Conf.popup_margins,
-			prompt,
-			entries_container,
-		},
-		widget = wibox.container.margin,
-		left = Conf.popup_margins,
-		right = Conf.popup_margins,
-		bottom = Conf.popup_margins,
-		top = Conf.popup_margins,
-	},
+local main = wibox.widget({
+	layout = wibox.layout.fixed.vertical,
+	spacing = 15,
+	prompt
 })
 
 local popup_widget = awful.popup({
@@ -94,18 +73,31 @@ local popup_widget = awful.popup({
 	placement = function(d)
 		_Utils.widget.placeWidget(d, "center", 0, 0, 0, 0)
 	end,
-	maximum_width = Conf.entry_width + Conf.entry_height + Conf.popup_margins * 3,
+	maximum_height = 77.5 * numberOfResult + 15 * 3 + 125,
 	shape = beautiful.radius,
-	widget = main_widget,
+	widget = {
+		main,
+		margins = 15,
+		widget = wibox.container.margin,
+	},
 })
+
+awesome.connect_signal("signal::blur", function(status)
+	popup_widget.bg = not status and beautiful.lighter or beautiful.lighter .. "DD"
+end)
 
 local index_entry, index_start = 1, 1
 local unfiltered, filtered, regfiltered = {}, {}, {}
 
+local lower = string.lower
+local len = string.len
+local insert = table.insert
+local sub = string.sub
+
 local function next()
 	if index_entry ~= #filtered then
 		index_entry = index_entry + 1
-		if index_entry > index_start + Conf.rows - 1 then
+		if index_entry > index_start + numberOfResult - 1 then
 			index_start = index_start + 1
 		end
 	else
@@ -122,7 +114,7 @@ local function back()
 		end
 	else
 		index_entry = #filtered
-		index_start = #filtered - Conf.rows + 1
+		index_start = #filtered - numberOfResult + 1
 	end
 end
 
@@ -131,10 +123,11 @@ local function gen()
 	for _, entry in ipairs(Gio.AppInfo.get_all()) do
 		if entry:should_show() then
 			local name = entry:get_name():gsub("&", "&amp;"):gsub("<", "&lt;"):gsub("'", "&#39;")
+			local desc = entry:get_description() or "Nothing to show"
 			local path = entry:get_icon():to_string()
 			local icon_info = iconTheme:lookup_icon(path, 48, 0)
 			local p = icon_info and icon_info:get_filename() or _Utils.icon.getIcon(nil, name, name)
-			table.insert(entries, { name = name, appinfo = entry, icon = p })
+			table.insert(entries, { name = name, desc = desc, appinfo = entry, icon = p })
 		end
 	end
 	return entries
@@ -142,27 +135,39 @@ end
 
 local function filter(input)
 	local clear_input = input:gsub("[%(%)%[%]%%]", "")
+	local input_lower = lower(clear_input)
+	local input_len = len(clear_input)
 
 	filtered = {}
 	regfiltered = {}
 
 	for _, entry in ipairs(unfiltered) do
-		if entry.name:lower():sub(1, clear_input:len()) == clear_input:lower() then
-			table.insert(filtered, entry)
-		elseif entry.name:lower():match(clear_input:lower()) then
-			table.insert(regfiltered, entry)
+		local name_lower = lower(entry.name)
+		if sub(name_lower, 1, input_len) == input_lower then
+			insert(filtered, entry)
+		elseif name_lower:match(input_lower) then
+			insert(regfiltered, entry)
 		end
 	end
 
-	table.sort(filtered, function(a, b)
-		return a.name:lower() < b.name:lower()
-	end)
-	table.sort(regfiltered, function(a, b)
-		return a.name:lower() < b.name:lower()
-	end)
+	local function sort_entries(a, b)
+		return lower(a.name) < lower(b.name)
+	end
+
+	table.sort(filtered, sort_entries)
+	table.sort(regfiltered, sort_entries)
 
 	for i = 1, #regfiltered do
-		filtered[#filtered + 1] = regfiltered[i]
+		insert(filtered, regfiltered[i])
+	end
+
+	if clear_input ~= "" then
+		main:reset()
+		main:add(prompt)
+		main:add(entries_container)
+	else
+		main:reset()
+		main:add(prompt)
 	end
 
 	entries_container:reset()
@@ -190,7 +195,6 @@ local function filter(input)
 				end),
 			},
 			widget = wibox.container.background,
-			shape_border_width = beautiful.border_width_custom,
 			{
 				{
 					{
@@ -201,33 +205,43 @@ local function filter(input)
 						widget = wibox.widget.imagebox,
 					},
 					{
-						markup = entry.name,
-						id = "name",
-						widget = wibox.widget.textbox,
-						font = beautiful.sans .. " 13",
+						{
+							{
+								markup = entry.name,
+								id = "name",
+								widget = wibox.widget.textbox,
+								font = beautiful.sans .. " 13",
+							},
+							{
+								markup = entry.desc,
+								id = "desc",
+								widget = wibox.widget.textbox,
+								font = beautiful.sans .. " 10",
+							},
+							layout = wibox.layout.fixed.vertical,
+							spacing = 5,
+						},
+						align = "center",
+						layout = wibox.container.place,
 					},
 					spacing = 20,
 					layout = wibox.layout.fixed.horizontal,
 				},
-				left = 30,
-				top = 10,
-				bottom = 10,
+				left = 20,
+				top = 15,
+				bottom = 15,
+				right = 20,
 				widget = wibox.container.margin,
 			},
 		})
 
-		if index_start <= i and i <= index_start + Conf.rows - 1 then
+		if index_start <= i and i <= index_start + numberOfResult - 1 then
 			entries_container:add(entry_widget)
 		end
 
 		if i == index_entry then
 			entry_widget.bg = beautiful.lighter1
 			entry_widget.shape_border_color = beautiful.border_color
-			_Utils.widget.gc(entry_widget, "name"):set_font(beautiful.sans .. " Medium 13")
-			_Utils.widget.gc(entry_widget, "name"):set_markup_silently(_Utils.widget.colorizeText(entry.name,
-				beautiful.blue))
-		else
-			entry_widget.shape_border_color = beautiful.foreground .. "00"
 		end
 	end
 
@@ -241,33 +255,29 @@ local function filter(input)
 end
 
 local exclude = {
-	"Shift_R",
-	"Shift_L",
-	"Super_R",
-	"Super_L",
-	"Tab",
-	"Alt_R",
-	"Alt_L",
-	"Control_L",
-	"Control_R",
-	"Caps_Lock",
-	"Print",
-	"Insert",
-	"CapsLock",
-	"Home",
-	"End",
-	"Down",
-	"Up",
-	"Left",
-	"Right",
+	Shift_R = true,
+	Shift_L = true,
+	Super_R = true,
+	Super_L = true,
+	Tab = true,
+	Alt_R = true,
+	Alt_L = true,
+	Control_L = true,
+	Control_R = true,
+	Caps_Lock = true,
+	Print = true,
+	Insert = true,
+	CapsLock = true,
+	Home = true,
+	End = true,
+	Down = true,
+	Up = true,
+	Left = true,
+	Right = true
 }
-local function has_value(tab, val)
-	for _, value in ipairs(tab) do
-		if value == val then
-			return true
-		end
-	end
-	return false
+
+local function has_value(_, val)
+	return exclude[val]
 end
 
 local prompt_grabber = awful.keygrabber({
@@ -293,7 +303,7 @@ local prompt_grabber = awful.keygrabber({
 			back()
 		elseif key == "Down" then
 			next()
-		elseif has_value(exclude, key) then
+		elseif has_value(nil, key) then
 			addition = ""
 		else
 			addition = key
@@ -317,8 +327,8 @@ end)
 awesome.connect_signal("toggle::launcher", function()
 	if not popup_widget.visible then
 		popup_widget.visible = true
-		unfiltered = gen()
 		filter("")
+		unfiltered = gen()
 		prompt_grabber:start()
 	else
 		awesome.emit_signal("close::launcher")
