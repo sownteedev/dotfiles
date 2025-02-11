@@ -22,7 +22,7 @@ end
 
 local getName     = function(type)
 	---@diagnostic disable: param-type-mismatch
-	local file_extension = (type == "rec") and ".mkv" or ".png"
+	local file_extension = (type == "rec") and ".mp4" or ".png"
 	local folder_path = (type == "rec") and "~/Videos/Recordings/" or "~/Pictures/Screenshots/"
 	local filename = folder_path .. os.date("%d-%m-%Y-%H:%M:%S") .. file_extension
 	return filename:gsub("~", os.getenv("HOME"))
