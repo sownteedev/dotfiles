@@ -33,15 +33,6 @@ else
     exit 1
 fi
 
-echo ">>> Update mirrorlist..."
-pacman -Sy reflector archlinux-keyring --noconfirm
-if reflector -c Vietnam -c Singapore -c Japan -c India -a 12 --sort rate --save /etc/pacman.d/mirrorlist; then
-    echo "Mirrorlist updated successfully."
-else
-    echo "Failed to update mirrorlist. Please check reflector settings."
-    exit 1
-fi
-
 # DISK
 read -p "Enter the disk you want to partition (e.g., sda or nvme0n1): " disk
 
@@ -72,7 +63,8 @@ mkdir -p /mnt/boot
 mount /dev/${disk}p${boot_part} /mnt/boot
 
 lsblk /dev/$disk
-sleep 5 && clear
+read -p "All right? Press Enter to continue..."
+clear
 
 # Chroot
 echo ">>> Basic install..."
@@ -102,7 +94,7 @@ echo LANG=en_US.UTF-8 > /etc/locale.conf
 echo "$hostname" > /etc/hostname
 cat << EOL > /etc/hosts
 127.0.0.1	localhost
-::1		localhost
+::1			localhost
 127.0.1.1	$hostname.localdomain	$hostname
 EOL
 
@@ -110,16 +102,15 @@ EOL
 echo "root:$rootpassword" | chpasswd
 
 # User and password
-useradd -m $username
+useradd -m -G wheel,audio,video,optical,storage,power $username
 echo "$username:$userpassword" | chpasswd
-usermod -aG wheel,audio,video,optical,storage,power $username
 
 echo ">>> Config sudo..."
 EDITOR=nvim visudo
 
 echo ">>> Installing NetworkManager..."
 pacman -S --noconfirm networkmanager wpa_supplicant wireless_tools
-systemctl enable NetworkManager
+systemctl enable NetworkManager wpa_supplicant
 
 echo ">>> Installing GRUB..."
 pacman -S --noconfirm grub os-prober efibootmgr ntfs-3g mtools dosfstools
