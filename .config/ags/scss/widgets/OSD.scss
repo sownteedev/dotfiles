@@ -1,0 +1,169 @@
+@use "sass:string";
+@use "../abstracts" as *;
+
+@function gtkalpha($c, $a) {
+  @return string.unquote("alpha(#{$c},#{$a})");
+}
+
+window.OSDWindow {
+  @include unset;
+  background: transparent;
+}
+
+.OSD {
+  background-color: gtkalpha($surface0, 0.95);
+  border-radius: 10px;
+  border: 1px solid gtkalpha($border, 1);
+  margin: 2rem 0;
+
+  .volume-indicator,
+  .volume-indicator-mute,
+  .mic-indicator,
+  .mic-indicator-mute,
+  .brightness-indicator {
+    padding: 0.75rem;
+    margin: 0.5rem 1rem 0.5rem 1rem;
+
+    .indicator {
+      icon {
+        margin-right: 0.5rem;
+        font-size: 20px;
+        color: $text;
+      }
+
+      label {
+        color: $text;
+        font-size: 1.1rem;
+      }
+    }
+  }
+
+  .volume-indicator {
+    .indicator icon {
+      color: $blue;
+      font-size: 25px;
+      padding-right: 5px;
+    }
+
+    .slider-container {
+      min-width: 250px;
+      margin-right: 0.75rem;
+
+      .volume-slider {
+        margin-left: 1.5rem;
+
+        trough {
+          background-color: gtkalpha($blue, 0.2);
+          min-height: 1.2rem;
+          border-radius: 10px;
+          margin-left: 0.5rem;
+        }
+
+        highlight {
+          background-color: $blue;
+          min-height: 0.8rem;
+          border-radius: 10px;
+          margin: 0 -1em;
+        }
+
+        slider {
+          background-color: $blue;
+          border-radius: 1rem;
+          min-height: 1.2rem;
+          min-width: 1.2rem;
+          margin: -0.2em;
+        }
+      }
+    }
+  }
+
+  .mic-indicator {
+    .indicator icon {
+      color: $yellow;
+      font-size: 25px;
+      padding-right: 5px;
+    }
+
+    .slider-container {
+      min-width: 250px;
+      margin-right: 0.75rem;
+
+      .volume-slider {
+        margin-left: 1.5rem;
+
+        trough {
+          background-color: gtkalpha($yellow, 0.2);
+          min-height: 1.2rem;
+          border-radius: 10px;
+          margin-left: 0.5rem;
+        }
+
+        highlight {
+          background-color: $yellow;
+          min-height: 0.8rem;
+          border-radius: 10px;
+          margin: 0 -1em;
+        }
+
+        slider {
+          background-color: $yellow;
+          border-radius: 1rem;
+          min-height: 1.2rem;
+          min-width: 1.2rem;
+          margin: -0.2em;
+        }
+      }
+    }
+  }
+
+  .brightness-indicator {
+    .indicator icon {
+      color: $green;
+      font-size: 25px;
+      padding-right: 5px;
+    }
+
+    .slider-container {
+      min-width: 250px;
+      margin-right: 0.75rem;
+
+      .brightness-slider {
+        margin-left: 1.5rem;
+
+        trough {
+          background-color: gtkalpha($green, 0.2);
+          min-height: 1.2rem;
+          border-radius: 10px;
+          margin-left: 0.5rem;
+        }
+
+        highlight {
+          background-color: $green;
+          min-height: 0.8rem;
+          border-radius: 10px;
+          margin: 0 -1em;
+        }
+
+        slider {
+          background-color: $green;
+          border-radius: 1rem;
+          min-height: 1.2rem;
+          min-width: 1.2rem;
+          margin: -0.2em;
+        }
+      }
+    }
+  }
+
+  .volume-indicator-mute,
+  .mic-indicator-mute {
+    icon {
+      color: $red;
+      font-size: 30px;
+    }
+  }
+
+  scale trough highlight {
+    background-color: $overlay2;
+  }
+}

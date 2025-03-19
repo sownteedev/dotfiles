@@ -1,0 +1,31 @@
+@use "./colors" as *;
+
+@mixin window {
+  background-color: $crust;
+  padding: 1rem;
+  color: $text;
+  box-shadow: 0 0 4px 2px $shadow;
+}
+
+@mixin unset($rec: false) {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  @if $rec {
+    * {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+    }
+  }
+}
+
+@mixin hovered-button {
+  &:hover {
+    background-color: $primary;
+    color: $base;
+  }
+}
