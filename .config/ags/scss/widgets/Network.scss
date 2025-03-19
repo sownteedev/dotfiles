@@ -1,0 +1,159 @@
+@use "../abstracts" as *;
+@use "../components/button" as *;
+
+window.NetworkWindow {
+  background: transparent;
+
+  >box {
+    background-color: $surface0;
+    border-radius: to-rem(12px);
+    border: to-rem(1px) solid gtkalpha($border, 0.2);
+    min-width: to-rem(350px);
+    margin: to-rem(10px);
+
+    .airplane-mode,
+    .wifi-toggle {
+      padding: to-rem(4px) to-rem(8px);
+      border-radius: to-rem(8px);
+
+      label {
+        color: $text;
+        font-weight: 500;
+      }
+
+      switch {
+        background-color: gtkalpha($surface1, 0.6);
+        padding: to-rem(2px);
+
+        &:checked {
+          background-color: $primary;
+        }
+
+        slider {
+          background-color: $text;
+          margin: 0;
+        }
+      }
+    }
+
+    .current-network {
+      background-color: gtkalpha($surface1, 0.6);
+      border-radius: to-rem(12px);
+      padding: to-rem(12px);
+      margin: to-rem(8px) 0;
+
+      >box:first-child {
+        margin-bottom: to-rem(8px);
+
+        icon {
+          font-size: to-rem(24px);
+          color: $primary;
+        }
+
+        label {
+          font-size: 1.1em;
+          font-weight: 600;
+          color: $text;
+        }
+      }
+
+      .network-details {
+        box {
+          margin: to-rem(4px) 0;
+
+          label {
+            &:first-child {
+              color: $subtext1;
+            }
+
+            &:last-child {
+              color: $text;
+            }
+          }
+        }
+      }
+    }
+
+    .visible-networks {
+      .network-selector {
+        padding: to-rem(8px);
+        border-radius: to-rem(8px);
+        background-color: transparent;
+        transition: all 200ms ease;
+
+        &:hover {
+          background-color: gtkalpha($surface2, 0.8);
+        }
+
+        icon:last-child {
+          transition: all 200ms ease;
+          -gtk-icon-transform: rotate(-90deg);
+
+          &.expanded {
+            -gtk-icon-transform: rotate(0deg);
+          }
+        }
+      }
+
+      .network-list {
+        margin-left: to-rem(8px);
+        min-height: to-rem(300px);
+
+        &,
+        scrolledwindow {
+          border: none;
+          outline: none;
+          box-shadow: none;
+          -gtk-outline-radius: 0;
+        }
+
+        viewport {
+          border: none;
+          outline: none;
+        }
+
+        button {
+          padding: to-rem(8px);
+          border-radius: to-rem(8px);
+          background-color: transparent;
+          transition: all 200ms ease;
+          margin: to-rem(2px) 0;
+
+          &:hover {
+            background-color: gtkalpha($surface2, 0.8);
+          }
+
+          &.active {
+            background-color: $primary;
+
+            label,
+            icon {
+              color: $base;
+            }
+          }
+
+          icon {
+            color: $primary;
+          }
+
+          label {
+            color: $text;
+            margin-left: to-rem(8px);
+          }
+        }
+      }
+    }
+
+    .settings {
+      button {
+        @include button;
+        padding: to-rem(8px) to-rem(12px);
+        background-color: gtkalpha($surface1, 0.6);
+
+        &:hover {
+          background-color: gtkalpha($surface2, 0.8);
+        }
+      }
+    }
+  }
+}
