@@ -1,0 +1,38 @@
+window.lock-screen {
+	background-color: $bg;
+
+	.TimeLockScreen {
+		font-size: 180px;
+		font-weight: 900;
+		color: $fg;
+	}
+
+	.DateLockScreen {
+		font-size: 45px;
+		font-weight: 500;
+		color: $fg;
+		margin-bottom: to-rem(300px);
+	}
+
+	.password-entry-box {
+		background-color: gtkalpha($bg, 0.9);
+		padding: 15px 25px;
+		border-radius: 30px;
+		box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+		border: to-rem(1px) solid gtkalpha($fg1, 0.5);
+
+		.password-entry {
+			font-size: 15px;
+			font-weight: 500;
+			min-width: 150px;
+			color: $fg;
+			background-color: transparent;
+			border: 0px solid transparent;
+			transition-duration: 200ms;
+
+			&.has-text {
+				min-width: 200px;
+			}
+		}
+	}
+}

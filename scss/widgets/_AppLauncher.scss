@@ -1,0 +1,67 @@
+window.launcher {
+    background-color: transparent;
+
+    >box {
+      margin: to-rem(20px);
+    }
+}
+
+.Applauncher {
+    background-color: $bg;
+    border-radius: 15px;
+    padding: to-rem(15px);
+    border: to-rem(1px) solid gtkalpha($bg3, 0.8);
+    box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+
+    .search {
+        min-height: 40px;
+        font-size: to-rem(18px);
+        padding: to-rem(10px) to-rem(20px) to-rem(10px) to-rem(20px);
+        border: 1px solid transparent;
+
+        &:focus {
+            border: 1px solid gtkalpha($fg2, 0.3);
+        }
+    }
+
+    button {
+        min-width: 0;
+        min-height: 0;
+        padding: to-rem(20px);
+        background-color: $bg1;
+        box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+
+        &:focus {
+            background-color: $bg2;
+        }
+
+        icon {
+            font-size: to-rem(60px);
+            margin-right: to-rem(20px);
+        }
+
+        label.name {
+            font-weight: bold;
+            font-size: to-rem(18px);
+        }
+
+        label.description {
+            color: gtkalpha($fg, .8);
+            font-size: to-rem(16px);
+        }
+    }
+
+    box.not-found {
+        padding: to-rem(15px);
+
+        icon {
+            font-size: 6em;
+            color: gtkalpha($fg, .7);
+        }
+
+        label {
+            color: gtkalpha($fg, .9);
+            font-size: 1.2em;
+        }
+    }
+}

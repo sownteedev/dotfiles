@@ -1,0 +1,23 @@
+@import 'base/index';
+
+* {
+  font-family: "Inter", "SF Pro Display", "Rubik", "Geist", "Noto Sans", sans-serif;
+  font-size: to-rem(16px);
+}
+
+tooltip {
+  background-color: $bg;
+  border-radius: to-rem(15px);
+  font-size: to-rem(18px);
+  font-weight: 500;
+}
+
+@import 'widgets/Bar';
+@import 'widgets/Desktop';
+@import 'widgets/MediaPlayer';
+@import 'widgets/Notifications';
+@import 'widgets/OSD';
+@import 'widgets/AppLauncher';
+@import 'widgets/Power';
+@import 'widgets/LockScreen';
+@import 'widgets/Control';
