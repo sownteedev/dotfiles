@@ -1,0 +1,82 @@
+box.MediaPlayer {
+  background-color: gtkalpha($bg, 0.98);
+  padding: to-rem(20px);
+  border-radius: to-rem(15px);
+  min-width: to-rem(620px);
+  margin-top: to-rem(15px);
+
+  box.cover-art {
+    min-width: to-rem(180px);
+    min-height: to-rem(180px);
+    border-radius: to-rem(10px);
+    margin-right: to-rem(20px);
+    background-size: contain;
+    background-position: center;
+  }
+
+  box.title {
+    label {
+      font-weight: 500;
+      font-size: to-rem(22px);
+      margin-right: to-rem(10px);
+    }
+
+    icon {
+      font-size: to-rem(25px);
+    }
+  }
+
+  box.artist {
+    label {
+      font-size: to-rem(18px);
+    }
+  }
+
+  .slider {
+    trough {
+      background-color: gtkalpha($red, 0.2);
+      border-radius: to-rem(15px);
+      min-height: to-rem(15px);
+    }
+
+    highlight {
+      background-color: $red;
+      border-radius: to-rem(15px);
+      min-height: to-rem(10px);
+    }
+
+    slider {
+      background-color: $red;
+      border-radius: to-rem(100px);
+      min-height: to-rem(5px);
+      min-width: to-rem(5px);
+      border: to-rem(1px) solid gtkalpha($bg, 0.5);
+    }
+  }
+
+  centerbox.actions {
+    min-width: to-rem(220px);
+
+    .position {
+      font-size: to-rem(18px);
+      font-weight: 500;
+    }
+
+    .length {
+      font-size: to-rem(18px);
+      font-weight: 500;
+    }
+
+    button {
+      min-width: 0;
+      min-height: 0;
+      padding: to-rem(5px);
+      margin: 0 to-rem(5px);
+      border-radius: to-rem(100px);
+
+      icon {
+        font-size: to-rem(28px);
+      } 
+    }
+  }
+}

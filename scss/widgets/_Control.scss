@@ -1,0 +1,217 @@
+window.control-menu {
+    background-color: transparent;
+
+    >box {
+        margin: to-rem(20px);
+    }
+}
+
+.control-menu-container {
+    background: $bg;
+    padding: to-rem(30px);
+    min-width: 600px;
+    min-height: 1460px;
+    border-radius: to-rem(20px);
+    box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+}
+
+// Top Control
+.top-control {
+    .uptime {
+        label {
+            color: $fg;
+            font-size: to-rem(20px);
+            font-weight: 500;
+        }
+        icon {
+            font-size: to-rem(30px);
+        }
+    }
+
+    .image {
+        background-size: cover;
+        min-width: 40px;
+        min-height: 40px;
+        border-radius: 50%;
+        box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+    }
+}
+
+// Control Buttons
+.control-buttons {
+    background-color: $bg1;
+    border-radius: 30px;
+    padding: to-rem(10px);
+    box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+
+    button {
+        background-color: $bg2;
+        border-radius: 50%;
+        padding: to-rem(15px);
+        box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+
+        icon {
+            color: $fg;
+            font-size: to-rem(30px);
+        }
+
+        &:hover {
+            background-color: $bg3;
+        }
+
+        &.active {
+            background-color: gtkalpha($blue, 0.8);
+            icon {
+                color: $bg;
+            }
+
+            &:hover {
+                background-color: $blue;
+            }
+        }
+    }
+}
+
+// Content
+.content-container {
+    background-color: $bg1;
+    border-radius: 15px;
+    padding: to-rem(30px);
+    box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+    min-height: 700px;
+}
+
+.button-container {
+    min-height: 20px;
+    background-color: transparent;
+
+    button {
+        background-color: transparent;
+        border-radius: 30px;
+        padding: to-rem(8px) to-rem(20px);
+        transition: background-color 0.2s;
+    }
+
+    .active {
+        background-color: gtkalpha($blue, 0.8);
+
+        &:hover {
+            background-color: $blue;
+        }
+    }
+
+    icon {
+        color: $fg;
+        font-size: to-rem(30px);
+    }
+
+    label {
+        color: $fg;
+        font-size: to-rem(18px);
+        font-weight: 600;
+    }
+}
+
+.wifi-container {
+    background-color: transparent;
+
+    .current-wifi {
+        background-color: $bg1;
+        border-radius: to-rem(15px);
+        padding: to-rem(15px) to-rem(40px);
+        box-shadow: 0 0 5px 5px gtkalpha(#000, 0.3);
+  
+        >centerbox:first-child {
+            margin-bottom: to-rem(8px);
+
+            icon {
+                font-size: to-rem(30px);
+                color: $blue;
+                margin-bottom: to-rem(5px);
+            }
+
+            label {
+                font-size: to-rem(18px);
+                font-weight: 600;
+                color: $fg;
+            }
+
+            button {
+                background-color: $bg2;
+                padding: to-rem(10px);
+                border-radius: 50%;
+
+                &:hover {
+                    background-color: $bg3;
+                }
+
+                icon {
+                    font-size: to-rem(30px);
+                    color: $fg;
+                    margin-bottom: to-rem(-3px);
+                }
+            }
+        }
+  
+        .wifi-details {
+            box {
+                label {
+                    font-size: to-rem(18px);
+                    font-weight: 500;
+
+                    &:first-child {
+                        color: $fg1;
+                    }
+        
+                    &:last-child {
+                        color: $fg;
+                    }
+                }
+            }
+        }
+    }
+
+    .wifi-list {
+        background-color: transparent;
+        border-radius: to-rem(15px);
+        min-height: to-rem(510px);
+
+        .no-networks {
+            padding-top: to-rem(200px);
+            color: $fg1;
+            font-size: to-rem(18px);
+            font-weight: 500;
+        }
+
+        viewport {
+            border: none;
+            outline: none;
+        }
+
+        button {
+            padding: to-rem(8px);
+            background-color: transparent;
+            transition: all 200ms ease;
+
+            &:hover {
+                background-color: gtkalpha($bg2, 0.8);
+            }
+
+            &.active {
+                background-color: $bg2;
+            }
+
+            icon {
+                color: $fg;
+                font-size: to-rem(30px);
+            }
+
+            label {
+                color: $fg;
+                font-size: to-rem(18px);
+                font-weight: 500;
+                margin-left: to-rem(5px);
+            }
+        }
+      }
+}

@@ -1,0 +1,10 @@
+window.desktop {
+  box {
+    background-image: linear-gradient(to bottom, $red, $blue);
+    padding: to-rem(20px);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: 250ms background-image;
+  }
+}
