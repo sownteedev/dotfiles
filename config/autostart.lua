@@ -7,8 +7,8 @@ end
 awful.spawn.easy_async_with_shell("cat ~/.cache/awesome/blur", function(stdout)
 	local status = stdout:match("true")
 	awful.spawn.with_shell(
-		not status and "picom --config ~/.config/picom/picom_no_opacity.conf -b" or
-		"picom --config ~/.config/picom/picom.conf -b"
+		not status and "picom --config ~/.config/awesome/scripts/picom/picom_no_opacity -b" or
+		"picom --config ~/.config/awesome/scripts/picom/picom.conf -b"
 	)
 end)
 

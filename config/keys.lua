@@ -83,7 +83,7 @@ awful.keyboard.append_global_keybindings({
 		area()
 	end),
 	awful.key({ alt }, "p", function()
-		awful.spawn.with_shell("~/.local/bin/colorpicker")
+		awful.spawn.with_shell("~/.config/awesome/scripts/colorpicker")
 	end),
 	awful.key({ alt }, "F4", function()
 		if client.focus then
