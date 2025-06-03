@@ -37,8 +37,8 @@ const createBrightnessIndicator = (brightness: any) => {
 }
 
 const createOSDWidget = (current_timeout_ref: any) => {
-	const speaker = Wp.get_default()!.audio.default_speaker
-	const mic = Wp.get_default()!.audio.default_microphone
+	const speaker = Wp.get_default()!.defaultSpeaker
+	const mic = Wp.get_default()!.defaultMicrophone
 	const brightness = Brightness.get_default()
 
 	return <box
@@ -75,36 +75,60 @@ const createOSDWidget = (current_timeout_ref: any) => {
 			let is_clicked_speaker_mute = false
 			let is_clicked_mic_mute = false
 
-			bind(speaker, "volume").subscribe(() => {
+			const subscriptions: any[] = [];
+
+			subscriptions.push(bind(speaker, "volume").subscribe(() => {
 				if (is_clicked_speaker) {
 					showOSD(speaker_vol)
 				}
 				is_clicked_speaker = true
-			})
-			bind(speaker, "mute").subscribe((muted: any) => {
+			}));
+
+			subscriptions.push(bind(speaker, "mute").subscribe((muted: any) => {
 				if (is_clicked_speaker_mute) {
 					showOSD(muted ? speaker_mute : speaker_vol)
 				}
 				is_clicked_speaker_mute = true
-			})
-			bind(mic, "volume").subscribe(() => {
+			}));
+
+			subscriptions.push(bind(mic, "volume").subscribe(() => {
 				if (is_clicked_mic) {
 					showOSD(mic_vol)
 				}
 				is_clicked_mic = true
-			})
-			bind(mic, "mute").subscribe((muted: any) => {
+			}));
+
+			subscriptions.push(bind(mic, "mute").subscribe((muted: any) => {
 				if (is_clicked_mic_mute) {
 					showOSD(muted ? mic_mute : mic_vol)
 				}
 				is_clicked_mic_mute = true
-			})
-			bind(brightness, "screen").subscribe(() => {
+			}));
+
+			subscriptions.push(bind(brightness, "screen").subscribe(() => {
 				if (is_clicked_brightness) {
 					showOSD(brightness_indicator)
 				}
 				is_clicked_brightness = true
-			})
+			}));
+
+			// Cleanup function
+			const cleanup = () => {
+				// Cancel any active timeout
+				if (current_timeout_ref.timer) {
+					current_timeout_ref.timer.cancel();
+					current_timeout_ref.timer = null;
+				}
+				// Unsubscribe all handlers
+				subscriptions.forEach(unsub => {
+					if (typeof unsub === 'function') {
+						unsub();
+					}
+				});
+			};
+
+			// Set cleanup on widget destroy
+			self.connect('destroy', cleanup);
 		}}>
 		{createVolumeIndicator(speaker, "volume-indicator")}
 		{createMuteIndicator(speaker, "volume-indicator")}

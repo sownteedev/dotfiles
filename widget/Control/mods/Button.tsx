@@ -2,6 +2,7 @@ import { bind, Variable, exec, execAsync } from "astal";
 import { Gtk } from "astal/gtk3";
 import Network from "gi://AstalNetwork"
 import Bluetooth from "gi://AstalBluetooth"
+import Notifd from "gi://AstalNotifd"
 
 const WifiButtonToggle = () => {
     const network = Network.get_default()
@@ -11,11 +12,7 @@ const WifiButtonToggle = () => {
 			network.wifi.enabled = !network.wifi.enabled
 		}}>
 		{
-			bind(wifiState).as((w) => {
-				return <icon
-                    icon={bind(w, "iconName")}
-                />
-            })
+			bind(wifiState).as((w) => <icon icon={bind(w, "iconName")} />)
         }
     </button>
 }
@@ -67,6 +64,16 @@ const DarkModeButtonToggle = () => {
     </button>
 }
 
+const SlienceNotification = () => {
+    const notifd = Notifd.get_default()
+    return <button className={bind(notifd, "dont_disturb").as((v) => v ? "active" : "")}
+        onClick={() => {
+            notifd.dont_disturb = !notifd.dont_disturb
+        }}>
+        <icon icon="dnd-symbolic" />
+    </button>
+}
+
 export default () => (
 	<box className="control-buttons" spacing={20} halign={Gtk.Align.CENTER}>
 		<WifiButtonToggle />
@@ -74,5 +81,6 @@ export default () => (
 		<AirplaneModeButtonToggle />
 		<AdjustsColorScreenButtonToggle />
 		<DarkModeButtonToggle />
+		<SlienceNotification />
 	</box>
 );

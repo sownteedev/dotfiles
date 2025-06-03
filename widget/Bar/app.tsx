@@ -1,5 +1,5 @@
 import { App, Astal, Gtk, Gdk } from "astal/gtk3"
-import { Variable, bind, GLib } from "astal"
+import { Variable, bind, GLib, exec, execAsync } from "astal"
 import Mpris from "gi://AstalMpris"
 import Battery from "gi://AstalBattery"
 import Network from "gi://AstalNetwork"
@@ -72,7 +72,11 @@ const Wifi = () => {
 	const network = Network.get_default()
 	const wifiState = Variable.derive([bind(network, "wifi")], (wifi) => wifi)
 
-	return <button>
+	const cleanup = () => {
+		wifiState.drop();
+	};
+
+	return <button onDestroy={cleanup}>
 		{
 			bind(wifiState).as((w) => {
 				return <icon
@@ -89,6 +93,7 @@ let mprisWindow: any = null
 const Media = () => {
 	const mpris = Mpris.get_default();
 	const windowVisible = Variable(false)
+	
 	const toggleMediaPlayer = () => {
 		if (windowVisible.get() && mprisWindow != null) {
 			mprisWindow.hide();
@@ -104,7 +109,16 @@ const Media = () => {
 		}
 	}
 
-	return <button className="Media" onClick={toggleMediaPlayer}>
+	// Cleanup function
+	const cleanup = () => {
+		windowVisible.drop();
+		if (mprisWindow) {
+			mprisWindow.destroy();
+			mprisWindow = null;
+		}
+	};
+
+	return <button className="Media" onClick={toggleMediaPlayer} onDestroy={cleanup}>
 		{bind(mpris, "players").as((arr) => arr[0] ? (
 			<box>
 				<box className="cover-art" css={bind(arr[0], "coverArt").as((c) => `background-image: url('${c || ""}')`)} />
@@ -141,10 +155,13 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
 				<Wifi />
 				<BatteryLevel />
 				<KhoangTrang />
-				<box vertical>
-					<Time />
-					<Date />
-				</box>
+				<button onClick={() => execAsync("astal -i sownteeastal -t control-menu")}>
+					<box vertical>
+						<Time />
+						<Date />
+					</box>
+				</button>
+
 			</box>
 		</centerbox>
 	</window >

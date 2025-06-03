@@ -7,7 +7,6 @@ import { isImage } from "../utils/file";
 const passwordVar = Variable("");
 const authenticating = Variable(false);
 const errorMessage = Variable("");
-
 const lockScreenWall = Variable(Global.LockScreenWall);
 const css = lockScreenWall.get() !== "" && isImage(lockScreenWall.get()) ? `background-image: url('${lockScreenWall.get()}'); background-size: cover;` : "";
 
@@ -64,6 +63,13 @@ export const LockScreen = () => {
 		
 	};
 
+	const cleanup = () => {
+		passwordVar.drop();
+		authenticating.drop();
+		errorMessage.drop();
+		lockScreenWall.drop();
+	};
+
 	return (
 		<window
 			name="lock-screen"
@@ -75,6 +81,7 @@ export const LockScreen = () => {
 			css={css}
 			exclusivity={Astal.Exclusivity.IGNORE}
 			visible={false}
+			onDestroy={cleanup}
 		>
 			<centerbox vertical>
 				<box halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER} vertical>

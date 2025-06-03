@@ -35,7 +35,7 @@ export const PowerMenu = ({ firstButtonRef }: { firstButtonRef: (button: Gtk.But
       <PowerAction command="astal -i sownteeastal -t lock-screen" icon="system-lock-screen-symbolic" ref={thirdButtonRef} />
       <PowerAction command="systemctl suspend" icon="system-suspend-symbolic" ref={fourthButtonRef} />
       <PowerAction command="systemctl hibernate" icon="system-hibernate-symbolic" ref={fifthButtonRef} />
-      <PowerAction command="loginctl kill-user $USER" icon="system-log-out-symbolic" ref={sixthButtonRef} />
+      <PowerAction command="niri msg action quit" icon="system-log-out-symbolic" ref={sixthButtonRef} />
     </box>
   );
 };
@@ -48,6 +48,11 @@ export default function Power() {
   };
 
   const width = Variable(2000)
+
+  // Cleanup function
+  const cleanup = () => {
+    width.drop();
+  };
 
   return <window
     name="power-menu"
@@ -68,6 +73,7 @@ export default function Power() {
         self.hide();
       }
     }}
+    onDestroy={cleanup}
   >
     <box>
       <eventbox widthRequest={width(w => w / 2)} expand onClick={hide} />

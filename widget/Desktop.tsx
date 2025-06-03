@@ -9,6 +9,10 @@ export const Desktop = (gdkmonitor: Gdk.Monitor) => {
 	const windowName = `desktop-${gdkmonitor.display.get_n_monitors()}`;
 	const Anchor = Astal.WindowAnchor;
 
+	const cleanup = () => {
+		desktopWall.drop();
+	};
+
 	return (
 		<window
 			gdkmonitor={gdkmonitor}
@@ -19,6 +23,7 @@ export const Desktop = (gdkmonitor: Gdk.Monitor) => {
 			exclusivity={Astal.Exclusivity.IGNORE}
 			keymode={Astal.Keymode.EXCLUSIVE}
 			className="desktop"
+			onDestroy={cleanup}
 		>
 			{bind(desktopWall).as((wallpaper) => {
 				if (wallpaper && isImage(wallpaper)) {

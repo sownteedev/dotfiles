@@ -13,7 +13,23 @@ interface Window {
 	is_floating: boolean;
 }
 
+// Create a single instance of Apps manager to avoid memory leaks
+let appManager: Apps.Apps | null = null;
+const getAppManager = () => {
+	if (!appManager) {
+		appManager = new Apps.Apps();
+	}
+	return appManager;
+};
+
+// Cache monitor data to avoid repeated exec calls
+let cachedMonitors: any[] | null = null;
+
 const getNiriMonitors = () => {
+	if (cachedMonitors) {
+		return cachedMonitors;
+	}
+
 	const monitors = JSON.parse(exec("niri msg --json outputs"));
 
 	const monitorArray = [];
@@ -29,20 +45,29 @@ const getNiriMonitors = () => {
 		}
 	}
 
+	cachedMonitors = monitorArray;
 	return monitorArray;
 }
 
-const getWindowsForWorkspace = () => {
+// Combine both exec calls into one function to reduce overhead
+const getNiriData = () => {
+	const workspaces = JSON.parse(exec("niri msg --json workspaces"));
 	const windows = JSON.parse(exec("niri msg --json windows"));
-	return windows;
+	return { workspaces, windows };
 }
 
 let previousWorkspaceState: { hash: string; data: any } | null = null;
+let lastCallTime = 0;
+const THROTTLE_DELAY = 150;
 
 const getWorkspaceData = () => {
-	const workspaces = JSON.parse(exec("niri msg --json workspaces"));
+	const now = Date.now();
+	if (now - lastCallTime < THROTTLE_DELAY && previousWorkspaceState) {
+		return previousWorkspaceState.data;
+	}
+	lastCallTime = now;
 
-	const windows: Window[] = getWindowsForWorkspace();
+	const { workspaces, windows } = getNiriData();
 	
 	const windowsByWorkspace: { [key: number]: Window[] } = {};
 	for (const window of windows) {
@@ -98,14 +123,30 @@ const getWorkspaceData = () => {
 	return workspaceData;
 }
 
+// Cache for app info to avoid repeated lookups
+const appInfoCache = new Map<string, any>();
+const MAX_CACHE_SIZE = 50;
+
 const getAppInfo = (appId: string) => {
 	if (!appId) return null;
 	
-	const appManager = new Apps.Apps();
+	// Check cache first
+	if (appInfoCache.has(appId)) {
+		return appInfoCache.get(appId);
+	}
 
-	const appList = appManager.get_list();
+	// Use the single app manager instance
+	const appList = getAppManager().get_list();
 	for (const app of appList) {
 		if (app.entry.toLowerCase().includes(appId.toLowerCase())|| app.icon_name === appId || app.iconName === appId || app.name === appId || app.wm_class === appId) {
+			// Limit cache size
+			if (appInfoCache.size >= MAX_CACHE_SIZE) {
+				const firstKey = appInfoCache.keys().next().value;
+				if (firstKey) {
+					appInfoCache.delete(firstKey);
+				}
+			}
+			appInfoCache.set(appId, app);
 			return app;
 		}
 	}
@@ -117,13 +158,29 @@ const getAppInfo = (appId: string) => {
 	
 	for (const keyword of commonKeywords) {
 		if (appId.toLowerCase().includes(keyword)) {
-			const keywordResults = appManager.fuzzy_query(keyword);
+			const keywordResults = getAppManager().fuzzy_query(keyword);
 			if (keywordResults.length > 0) {
+				// Limit cache size
+				if (appInfoCache.size >= MAX_CACHE_SIZE) {
+					const firstKey = appInfoCache.keys().next().value;
+					if (firstKey) {
+						appInfoCache.delete(firstKey);
+					}
+				}
+				appInfoCache.set(appId, keywordResults[0]);
 				return keywordResults[0];
 			}
 		}
 	}
 	
+	// Cache null result to avoid repeated failed lookups
+	if (appInfoCache.size >= MAX_CACHE_SIZE) {
+		const firstKey = appInfoCache.keys().next().value;
+		if (firstKey) {
+			appInfoCache.delete(firstKey);
+		}
+	}
+	appInfoCache.set(appId, null);
 	return null;
 };
 
@@ -193,21 +250,28 @@ const MonitorWorkspaces = (props: any) => {
 }
 
 export default () => {
-	const workspaceData = Variable(getWorkspaceData).poll(250, getWorkspaceData);
+	const workspaceData = Variable(getWorkspaceData).poll(200, getWorkspaceData);
 
-	return <box className={"Workspaces"}>
+	const cleanup = () => {
+		workspaceData.drop();
+		appInfoCache.clear();
+		previousWorkspaceState = null;
+		cachedMonitors = null;
+		appManager = null;
+	};
+
+	return <box className={"Workspaces"} onDestroy={cleanup}>
 		{bind(workspaceData).as((ws: any) => {
 			if (!Array.isArray(ws)) {
-				return null;
+				return <label label="Loading workspaces..." />;
 			}
-			const monitors = ws.map((monitor: any) => (
+			
+			return ws.map((monitor: any) => (
 				<MonitorWorkspaces
-					monitor={monitor.monitor}
 					name={monitor.name}
 					workspaces={monitor.workspaces}
 				/>
 			));
-			return monitors;
 		})}
 	</box>
 }
