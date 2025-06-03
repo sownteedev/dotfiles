@@ -18,7 +18,11 @@ export default () => {
 		return getActiveWindow() || {}
 	})
 
-	return <box className={"ActiveClient"}>
+	const cleanup = () => {
+		active_window.drop();
+	};
+
+	return <box className={"ActiveClient"} onDestroy={cleanup}>
 		<box vertical>
 			<label className={"app-id"} halign={Gtk.Align.START} label={bind(active_window).as((window: any) => {
 				return (sanitizeUtf8(window.app_id || "Desktop")).toLowerCase()

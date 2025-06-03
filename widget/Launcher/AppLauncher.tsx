@@ -4,6 +4,15 @@ import { bind, Variable } from "astal"
 
 const MAX_ITEMS = 5
 
+// Singleton Apps instance to avoid memory leak
+let appsInstance: Apps.Apps | null = null;
+const getAppsInstance = () => {
+	if (!appsInstance) {
+		appsInstance = new Apps.Apps();
+	}
+	return appsInstance;
+};
+
 function hide() {
 	App.get_window("launcher")!.hide()
 }
@@ -34,15 +43,26 @@ function AppButton({ app }: { app: Apps.Application }) {
 
 export default function Applauncher() {
 	const { CENTER } = Gtk.Align
-	const apps = new Apps.Apps()
+	const apps = getAppsInstance(); // Use singleton instance
 	const width = Variable(2000)
 
 	const text = Variable("")
 	const list = text(text => text.trim() === "" ? [] : apps.fuzzy_query(text).slice(0, MAX_ITEMS))
+	
 	const onEnter = () => {
-		apps.fuzzy_query(text.get())?.[0].launch()
-		hide()
+		const results = apps.fuzzy_query(text.get());
+		if (results.length > 0) {
+			results[0].launch();
+			hide();
+		}
 	}
+
+	// Cleanup function
+	const cleanup = () => {
+		width.drop();
+		text.drop();
+		// Note: list is derived from text, so it will be cleaned up automatically
+	};
 
 	return <window
 		name="launcher"
@@ -57,7 +77,8 @@ export default function Applauncher() {
 		onKeyPressEvent={function(self, event: Gdk.Event) {
 			if (event.get_keyval()[1] === Gdk.KEY_Escape)
 				self.hide()
-		}}>
+		}}
+		onDestroy={cleanup}>
 		<box>
 			<eventbox widthRequest={width(w => w / 2)} expand onClick={hide} />
 			<box hexpand={false} vertical>

@@ -12,19 +12,23 @@ function getUptime() {
 
 const uptime = Variable(getUptime()).poll(60000, getUptime);
 
-export default () => (
-    <centerbox className="top-control">
-        <box className="uptime" spacing={15} halign={Gtk.Align.START}>
-            <icon icon="media-playlist-shuffle-symbolic"/>
-            <label label={bind(uptime)} />
-        </box>
-        <box>
-            <label label=""/>
-        </box>
-        <box
-            halign={Gtk.Align.END}
-            className="image"
-            css={`background-image: url("${Global.ProfileImage}")`}
-        />
-    </centerbox>
-);
+export default () => {
+    const cleanup = () => {
+        uptime.drop();
+    };
+
+    return (
+        <centerbox className="top-control" onDestroy={cleanup}>
+            <box className="uptime" spacing={15} halign={Gtk.Align.START}>
+                <icon icon="media-playlist-shuffle-symbolic"/>
+                <label label={bind(uptime)} />
+            </box>
+            <box/>
+            <box
+                halign={Gtk.Align.END}
+                className="image"
+                css={`background-image: url("${Global.ProfileImage}")`}
+            />
+        </centerbox>
+    );
+};

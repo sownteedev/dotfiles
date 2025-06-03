@@ -61,6 +61,8 @@ window.control-menu {
 
         &.active {
             background-color: gtkalpha($blue, 0.8);
+            box-shadow: 0 0 3px 3px gtkalpha($blue, 0.3);
+
             icon {
                 color: $bg;
             }
@@ -94,9 +96,18 @@ window.control-menu {
 
     .active {
         background-color: gtkalpha($blue, 0.8);
+        box-shadow: 0 0 5px 5px gtkalpha($blue, 0.3);
 
         &:hover {
             background-color: $blue;
+        }
+
+        icon {
+            color: $bg;
+        }
+
+        label {
+            color: $bg;
         }
     }
 
@@ -213,5 +224,376 @@ window.control-menu {
                 margin-left: to-rem(5px);
             }
         }
-      }
+    }
+}
+
+.password-entry {
+    padding: to-rem(15px) to-rem(20px);
+
+    .password-entry-header {
+        button {
+            background-color: $bg2;
+            padding: to-rem(10px);
+            border-radius: 50%;
+
+            icon {
+                font-size: to-rem(25px);
+            }
+        }
+
+        label {
+            font-size: to-rem(18px);
+            font-weight: 500;
+        }
+
+        icon {
+            font-size: to-rem(30px);
+            margin-bottom: to-rem(5px);
+        }
+    }
+
+    .password-entry-body {
+        label {
+            color: $fg;
+            font-size: to-rem(18px);
+            font-weight: 500;
+        }
+
+        entry {
+            background-color: $bg2;
+            border-radius: to-rem(10px);
+            padding: to-rem(15px);
+            color: $fg;
+            font-size: to-rem(18px);
+            border: to-rem(1px) solid gtkalpha($fg1, 0.5);
+
+            &.status-error {
+                color: $fg;
+                border: 1px solid $red;
+            }
+        }
+
+        button {
+            background-color: $bg2;
+            padding: to-rem(15px);
+            border-radius: to-rem(10px);
+            color: $fg;
+            font-size: to-rem(18px);
+        }
+    }
+}
+
+// Bluetooth
+.bluetooth-container {
+    background-color: transparent;
+
+    .bluetooth-header {
+        label {
+            color: $fg;
+            font-size: to-rem(18px);
+            font-weight: 600;
+        }
+
+        button {
+            background-color: $bg2;
+            padding: to-rem(10px);
+            border-radius: 50%;
+
+            icon {
+                font-size: to-rem(30px);
+            }
+        }
+    }
+}
+
+.bluetooth-devices-scroll {
+    background-color: transparent;
+    border-radius: to-rem(15px);
+    min-height: to-rem(660px);
+
+    viewport {
+        border: none;
+        outline: none;
+    }
+
+    .devices-list {
+        background-color: transparent;
+
+        label {
+            color: $fg;
+            font-size: to-rem(18px);
+            font-weight: 500;
+        }
+    }
+
+    .bluetooth-device {
+        background-color: transparent;
+
+        .bluetooth-device-name {
+            color: $fg;
+            font-size: to-rem(18px);
+            font-weight: 500;
+        }
+
+        .bluetooth-device-icon {
+            font-size: to-rem(25px);
+            margin-bottom: to-rem(15px);
+        }
+
+        button {
+            background-color: $bg2;
+            padding: to-rem(10px);
+            border-radius: 50%;
+
+            icon {
+                font-size: to-rem(20px);
+            }
+        }
+    }
+}
+
+
+// Audio
+.audio-container {
+    background-color: transparent;
+    min-height: to-rem(710px);
+
+    viewport {
+        border: none;
+        outline: none;
+    }
+}
+
+.device-item {
+    background-color: $bg1;
+    border-radius: to-rem(15px);
+    padding: to-rem(12px);
+
+    &.active {
+        background-color: $bg2;
+    }
+
+    label {
+        font-size: to-rem(17px);
+        font-weight: 500;
+    }
+}
+
+.section-title {
+    font-size: to-rem(18px);
+    font-weight: 600;
+}
+
+.volume-slider-control {
+    label {
+        font-size: to-rem(18px);
+        font-weight: 600;
+    }
+
+    button {
+        background-color: transparent;
+        border-radius: 50%;
+        padding: to-rem(10px);
+
+        icon {
+            font-size: to-rem(30px);
+        }
+    }
+
+    trough {
+        background-color: gtkalpha($blue, 0.2);
+        border-radius: to-rem(15px);
+        margin-right: to-rem(20px);
+    }
+
+    highlight {
+        background-color: $blue;
+        border-radius: to-rem(15px);
+    }
+
+    slider {
+        background-color: $blue;
+        border-radius: to-rem(100px);
+        box-shadow: 0 0 to-rem(5px) to-rem(3px) gtkalpha(#000, 0.3);
+    }
+}
+
+.application-volume-container {
+    .application-title {
+        font-size: to-rem(19px);
+        font-weight: 600;
+    }
+
+    .no-applications {
+        font-size: to-rem(18px);
+        font-weight: 500;
+        color: $fg1;
+    }
+
+    .application-volume-item {
+        label {
+            font-size: to-rem(18px);
+            font-weight: 500;
+        }
+
+        button {
+            background-color: transparent;
+            icon {
+                font-size: to-rem(30px);
+            }
+        }
+
+        trough {
+            margin-right: to-rem(20px);
+            background-color: gtkalpha($blue, 0.2);
+            border-radius: to-rem(15px);
+        }
+    
+        highlight {
+            background-color: $blue;
+            border-radius: to-rem(15px);
+        }
+    
+        slider {
+            background-color: $blue;
+            border-radius: to-rem(100px);
+            box-shadow: 0 0 to-rem(5px) to-rem(3px) gtkalpha(#000, 0.3);
+        }
+    }
+}
+
+
+// Notification
+.notification-container-scrollable {
+    background-color: transparent;
+    min-height: to-rem(650px);
+
+    viewport {
+        border: none;
+        outline: none;
+    }
+}
+
+.no-notifications {
+    font-size: to-rem(400px);
+    margin-top: to-rem(100px);
+}
+
+.notification-list {
+    background-color: transparent;
+
+    >box {
+        margin: to-rem(15px) to-rem(0px) to-rem(0px) to-rem(0px);
+    }
+}
+
+.notification-item {
+    background-color: $bg2;
+    border-radius: to-rem(15px);
+    padding: to-rem(20px);
+
+    &:hover {
+        background-color: $bg3;
+    }
+
+    .default-icon-notification-list {
+        margin-right: to-rem(20px);
+        padding: to-rem(15px);
+        border-radius: 50%;
+
+        icon {
+            font-size: to-rem(40px);
+        }
+    }
+
+    .icon-image-list {
+        margin-right: to-rem(20px);
+        min-width: to-rem(20px);
+        min-height: to-rem(20px);
+    }
+    
+    .image-list {
+        margin-right: to-rem(20px);
+        border-radius: to-rem(15px);
+        min-width: to-rem(70px);
+        min-height: to-rem(70px);
+        background-size: cover;
+        background-position: center;
+    }
+    
+    .notification-summary-list {
+        font-size: to-rem(18px);
+        font-weight: 600;
+        margin-bottom: to-rem(20px);
+    }
+    
+    .notification-body-list {
+        font-size: to-rem(16px);
+        font-weight: 500;
+    }
+    
+    .notification-time-list {
+        margin: 0 to-rem(-5px) 0 to-rem(30px);
+        font-size: to-rem(16px);
+        font-weight: 600;
+        color: gtkalpha($fg, 0.8);
+    }
+    
+    .notification-expand-button-list {
+        icon {
+            transition: all 200ms ease-out;
+            -gtk-icon-transform: rotate(0deg);
+    
+            &.expanded {
+                -gtk-icon-transform: rotate(180deg);
+            }
+        }
+    }
+    
+    .notification-actions-list {
+        margin-top: to-rem(20px);
+        
+        button {
+            border-radius: to-rem(15px);
+            padding: to-rem(10px);
+            background-color: gtkalpha($bg3, 0.8);
+    
+            label {
+                font-size: to-rem(16px);
+            }
+        
+            &:last-child {
+                margin-right: to-rem(20px);
+            }
+            
+            &:hover {
+                background-color: $bg3;
+            }
+        }
+    }
+}
+
+.notification-container {
+    background-color: transparent;
+    label {
+        color: $fg;
+        font-size: to-rem(18px);
+        font-weight: 600;
+    }
+
+    >centerbox {
+        icon {
+            font-size: to-rem(35px);
+            color: $fg;
+        }
+
+        button {
+            border-radius: 50%;
+            background-color: gtkalpha($bg3, 0.8);
+
+            &:hover {
+                background-color: $bg3;
+            }
+        }
+    }
 }

@@ -17,34 +17,15 @@ window.NotificationPopups {
     border-radius: to-rem(15px);
     background-color: $bg;
     margin-top: to-rem(20px);
-    border-left: to-rem(3px) solid $bg2;
     padding: to-rem(20px);
     border: to-rem(1px) solid gtkalpha($bg3, 0.8);
     box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
-    
-    &.low {
-      border-left-color: #777777;
-    }
-    
-    &.normal {
-      border-left-color: #cc2222;
-    }
-    
-    &.critical {
-      border-left-color: #ff3333;
-    }
   }
 
   &.critical > box {
     .notification-app-icon {
       color: gtkalpha($red, .8);
     }
-  }
-
-  .notification-app-icon {
-    margin-right: to-rem(20px);
-    min-width: to-rem(40px);
-    min-height: to-rem(40px);
   }
 
   .icon-image {
@@ -60,6 +41,16 @@ window.NotificationPopups {
     min-height: to-rem(80px);
     background-size: cover;
     background-position: center;
+  }
+
+  .default-icon-notification {
+    margin-right: to-rem(20px);
+    padding: to-rem(15px);
+    border-radius: 50%;
+
+    icon {
+      font-size: to-rem(40px);
+    }
   }
 
   .notification-summary {

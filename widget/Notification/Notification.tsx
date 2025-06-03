@@ -1,4 +1,4 @@
-import { bind, exec, GLib, Variable } from "astal"
+import { bind, GLib, Variable } from "astal"
 import { Gtk, Astal } from "astal/gtk3"
 import { type EventBox } from "astal/gtk3/widget"
 import Notifd from "gi://AstalNotifd"
@@ -12,13 +12,6 @@ const isIcon = (icon: string) => {
 	const result = !!Astal.Icon.lookup_icon(icon)
 	iconCache.set(icon, result)
 	return result
-}
-
-const formatTime = (time: number) => {
-	const date = GLib.DateTime.new_from_unix_local(time)
-	const hours = date.get_hour().toString().padStart(2, '0')
-	const minutes = date.get_minute().toString().padStart(2, '0')
-	return `${hours}:${minutes}`
 }
 
 const urgency = (n: Notifd.Notification) => {
@@ -61,6 +54,11 @@ export default function Notification(props: Props) {
 				className="icon-image">
 				<icon icon={n.image} expand halign={CENTER} valign={CENTER} />
 			</box>}
+			{!n.image && <button
+				className="default-icon-notification"
+				valign={Gtk.Align.START}>
+				<icon icon="default-notification-symbolic" />
+			</button>}
 			<box vertical>
 				<box>
 					<label
@@ -74,7 +72,7 @@ export default function Notification(props: Props) {
 						<label
 							className="notification-time"
 							halign={START}
-							label={formatTime(n.time)}
+							label={"now"}
 						/>
 						<button
 							className="notification-expand-button"
