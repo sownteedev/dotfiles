@@ -1,82 +1,83 @@
 window.OSDWindow {
-  background: transparent;
+    background: transparent;
 
-  >box {
-    margin: to-rem(20px);
-  }
+    >box {
+        margin: to-rem(20px);
+    }
 }
 
 .OSD {
-  background-color: gtkalpha($bg, 0.95);
-  border-radius: to-rem(15px);
-  border: to-rem(1px) solid gtkalpha($bg3, 0.8);
-  margin: to-rem(32px) 0;
-  box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
-  @mixin slider-styles($color) {
-    padding: to-rem(25px);
+    background-color: gtkalpha($bg, 0.95);
+    border-radius: to-rem(15px);
+    border: to-rem(1px) solid gtkalpha($bg3, 0.8);
+    margin: to-rem(32px) 0;
+    box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+    @mixin slider-styles($color) {
+        padding: to-rem(25px);
 
-    .indicator {
-      label {
-        color: $fg;
-        font-weight: 600;
-        font-size: to-rem(18px);
-      }
+        .indicator {
+            label {
+                color: $fg;
+                font-weight: 600;
+                font-size: to-rem(18px);
+            }
 
-      icon {
-        color: $color;
-        margin-right: to-rem(15px);
-        font-size: to-rem(30px);
-      }
-    }
-
-    .slider-container {
-      min-width: to-rem(280px);
-
-      .volume-slider,
-      .brightness-slider {
-        margin-left: to-rem(15px);
-
-        trough {
-          background-color: gtkalpha($color, 0.2);
-          border-radius: to-rem(15px);
+            icon {
+                color: $color;
+                margin-right: to-rem(15px);
+                font-size: to-rem(30px);
+            }
         }
 
-        highlight {
-          background-color: $color;
-          border-radius: to-rem(15px);
+        .slider-container {
+            min-width: to-rem(280px);
+
+            .volume-slider,
+            .brightness-slider {
+                margin-left: to-rem(15px);
+                transition: all ease-in-out 500ms;
+
+                trough {
+                    background-color: gtkalpha($color, 0.2);
+                    border-radius: to-rem(15px);
+                }
+
+                highlight {
+                    background-color: $color;
+                    border-radius: to-rem(15px);
+                }
+
+                slider {
+                    background-color: $color;
+                    border-radius: to-rem(100px);
+                    min-height: to-rem(20px);
+                    min-width: to-rem(20px);
+                    margin: to-rem(-3px);
+                    box-shadow: 0 0 to-rem(5px) to-rem(3px) gtkalpha(#000, 0.3);
+                }
+            }
         }
+    }
 
-        slider {
-          background-color: $color;
-          border-radius: to-rem(100px);
-          min-height: to-rem(20px);
-          min-width: to-rem(20px);
-          margin: to-rem(-3px);
-          box-shadow: 0 0 to-rem(5px) to-rem(3px) gtkalpha(#000, 0.3);
+    .volume-indicator {
+        @include slider-styles($blue);
+    }
+
+    .mic-indicator {
+        @include slider-styles($yellow);
+    }
+
+    .brightness-indicator {
+        @include slider-styles($green);
+    }
+
+    .volume-indicator-mute,
+    .mic-indicator-mute {
+        padding: to-rem(20px);
+
+        icon {
+            color: $red;
+            font-size: to-rem(30px);
         }
-      }
     }
-  }
-
-  .volume-indicator {
-    @include slider-styles($blue);
-  }
-
-  .mic-indicator {
-    @include slider-styles($yellow);
-  }
-
-  .brightness-indicator {
-    @include slider-styles($green);
-  }
-
-  .volume-indicator-mute,
-  .mic-indicator-mute {
-    padding: to-rem(20px);
-
-    icon {
-      color: $red;
-      font-size: to-rem(30px);
-    }
-  }
 }

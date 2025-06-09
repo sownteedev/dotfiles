@@ -1,132 +1,160 @@
 .Bar {
-  background-color: gtkalpha($bg, 0.8);
+    background-color: gtkalpha($bg, 0.8);
 
-  button {
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  label {
-    margin: 0 to-rem(8px);
-  }
-
-  >centerbox {
-    padding: to-rem(10px);
-  }
-
-  .SysTrayIcon {
-    font-size: to-rem(27px);
-  }
-
-  .Chia {
-    font-size: to-rem(21px);
-    font-weight: 600;
-    margin-right: to-rem(-30px);
-    margin-left: to-rem(-20px);
-  }
-
-  .Wifi {
-    font-size: to-rem(30px);
-    margin-bottom: to-rem(5px);
-  }
-
-  .BatteryIcon {
-    font-size: to-rem(30px);
-  }
-
-  .ActiveClient {
-    margin-left: to-rem(20px);
-    .app-id {
-      font-size: to-rem(17px);
-      color: $fg1;
+    button {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
     }
 
-    .window-title {
-      font-size: to-rem(18px);
-      font-weight: 500;
+    label {
+        margin: 0 to-rem(8px);
     }
-  }
 
-  .Time {
-    font-size: to-rem(19px);
-    font-weight: 700;
-  }
+    >centerbox {
+        padding: to-rem(10px);
+    }
 
-  .Date {
-    font-size: to-rem(17px);
-    font-weight: 600;
-    color: $fg1;
-  }
+    .SysTrayIcon {
+        font-size: to-rem(27px);
+    }
 
-  box.cover-art {
-    min-width: to-rem(28px);
-    min-height: to-rem(10px);
-    border-radius: to-rem(15px);
-    margin: 0 0.6rem 0rem 0;
-    padding: 0.8rem;
-    background-size: cover;
-    background-position: center;
-  }
+    .Chia {
+        font-size: to-rem(21px);
+        font-weight: 600;
+        margin-right: to-rem(-30px);
+        margin-left: to-rem(-20px);
+    }
 
-  label.title {
-    font-size: to-rem(18px);
-    font-weight: 500;
-  }
+    .Wifi {
+        icon {
+            font-size: to-rem(30px);
+            margin-bottom: to-rem(5px);
+        }
 
-  label.artist {
-    font-size: to-rem(17px);
-  }
+        label {
+            font-size: to-rem(17px);
+            font-weight: 500;
+        }
+    }
+
+    .Battery {
+        icon {
+            font-size: to-rem(30px);
+        }
+
+        label {
+            font-size: to-rem(17px);
+            font-weight: 500;
+        }
+    }
+
+    .ActiveClient {
+        margin-left: to-rem(20px);
+        .app-id {
+            font-size: to-rem(17px);
+            color: $fg1;
+        }
+
+        .window-title {
+            font-size: to-rem(18px);
+            font-weight: 500;
+        }
+    }
+
+    .Time {
+        font-size: to-rem(19px);
+        font-weight: 700;
+    }
+
+    .Date {
+        font-size: to-rem(17px);
+        color: $fg1;
+    }
+
+    .play-pause-bar {
+        background-color: gtkalpha($bg, 0.6);
+        transition: all 0.2s ease;
+        icon {
+            font-size: to-rem(25px);
+        }
+    }
+
+    .progress-media {
+        transition: all ease-in-out 500ms;
+        font-size: to-rem(3px);
+        color: $fg;
+        background-color: $fg2;
+    }
+
+    box.cover-art {
+        min-width: to-rem(20px);
+        border-radius: 50%;
+        margin: to-rem(5px);
+        padding: 0 to-rem(10px);
+        background-size: cover;
+        background-position: center;
+    }
+
+    label.title {
+        font-size: to-rem(18px);
+        font-weight: 600;
+    }
+
+    label.artist {
+        font-size: to-rem(17px);
+        color: $fg1;
+    }
 }
 
 .Workspaces {
-  .monitor-workspaces {
-    border-radius: to-rem(5px);
+    .monitor-workspaces {
+        border-radius: to-rem(5px);
 
-    &.monitor-1 .workspace-button {
-      background-color: gtkalpha($bg1, 0.8);
-      box-shadow: 0 0 5px 5px gtkalpha(#000, 0.3);
+        &.monitor-1 .workspace-button {
+            background-color: gtkalpha($bg1, 0.8);
+            box-shadow: 0 0 5px 5px gtkalpha(#000, 0.3);
 
-      &.active {
-        background-color: gtkalpha($bg2, 0.8);
-      }
-    }
-
-    &.monitor-2 .workspace-button {
-      background-color: gtkalpha($red, 0.2);
-
-      &.active {
-        background-color: $red;
-        box-shadow: 0 0 5px 5px gtkalpha(#000, 0.3);
-      }
-    }
-
-    .workspace-button {
-      min-width: to-rem(30px);
-      min-height: to-rem(30px);
-      border-radius: to-rem(8px);
-      padding: 0 to-rem(10px) 0 to-rem(10px);
-
-      .txt-ws {
-        font-size: to-rem(17px);
-        font-weight: 900;
-        color: $fg;
-        margin-right: to-rem(4px);
-      }
-      
-      .app-icon {
-        icon {
-          font-size: to-rem(30px);
-          margin: 0 to-rem(3px);
+            &.active {
+                background-color: gtkalpha($bg2, 0.8);
+            }
         }
-        
-        .app-name {
-          font-size: to-rem(17px);
-          font-weight: 600;
-          margin-left: to-rem(4px);
+
+        &.monitor-2 .workspace-button {
+            background-color: gtkalpha($red, 0.2);
+
+            &.active {
+                background-color: $red;
+                box-shadow: 0 0 5px 5px gtkalpha(#000, 0.3);
+            }
         }
-      }
+
+        .workspace-button {
+            min-width: to-rem(30px);
+            min-height: to-rem(30px);
+            border-radius: to-rem(8px);
+            padding: 0 to-rem(10px) 0 to-rem(10px);
+
+            .txt-ws {
+                font-size: to-rem(17px);
+                font-weight: 900;
+                color: $fg;
+                margin-right: to-rem(4px);
+            }
+            
+            .app-icon {
+                icon {
+                    font-size: to-rem(30px);
+                    margin: 0 to-rem(3px);
+                }
+                
+                .app-name {
+                    font-size: to-rem(17px);
+                    font-weight: 600;
+                    margin-left: to-rem(4px);
+                }
+            }
+        }
     }
-  }
 }

@@ -5,11 +5,22 @@ import Notifd from "gi://AstalNotifd"
 import { fileExists } from "../../utils/file"
 
 const iconCache = new Map<string, boolean>()
+const MAX_CACHE_SIZE = 200
+
 const isIcon = (icon: string) => {
 	if (!icon) return false
 	if (iconCache.has(icon)) return iconCache.get(icon)
 	
 	const result = !!Astal.Icon.lookup_icon(icon)
+	
+	// Limit cache size to prevent memory leak
+	if (iconCache.size >= MAX_CACHE_SIZE) {
+		const firstKey = iconCache.keys().next().value
+		if (firstKey) {
+			iconCache.delete(firstKey)
+		}
+	}
+	
 	iconCache.set(icon, result)
 	return result
 }
@@ -41,7 +52,10 @@ export default function Notification(props: Props) {
 		className={`Notification ${urgency(n)}`}
 		setup={setup}
 		onHoverLost={onHoverLost}
-		onHover={onHover}>
+		onHover={onHover}
+		onDestroy={() => {
+			showActions.drop();
+		}}>
 		<box className="notification-container">
 			{n.image && fileExists(n.image) && <box
 				valign={START}
@@ -76,6 +90,7 @@ export default function Notification(props: Props) {
 						/>
 						<button
 							className="notification-expand-button"
+							cursor={"hand1"}
 							onClicked={() => showActions.set(!showActions.get())}
 							css={`background-color: transparent;`}
 						>
@@ -100,6 +115,7 @@ export default function Notification(props: Props) {
 					<box className="notification-actions">
 						<box>
 							<button
+								cursor={"hand1"}
 								onClicked={() => n.dismiss()}>
 								<label label="Close" halign={CENTER} hexpand />
 							</button>
@@ -107,6 +123,7 @@ export default function Notification(props: Props) {
 						{n.get_actions().length > 0 && <box>
 							{n.get_actions().map(({ label, id }) => (
 								<button
+									cursor={"hand1"}
 									hexpand
 									onClicked={() => n.invoke(id)}>
 									<label label={label} halign={CENTER} hexpand />

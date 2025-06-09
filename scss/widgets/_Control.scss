@@ -199,30 +199,45 @@ window.control-menu {
             outline: none;
         }
 
-        button {
-            padding: to-rem(8px);
+        .network-item {
+            padding: to-rem(10px) to-rem(15px);
             background-color: transparent;
             transition: all 200ms ease;
-
-            &:hover {
-                background-color: gtkalpha($bg2, 0.8);
-            }
+            border-radius: to-rem(15px);
 
             &.active {
                 background-color: $bg2;
             }
 
-            icon {
-                color: $fg;
-                font-size: to-rem(30px);
-            }
+            button {
+                background-color: transparent;
+                margin: to-rem(-7px) 0;
 
-            label {
-                color: $fg;
-                font-size: to-rem(18px);
-                font-weight: 500;
-                margin-left: to-rem(5px);
+                icon {
+                    color: $fg;
+                    font-size: to-rem(30px);
+                }
+
+                label {
+                    color: $fg;
+                    font-size: to-rem(18px);
+                    font-weight: 500;
+                    margin-left: to-rem(5px);
+                }
             }
+        }
+
+        .forget-wifi-button {
+            background-color: transparent;
+            margin: to-rem(-7px) 0;
+
+            .forget-wifi-icon {
+                font-size: to-rem(25px);
+            }
+        }
+
+        .security-icon {
+            font-size: to-rem(30px);
         }
     }
 }
@@ -309,7 +324,7 @@ window.control-menu {
 .bluetooth-devices-scroll {
     background-color: transparent;
     border-radius: to-rem(15px);
-    min-height: to-rem(660px);
+    min-height: to-rem(650px);
 
     viewport {
         border: none;
@@ -321,6 +336,13 @@ window.control-menu {
 
         label {
             color: $fg;
+            font-size: to-rem(18px);
+            font-weight: 500;
+        }
+
+        .no-devices {
+            color: $fg1;
+            margin-top: to-rem(300px);
             font-size: to-rem(18px);
             font-weight: 500;
         }
@@ -364,18 +386,27 @@ window.control-menu {
     }
 }
 
-.device-item {
-    background-color: $bg1;
+.device-dropdown-button {
+    background-color: $bg2;
     border-radius: to-rem(15px);
-    padding: to-rem(12px);
+    padding: to-rem(15px);
+    border: none;
+    transition: all 200ms ease;
 
-    &.active {
-        background-color: $bg2;
+    &:hover {
+        background-color: $bg3;
+        box-shadow: 0 0 3px 3px gtkalpha(#000, 0.2);
     }
 
     label {
-        font-size: to-rem(17px);
+        font-size: to-rem(18px);
         font-weight: 500;
+        color: $fg;
+    }
+
+    icon {
+        color: $fg;
+        font-size: to-rem(24px);
     }
 }
 
@@ -413,6 +444,8 @@ window.control-menu {
 
     slider {
         background-color: $blue;
+        min-height: to-rem(3px);
+        min-width: to-rem(3px);
         border-radius: to-rem(100px);
         box-shadow: 0 0 to-rem(5px) to-rem(3px) gtkalpha(#000, 0.3);
     }
@@ -456,6 +489,8 @@ window.control-menu {
     
         slider {
             background-color: $blue;
+            min-height: to-rem(3px);
+            min-width: to-rem(3px);
             border-radius: to-rem(100px);
             box-shadow: 0 0 to-rem(5px) to-rem(3px) gtkalpha(#000, 0.3);
         }
@@ -593,6 +628,185 @@ window.control-menu {
 
             &:hover {
                 background-color: $bg3;
+            }
+        }
+    }
+}
+
+// Battery
+.battery-container {
+    background-color: transparent;
+}
+
+.battery-info-container {
+    background-color: $bg1;
+    border-radius: to-rem(15px);
+    padding: to-rem(20px) to-rem(40px);
+    box-shadow: 0 0 5px 5px gtkalpha(#000, 0.3);
+
+    label {
+        font-size: to-rem(18px);
+        font-weight: 500;
+
+        &:first-child {
+            color: $fg1;
+        }
+
+        &:last-child {
+            color: $fg;
+        }
+    }
+
+    .battery-percentage-container {
+        margin-bottom: to-rem(15px);
+        margin-top: to-rem(-20px);
+
+        label {
+            font-size: to-rem(18px);
+            font-weight: 500;
+            color: $fg;
+        }
+
+        .battery-percentage-slider-green {
+            trough {
+                margin-right: to-rem(20px);
+                background-color: gtkalpha($green, 0.2);
+                border-radius: to-rem(15px);
+            }
+        
+            highlight {
+                background-color: $green;
+                border-radius: to-rem(15px);
+            }
+        
+            slider {
+                background-color: transparent;
+            }
+        }
+
+        .battery-percentage-slider-blue {
+            trough {
+                margin-right: to-rem(20px);
+                background-color: gtkalpha($blue, 0.2);
+                border-radius: to-rem(15px);
+            }
+
+            highlight {
+                background-color: $blue;
+                border-radius: to-rem(15px);
+            }
+
+            slider {
+                background-color: transparent;
+            }
+        }
+
+        .battery-percentage-slider-yellow {
+            trough {
+                margin-right: to-rem(20px);
+                background-color: gtkalpha($yellow, 0.2);
+                border-radius: to-rem(15px);
+            }
+
+            highlight {
+                background-color: $yellow;
+                border-radius: to-rem(15px);
+            }
+
+            slider {
+                background-color: transparent;
+            }
+        }
+
+        .battery-percentage-slider-red {
+            trough {
+                margin-right: to-rem(20px);
+                background-color: gtkalpha($red, 0.2);
+                border-radius: to-rem(15px);
+            }
+
+            highlight {
+                background-color: $red;
+                border-radius: to-rem(15px);
+            }
+
+            slider {
+                background-color: transparent;
+            }
+        }
+    }
+
+
+    .battery-info-section-title {
+        font-size: to-rem(20px);
+        font-weight: 600;
+
+        &:first-child {
+            color: $fg;
+            margin-bottom: to-rem(10px);
+        }
+    }
+}
+
+.power-profile-container {
+    background-color: transparent;
+
+    label {
+        font-size: to-rem(18px);
+        font-weight: 500;
+        color: $fg;
+    }
+
+    .power-mode-buttons {
+        button {
+            background-color: $bg2;
+            border-radius: to-rem(15px);
+            padding: to-rem(10px);
+        }
+
+        .active {
+            background-color: $blue;
+            label {
+                color: $bg;
+            }
+        }
+    }
+}
+
+.battery-charging-container {
+    background-color: transparent;
+
+    .battery-charging-section-title {
+        font-size: to-rem(20px);
+        font-weight: 600;
+        color: $fg;
+    }
+
+    .charge-mode-option {
+        background-color: $bg2;
+        border-radius: to-rem(15px);
+        padding: to-rem(10px) to-rem(25px);
+
+        &.active {
+            background-color: $blue;
+        }
+
+        .battery-charging-section-first {
+            font-size: to-rem(18px);
+            font-weight: 600;
+
+            &.active {
+                color: $bg;
+            }
+        }
+
+        .battery-charging-section-second {   
+            font-size: to-rem(16px);
+            font-weight: 500;
+            color: $fg1;
+
+            &.active {
+                color: $bg3;
             }
         }
     }
