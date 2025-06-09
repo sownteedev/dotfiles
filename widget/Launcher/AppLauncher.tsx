@@ -20,7 +20,9 @@ function hide() {
 function AppButton({ app }: { app: Apps.Application }) {
 	return <button
 		className="AppButton"
-		onClicked={() => { hide(); app.launch() }}>
+		cursor={"hand1"}
+		onClicked={() => { hide(); app.launch() }}
+		>
 		<box>
 			<icon icon={app.iconName} />
 			<box valign={Gtk.Align.CENTER} vertical spacing={5}>

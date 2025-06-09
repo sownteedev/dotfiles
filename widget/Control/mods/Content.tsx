@@ -1,9 +1,11 @@
 import { bind, exec, execAsync, GLib, Variable } from "astal";
-import { Astal, Gtk } from "astal/gtk3";
+import { Astal, Gtk, Gdk } from "astal/gtk3";
 import Network from "gi://AstalNetwork";
 import Bluetooth from "gi://AstalBluetooth";
 import Wp from "gi://AstalWp"
 import Notifd from "gi://AstalNotifd"
+import Battery from "gi://AstalBattery"
+import PowerProfiles from "gi://AstalPowerProfiles";
 import { sanitizeUtf8, truncateText } from "../../../utils/common";
 import { fileExists } from "../../../utils/file";
 
@@ -26,6 +28,34 @@ const sortByPriority = (list: any[]) => {
 	return list.sort((a, b) => (b.strength || 0) - (a.strength || 0));
 };
 
+const getIPAddress = async () => {
+    const info = await execAsync(`curl https://ipinfo.io/ip`);
+    return info.toString().trim().slice(0, info.length - 2) + "?";
+};
+export const IPAddress = Variable("");
+export { getIPAddress };
+getIPAddress().then(ip => IPAddress.set(ip));
+
+// Auto refresh IP address when wifi state changes
+let wifiStateTimeout: number | null = null;
+const refreshIPOnWifiChange = () => {
+    if (wifiStateTimeout) {
+        GLib.source_remove(wifiStateTimeout);
+    }
+    wifiStateTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+        if (wifi.enabled && wifi.active_access_point) {
+            getIPAddress().then(ip => IPAddress.set(ip));
+        } else {
+            IPAddress.set("N/A");
+        }
+        wifiStateTimeout = null;
+        return false;
+    });
+};
+
+// Listen to wifi state changes
+wifi.connect("notify::state", refreshIPOnWifiChange);
+
 const WifiList = () => {
     const isScanning = Variable(false);
 	const networksReady = Variable(false);
@@ -36,10 +66,12 @@ const WifiList = () => {
     const selectedNetwork = Variable<any>(null);
     const passwordText = Variable("");
     const connectionError = Variable("");
+    const storedConnections = Variable(new Set<string>());
     
     // Store timeout IDs for cleanup
     let scanTimeoutId: number | null = null;
     let autoStartTimeoutId: number | null = null;
+    let forgetTimeoutIds: number[] = [];
     
     // Cleanup function
     const cleanup = () => {
@@ -51,6 +83,11 @@ const WifiList = () => {
             GLib.source_remove(autoStartTimeoutId);
             autoStartTimeoutId = null;
         }
+        // Cleanup forget timeouts
+        forgetTimeoutIds.forEach(id => {
+            GLib.source_remove(id);
+        });
+        forgetTimeoutIds = [];
         // Cleanup variables
         isScanning.drop();
         networksReady.drop();
@@ -58,6 +95,7 @@ const WifiList = () => {
         selectedNetwork.drop();
         passwordText.drop();
         connectionError.drop();
+        storedConnections.drop();
     };
 
     const CurrentNetwork = () => (
@@ -68,31 +106,18 @@ const WifiList = () => {
                     <label label={bind(wifi, "ssid").as(ssid => ssid || "Not Connected")}/>
                 </box>
                 <label label="" />
-                <button halign={Gtk.Align.END} onClicked={() => {
+                <button halign={Gtk.Align.END} cursor={"hand1"} onClicked={() => {
                     if (!isScanning.get()) {
                         startScan();
                     } else {
                         isScanning.set(false);
                     }
-                }}>
+                }}
+                >
                     <icon icon="reload-icon-v2" />
                 </button>
             </centerbox>
             <box className="wifi-details" vertical spacing={10}>
-                <box>
-                    <label label="Signal Strength:" />
-                    <label
-                        label={bind(wifi, "strength").as(strength => {
-                            if (!strength) return "N/A";
-                            if (strength >= 80) return "Excellent";
-                            if (strength >= 60) return "Good";
-                            if (strength >= 40) return "Fair";
-                            return "Weak";
-                        })}
-                        xalign={1}
-                        hexpand
-                    />
-                </box>
                 <box>
                     <label label="Frequency:" />
                     <label
@@ -113,12 +138,21 @@ const WifiList = () => {
                         hexpand
                     />
                 </box>
+                <box>
+                    <label label="IP Address:" />
+                    <label
+                        label={bind(IPAddress).as(ip => ip || "N/A")}
+                        xalign={1}
+                        hexpand
+                    />
+                </box>
             </box>
         </box>
     );
 
 	const startScan = () => {
 		if (wifi.enabled) {
+			updateStoredConnections();
 			isScanning.set(true);
 			networksReady.set(false);
 			cachedNetworks = null;
@@ -147,6 +181,48 @@ const WifiList = () => {
         }
         return false;
     });
+
+	// Update stored connections list
+	const updateStoredConnections = async () => {
+		try {
+			const result = await execAsync('nmcli -g NAME,TYPE connection show');
+			const connections = result.toString().trim().split('\n');
+			const wifiConnections = new Set<string>();
+			
+			connections.forEach(line => {
+				const [name, type] = line.split(':');
+				if (type === '802-11-wireless') {
+					wifiConnections.add(name);
+				}
+			});
+			
+			storedConnections.set(wifiConnections);
+		} catch {
+			storedConnections.set(new Set<string>());
+		}
+	};
+
+	// Forget WiFi connection
+	const forgetWifi = async (ssid: string) => {
+		try {
+			await execAsync(`nmcli connection delete "${ssid}"`);
+			connectionError.set(`Forgotten "${ssid}"`);
+			const timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+				connectionError.set("");
+				return false;
+			});
+			forgetTimeoutIds.push(timeoutId);
+			updateStoredConnections();
+			startScan();
+		} catch (error) {
+			connectionError.set(`Failed to forget: ${String(error)}`);
+			const timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 3000, () => {
+				connectionError.set("");
+				return false;
+			});
+			forgetTimeoutIds.push(timeoutId);
+		}
+	};
 
     // Improved connect function with password support
     const connectToWifi = async (accessPoint: any, password?: string) => {
@@ -190,19 +266,14 @@ const WifiList = () => {
                     startScan();
                     return false;
                 });
+                
+                // Refresh IP address after successful connection
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+                    getIPAddress().then(ip => IPAddress.set(ip));
+                    return false;
+                });
             }
-        } catch (error) {
-            const errorStr = String(error);
-            if (errorStr.includes("SecretRequestFailed") || 
-                errorStr.includes("Secrets were required") || 
-                errorStr.includes("Failed to activate") ||
-                errorStr.includes("key-mgmt") ||
-                errorStr.includes("property is missing")) {
-                connectionError.set("Wrong password! Please try again.");
-            } else {
-                connectionError.set("Connection failed: " + errorStr);
-            }
-        }
+        } catch (error) {}
     };
 
     const PasswordEntry = () => {
@@ -214,12 +285,13 @@ const WifiList = () => {
                         <label label={`Connect to ${selectedNetwork.get()?.ssid}`} />
                     </box>
                     <box />
-                    <button halign={Gtk.Align.END} onClicked={() => {
+                    <button halign={Gtk.Align.END} cursor={"hand1"} onClicked={() => {
                         showPasswordEntry.set(false);
                         selectedNetwork.set(null);
                         passwordText.set("");
                         connectionError.set("");
-                    }}>
+                    }}
+                    >
                         <icon icon="go-previous-symbolic" />
                     </button>
                 </centerbox>
@@ -245,8 +317,9 @@ const WifiList = () => {
                         })}
                     />
                     <box halign={Gtk.Align.END}>
-                        <button 
-                            className="connect-button" 
+                        <button
+                            className="connect-button"
+                            cursor={"hand1"}
                             onClicked={() => {
                                 connectToWifi(selectedNetwork.get(), passwordText.get());
                             }}
@@ -291,9 +364,10 @@ const WifiList = () => {
 			const isActiveNetwork = wifi.active_access_point &&
 				wifi.active_access_point.ssid === item.ssid;
 
-			return (
-				<button
-                    className={`network-item${isActiveNetwork ? " active" : ""}`}
+            return (
+                <box className={`network-item${isActiveNetwork ? " active" : ""}`}>
+                    <button
+                    cursor={"hand1"}
 					onClicked={async () => {
                         if (isActiveNetwork) {
                             return;
@@ -302,26 +376,35 @@ const WifiList = () => {
                         const needsPassword = (item.wpa_flags > 0 || item.rsn_flags > 0);
                         
                         if (needsPassword) {
-                            // Thử kết nối với stored connection trước
-                            try {
-                                connectionError.set("Connecting...");
-                                const result = await execAsync(`nmcli connection up "${item.ssid}"`);
-                                const resultStr = result.toString();
-                                
-                                if (!resultStr.includes("error") && !resultStr.includes("failed")) {
-                                    // Kết nối thành công với stored connection
-                                    connectionError.set("");
-                                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
-                                        startScan();
-                                        return false;
-                                    });
-                                    return;
+                            // Kiểm tra xem có stored connection không
+                            if (storedConnections.get().has(item.ssid)) {
+                                // Có stored connection - thử kết nối
+                                try {
+                                    connectionError.set("Connecting...");
+                                    const result = await execAsync(`nmcli connection up "${item.ssid}"`);
+                                    const resultStr = result.toString();
+                                    
+                                    if (!resultStr.includes("error") && !resultStr.includes("failed")) {
+                                        // Kết nối thành công với stored connection
+                                        connectionError.set("");
+                                        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
+                                            startScan();
+                                            return false;
+                                        });
+                                        
+                                        // Refresh IP address after successful connection
+                                        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+                                            getIPAddress().then(ip => IPAddress.set(ip));
+                                            return false;
+                                        });
+                                        return;
+                                    }
+                                } catch {
+                                    // Fail khi kết nối với stored connection
                                 }
-                            } catch {
-                                // Không có stored connection hoặc fail
                             }
                             
-                            // Nếu không kết nối được với stored connection -> hiện PasswordEntry
+                            // Chưa có stored connection hoặc kết nối fail -> hiện PasswordEntry
                             selectedNetwork.set(item);
                             showPasswordEntry.set(true);
                             passwordText.set("");
@@ -330,20 +413,27 @@ const WifiList = () => {
                             connectToWifi(item);
                         }
                     }}
-				>
-					<box spacing={10}>
-						<icon icon={item.icon_name} />
-						<label
-							label={item.ssid}
-							xalign={0}
-							hexpand
-						/>
+                    >
+                        <box spacing={10}>
+                            <icon icon={item.icon_name} />
+                            <label
+                                label={item.ssid}
+                                xalign={0}
+                                hexpand
+                            />
+                        </box>
+                    </button>
+                    <box>
+                        {storedConnections.get().has(item.ssid) && 
+                        <button className="forget-wifi-button" cursor={"hand1"} onClicked={() => forgetWifi(item.ssid)}>
+                            <icon icon="edit-delete-symbolic" className="forget-wifi-icon" />
+                        </button>}
                         {(item.wpa_flags > 0 || item.rsn_flags > 0) && 
-                            <icon icon="security-high-symbolic" />
+                            <icon icon="security-high-symbolic" className="security-icon" />
                         }
-					</box>
-				</button>
-			);
+                    </box>
+                </box>
+            )
 		});
 	};
 
@@ -402,11 +492,22 @@ const WifiList = () => {
 
 
 const iconCache = new Map<string, boolean>()
+const MAX_CACHE_SIZE = 500
+
 const isIcon = (icon: string) => {
 	if (!icon) return false
 	if (iconCache.has(icon)) return iconCache.get(icon)
 	
 	const result = !!Astal.Icon.lookup_icon(icon)
+	
+	// Limit cache size to prevent memory leak
+	if (iconCache.size >= MAX_CACHE_SIZE) {
+		const firstKey = iconCache.keys().next().value
+		if (firstKey) {
+			iconCache.delete(firstKey)
+		}
+	}
+	
 	iconCache.set(icon, result)
 	return result
 }
@@ -471,6 +572,11 @@ const NotificationList = () => {
             }
         });
         notificationConnections = [];
+        // Cleanup variables
+        notifications.drop();
+        allNotifications.drop();
+        notificationCount.drop();
+        timeRefresher.drop();
     };
     
     timeRefresherId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60000, () => {
@@ -550,6 +656,7 @@ const NotificationList = () => {
                             />
                             <button
                                 className="notification-expand-button-list"
+                                cursor={"hand1"}
                                 onClicked={() => showActions.set(!showActions.get())}
                                 css={`background-color: transparent;`}
                             >
@@ -574,6 +681,7 @@ const NotificationList = () => {
                         <box className="notification-actions-list">
                             <box>
                                 <button
+                                    cursor={"hand1"}
                                     onClicked={() => {
                                         if (typeof notification.dismiss === 'function') {
                                             notification.dismiss();
@@ -594,6 +702,7 @@ const NotificationList = () => {
                             {notification.get_actions().length > 0 && <box>
                                 {notification.get_actions().map(({ label, id }: { label: string, id: string }) => (
                                     <button
+                                        cursor={"hand1"}
                                         hexpand
                                         onClicked={() => {
                                             notification.invoke(id);
@@ -639,6 +748,7 @@ const NotificationList = () => {
                     className="notification-clear-all-button"
                     halign={Gtk.Align.END}
                     valign={Gtk.Align.END}
+                    cursor={"hand1"}
                     onClicked={() => {
                         notifd.notifications.forEach(notification => notification.dismiss());
                         notifications.set([]);
@@ -810,6 +920,7 @@ const BluetoothList = () => {
                         sensitive={device && !device.paired && !isPairing.get()}
                         onClicked={handlePair}
                         tooltipText={device?.paired ? "Already paired" : "Pair device"}
+                        cursor={"hand1"}
                     >
                         {bind(isPairing).as(pairing => {
                             if (pairing) {
@@ -825,6 +936,7 @@ const BluetoothList = () => {
                         sensitive={device?.paired}
                         onClicked={toggleTrust}
                         tooltipText={device?.trusted ? "Remove trust" : "Trust device"}
+                        cursor={"hand1"}
                     >
                         <icon icon={device?.trusted ? "security-high-symbolic" : "security-medium-symbolic"} />
                     </button>
@@ -835,6 +947,7 @@ const BluetoothList = () => {
                         sensitive={device?.paired && !isConnecting.get()}
                         onClicked={device?.connected ? handleDisconnect : handleConnect}
                         tooltipText={device?.connected ? "Disconnect" : "Connect"}
+                        cursor={"hand1"}
                     >
                         {bind(isConnecting).as(connecting => {
                             if (connecting) {
@@ -881,6 +994,7 @@ const BluetoothList = () => {
                                 <button 
                                     className={`scan-button ${bind(isScanning).as(scanning => scanning ? "active" : "")}`}
                                     halign={Gtk.Align.END} 
+                                    cursor={"hand1"}
                                     onClicked={() => {
                                         if (isScanning.get()) {
                                             stopDiscovery();
@@ -904,7 +1018,7 @@ const BluetoothList = () => {
                                 <box vertical spacing={30} className="devices-list">
                                     {bind(bluetooth, "devices").as(devices => {
                                         if (!devices || devices.length === 0) {
-                                            return <label label="No devices found" xalign={0.5} />;
+                                            return <label label="No devices found" xalign={0.5} className="no-devices" />;
                                         }
                                         
                                         // Sort devices: connected first, then paired, then by signal strength
@@ -933,6 +1047,9 @@ const BluetoothList = () => {
 const InputOutputList = () => {
     const wp = Wp.get_default()!;
     const audio = wp.audio;
+    
+    const defaultSpeaker = audio.defaultSpeaker;
+    const defaultMicrophone = audio.defaultMicrophone;
 
     const streams = Variable(audio.get_streams()).observe(audio, "stream-added", () => audio.get_streams()).observe(audio, "stream-removed", () => audio.get_streams())
 
@@ -957,7 +1074,7 @@ const InputOutputList = () => {
                                         <label label={stream.description} halign={Gtk.Align.START}/>
                                         <box/>
                                         <box spacing={5} halign={Gtk.Align.END}>
-                                            <button className="action-button" onClicked={() => stream.mute = !stream.mute}>
+                                            <button className="action-button" onClicked={() => stream.mute = !stream.mute} cursor={"hand1"}>
                                                 <icon icon={bind(stream, "mute").as(muted => muted ? "audio-volume-muted-symbolic" : "audio-volume-high-symbolic")} />
                                             </button>
                                             <label label={bind(stream, "volume").as(vol => `${Math.floor((vol ? vol : 0) * 100)}%`)} xalign={1}/>
@@ -968,6 +1085,7 @@ const InputOutputList = () => {
                                         hexpand 
                                         onDragged={(slider) => stream.volume = slider.value} 
                                         value={bind(stream, "volume")}
+                                        cursor={"hand1"}
                                     />
                                 </box>
                             );
@@ -981,14 +1099,23 @@ const InputOutputList = () => {
     const VolumeSlider = ({ endpoint, label }: { endpoint: any, label: string }) => {
         if (!endpoint) return null;
         
+        const isInputDevice = label.includes("Input");
+        
         return (
-            <box className="volume-slider-control" vertical>
+            <box className="volume-slider-control" vertical spacing={5}>
                 <box spacing={10}>
                     <button
                         className={bind(endpoint, "mute").as(muted => `mute-button ${muted ? "muted" : ""}`)}
                         onClicked={() => endpoint.mute = !endpoint.mute}
+                        cursor={"hand1"}
                     >
-                        <icon icon={bind(endpoint, "mute").as(muted => muted ? "audio-volume-muted-symbolic" : "audio-volume-high-symbolic")} />
+                        <icon icon={bind(endpoint, "mute").as(muted => {
+                            if (isInputDevice) {
+                                return muted ? "microphone-sensitivity-muted-symbolic" : "audio-input-microphone-symbolic";
+                            } else {
+                                return muted ? "audio-volume-muted-symbolic" : "audio-volume-high-symbolic";
+                            }
+                        })} />
                     </button>
                     <label 
                         label={bind(endpoint, "volume").as((vol) => `${Math.floor((vol ? vol : 0) * 100)}%`)} 
@@ -1000,33 +1127,9 @@ const InputOutputList = () => {
                     hexpand 
                     onDragged={(slider) => endpoint.volume = slider.value} 
                     value={bind(endpoint, "volume")} 
+                    cursor={"hand1"}
                 />
             </box>
-        );
-    };
-    
-    const DeviceItem = ({ endpoint }: { endpoint: any }) => {
-        return (
-            <button 
-                className={bind(endpoint, "isDefault").as(isDefault => `device-item ${isDefault ? "active" : ""}`)}
-                onClicked={() => {
-                    endpoint.isDefault = true;
-                }}
-            >
-                <box>
-                    <box vertical hexpand>
-                        <label
-                            label={bind(endpoint, "description").as(desc => truncateText(sanitizeUtf8(desc || ""), 60))} 
-                            wrap
-                            xalign={0}
-                            className="device-name"
-                        />
-                    </box>
-                    {bind(endpoint, "isDefault").as(isDefault => 
-                        isDefault ? <icon icon="emblem-ok-symbolic" className="default-indicator" /> : ""
-                    )}
-                </box>
-            </button>
         );
     };
     
@@ -1045,27 +1148,55 @@ const InputOutputList = () => {
                 <box vertical spacing={10}>
                     <box vertical spacing={15}>
                         <label label="Output Devices" className="section-title" xalign={0} />
-                        <box vertical spacing={5}>
-                            {bind(audio, "speakers").as((speakers) => {
-                                if (!speakers || speakers.length === 0) {
-                                    return <label label="No output devices found" xalign={0.5} className="no-devices" />;
-                                }
-                                return speakers.map(speaker => (
-                                    <DeviceItem 
-                                        endpoint={speaker} 
-                                    />
-                                ));
-                            })}
+                        <box spacing={5}>
+                            {defaultSpeaker ? (
+                                <box vertical>
+                                    <button
+                                        className="device-dropdown-button"
+                                        cursor={"hand1"}
+                                        onClicked={(self) => {
+                                            const menu = new Gtk.Menu();
+                                            
+                                            audio.speakers.forEach(speaker => {
+                                                const menuItem = new Gtk.MenuItem();
+                                                menuItem.set_label(speaker.description);
+                                                
+                                                menuItem.connect("activate", () => {
+                                                    speaker.isDefault = true;
+                                                    menu.hide();
+                                                });
+                                                
+                                                menu.append(menuItem);
+                                            });
+                                            
+                                            menu.show_all();
+                                            menu.popup_at_widget(self, Gdk.Gravity.SOUTH_WEST, Gdk.Gravity.NORTH_WEST, null);
+                                        }}
+                                    >
+                                        <box spacing={10}>
+                                            <box hexpand>
+                                                <label
+                                                    label={bind(defaultSpeaker, "description").as(desc => truncateText(sanitizeUtf8(desc || ""), 60))}
+                                                    wrap
+                                                    xalign={0}
+                                                />
+                                            </box>
+                                            <icon icon="pan-down-symbolic" />
+                                        </box>
+                                    </button>
+                                </box>
+                            ) : (
+                                <label label="No default output device" xalign={0.5} className="no-devices" />
+                            )}
                         </box>
                     </box>
 
                     {/* Default Output Volume Control */}
-                    {bind(audio, "defaultSpeaker").as(defaultSpeaker => {
-                        if (!defaultSpeaker) {
-                            return <label label="No default output device" xalign={0.5} className="no-devices" />;
-                        }
-                        return <VolumeSlider endpoint={defaultSpeaker} label="Output Volume" />;
-                    })}
+                    {defaultSpeaker ? (
+                        <VolumeSlider endpoint={defaultSpeaker} label="Output Volume" />
+                    ) : (
+                        <label label="No default output device" xalign={0.5} className="no-devices" />
+                    )}
                 </box>
 
                 <Gtk.Separator visible />
@@ -1074,31 +1205,410 @@ const InputOutputList = () => {
                 <box vertical spacing={10}>
                     <box vertical spacing={15}>
                         <label label="Input Devices" className="section-title" xalign={0} />
-                        <box vertical spacing={5}>
-                            {bind(audio, "microphones").as((microphones) => {
-                                if (!microphones || microphones.length === 0) {
-                                    return <label label="No input devices found" xalign={0.5} className="no-devices" />;
-                                }
-                                return microphones.map(mic => (
-                                    <DeviceItem 
-                                        endpoint={mic} 
-                                    />
-                                ));
-                            })}
+                        <box spacing={5}>
+                            {defaultMicrophone ? (
+                                <box vertical>
+                                    <button
+                                        className="device-dropdown-button"
+                                        cursor={"hand1"}
+                                        onClicked={(self) => {
+                                            const menu = new Gtk.Menu();
+                                            
+                                            audio.microphones.forEach(mic => {
+                                                const menuItem = new Gtk.MenuItem();
+                                                menuItem.set_label(mic.description);
+                                                
+                                                menuItem.connect("activate", () => {
+                                                    mic.isDefault = true;
+                                                    menu.hide();
+                                                });
+                                                
+                                                menu.append(menuItem);
+                                            });
+                                            
+                                            menu.show_all();
+                                            menu.popup_at_widget(self, Gdk.Gravity.SOUTH_WEST, Gdk.Gravity.NORTH_WEST, null);
+                                        }}
+                                    >
+                                        <box spacing={10}>
+                                            <box vertical hexpand>
+                                                <label
+                                                    label={bind(defaultMicrophone, "description").as(desc => truncateText(sanitizeUtf8(desc || ""), 60))}
+                                                    wrap
+                                                    xalign={0}
+                                                    className="device-name"
+                                                />
+                                            </box>
+                                            <icon icon="pan-down-symbolic" />
+                                        </box>
+                                    </button>
+                                </box>
+                            ) : (
+                                <label label="No default input device" xalign={0.5} className="no-devices" />
+                            )}
                         </box>
                     </box>
 
                     {/* Default Input Volume Control */}
-                    {bind(audio, "defaultMicrophone").as(defaultMicrophone => {
-                        if (!defaultMicrophone) {
-                            return <label label="No default input device" xalign={0.5} className="no-devices" />;
-                        }
-                        return <VolumeSlider endpoint={defaultMicrophone} label="Input Volume" />;
-                    })}
+                    {defaultMicrophone ? (
+                        <VolumeSlider endpoint={defaultMicrophone} label="Input Volume" />
+                    ) : (
+                        <label label="No default input device" xalign={0.5} className="no-devices" />
+                    )}
                 </box>
             </box>
         </scrollable>
     );
+}
+
+const BatteryInfo = () => {
+    const getBatteryDevice = () => {
+        const upower = Battery.UPower.new();
+        if (!upower) {
+            console.error("Battery: Failed to initialize UPower");
+            return null;
+        }
+    
+        const devices = upower.get_devices();
+        if (!devices) {
+            console.error("Battery: Failed to get battery devices");
+            return null;
+        }
+    
+        for (const device of devices) {
+            if (device.get_is_battery() && device.get_power_supply()) {
+                return device;
+            }
+        }
+    
+        const display_device = upower.get_display_device();
+        if (!display_device) {
+            console.error("Battery: No battery device found");
+            return null;
+        }
+        return display_device;
+    };
+
+    const BatteryInfo = () => {
+        const bat = getBatteryDevice();
+        if (!bat) {
+            console.error("Battery: Cannot create BatteryInfo: no battery device");
+            return <box />;
+        }
+
+        return (
+            <box
+                className="battery-info-container"
+                vertical
+                spacing={15}
+                hexpand
+            >
+                <label label="Battery Information" xalign={0} className="battery-info-section-title" />
+
+                <box vertical spacing={10} className="battery-percentage-container">
+                    <slider
+                        className={bind(bat, "percentage").as((percentage) => {
+                            if (!percentage) return "battery-percentage-slider-red";
+                            const percent = Math.floor(percentage * 100);
+                            if (percent >= 100) return "battery-percentage-slider-green";
+                            if (percent >= 80) return "battery-percentage-slider-blue";
+                            if (percent >= 20) return "battery-percentage-slider-yellow";
+                            return "battery-percentage-slider-red";
+                        })}
+                        hexpand
+                        value={bind(bat, "percentage")}
+                    />
+                    <box spacing={10} hexpand>
+                        <label
+                            label={bind(Variable.derive([bind(bat, "state"), bind(bat, "timeToFull"), bind(bat, "timeToEmpty")], (state, timeToFull, timeToEmpty) => {
+                                if (!state) return "Unknown";
+                                
+                                if (state === Battery.State.CHARGING) {
+                                    if (timeToFull > 0) {
+                                        const hours = Math.floor(timeToFull / 3600);
+                                        const minutes = Math.floor((timeToFull % 3600) / 60);
+                                        return `${hours}h ${minutes}m to full`;
+                                    }
+                                    return "Charging";
+                                } else if (state === Battery.State.DISCHARGING) {
+                                    if (timeToEmpty > 0) {
+                                        const hours = Math.floor(timeToEmpty / 3600);
+                                        const minutes = Math.floor((timeToEmpty % 3600) / 60);
+                                        return `${hours}h ${minutes}m remaining`;
+                                    }
+                                    return "Discharging";
+                                }
+                                
+                                const stateMap = {
+                                    [Battery.State.EMPTY]: "Empty",
+                                    [Battery.State.FULLY_CHARGED]: "Full",
+                                    [Battery.State.PENDING_CHARGE]: "Pending",
+                                    [Battery.State.PENDING_DISCHARGE]: "Pending Discharge"
+                                };
+                                return stateMap[state] || String(state);
+                            }))}
+                            xalign={0}
+                            hexpand
+                        />
+                        <label
+                            label={bind(bat, "percentage").as((percentage) => {
+                                if (!percentage) return "N/A";
+                                return `${Math.floor(percentage * 100)}%`;
+                            })}
+                            xalign={1}
+                            hexpand
+                        />
+                    </box>
+                </box>
+
+                <box hexpand>
+                    <label label="Energy Rate:" />
+                    <label
+                        label={bind(bat, "energyRate").as((rate) => {
+                            if (!rate) return "N/A";
+                            return `${rate.toFixed(1)} W`;
+                        })}
+                        xalign={1}
+                        hexpand
+                    />
+                </box>
+
+                <box hexpand>
+                    <label label="Design Energy:" />
+                    <label
+                        label={bind(bat, "energyFullDesign").as((energyFullDesign) => {
+                            if (!energyFullDesign) return "N/A";
+                            return `${energyFullDesign.toFixed(1)} Wh`;
+                        })}
+                        xalign={1}
+                        hexpand
+                    />
+                </box>
+
+                <box hexpand>
+                    <label label="Health:" />
+                    <label
+                        label={bind(bat, "capacity").as((capacity) => {
+                            if (!capacity) {
+                                return "N/A";
+                            }
+                            return `${(capacity * 100).toFixed(1)}%`;
+                        })}
+                        xalign={1}
+                        hexpand
+                    />
+                </box>
+
+                {/* <box hexpand>
+                    <label label="Change cycles:" />
+                    <label
+                        label={bind(bat, "chargeCycles").as((chargeCycles) => {
+                            if (!chargeCycles) {
+                                return "N/A";
+                            }
+                            return `${chargeCycles}`;
+                        })}
+                        xalign={1}
+                        hexpand
+                    />
+                </box> */}
+
+                <box hexpand>
+                    <label label="Model:" />
+                    <label
+                        label={bind(bat, "model").as((model) => {
+                            if (!model) return "N/A";
+                            return `${model}`;
+                        })}
+                        xalign={1}
+                        hexpand
+                    />
+                </box>
+
+                <box hexpand>
+                    <label label="Temperature:" />
+                    <label
+                        label={bind(bat, "temperature").as((temp) => {
+                            if (!temp) return "N/A";
+                            return `${temp.toFixed(1)}°C`;
+                        })}
+                        xalign={1}
+                        hexpand
+                    />
+                </box>
+
+                <box hexpand>
+                    <label label="Voltage:" />
+                    <label
+                        label={bind(bat, "voltage").as((voltage) => {
+                            if (!voltage) {
+                                return "N/A";
+                            }
+                            return `${voltage.toFixed(1)} V`;
+                        })}
+                        xalign={1}
+                        hexpand
+                    />
+                </box>
+            </box>
+        );
+    };
+
+
+    const PowerProfile = () => {
+        const power = PowerProfiles.get_default();
+        if (!power) {
+            console.error("Battery: Failed to initialize PowerProfiles");
+            return <box />;
+        }
+    
+        return (
+            <box
+                className="power-profile-container"
+                vertical
+                spacing={15}
+                hexpand
+            >
+                <label label="Power Mode" xalign={0}/>
+                <box
+                    className="power-mode-buttons"
+                    spacing={15}
+                    hexpand
+                >
+                    <button
+                        className={bind(power, "activeProfile").as(profile => 
+                            `power-mode-button ${profile === "power-saver" ? "active" : ""}`
+                        )}
+                        label="Power Saver"
+                        hexpand
+                        onClicked={() => power.activeProfile = "power-saver"}
+                        cursor={"hand1"}
+                    />
+                    <button
+                        className={bind(power, "activeProfile").as(profile => 
+                            `power-mode-button ${profile === "balanced" ? "active" : ""}`
+                        )}
+                        label="Balanced"
+                        hexpand
+                        onClicked={() => power.activeProfile = "balanced"}
+                        cursor={"hand1"}
+                    />
+                    <button
+                        className={bind(power, "activeProfile").as(profile => 
+                            `power-mode-button ${profile === "performance" ? "active" : ""}`
+                        )}
+                        label="Performance"
+                        hexpand
+                        onClicked={() => power.activeProfile = "performance"}
+                        cursor={"hand1"}
+                    />
+                </box>
+            </box>
+        );
+    };
+
+    const BatteryCharging = () => {
+        const chargeMode = Variable("");
+        execAsync("cat /sys/class/power_supply/BAT0/charge_control_end_threshold").then((v) => {
+            if (v === "80") {
+                chargeMode.set("preserve");
+            } else {
+                chargeMode.set("maximize");
+            }
+        });
+
+        const setBatteryChargeMode = async (mode: string) => {
+            try {
+                if (mode === "preserve") {
+                    await exec(`pkexec bash -c "echo 80 > /sys/class/power_supply/BAT0/charge_control_end_threshold && echo 75 > /sys/class/power_supply/BAT0/charge_control_start_threshold"`);
+                    chargeMode.set("preserve");
+                } else {
+                    await exec(`pkexec bash -c "echo 100 > /sys/class/power_supply/BAT0/charge_control_end_threshold && echo 50 > /sys/class/power_supply/BAT0/charge_control_start_threshold"`);
+                    chargeMode.set("maximize");
+                }
+            } catch (error) {
+                console.error("Failed to set battery charge mode:", error);
+            }
+        };
+
+        return (
+            <box
+                className="battery-charging-container"
+                vertical
+                spacing={15}
+                hexpand
+                onDestroy={() => {
+                    chargeMode.drop();
+                }}
+            >
+                <label label="Battery Charging" xalign={0} className="battery-charging-section-title" />
+                
+                <box vertical spacing={15}>
+                    <button
+                        className={bind(chargeMode).as(mode => 
+                            `charge-mode-option ${mode === "maximize" ? "active" : ""}`
+                        )}
+                        onClicked={() => setBatteryChargeMode("maximize")}
+                        cursor={"hand1"}
+                    >
+                        <box spacing={15} hexpand>
+                            <box vertical spacing={5} hexpand>
+                                <label 
+                                    className={bind(chargeMode).as(mode => 
+                                        `battery-charging-section-first ${mode === "maximize" ? "active" : ""}`
+                                    )}
+                                    label="Maximize Charge"
+                                    xalign={0} 
+                                />
+                                <label
+                                    className={bind(chargeMode).as(mode => 
+                                        `battery-charging-section-second ${mode === "maximize" ? "active" : ""}`
+                                    )}
+                                    label="Uses full battery capacity. Degrades batteries more quickly." 
+                                    xalign={0}
+                                    wrap
+                                />
+                            </box>
+                        </box>
+                    </button>
+
+                    <button
+                        className={bind(chargeMode).as(mode => 
+                            `charge-mode-option ${mode === "preserve" ? "active" : ""}`
+                        )}
+                        onClicked={() => setBatteryChargeMode("preserve")}
+                        cursor={"hand1"}
+                    >
+                        <box spacing={15} hexpand>
+                            <box vertical spacing={5} hexpand>
+                                <label
+                                    className={bind(chargeMode).as(mode => 
+                                        `battery-charging-section-first ${mode === "preserve" ? "active" : ""}`
+                                    )}
+                                    label="Preserve Battery Health" 
+                                    xalign={0} 
+                                />
+                                <label
+                                    className={bind(chargeMode).as(mode => 
+                                        `battery-charging-section-second ${mode === "preserve" ? "active" : ""}`
+                                    )}
+                                    label="Increases battery longevity by maintaining lower charge levels (80% max)." 
+                                    xalign={0} 
+                                    wrap
+                                />
+                            </box>
+                        </box>
+                    </button>
+                </box>
+            </box>
+        );
+    }
+
+    return <box vertical spacing={25} className="battery-container">
+        <BatteryInfo />
+        <PowerProfile />
+        <BatteryCharging />
+    </box>
 }
 
 export default () => {
@@ -1119,6 +1629,10 @@ export default () => {
             label: "Volume",
             icon: "audio-volume-high-symbolic",
         },
+        {
+            label: "Battery",
+            icon: "battery-symbolic",
+        },
     ];
 
     const content = Variable(<NotificationList />);
@@ -1134,6 +1648,7 @@ export default () => {
             <box spacing={10} className="button-container" halign={Gtk.Align.CENTER}>
                 {buttons.map((button, index) => (
                     <button
+                        cursor={"hand1"}
                         className={bind(buttonSelected).as((selected) => {
                             if (selected === index) {
                                 return "active";
@@ -1152,6 +1667,9 @@ export default () => {
                                 buttonSelected.set(index);
                             } else if (button.label === "Volume") {
                                 content.set(<InputOutputList />);
+                                buttonSelected.set(index);
+                            } else if (button.label === "Battery") {
+                                content.set(<BatteryInfo />);
                                 buttonSelected.set(index);
                             }
                         }}>

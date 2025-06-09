@@ -16,6 +16,7 @@ const PowerAction = ({ command, icon, ref }: { command: string, icon: string, re
       setup={ref}
       focusOnClick={true}
       className="power-button"
+      cursor={"hand1"}
     >
       <icon icon={icon} />
     </button>

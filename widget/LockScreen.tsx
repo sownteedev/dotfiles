@@ -41,29 +41,70 @@ const MediaPlayer = () => {
 }
 
 export const LockScreen = () => {
+	let pam: any = null;
+	let timeoutId: number | null = null;
+
+	const resetState = () => {
+		authenticating.set(false);
+		passwordVar.set("");
+		if (timeoutId) {
+			GLib.source_remove(timeoutId);
+			timeoutId = null;
+		}
+	};
+
 	const authenticate = () => {
 		if (passwordVar.get() === "") return;
 
 		authenticating.set(true);
 		errorMessage.set("");
 
-		Auth.Pam.authenticate(passwordVar.get(), (_, task) => {
-			try {
-				Auth.Pam.authenticate_finish(task);
-				console.log("Authentication successful");
-				hide();
-			} catch (error) {
-				exec(`notify-send "Authentication failed" "${error}"`);
-			} finally {
-				authenticating.set(false);
-				passwordVar.set("");
+		if (timeoutId) {
+			GLib.source_remove(timeoutId);
+		}
+
+		timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 5000, () => {
+			resetState();
+			if (pam) {
+				pam = null;
 			}
+			return false;
 		});
 
-		
+		try {
+			const success = Auth.Pam.authenticate(passwordVar.get(), (_, task) => {
+				if (timeoutId) {
+					GLib.source_remove(timeoutId);
+					timeoutId = null;
+				}
+
+				try {
+					Auth.Pam.authenticate_finish(task);
+					hide();
+					resetState();
+				} catch (error) {
+					errorMessage.set("Wrong password. Please try again.");
+					resetState();
+				}
+			});
+
+			if (!success) {
+				errorMessage.set("Failed to start authentication");
+				resetState();
+			}
+
+		} catch (error) {
+			errorMessage.set("Authentication error occurred");
+			resetState();
+		}
 	};
 
 	const cleanup = () => {
+		if (timeoutId) {
+			GLib.source_remove(timeoutId);
+			timeoutId = null;
+		}
+		
 		passwordVar.drop();
 		authenticating.drop();
 		errorMessage.drop();
@@ -99,6 +140,7 @@ export const LockScreen = () => {
 							onActivate={authenticate}
 							xalign={0.5}
 							placeholderText="Enter your password"
+							sensitive={bind(authenticating).as(auth => !auth)}
 							onChanged={(self: Gtk.Entry) => {
 								passwordVar.set(self.text);
 								if (self.text.length > 0) {

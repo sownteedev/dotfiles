@@ -191,16 +191,27 @@ const AppIcon = (props: any) => {
 	
 	const app = getAppInfo(appId);
 	const appName = app?.name || appId;
+
+	const showAppName = Variable(isFocused)
+
+	const cleanup = () => {
+		showAppName.drop();
+	}
 	
 	return <button
 		className={`app-icon ${isFocused ? 'focused' : ''}`}
 		onClick={() => {
 			exec(`niri msg action focus-window --id ${windowId}`);
+			showAppName.set(true);
 		}}
+		cursor={"hand1"}
+		onDestroy={cleanup}
 	>
-		<box spacing={5}>
+		<box spacing={3} valign={Gtk.Align.CENTER}>
 			<icon icon={app?.iconName || 'application-x-executable'}/>
-			{isFocused && <label className="app-name" label={appName} />}
+			<revealer transitionDuration={200} transitionType={Gtk.RevealerTransitionType.SLIDE_LEFT} revealChild={bind(showAppName).as(show => isFocused || show)}>
+				<label className="app-name" label={appName} />
+			</revealer>
 		</box>
 	</button>
 }

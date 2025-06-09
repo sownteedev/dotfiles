@@ -14,7 +14,7 @@ const getActiveWindow = () => {
 }
 
 export default () => {
-	const active_window = Variable({}).poll(500, () => {
+	const active_window = Variable({}).poll(200, () => {
 		return getActiveWindow() || {}
 	})
 

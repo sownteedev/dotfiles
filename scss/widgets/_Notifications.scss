@@ -1,104 +1,104 @@
 window.NotificationPopups {
-  background-color: transparent;
+    background-color: transparent;
 
-  >box {
-    margin: to-rem(20px);
-  }
+    >box {
+        margin: to-rem(20px);
+    }
 }
 
 .Notification {
-  background-color: transparent;
+    background-color: transparent;
 
-  >box {
-    margin: to-rem(20px);
-  }
-  .notification-container {
-    min-width: to-rem(500px);
-    border-radius: to-rem(15px);
-    background-color: $bg;
-    margin-top: to-rem(20px);
-    padding: to-rem(20px);
-    border: to-rem(1px) solid gtkalpha($bg3, 0.8);
-    box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
-  }
-
-  &.critical > box {
-    .notification-app-icon {
-      color: gtkalpha($red, .8);
+    >box {
+        margin: to-rem(20px);
     }
-  }
-
-  .icon-image {
-    margin-right: to-rem(20px);
-    min-width: to-rem(40px);
-    min-height: to-rem(40px);
-  }
-
-  .image {
-    margin-right: to-rem(20px);
-    border-radius: to-rem(15px);
-    min-width: to-rem(80px);
-    min-height: to-rem(80px);
-    background-size: cover;
-    background-position: center;
-  }
-
-  .default-icon-notification {
-    margin-right: to-rem(20px);
-    padding: to-rem(15px);
-    border-radius: 50%;
-
-    icon {
-      font-size: to-rem(40px);
+    .notification-container {
+        min-width: to-rem(500px);
+        border-radius: to-rem(15px);
+        background-color: $bg;
+        margin-top: to-rem(20px);
+        padding: to-rem(20px);
+        border: to-rem(1px) solid gtkalpha($bg3, 0.8);
+        box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
     }
-  }
 
-  .notification-summary {
-    font-size: to-rem(18px);
-    font-weight: 600;
-    margin-bottom: to-rem(20px);
-  }
-
-  .notification-body {
-    font-size: to-rem(16px);
-    font-weight: 500;
-  }
-
-  .notification-time {
-    margin: 0 to-rem(-5px) 0 to-rem(30px);
-    font-size: to-rem(16px);
-    color: gtkalpha($fg, 0.8);
-  }
-
-  .notification-expand-button {
-    icon {
-      transition: all 200ms ease-out;
-      -gtk-icon-transform: rotate(0deg);
-
-      &.expanded {
-        -gtk-icon-transform: rotate(180deg);
-      }
+    &.critical > box {
+        .notification-app-icon {
+            color: gtkalpha($red, .8);
+        }
     }
-  }
 
-  .notification-actions {
-    margin-top: to-rem(20px);
-    
-    button {
-      border-radius: to-rem(15px);
-      padding: to-rem(10px);
-
-      label {
-        font-size: to-rem(16px);
-      }
-
-      &:last-child {
+    .icon-image {
         margin-right: to-rem(20px);
-      }
-      
-      &:hover {
-        background-color: $bg2;
-      }
+        min-width: to-rem(40px);
+        min-height: to-rem(40px);
     }
-  }
+
+    .image {
+        margin-right: to-rem(20px);
+        border-radius: to-rem(15px);
+        min-width: to-rem(80px);
+        min-height: to-rem(80px);
+        background-size: cover;
+        background-position: center;
+    }
+
+    .default-icon-notification {
+        margin-right: to-rem(20px);
+        padding: to-rem(15px);
+        border-radius: 50%;
+
+        icon {
+            font-size: to-rem(40px);
+        }
+    }
+
+    .notification-summary {
+        font-size: to-rem(18px);
+        font-weight: 600;
+        margin-bottom: to-rem(20px);
+    }
+
+    .notification-body {
+        font-size: to-rem(16px);
+        font-weight: 500;
+    }
+
+    .notification-time {
+        margin: 0 to-rem(-5px) 0 to-rem(30px);
+        font-size: to-rem(16px);
+        color: gtkalpha($fg, 0.8);
+    }
+
+    .notification-expand-button {
+        icon {
+            transition: all 200ms ease-out;
+            -gtk-icon-transform: rotate(0deg);
+
+            &.expanded {
+                -gtk-icon-transform: rotate(180deg);
+            }
+        }
+    }
+
+    .notification-actions {
+        margin-top: to-rem(20px);
+        
+        button {
+            border-radius: to-rem(15px);
+            padding: to-rem(10px);
+
+            label {
+                font-size: to-rem(16px);
+            }
+
+            &:last-child {
+                margin-right: to-rem(20px);
+            }
+            
+            &:hover {
+                background-color: $bg2;
+            }
+        }
+    }
 }
