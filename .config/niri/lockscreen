@@ -1,0 +1,3 @@
+#!/bin/bash
+
+swayidle -w timeout 600 'astal -i sownteeastal -t lock-screen' timeout 600 'niri msg action power-off-monitors' resume '' before-sleep 'astal -i sownteeastal -t lock-screen'

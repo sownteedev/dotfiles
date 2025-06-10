@@ -24,6 +24,7 @@ alias mv='mv -i'
 
 alias dotpush='git add . && git commit -m ":>" && git push'
 alias syncfont='sudo fc-cache -fv'
+alias cleanarch='sudo paccache -ruk0 && yay -Sc && sudo pacman -Scc && sudo pacman -Rns $(pacman -Qtdq)'
 
 bindkey -s ^o "startx\n"
 bindkey '^e' "autosuggest-accept"
