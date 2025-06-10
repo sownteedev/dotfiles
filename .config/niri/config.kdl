@@ -1,0 +1,347 @@
+output "eDP-1" {
+    mode "2560x1600@165.004"
+    scale 1.0
+    transform "normal"
+    position x=0 y=0
+}
+
+output "HDMI-A-1" {
+    // ...settings for HDMI-A-1...
+}
+
+input {
+    keyboard {
+        xkb {
+        }
+		numlock
+    }
+
+    touchpad {
+        // off
+        tap
+        // dwt
+        // dwtp
+		// drag false
+        // drag-lock
+        natural-scroll
+        accel-speed 0.6
+        // accel-profile "flat"
+        // scroll-factor 1.0
+        // scroll-method "two-finger"
+        // scroll-button 273
+        // tap-button-map "left-middle-right"
+        // click-method "clickfinger"
+        // left-handed
+        // disabled-on-external-mouse
+        // middle-emulation
+    }
+
+    /-mouse {
+		// off
+        natural-scroll
+        accel-speed 0.2
+        accel-profile "flat"
+        scroll-factor 1.0
+        scroll-method "no-scroll"
+        scroll-button 273
+        left-handed
+        middle-emulation
+    }
+
+    /-trackpoint {
+        // off
+        natural-scroll
+        accel-speed 0.2
+        accel-profile "flat"
+        scroll-method "on-button-down"
+        scroll-button 273
+        middle-emulation
+    }
+
+	/-tablet {
+		off
+		map-to-output "eDP-1"
+		left-handed
+		calibration-matrix 1.0 0.0 0.0 0.0 1.0 0.0
+	}
+
+    /-touch {
+		off
+		map-to-output "eDP-1"
+	}
+
+	// disable-power-key-handling
+    // warp-mouse-to-focus
+    // focus-follows-mouse max-scroll-amount="0%"
+    // workspace-auto-back-and-forth
+}
+
+gestures {
+    dnd-edge-view-scroll {
+        trigger-width 30
+        delay-ms 100
+        max-speed 1500
+    }
+
+    dnd-edge-workspace-switch {
+        trigger-height 50
+        delay-ms 100
+        max-speed 1500
+    }
+
+    hot-corners {
+        // off
+    }
+}
+
+layout {
+    gaps 10
+	background-color "transparent"
+
+    center-focused-column "never"
+	// always-center-single-column
+    // empty-workspace-above-first
+    // default-column-display "tabbed"
+
+    /-preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+    }
+
+    // preset-window-heights { }
+
+    default-column-width { proportion 1.0; }
+
+    focus-ring {
+        off
+    }
+
+    border {
+        // off
+        width 1
+        active-color "#222222"
+        inactive-color "#222222"
+    }
+
+    shadow {
+        on
+        softness 20
+        spread 5
+        offset x=0 y=0
+		draw-behind-window true
+        color "#000"
+    }
+
+    /-struts {
+        left 64
+        right 64
+        top 64
+        bottom 64
+    }
+}
+
+spawn-at-startup "xwayland-satellite"
+spawn-at-startup "fcixt5"
+spawn-at-startup "ags" "run"
+spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1" "||" "/usr/libexec/polkit-gnome-authentication-agent-1"
+spawn-at-startup "gnome-keyring-daemon" "--start" "--components=secrets"
+spawn-at-startup "dbus-update-activation-environment" "--all"
+spawn-at-startup "sleep" "1" "&&" "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP"
+spawn-at-startup "~/.config/niri/lockscreen"
+
+prefer-no-csd
+
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+// screenshot-path null
+
+environment {
+    QT_QPA_PLATFORM "wayland"
+	QT_QPA_PLATFORMTHEME "qt6ct"
+	QT_IM_MODULE "fcitx"
+	XMODIFIERS "@im=fcitx"
+	SDL_IM_MODULE "fcitx"
+	GLFW_IM_MODULE "ibus"
+	INPUT_METHOD "fcitx"
+    DISPLAY ":0"
+}
+
+animations {
+    //slowdown 3.0
+}
+
+window-rule {
+    geometry-corner-radius 15
+    clip-to-geometry true
+}
+
+layer-rule {
+    match namespace="^wallpaper$"
+    place-within-backdrop true
+}
+
+hotkey-overlay {
+    skip-at-startup
+}
+
+overview {
+    zoom 0.75
+	backdrop-color "#0a0a0a"
+	
+    workspace-shadow {
+        // off
+		softness 30
+        spread 5
+        offset x=0 y=0
+        color "#000"
+    }
+}
+
+cursor {
+	xcursor-theme "Dark_Cursor"
+    xcursor-size 25
+}
+
+binds {
+    Mod+Shift+Slash								{ show-hotkey-overlay; }
+
+    Mod+Return									{ spawn "blackbox"; }
+    Alt+Space									{ spawn "bash" "-c" "astal -i sownteeastal -t launcher"; }
+    Mod+L										{ spawn "bash" "-c" "astal -i sownteeastal -t lock-screen"; }
+	Ctrl+Alt+R									{ spawn "bash" "-c" "ags quit -i sownteeastal; ags run"; }
+	Alt+F4										{ spawn "~/.config/niri/close"; }
+	Mod+E										{ spawn "nautilus"; }
+	Ctrl+Shift+Escape							{ spawn "missioncenter"; }
+	Alt+P										{ spawn "hyprpicker" "-a"; }
+	Mod+I										{ spawn "env" "XDG_CURRENT_DESKTOP=GNOME" "gnome-control-center"; }
+
+	XF86AudioRaiseVolume     allow-when-locked=true { spawn "pactl" "set-sink-volume" "@DEFAULT_SINK@" "+2%"; }
+    XF86AudioLowerVolume     allow-when-locked=true { spawn "pactl" "set-sink-volume" "@DEFAULT_SINK@" "-2%"; }
+    Mod+XF86AudioRaiseVolume allow-when-locked=true { spawn "pactl" "set-source-volume" "@DEFAULT_SOURCE@" "+2%"; }
+    Mod+XF86AudioLowerVolume allow-when-locked=true { spawn "pactl" "set-source-volume" "@DEFAULT_SOURCE@" "-2%"; }
+    XF86AudioMute            allow-when-locked=true { spawn "~/.config/niri/mute"; }
+    XF86AudioMicMute         allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
+	XF86MonBrightnessUp      allow-when-locked=true { spawn "brightnessctl" "s" "5%+"; }
+	XF86MonBrightnessDown    allow-when-locked=true { spawn "brightnessctl" "s" "5%-"; }
+
+	// ------------------------------------ WINDOWS -----------------------------
+    Alt+Left  { focus-column-left; }
+    Alt+Down  { focus-window-down; }
+    Alt+Up    { focus-window-up; }
+    Alt+Right { focus-column-right; }
+
+    Alt+Ctrl+Left  { move-column-left; }
+    Alt+Ctrl+Down  { move-window-down; }
+    Alt+Ctrl+Up    { move-window-up; }
+    Alt+Ctrl+Right { move-column-right; }
+
+    Mod+J     { focus-window-or-workspace-down; }
+    Mod+K     { focus-window-or-workspace-up; }
+    Mod+Ctrl+J     { move-window-down-or-to-workspace-down; }
+    Mod+Ctrl+K     { move-window-up-or-to-workspace-up; }
+
+	// ------------------------------------ MONITOR -----------------------------
+    Mod+Shift+Left  { focus-monitor-left; }
+    Mod+Shift+Down  { focus-monitor-down; }
+    Mod+Shift+Up    { focus-monitor-up; }
+    Mod+Shift+Right { focus-monitor-right; }
+
+    Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+Down  { move-column-to-monitor-down; }
+    Mod+Shift+Ctrl+Up    { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+Right { move-column-to-monitor-right; }
+
+    // Mod+Shift+Ctrl+Left  { move-window-to-monitor-left; }
+    // Mod+Shift+Ctrl+Left  { move-workspace-to-monitor-left; }
+
+	// ------------------------------------ WORKSPACE -----------------------------
+	Mod+O repeat=false	  { toggle-overview; }
+	Mod+Tab				  { focus-workspace-previous; }
+	Mod+Ctrl+Down         { move-workspace-down; }
+    Mod+Ctrl+Up           { move-workspace-up; }
+
+	Alt+Tab			{ spawn "~/.config/niri/focus-app" "next"; }
+	Alt+Shift+Tab	{ spawn "~/.config/niri/focus-app" "prev"; }
+
+	Alt+1 { spawn "~/.config/niri/focus-app" "focus" "1"; }
+	Alt+2 { spawn "~/.config/niri/focus-app" "focus" "2"; }
+	Alt+3 { spawn "~/.config/niri/focus-app" "focus" "3"; }
+	Alt+4 { spawn "~/.config/niri/focus-app" "focus" "4"; }
+	Alt+5 { spawn "~/.config/niri/focus-app" "focus" "5"; }
+	Alt+6 { spawn "~/.config/niri/focus-app" "focus" "6"; }
+	Alt+7 { spawn "~/.config/niri/focus-app" "focus" "7"; }
+	Alt+8 { spawn "~/.config/niri/focus-app" "focus" "8"; }
+	Alt+9 { spawn "~/.config/niri/focus-app" "focus" "9"; }
+
+	Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+    Mod+Shift+1 { move-column-to-workspace 1; }
+    Mod+Shift+2 { move-column-to-workspace 2; }
+    Mod+Shift+3 { move-column-to-workspace 3; }
+    Mod+Shift+4 { move-column-to-workspace 4; }
+    Mod+Shift+5 { move-column-to-workspace 5; }
+    Mod+Shift+6 { move-column-to-workspace 6; }
+    Mod+Shift+7 { move-column-to-workspace 7; }
+    Mod+Shift+8 { move-column-to-workspace 8; }
+    Mod+Shift+9 { move-column-to-workspace 9; }
+
+	// ------------------------------------- MOUSE --------------------------------
+    Alt+WheelScrollDown      { focus-column-right; }
+    Alt+WheelScrollUp        { focus-column-left; }
+    Alt+Ctrl+WheelScrollDown { move-column-right; }
+    Alt+Ctrl+WheelScrollUp   { move-column-left; }
+
+	Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
+    Mod+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }
+	Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
+    Mod+Ctrl+WheelScrollUp   cooldown-ms=150 { move-column-to-workspace-up; }
+
+	// ------------------------------------- TOUCHPAD ----------------------------------
+    Mod+TouchpadScrollLeft   { spawn "pactl" "set-sink-volume" "@DEFAULT_SINK@" "+2%"; }
+    Mod+TouchpadScrollRight  { spawn "pactl" "set-sink-volume" "@DEFAULT_SINK@" "-2%"; }
+	Alt+TouchpadScrollLeft   { spawn "pactl" "set-source-volume" "@DEFAULT_SOURCE@" "+2%"; }
+	Alt+TouchpadScrollRight  { spawn "pactl" "set-source-volume" "@DEFAULT_SOURCE@" "-2%"; }
+	Ctrl+TouchpadScrollLeft  { spawn "brightnessctl" "s" "5%+"; }
+	Ctrl+TouchpadScrollRight { spawn "brightnessctl" "s" "5%-"; }
+
+
+
+	// ------------------------------------- OTHER ----------------------------------------
+    Mod+Shift+F					{ fullscreen-window; }
+	Mod+R						{ switch-preset-column-width; }
+	Mod+F						{ maximize-column; }
+    Mod+Shift+R					{ switch-preset-window-height; }
+    Mod+Ctrl+R					{ reset-window-height; }
+
+	Mod+V						{ toggle-window-floating; }
+    Mod+Shift+V					{ switch-focus-between-floating-and-tiling; }
+
+	Mod+Minus					{ set-column-width "-10%"; }
+    Mod+Equal					{ set-column-width "+10%"; }
+	Mod+Shift+Minus				{ set-window-height "-10%"; }
+    Mod+Shift+Equal				{ set-window-height "+10%"; }
+
+	Mod+C						{ center-column; }
+    Mod+Ctrl+C					{ center-visible-columns; }
+
+    Mod+BracketLeft				{ consume-or-expel-window-left; }
+    Mod+BracketRight			{ consume-or-expel-window-right; }
+    Mod+Comma					{ consume-window-into-column; }
+    Mod+Period					{ expel-window-from-column; }
+
+    Mod+W						{ toggle-column-tabbed-display; }
+
+    Mod+Shift+S					{ screenshot; }
+// gpu-screen-recorder -w eDP-1 -s 2560x1600 -f 165 -a default_output -ac opus -q very_high -k h264 -encoder cpu -cr limited -fm vfr -o ~/Videos/recording_$(date +"%Y-%m-%d_%H:%M:%S").mp4
+
+// gpu-screen-recorder -w region -region $(slurp -f "%wx%h+%x+%y") -f 165 -a default_output -ac opus -q very_high -k h264 -encoder cpu -cr limited -fm vfr -o ~/Videos/recording_$(date +"%Y-%m-%d_%H:%M:%S").mp4
+
+    Mod+Alt+Q { quit; }
+}

@@ -1,6 +1,0 @@
-[Nemo Action]
-Name=Open on Neovim
-Exec=alacritty -e nvim %F
-Icon-Name=nvim
-Selection=s
-Extensions=any;

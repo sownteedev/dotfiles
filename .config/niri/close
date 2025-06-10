@@ -1,0 +1,24 @@
+#!/bin/bash
+
+WINDOWS=$(niri msg --json windows)
+
+if [ -z "$WINDOWS" ] || [ "$WINDOWS" = "[]" ]; then
+    astal -i sownteeastal -t power-menu
+    exit 0
+fi
+
+if command -v jq >/dev/null 2>&1; then
+    FOCUSED_COUNT=$(echo "$WINDOWS" | jq '[.[] | select(.is_focused == true)] | length')
+    
+    if [ "$FOCUSED_COUNT" -eq 0 ]; then
+        astal -i sownteeastal -t power-menu
+        exit 0
+    fi
+else
+    if ! echo "$WINDOWS" | grep -q '"is_focused":true'; then
+        astal -i sownteeastal -t power-menu
+        exit 0
+    fi
+fi
+
+niri msg action close-window

@@ -1,0 +1,25 @@
+{
+	"name": "Sowntee Custom",
+	"comment": "Custom Colour Scheme",
+	"use-theme-colors": false,
+	"foreground-color": "#ffffff",
+	"background-color": "#141414",
+	"palette": [
+		"#1c1c1c",
+		"#da5858",
+		"#3fc661",
+		"#e8ca5e",
+		"#497ee9",
+		"#d56cc3",
+		"#5cd8e6",
+		"#ffffff",
+		"#222222",
+		"#e36d6d",
+		"#61d67e",
+		"#fadd75",
+		"#5d8dee",
+		"#df81cf",
+		"#7eeaf6",
+		"#e0e0e1"
+	]
+}
