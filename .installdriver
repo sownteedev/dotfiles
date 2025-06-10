@@ -54,7 +54,7 @@ sleep 3 && clear
 
 # Audio
 echo "[*] Installing audio & mic driver ..."
-sudo pacman -S pavucontrol pipewire pipewire-audio pipewire-pulse alsa-ucm-conf sof-firmware playerctl --noconfirm
+sudo pacman -S pipewire pipewire-audio pipewire-pulse wireplumber alsa-ucm-conf sof-firmware playerctl --noconfirm
 sudo systemctl --user enable pipewire pipewire-pulse wireplumber
 echo "[*] Done."
 sleep 3 && clear
@@ -74,7 +74,7 @@ sleep 3 && clear
 
 # Network
 echo "[*] Installing network ..."
-sudo pacman -S networkmanager wpa_supplicant wireless_tools network-manager-applet --noconfirm
+sudo pacman -S networkmanager wpa_supplicant wireless_tools --noconfirm
 sudo systemctl enable NetworkManager wpa_supplicant
 LOC="/etc/NetworkManager/conf.d/wifi-powersave.conf"
 echo -e "The following has been added to $LOC.\n"
@@ -90,13 +90,13 @@ sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-sudo pacman -S nautilus tumbler ranger ueberzug exa zip gzip tar unzip unrar xdg-user-dirs gvfs vlc evince glib2 dconf --noconfirm
+sudo pacman -S nautilus tumbler ueberzug exa zip gzip tar unzip unrar xdg-user-dirs gvfs vlc evince glib2 dconf --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Monitor and Theme
 echo "[*] Installing monitor and theme ..."
-sudo pacman -S viewnior shotwell nwg-look imagemagick fastfetch --noconfirm
+sudo pacman -S viewnior nwg-look imagemagick fastfetch qt5-wayland qt6-wayland qt5ct qt6ct --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
