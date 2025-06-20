@@ -176,8 +176,8 @@ window-rule {
 }
 
 layer-rule {
-    match namespace="^wallpaper$"
-    place-within-backdrop true
+    match namespace="^desktop-"
+	place-within-backdrop true
 }
 
 hotkey-overlay {
@@ -185,11 +185,11 @@ hotkey-overlay {
 }
 
 overview {
-    zoom 0.75
+    zoom 0.5
 	backdrop-color "#0a0a0a"
 	
     workspace-shadow {
-        // off
+        off
 		softness 30
         spread 5
         offset x=0 y=0
@@ -311,14 +311,9 @@ binds {
 	Ctrl+TouchpadScrollLeft  { spawn "brightnessctl" "s" "5%+"; }
 	Ctrl+TouchpadScrollRight { spawn "brightnessctl" "s" "5%-"; }
 
-
-
 	// ------------------------------------- OTHER ----------------------------------------
     Mod+Shift+F					{ fullscreen-window; }
-	Mod+R						{ switch-preset-column-width; }
 	Mod+F						{ maximize-column; }
-    Mod+Shift+R					{ switch-preset-window-height; }
-    Mod+Ctrl+R					{ reset-window-height; }
 
 	Mod+V						{ toggle-window-floating; }
     Mod+Shift+V					{ switch-focus-between-floating-and-tiling; }
@@ -339,9 +334,7 @@ binds {
     Mod+W						{ toggle-column-tabbed-display; }
 
     Mod+Shift+S					{ screenshot; }
-// gpu-screen-recorder -w eDP-1 -s 2560x1600 -f 165 -a default_output -ac opus -q very_high -k h264 -encoder cpu -cr limited -fm vfr -o ~/Videos/recording_$(date +"%Y-%m-%d_%H:%M:%S").mp4
-
-// gpu-screen-recorder -w region -region $(slurp -f "%wx%h+%x+%y") -f 165 -a default_output -ac opus -q very_high -k h264 -encoder cpu -cr limited -fm vfr -o ~/Videos/recording_$(date +"%Y-%m-%d_%H:%M:%S").mp4
+	Mod+Shift+R					{ spawn "~/.config/niri/record"; }
 
     Mod+Alt+Q { quit; }
 }
