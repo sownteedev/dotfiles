@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if pgrep -f "gpu-screen-recorder" > /dev/null; then
+    killall gpu-screen-recorder
+else
+	output_path="$HOME/Videos/recording_$(date +'%Y-%m-%d_%H:%M:%S').mp4"
+	region=$(slurp -f '%wx%h+%x+%y')
+	if [ -z "$region" ]; then
+        notify-send "🎥 Screen Recording" "Recording cancelled (no region selected)."
+        exit 1
+    fi
+	notify-send "🎥 Screen Recording" "Started Recorder"
+    gpu-screen-recorder \
+        -w region \
+		-region "$region" \
+        -f 165 \
+        -a default_output \
+        -ac opus \
+        -q very_high \
+        -k h264 \
+        -encoder cpu \
+        -cr limited \
+        -fm vfr \
+		-o "$output_path"
+	notify-send "🎥 Screen Recording" "The recording was saved to $output_path"
+fi
