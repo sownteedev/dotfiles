@@ -54,12 +54,13 @@
         margin-left: to-rem(20px);
         .app-id {
             font-size: to-rem(17px);
+            font-weight: 500;
             color: $fg1;
         }
 
         .window-title {
             font-size: to-rem(18px);
-            font-weight: 500;
+            font-weight: 600;
         }
     }
 
@@ -70,6 +71,7 @@
 
     .Date {
         font-size: to-rem(17px);
+        font-weight: 500;
         color: $fg1;
     }
 
@@ -77,6 +79,7 @@
         background-color: gtkalpha($bg, 0.6);
         transition: all 0.2s ease;
         icon {
+            color: $fg;
             font-size: to-rem(25px);
         }
     }
@@ -86,6 +89,10 @@
         font-size: to-rem(3px);
         color: $fg;
         background-color: $fg2;
+
+        &.live {
+            color: $red;
+        }
     }
 
     box.cover-art {
