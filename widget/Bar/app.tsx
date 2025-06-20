@@ -8,7 +8,6 @@ import ActiveClient from "./mods/ActiveClient"
 import Workspace from "./mods/Workspace"
 import MediaCava from "./mods/MediaCava"
 import { truncateText } from "../../utils/common"
-import { Stack } from "astal/gtk3/widget"
 
 const SysTray = () => {
 	const tray = Tray.get_default()
@@ -73,20 +72,19 @@ const BatteryLevel = () => {
 
 const Wifi = () => {
 	const network = Network.get_default()
-	const wifiState = Variable.derive([bind(network, "wifi")], (wifi) => wifi)
+	const wifi = network.wifi
 	const showWifiName = Variable(false)
 
 	const cleanup = () => {
 		showWifiName.drop();
-		wifiState.drop();
 	};
 
 	return <eventbox onHover={() => showWifiName.set(true)} onHoverLost={() => showWifiName.set(false)} onDestroy={cleanup}>
 		<box className="Wifi">
-			<icon icon={bind(wifiState).as(wifi => wifi.iconName || "")}/>
+			<icon icon={bind(wifi, "iconName")} />
 
 			<revealer transitionDuration={200} transitionType={Gtk.RevealerTransitionType.SLIDE_LEFT} revealChild={bind(showWifiName)}>
-				<label label={bind(wifiState).as(wifi => wifi.ssid || "")}/>
+				<label label={bind(wifi, "ssid").as(ssid => ssid || "")}/>
 			</revealer>
 		</box>
 	</eventbox >
@@ -98,75 +96,55 @@ const Media = () => {
 	const showMediaPlayer = Variable(false)
 	const showPlayButton = Variable(false)
 	
-	// Debounce hover events to prevent spam
-	let hoverTimeout: number | null = null
-	let hoverLostTimeout: number | null = null
-	
 	const cleanup = () => {
 		showMediaPlayer.drop();
 		showPlayButton.drop();
-		
-		// Cleanup timeouts
-		if (hoverTimeout) GLib.source_remove(hoverTimeout);
-		if (hoverLostTimeout) GLib.source_remove(hoverLostTimeout);
 	};
+
+	function lengthStr(length: number) {
+		return `${length}s`
+	}
 
 	return <box className="Media" onDestroy={cleanup}>
 		{bind(mpris, "players").as((arr) => arr[0] ? (
 			<box spacing={5}>
-				<eventbox 
+				<eventbox
 					onHover={() => {
-						// Clear any pending hover lost timeout
-						if (hoverLostTimeout) {
-							GLib.source_remove(hoverLostTimeout);
-							hoverLostTimeout = null;
-						}
-						
-						// Debounce hover events to prevent spam
-						if (hoverTimeout) {
-							GLib.source_remove(hoverTimeout);
-						}
-						
-						hoverTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-							showPlayButton.set(true)
-							showMediaPlayer.set(true)
-							hoverTimeout = null;
-							return false;
-						});
+						showPlayButton.set(true)
+						showMediaPlayer.set(true)
+						return false;
 					}} 
 					onHoverLost={() => {
-						// Clear any pending hover timeout
-						if (hoverTimeout) {
-							GLib.source_remove(hoverTimeout);
-							hoverTimeout = null;
-						}
-						
-						// Debounce hover lost events
-						if (hoverLostTimeout) {
-							GLib.source_remove(hoverLostTimeout);
-						}
-						
-						hoverLostTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
-							showPlayButton.set(false)
-							showMediaPlayer.set(false)
-							hoverLostTimeout = null;
-							return false;
-						});
+						showPlayButton.set(false)
+						showMediaPlayer.set(false)
+						return false;
 					}}
 					cursor={"hand1"}
 				>
 					<circularprogress
-					className={"progress-media"}
-					endAt={bind(arr[0], "length").as(l => l > 0 ? l : 0)}
+					className={bind(arr[0], "length").as(length => length >= 3600 ? "progress-media live" : "progress-media")}
+					endAt={bind(arr[0], "identity").as(identity => {
+						const laggyPlayers = ["youtube", "spotify"];
+						const isLaggy = laggyPlayers.some(player =>
+							identity.toLowerCase().includes(player)
+						);
+						return isLaggy || arr[0].length >= 3600 ? 1 : (arr[0].length >= 0 ? arr[0].length : 1);
+					})}
 					rounded={true}
-					value={bind(arr[0], "position").as(p => arr[0].length > 0 ? p / arr[0].length : 0)}
+					value={bind(arr[0], "identity").as(identity => {
+						const laggyPlayers = ["youtube", "spotify"];
+						const isLaggy = laggyPlayers.some(player => 
+							identity.toLowerCase().includes(player)
+						);
+						return isLaggy || arr[0].length >= 3600 ? 1 : (arr[0].length > 0 ? arr[0].position / arr[0].length : 1);
+					})}
 					child={
 						<overlay>
 							<box className="cover-art" css={bind(arr[0], "coverArt").as((c) => {
 								if (!c || c === "") return "background-color: rgba(255, 255, 255, 0.1);"
 								return `background-image: url('${c}'); background-size: cover; background-position: center;`
 							})} />
-							<revealer 
+							<revealer
 								transitionType={Gtk.RevealerTransitionType.CROSSFADE}
 								transitionDuration={200}
 								revealChild={bind(showPlayButton)}
@@ -188,7 +166,7 @@ const Media = () => {
 				<revealer transitionDuration={200} transitionType={Gtk.RevealerTransitionType.SLIDE_LEFT} revealChild={bind(showMediaPlayer)}>
 					<box vertical valign={Gtk.Align.CENTER}>
 						<label className="title" halign={Gtk.Align.START} label={bind(arr[0], "title").as((t) => truncateText(t || "Unknown Track", 50))} />
-						<label className="artist" halign={Gtk.Align.START} label={bind(arr[0], "artist").as((a) => a || "Unknown Artist")} />
+						<label className="artist" halign={Gtk.Align.START} label={bind(arr[0], "artist").as((a) => truncateText(a || "Unknown Artist", 50))} />
 					</box>
 				</revealer>
 			</box>

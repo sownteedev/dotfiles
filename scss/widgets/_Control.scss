@@ -681,6 +681,7 @@ window.control-menu {
         
             slider {
                 background-color: transparent;
+                min-height: to-rem(3px);
             }
         }
 
