@@ -179,6 +179,7 @@ install_workspace() {
 
     echo "[*] Installing Development Applications..."
     yay -S --noconfirm visual-studio-code-insiders-bin cursor-extracted jetbrains-toolbox docker docker-desktop postman-bin github-desktop-bin devtoys-bin blackbox-terminal
+	rm ~/.config/systemd/user/graphical-session.target.wants/docker-desktop.service
     yay -S --noconfirm vmware-workstation open-vm-tools xf86-video-vmware xf86-input-vmmouse
     sudo systemctl enable vmware-networks vmware-usbarbitrator vmtoolsd
 
