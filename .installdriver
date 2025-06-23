@@ -140,20 +140,20 @@ sudo sbctl enroll-keys -mi
 
 sleep 3 && clear
 
-echo ">>> Config driver NVIDIA..."
+# echo ">>> Config driver NVIDIA..."
 # Open [multilib] repository
-sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
+# sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
 
 # Reupdate all
-sudo pacman -Syu --needed --noconfirm
-sudo pacman -S --needed nvidia-open nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime --noconfirm
+# sudo pacman -Syu --needed --noconfirm
+# sudo pacman -S --needed nvidia-open nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime --noconfirm
 
 # Add nvidia_drm.modeset=1 on GRUB
-sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1 nvidia.NVreg_EnableGpuFirmware=0/' /etc/default/grub
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+# sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1 nvidia.NVreg_EnableGpuFirmware=0/' /etc/default/grub
+# sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 # Add enviroment
-sudo bash -c 'echo -e "GBM_BACKEND=nvidia-drm\n__GLX_VENDOR_LIBRARY_NAME=nvidia" >> /etc/environment'
+# sudo bash -c 'echo -e "GBM_BACKEND=nvidia-drm\n__GLX_VENDOR_LIBRARY_NAME=nvidia" >> /etc/environment'
 
 # Edit Mkinitcpio
 # sudo sed -i 's/^MODULES=(.*)/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
