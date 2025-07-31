@@ -26,7 +26,7 @@ input {
         natural-scroll
         accel-speed 0.6
         // accel-profile "flat"
-        // scroll-factor 1.0
+        //scroll-factor 1.0
         // scroll-method "two-finger"
         // scroll-button 273
         // tap-button-map "left-middle-right"
@@ -36,15 +36,15 @@ input {
         // middle-emulation
     }
 
-    /-mouse {
+    mouse {
 		// off
-        natural-scroll
+        //natural-scroll
         accel-speed 0.2
         accel-profile "flat"
-        scroll-factor 1.0
+        scroll-factor 2.0
         scroll-method "no-scroll"
         scroll-button 273
-        left-handed
+        //left-handed
         middle-emulation
     }
 
@@ -143,14 +143,15 @@ layout {
 
 spawn-at-startup "xwayland-satellite"
 spawn-at-startup "fcixt5"
-spawn-at-startup "ags" "run"
+spawn-at-startup "agsv2" "run"
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1" "||" "/usr/libexec/polkit-gnome-authentication-agent-1"
 spawn-at-startup "gnome-keyring-daemon" "--start" "--components=secrets"
 spawn-at-startup "dbus-update-activation-environment" "--all"
 spawn-at-startup "sleep" "1" "&&" "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP"
-spawn-at-startup "~/.config/niri/lockscreen"
+spawn-at-startup "bash" "-c" "swayidle -w timeout 600 'astal -i sownteeastal -t lock-screen' timeout 600 'niri msg action power-off-monitors' resume '' before-sleep 'astal -i sownteeastal -t lock-screen'
+"
 
-prefer-no-csd
+// prefer-no-csd
 
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 // screenshot-path null
@@ -163,7 +164,14 @@ environment {
 	SDL_IM_MODULE "fcitx"
 	GLFW_IM_MODULE "ibus"
 	INPUT_METHOD "fcitx"
-    DISPLAY ":0"
+    DISPLAY ":1"
+	GBM_BACKEND "nvidia_drm"
+	__GLX_VENDOR_LIBRARY_NAME "nvidia"
+	// LIBVA_DRIVER_NAME "nvidia"
+}
+
+debug {
+    wait-for-frame-completion-in-pipewire
 }
 
 animations {
@@ -173,6 +181,7 @@ animations {
 window-rule {
     geometry-corner-radius 15
     clip-to-geometry true
+	open-floating false
 }
 
 layer-rule {
@@ -208,7 +217,7 @@ binds {
     Mod+Return									{ spawn "blackbox"; }
     Alt+Space									{ spawn "bash" "-c" "astal -i sownteeastal -t launcher"; }
     Mod+L										{ spawn "bash" "-c" "astal -i sownteeastal -t lock-screen"; }
-	Ctrl+Alt+R									{ spawn "bash" "-c" "ags quit -i sownteeastal; ags run"; }
+	Ctrl+Alt+R									{ spawn "bash" "-c" "agsv2 quit -i sownteeastal; agsv2 run"; }
 	Alt+F4										{ spawn "~/.config/niri/close"; }
 	Mod+E										{ spawn "nautilus"; }
 	Ctrl+Shift+Escape							{ spawn "missioncenter"; }
@@ -316,7 +325,8 @@ binds {
 	Mod+F						{ maximize-column; }
 
 	Mod+V						{ toggle-window-floating; }
-    Mod+Shift+V					{ switch-focus-between-floating-and-tiling; }
+    Mod+Ctrl+V					{ switch-focus-between-floating-and-tiling; }
+	Mod+Shift+V					{ spawn "~/.config/niri/toogle-floating-workspace"; }
 
 	Mod+Minus					{ set-column-width "-10%"; }
     Mod+Equal					{ set-column-width "+10%"; }

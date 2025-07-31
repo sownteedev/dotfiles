@@ -3,12 +3,14 @@
 if pgrep -f "gpu-screen-recorder" > /dev/null; then
     killall gpu-screen-recorder
 else
-	output_path="$HOME/Videos/recording_$(date +'%Y-%m-%d_%H:%M:%S').mp4"
-	region=$(slurp -f '%wx%h+%x+%y')
+	output_path="$HOME/Videos/recording_$(date +'%d-%m-%Y_%H:%M:%S').mp4"
+
+	region=$(slurp -b '#00000090' -c '#fff' -w 2 -f %wx%h+%x+%y)
 	if [ -z "$region" ]; then
         notify-send "🎥 Screen Recording" "Recording cancelled (no region selected)."
         exit 1
     fi
+
 	notify-send "🎥 Screen Recording" "Started Recorder"
     gpu-screen-recorder \
         -w region \
@@ -22,5 +24,21 @@ else
         -cr limited \
         -fm vfr \
 		-o "$output_path"
-	notify-send "🎥 Screen Recording" "The recording was saved to $output_path"
+
+	wl-copy file:/"$output_path" -t text/uri-list
+
+	action=$(notify-send "🎥 Screen Recording" \
+	"Recording saved to $output_path" \
+	--action='vlc=Open' \
+	--action='delete=Delete' \
+	--wait)
+
+	case "$action" in
+		vlc)
+			vlc "$output_path" &
+		;;
+		delete)
+			rm -f "$output_path" &
+		;;
+	esac
 fi

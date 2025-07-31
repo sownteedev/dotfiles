@@ -1,0 +1,104 @@
+#!/bin/bash
+
+# Niri Toggle Floating Workspace - Toggle floating status for all windows in current workspace
+# Also updates config.kdl to change default open-floating behavior
+# Usage: toogle-floating-workspace
+
+# Get script directory for config path
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/config.kdl"
+
+# Function to get workspace data
+get_workspace_data() {
+    niri msg --json windows | jq --argjson workspaces "$(niri msg --json workspaces)" '
+        [.[] | select(.workspace_id == ($workspaces[] | select(.is_active) | .id))] // []'
+}
+
+# Function to update config.kdl open-floating setting
+update_config_floating() {
+    local new_floating_state=$1
+    
+    if [ ! -f "$CONFIG_FILE" ]; then
+        return 1
+    fi
+    
+    # Update open-floating setting
+    if [ "$new_floating_state" = "true" ]; then
+        sed -i -e 's/open-floating false/open-floating true/g' -e 's/^\s*\/\/\s*open-floating true/\topen-floating true/g' "$CONFIG_FILE"
+    else
+        sed -i 's/open-floating true/open-floating false/g' "$CONFIG_FILE"
+    fi
+}
+
+# Function to toggle floating for all windows
+toggle_floating_workspace() {
+    # Get workspace windows data
+    local workspace_data=$(get_workspace_data)
+    local window_count=$(echo "$workspace_data" | jq 'length')
+    
+    if [ "$window_count" -eq 0 ]; then
+        # Still update config based on current setting
+        local current_floating=$(grep -E "^\s*open-floating\s+(true|false)" "$CONFIG_FILE" | grep -o -E "(true|false)" | tail -1)
+        if [ "$current_floating" = "true" ]; then
+            update_config_floating "false"
+        else
+            update_config_floating "true"
+        fi
+        exit 0
+    fi
+    
+    # Extract window data and count floating windows in one pass
+    local floating_count=0
+    local window_ids=()
+    
+    while IFS= read -r window_data; do
+        if [ -n "$window_data" ]; then
+            local window_id=$(echo "$window_data" | cut -d'|' -f1)
+            local is_floating=$(echo "$window_data" | cut -d'|' -f2)
+            
+            window_ids+=("$window_id")
+            
+            if [ "$is_floating" = "true" ]; then
+                floating_count=$((floating_count + 1))
+            fi
+        fi
+    done <<< "$(echo "$workspace_data" | jq -r '.[] | "\(.id)|\(.is_floating)"')"
+    
+    # Determine target state - if majority floating, switch to tiled
+    local target_config_state="true"
+    if [ $floating_count -gt $((window_count / 2)) ]; then
+        target_config_state="false"
+    fi
+    
+    # Toggle floating status for each window
+    for window_id in "${window_ids[@]}"; do
+        niri msg action toggle-window-floating --id "$window_id"
+    done
+    
+    # If switching to tiled mode, maximize all columns
+    if [ "$target_config_state" = "false" ]; then
+        for window_id in "${window_ids[@]}"; do
+            niri msg action focus-window --id "$window_id" >/dev/null 2>&1
+            niri msg action maximize-column >/dev/null 2>&1
+        done
+    fi
+    
+    # Update config based on target state
+    update_config_floating "$target_config_state"
+}
+
+# Main function
+main() {
+    local action=$1
+    
+    case "$action" in
+        "")
+            toggle_floating_workspace
+            ;;
+        *)
+            exit 0
+            ;;
+    esac
+}
+
+main "$@"
