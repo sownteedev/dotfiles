@@ -464,6 +464,10 @@ window.control-menu {
     }
 
     .application-volume-item {
+        .application-icon {
+            font-size: to-rem(25px);
+        }
+
         label {
             font-size: to-rem(18px);
             font-weight: 500;
@@ -568,7 +572,7 @@ window.control-menu {
     }
     
     .notification-time-list {
-        margin: 0 to-rem(-5px) 0 to-rem(30px);
+        margin: 0 to-rem(-5px) 0 to-rem(10px);
         font-size: to-rem(16px);
         font-weight: 600;
         color: gtkalpha($fg, 0.8);
@@ -658,8 +662,8 @@ window.control-menu {
     }
 
     .battery-percentage-container {
-        margin-bottom: to-rem(15px);
-        margin-top: to-rem(-20px);
+        margin-bottom: to-rem(10px);
+        margin-top: to-rem(-10px);
 
         label {
             font-size: to-rem(18px);
@@ -667,76 +671,42 @@ window.control-menu {
             color: $fg;
         }
 
-        .battery-percentage-slider-green {
+        @mixin battery-percentage-slider($color) {
             trough {
                 margin-right: to-rem(20px);
-                background-color: gtkalpha($green, 0.2);
+                background-color: gtkalpha($color, 0.2);
                 border-radius: to-rem(15px);
+                margin-right: to-rem(-3px)
             }
-        
+
             highlight {
-                background-color: $green;
+                background-color: $color;
                 border-radius: to-rem(15px);
+                margin-right: to-rem(-3px)
             }
-        
+
             slider {
                 background-color: transparent;
                 min-height: to-rem(3px);
             }
         }
 
+        .battery-percentage-slider-green {
+            @include battery-percentage-slider($green);
+        }
+
         .battery-percentage-slider-blue {
-            trough {
-                margin-right: to-rem(20px);
-                background-color: gtkalpha($blue, 0.2);
-                border-radius: to-rem(15px);
-            }
-
-            highlight {
-                background-color: $blue;
-                border-radius: to-rem(15px);
-            }
-
-            slider {
-                background-color: transparent;
-            }
+            @include battery-percentage-slider($blue);
         }
 
         .battery-percentage-slider-yellow {
-            trough {
-                margin-right: to-rem(20px);
-                background-color: gtkalpha($yellow, 0.2);
-                border-radius: to-rem(15px);
-            }
-
-            highlight {
-                background-color: $yellow;
-                border-radius: to-rem(15px);
-            }
-
-            slider {
-                background-color: transparent;
-            }
+            @include battery-percentage-slider($yellow);
         }
 
         .battery-percentage-slider-red {
-            trough {
-                margin-right: to-rem(20px);
-                background-color: gtkalpha($red, 0.2);
-                border-radius: to-rem(15px);
-            }
-
-            highlight {
-                background-color: $red;
-                border-radius: to-rem(15px);
-            }
-
-            slider {
-                background-color: transparent;
-            }
+            @include battery-percentage-slider($red);
         }
     }
-
 
     .battery-info-section-title {
         font-size: to-rem(20px);
@@ -744,71 +714,42 @@ window.control-menu {
 
         &:first-child {
             color: $fg;
-            margin-bottom: to-rem(10px);
         }
     }
 }
 
-.power-profile-container {
+@mixin control-section-container($prefix) {
     background-color: transparent;
 
-    label {
-        font-size: to-rem(18px);
-        font-weight: 500;
-        color: $fg;
-    }
-
-    .power-mode-buttons {
-        button {
-            background-color: $bg2;
-            border-radius: to-rem(15px);
-            padding: to-rem(10px);
-        }
-
-        .active {
-            background-color: $blue;
-            label {
-                color: $bg;
-            }
-        }
-    }
-}
-
-.battery-charging-container {
-    background-color: transparent;
-
-    .battery-charging-section-title {
+    .#{$prefix}-title {
         font-size: to-rem(20px);
         font-weight: 600;
         color: $fg;
     }
 
-    .charge-mode-option {
-        background-color: $bg2;
-        border-radius: to-rem(15px);
-        padding: to-rem(10px) to-rem(25px);
-
-        &.active {
-            background-color: $blue;
-        }
-
-        .battery-charging-section-first {
-            font-size: to-rem(18px);
-            font-weight: 600;
-
-            &.active {
-                color: $bg;
+    .#{$prefix}-button {        
+        label {
+            &:first-child {
+                font-size: to-rem(18px);
+                color: $fg;
             }
-        }
 
-        .battery-charging-section-second {   
-            font-size: to-rem(16px);
-            font-weight: 500;
-            color: $fg1;
-
-            &.active {
-                color: $bg3;
+            &:last-child {
+                font-size: to-rem(16px);
+                color: $fg1;
             }
         }
     }
+}
+
+.power-profile-container {
+    @include control-section-container('power-profile');
+}
+
+.cpu-profile-container {
+    @include control-section-container('cpu-profile');
+}
+
+.battery-charging-container {
+    @include control-section-container('battery-charging');
 }

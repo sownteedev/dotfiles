@@ -13,7 +13,7 @@
     }
 
     >centerbox {
-        padding: to-rem(10px);
+        padding: to-rem(8px);
     }
 
     .SysTrayIcon {
@@ -23,8 +23,7 @@
     .Chia {
         font-size: to-rem(21px);
         font-weight: 600;
-        margin-right: to-rem(-30px);
-        margin-left: to-rem(-20px);
+        margin: 0 to-rem(-30px) 0 to-rem(-20px);
     }
 
     .Wifi {
@@ -65,7 +64,7 @@
     }
 
     .Time {
-        font-size: to-rem(19px);
+        font-size: to-rem(18px);
         font-weight: 700;
     }
 
@@ -96,7 +95,7 @@
     }
 
     box.cover-art {
-        min-width: to-rem(20px);
+        min-width: to-rem(17px);
         border-radius: 50%;
         margin: to-rem(5px);
         padding: 0 to-rem(10px);
@@ -105,12 +104,12 @@
     }
 
     label.title {
-        font-size: to-rem(18px);
+        font-size: to-rem(17px);
         font-weight: 600;
     }
 
     label.artist {
-        font-size: to-rem(17px);
+        font-size: to-rem(16px);
         color: $fg1;
     }
 }
@@ -138,21 +137,19 @@
         }
 
         .workspace-button {
-            min-width: to-rem(30px);
-            min-height: to-rem(30px);
             border-radius: to-rem(8px);
-            padding: 0 to-rem(10px) 0 to-rem(10px);
+            padding: 0 to-rem(10px);
 
             .txt-ws {
                 font-size: to-rem(17px);
                 font-weight: 900;
                 color: $fg;
-                margin-right: to-rem(4px);
+                margin-right: to-rem(0px);
             }
             
             .app-icon {
                 icon {
-                    font-size: to-rem(30px);
+                    font-size: to-rem(28px);
                     margin: 0 to-rem(3px);
                 }
                 

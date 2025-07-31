@@ -79,13 +79,21 @@ const Wifi = () => {
 		showWifiName.drop();
 	};
 
+	const NameWifi = () => { 
+		return bind(wifi, "state").as(state => {
+			if (state === Network.DeviceState.ACTIVATED) {
+				return <revealer transitionDuration={200} transitionType={Gtk.RevealerTransitionType.SLIDE_LEFT} revealChild={bind(showWifiName)}>
+					<label label={bind(wifi, "ssid").as(ssid => ssid || "")}/>
+				</revealer>
+			}
+			return <box/>
+		})
+	}
+
 	return <eventbox onHover={() => showWifiName.set(true)} onHoverLost={() => showWifiName.set(false)} onDestroy={cleanup}>
 		<box className="Wifi">
 			<icon icon={bind(wifi, "iconName")} />
-
-			<revealer transitionDuration={200} transitionType={Gtk.RevealerTransitionType.SLIDE_LEFT} revealChild={bind(showWifiName)}>
-				<label label={bind(wifi, "ssid").as(ssid => ssid || "")}/>
-			</revealer>
+			{NameWifi()}
 		</box>
 	</eventbox >
 }
@@ -100,10 +108,6 @@ const Media = () => {
 		showMediaPlayer.drop();
 		showPlayButton.drop();
 	};
-
-	function lengthStr(length: number) {
-		return `${length}s`
-	}
 
 	return <box className="Media" onDestroy={cleanup}>
 		{bind(mpris, "players").as((arr) => arr[0] ? (

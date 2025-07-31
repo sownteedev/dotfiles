@@ -1,4 +1,5 @@
 import { Gtk } from 'astal/gtk3';
+import Apps from "gi://AstalApps"
 
 function tb_override<T extends object, U extends object>(target: T, source: U): T & U {
     for (const key in source) {
@@ -78,4 +79,73 @@ function lookupIcon(args: { icon_name?: string | string[]; size?: number; path?:
     return undefined;
 }
 
-export { lookupIcon };
+
+const appInfoCache = new Map<string, any>();
+const MAX_CACHE_SIZE = 50;
+
+let appManager: Apps.Apps | null = null;
+const getAppManager = () => {
+	if (!appManager) {
+		appManager = new Apps.Apps();
+	}
+	return appManager;
+};
+
+const getIcon = (appId: string) => {
+	if (!appId) return null;
+	
+	// Check cache first
+	if (appInfoCache.has(appId)) {
+		return appInfoCache.get(appId);
+	}
+
+	// Use the single app manager instance
+	const appList = getAppManager().get_list();
+	for (const app of appList) {
+		if (app.entry.toLowerCase().includes(appId.toLowerCase())|| app.icon_name === appId || app.iconName === appId || app.name === appId || app.wm_class === appId) {
+			// Limit cache size
+			if (appInfoCache.size >= MAX_CACHE_SIZE) {
+				const firstKey = appInfoCache.keys().next().value;
+				if (firstKey) {
+					appInfoCache.delete(firstKey);
+				}
+			}
+			appInfoCache.set(appId, app);
+			return app;
+		}
+	}
+	
+	const commonKeywords = [
+		"browser", "web", "music", "media", "video", "audio", "terminal", "editor", 
+		"code", "chat", "mail", "photo", "image", "settings", "control"
+	];
+	
+	for (const keyword of commonKeywords) {
+		if (appId.toLowerCase().includes(keyword)) {
+			const keywordResults = getAppManager().fuzzy_query(keyword);
+			if (keywordResults.length > 0) {
+				// Limit cache size
+				if (appInfoCache.size >= MAX_CACHE_SIZE) {
+					const firstKey = appInfoCache.keys().next().value;
+					if (firstKey) {
+						appInfoCache.delete(firstKey);
+					}
+				}
+				appInfoCache.set(appId, keywordResults[0]);
+				return keywordResults[0];
+			}
+		}
+	}
+	
+	// Cache null result to avoid repeated failed lookups
+	if (appInfoCache.size >= MAX_CACHE_SIZE) {
+		const firstKey = appInfoCache.keys().next().value;
+		if (firstKey) {
+			appInfoCache.delete(firstKey);
+		}
+	}
+	appInfoCache.set(appId, null);
+	return null;
+};
+
+export { lookupIcon, getIcon };

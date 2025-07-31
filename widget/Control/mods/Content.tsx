@@ -8,6 +8,7 @@ import Battery from "gi://AstalBattery"
 import PowerProfiles from "gi://AstalPowerProfiles";
 import { sanitizeUtf8, truncateText } from "../../../utils/common";
 import { fileExists } from "../../../utils/file";
+import { getIcon } from "../../../utils/icon";
 
 const network = Network.get_default();
 const wifi = network.wifi;
@@ -619,7 +620,6 @@ const NotificationList = () => {
 
         return (
             <box className="notification-item" onDestroy={() => {
-                // Cleanup showActions variable when component is destroyed
                 showActions.drop();
             }}>
                 {notification.image && fileExists(notification.image) && <box
@@ -648,7 +648,7 @@ const NotificationList = () => {
                             hexpand
                             wrap
                         />
-                        <box halign={Gtk.Align.END}>
+                        <box halign={Gtk.Align.END} valign={Gtk.Align.START}>
                             <label
                                 className="notification-time-list"
                                 halign={Gtk.Align.START}
@@ -1068,10 +1068,16 @@ const InputOutputList = () => {
                         }
                         
                         return streams?.map(stream => {
+                            const appInfo = getIcon(stream.description);
+                            const streamIcon = appInfo?.icon_name || stream.icon || "audio-volume-high-symbolic";
+                            
                             return (
                                 <box vertical className={"application-volume-item"}>
                                     <centerbox>
-                                        <label label={stream.description} halign={Gtk.Align.START}/>
+                                        <box spacing={10}>
+                                            <icon icon={streamIcon} className="application-icon" />
+                                            <label label={truncateText(sanitizeUtf8(stream.description + ": " + stream.name), 50)}  halign={Gtk.Align.START} className="application-name"/>
+                                        </box>
                                         <box/>
                                         <box spacing={5} halign={Gtk.Align.END}>
                                             <button className="action-button" onClicked={() => stream.mute = !stream.mute} cursor={"hand1"}>
@@ -1083,8 +1089,8 @@ const InputOutputList = () => {
                                     <slider
                                         className="volume-slider-application" 
                                         hexpand 
-                                        onDragged={(slider) => stream.volume = slider.value} 
                                         value={bind(stream, "volume")}
+                                        onValueChanged={(slider) => stream.volume = slider.value}
                                         cursor={"hand1"}
                                     />
                                 </box>
@@ -1125,7 +1131,7 @@ const InputOutputList = () => {
                 <slider 
                     className="volume-slider" 
                     hexpand 
-                    onDragged={(slider) => endpoint.volume = slider.value} 
+                    onValueChanged={(slider) => endpoint.volume = slider.value} 
                     value={bind(endpoint, "volume")} 
                     cursor={"hand1"}
                 />
@@ -1300,12 +1306,23 @@ const BatteryInfo = () => {
             <box
                 className="battery-info-container"
                 vertical
-                spacing={15}
+                spacing={10}
                 hexpand
             >
-                <label label="Battery Information" xalign={0} className="battery-info-section-title" />
+                <box>
+                    <label label="Battery Information" xalign={0} className="battery-info-section-title" />
+                    <label
+                        label={bind(bat, "model").as((model) => {
+                            if (!model) return "N/A";
+                            return `${model}`;
+                        })}
+                        valign={Gtk.Align.START}
+                        xalign={1}
+                        hexpand
+                    />
+                </box>
 
-                <box vertical spacing={10} className="battery-percentage-container">
+                <box vertical spacing={5} className="battery-percentage-container">
                     <slider
                         className={bind(bat, "percentage").as((percentage) => {
                             if (!percentage) return "battery-percentage-slider-red";
@@ -1318,7 +1335,7 @@ const BatteryInfo = () => {
                         hexpand
                         value={bind(bat, "percentage")}
                     />
-                    <box spacing={10} hexpand>
+                    <box hexpand>
                         <label
                             label={bind(Variable.derive([bind(bat, "state"), bind(bat, "timeToFull"), bind(bat, "timeToEmpty")], (state, timeToFull, timeToEmpty) => {
                                 if (!state) return "Unknown";
@@ -1414,18 +1431,6 @@ const BatteryInfo = () => {
                 </box> */}
 
                 <box hexpand>
-                    <label label="Model:" />
-                    <label
-                        label={bind(bat, "model").as((model) => {
-                            if (!model) return "N/A";
-                            return `${model}`;
-                        })}
-                        xalign={1}
-                        hexpand
-                    />
-                </box>
-
-                <box hexpand>
                     <label label="Temperature:" />
                     <label
                         label={bind(bat, "temperature").as((temp) => {
@@ -1454,54 +1459,153 @@ const BatteryInfo = () => {
         );
     };
 
-
     const PowerProfile = () => {
         const power = PowerProfiles.get_default();
         if (!power) {
             console.error("Battery: Failed to initialize PowerProfiles");
             return <box />;
         }
-    
+
+        const getProfileDisplayName = (profile: string) => {
+            switch (profile) {
+                case "power-saver": return "Power Saver";
+                case "balanced": return "Balanced";
+                case "performance": return "Performance";
+                default: return "Unknown";
+            }
+        };
+
         return (
             <box
                 className="power-profile-container"
                 vertical
-                spacing={15}
+                spacing={10}
                 hexpand
             >
-                <label label="Power Mode" xalign={0}/>
-                <box
-                    className="power-mode-buttons"
-                    spacing={15}
-                    hexpand
-                >
+                <label label="Power Mode" xalign={0} className="power-profile-title"/>
+                <box spacing={5}>
                     <button
-                        className={bind(power, "activeProfile").as(profile => 
-                            `power-mode-button ${profile === "power-saver" ? "active" : ""}`
-                        )}
-                        label="Power Saver"
-                        hexpand
-                        onClicked={() => power.activeProfile = "power-saver"}
+                        className="device-dropdown-button"
                         cursor={"hand1"}
-                    />
+                        onClicked={(self) => {
+                            const menu = new Gtk.Menu();
+                            
+                            const profiles = ["power-saver", "balanced", "performance"];
+                            profiles.forEach(profile => {
+                                const menuItem = new Gtk.MenuItem();
+                                menuItem.set_label(getProfileDisplayName(profile));
+                                
+                                menuItem.connect("activate", () => {
+                                    power.activeProfile = profile;
+                                    menu.hide();
+                                });
+                                
+                                menu.append(menuItem);
+                            });
+                            
+                            menu.show_all();
+                            menu.popup_at_widget(self, Gdk.Gravity.SOUTH_WEST, Gdk.Gravity.NORTH_WEST, null);
+                        }}
+                    >
+                        <box spacing={10} className="power-profile-button">
+                            <box hexpand vertical spacing={5}>
+                                <label
+                                    label={bind(power, "activeProfile").as(profile => 
+                                        getProfileDisplayName(profile)
+                                    )}
+                                    xalign={0}
+                                />
+                                <label
+                                    label={bind(power, "activeProfile").as(profile => 
+                                        profile === "power-saver" ? "Lowest power consumption, highest battery life" :
+                                        profile === "balanced" ? "Default power consumption, good battery life" :
+                                        "Highest performance, lowest battery life"
+                                    )}
+                                    xalign={0}
+                                />
+                            </box>
+                            <icon icon="pan-down-symbolic" />
+                        </box>
+                    </button>
+                </box>
+            </box>
+        );
+    };
+
+    const CpuProfile = () => {
+        const getCpuPowerProfile = Variable(exec("cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor").includes("powersave"));
+
+        const setCpuPowerProfile = async (profile: string) => {
+            try {
+                await exec(`pkexec bash -c "cpupower frequency-set -g ${profile}"`);
+                if (profile === "powersave") {
+                    getCpuPowerProfile.set(true);
+                } else {
+                    getCpuPowerProfile.set(false);
+                }
+            } catch (error) {
+                console.error("Failed to set CPU power profile:", error);
+            }
+        }
+
+        const getCpuProfileDisplayName = (isPowersave: boolean) => {
+            return isPowersave ? "Powersave" : "Performance";
+        };
+    
+        return (
+            <box
+                className="cpu-profile-container"
+                vertical
+                spacing={10}
+                hexpand
+            >
+                <label label="CPU Mode" xalign={0} className="cpu-profile-title"/>
+                <box spacing={5}>
                     <button
-                        className={bind(power, "activeProfile").as(profile => 
-                            `power-mode-button ${profile === "balanced" ? "active" : ""}`
-                        )}
-                        label="Balanced"
-                        hexpand
-                        onClicked={() => power.activeProfile = "balanced"}
+                        className="device-dropdown-button"
                         cursor={"hand1"}
-                    />
-                    <button
-                        className={bind(power, "activeProfile").as(profile => 
-                            `power-mode-button ${profile === "performance" ? "active" : ""}`
-                        )}
-                        label="Performance"
-                        hexpand
-                        onClicked={() => power.activeProfile = "performance"}
-                        cursor={"hand1"}
-                    />
+                        onClicked={(self) => {
+                            const menu = new Gtk.Menu();
+                            
+                            const profiles = [
+                                { name: "Powersave", value: "powersave" },
+                                { name: "Performance", value: "performance" }
+                            ];
+                            
+                            profiles.forEach(profile => {
+                                const menuItem = new Gtk.MenuItem();
+                                menuItem.set_label(profile.name);
+                                
+                                menuItem.connect("activate", () => {
+                                    setCpuPowerProfile(profile.value);
+                                    menu.hide();
+                                });
+                                
+                                menu.append(menuItem);
+                            });
+                            
+                            menu.show_all();
+                            menu.popup_at_widget(self, Gdk.Gravity.SOUTH_WEST, Gdk.Gravity.NORTH_WEST, null);
+                        }}
+                    >
+                        <box spacing={10} className="cpu-profile-button">
+                            <box hexpand vertical spacing={5}>
+                                <label
+                                    label={bind(getCpuPowerProfile).as(isPowersave => 
+                                        getCpuProfileDisplayName(isPowersave)
+                                    )}
+                                    xalign={0}
+                                />
+                                <label
+                                    label={bind(getCpuPowerProfile).as(isPowersave => 
+                                        isPowersave ? "Change CPU frequency to lowest" : "Change CPU frequency to highest"
+                                    )}
+                                    xalign={0}
+                                />
+                            </box>
+                            <icon icon="pan-down-symbolic" />
+                        </box>
+                    </button>
                 </box>
             </box>
         );
@@ -1531,72 +1635,65 @@ const BatteryInfo = () => {
             }
         };
 
+        const getChargeModeDisplayName = (mode: string) => {
+            return mode === "preserve" ? "Preserve Battery Health" : "Maximize Charge";
+        };
+
         return (
             <box
                 className="battery-charging-container"
                 vertical
-                spacing={15}
+                spacing={10}
                 hexpand
                 onDestroy={() => {
                     chargeMode.drop();
                 }}
             >
-                <label label="Battery Charging" xalign={0} className="battery-charging-section-title" />
-                
-                <box vertical spacing={15}>
+                <label label="Battery Charging" xalign={0} className="battery-charging-title"/>
+                <box spacing={5}>
                     <button
-                        className={bind(chargeMode).as(mode => 
-                            `charge-mode-option ${mode === "maximize" ? "active" : ""}`
-                        )}
-                        onClicked={() => setBatteryChargeMode("maximize")}
+                        className="device-dropdown-button"
                         cursor={"hand1"}
+                        onClicked={(self) => {
+                            const menu = new Gtk.Menu();
+                            
+                            const modes = [
+                                { name: "Maximize Charge", value: "maximize" },
+                                { name: "Preserve Battery Health", value: "preserve" }
+                            ];
+                            
+                            modes.forEach(mode => {
+                                const menuItem = new Gtk.MenuItem();
+                                menuItem.set_label(mode.name);
+                                
+                                menuItem.connect("activate", () => {
+                                    setBatteryChargeMode(mode.value);
+                                    menu.hide();
+                                });
+                                
+                                menu.append(menuItem);
+                            });
+                            
+                            menu.show_all();
+                            menu.popup_at_widget(self, Gdk.Gravity.SOUTH_WEST, Gdk.Gravity.NORTH_WEST, null);
+                        }}
                     >
-                        <box spacing={15} hexpand>
-                            <box vertical spacing={5} hexpand>
-                                <label 
-                                    className={bind(chargeMode).as(mode => 
-                                        `battery-charging-section-first ${mode === "maximize" ? "active" : ""}`
-                                    )}
-                                    label="Maximize Charge"
-                                    xalign={0} 
-                                />
+                        <box spacing={10} className="battery-charging-button">
+                            <box hexpand vertical spacing={5}>
                                 <label
-                                    className={bind(chargeMode).as(mode => 
-                                        `battery-charging-section-second ${mode === "maximize" ? "active" : ""}`
+                                    label={bind(chargeMode).as(mode => 
+                                        getChargeModeDisplayName(mode)
                                     )}
-                                    label="Uses full battery capacity. Degrades batteries more quickly." 
                                     xalign={0}
-                                    wrap
-                                />
-                            </box>
-                        </box>
-                    </button>
-
-                    <button
-                        className={bind(chargeMode).as(mode => 
-                            `charge-mode-option ${mode === "preserve" ? "active" : ""}`
-                        )}
-                        onClicked={() => setBatteryChargeMode("preserve")}
-                        cursor={"hand1"}
-                    >
-                        <box spacing={15} hexpand>
-                            <box vertical spacing={5} hexpand>
-                                <label
-                                    className={bind(chargeMode).as(mode => 
-                                        `battery-charging-section-first ${mode === "preserve" ? "active" : ""}`
-                                    )}
-                                    label="Preserve Battery Health" 
-                                    xalign={0} 
                                 />
                                 <label
-                                    className={bind(chargeMode).as(mode => 
-                                        `battery-charging-section-second ${mode === "preserve" ? "active" : ""}`
+                                    label={bind(chargeMode).as(mode => 
+                                        mode === "preserve" ? "Increases battery longevity by maintaining lower charge levels (80% max)" : "Uses full battery capacity. Degrades batteries more quickly"
                                     )}
-                                    label="Increases battery longevity by maintaining lower charge levels (80% max)." 
-                                    xalign={0} 
-                                    wrap
+                                    xalign={0}
                                 />
                             </box>
+                            <icon icon="pan-down-symbolic" />
                         </box>
                     </button>
                 </box>
@@ -1604,10 +1701,11 @@ const BatteryInfo = () => {
         );
     }
 
-    return <box vertical spacing={25} className="battery-container">
+    return <box vertical spacing={20} className="battery-container">
         <BatteryInfo />
         <PowerProfile />
         <BatteryCharging />
+        <CpuProfile />
     </box>
 }
 

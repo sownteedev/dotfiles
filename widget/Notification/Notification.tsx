@@ -1,4 +1,4 @@
-import { bind, GLib, Variable } from "astal"
+import { bind, Variable } from "astal"
 import { Gtk, Astal } from "astal/gtk3"
 import { type EventBox } from "astal/gtk3/widget"
 import Notifd from "gi://AstalNotifd"
@@ -37,22 +37,28 @@ const urgency = (n: Notifd.Notification) => {
 
 type Props = {
 	setup(self: EventBox): void
-	onHoverLost(self: EventBox): void
-	onHover(self: EventBox): void
+	onHoverLost(): void
+	onHover(): void
 	notification: Notifd.Notification
 }
 
 export default function Notification(props: Props) {
 	const { notification: n, onHoverLost, onHover, setup } = props
-	const { START, CENTER, END } = Gtk.Align
+	const { START, CENTER } = Gtk.Align
 
 	const showActions = Variable(false)
 
 	return <eventbox
 		className={`Notification ${urgency(n)}`}
 		setup={setup}
-		onHoverLost={onHoverLost}
-		onHover={onHover}
+		onHoverLost={() => {
+			onHoverLost()
+			showActions.set(false)
+		}}
+		onHover={() => {
+			onHover()
+			showActions.set(true)
+		}}
 		onDestroy={() => {
 			showActions.drop();
 		}}>
@@ -82,21 +88,12 @@ export default function Notification(props: Props) {
 						label={n.summary}
 						hexpand
 					/>
-					<box halign={END}>
-						<label
-							className="notification-time"
-							halign={START}
-							label={"now"}
-						/>
-						<button
-							className="notification-expand-button"
-							cursor={"hand1"}
-							onClicked={() => showActions.set(!showActions.get())}
-							css={`background-color: transparent;`}
-						>
-							<icon icon={"expand-down"} className={bind(showActions).as(shown => shown ? "expanded" : "")} />
-						</button>
-					</box>
+					<label
+						className="notification-time"
+						halign={START}
+						valign={START}
+						label={"now"}
+					/>
 				</box>
 				{n.body && <label
 					className="notification-body"
@@ -113,14 +110,14 @@ export default function Notification(props: Props) {
 					revealChild={bind(showActions)}
 				>
 					<box className="notification-actions">
-						<box>
+						<box spacing={15}>
 							<button
 								cursor={"hand1"}
 								onClicked={() => n.dismiss()}>
 								<label label="Close" halign={CENTER} hexpand />
 							</button>
 						</box>
-						{n.get_actions().length > 0 && <box>
+						{n.get_actions().length > 0 && <box spacing={15}>
 							{n.get_actions().map(({ label, id }) => (
 								<button
 									cursor={"hand1"}

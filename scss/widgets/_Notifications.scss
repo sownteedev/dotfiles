@@ -17,7 +17,7 @@ window.NotificationPopups {
         border-radius: to-rem(15px);
         background-color: $bg;
         margin-top: to-rem(20px);
-        padding: to-rem(20px);
+        padding: to-rem(25px);
         border: to-rem(1px) solid gtkalpha($bg3, 0.8);
         box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
     }
@@ -65,20 +65,9 @@ window.NotificationPopups {
     }
 
     .notification-time {
-        margin: 0 to-rem(-5px) 0 to-rem(30px);
-        font-size: to-rem(16px);
+        font-size: to-rem(15px);
         color: gtkalpha($fg, 0.8);
-    }
-
-    .notification-expand-button {
-        icon {
-            transition: all 200ms ease-out;
-            -gtk-icon-transform: rotate(0deg);
-
-            &.expanded {
-                -gtk-icon-transform: rotate(180deg);
-            }
-        }
+        margin-left: to-rem(20px);
     }
 
     .notification-actions {
@@ -87,6 +76,7 @@ window.NotificationPopups {
         button {
             border-radius: to-rem(15px);
             padding: to-rem(10px);
+            min-width: to-rem(100px);
 
             label {
                 font-size: to-rem(16px);

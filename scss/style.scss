@@ -1,7 +1,7 @@
 @import 'base/index';
 
 * {
-    font-family: "Inter", "SF Pro Display", "Rubik", "Geist", "Noto Sans", sans-serif;
+    font-family: "Inter", "SF Pro Display", sans-serif;
     font-size: to-rem(16px);
 }
 
@@ -15,26 +15,15 @@ tooltip {
 menu {
     background-color: $bg2;
     border-radius: to-rem(15px);
-    box-shadow: 0 0 10px 5px gtkalpha(#000, 0.3);
-
-    menuitem:first-child {
-        margin-top: to-rem(10px);
-    }
-
-    menuitem:last-child {
-        margin-bottom: to-rem(10px);
-    }
 
     menuitem {
         background-color: transparent;
-        margin: 0 to-rem(10px);
+        margin: to-rem(5px);
         border-radius: to-rem(8px);
-        transition: all 200ms ease;
-        min-height: to-rem(25px);
+        min-height: to-rem(23px);
 
         &:hover {
             background-color: $bg3;
-            box-shadow: 0 0 3px 1px gtkalpha($blue, 0.2);
         }
 
         label {

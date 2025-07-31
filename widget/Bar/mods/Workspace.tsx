@@ -1,7 +1,7 @@
 import { bind, Variable, exec } from "astal";
 import { Gtk } from "astal/gtk3";
-import Apps from "gi://AstalApps"
-import { map } from "../../../utils/common"
+import { map } from "../../../utils/common";
+import { getIcon } from "../../../utils/icon";
 
 interface Window {
 	id: number;
@@ -12,15 +12,6 @@ interface Window {
 	is_focused: boolean;
 	is_floating: boolean;
 }
-
-// Create a single instance of Apps manager to avoid memory leaks
-let appManager: Apps.Apps | null = null;
-const getAppManager = () => {
-	if (!appManager) {
-		appManager = new Apps.Apps();
-	}
-	return appManager;
-};
 
 // Cache monitor data to avoid repeated exec calls
 let cachedMonitors: any[] | null = null;
@@ -123,76 +114,15 @@ const getWorkspaceData = () => {
 	return workspaceData;
 }
 
-// Cache for app info to avoid repeated lookups
-const appInfoCache = new Map<string, any>();
-const MAX_CACHE_SIZE = 50;
-
-const getAppInfo = (appId: string) => {
-	if (!appId) return null;
-	
-	// Check cache first
-	if (appInfoCache.has(appId)) {
-		return appInfoCache.get(appId);
-	}
-
-	// Use the single app manager instance
-	const appList = getAppManager().get_list();
-	for (const app of appList) {
-		if (app.entry.toLowerCase().includes(appId.toLowerCase())|| app.icon_name === appId || app.iconName === appId || app.name === appId || app.wm_class === appId) {
-			// Limit cache size
-			if (appInfoCache.size >= MAX_CACHE_SIZE) {
-				const firstKey = appInfoCache.keys().next().value;
-				if (firstKey) {
-					appInfoCache.delete(firstKey);
-				}
-			}
-			appInfoCache.set(appId, app);
-			return app;
-		}
-	}
-	
-	const commonKeywords = [
-		"browser", "web", "music", "media", "video", "audio", "terminal", "editor", 
-		"code", "chat", "mail", "photo", "image", "settings", "control"
-	];
-	
-	for (const keyword of commonKeywords) {
-		if (appId.toLowerCase().includes(keyword)) {
-			const keywordResults = getAppManager().fuzzy_query(keyword);
-			if (keywordResults.length > 0) {
-				// Limit cache size
-				if (appInfoCache.size >= MAX_CACHE_SIZE) {
-					const firstKey = appInfoCache.keys().next().value;
-					if (firstKey) {
-						appInfoCache.delete(firstKey);
-					}
-				}
-				appInfoCache.set(appId, keywordResults[0]);
-				return keywordResults[0];
-			}
-		}
-	}
-	
-	// Cache null result to avoid repeated failed lookups
-	if (appInfoCache.size >= MAX_CACHE_SIZE) {
-		const firstKey = appInfoCache.keys().next().value;
-		if (firstKey) {
-			appInfoCache.delete(firstKey);
-		}
-	}
-	appInfoCache.set(appId, null);
-	return null;
-};
-
 const AppIcon = (props: any) => {
 	const appId = props.app_id;
 	const isFocused = props.is_focused;
 	const windowId = props.id;
 	
-	const app = getAppInfo(appId);
+	const app = getIcon(appId);
 	const appName = app?.name || appId;
 
-	const showAppName = Variable(isFocused)
+	const showAppName = Variable(isFocused);
 
 	const cleanup = () => {
 		showAppName.drop();
@@ -202,16 +132,14 @@ const AppIcon = (props: any) => {
 		className={`app-icon ${isFocused ? 'focused' : ''}`}
 		onClick={() => {
 			exec(`niri msg action focus-window --id ${windowId}`);
-			showAppName.set(true);
+			showAppName.set(!showAppName.get());
 		}}
 		cursor={"hand1"}
 		onDestroy={cleanup}
 	>
 		<box spacing={3} valign={Gtk.Align.CENTER}>
 			<icon icon={app?.iconName || 'application-x-executable'}/>
-			<revealer transitionDuration={200} transitionType={Gtk.RevealerTransitionType.SLIDE_LEFT} revealChild={bind(showAppName).as(show => isFocused || show)}>
-				<label className="app-name" label={appName} />
-			</revealer>
+			{showAppName.get() && <label className="app-name" label={appName} />}
 		</box>
 	</button>
 }
@@ -265,10 +193,8 @@ export default () => {
 
 	const cleanup = () => {
 		workspaceData.drop();
-		appInfoCache.clear();
 		previousWorkspaceState = null;
 		cachedMonitors = null;
-		appManager = null;
 	};
 
 	return <box className={"Workspaces"} onDestroy={cleanup}>

@@ -18,7 +18,7 @@ class NotifiationMap implements Subscribable {
 
 	// notify subscribers to rerender when state changes
 	private notifiy() {
-		this.var.set([...this.map.values()].reverse())
+		this.var.set([...this.map.values()])
 	}
 
 	constructor() {
@@ -78,6 +78,7 @@ class NotifiationMap implements Subscribable {
 	}
 
 	private delete(key: number) {
+		console.log(`Deleting notification ${key}`);
 		const timeoutId = this.timeouts.get(key);
 		if (timeoutId) {
 			GLib.source_remove(timeoutId);
@@ -100,16 +101,15 @@ class NotifiationMap implements Subscribable {
 }
 
 export default function NotificationPopups(gdkmonitor: Gdk.Monitor) {
-	const { TOP, RIGHT } = Astal.WindowAnchor
+	const { TOP } = Astal.WindowAnchor
 	const notifs = new NotifiationMap()
 
 	return <window
 		className="NotificationPopups"
 		gdkmonitor={gdkmonitor}
 		anchor={TOP}>
-		<box vertical spacing={10}>
+		<box vertical noImplicitDestroy>
 			{bind(notifs)}
 		</box>
 	</window>
 }
-
