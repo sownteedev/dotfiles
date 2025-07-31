@@ -41,7 +41,7 @@ sleep 3 && clear
 echo "[*] Installing dotfiles ..."
 git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf ~/Dotfiles/dotf
 clear
-git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=main ~/Dotfiles/main
+git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=install ~/Dotfiles/install
 echo "[*] Done."
 sleep 3 && clear
 
@@ -67,7 +67,7 @@ sleep 3 && clear
 
 # Battery
 echo "[*] Installing battery ..."
-sudo pacman -S acpi acpid upower power-profiles-daemon --noconfirm
+sudo pacman -S acpi acpid upower power-profiles-daemon cpupower --noconfirm
 sudo systemctl enable acpid upower power-profiles-daemon
 echo "[*] Done."
 sleep 3 && clear
@@ -96,7 +96,7 @@ sleep 3 && clear
 
 # Monitor and Theme
 echo "[*] Installing monitor and theme ..."
-sudo pacman -S viewnior nwg-look imagemagick fastfetch qt5-wayland qt6-wayland qt5ct qt6ct --noconfirm
+sudo pacman -S viewnior nwg-look imagemagick fastfetch qt5-wayland qt6-wayland qt5ct qt6ct xdg-desktop-portal-gnome xdg-desktop-portal-gtk --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
@@ -140,24 +140,23 @@ sudo sbctl enroll-keys -mi
 
 sleep 3 && clear
 
-# echo ">>> Config driver NVIDIA..."
+echo ">>> Config driver NVIDIA..."
 # Open [multilib] repository
-# sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
+sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
 
 # Reupdate all
-# sudo pacman -Syu --needed --noconfirm
-# sudo pacman -S --needed nvidia-open nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime --noconfirm
+sudo pacman -Syu --needed --noconfirm
+sudo pacman -S --needed nvidia-open lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime --noconfirm
 
 # Add nvidia_drm.modeset=1 on GRUB
 # sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1 nvidia.NVreg_EnableGpuFirmware=0/' /etc/default/grub
 # sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 # Add enviroment
-# sudo bash -c 'echo -e "GBM_BACKEND=nvidia-drm\n__GLX_VENDOR_LIBRARY_NAME=nvidia" >> /etc/environment'
+# sudo bash -c 'echo -e "GBM_BACKEND=nvidia-drm\n__NV_PRIME_RENDER_OFFLOAD=1\n__GLX_VENDOR_LIBRARY_NAME=nvidia" >> /etc/environment'
 
 # Edit Mkinitcpio
 # sudo sed -i 's/^MODULES=(.*)/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
-# sudo sed -i 's/\<kms\> //' /etc/mkinitcpio.conf
 # sudo mkinitcpio -P
 
 echo "[*] Done. Rebooting your system..."
