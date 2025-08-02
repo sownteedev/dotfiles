@@ -181,7 +181,6 @@ animations {
 window-rule {
     geometry-corner-radius 15
     clip-to-geometry true
-	open-floating false
 }
 
 layer-rule {

@@ -24,9 +24,16 @@ update_config_floating() {
     
     # Update open-floating setting
     if [ "$new_floating_state" = "true" ]; then
-        sed -i -e 's/open-floating false/open-floating true/g' -e 's/^\s*\/\/\s*open-floating true/\topen-floating true/g' "$CONFIG_FILE"
+        # Add open-floating true if not exists, or uncomment/update existing line
+        if ! grep -q "open-floating true" "$CONFIG_FILE"; then
+            sed -i '/^\s*open-floating false/c\\topen-floating true' "$CONFIG_FILE"
+            if ! grep -q "open-floating true" "$CONFIG_FILE"; then
+                sed -i '/clip-to-geometry true/a\\topen-floating true' "$CONFIG_FILE"
+            fi
+        fi
     else
-        sed -i 's/open-floating true/open-floating false/g' "$CONFIG_FILE"
+        # Remove open-floating line completely
+        sed -i '/^\s*open-floating/d' "$CONFIG_FILE"
     fi
 }
 
@@ -38,8 +45,7 @@ toggle_floating_workspace() {
     
     if [ "$window_count" -eq 0 ]; then
         # Still update config based on current setting
-        local current_floating=$(grep -E "^\s*open-floating\s+(true|false)" "$CONFIG_FILE" | grep -o -E "(true|false)" | tail -1)
-        if [ "$current_floating" = "true" ]; then
+        if grep -q "^\s*open-floating true" "$CONFIG_FILE"; then
             update_config_floating "false"
         else
             update_config_floating "true"
