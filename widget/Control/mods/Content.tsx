@@ -1076,7 +1076,7 @@ const InputOutputList = () => {
                                     <centerbox>
                                         <box spacing={10}>
                                             <icon icon={streamIcon} className="application-icon" />
-                                            <label label={truncateText(sanitizeUtf8(stream.description + ": " + stream.name), 50)}  halign={Gtk.Align.START} className="application-name"/>
+                                            <label label={truncateText(sanitizeUtf8(stream.description + ": " + stream.name), 45)}  halign={Gtk.Align.START} className="application-name"/>
                                         </box>
                                         <box/>
                                         <box spacing={5} halign={Gtk.Align.END}>
