@@ -24,7 +24,7 @@ const getNiriMonitors = () => {
 	const monitors = JSON.parse(exec("niri msg --json outputs"));
 
 	const monitorArray = [];
-	const monitorOrder = ["eDP-1", "HDMI-A-1"];
+	const monitorOrder = ["eDP-1", "eDP-2", "HDMI-A-1", "HDMI-A-2", "DP-1", "DP-2"];
 
 	for (const name of monitorOrder) {
 		if (monitors[name]) {
@@ -164,13 +164,7 @@ const WorkspaceButton = (props: any) => {
 
 const MonitorWorkspaces = (props: any) => {
 	let monitorNumber
-	if (props.name === "eDP-1") {
-		monitorNumber = 1
-	} else if (props.name === "HDMI-A-1") {
-		monitorNumber = 2
-	} else {
-		monitorNumber = 1
-	}
+	monitorNumber = 1
 
 	const activeWorkspaces = props.workspaces.filter((ws: any) => ws.windows && ws.windows.length > 0);
 

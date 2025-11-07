@@ -6,7 +6,6 @@ import Network from "gi://AstalNetwork"
 import Tray from "gi://AstalTray"
 import ActiveClient from "./mods/ActiveClient"
 import Workspace from "./mods/Workspace"
-import MediaCava from "./mods/MediaCava"
 import { truncateText } from "../../utils/common"
 
 const SysTray = () => {

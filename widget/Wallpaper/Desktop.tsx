@@ -1,7 +1,7 @@
 import { bind, Variable } from "astal";
 import { Astal, Gdk } from "astal/gtk3";
-import { isImage } from "../utils/file";
-import Global from "../Global";
+import { isImage } from "../../utils/file";
+import Global from "../../Global";
 
 const desktopWall = Variable(Global.Wallpaper);
 

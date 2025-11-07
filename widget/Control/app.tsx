@@ -2,6 +2,7 @@ import { Astal, App } from "astal/gtk3";
 import TopControl from "./mods/TopControl";
 import ControlButtons from "./mods/Button";
 import Content from "./mods/Content";
+import CalendarTodoWeather from "./mods/CalendarTodoWeather";
 
 export default function Control() {
     return <window
@@ -17,6 +18,7 @@ export default function Control() {
             <TopControl />
             <ControlButtons />
             <Content />
+            <CalendarTodoWeather />
         </box>
     </window>
 }

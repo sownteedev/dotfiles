@@ -1,5 +1,7 @@
 import { App } from "astal/gtk3"
 import style from "./scss/style.scss"
+import { execAsync } from "astal/process"
+import Global from "./Global"
 
 App.start({
 	icons: "./icons",
@@ -16,7 +18,7 @@ App.start({
 		monitors.map(Bar)
 
 		const [Desktop, OSD, NotificationPopups] = await Promise.all([
-			import("./widget/Desktop").then(m => m.default),
+			import("./widget/Wallpaper/Desktop").then(m => m.default),
 			import("./widget/OSD/app").then(m => m.default),
 			import("./widget/Notification/app").then(m => m.default),
 		])
@@ -35,5 +37,11 @@ App.start({
 
 		const Control = await import("./widget/Control/app").then(m => m.default)
 		monitors.map(Control)
+		
+		await execAsync(`magick ${Global.Wallpaper} -blur 0x8 /tmp/backdrop.png`)
+		const [Backdrop] = await Promise.all([
+			import("./widget/Wallpaper/Backdrop").then(m => m.default),
+		])
+		monitors.map(Backdrop)
 	},
 })
