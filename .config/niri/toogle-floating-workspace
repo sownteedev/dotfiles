@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Niri Toggle Floating Workspace - Toggle floating status for all windows in current workspace
+# Niri Toggle Floating Workspace - Toggle floating status for all windows in current workspace (sownteedev)
 # Also updates config.kdl to change default open-floating behavior
 # Usage: toogle-floating-workspace
 

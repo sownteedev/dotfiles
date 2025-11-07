@@ -1,0 +1,9 @@
+window-rule {
+    geometry-corner-radius 15
+    clip-to-geometry true
+}
+
+layer-rule {
+    match namespace="^backdrop-"
+	place-within-backdrop true
+}

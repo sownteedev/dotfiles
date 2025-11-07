@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Niri App Switcher - Combined script for app focusing and cycling ( sownteedev )
+# Niri App Switcher - Combined script for app focusing and cycling (sownteedev)
 # Usage: 
 #   focus-app.sh focus <number>     # Focus app by number (1-9)
 #   focus-app.sh next               # Cycle to next app

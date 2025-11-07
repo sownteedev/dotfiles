@@ -1,0 +1,84 @@
+input {
+    keyboard {
+        xkb {
+        }
+		numlock
+    }
+
+    touchpad {
+        // off
+        tap
+        // dwt
+        // dwtp
+		// drag false
+        // drag-lock
+        natural-scroll
+        accel-speed 0.6
+        // accel-profile "flat"
+        //scroll-factor 1.0
+        // scroll-method "two-finger"
+        // scroll-button 273
+        // tap-button-map "left-middle-right"
+        // click-method "clickfinger"
+        // left-handed
+        // disabled-on-external-mouse
+        // middle-emulation
+    }
+
+    mouse {
+		// off
+        //natural-scroll
+        accel-speed 0.2
+        accel-profile "flat"
+        scroll-factor 2.0
+        scroll-method "no-scroll"
+        scroll-button 273
+        //left-handed
+        middle-emulation
+    }
+
+    /-trackpoint {
+        // off
+        natural-scroll
+        accel-speed 0.2
+        accel-profile "flat"
+        scroll-method "on-button-down"
+        scroll-button 273
+        middle-emulation
+    }
+
+	/-tablet {
+		off
+		map-to-output "eDP-1"
+		left-handed
+		calibration-matrix 1.0 0.0 0.0 0.0 1.0 0.0
+	}
+
+    /-touch {
+		off
+		map-to-output "eDP-1"
+	}
+
+	// disable-power-key-handling
+    // warp-mouse-to-focus
+    // focus-follows-mouse max-scroll-amount="0%"
+    // workspace-auto-back-and-forth
+}
+
+gestures {
+    dnd-edge-view-scroll {
+        trigger-width 30
+        delay-ms 100
+        max-speed 1500
+    }
+
+    dnd-edge-workspace-switch {
+        trigger-height 50
+        delay-ms 100
+        max-speed 1500
+    }
+
+    hot-corners {
+        // off
+    }
+}

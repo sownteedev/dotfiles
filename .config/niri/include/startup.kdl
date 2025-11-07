@@ -1,0 +1,27 @@
+spawn-at-startup "xwayland-satellite"
+spawn-at-startup "fcixt5"
+spawn-at-startup "agsv2" "run"
+spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1" "||" "/usr/libexec/polkit-gnome-authentication-agent-1"
+spawn-at-startup "gnome-keyring-daemon" "--start" "--components=secrets"
+spawn-at-startup "dbus-update-activation-environment" "--all"
+spawn-at-startup "sleep" "1" "&&" "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP"
+spawn-at-startup "bash" "-c" "swayidle -w timeout 600 'astal -i sownteeastal -t lock-screen' timeout 600 'niri msg action power-off-monitors' resume '' before-sleep 'astal -i sownteeastal -t lock-screen'"
+
+environment {
+    QT_QPA_PLATFORM "wayland"
+	QT_QPA_PLATFORMTHEME "qt6ct"
+	QT_IM_MODULE "fcitx"
+	XMODIFIERS "@im=fcitx"
+	SDL_IM_MODULE "fcitx"
+	GLFW_IM_MODULE "ibus"
+	INPUT_METHOD "fcitx"
+    DISPLAY ":1"
+	GBM_BACKEND "nvidia_drm"
+	__GLX_VENDOR_LIBRARY_NAME "nvidia"
+	// LIBVA_DRIVER_NAME "nvidia"
+}
+
+cursor {
+	xcursor-theme "Dark_Cursor"
+    xcursor-size 25
+}

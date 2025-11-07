@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Niri Close Window - Close the currently focused window (sownteedev)
+# If no window is focused, show the power menu
+
 WINDOWS=$(niri msg --json windows)
 
 if [ -z "$WINDOWS" ] || [ "$WINDOWS" = "[]" ]; then

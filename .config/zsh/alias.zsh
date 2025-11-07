@@ -5,6 +5,25 @@ usenvm() {
 	sed -i 's/^source \/usr\/share\/nvm\/init-nvm.sh/# source \/usr\/share\/nvm\/init-nvm.sh/' ~/Dotfiles/dotf/.config/zsh/.zshrc
 }
 
+# claude_execute: Generate exact shell command from natural language; reasoning off; auto-executes; globbing disabled
+claude_execute() {
+	emulate -L zsh
+	setopt NO_GLOB
+	local query="$*"
+	local prompt="You are a command line expert. The user wants to run a command but they don't know how. Here is what they asked: ${query}. Return ONLY the exact shell command needed. Do not prepend with an explanation, no markdown, no code blocks - just return the raw command you think will solve their query."
+	local cmd
+	# use Claude Code
+	cmd=$(claude --dangerously-skip-permissions --disallowedTools "Bash(*)" --model default -p "$prompt" --output-format text | tr -d '\000-\037' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+	# use Gemini CLI
+	if [[ -z "$cmd" ]]; then
+		echo "claude_execute: No command found"
+		return 1
+	fi
+	echo -e "$ \033[0;36m$cmd\033[0m"
+	eval "$cmd"
+}
+alias ce="noglob claude_execute"
+
 alias ll="exa --all --long --icons --group --git"
 alias ls="exa --icons"
 
