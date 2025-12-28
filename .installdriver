@@ -90,13 +90,13 @@ sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-sudo pacman -S tumbler exa zip gzip tar unzip unrar vlc dconf --noconfirm
+sudo pacman -S nautilus tumbler exa zip gzip tar unzip unrar vlc dconf xdg-user-dirs evince gvfs --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Monitor and Theme
 echo "[*] Installing monitor and theme ..."
-sudo pacman -S nwg-look imagemagick fastfetch qt5-wayland qt6-wayland qt5ct qt6ct xdg-desktop-portal-gtk --noconfirm
+sudo pacman -S nwg-look imagemagick fastfetch qt5-wayland qt6-wayland qt5ct qt6ct xdg-desktop-portal-gtk gnome-control-center --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
@@ -146,7 +146,8 @@ sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
 
 # Reupdate all
 sudo pacman -Syu --needed --noconfirm
-sudo pacman -S --needed nvidia-open lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime envycontrol --noconfirm
+sudo pacman -S --needed nvidia-open lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime mesa-utils --noconfirm
+yay -S envycontrol awcc-git --noconfirm
 
 # Add nvidia_drm.modeset=1 on GRUB
 # sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1 nvidia.NVreg_EnableGpuFirmware=0/' /etc/default/grub

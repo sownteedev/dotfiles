@@ -108,7 +108,7 @@ setup_env() {
         rm -rf ~/.config/niri
         ln -s ~/Dotfiles/dotf/.config/niri ~/.config/niri
 		echo "[*] Installing Ags/Astal ..."
-		# yay -S libastal-meta aylurs-gtk-shell-git --noconfirm
+		yay -S libastal-meta aylurs-gtk-shell-git --noconfirm
 		git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=ags/astal ~/Dotfiles/ags
 		ln -s ~/Dotfiles/ags ~/.config/ags
         echo "[*] Done."
@@ -157,17 +157,17 @@ install_workspace() {
     echo "[*] Installing Development Applications..."
     yay -S --noconfirm visual-studio-code-bin cursor-bin jetbrains-toolbox docker docker-desktop postman-bin github-desktop-bin blackbox-terminal
 	rm -rf ~/.config/systemd/user/graphical-session.target.wants/docker-desktop.service
-    yay -S --noconfirm vmware-keymaps open-vm-tools xf86-video-vmware xf86-input-vmmouse
-	yay -S --noconfirm vmware-workstation
-    sudo systemctl enable vmware-networks vmware-usbarbitrator vmtoolsd
+    # yay -S --noconfirm vmware-keymaps open-vm-tools xf86-video-vmware xf86-input-vmmouse
+	# yay -S --noconfirm vmware-workstation
+    # sudo systemctl enable vmware-networks vmware-usbarbitrator vmtoolsd
 
     echo "[*] Installing Other Applications..."
-    yay -S --noconfirm vesktop-bin telegram-desktop-bin cloudflare-warp-bin libreoffice-fresh spotify youtube-music zen-browser-bin
+    yay -S --noconfirm vesktop-bin telegram-desktop-bin cloudflare-warp-bin libreoffice-fresh spotify zen-browser-bin
 	xdg-settings set default-web-browser zen.desktop
 	sudo systemctl enable warp-svc.service
 	warp-cli registration new
 
-    sh -c "$(curl -sSL https://raw.githubusercontent.com/realdtn2/zalo-linux-unofficial/main/install_curl.sh)"
+    # sh -c "$(curl -sSL https://raw.githubusercontent.com/realdtn2/zalo-linux-unofficial/main/install_curl.sh)"
 
     echo "[*] Environment setup complete."
     sleep 3 && clear
