@@ -27,20 +27,41 @@ else
         -fm vfr \
 		-o "$output_path"
 
-	wl-copy file:/"$output_path" -t text/uri-list
+	format=$(notify-send "🎥 Screen Recording" \
+		"Recording saved! Choose format:" \
+		--action='delete=Delete' \
+		--action='mp4=MP4' \
+		--action='mp3=MP3' \
+		--wait)
+
+	case "$format" in
+		delete)
+			rm -f "$output_path"
+			exit 0
+			;;
+		mp4)
+			final_path="$output_path"
+			;;
+		mp3)
+			final_path="${output_path%.mp4}.mp3"
+			ffmpeg -i "$output_path" -vn -acodec libmp3lame -b:a 192k "$final_path"
+			rm -f "$output_path"
+			;;
+		*)
+			final_path="$output_path"
+			;;
+	esac
+
+	wl-copy file:/"$final_path" -t text/uri-list
 
 	action=$(notify-send "🎥 Screen Recording" \
-	"Recording saved to $output_path" \
-	--action='vlc=Open' \
-	--action='delete=Delete' \
-	--wait)
+		"Saved to $final_path" \
+		--action='open=Open' \
+		--wait)
 
 	case "$action" in
-		vlc)
-			vlc "$output_path" &
-		;;
-		delete)
-			rm -f "$output_path" &
-		;;
+		open)
+			vlc "$final_path" &
+			;;
 	esac
 fi

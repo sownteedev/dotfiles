@@ -8,14 +8,14 @@ binds {
 	Alt+F4										{ spawn "~/.config/niri/close"; }
 	Mod+E										{ spawn "nautilus"; }
 	Ctrl+Shift+Escape							{ spawn "missioncenter"; }
-	Alt+P										{ spawn "hyprpicker" "-a"; }
+	Alt+P										{ spawn-sh "hyprpicker -a"; }
 	Mod+I										{ spawn-sh "env XDG_CURRENT_DESKTOP=GNOME gnome-control-center"; }
 
 	XF86AudioRaiseVolume     allow-when-locked=true { spawn-sh "pactl set-sink-volume @DEFAULT_SINK@ +2%"; }
     XF86AudioLowerVolume     allow-when-locked=true { spawn-sh "pactl set-sink-volume @DEFAULT_SINK@ -2%"; }
     Mod+XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "pactl set-source-volume @DEFAULT_SOURCE@ +2%"; }
     Mod+XF86AudioLowerVolume allow-when-locked=true { spawn-sh "pactl set-source-volume @DEFAULT_SOURCE@ -2%"; }
-    XF86AudioMute            allow-when-locked=true { spawn "~/.config/niri/mute"; }
+    XF86AudioMute            allow-when-locked=true { spawn-sh "~/.config/niri/mute"; }
     XF86AudioMicMute         allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
 	XF86MonBrightnessUp      allow-when-locked=true { spawn-sh "brightnessctl s 5%+"; }
 	XF86MonBrightnessDown    allow-when-locked=true { spawn-sh "brightnessctl s 5%-"; }
@@ -60,9 +60,6 @@ binds {
 	Mod+Tab				  { focus-workspace-previous; }
 	Mod+Ctrl+Down         { move-workspace-down; }
     Mod+Ctrl+Up           { move-workspace-up; }
-
-	Alt+Tab			{ spawn-sh "~/.config/niri/focus-app next"; }
-	Alt+Shift+Tab	{ spawn-sh "~/.config/niri/focus-app prev"; }
 
 	Alt+1 { spawn-sh "~/.config/niri/focus-app focus 1"; }
 	Alt+2 { spawn-sh "~/.config/niri/focus-app focus 2"; }

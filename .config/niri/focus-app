@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# Niri App Switcher - Combined script for app focusing and cycling (sownteedev)
+# Niri App Switcher - Combined script for app focusing (sownteedev)
 # Usage: 
 #   focus-app.sh focus <number>     # Focus app by number (1-9)
-#   focus-app.sh next               # Cycle to next app
-#   focus-app.sh prev               # Cycle to previous app
 
 # Common function to get workspace data
 get_workspace_data() {
@@ -63,83 +61,6 @@ focus_app_by_number() {
     niri msg action focus-window --id "$target_window_id"
 }
 
-# Function to cycle through apps
-cycle_apps() {
-    local direction=$1  # "next" or "prev"
-    
-    # Get workspace windows data
-    local workspace_data=$(get_workspace_data)
-    
-    if [ -z "$workspace_data" ] || [ "$workspace_data" = "[]" ]; then
-        exit 1
-    fi
-    
-    # Build arrays
-    local window_ids=()
-    local window_info=()
-    local focused_index=-1
-    local counter=0
-    
-    while IFS= read -r window; do
-        if [ -n "$window" ]; then
-            local window_id=$(echo "$window" | jq -r '.id')
-            local app_id=$(echo "$window" | jq -r '.app_id')
-            local title=$(echo "$window" | jq -r '.title')
-            local is_focused=$(echo "$window" | jq -r '.is_focused')
-            
-            window_ids+=("$window_id")
-            window_info+=("$app_id: $title")
-            
-            if [ "$is_focused" = "true" ]; then
-                focused_index=$counter
-            fi
-            
-            ((counter++))
-        fi
-    done <<< "$(echo "$workspace_data" | jq -c '.[]')"
-    
-    # Check if we have windows
-    if [ ${#window_ids[@]} -eq 0 ]; then
-        exit 1
-    fi
-    
-    # If only one window, no need to cycle
-    if [ ${#window_ids[@]} -eq 1 ]; then
-        exit 0
-    fi
-    
-    # Calculate next index
-    local next_index
-    if [ "$direction" = "prev" ]; then
-        # Cycle backwards
-        if [ $focused_index -eq -1 ] || [ $focused_index -eq 0 ]; then
-            next_index=$((${#window_ids[@]} - 1))
-        else
-            next_index=$((focused_index - 1))
-        fi
-    else
-        # Cycle forwards (default)
-        if [ $focused_index -eq -1 ] || [ $focused_index -eq $((${#window_ids[@]} - 1)) ]; then
-            next_index=0
-        else
-            next_index=$((focused_index + 1))
-        fi
-    fi
-    
-    # Get the target window
-    local target_window_id=${window_ids[$next_index]}
-    local target_window_info=${window_info[$next_index]}
-    
-    # Focus the window
-    niri msg action focus-window --id "$target_window_id"
-    
-    # Show notification
-    local cycle_type="Next"
-    if [ "$direction" = "prev" ]; then
-        cycle_type="Previous"
-    fi
-}
-
 # Main function
 main() {
     local action=$1
@@ -151,12 +72,6 @@ main() {
                 exit 1
             fi
             focus_app_by_number "$param"
-            ;;
-        "next")
-            cycle_apps "next"
-            ;;
-        "prev")
-            cycle_apps "prev"
             ;;
         *)
             exit 1

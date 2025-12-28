@@ -3,10 +3,9 @@
 # Niri Transform - Rotate display orientation (sownteedev)
 # Usage: transform left|right
 
-CONFIG="$HOME/.config/niri/config.kdl"
+CONFIG="$HOME/.config/niri/include/output.kdl"
 
-# TODO: Get dynamic output
-OUTPUT="eDP-2"
+OUTPUT=$(niri msg -j focused-output | jq -r '.name')
 
 current=$(awk "/output \"$OUTPUT\" {/,/}/{if (\$1==\"transform\") print \$2}" "$CONFIG" | tr -d '"')
 

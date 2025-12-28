@@ -1,17 +1,16 @@
-local lspconfig = require("lspconfig")
 local on_attach = require("tevim.plugins.configs.lspconfig").on_attach
 local capabilities = require("tevim.plugins.configs.lspconfig").capabilities
 
 local servers = { "clangd", "cssls", "html", "jsonls", "bashls", "emmet_ls", "eslint" }
 
 for _, lsp in ipairs(servers) do
-	lspconfig[lsp].setup({
+	vim.lsp.config(lsp, {
 		on_attach = on_attach,
 		capabilities = capabilities,
 	})
 end
 
-lspconfig.lua_ls.setup({
+vim.lsp.config("lua_ls", {
 	on_attach = on_attach,
 	capabilities = capabilities,
 	settings = {
@@ -23,7 +22,7 @@ lspconfig.lua_ls.setup({
 	},
 })
 
-lspconfig.ts_ls.setup({
+vim.lsp.config("ts_ls", {
 	on_attach = on_attach,
 	capabilities = capabilities,
 	completions = {
