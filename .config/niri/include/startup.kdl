@@ -19,9 +19,10 @@ environment {
 	INPUT_METHOD "fcitx"
 
     DISPLAY ":1"
-	// GBM_BACKEND "nvidia_drm"
-	// __GLX_VENDOR_LIBRARY_NAME "nvidia"
-	// LIBVA_DRIVER_NAME "nvidia"
+	GBM_BACKEND "nvidia_drm"
+	__NV_PRIME_RENDER_OFFLOAD "1"
+	__GLX_VENDOR_LIBRARY_NAME "nvidia"
+	LIBVA_DRIVER_NAME "nvidia"
 }
 
 cursor {

@@ -61,15 +61,15 @@ binds {
 	Mod+Ctrl+Down         { move-workspace-down; }
     Mod+Ctrl+Up           { move-workspace-up; }
 
-	Alt+1 { spawn-sh "~/.config/niri/focus-app focus 1"; }
-	Alt+2 { spawn-sh "~/.config/niri/focus-app focus 2"; }
-	Alt+3 { spawn-sh "~/.config/niri/focus-app focus 3"; }
-	Alt+4 { spawn-sh "~/.config/niri/focus-app focus 4"; }
-	Alt+5 { spawn-sh "~/.config/niri/focus-app focus 5"; }
-	Alt+6 { spawn-sh "~/.config/niri/focus-app focus 6"; }
-	Alt+7 { spawn-sh "~/.config/niri/focus-app focus 7"; }
-	Alt+8 { spawn-sh "~/.config/niri/focus-app focus 8"; }
-	Alt+9 { spawn-sh "~/.config/niri/focus-app focus 9"; }
+	Alt+1 { spawn-sh "~/.config/niri/focus-app 1"; }
+	Alt+2 { spawn-sh "~/.config/niri/focus-app 2"; }
+	Alt+3 { spawn-sh "~/.config/niri/focus-app 3"; }
+	Alt+4 { spawn-sh "~/.config/niri/focus-app 4"; }
+	Alt+5 { spawn-sh "~/.config/niri/focus-app 5"; }
+	Alt+6 { spawn-sh "~/.config/niri/focus-app 6"; }
+	Alt+7 { spawn-sh "~/.config/niri/focus-app 7"; }
+	Alt+8 { spawn-sh "~/.config/niri/focus-app 8"; }
+	Alt+9 { spawn-sh "~/.config/niri/focus-app 9"; }
 
 	Mod+1 { focus-workspace 1; }
     Mod+2 { focus-workspace 2; }
