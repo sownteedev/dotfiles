@@ -5,20 +5,23 @@ import Content from "./mods/Content";
 import CalendarTodoWeather from "./mods/CalendarTodoWeather";
 
 export default function Control() {
-    return <window
-        name="control-menu"
-        className="control-menu"
-        anchor={Astal.WindowAnchor.TOP | Astal.WindowAnchor.RIGHT}
-        exclusivity={Astal.Exclusivity.EXCLUSIVE}
-        layer={Astal.Layer.TOP}
-        visible={false}
-        keymode={Astal.Keymode.ON_DEMAND}
-        application={App}>
-        <box vertical className="control-menu-container" spacing={20}>
-            <TopControl />
-            <ControlButtons />
-            <Content />
-            <CalendarTodoWeather />
-        </box>
-    </window>
+    return (
+        <window
+            name="control-menu"
+            className="control-menu"
+            anchor={Astal.WindowAnchor.TOP | Astal.WindowAnchor.RIGHT}
+            exclusivity={Astal.Exclusivity.EXCLUSIVE}
+            layer={Astal.Layer.TOP}
+            visible={false}
+            keymode={Astal.Keymode.ON_DEMAND}
+            application={App}
+        >
+            <box vertical className="control-menu-container" spacing={20}>
+                <TopControl />
+                <ControlButtons />
+                <Content />
+                <CalendarTodoWeather />
+            </box>
+        </window>
+    );
 }

@@ -10,25 +10,40 @@ function getUptime() {
     return `Uptime ${hours}h, ${minutes}m`;
 }
 
-const uptime = Variable(getUptime()).poll(60000, getUptime);
+// Singleton pattern for uptime Variable
+let uptime: ReturnType<typeof Variable<string>> | null = null;
+const getUptimeVar = () => {
+    if (!uptime) {
+        uptime = Variable(getUptime()).poll(60000, getUptime);
+    }
+    return uptime;
+};
 
 export default () => {
-    const cleanup = () => {
-        uptime.drop();
-    };
+    const uptimeVar = getUptimeVar();
 
     return (
-        <centerbox className="top-control" onDestroy={cleanup}>
+        <centerbox className="top-control">
             <box className="uptime" spacing={15} halign={Gtk.Align.START}>
-                <icon icon="media-playlist-shuffle-symbolic"/>
-                <label label={bind(uptime)} />
+                <icon icon="media-playlist-shuffle-symbolic" />
+                <label label={bind(uptimeVar)} />
             </box>
-            <box/>
+            <box />
             <box
                 halign={Gtk.Align.END}
                 className="image"
-                css={`background-image: url("${Global.ProfileImage}")`}
+                css={`
+                    background-image: url("${Global.ProfileImage}");
+                `}
             />
         </centerbox>
     );
+};
+
+// Export cleanup for global resource management
+export const cleanupTopControl = () => {
+    if (uptime) {
+        uptime.drop();
+        uptime = null;
+    }
 };

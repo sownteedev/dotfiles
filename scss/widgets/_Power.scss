@@ -1,7 +1,7 @@
 window.power-menu {
     background-color: transparent;
 
-    >box {
+    > box {
         margin: to-rem(20px);
     }
 }
@@ -12,7 +12,6 @@ window.power-menu {
     padding: to-rem(20px);
     border: to-rem(1px) solid gtkalpha($bg3, 0.8);
     box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
-
 
     button.power-button {
         padding: to-rem(15px);

@@ -1,7 +1,7 @@
 window.control-menu {
     background-color: transparent;
 
-    >box {
+    > box {
         margin: to-rem(20px);
     }
 }
@@ -130,8 +130,8 @@ window.control-menu {
         border-radius: to-rem(15px);
         padding: to-rem(15px) to-rem(40px);
         box-shadow: 0 0 5px 5px gtkalpha(#000, 0.3);
-  
-        >centerbox:first-child {
+
+        > centerbox:first-child {
             margin-bottom: to-rem(8px);
 
             icon {
@@ -162,7 +162,7 @@ window.control-menu {
                 }
             }
         }
-  
+
         .wifi-details {
             box {
                 label {
@@ -172,7 +172,7 @@ window.control-menu {
                     &:first-child {
                         color: $fg1;
                     }
-        
+
                     &:last-child {
                         color: $fg;
                     }
@@ -374,7 +374,6 @@ window.control-menu {
     }
 }
 
-
 // Audio
 .audio-container {
     background-color: transparent;
@@ -389,13 +388,23 @@ window.control-menu {
 .device-dropdown-button {
     background-color: $bg2;
     border-radius: to-rem(15px);
-    padding: to-rem(15px);
-    border: none;
+    padding: to-rem(14px) to-rem(20px);
+    border: 1px solid gtkalpha($fg, 0.05);
     transition: all 200ms ease;
 
     &:hover {
         background-color: $bg3;
-        box-shadow: 0 0 3px 3px gtkalpha(#000, 0.2);
+        border-color: gtkalpha($blue, 0.3);
+        box-shadow: 0 to-rem(4px) to-rem(12px) gtkalpha(#000, 0.2);
+
+        icon {
+            color: $blue;
+        }
+    }
+
+    &:active {
+        background-color: gtkalpha($blue, 0.1);
+        border-color: gtkalpha($blue, 0.5);
     }
 
     label {
@@ -405,14 +414,18 @@ window.control-menu {
     }
 
     icon {
-        color: $fg;
+        color: $fg1;
         font-size: to-rem(24px);
+        transition: all 200ms ease;
     }
 }
 
 .section-title {
     font-size: to-rem(18px);
     font-weight: 600;
+    color: $fg;
+    margin-bottom: to-rem(10px);
+    padding-left: to-rem(3px);
 }
 
 .volume-slider-control {
@@ -485,12 +498,12 @@ window.control-menu {
             background-color: gtkalpha($blue, 0.2);
             border-radius: to-rem(15px);
         }
-    
+
         highlight {
             background-color: $blue;
             border-radius: to-rem(15px);
         }
-    
+
         slider {
             background-color: $blue;
             min-height: to-rem(3px);
@@ -500,7 +513,6 @@ window.control-menu {
         }
     }
 }
-
 
 // Notification
 .notification-container-scrollable {
@@ -521,7 +533,7 @@ window.control-menu {
 .notification-list {
     background-color: transparent;
 
-    >box {
+    > box {
         margin: to-rem(15px) to-rem(0px) to-rem(0px) to-rem(0px);
     }
 }
@@ -550,7 +562,7 @@ window.control-menu {
         min-width: to-rem(20px);
         min-height: to-rem(20px);
     }
-    
+
     .image-list {
         margin-right: to-rem(20px);
         border-radius: to-rem(15px);
@@ -559,52 +571,52 @@ window.control-menu {
         background-size: cover;
         background-position: center;
     }
-    
+
     .notification-summary-list {
         font-size: to-rem(18px);
         font-weight: 600;
         margin-bottom: to-rem(20px);
     }
-    
+
     .notification-body-list {
         font-size: to-rem(16px);
         font-weight: 500;
     }
-    
+
     .notification-time-list {
         margin: 0 to-rem(-5px) 0 to-rem(10px);
         font-size: to-rem(16px);
         font-weight: 600;
         color: gtkalpha($fg, 0.8);
     }
-    
+
     .notification-expand-button-list {
         icon {
             transition: all 200ms ease-out;
             -gtk-icon-transform: rotate(0deg);
-    
+
             &.expanded {
                 -gtk-icon-transform: rotate(180deg);
             }
         }
     }
-    
+
     .notification-actions-list {
         margin-top: to-rem(20px);
-        
+
         button {
             border-radius: to-rem(15px);
             padding: to-rem(10px);
             background-color: gtkalpha($bg3, 0.8);
-    
+
             label {
                 font-size: to-rem(16px);
             }
-        
+
             &:last-child {
                 margin-right: to-rem(20px);
             }
-            
+
             &:hover {
                 background-color: $bg3;
             }
@@ -620,7 +632,7 @@ window.control-menu {
         font-weight: 600;
     }
 
-    >centerbox {
+    > centerbox {
         icon {
             font-size: to-rem(35px);
             color: $fg;
@@ -676,13 +688,13 @@ window.control-menu {
                 margin-right: to-rem(20px);
                 background-color: gtkalpha($color, 0.2);
                 border-radius: to-rem(15px);
-                margin-right: to-rem(-3px)
+                margin-right: to-rem(-3px);
             }
 
             highlight {
                 background-color: $color;
                 border-radius: to-rem(15px);
-                margin-right: to-rem(-3px)
+                margin-right: to-rem(-3px);
             }
 
             slider {
@@ -727,7 +739,7 @@ window.control-menu {
         color: $fg;
     }
 
-    .#{$prefix}-button {        
+    .#{$prefix}-button {
         label {
             &:first-child {
                 font-size: to-rem(18px);
@@ -739,19 +751,29 @@ window.control-menu {
                 color: $fg1;
             }
         }
+
+        icon {
+            opacity: 0.7;
+            transition: all 200ms ease;
+        }
+
+        &:hover icon {
+            opacity: 1;
+            color: $blue;
+        }
     }
 }
 
 .power-profile-container {
-    @include control-section-container('power-profile');
+    @include control-section-container("power-profile");
 }
 
 .cpu-profile-container {
-    @include control-section-container('cpu-profile');
+    @include control-section-container("cpu-profile");
 }
 
 .battery-charging-container {
-    @include control-section-container('battery-charging');
+    @include control-section-container("battery-charging");
 }
 
 .calendar-todo-weather-container {
@@ -765,7 +787,7 @@ window.control-menu {
 // Calendar Todo Weather
 .calendar-container {
     background: $bg1;
-    
+
     .calendar-header {
         margin-bottom: to-rem(15px);
 
@@ -773,41 +795,41 @@ window.control-menu {
             background-color: $bg2;
             border-radius: 50%;
             padding: to-rem(15px);
-    
+            margin: 0 to-rem(40px);
+
             icon {
                 color: $fg;
                 font-size: to-rem(20px);
             }
-    
+
             &:hover {
                 background-color: $bg3;
             }
-    
-            &.active {
-                background-color: gtkalpha($blue, 0.8);
-    
-                icon {
-                    color: $bg;
-                }
-    
-                &:hover {
-                    background-color: $blue;
-                }
-            }
         }
-        
-        label {
+
+        .calendar-solar-header {
             font-size: to-rem(22px);
             font-weight: 600;
             color: $fg;
         }
+
+        .calendar-lunar-header {
+            font-size: to-rem(17px);
+            font-weight: 500;
+            color: $fg1;
+            margin-top: to-rem(3px);
+        }
     }
-    
+
     .calendar-weekdays {
         margin-bottom: to-rem(10px);
-        
+
+        > box {
+            min-width: to-rem(40px);
+        }
+
         label {
-            font-size: to-rem(20px);
+            font-size: to-rem(18px);
             font-weight: 600;
             color: $fg;
         }
@@ -816,245 +838,488 @@ window.control-menu {
             color: $red;
         }
     }
-    
+
     .calendar-grid {
         .calendar-week {
             .calendar-day {
                 background: transparent;
                 border-radius: 50%;
-                padding: to-rem(10px) to-rem(0px);
-                min-width: to-rem(40px);
+                padding: to-rem(7px);
+                min-width: to-rem(42px);
                 min-height: to-rem(40px);
-                
+
                 &:hover {
                     background: $bg2;
                 }
-                
+
                 &.today {
-                    background: $blue;
-                    
-                    label {
-                        color: $bg;
+                    background: gtkalpha($fg1, 0.3);
+
+                    .solar-day {
+                        color: $fg;
+                        font-weight: 700;
+                    }
+                }
+
+                &.lunar-special {
+                    .lunar-day.special {
+                        color: $red;
                         font-weight: 600;
                     }
                 }
-                
-                label {
+
+                &.has-events {
+                    .solar-day.has-events {
+                        color: $blue;
+                        font-weight: 700;
+                    }
+                }
+
+                .solar-day {
                     font-size: to-rem(18px);
                     color: $fg;
                     font-weight: 600;
+                }
+
+                .lunar-day {
+                    font-size: to-rem(15px);
+                    color: $fg1;
+                    font-weight: 500;
                 }
             }
 
             // Out-of-month days
             .calendar-day.not-in {
-                opacity: 0.35;
+                opacity: 0.3;
+
+                // Out-of-month days with events
+                &.has-events {
+                    .solar-day.has-events {
+                        color: $blue;
+                    }
+                }
             }
 
             // Saturday and Sunday
-            .calendar-day.weekend label {
-                color: $red;
+            .calendar-day.weekend {
+                .solar-day {
+                    color: $red;
+                }
+            }
+        }
+    }
+
+    // Day Events View (when clicking on a day with events)
+    .day-events-view {
+        .day-events-header {
+            margin-bottom: to-rem(10px);
+
+            button {
+                background: $bg2;
+                border-radius: 50%;
+                padding: to-rem(6px);
+                min-width: to-rem(32px);
+                min-height: to-rem(32px);
+                transition: all 200ms ease;
+
+                &:hover {
+                    background: $bg3;
+                }
+
+                icon {
+                    color: $fg;
+                    font-size: to-rem(16px);
+                }
+            }
+
+            .day-events-title {
+                font-size: to-rem(20px);
+                font-weight: 600;
+                color: $fg;
+            }
+        }
+
+        .day-events-scroll {
+            background-color: transparent;
+            min-height: to-rem(350px);
+
+            viewport {
+                border: none;
+                outline: none;
+            }
+
+            .day-event-item {
+                background: $bg2;
+                border-radius: to-rem(12px);
+                padding: to-rem(10px) to-rem(20px);
+                border-left: 3px solid $blue;
+                transition: all 150ms ease;
+
+                &:hover {
+                    background: $bg3;
+                }
+
+                .day-event-title {
+                    font-size: to-rem(18px);
+                    font-weight: 600;
+                    color: $fg;
+                }
+
+                .day-event-time {
+                    font-size: to-rem(14px);
+                    color: $fg1;
+                    font-weight: 500;
+                }
+
+                .day-event-delete {
+                    background: transparent;
+                    border-radius: 50%;
+                    padding: to-rem(8px);
+                    min-width: to-rem(36px);
+                    min-height: to-rem(36px);
+                    transition: all 150ms ease;
+
+                    icon {
+                        font-size: to-rem(18px);
+                        color: $fg1;
+                    }
+
+                    &:hover {
+                        background: gtkalpha($red, 0.2);
+
+                        icon {
+                            color: $red;
+                        }
+                    }
+                }
+            }
+
+            .empty-text {
+                font-size: to-rem(16px);
+                color: $fg1;
             }
         }
     }
 }
-    
-//     .todo-container {
-//         background: $bg1;
-//         border-radius: to-rem(15px);
-//         padding: to-rem(15px);
-//         margin-bottom: to-rem(15px);
-        
-//         .todo-header {
-//             margin-bottom: to-rem(10px);
-            
-//             icon {
-//                 font-size: to-rem(16px);
-//                 color: $blue;
-//             }
-            
-//             .todo-title {
-//                 font-size: to-rem(16px);
-//                 font-weight: 600;
-//                 color: $fg;
-//             }
-//         }
-        
-//         .todo-input {
-//             margin-bottom: to-rem(15px);
-            
-//             .todo-entry {
-//                 background: $bg2;
-//                 border-radius: to-rem(8px);
-//                 padding: to-rem(8px) to-rem(12px);
-//                 font-size: to-rem(14px);
-//                 color: $fg;
-//                 border: 1px solid transparent;
-                
-//                 &:focus {
-//                     border-color: $green;
-//                 }
-//             }
-            
-//             .todo-add-button {
-//                 background: $green;
-//                 border-radius: to-rem(8px);
-//                 padding: to-rem(8px);
-//                 min-width: to-rem(35px);
-                
-//                 &:hover {
-//                     background: $yellow;
-//                 }
-                
-//                 icon {
-//                     color: $bg;
-//                     font-size: to-rem(14px);
-//                 }
-//             }
-//         }
-        
-//         .todo-scroll {
-//             max-height: to-rem(200px);
-            
-//             .todo-list {
-//                 .todo-item {
-//                     background: $bg2;
-//                     border-radius: to-rem(8px);
-//                     padding: to-rem(8px) to-rem(12px);
-//                     margin-bottom: to-rem(5px);
-                    
-//                     &.completed {
-//                         opacity: 0.6;
-                        
-//                         .todo-text {
-//                             text-decoration: line-through;
-//                         }
-//                     }
-                    
-//                     .todo-checkbox {
-//                         background: transparent;
-//                         border-radius: to-rem(4px);
-//                         padding: to-rem(2px);
-                        
-//                         icon {
-//                             font-size: to-rem(14px);
-//                             color: $green;
-//                         }
-//                     }
-                    
-//                     .todo-text {
-//                         font-size: to-rem(14px);
-//                         color: $fg;
-//                         margin-left: to-rem(8px);
-//                     }
-                    
-//                     .todo-delete {
-//                         background: transparent;
-//                         border-radius: to-rem(4px);
-//                         padding: to-rem(4px);
-                        
-//                         &:hover {
-//                             background: $red;
-//                         }
-                        
-//                         icon {
-//                             font-size: to-rem(12px);
-//                             color: $red;
-//                         }
-//                     }
-//                 }
-                
-//                 .todo-empty {
-//                     padding: to-rem(20px);
-                    
-//                     .todo-empty-text {
-//                         color: $fg1;
-//                         font-style: italic;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-    
-//     .weather-container {
-//         background: $bg1;
-//         border-radius: to-rem(15px);
-//         padding: to-rem(15px);
-        
-//         .weather-header {
-//             margin-bottom: to-rem(15px);
-            
-//             icon {
-//                 font-size: to-rem(16px);
-//                 color: $blue;
-//             }
-            
-//             .weather-title {
-//                 font-size: to-rem(16px);
-//                 font-weight: 600;
-//                 color: $fg;
-//             }
-            
-//             .weather-refresh {
-//                 background: $bg2;
-//                 border-radius: to-rem(6px);
-//                 padding: to-rem(6px);
-                
-//                 &:hover {
-//                     background: $blue;
-//                 }
-                
-//                 icon {
-//                     font-size: to-rem(12px);
-//                     color: $fg;
-//                 }
-//             }
-//         }
-        
-//         .weather-current {
-//             margin-bottom: to-rem(15px);
-            
-//             .weather-icon {
-//                 font-size: to-rem(48px);
-//                 color: $blue;
-//             }
-            
-//             .weather-temperature {
-//                 font-size: to-rem(24px);
-//                 font-weight: 600;
-//                 color: $fg;
-//             }
-            
-//             .weather-condition {
-//                 font-size: to-rem(14px);
-//                 color: $fg1;
-//             }
-//         }
-        
-//         .weather-details {
-//             .weather-detail {
-//                 background: $bg2;
-//                 border-radius: to-rem(8px);
-//                 padding: to-rem(8px) to-rem(12px);
-//                 margin-bottom: to-rem(5px);
-                
-//                 .weather-detail-icon {
-//                     font-size: to-rem(14px);
-//                     color: $blue;
-//                     min-width: to-rem(20px);
-//                 }
-                
-//                 .weather-detail-label {
-//                     font-size: to-rem(13px);
-//                     color: $fg1;
-//                 }
-                
-//                 .weather-detail-value {
-//                     font-size: to-rem(13px);
-//                     font-weight: 500;
-//                     color: $fg;
-//                 }
-//             }
-//         }
-//     }
-// }
+
+// Todo Component - Google Calendar Integration
+.todo-container {
+    background: transparent;
+
+    .todo-header {
+        margin-bottom: to-rem(8px);
+
+        .todo-title {
+            font-size: to-rem(20px);
+            font-weight: 600;
+            color: $fg;
+        }
+
+        .todo-reload-button {
+            background: $bg2;
+            border-radius: 50%;
+            padding: to-rem(6px);
+            min-width: to-rem(32px);
+            min-height: to-rem(32px);
+            transition: all 200ms ease;
+
+            &:hover {
+                background: $bg3;
+            }
+
+            icon {
+                color: $fg;
+                font-size: to-rem(16px);
+            }
+        }
+
+        .todo-add-button {
+            background: $green;
+            border-radius: 50%;
+            padding: to-rem(6px);
+            min-width: to-rem(32px);
+            min-height: to-rem(32px);
+            transition: all 200ms ease;
+
+            &:hover {
+                background: gtkalpha($green, 0.85);
+            }
+
+            icon {
+                color: $bg;
+                font-size: to-rem(16px);
+            }
+        }
+    }
+
+    // Event Form
+    .event-form {
+        background: $bg2;
+        border-radius: to-rem(16px);
+        padding: to-rem(20px);
+
+        .event-form-header {
+            margin-bottom: to-rem(5px);
+            padding-bottom: to-rem(10px);
+            border-bottom: 1px solid $bg3;
+
+            .event-form-title-label {
+                font-size: to-rem(20px);
+                font-weight: 700;
+                color: $fg;
+            }
+
+            button {
+                background: $bg3;
+                border-radius: 50%;
+                padding: to-rem(5px);
+                min-width: to-rem(30px);
+                min-height: to-rem(30px);
+                transition: all 150ms ease;
+
+                &:hover {
+                    background: gtkalpha($red, 0.2);
+
+                    icon {
+                        color: $red;
+                    }
+                }
+
+                icon {
+                    color: $fg1;
+                    font-size: to-rem(16px);
+                }
+            }
+        }
+
+        .event-form-body {
+            > box {
+                > label {
+                    font-size: to-rem(18px);
+                    font-weight: 600;
+                    color: $fg;
+                    margin-bottom: to-rem(5px);
+                }
+
+                .event-form-entry {
+                    background: $bg3;
+                    border-radius: to-rem(12px);
+                    padding: to-rem(14px) to-rem(18px);
+                    font-size: to-rem(17px);
+                    color: $fg;
+                    transition: all 150ms ease;
+                }
+            }
+
+            .event-form-time-inputs {
+                > box {
+                    > label {
+                        font-size: to-rem(18px);
+                        font-weight: 600;
+                        color: $fg;
+                    }
+                }
+
+                .event-form-entry {
+                    background: $bg3;
+                    border-radius: to-rem(12px);
+                    padding: to-rem(14px) to-rem(18px);
+                    font-size: to-rem(17px);
+                    color: $fg;
+                    transition: all 150ms ease;
+                }
+            }
+        }
+
+        .event-form-submit {
+            background: $blue;
+            border-radius: to-rem(12px);
+            padding: to-rem(12px) to-rem(28px);
+            margin-top: to-rem(10px);
+            transition: all 150ms ease;
+
+            label {
+                font-size: to-rem(16px);
+                font-weight: 600;
+                color: $bg;
+            }
+
+            &:hover {
+                background: gtkalpha($blue, 0.85);
+            }
+        }
+    }
+
+    .todo-scroll {
+        background-color: transparent;
+        min-height: to-rem(350px);
+
+        viewport {
+            border: none;
+            outline: none;
+        }
+
+        .todo-list {
+            .todo-item {
+                background: $bg2;
+                border-radius: to-rem(12px);
+                padding: to-rem(20px) to-rem(20px);
+                border-left: 3px solid $blue;
+                transition: all 150ms ease;
+
+                &.completed {
+                    opacity: 0.5;
+                    border-left-color: $green;
+                }
+
+                &:hover {
+                    background: $bg3;
+                }
+
+                .todo-text {
+                    font-size: to-rem(18px);
+                    font-weight: 600;
+                    color: $fg;
+
+                    &.completed {
+                        color: $fg1;
+                    }
+                }
+
+                .event-date {
+                    font-size: to-rem(14px);
+                    color: $blue;
+                    font-weight: 600;
+                    background: gtkalpha($blue, 0.15);
+                    padding: to-rem(3px) to-rem(8px);
+                    border-radius: to-rem(5px);
+                }
+
+                .event-time {
+                    font-size: to-rem(14px);
+                    color: $fg1;
+                    font-weight: 500;
+                }
+
+                .todo-delete {
+                    background: transparent;
+                    transition: all 150ms ease;
+
+                    icon {
+                        font-size: to-rem(18px);
+                        color: $fg1;
+                    }
+
+                    &:hover {
+                        icon {
+                            color: $red;
+                        }
+                    }
+                }
+            }
+
+            .todo-empty {
+                padding: to-rem(60px) to-rem(20px);
+
+                .todo-empty-icon {
+                    font-size: to-rem(60px);
+                    color: $fg2;
+                    opacity: 0.5;
+                }
+
+                .todo-empty-text {
+                    font-size: to-rem(18px);
+                    font-weight: 600;
+                    color: $fg1;
+                }
+            }
+        }
+    }
+}
+
+// Weather Component
+.weather-container {
+    background: transparent;
+
+    // Main weather display row
+    .weather-main {
+        padding: to-rem(20px);
+
+        // Left side: City, Large Icon, Description
+        .weather-left {
+            .weather-location-icon {
+                font-size: to-rem(25px);
+                color: $fg1;
+            }
+
+            .weather-location {
+                font-size: to-rem(22px);
+                font-weight: 600;
+                color: $fg;
+            }
+
+            .weather-icon-large {
+                font-size: to-rem(90px);
+                color: $fg;
+            }
+
+            .weather-condition {
+                font-size: to-rem(20px);
+                font-weight: 500;
+                color: $fg1;
+            }
+        }
+
+        // Right side: Large Temp, Max/Min, Feels Like, Humidity
+        .weather-right {
+            .weather-temp-large {
+                font-size: to-rem(50px);
+                font-weight: 700;
+                color: $fg;
+            }
+
+            .weather-temp-range {
+                font-size: to-rem(18px);
+                font-weight: 500;
+                color: $fg1;
+            }
+
+            .weather-feels-like {
+                font-size: to-rem(18px);
+                color: $fg1;
+            }
+
+            .weather-humidity {
+                font-size: to-rem(18px);
+                color: $fg1;
+            }
+        }
+    }
+
+    // 6-day forecast row
+    .weather-forecast {
+        padding: to-rem(15px) to-rem(10px);
+        border-radius: to-rem(15px);
+
+        .weather-forecast-day {
+            padding: to-rem(10px) to-rem(8px);
+
+            .forecast-day-name {
+                font-size: to-rem(18px);
+                font-weight: 500;
+                color: $fg1;
+            }
+
+            .forecast-icon {
+                font-size: to-rem(50px);
+                color: $fg;
+            }
+
+            .forecast-temp {
+                font-size: to-rem(16px);
+                font-weight: 500;
+                color: $fg;
+            }
+        }
+    }
+}

@@ -1,8 +1,8 @@
 window.launcher {
     background-color: transparent;
 
-    >box {
-      margin: to-rem(20px);
+    > box {
+        margin: to-rem(20px);
     }
 }
 
@@ -46,7 +46,7 @@ window.launcher {
         }
 
         label.description {
-            color: gtkalpha($fg, .8);
+            color: gtkalpha($fg, 0.8);
             font-size: to-rem(16px);
         }
     }
@@ -56,11 +56,11 @@ window.launcher {
 
         icon {
             font-size: 6em;
-            color: gtkalpha($fg, .7);
+            color: gtkalpha($fg, 0.7);
         }
 
         label {
-            color: gtkalpha($fg, .9);
+            color: gtkalpha($fg, 0.9);
             font-size: 1.2em;
         }
     }

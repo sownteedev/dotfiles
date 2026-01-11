@@ -12,7 +12,7 @@
         margin: 0 to-rem(8px);
     }
 
-    >centerbox {
+    > centerbox {
         padding: to-rem(8px);
     }
 
@@ -138,6 +138,12 @@
         .workspace-button {
             border-radius: to-rem(8px);
             padding: 0 to-rem(10px);
+            transition: all 0.15s ease;
+
+            &.drag-over {
+                background-color: gtkalpha($blue, 0.4);
+                box-shadow: 0 0 8px 2px gtkalpha($blue, 0.5);
+            }
 
             .txt-ws {
                 font-size: to-rem(17px);
@@ -145,17 +151,31 @@
                 color: $fg;
                 margin-right: to-rem(0px);
             }
-            
+
             .app-icon {
+                transition: all 0.15s ease;
+
                 icon {
                     font-size: to-rem(28px);
                     margin: 0 to-rem(3px);
                 }
-                
+
                 .app-name {
                     font-size: to-rem(17px);
                     font-weight: 600;
                     margin-left: to-rem(4px);
+                }
+
+                &:hover {
+                    margin: 0 0 to-rem(8px) 0;
+                }
+
+                &.dragging {
+                    opacity: 0.5;
+                }
+
+                &.drop-target {
+                    margin: 0 to-rem(8px);
                 }
             }
         }

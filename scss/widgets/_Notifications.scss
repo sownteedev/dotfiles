@@ -1,7 +1,7 @@
 window.NotificationPopups {
     background-color: transparent;
 
-    >box {
+    > box {
         margin: to-rem(20px);
     }
 }
@@ -9,7 +9,7 @@ window.NotificationPopups {
 .Notification {
     background-color: transparent;
 
-    >box {
+    > box {
         margin: to-rem(20px);
     }
     .notification-container {
@@ -24,7 +24,7 @@ window.NotificationPopups {
 
     &.critical > box {
         .notification-app-icon {
-            color: gtkalpha($red, .8);
+            color: gtkalpha($red, 0.8);
         }
     }
 
@@ -72,7 +72,7 @@ window.NotificationPopups {
 
     .notification-actions {
         margin-top: to-rem(20px);
-        
+
         button {
             border-radius: to-rem(15px);
             padding: to-rem(10px);
@@ -85,7 +85,7 @@ window.NotificationPopups {
             &:last-child {
                 margin-right: to-rem(20px);
             }
-            
+
             &:hover {
                 background-color: $bg2;
             }
