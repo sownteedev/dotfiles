@@ -1,0 +1,8 @@
+[SddmGreeterTheme]
+Name=R1999_1
+Description=Reverse 1999 Qylock Theme
+Author=Darkkal44
+Type=sddm-theme
+MainScript=Main.qml
+ConfigFile=theme.conf
+QtVersion=6

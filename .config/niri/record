@@ -61,7 +61,7 @@ else
 
 	case "$action" in
 		open)
-			vlc "$final_path" &
+			mpv "$final_path" &
 			;;
 	esac
 fi

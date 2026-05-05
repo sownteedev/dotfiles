@@ -34,7 +34,7 @@ input {
         scroll-method "no-scroll"
         scroll-button 273
         //left-handed
-        middle-emulation
+		//middle-emulation
     }
 
     /-trackpoint {

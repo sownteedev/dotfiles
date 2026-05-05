@@ -1,6 +1,6 @@
 spawn-at-startup "xwayland-satellite"
 spawn-at-startup "fcixt5"
-spawn-at-startup "agsv2" "run"
+spawn-at-startup "bash" "-c" "agsv2 run -d ~/Dotfiles/ags"
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1" "||" "/usr/libexec/polkit-gnome-authentication-agent-1"
 spawn-at-startup "gnome-keyring-daemon" "--start" "--components=secrets"
 spawn-at-startup "dbus-update-activation-environment" "--all"

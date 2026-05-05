@@ -1,0 +1,7 @@
+[SddmGreeterTheme]
+Name=last-of-us
+Description=The Last of Us Part II Theme
+Type=sddm-theme
+MainScript=Main.qml
+ConfigFile=theme.conf
+QtVersion=6

@@ -4,7 +4,7 @@ binds {
     Mod+Return									{ spawn "blackbox"; }
     Alt+Space									{ spawn-sh "astal -i sownteeastal -t launcher"; }
     Mod+L										{ spawn-sh "astal -i sownteeastal -t lock-screen"; }
-	Ctrl+Alt+R									{ spawn-sh "agsv2 quit -i sownteeastal; agsv2 run"; }
+	Ctrl+Alt+R									{ spawn-sh "agsv2 quit -i sownteeastal; agsv2 run -d ~/Dotfiles/ags"; }
 	Alt+F4										{ spawn "~/.config/niri/close"; }
 	Mod+E										{ spawn "nautilus"; }
 	Ctrl+Shift+Escape							{ spawn "missioncenter"; }
