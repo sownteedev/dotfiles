@@ -2,8 +2,8 @@ layout {
     gaps 10
 	background-color "transparent"
 
-    center-focused-column "never"
-	// always-center-single-column
+    center-focused-column "on-overflow"
+	always-center-single-column
     // empty-workspace-above-first
     // default-column-display "tabbed"
 
