@@ -1,32 +1,80 @@
 import Wp from "gi://AstalWp";
 import { bind, timeout, Variable } from "astal";
-import { Astal, Gdk, App } from "astal/gtk3";
+import { Astal, Gdk, Gtk } from "astal/gtk3";
 import Brightness from "./brightness";
 
 const SHOW_TIME: number = 2000;
 
-const createVolumeIndicator = (device: any, class_name: any) => {
-    return (
-        <box className={`${class_name}`} visible={false}>
-            <box className={"indicator"}>
-                <icon icon={bind(device, "volume-icon")} />
-                <label
-                    label={bind(device, "volume").as(
-                        (vol) => `${Math.floor((vol ? vol : 0) * 100)}`
-                    )}
-                />
-            </box>
+interface SliderIndicatorProps {
+    label: string;
+    icon: any;
+    value: any;
+    onDragged: (slider: any) => void;
+    className: string;
+    sliderClassName: string;
+}
 
-            <box className="slider-container">
-                <slider
-                    className="volume-slider"
-                    hexpand={true}
-                    onDragged={(slider: any) => (device.volume = slider.value)}
-                    value={bind(device, "volume")}
-                />
+const createSliderIndicator = ({
+    label,
+    icon,
+    value,
+    onDragged,
+    className,
+    sliderClassName,
+}: SliderIndicatorProps) => {
+    return (
+        <box className={className} visible={false} horizontal={true}>
+            <icon icon={icon} />
+
+            <box className={"indicator"} vertical={true}>
+                <box className="indicator-text">
+                    <label
+                        label={label}
+                        className="indicator-label"
+                        hexpand={true}
+                        xalign={0}
+                    />
+                    <label
+                        label={value.as(
+                            (val: any) => `${Math.floor((val ? val : 0) * 100)}`
+                        )}
+                        className="indicator-value"
+                        xalign={1}
+                    />
+                </box>
+                <box className="slider-container">
+                    <slider
+                        className={sliderClassName}
+                        hexpand={true}
+                        onDragged={onDragged}
+                        value={value}
+                    />
+                </box>
             </box>
         </box>
     );
+};
+
+const createVolumeIndicator = (device: any, class_name: any) => {
+    return createSliderIndicator({
+        label: "Volume",
+        icon: bind(device, "volume-icon"),
+        value: bind(device, "volume"),
+        onDragged: (slider: any) => (device.volume = slider.value),
+        className: class_name,
+        sliderClassName: "volume-slider",
+    });
+};
+
+const createMicIndicator = (device: any, class_name: any) => {
+    return createSliderIndicator({
+        label: "Microphone",
+        icon: "audio-input-microphone-symbolic",
+        value: bind(device, "volume"),
+        onDragged: (slider: any) => (device.volume = slider.value),
+        className: class_name,
+        sliderClassName: "mic-slider",
+    });
 };
 
 const createMuteIndicator = (device: any, class_name: any) => {
@@ -38,31 +86,17 @@ const createMuteIndicator = (device: any, class_name: any) => {
 };
 
 const createBrightnessIndicator = (brightness: any) => {
-    return (
-        <box className="brightness-indicator" visible={false}>
-            <box className={"indicator"}>
-                <icon icon="display-brightness-symbolic" />
-                <label
-                    label={bind(brightness, "screen").as(
-                        (level) => `${Math.floor((level ? level : 0) * 100)}`
-                    )}
-                />
-            </box>
-            <box className="slider-container">
-                <slider
-                    className="brightness-slider"
-                    hexpand={true}
-                    onDragged={(slider: any) =>
-                        (brightness.screen = slider.value)
-                    }
-                    value={bind(brightness, "screen")}
-                />
-            </box>
-        </box>
-    );
+    return createSliderIndicator({
+        label: "Brightness",
+        icon: "display-brightness-symbolic",
+        value: bind(brightness, "screen"),
+        onDragged: (slider: any) => (brightness.screen = slider.value),
+        className: "brightness-indicator",
+        sliderClassName: "brightness-slider",
+    });
 };
 
-const createOSDWidget = (current_timeout_ref: any) => {
+const createOSDWidget = (current_timeout_ref: any, visibleVar: any) => {
     const speaker = Wp.get_default()!.defaultSpeaker;
     const mic = Wp.get_default()!.defaultMicrophone;
     const brightness = Brightness.get_default();
@@ -86,12 +120,13 @@ const createOSDWidget = (current_timeout_ref: any) => {
                     brightness_indicator.visible = false;
 
                     widget.visible = true;
+                    visibleVar.set(true);
                     if (current_timeout_ref.timer) {
                         current_timeout_ref.timer.cancel();
                     }
 
                     current_timeout_ref.timer = timeout(SHOW_TIME, () => {
-                        widget.visible = false;
+                        visibleVar.set(false);
                         current_timeout_ref.timer = null;
                     });
                 };
@@ -170,7 +205,7 @@ const createOSDWidget = (current_timeout_ref: any) => {
         >
             {createVolumeIndicator(speaker, "volume-indicator")}
             {createMuteIndicator(speaker, "volume-indicator")}
-            {createVolumeIndicator(mic, "mic-indicator")}
+            {createMicIndicator(mic, "mic-indicator")}
             {createMuteIndicator(mic, "mic-indicator")}
             {createBrightnessIndicator(brightness)}
         </box>
@@ -179,14 +214,22 @@ const createOSDWidget = (current_timeout_ref: any) => {
 
 export default function OSD(gdkmonitor: Gdk.Monitor) {
     const current_timeout_ref: any = { timer: null };
+    const visible = Variable(false);
 
     return (
         <window
             gdkmonitor={gdkmonitor}
             className="OSDWindow"
             anchor={Astal.WindowAnchor.BOTTOM}
+            css={bind(visible).as((v) => (v ? "" : "pointer-events: none;"))}
         >
-            {createOSDWidget(current_timeout_ref)}
+            <revealer
+                transitionType={Gtk.RevealerTransitionType.SLIDE_UP}
+                transitionDuration={300}
+                revealChild={bind(visible)}
+            >
+                {createOSDWidget(current_timeout_ref, visible)}
+            </revealer>
         </window>
     );
 }

@@ -34,46 +34,52 @@ class NotifiationMap implements Subscribable {
          */
         // notifd.ignoreTimeout = true
 
-        const notifiedId = this.notifd.connect("notified", (_, id) => {
-            this.set(
-                id,
-                Notification({
-                    notification: this.notifd.get_notification(id)!,
+        const notifiedId = this.notifd.connect(
+            "notified",
+            (_: any, id: any) => {
+                this.set(
+                    id,
+                    Notification({
+                        notification: this.notifd.get_notification(id)!,
 
-                    // When hovering, clear the timeout
-                    onHover: () => {
-                        const timeoutId = this.timeouts.get(id);
-                        if (timeoutId) {
-                            GLib.source_remove(timeoutId);
-                            this.timeouts.delete(id);
-                        }
-                    },
+                        // When hovering, clear the timeout
+                        onHover: () => {
+                            const timeoutId = this.timeouts.get(id);
+                            if (timeoutId) {
+                                GLib.source_remove(timeoutId);
+                                this.timeouts.delete(id);
+                            }
+                        },
 
-                    // When mouse leaves, start a new timeout
-                    onHoverLost: () => {
-                        const timeoutId = timeout(TIMEOUT_DELAY, () => {
-                            this.delete(id);
-                        });
-                        this.timeouts.set(id, Number(timeoutId));
-                    },
+                        // When mouse leaves, start a new timeout
+                        onHoverLost: () => {
+                            const timeoutId = timeout(TIMEOUT_DELAY, () => {
+                                this.delete(id);
+                            });
+                            this.timeouts.set(id, Number(timeoutId));
+                        },
 
-                    // Setup initial timeout
-                    setup: () => {
-                        const timeoutId = timeout(TIMEOUT_DELAY, () => {
-                            this.delete(id);
-                        });
-                        this.timeouts.set(id, Number(timeoutId));
-                    },
-                })
-            );
-        });
+                        // Setup initial timeout
+                        setup: () => {
+                            const timeoutId = timeout(TIMEOUT_DELAY, () => {
+                                this.delete(id);
+                            });
+                            this.timeouts.set(id, Number(timeoutId));
+                        },
+                    })
+                );
+            }
+        );
         this.signalIds.push(notifiedId);
 
         // notifications can be closed by the outside before
         // any user input, which have to be handled too
-        const resolvedId = this.notifd.connect("resolved", (_, id) => {
-            this.delete(id);
-        });
+        const resolvedId = this.notifd.connect(
+            "resolved",
+            (_: any, id: any) => {
+                this.delete(id);
+            }
+        );
         this.signalIds.push(resolvedId);
     }
 

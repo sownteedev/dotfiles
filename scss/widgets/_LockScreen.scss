@@ -20,6 +20,11 @@ window.lock-screen {
         border-radius: 30px;
         box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
         border: to-rem(1px) solid gtkalpha($fg1, 0.5);
+        transition-duration: 200ms;
+
+        &.error {
+            border: to-rem(1px) solid $red;
+        }
 
         .password-entry {
             font-size: 15px;

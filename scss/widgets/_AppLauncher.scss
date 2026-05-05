@@ -7,32 +7,63 @@ window.launcher {
 }
 
 .Applauncher {
-    background-color: $bg;
-    border-radius: 15px;
+    background-color: gtkalpha($bg, 0.95);
+    border-radius: to-rem(50px);
     padding: to-rem(15px);
     border: to-rem(1px) solid gtkalpha($bg3, 0.8);
     box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
 
-    .search {
-        min-height: 40px;
-        font-size: to-rem(18px);
-        padding: to-rem(10px) to-rem(20px) to-rem(10px) to-rem(20px);
-        border: 1px solid transparent;
+    .search-icon {
+        font-size: to-rem(35px);
+        margin-left: to-rem(15px);
+    }
 
-        &:focus {
-            border: 1px solid gtkalpha($fg2, 0.3);
+    .search-entry-box {
+        background-color: transparent;
+        border-radius: to-rem(50px);
+        padding: to-rem(10px) to-rem(20px);
+        min-width: to-rem(350px);
+        transition: min-width 200ms ease;
+
+        &.has-text {
+            min-width: to-rem(500px);
+        }
+
+        .search-entry {
+            min-height: to-rem(40px);
+            font-size: to-rem(18px);
+            padding: 0;
+            border: 1px solid transparent;
+            background-color: transparent;
+
+            &:focus {
+                border: 1px solid transparent;
+            }
         }
     }
 
-    button {
+    // Animate list container when items change
+    .app-list-container {
+        transition:
+            min-height 200ms cubic-bezier(0.4, 0, 0.2, 1),
+            margin-top 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    // Add transition for buttons when list updates
+    .app-list-container > .AppButton {
+        transition:
+            opacity 200ms ease,
+            transform 200ms ease;
+
         min-width: 0;
         min-height: 0;
-        padding: to-rem(20px);
-        background-color: $bg1;
-        box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+        padding: to-rem(15px);
+        background-color: transparent;
+        border-radius: to-rem(35px);
 
+        &:hover,
         &:focus {
-            background-color: $bg2;
+            background-color: gtkalpha($bg1, 0.5);
         }
 
         icon {
@@ -40,14 +71,27 @@ window.launcher {
             margin-right: to-rem(20px);
         }
 
-        label.name {
-            font-weight: bold;
+        .name {
+            font-weight: 600;
             font-size: to-rem(18px);
         }
 
-        label.description {
-            color: gtkalpha($fg, 0.8);
+        .description {
+            color: $fg1;
+            font-weight: 500;
             font-size: to-rem(16px);
+        }
+    }
+
+    .all-apps-button {
+        min-width: to-rem(40px);
+        min-height: to-rem(40px);
+        padding: to-rem(10px);
+        background-color: transparent;
+        border-radius: to-rem(20px);
+
+        icon {
+            font-size: to-rem(24px);
         }
     }
 
@@ -63,5 +107,71 @@ window.launcher {
             color: gtkalpha($fg, 0.9);
             font-size: 1.2em;
         }
+    }
+
+    // All Apps View Styles
+    .all-apps-container {
+        background-color: transparent;
+        border-radius: to-rem(20px);
+        padding: to-rem(25px);
+        min-width: to-rem(1200px);
+        min-height: to-rem(700px);
+        margin-top: to-rem(20px);
+    }
+
+    .all-apps-scrollable {
+        background-color: transparent;
+        min-height: to-rem(600px);
+
+        viewport {
+            border: none;
+            outline: none;
+        }
+    }
+
+    .all-apps-grid {
+        background-color: transparent;
+        padding: to-rem(15px);
+    }
+
+    .all-apps-grid-row {
+        background-color: transparent;
+        margin-bottom: to-rem(25px);
+    }
+
+    .app-grid-item {
+        min-width: to-rem(140px);
+        min-height: to-rem(130px);
+        padding: to-rem(12px);
+        background-color: transparent;
+        border-radius: to-rem(16px);
+        transition: background-color 200ms ease;
+
+        &:hover {
+            background-color: gtkalpha($bg1, 0.5);
+        }
+    }
+
+    .app-grid-icon {
+        font-size: to-rem(72px);
+        min-width: to-rem(72px);
+        min-height: to-rem(72px);
+    }
+
+    .app-grid-name {
+        font-size: to-rem(16px);
+        color: $fg;
+        font-weight: 500;
+        margin-top: to-rem(8px);
+    }
+
+    .all-apps-empty {
+        padding: to-rem(40px);
+    }
+
+    .all-apps-empty-label {
+        font-size: to-rem(18px);
+        color: gtkalpha($fg, 0.6);
+        font-weight: 500;
     }
 }

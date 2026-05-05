@@ -2,10 +2,19 @@ import { bind, Variable } from "astal";
 import { Astal, Gdk } from "astal/gtk3";
 import { isImage } from "../../utils/file";
 
-const desktopWall = Variable("/tmp/backdrop.png");
+interface WallpaperProps {
+    wallpaperPath: string;
+    windowNamePrefix: string;
+    gdkmonitor: Gdk.Monitor;
+}
 
-export const Desktop = (gdkmonitor: Gdk.Monitor) => {
-    const windowName = `backdrop-${gdkmonitor.display.get_n_monitors()}`;
+const createWallpaper = ({
+    wallpaperPath,
+    windowNamePrefix,
+    gdkmonitor,
+}: WallpaperProps) => {
+    const desktopWall = Variable(wallpaperPath);
+    const windowName = `${windowNamePrefix}-${gdkmonitor.display.get_n_monitors()}`;
     const Anchor = Astal.WindowAnchor;
 
     const cleanup = () => {
@@ -50,4 +59,4 @@ export const Desktop = (gdkmonitor: Gdk.Monitor) => {
     );
 };
 
-export default Desktop;
+export default createWallpaper;

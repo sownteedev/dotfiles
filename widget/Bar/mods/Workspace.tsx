@@ -7,11 +7,14 @@ import { getIcon } from "../../../utils/icon";
 let draggedWindowId: number | null = null;
 let draggedFromWorkspace: number | null = null;
 
+// Global variable to track dragging state
+const isDragging = Variable(false);
+
 // Drag target for receiving drops
 const targetEntry = new Gtk.TargetEntry(
     "text/plain",
     Gtk.TargetFlags.SAME_APP,
-    0
+    0,
 );
 
 interface Window {
@@ -168,7 +171,7 @@ const AppIcon = (props: any) => {
         self.drag_source_set(
             Gdk.ModifierType.BUTTON1_MASK,
             [targetEntry],
-            Gdk.DragAction.MOVE
+            Gdk.DragAction.MOVE,
         );
 
         self.connect(
@@ -176,16 +179,18 @@ const AppIcon = (props: any) => {
             (_widget: Gtk.Widget, context: Gdk.DragContext) => {
                 draggedWindowId = windowId;
                 draggedFromWorkspace = workspaceId;
+                isDragging.set(true);
                 self.get_style_context().add_class("dragging");
 
                 // Create drag icon that follows cursor
                 Gtk.drag_set_icon_name(context, iconName, 16, 16);
-            }
+            },
         );
 
         self.connect("drag-end", () => {
             draggedWindowId = null;
             draggedFromWorkspace = null;
+            isDragging.set(false);
             self.get_style_context().remove_class("dragging");
         });
 
@@ -193,7 +198,7 @@ const AppIcon = (props: any) => {
         self.drag_dest_set(
             Gtk.DestDefaults.ALL,
             [targetEntry],
-            Gdk.DragAction.MOVE
+            Gdk.DragAction.MOVE,
         );
 
         self.connect("drag-drop", () => {
@@ -201,22 +206,22 @@ const AppIcon = (props: any) => {
                 if (draggedFromWorkspace === workspaceId) {
                     // Same workspace: reorder
                     exec(
-                        `niri msg action focus-window --id ${draggedWindowId}`
+                        `niri msg action focus-window --id ${draggedWindowId}`,
                     );
                     exec(`niri msg action move-column-to-index ${position}`);
                 } else {
                     // Different workspace: move to workspace then to position
                     const targetWindowId = draggedWindowId;
                     exec(
-                        `niri msg action move-window-to-workspace --window-id ${targetWindowId} ${workspaceId}`
+                        `niri msg action move-window-to-workspace --window-id ${targetWindowId} ${workspaceId}`,
                     );
                     // Use GLib.timeout_add instead of setTimeout for proper GTK integration
                     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
                         exec(
-                            `niri msg action focus-window --id ${targetWindowId}`
+                            `niri msg action focus-window --id ${targetWindowId}`,
                         );
                         exec(
-                            `niri msg action move-column-to-index ${position}`
+                            `niri msg action move-column-to-index ${position}`,
                         );
                         return false; // Don't repeat
                     });
@@ -269,14 +274,14 @@ const WorkspaceButton = (props: any) => {
         self.drag_dest_set(
             Gtk.DestDefaults.ALL,
             [targetEntry],
-            Gdk.DragAction.MOVE
+            Gdk.DragAction.MOVE,
         );
 
         self.connect("drag-drop", () => {
             if (draggedWindowId !== null) {
                 // Move window to this workspace
                 exec(
-                    `niri msg action move-window-to-workspace --window-id ${draggedWindowId} ${props.workspace_id}`
+                    `niri msg action move-window-to-workspace --window-id ${draggedWindowId} ${props.workspace_id}`,
                 );
                 return true;
             }
@@ -323,13 +328,73 @@ const WorkspaceButton = (props: any) => {
     );
 };
 
+// Empty workspace drop zone component
+const EmptyWorkspaceDropZone = (props: {
+    monitorName: string;
+    nextWorkspaceId: number;
+}) => {
+    const setupDropZone = (self: Gtk.Widget) => {
+        // Setup as drop target
+        self.drag_dest_set(
+            Gtk.DestDefaults.ALL,
+            [targetEntry],
+            Gdk.DragAction.MOVE,
+        );
+
+        self.connect("drag-drop", () => {
+            if (draggedWindowId !== null) {
+                // Create new workspace by moving window to next available ID
+                // Niri will automatically create the workspace if it doesn't exist
+                exec(
+                    `niri msg action move-window-to-workspace --window-id ${draggedWindowId} ${props.nextWorkspaceId}`,
+                );
+                return true;
+            }
+            return false;
+        });
+
+        // Visual feedback on drag over
+        self.connect("drag-motion", () => {
+            if (draggedWindowId !== null) {
+                self.get_style_context().add_class("drop-zone");
+            }
+            return true;
+        });
+
+        self.connect("drag-leave", () => {
+            self.get_style_context().remove_class("drop-zone");
+        });
+    };
+
+    return (
+        <box
+            className="empty-workspace-drop-zone"
+            spacing={10}
+            setup={setupDropZone}
+        >
+            <label className="txt-ws">+</label>
+        </box>
+    );
+};
+
 const MonitorWorkspaces = (props: any) => {
     let monitorNumber;
     monitorNumber = 1;
 
     const activeWorkspaces = props.workspaces.filter(
-        (ws: any) => ws.windows && ws.windows.length > 0
+        (ws: any) => ws.windows && ws.windows.length > 0,
     );
+
+    // Find the highest workspace ID to create a new one
+    const getNextWorkspaceId = () => {
+        const allWorkspaceIds = props.workspaces.map(
+            (ws: any) => ws.workspace_id,
+        );
+        if (allWorkspaceIds.length === 0) return 1;
+        return Math.max(...allWorkspaceIds) + 1;
+    };
+
+    const nextWorkspaceId = getNextWorkspaceId();
 
     return (
         <box
@@ -346,6 +411,17 @@ const MonitorWorkspaces = (props: any) => {
                     windows={ws.windows}
                 />
             ))}
+            {/* Empty drop zone to create new workspace - only show when dragging */}
+            <revealer
+                transitionType={Gtk.RevealerTransitionType.SLIDE_LEFT}
+                transitionDuration={200}
+                revealChild={bind(isDragging)}
+            >
+                <EmptyWorkspaceDropZone
+                    monitorName={props.name}
+                    nextWorkspaceId={nextWorkspaceId}
+                />
+            </revealer>
         </box>
     );
 };
@@ -353,7 +429,7 @@ const MonitorWorkspaces = (props: any) => {
 export default () => {
     const workspaceData = Variable(getWorkspaceData).poll(
         200,
-        getWorkspaceData
+        getWorkspaceData,
     );
 
     const cleanup = () => {
@@ -362,8 +438,60 @@ export default () => {
         cachedMonitors = null;
     };
 
+    const setupMainDropZone = (self: Gtk.Widget) => {
+        // Setup as drop target for empty space in main container
+        self.drag_dest_set(
+            Gtk.DestDefaults.ALL,
+            [targetEntry],
+            Gdk.DragAction.MOVE,
+        );
+
+        self.connect(
+            "drag-drop",
+            (context: Gdk.DragContext, x: number, y: number) => {
+                if (draggedWindowId !== null) {
+                    // Get workspace data to find next workspace ID
+                    const ws = workspaceData.get();
+                    if (Array.isArray(ws) && ws.length > 0) {
+                        // Find the monitor that contains the drop (use first monitor for now)
+                        const monitor = ws[0];
+                        const allWorkspaceIds = monitor.workspaces.map(
+                            (ws: any) => ws.workspace_id,
+                        );
+                        const nextWorkspaceId =
+                            allWorkspaceIds.length === 0
+                                ? 1
+                                : Math.max(...allWorkspaceIds) + 1;
+
+                        // Create new workspace by moving window
+                        exec(
+                            `niri msg action move-window-to-workspace --window-id ${draggedWindowId} ${nextWorkspaceId}`,
+                        );
+                        return true;
+                    }
+                }
+                return false;
+            },
+        );
+
+        self.connect("drag-motion", () => {
+            if (draggedWindowId !== null) {
+                self.get_style_context().add_class("drop-zone");
+            }
+            return true;
+        });
+
+        self.connect("drag-leave", () => {
+            self.get_style_context().remove_class("drop-zone");
+        });
+    };
+
     return (
-        <box className={"Workspaces"} onDestroy={cleanup}>
+        <box
+            className={"Workspaces"}
+            onDestroy={cleanup}
+            setup={setupMainDropZone}
+        >
             {bind(workspaceData).as((ws: any) => {
                 if (!Array.isArray(ws)) {
                     return <label label="Loading workspaces..." />;

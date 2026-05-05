@@ -3,7 +3,7 @@ import { Gtk } from "astal/gtk3";
 import Network from "gi://AstalNetwork";
 import Bluetooth from "gi://AstalBluetooth";
 import Notifd from "gi://AstalNotifd";
-import { getIPAddress, IPAddress } from "./Content";
+import { getIPAddress, IPAddress } from "./Content/Wifi";
 
 const WifiButtonToggle = () => {
     const network = Network.get_default();
@@ -117,7 +117,7 @@ const DarkModeButtonToggle = () => {
             cursor={"hand1"}
             onDestroy={() => darkMode.drop()}
         >
-            <icon icon="weather-clear-night-symbolic" />
+            <icon icon="dark-mode-symbolic" />
         </button>
     );
 };

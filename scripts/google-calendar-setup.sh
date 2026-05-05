@@ -6,7 +6,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GLOBAL_TS="$SCRIPT_DIR/../Global.ts"
-TOKEN_FILE="$HOME/.config/ags/google-calendar-token.json"
+TOKEN_FILE="$HOME/Dotfiles/ags/google-calendar-token.json"
+MODE="${1:-interactive}"
+AUTH_CODE_INPUT="${2:-}"
 
 echo "=== Google Calendar OAuth Setup ==="
 echo ""
@@ -34,27 +36,39 @@ echo "  Client ID: ${CLIENT_ID:0:20}..."
 echo ""
 
 REDIRECT_URI="urn:ietf:wg:oauth:2.0:oob"
-SCOPE="https://www.googleapis.com/auth/calendar"
+# Calendar + Tasks (Tasks cần bật API trong Google Cloud Console)
+SCOPE="https://www.googleapis.com/auth/calendar%20https://www.googleapis.com/auth/tasks"
 
 AUTH_URL="https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${SCOPE}&access_type=offline&prompt=consent"
 
-echo "Opening browser for authentication..."
-echo ""
+if [[ "$MODE" != "--auth-code" ]]; then
+    echo "Opening browser for authentication..."
+    echo ""
 
-# Try to open browser
-if command -v xdg-open &>/dev/null; then
-    xdg-open "$AUTH_URL" 2>/dev/null &
-elif command -v open &>/dev/null; then
-    open "$AUTH_URL" 2>/dev/null &
-else
-    echo "Could not open browser automatically."
-    echo "Visit this URL manually:"
-    echo ""
-    echo "$AUTH_URL"
-    echo ""
+    # Try to open browser
+    if command -v xdg-open &>/dev/null; then
+        xdg-open "$AUTH_URL" 2>/dev/null &
+    elif command -v open &>/dev/null; then
+        open "$AUTH_URL" 2>/dev/null &
+    else
+        echo "Could not open browser automatically."
+        echo "Visit this URL manually:"
+        echo ""
+        echo "$AUTH_URL"
+        echo ""
+    fi
 fi
 
-read -rp "Enter the authorization code: " AUTH_CODE
+if [[ "$MODE" == "--open-only" ]]; then
+    echo "Opened authentication URL. Paste code in UI and press Done."
+    exit 0
+fi
+
+if [[ "$MODE" == "--auth-code" ]]; then
+    AUTH_CODE="$AUTH_CODE_INPUT"
+else
+    read -rp "Enter the authorization code: " AUTH_CODE
+fi
 
 if [[ -z "$AUTH_CODE" ]]; then
     echo "Error: Authorization code is required!"

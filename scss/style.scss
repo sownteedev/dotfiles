@@ -14,21 +14,21 @@ tooltip {
 
 menu {
     background-color: $bg1;
-    border-radius: to-rem(16px);
-    padding: to-rem(8px);
-    box-shadow: 0 to-rem(10px) to-rem(30px) gtkalpha(#000, 0.5),
-        0 to-rem(4px) to-rem(10px) gtkalpha(#000, 0.3);
-    border: 1px solid gtkalpha($fg, 0.06);
+    border-radius: to-rem(18px);
+    padding: to-rem(6px);
+    box-shadow: 0 to-rem(10px) to-rem(30px) gtkalpha(#000, 0.55),
+        0 to-rem(4px) to-rem(10px) gtkalpha(#000, 0.35);
+    border: 1px solid gtkalpha($fg, 0.08);
 
     menuitem {
-        background-color: $bg2;
-        margin: to-rem(7px);
-        padding: to-rem(15px) to-rem(10px);
-        border-radius: to-rem(10px);
-        transition: all 200ms ease;
+        background-color: transparent;
+        margin: to-rem(4px) to-rem(6px);
+        padding: to-rem(12px) to-rem(14px);
+        border-radius: to-rem(12px);
+        transition: background-color 260ms cubic-bezier(0.4, 0, 0.2, 1);
 
         &:hover {
-            background-color: gtkalpha($blue, 0.2);
+            background-color: gtkalpha($fg, 0.12);
         }
 
         label {
@@ -39,14 +39,14 @@ menu {
         }
 
         &:hover label {
-            color: $blue;
+            color: $fg;
         }
     }
 
     separator {
-        background-color: gtkalpha($fg, 0.1);
+        background-color: gtkalpha($fg, 0.12);
         min-height: 1px;
-        margin: to-rem(8px) to-rem(10px);
+        margin: to-rem(8px) to-rem(12px);
     }
 }
 

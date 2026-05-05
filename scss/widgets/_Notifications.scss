@@ -36,9 +36,8 @@ window.NotificationPopups {
 
     .image {
         margin-right: to-rem(20px);
-        border-radius: to-rem(15px);
-        min-width: to-rem(80px);
-        min-height: to-rem(80px);
+        min-width: to-rem(55px);
+        min-height: to-rem(55px);
         background-size: cover;
         background-position: center;
     }
@@ -49,24 +48,26 @@ window.NotificationPopups {
         border-radius: 50%;
 
         icon {
-            font-size: to-rem(40px);
+            font-size: to-rem(30px);
         }
     }
 
     .notification-summary {
         font-size: to-rem(18px);
         font-weight: 600;
-        margin-bottom: to-rem(20px);
+        margin-bottom: to-rem(10px);
     }
 
     .notification-body {
         font-size: to-rem(16px);
+        color: gtkalpha($fg, 0.7);
         font-weight: 500;
     }
 
     .notification-time {
         font-size: to-rem(15px);
         color: gtkalpha($fg, 0.8);
+        font-weight: 400;
         margin-left: to-rem(20px);
     }
 

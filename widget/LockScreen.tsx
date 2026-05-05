@@ -1,17 +1,12 @@
 import { App, Astal, Gdk, Gtk } from "astal/gtk3";
 import { bind, Variable, exec, GLib } from "astal";
 import Auth from "gi://AstalAuth";
-import Global from "../Global";
-import { isImage } from "../utils/file";
 
 const passwordVar = Variable("");
 const authenticating = Variable(false);
 const errorMessage = Variable("");
-const lockScreenWall = Variable(Global.LockScreenWall);
-const css =
-    lockScreenWall.get() !== "" && isImage(lockScreenWall.get())
-        ? `background-image: url('${lockScreenWall.get()}'); background-size: cover;`
-        : "";
+const hasPasswordError = Variable(false);
+const css = `background-image: url("/tmp/backdrop-lock.png"); background-size: cover;`;
 
 function hide() {
     App.get_window("lock-screen")!.hide();
@@ -52,6 +47,7 @@ const MediaPlayer = () => {};
 export const LockScreen = () => {
     let pam: any = null;
     let timeoutId: number | null = null;
+    let passwordEntry: Gtk.Entry | null = null;
 
     const resetState = () => {
         authenticating.set(false);
@@ -67,6 +63,7 @@ export const LockScreen = () => {
 
         authenticating.set(true);
         errorMessage.set("");
+        hasPasswordError.set(false);
 
         if (timeoutId) {
             GLib.source_remove(timeoutId);
@@ -95,18 +92,31 @@ export const LockScreen = () => {
                         resetState();
                     } catch (error) {
                         errorMessage.set("Wrong password. Please try again.");
-                        resetState();
+                        hasPasswordError.set(true);
+                        authenticating.set(false);
+                        // Keep password and focus cursor on entry
+                        if (passwordEntry) {
+                            passwordEntry.grab_focus();
+                        }
                     }
                 }
             );
 
             if (!success) {
                 errorMessage.set("Failed to start authentication");
-                resetState();
+                hasPasswordError.set(true);
+                authenticating.set(false);
+                if (passwordEntry) {
+                    passwordEntry.grab_focus();
+                }
             }
         } catch (error) {
             errorMessage.set("Authentication error occurred");
-            resetState();
+            hasPasswordError.set(true);
+            authenticating.set(false);
+            if (passwordEntry) {
+                passwordEntry.grab_focus();
+            }
         }
     };
 
@@ -119,7 +129,7 @@ export const LockScreen = () => {
         passwordVar.drop();
         authenticating.drop();
         errorMessage.drop();
-        lockScreenWall.drop();
+        hasPasswordError.drop();
     };
 
     return (
@@ -151,7 +161,13 @@ export const LockScreen = () => {
                 </box>
                 <box halign={Gtk.Align.CENTER}>{/* <MediaPlayer /> */}</box>
                 <box halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER}>
-                    <box className="password-entry-box">
+                    <box
+                        className={bind(hasPasswordError).as((error) =>
+                            error
+                                ? "password-entry-box error"
+                                : "password-entry-box"
+                        )}
+                    >
                         <entry
                             className={"password-entry"}
                             visibility={false}
@@ -159,8 +175,14 @@ export const LockScreen = () => {
                             xalign={0.5}
                             placeholderText="Enter your password"
                             sensitive={bind(authenticating).as((auth) => !auth)}
+                            setup={(self: Gtk.Entry) => {
+                                passwordEntry = self;
+                            }}
                             onChanged={(self: Gtk.Entry) => {
                                 passwordVar.set(self.text);
+                                if (hasPasswordError.get()) {
+                                    hasPasswordError.set(false);
+                                }
                                 if (self.text.length > 0) {
                                     self.get_style_context()?.add_class(
                                         "has-text"

@@ -8,15 +8,14 @@ window.power-menu {
 
 .power-popup {
     background-color: $bg;
-    border-radius: to-rem(15px);
+    border-radius: to-rem(60px);
     padding: to-rem(20px);
-    border: to-rem(1px) solid gtkalpha($bg3, 0.8);
+    border: to-rem(1px) solid gtkalpha($bg2, 0.8);
     box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
 
     button.power-button {
         padding: to-rem(15px);
-        margin: to-rem(5px) 0;
-        border-radius: to-rem(10px);
+        border-radius: to-rem(40px);
         background-color: $bg;
         transition: all 200ms ease;
         border: 1px solid $bg1;
@@ -28,14 +27,14 @@ window.power-menu {
 
         &:hover {
             background-color: $bg2;
-            border: 1px solid $bg2;
+            border: 1px solid $bg3;
             box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
         }
 
         &:focus {
-            background-color: $bg1;
+            background-color: $bg2;
             outline: none;
-            border: 1px solid $bg2;
+            border: 1px solid $bg3;
             box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
         }
     }

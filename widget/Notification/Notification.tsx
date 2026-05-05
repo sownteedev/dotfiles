@@ -92,7 +92,7 @@ export default function Notification(props: Props) {
                         className="default-icon-notification"
                         valign={Gtk.Align.START}
                     >
-                        <icon icon="default-notification-symbolic" />
+                        <icon icon="default-notification" />
                     </button>
                 )}
                 <box vertical>
@@ -142,19 +142,21 @@ export default function Notification(props: Props) {
                             </box>
                             {n.get_actions().length > 0 && (
                                 <box spacing={15}>
-                                    {n.get_actions().map(({ label, id }) => (
-                                        <button
-                                            cursor={"hand1"}
-                                            hexpand
-                                            onClicked={() => n.invoke(id)}
-                                        >
-                                            <label
-                                                label={label}
-                                                halign={CENTER}
+                                    {n
+                                        .get_actions()
+                                        .map(({ label, id }: any) => (
+                                            <button
+                                                cursor={"hand1"}
                                                 hexpand
-                                            />
-                                        </button>
-                                    ))}
+                                                onClicked={() => n.invoke(id)}
+                                            >
+                                                <label
+                                                    label={label}
+                                                    halign={CENTER}
+                                                    hexpand
+                                                />
+                                            </button>
+                                        ))}
                                 </box>
                             )}
                         </box>

@@ -1,59 +1,60 @@
 window.OSDWindow {
     background: transparent;
 
-    > box {
-        margin: to-rem(20px);
+    > revealer {
+        margin: to-rem(40px);
+
+        > box {
+            margin: to-rem(40px);
+        }
     }
 }
 
 .OSD {
     background-color: gtkalpha($bg, 0.95);
-    border-radius: to-rem(15px);
-    border: to-rem(1px) solid gtkalpha($bg3, 0.8);
-    margin: to-rem(32px) 0;
     box-shadow: 0 0 5px 5px gtkalpha(#000, 0.5);
+    border-radius: to-rem(40px);
+
     @mixin slider-styles($color) {
-        padding: to-rem(25px);
+        padding: to-rem(15px) to-rem(25px);
 
-        .indicator {
-            label {
-                color: $fg;
-                font-weight: 600;
-                font-size: to-rem(18px);
-            }
-
-            icon {
-                color: $color;
-                margin-right: to-rem(15px);
-                font-size: to-rem(30px);
-            }
+        icon {
+            color: $fg;
+            font-size: to-rem(33px);
         }
 
-        .slider-container {
-            min-width: to-rem(280px);
+        .indicator {
+            margin: 0 0 0 to-rem(20px);
 
-            .volume-slider,
-            .brightness-slider {
-                margin-left: to-rem(15px);
-                transition: all ease-in-out 500ms;
-
-                trough {
-                    background-color: gtkalpha($color, 0.2);
-                    border-radius: to-rem(15px);
+            .indicator-text {
+                label {
+                    color: $fg;
+                    font-weight: 600;
+                    font-size: to-rem(18px);
                 }
+            }
 
-                highlight {
-                    background-color: $color;
-                    border-radius: to-rem(15px);
-                }
+            .slider-container {
+                min-width: to-rem(200px);
 
-                slider {
-                    background-color: $color;
-                    border-radius: to-rem(100px);
-                    min-height: to-rem(20px);
-                    min-width: to-rem(20px);
-                    margin: to-rem(-3px);
-                    box-shadow: 0 0 to-rem(5px) to-rem(3px) gtkalpha(#000, 0.3);
+                .volume-slider,
+                .brightness-slider,
+                .mic-slider {
+                    trough {
+                        background-color: gtkalpha($color, 0.2);
+                        border-radius: to-rem(30px);
+                    }
+
+                    highlight {
+                        background-color: $color;
+                        border-radius: to-rem(30px);
+                    }
+
+                    slider {
+                        background-color: transparent;
+                        border-radius: 50%;
+                        margin: to-rem(-7px);
+                    }
                 }
             }
         }

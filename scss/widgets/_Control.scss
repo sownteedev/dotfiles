@@ -1,8 +1,10 @@
 window.control-menu {
     background-color: transparent;
 
-    > box {
-        margin: to-rem(20px);
+    > revealer {
+        > box {
+            margin: to-rem(20px);
+        }
     }
 }
 
@@ -90,16 +92,11 @@ window.control-menu {
         background-color: transparent;
         border-radius: 30px;
         padding: to-rem(8px) to-rem(20px);
-        transition: background-color 0.2s;
     }
 
     .active {
-        background-color: gtkalpha($blue, 0.8);
+        background-color: $blue;
         box-shadow: 0 0 5px 5px gtkalpha($blue, 0.3);
-
-        &:hover {
-            background-color: $blue;
-        }
 
         icon {
             color: $bg;
@@ -346,29 +343,132 @@ window.control-menu {
             font-size: to-rem(18px);
             font-weight: 500;
         }
+
+        .devices-section {
+            margin-bottom: to-rem(15px);
+
+            &:first-child {
+                margin-top: to-rem(10px);
+            }
+        }
+
+        .devices-section-title {
+            color: $fg;
+            font-size: to-rem(18px);
+            font-weight: 600;
+            margin-bottom: to-rem(12px);
+            opacity: 0.8;
+        }
     }
 
     .bluetooth-device {
         background-color: transparent;
+        padding: to-rem(10px);
+        border-radius: to-rem(14px);
+        transition: background-color 200ms ease;
+
+        &:hover {
+            background-color: gtkalpha($fg, 0.05);
+        }
 
         .bluetooth-device-name {
             color: $fg;
-            font-size: to-rem(18px);
+            font-size: to-rem(19px);
+            font-weight: 600;
+            margin-bottom: to-rem(6px);
+        }
+
+        .bluetooth-device-mac {
+            color: $fg1;
+            font-size: to-rem(15px);
             font-weight: 500;
+            opacity: 0.7;
+        }
+
+        .bluetooth-device-details {
+            color: $fg1;
+            font-size: to-rem(13px);
+            font-weight: 400;
+            opacity: 0.65;
+            margin-top: to-rem(4px);
+        }
+
+        .bluetooth-device-battery {
+            color: $fg1;
+            font-size: to-rem(14px);
+            font-weight: 500;
+            opacity: 0.85;
+            margin-top: to-rem(4px);
         }
 
         .bluetooth-device-icon {
-            font-size: to-rem(25px);
-            margin-bottom: to-rem(15px);
+            font-size: to-rem(32px);
+            margin-right: to-rem(12px);
+            color: $fg;
         }
 
         button {
             background-color: $bg2;
-            padding: to-rem(10px);
+            min-width: to-rem(30px);
+            min-height: to-rem(30px);
             border-radius: 50%;
+            transition: all 200ms ease;
+            border: 1px solid transparent;
+
+            &:hover {
+                background-color: $bg3;
+                border-color: gtkalpha($blue, 0.3);
+                box-shadow: 0 to-rem(2px) to-rem(8px) gtkalpha($blue, 0.2);
+
+                icon {
+                    color: $blue;
+                }
+            }
+
+            &:active {
+                background-color: $bg2;
+                box-shadow: inset 0 to-rem(2px) to-rem(4px) gtkalpha(#000, 0.3);
+            }
 
             icon {
                 font-size: to-rem(20px);
+                transition: color 200ms ease;
+            }
+
+            &.pair.active {
+                background-color: gtkalpha($green, 0.2);
+                border-color: gtkalpha($green, 0.4);
+
+                icon {
+                    color: $green;
+                }
+            }
+
+            &.connect.active {
+                background-color: gtkalpha($blue, 0.2);
+                border-color: gtkalpha($blue, 0.4);
+
+                icon {
+                    color: $blue;
+                }
+            }
+
+            &.trust.active {
+                background-color: gtkalpha($yellow, 0.2);
+                border-color: gtkalpha($yellow, 0.4);
+
+                icon {
+                    color: $yellow;
+                }
+            }
+
+            &.remove:hover {
+                background-color: gtkalpha($red, 0.2);
+                border-color: gtkalpha($red, 0.3);
+
+                icon {
+                    color: $red;
+                }
             }
         }
     }
@@ -459,7 +559,7 @@ window.control-menu {
         background-color: $blue;
         min-height: to-rem(3px);
         min-width: to-rem(3px);
-        border-radius: to-rem(100px);
+        border-radius: 50%;
         box-shadow: 0 0 to-rem(5px) to-rem(3px) gtkalpha(#000, 0.3);
     }
 }
@@ -508,7 +608,7 @@ window.control-menu {
             background-color: $blue;
             min-height: to-rem(3px);
             min-width: to-rem(3px);
-            border-radius: to-rem(100px);
+            border-radius: 50%;
             box-shadow: 0 0 to-rem(5px) to-rem(3px) gtkalpha(#000, 0.3);
         }
     }
@@ -526,8 +626,9 @@ window.control-menu {
 }
 
 .no-notifications {
-    font-size: to-rem(400px);
-    margin-top: to-rem(100px);
+    font-size: to-rem(200px);
+    margin-top: to-rem(200px);
+    color: $red;
 }
 
 .notification-list {
@@ -553,7 +654,7 @@ window.control-menu {
         border-radius: 50%;
 
         icon {
-            font-size: to-rem(40px);
+            font-size: to-rem(30px);
         }
     }
 
@@ -565,9 +666,8 @@ window.control-menu {
 
     .image-list {
         margin-right: to-rem(20px);
-        border-radius: to-rem(15px);
-        min-width: to-rem(70px);
-        min-height: to-rem(70px);
+        min-width: to-rem(55px);
+        min-height: to-rem(55px);
         background-size: cover;
         background-position: center;
     }
@@ -575,18 +675,19 @@ window.control-menu {
     .notification-summary-list {
         font-size: to-rem(18px);
         font-weight: 600;
-        margin-bottom: to-rem(20px);
+        margin-bottom: to-rem(10px);
     }
 
     .notification-body-list {
         font-size: to-rem(16px);
+        color: gtkalpha($fg, 0.7);
         font-weight: 500;
     }
 
     .notification-time-list {
         margin: 0 to-rem(-5px) 0 to-rem(10px);
-        font-size: to-rem(16px);
-        font-weight: 600;
+        font-size: to-rem(15px);
+        font-weight: 400;
         color: gtkalpha($fg, 0.8);
     }
 
@@ -784,6 +885,215 @@ window.control-menu {
     min-height: 500px;
 }
 
+// Event Form - top-level so styles apply when form is shown from Calendar (any parent)
+.event-form {
+    background: $bg2;
+    border-radius: to-rem(16px);
+    padding: to-rem(20px);
+
+    .event-form-header {
+        margin-bottom: to-rem(5px);
+        padding-bottom: to-rem(10px);
+        border-bottom: 1px solid $bg3;
+
+        .event-form-title-label {
+            font-size: to-rem(20px);
+            font-weight: 700;
+            color: $fg;
+        }
+
+        button {
+            background: $bg3;
+            border-radius: 50%;
+            padding: to-rem(5px);
+            min-width: to-rem(30px);
+            min-height: to-rem(30px);
+            transition: all 150ms ease;
+
+            &:hover {
+                background: gtkalpha($red, 0.2);
+
+                icon {
+                    color: $red;
+                }
+            }
+
+            icon {
+                color: $fg1;
+                font-size: to-rem(16px);
+            }
+        }
+    }
+
+    .event-form-scroll {
+        min-height: to-rem(300px);
+
+        viewport {
+            border: none;
+            outline: none;
+        }
+
+        scrollbar {
+            &.vertical {
+                min-width: to-rem(8px);
+            }
+        }
+    }
+
+    .event-form-body {
+        padding: to-rem(5px);
+
+        > box {
+            > label {
+                font-size: to-rem(18px);
+                font-weight: 600;
+                color: $fg;
+                margin-bottom: to-rem(5px);
+            }
+
+            .event-form-entry {
+                background: $bg3;
+                border-radius: to-rem(12px);
+                padding: to-rem(14px) to-rem(18px);
+                font-size: to-rem(17px);
+                color: $fg;
+                transition: all 150ms ease;
+            }
+        }
+
+        .event-form-time-inputs {
+            > box {
+                > label {
+                    font-size: to-rem(18px);
+                    font-weight: 600;
+                    color: $fg;
+                }
+            }
+
+            .event-form-entry {
+                background: $bg3;
+                border-radius: to-rem(12px);
+                padding: to-rem(14px) to-rem(18px);
+                font-size: to-rem(17px);
+                color: $fg;
+                transition: all 150ms ease;
+            }
+        }
+
+        .calendar-select-button {
+            background: $bg3;
+            border-radius: to-rem(12px);
+            padding: to-rem(12px) to-rem(18px);
+            border: 2px solid transparent;
+            transition: all 150ms ease;
+
+            .calendar-select-label {
+                font-size: to-rem(17px);
+                color: $fg;
+                font-weight: 500;
+            }
+
+            &:hover {
+                background: $bg2;
+                border-color: gtkalpha($blue, 0.3);
+            }
+
+            &.active {
+                background: gtkalpha($blue, 0.2);
+                border-color: $blue;
+                box-shadow: 0 0 to-rem(8px) gtkalpha($blue, 0.3);
+
+                .calendar-select-label {
+                    color: $blue;
+                    font-weight: 600;
+                }
+            }
+        }
+
+        .event-type-button {
+            background: $bg3;
+            border-radius: to-rem(12px);
+            padding: to-rem(12px);
+            transition: all 150ms ease;
+
+            label {
+                font-size: to-rem(16px);
+                font-weight: 500;
+                color: $fg1;
+            }
+
+            &:hover {
+                background: gtkalpha($bg4, 0.5);
+            }
+        }
+
+        .event-type-active {
+            background: gtkalpha($blue, 0.2);
+            border-radius: to-rem(12px);
+            padding: to-rem(12px);
+            transition: all 150ms ease;
+
+            label {
+                font-size: to-rem(16px);
+                font-weight: 600;
+                color: $blue;
+            }
+
+            &:hover {
+                background: gtkalpha($blue, 0.3);
+            }
+        }
+    }
+
+    .event-form-submit {
+        background: $blue;
+        border-radius: to-rem(12px);
+        padding: to-rem(12px) to-rem(28px);
+        margin-top: to-rem(10px);
+        transition: all 150ms ease;
+
+        label {
+            font-size: to-rem(16px);
+            font-weight: 600;
+            color: $bg;
+        }
+
+        &:hover {
+            background: gtkalpha($blue, 0.85);
+        }
+    }
+}
+
+// Form thêm task (Google Tasks) — dùng chung .event-form
+.event-form.todo-task-form {
+    .event-form-header .event-form-title-label {
+        font-size: to-rem(18px);
+    }
+
+    label.todo-form-field-label {
+        font-size: to-rem(17px);
+        font-weight: 600;
+        color: $fg;
+    }
+
+    .event-form-body entry {
+        font-size: to-rem(16px);
+    }
+
+    .todo-note-box--form {
+        border-radius: to-rem(12px);
+        background: $bg3;
+        min-height: to-rem(100px);
+        border: 1px solid gtkalpha($fg, 0.12);
+
+        textview {
+            background: transparent;
+            color: $fg;
+            font-size: to-rem(16px);
+        }
+    }
+}
+
 // Calendar Todo Weather
 .calendar-container {
     background: $bg1;
@@ -952,12 +1262,6 @@ window.control-menu {
                 background: $bg2;
                 border-radius: to-rem(12px);
                 padding: to-rem(10px) to-rem(20px);
-                border-left: 3px solid $blue;
-                transition: all 150ms ease;
-
-                &:hover {
-                    background: $bg3;
-                }
 
                 .day-event-title {
                     font-size: to-rem(18px);
@@ -966,6 +1270,30 @@ window.control-menu {
                 }
 
                 .day-event-time {
+                    font-size: to-rem(14px);
+                    color: $fg1;
+                    font-weight: 500;
+                }
+
+                .day-event-calendar-name {
+                    font-size: to-rem(14px);
+                    color: $fg1;
+                    font-weight: 500;
+                }
+
+                .day-event-location-icon,
+                .day-event-description-icon {
+                    font-size: to-rem(14px);
+                    color: $fg1;
+                }
+
+                .day-event-location {
+                    font-size: to-rem(14px);
+                    color: $fg1;
+                    font-weight: 500;
+                }
+
+                .day-event-description {
                     font-size: to-rem(14px);
                     color: $fg1;
                     font-weight: 500;
@@ -994,65 +1322,25 @@ window.control-menu {
                 }
             }
 
-            .empty-text {
-                font-size: to-rem(16px);
-                color: $fg1;
-            }
-        }
-    }
-}
+            .day-events-empty {
+                padding: to-rem(60px) to-rem(20px);
 
-// Todo Component - Google Calendar Integration
-.todo-container {
-    background: transparent;
+                .day-events-empty-icon {
+                    font-size: to-rem(60px);
+                    color: $fg2;
+                    opacity: 0.5;
+                }
 
-    .todo-header {
-        margin-bottom: to-rem(8px);
-
-        .todo-title {
-            font-size: to-rem(20px);
-            font-weight: 600;
-            color: $fg;
-        }
-
-        .todo-reload-button {
-            background: $bg2;
-            border-radius: 50%;
-            padding: to-rem(6px);
-            min-width: to-rem(32px);
-            min-height: to-rem(32px);
-            transition: all 200ms ease;
-
-            &:hover {
-                background: $bg3;
-            }
-
-            icon {
-                color: $fg;
-                font-size: to-rem(16px);
-            }
-        }
-
-        .todo-add-button {
-            background: $green;
-            border-radius: 50%;
-            padding: to-rem(6px);
-            min-width: to-rem(32px);
-            min-height: to-rem(32px);
-            transition: all 200ms ease;
-
-            &:hover {
-                background: gtkalpha($green, 0.85);
-            }
-
-            icon {
-                color: $bg;
-                font-size: to-rem(16px);
+                .day-events-empty-text {
+                    font-size: to-rem(18px);
+                    font-weight: 600;
+                    color: $fg1;
+                }
             }
         }
     }
 
-    // Event Form
+    // Event Form (shown from Calendar day view)
     .event-form {
         background: $bg2;
         border-radius: to-rem(16px);
@@ -1092,7 +1380,24 @@ window.control-menu {
             }
         }
 
+        .event-form-scroll {
+            min-height: to-rem(300px);
+
+            viewport {
+                border: none;
+                outline: none;
+            }
+
+            scrollbar {
+                &.vertical {
+                    min-width: to-rem(8px);
+                }
+            }
+        }
+
         .event-form-body {
+            padding: to-rem(5px);
+
             > box {
                 > label {
                     font-size: to-rem(18px);
@@ -1129,6 +1434,70 @@ window.control-menu {
                     transition: all 150ms ease;
                 }
             }
+
+            .calendar-select-button {
+                background: $bg3;
+                border-radius: to-rem(12px);
+                padding: to-rem(12px) to-rem(18px);
+                border: 2px solid transparent;
+                transition: all 150ms ease;
+
+                .calendar-select-label {
+                    font-size: to-rem(17px);
+                    color: $fg;
+                    font-weight: 500;
+                }
+
+                &:hover {
+                    background: $bg2;
+                    border-color: gtkalpha($blue, 0.3);
+                }
+
+                &.active {
+                    background: gtkalpha($blue, 0.2);
+                    border-color: $blue;
+                    box-shadow: 0 0 to-rem(8px) gtkalpha($blue, 0.3);
+
+                    .calendar-select-label {
+                        color: $blue;
+                        font-weight: 600;
+                    }
+                }
+            }
+
+            .event-type-button {
+                background: $bg3;
+                border-radius: to-rem(12px);
+                padding: to-rem(12px);
+                transition: all 150ms ease;
+
+                label {
+                    font-size: to-rem(16px);
+                    font-weight: 500;
+                    color: $fg1;
+                }
+
+                &:hover {
+                    background: gtkalpha($bg4, 0.5);
+                }
+            }
+
+            .event-type-active {
+                background: gtkalpha($blue, 0.2);
+                border-radius: to-rem(12px);
+                padding: to-rem(12px);
+                transition: all 150ms ease;
+
+                label {
+                    font-size: to-rem(16px);
+                    font-weight: 600;
+                    color: $blue;
+                }
+
+                &:hover {
+                    background: gtkalpha($blue, 0.3);
+                }
+            }
         }
 
         .event-form-submit {
@@ -1149,6 +1518,156 @@ window.control-menu {
             }
         }
     }
+}
+
+// Todo Component - Task list (GTK CSS: prefer label./entry./button. + image/icon children)
+.todo-container {
+    background: transparent;
+
+    .todo-header-bar {
+        margin-bottom: to-rem(8px);
+        min-height: to-rem(40px);
+
+        // Match Calendar day-events-header: circular icon buttons
+        button.todo-add-button {
+            background: $bg2;
+            border-radius: 50%;
+            padding: to-rem(6px);
+            min-width: to-rem(32px);
+            min-height: to-rem(32px);
+            transition: background-color 200ms ease;
+
+            &:hover {
+                background: $bg3;
+            }
+
+            icon,
+            image {
+                color: $fg;
+                font-size: to-rem(16px);
+            }
+        }
+    }
+
+    label.todo-title {
+        font-size: to-rem(22px);
+        font-weight: 600;
+        color: $fg;
+    }
+
+    button.todo-reload-button {
+        background: $bg2;
+        border-radius: 50%;
+        padding: to-rem(6px);
+        min-width: to-rem(32px);
+        min-height: to-rem(32px);
+        transition: background-color 200ms ease;
+
+        &:hover {
+            background: $bg3;
+        }
+
+        icon,
+        image {
+            color: $fg;
+            font-size: to-rem(16px);
+        }
+    }
+
+    .todo-setup-wrap {
+        padding-bottom: to-rem(4px);
+    }
+
+    label.todo-setup-label {
+        font-size: to-rem(14px);
+        color: $fg1;
+    }
+
+    entry.todo-setup-entry {
+        background: $bg2;
+        border-radius: to-rem(10px);
+        padding: to-rem(8px) to-rem(12px);
+        font-size: to-rem(15px);
+        color: $fg;
+    }
+
+    button.todo-setup-button {
+        background: $bg2;
+        border-radius: to-rem(10px);
+        padding: to-rem(8px) to-rem(12px);
+        transition: background-color 200ms ease;
+
+        label {
+            font-size: to-rem(14px);
+            color: $fg;
+            font-weight: 600;
+        }
+
+        &:hover {
+            background: $bg3;
+        }
+    }
+
+    .todo-filter-tabs {
+        margin-bottom: to-rem(2px);
+    }
+
+    button.todo-filter-tab {
+        background: $bg2;
+        border-radius: to-rem(10px);
+        padding: to-rem(6px) to-rem(12px);
+        transition: background-color 150ms ease;
+
+        label {
+            font-size: to-rem(14px);
+            color: $fg1;
+            font-weight: 600;
+        }
+
+        &:hover {
+            background: $bg3;
+        }
+    }
+
+    button.todo-filter-tab.active {
+        background: gtkalpha($blue, 0.2);
+
+        label {
+            color: $blue;
+        }
+    }
+
+    label.todo-field-label {
+        font-size: to-rem(15px);
+        font-weight: bold;
+        color: $fg;
+        padding-top: to-rem(4px);
+    }
+
+    label.todo-section-header {
+        font-size: to-rem(16px);
+        font-weight: bold;
+        color: $fg1;
+        padding-top: to-rem(6px);
+    }
+
+    .todo-due-group {
+        margin-bottom: to-rem(4px);
+    }
+
+    label.todo-due-chip {
+        font-size: to-rem(15px);
+        color: $blue;
+        font-weight: bold;
+    }
+
+    entry.todo-edit-due-entry {
+        background: $bg3;
+        border-radius: to-rem(8px);
+        padding: to-rem(8px) to-rem(12px);
+        font-size: to-rem(16px);
+        color: $fg;
+    }
 
     .todo-scroll {
         background-color: transparent;
@@ -1163,55 +1682,177 @@ window.control-menu {
             .todo-item {
                 background: $bg2;
                 border-radius: to-rem(12px);
-                padding: to-rem(20px) to-rem(20px);
-                border-left: 3px solid $blue;
-                transition: all 150ms ease;
-
-                &.completed {
-                    opacity: 0.5;
-                    border-left-color: $green;
-                }
+                padding: to-rem(14px) to-rem(18px);
+                transition: background-color 150ms ease;
 
                 &:hover {
                     background: $bg3;
                 }
 
-                .todo-text {
-                    font-size: to-rem(18px);
-                    font-weight: 600;
-                    color: $fg;
+                .todo-item-actions {
+                    margin: 0;
+                    padding: 0;
+                }
 
-                    &.completed {
+                button.todo-check {
+                    background: transparent;
+                    border-radius: 50%;
+                    padding: to-rem(6px);
+                    min-width: to-rem(34px);
+                    min-height: to-rem(34px);
+                    transition: background-color 150ms ease;
+
+                    icon,
+                    image {
+                        font-size: to-rem(18px);
                         color: $fg1;
+                    }
+
+                    icon.todo-check-done,
+                    image.todo-check-done {
+                        color: $blue;
+                    }
+
+                    &:hover icon,
+                    &:hover image {
+                        color: $fg;
                     }
                 }
 
-                .event-date {
-                    font-size: to-rem(14px);
-                    color: $blue;
-                    font-weight: 600;
-                    background: gtkalpha($blue, 0.15);
-                    padding: to-rem(3px) to-rem(8px);
-                    border-radius: to-rem(5px);
+                label.todo-text {
+                    font-size: to-rem(18px);
+                    font-weight: bold;
+                    color: $fg;
                 }
 
-                .event-time {
-                    font-size: to-rem(14px);
+                label.todo-text.todo-text-done {
                     color: $fg1;
-                    font-weight: 500;
+                    text-decoration: line-through;
                 }
 
-                .todo-delete {
+                button.todo-edit-button {
                     background: transparent;
-                    transition: all 150ms ease;
+                    border-radius: 50%;
+                    padding: to-rem(6px);
+                    min-width: to-rem(34px);
+                    min-height: to-rem(34px);
+                    transition: background-color 150ms ease;
 
-                    icon {
+                    icon,
+                    image {
                         font-size: to-rem(18px);
                         color: $fg1;
                     }
 
                     &:hover {
-                        icon {
+                        background: gtkalpha($blue, 0.2);
+
+                        icon,
+                        image {
+                            color: $blue;
+                        }
+                    }
+                }
+
+                entry.todo-edit-entry {
+                    background: $bg3;
+                    border-radius: to-rem(8px);
+                    padding: to-rem(10px) to-rem(14px);
+                    font-size: to-rem(17px);
+                    color: $fg;
+                }
+
+                .todo-edit-note-box {
+                    border-radius: to-rem(10px);
+                    background: $bg3;
+                    min-height: to-rem(88px);
+                    border: 1px solid gtkalpha($fg, 0.1);
+
+                    textview {
+                        background: transparent;
+                        color: $fg;
+                        font-size: to-rem(17px);
+                    }
+                }
+
+                .todo-notes-row {
+                    margin-top: to-rem(2px);
+
+                    icon.todo-notes-icon,
+                    image.todo-notes-icon {
+                        color: $fg;
+                        font-size: to-rem(16px);
+                        margin-top: to-rem(2px);
+                    }
+
+                    label.todo-notes-text {
+                        font-size: to-rem(15px);
+                        color: $fg;
+                    }
+                }
+
+                button.todo-edit-ok {
+                    background: gtkalpha($green, 0.18);
+                    border-radius: 50%;
+                    padding: to-rem(6px);
+                    min-width: to-rem(34px);
+                    min-height: to-rem(34px);
+                    transition: background-color 150ms ease;
+
+                    icon,
+                    image {
+                        font-size: to-rem(18px);
+                        color: $green;
+                    }
+
+                    &:hover {
+                        background: gtkalpha($green, 0.32);
+                    }
+                }
+
+                button.todo-edit-cancel {
+                    background: gtkalpha($red, 0.18);
+                    border-radius: 50%;
+                    padding: to-rem(6px);
+                    min-width: to-rem(34px);
+                    min-height: to-rem(34px);
+                    transition: background-color 150ms ease;
+
+                    icon,
+                    image {
+                        font-size: to-rem(18px);
+                        color: $red;
+                    }
+
+                    &:hover {
+                        background: gtkalpha($red, 0.32);
+
+                        icon,
+                        image {
+                            color: $red;
+                        }
+                    }
+                }
+
+                button.todo-delete {
+                    background: transparent;
+                    border-radius: 50%;
+                    padding: to-rem(6px);
+                    min-width: to-rem(34px);
+                    min-height: to-rem(34px);
+                    transition: background-color 150ms ease;
+
+                    icon,
+                    image {
+                        font-size: to-rem(18px);
+                        color: $fg1;
+                    }
+
+                    &:hover {
+                        background: gtkalpha($red, 0.2);
+
+                        icon,
+                        image {
                             color: $red;
                         }
                     }
@@ -1221,14 +1862,15 @@ window.control-menu {
             .todo-empty {
                 padding: to-rem(60px) to-rem(20px);
 
-                .todo-empty-icon {
+                icon.todo-empty-icon,
+                image.todo-empty-icon {
                     font-size: to-rem(60px);
                     color: $fg2;
                     opacity: 0.5;
                 }
 
-                .todo-empty-text {
-                    font-size: to-rem(18px);
+                label.todo-empty-text {
+                    font-size: to-rem(20px);
                     font-weight: 600;
                     color: $fg1;
                 }
@@ -1240,11 +1882,10 @@ window.control-menu {
 // Weather Component
 .weather-container {
     background: transparent;
+    padding: 0 to-rem(5px);
 
     // Main weather display row
     .weather-main {
-        padding: to-rem(20px);
-
         // Left side: City, Large Icon, Description
         .weather-left {
             .weather-location-icon {
@@ -1296,11 +1937,68 @@ window.control-menu {
         }
     }
 
+    // Hourly forecast (iPhone style) - Scrollable
+    .weather-hourly-scroll {
+        viewport {
+            border: none;
+            outline: none;
+        }
+
+        scrollbar {
+            &.horizontal {
+                background: transparent;
+                border: none;
+                margin: to-rem(3px) 0;
+
+                slider {
+                    background: gtkalpha($fg1, 0.3);
+                    border-radius: to-rem(10px);
+                    min-height: to-rem(4px);
+
+                    &:hover {
+                        background: gtkalpha($fg1, 0.5);
+                    }
+                }
+
+                trough {
+                    background: transparent;
+                    border: none;
+                }
+            }
+        }
+    }
+
+    .weather-hourly {
+        padding: to-rem(15px) to-rem(5px);
+        background: gtkalpha($bg2, 0.5);
+        border-radius: to-rem(12px);
+
+        .weather-hourly-item {
+            padding: to-rem(5px) to-rem(8px);
+            min-width: to-rem(55px);
+
+            .hourly-time {
+                font-size: to-rem(14px);
+                font-weight: 600;
+                color: $fg1;
+            }
+
+            .hourly-icon {
+                font-size: to-rem(28px);
+                color: $fg;
+                margin: to-rem(5px) 0;
+            }
+
+            .hourly-temp {
+                font-size: to-rem(16px);
+                font-weight: 600;
+                color: $fg;
+            }
+        }
+    }
+
     // 6-day forecast row
     .weather-forecast {
-        padding: to-rem(15px) to-rem(10px);
-        border-radius: to-rem(15px);
-
         .weather-forecast-day {
             padding: to-rem(10px) to-rem(8px);
 

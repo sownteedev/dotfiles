@@ -51,6 +51,7 @@
 
     .ActiveClient {
         margin-left: to-rem(20px);
+
         .app-id {
             font-size: to-rem(17px);
             font-weight: 500;
@@ -104,12 +105,13 @@
     }
 
     label.title {
-        font-size: to-rem(17px);
+        font-size: to-rem(18px);
         font-weight: 600;
     }
 
     label.artist {
         font-size: to-rem(16px);
+        font-weight: 600;
         color: $fg1;
     }
 }
