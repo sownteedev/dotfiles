@@ -4,7 +4,7 @@
 
 pkg_installed() {
 	local PKG=$1
-	if pacman -Qi $PKG &>/dev/null; then
+	if pacman -Qi "$PKG" &>/dev/null; then
 		return 0
 	else
 		return 1
@@ -12,7 +12,7 @@ pkg_installed() {
 }
 
 # Update
-sudo sudo pacman -Syu --noconfirm
+sudo pacman -Syu --noconfirm
 sleep 3 && clear
 
 # Git
@@ -30,7 +30,7 @@ if pkg_installed yay; then
 	echo "[*] Yay already installed, skipping ..."
 else
 	git clone https://aur.archlinux.org/yay.git && cd yay
-	makepkg -si
+	makepkg -si --noconfirm
 	cd .. && rm -rf yay
 	echo "[*] Yay Installed."
 fi
@@ -84,13 +84,13 @@ sleep 3 && clear
 
 # Bluetooth
 echo "[*] Installing bluetooth driver ..."
-sudo pacman -S bluez bluez-utils bluez-libs --noconfirm
+sudo pacman -S bluez bluez-utils bluez-libs bluez-deprecated-tools --noconfirm
 sudo systemctl enable bluetooth.service
 sleep 3 && clear
 
 # File manager
 echo "[*] Installing file manager ..."
-sudo pacman -S nautilus tumbler exa zip gzip tar unzip unrar vlc dconf xdg-user-dirs evince gvfs --noconfirm
+sudo pacman -S nautilus ffmpegthumbnailer tumbler exa zip gzip tar unzip unrar mpv dconf xdg-user-dirs gvfs --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
@@ -102,11 +102,11 @@ sleep 3 && clear
 
 # Other
 echo "[*] Installing other ..."
-sudo pacman -S --noconfirm devtools libgnome-keyring pacman-contrib github-cli wget zsh && yay -S --noconfirm inotify-tools mission-center
+sudo pacman -S --noconfirm devtools libgnome-keyring polkit-gnome pacman-contrib github-cli wget zsh && yay -S --noconfirm inotify-tools mission-center
 echo "[*] Done."
 sleep 3 && clear
 
-# Fix Driver audio (for me)
+# Fix Driver audio (DELL G16 7620)
 echo "[*] Fixing audio driver ..."
 sudo pacman -S rsync --noconfirm && cd ~
 mkdir -p ~/old-sof-backup
@@ -147,7 +147,7 @@ sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
 # Reupdate all
 sudo pacman -Syu --needed --noconfirm
 sudo pacman -S --needed nvidia-open lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime mesa-utils --noconfirm
-yay -S envycontrol awcc-git --noconfirm
+# yay -S envycontrol awcc-git --noconfirm
 
 # Add nvidia_drm.modeset=1 on GRUB
 # sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1 nvidia.NVreg_EnableGpuFirmware=0/' /etc/default/grub

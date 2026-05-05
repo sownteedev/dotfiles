@@ -1,25 +1,27 @@
 #!/usr/bin/env bash
 cd ~
 
+DOTFILES_DIR="$HOME/Dotfiles/dotf"
+
 setup_dotfiles() {
     # Font
     echo "[*] Installing fonts..."
-    sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm && yay -S apple-fonts ttf-rubik ttf-ms-win11-auto ttf-ms-win11-auto-korean ttf-ms-win11-auto-zh_cn --noconfirm
+    sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm && yay -S apple-fonts ttf-rubik-vf ttf-ms-win11-auto ttf-ms-win11-auto-korean ttf-ms-win11-auto-zh_cn --noconfirm
     echo "[*] Copy fonts ..."
-    ln -s ~/Dotfiles/dotf/.fonts ~/.fonts
+    ln -s $DOTFILES_DIR/.fonts ~/.fonts
     fc-cache -fv
     echo "[*] Done."
     sleep 3 && clear
 
     # Icon theme & Cursor theme
     echo "[*] Copy icons ..."
-    ln -s ~/Dotfiles/dotf/.icons ~/.icons
+    ln -s $DOTFILES_DIR/.icons ~/.icons
     echo "[*] Done."
     sleep 3 && clear
 
     # Themes
     echo "[*] Copy themes ..."
-    ln -s ~/Dotfiles/dotf/.themes ~/.themes
+    ln -s $DOTFILES_DIR/.themes ~/.themes
     echo "[*] Done."
     sleep 3 && clear
 
@@ -28,10 +30,10 @@ setup_dotfiles() {
     if ! [ -d $HOME/.config ]; then
         mkdir -p $HOME/.config
     fi
-    ln -s ~/Dotfiles/dotf/.config/zsh ~/.config/zsh
-    ln -s ~/Dotfiles/dotf/.config/fontconfig ~/.config/fontconfig
-    ln -s ~/Dotfiles/dotf/.config/gtk-3.0 ~/.config/gtk-3.0
-    ln -s ~/Dotfiles/dotf/.config/gtk-4.0 ~/.config/gtk-4.0
+    ln -s $DOTFILES_DIR/.config/zsh ~/.config/zsh
+    ln -s $DOTFILES_DIR/.config/fontconfig ~/.config/fontconfig
+    ln -s $DOTFILES_DIR/.config/gtk-3.0 ~/.config/gtk-3.0
+    ln -s $DOTFILES_DIR/.config/gtk-4.0 ~/.config/gtk-4.0
     echo "[*] Done."
     sleep 3 && clear
 
@@ -41,14 +43,8 @@ setup_dotfiles() {
         mkdir -p $HOME/.local
     fi
     mkdir -p ~/.local/share/applications
-    ln -s ~/Dotfiles/dotf/.local/bin ~/.local/bin
-	ln -s ~/Dotfiles/dotf/.local/share/blackbox ~/.local/share
-    echo "[*] Done."
-    sleep 3 && clear
-
-    # .gtkrc-2.0
-    echo "[*] Copy .gtkrc-2.0 ..."
-    rm -f ~/.gtkrc-2.0 && ln -s ~/Dotfiles/dotf/.gtkrc-2.0 ~/.gtkrc-2.0
+    ln -s $DOTFILES_DIR/.local/bin ~/.local/bin
+	ln -s $DOTFILES_DIR/.local/share/blackbox ~/.local/share
     echo "[*] Done."
     sleep 3 && clear
     cd ~
@@ -64,19 +60,19 @@ setup_env() {
         echo "[*] Enable touchpad for laptop and set time to sleep ..."
         yay -S xf86-input-libinput xf86-input-synaptics libinput-gestures xdotool wmctrl --noconfirm
         sudo rm -rf /etc/X11/xorg.conf.d
-        sudo ln -s ~/Dotfiles/dotf/.root/xorg.conf.d /etc/X11/xorg.conf.d
-		ln -s ~/Dotfiles/dotf/.config/libinput-gestures.conf ~/.config/libinput-gestures.conf
+        sudo ln -s $DOTFILES_DIR/.root/xorg.conf.d /etc/X11/xorg.conf.d
+		ln -s $DOTFILES_DIR/.config/libinput-gestures.conf ~/.config/libinput-gestures.conf
         sudo gpasswd -a $USER input
         libinput-gestures-setup stop desktop autostart start
         sleep 3 && clear
 		
 		echo "[*] Copy .Xresources ..."
-		rm -f ~/.Xresources && ln -s ~/Dotfiles/dotf/.Xresources ~/.Xresources
+		rm -f ~/.Xresources && ln -s $DOTFILES_DIR/.Xresources ~/.Xresources
 		echo "[*] Done."
 		sleep 3 && clear
 
         echo "[*] Override .xinitrc ..."
-        rm -f ~/.xinitrc && ln -s ~/Dotfiles/dotf/.xinitrc ~/.xinitrc
+        rm -f ~/.xinitrc && ln -s $DOTFILES_DIR/.xinitrc ~/.xinitrc
         echo "[*] Done"
         sleep 3 && clear
 
@@ -91,13 +87,13 @@ setup_env() {
         read -p "[*] What version AwesomeWM? ( 1 for default / 2 for mAWMcos ): " choice
         if [ "$choice" = "1" ]; then
             echo "[*] Installing Default ..."
-            git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=awesome ~/Dotfiles/awesome
-            ln -s ~/Dotfiles/awesome ~/.config/awesome
+            git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=awesome $DOTFILES_DIR/awesome
+            ln -s $DOTFILES_DIR/awesome ~/.config/awesome
             echo "[*] Done."
         else
             echo "[*] Installing mAWMcos ..."
-            git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=mAWMcos ~/Dotfiles/mAWMcos
-            ln -s ~/Dotfiles/mAWMcos ~/.config/awesome
+            git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=mAWMcos $DOTFILES_DIR/mAWMcos
+            ln -s $DOTFILES_DIR/mAWMcos ~/.config/awesome
             echo "[*] Done."
         fi
     elif [ "$choice" = "2" ]; then
@@ -106,11 +102,12 @@ setup_env() {
 		yay -S slurp gpu-screen-recorder wl-clipboard hyprpicker gammastep swayidle --noconfirm
         yay -S fcitx5 fcitx5-bamboo fcitx5-configtool fcitx5-gtk --noconfirm
         rm -rf ~/.config/niri
-        ln -s ~/Dotfiles/dotf/.config/niri ~/.config/niri
+        ln -s $DOTFILES_DIR/.config/niri ~/.config/niri
 		echo "[*] Installing Ags/Astal ..."
-		yay -S libastal-meta aylurs-gtk-shell-git --noconfirm
-		git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=ags/astal ~/Dotfiles/ags
-		ln -s ~/Dotfiles/ags ~/.config/ags
+		yay -S libastal-meta aylurs-gtk-shell-git libastal-gjs --noconfirm
+		git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=ags/astal $DOTFILES_DIR/ags
+		cp $DOTFILES_DIR/ags/PKGBUILD ~/Downloads/PKGBUILD
+		cd ~/Downloads && makepkg -si --noconfirm
         echo "[*] Done."
     fi
 	sleep 3 && clear
@@ -127,42 +124,71 @@ setup_env() {
     sleep 3 && clear
 }
 
+select_theme_sddm() {
+    THEMES=$(ls "$DOTFILES_DIR/.root/sddm-theme")
+    echo "[*] Themes available:"
+    for theme in ${THEMES}; do
+        echo "  - ${theme}"
+    done
+    while true; do
+        read -p "[*] Type theme you want use: " THEME_NAMES
+        if echo "${THEMES}" | grep -q "${THEME_NAMES}"; then
+            break
+        else
+            echo "[*] Theme not found, please try again."
+        fi
+    done
+    sudo sed -i "s/^Current=.*/Current=${THEME_NAMES}/" /usr/lib/sddm/sddm.conf.d/default.conf
+    sudo systemctl enable sddm
+}
+
+select_theme_grub() {
+    THEMES=$(ls "$DOTFILES_DIR/.root/grub/themes")
+    echo "[*] Themes available:"
+    for theme in ${THEMES}; do
+        echo "  - ${theme}"
+    done
+    while true; do
+        read -p "[*] Type theme you want use: " THEME_NAMES
+        if echo "${THEMES}" | grep -q "${THEME_NAMES}"; then
+            break
+        else
+            echo "[*] Theme not found, please try again."
+        fi
+    done
+    sudo sed -i "s|#GRUB_THEME=.*|GRUB_THEME=/usr/share/grub/themes/${THEME_NAMES}/theme.txt|g" /etc/default/grub
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+}
+
 install_workspace() {
     echo "[*] Installing Grub Theme ..."
-    read -p "[*] Type theme you want use: " THEME_NAME
-    THEME_DIR="/usr/share/grub/themes"
-    sudo ln -s ~/Dotfiles/dotf/.root/grub/themes/${THEME_NAME} ${THEME_DIR}/${THEME_NAME}
-    sudo sed -i "s|#GRUB_THEME=.*|GRUB_THEME=${THEME_DIR}/${THEME_NAME}/theme.txt|g" /etc/default/grub
-    sudo grub-mkconfig -o /boot/grub/grub.cfg
+    sudo mkdir -p /usr/share/grub/themes && sudo cp -a $DOTFILES_DIR/.root/grub/themes/. /usr/share/grub/themes/
+    select_theme_grub
     echo "[*] Grub Theme setup done."
     sleep 3 && clear
 
-    echo "[*] Installing Display Manager (SDDM Custom Stray)"
-    yay -S --noconfirm sddm qt6 qt6-svg qt6-multimedia
-	git clone --depth 1 https://github.com/Bqrry4/sddm-stray.git && cd sddm-stray
-	sudo cp -r theme/ /usr/share/sddm/themes/stray
-	cd .. && rm -rf sddm-stray
-	sudo sed -i 's/^Current=.*/Current=stray/' /usr/lib/sddm/sddm.conf.d/default.conf
-	sudo systemctl enable sddm
-    echo "[*] Done."
+    echo "[*] Installing Display Manager (SDDM)"
+    yay -S --noconfirm sddm qt6 qt6-svg qt6-multimedia qt5-graphicaleffects qt5-multimedia qt5-quickcontrols qt5-quickcontrols2 qt5-svg gst-libav gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-plugins-base
+    sudo mkdir -p /usr/share/sddm/themes && sudo cp -a $DOTFILES_DIR/.root/sddm-theme/. /usr/share/sddm/themes/
+    select_theme_sddm
+    echo "[*] Display Manager setup done."
     sleep 3 && clear
 
     echo "[*] Installing TeVim ..."
     yay -S --noconfirm lazygit fzf ripgrep neovim
     git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
-    ln -s ~/Dotfiles/dotf/.config/nvim/lua/custom ~/.config/nvim/lua/custom
+    ln -s $DOTFILES_DIR/.config/nvim/lua/custom ~/.config/nvim/lua/custom
     echo "[*] TeVim setup done."
     sleep 3 && clear
 
     echo "[*] Installing Development Applications..."
-    yay -S --noconfirm visual-studio-code-bin cursor-bin jetbrains-toolbox docker docker-desktop postman-bin github-desktop-bin blackbox-terminal
-	rm -rf ~/.config/systemd/user/graphical-session.target.wants/docker-desktop.service
-    # yay -S --noconfirm vmware-keymaps open-vm-tools xf86-video-vmware xf86-input-vmmouse
-	# yay -S --noconfirm vmware-workstation
+    yay -S --noconfirm visual-studio-code-bin cursor-bin jetbrains-toolbox docker postman-bin blackbox-terminal
+    # rm -rf ~/.config/systemd/user/graphical-session.target.wants/docker-desktop.service
+    # yay -S --noconfirm vmware-keymaps open-vm-tools xf86-video-vmware xf86-input-vmmouse vmware-workstation
     # sudo systemctl enable vmware-networks vmware-usbarbitrator vmtoolsd
 
     echo "[*] Installing Other Applications..."
-    yay -S --noconfirm vesktop-bin telegram-desktop-bin cloudflare-warp-bin libreoffice-fresh spotify zen-browser-bin
+    yay -S --noconfirm vesktop-bin telegram-desktop-bin cloudflare-warp-bin spotify zen-browser-bin
 	xdg-settings set default-web-browser zen.desktop
 	sudo systemctl enable warp-svc.service
 	warp-cli registration new
@@ -186,6 +212,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --env)
 			setup_env
+			exit 0
+            ;;
+        --sddm)
+			select_theme_sddm
+			exit 0
+            ;;
+        --grub)
+			select_theme_grub
 			exit 0
             ;;
         --dots)
