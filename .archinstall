@@ -106,7 +106,7 @@ useradd -m -G wheel,audio,video,optical,storage,power $username
 echo "$username:$userpassword" | chpasswd
 
 echo ">>> Config sudo..."
-EDITOR=nvim visudo
+sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
 echo ">>> Installing NetworkManager..."
 pacman -S --noconfirm networkmanager wpa_supplicant wireless_tools
