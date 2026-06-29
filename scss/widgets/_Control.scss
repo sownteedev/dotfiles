@@ -198,16 +198,27 @@ window.control-menu {
         .network-item {
             padding: to-rem(10px) to-rem(15px);
             background-color: transparent;
-            transition: all 200ms ease;
-            border-radius: to-rem(15px);
+            transition: background-color 200ms ease;
+            border-radius: to-rem(14px);
+
+            &:hover {
+                background-color: gtkalpha($fg, 0.05);
+            }
 
             &.active {
                 background-color: $bg2;
             }
 
-            button {
+            .network-item-btn {
                 background-color: transparent;
-                margin: to-rem(-7px) 0;
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+
+                &:hover {
+                    background-color: transparent;
+                }
 
                 icon {
                     color: $fg;
@@ -218,23 +229,15 @@ window.control-menu {
                     color: $fg;
                     font-size: to-rem(18px);
                     font-weight: 500;
-                    margin-left: to-rem(5px);
+                    margin-left: to-rem(12px);
                 }
             }
         }
 
-        .forget-wifi-button {
-            background-color: transparent;
-            margin: to-rem(-7px) 0;
-            padding: 0px;
-
-            .forget-wifi-icon {
-                font-size: to-rem(28px);
-            }
-        }
-
         .security-icon {
-            font-size: to-rem(30px);
+            font-size: to-rem(18px);
+            color: gtkalpha($fg, 0.4);
+            margin: 0 to-rem(6px);
         }
     }
 }
@@ -285,12 +288,34 @@ window.control-menu {
             }
         }
 
-        button {
-            background-color: $bg2;
-            padding: to-rem(15px);
+        .connection-error-label {
+            font-size: to-rem(15px);
+            font-weight: 500;
+            margin-top: to-rem(5px);
+            color: $red;
+
+            &.connecting {
+                color: $blue;
+            }
+
+            &.success {
+                color: $green;
+            }
+        }
+
+        .connect-button {
+            background-color: gtkalpha($blue, 0.15);
+            border: 1px solid gtkalpha($blue, 0.3);
             border-radius: to-rem(10px);
-            color: $fg;
-            font-size: to-rem(18px);
+            padding: to-rem(10px) to-rem(24px);
+            color: $blue;
+            font-weight: 600;
+            font-size: to-rem(16px);
+            transition: all 200ms ease;
+
+            &:hover {
+                background-color: gtkalpha($blue, 0.25);
+            }
         }
     }
 }
@@ -313,6 +338,92 @@ window.control-menu {
 
             icon {
                 font-size: to-rem(30px);
+            }
+        }
+    }
+}
+
+button.action-button {
+    background-color: $bg2;
+    min-height: to-rem(34px);
+    border-radius: to-rem(10px);
+    transition: all 200ms ease;
+    border: 1px solid transparent;
+    padding: 0;
+
+    &:hover {
+        background-color: $bg3;
+    }
+
+    icon {
+        font-size: to-rem(18px);
+        transition: color 200ms ease;
+    }
+
+    &.remove {
+        min-width: to-rem(34px);
+        border-radius: to-rem(10px);
+
+        &:hover {
+            background-color: gtkalpha($red, 0.2);
+            border-color: gtkalpha($red, 0.3);
+
+            icon {
+                color: $red;
+            }
+        }
+    }
+
+    &.pair-device-btn {
+        background-color: gtkalpha($blue, 0.15);
+        border-color: gtkalpha($blue, 0.3);
+        border-radius: to-rem(10px);
+        padding: 0 to-rem(16px);
+        min-width: to-rem(90px);
+
+        .pair-btn-label {
+            font-size: to-rem(13px);
+            font-weight: 600;
+            color: $blue;
+        }
+
+        &:hover {
+            background-color: gtkalpha($blue, 0.25);
+        }
+    }
+
+    &.connect-device-btn {
+        background-color: gtkalpha($blue, 0.1);
+        border-color: gtkalpha($blue, 0.25);
+        border-radius: to-rem(10px);
+        padding: 0 to-rem(16px);
+        min-width: to-rem(90px);
+
+        .connect-btn-label {
+            font-size: to-rem(13px);
+            font-weight: 600;
+            color: $blue;
+        }
+
+        &:hover {
+            background-color: gtkalpha($blue, 0.2);
+        }
+
+        &.connected {
+            background-color: gtkalpha($fg, 0.05);
+            border-color: gtkalpha($fg, 0.15);
+
+            .connect-btn-label {
+                color: gtkalpha($fg, 0.8);
+            }
+
+            &:hover {
+                background-color: gtkalpha($red, 0.15);
+                border-color: gtkalpha($red, 0.3);
+
+                .connect-btn-label {
+                    color: $red;
+                }
             }
         }
     }
@@ -363,7 +474,7 @@ window.control-menu {
 
     .bluetooth-device {
         background-color: transparent;
-        padding: to-rem(10px);
+        padding: to-rem(10px) to-rem(15px);
         border-radius: to-rem(14px);
         transition: background-color 200ms ease;
 
@@ -371,106 +482,81 @@ window.control-menu {
             background-color: gtkalpha($fg, 0.05);
         }
 
+        .bluetooth-device-info-btn {
+            background-color: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
+
+            &:hover {
+                background-color: transparent;
+            }
+        }
+
         .bluetooth-device-name {
             color: $fg;
-            font-size: to-rem(19px);
+            font-size: to-rem(18px);
             font-weight: 600;
-            margin-bottom: to-rem(6px);
+            margin-bottom: to-rem(4px);
+        }
+
+        .device-status-badge {
+            font-size: to-rem(13px);
+            font-weight: 600;
+            padding: to-rem(2px) to-rem(6px);
+            border-radius: to-rem(6px);
+            background-color: gtkalpha($fg1, 0.1);
+            color: gtkalpha($fg, 0.7);
+
+            &.connected {
+                color: $blue;
+                background-color: gtkalpha($blue, 0.15);
+            }
+
+            &.connecting {
+                color: $yellow;
+                background-color: gtkalpha($yellow, 0.15);
+            }
+
+            &.saved {
+                color: gtkalpha($fg1, 0.8);
+                background-color: gtkalpha($fg1, 0.1);
+            }
+        }
+
+        .device-status-separator {
+            color: gtkalpha($fg, 0.3);
+            margin: 0 to-rem(2px);
         }
 
         .bluetooth-device-mac {
             color: $fg1;
-            font-size: to-rem(15px);
+            font-size: to-rem(13px);
             font-weight: 500;
-            opacity: 0.7;
+            opacity: 0.6;
         }
 
         .bluetooth-device-details {
             color: $fg1;
             font-size: to-rem(13px);
             font-weight: 400;
-            opacity: 0.65;
-            margin-top: to-rem(4px);
-        }
-
-        .bluetooth-device-battery {
-            color: $fg1;
-            font-size: to-rem(14px);
-            font-weight: 500;
-            opacity: 0.85;
+            opacity: 0.5;
             margin-top: to-rem(4px);
         }
 
         .bluetooth-device-icon {
-            font-size: to-rem(32px);
+            font-size: to-rem(30px);
             margin-right: to-rem(12px);
-            color: $fg;
-        }
+            color: gtkalpha($fg, 0.6);
+            transition: color 250ms ease;
 
-        button {
-            background-color: $bg2;
-            min-width: to-rem(30px);
-            min-height: to-rem(30px);
-            border-radius: 50%;
-            transition: all 200ms ease;
-            border: 1px solid transparent;
-
-            &:hover {
-                background-color: $bg3;
-                border-color: gtkalpha($blue, 0.3);
-                box-shadow: 0 to-rem(2px) to-rem(8px) gtkalpha($blue, 0.2);
-
-                icon {
-                    color: $blue;
-                }
-            }
-
-            &:active {
-                background-color: $bg2;
-                box-shadow: inset 0 to-rem(2px) to-rem(4px) gtkalpha(#000, 0.3);
-            }
-
-            icon {
-                font-size: to-rem(20px);
-                transition: color 200ms ease;
-            }
-
-            &.pair.active {
-                background-color: gtkalpha($green, 0.2);
-                border-color: gtkalpha($green, 0.4);
-
-                icon {
-                    color: $green;
-                }
-            }
-
-            &.connect.active {
-                background-color: gtkalpha($blue, 0.2);
-                border-color: gtkalpha($blue, 0.4);
-
-                icon {
-                    color: $blue;
-                }
-            }
-
-            &.trust.active {
-                background-color: gtkalpha($yellow, 0.2);
-                border-color: gtkalpha($yellow, 0.4);
-
-                icon {
-                    color: $yellow;
-                }
-            }
-
-            &.remove:hover {
-                background-color: gtkalpha($red, 0.2);
-                border-color: gtkalpha($red, 0.3);
-
-                icon {
-                    color: $red;
-                }
+            &.connected {
+                color: $blue;
             }
         }
+
+
     }
 }
 
@@ -633,16 +719,13 @@ window.control-menu {
 
 .notification-list {
     background-color: transparent;
-
-    > box {
-        margin: to-rem(15px) to-rem(0px) to-rem(0px) to-rem(0px);
-    }
 }
 
 .notification-item {
     background-color: $bg2;
     border-radius: to-rem(15px);
     padding: to-rem(20px);
+    margin-top: to-rem(15px);
 
     &:hover {
         background-color: $bg3;
@@ -843,12 +926,12 @@ window.control-menu {
     .#{$prefix}-button {
         label {
             &:first-child {
-                font-size: to-rem(18px);
+                font-size: to-rem(20px);
                 color: $fg;
             }
 
             &:last-child {
-                font-size: to-rem(16px);
+                font-size: to-rem(17px);
                 color: $fg1;
             }
         }
@@ -867,10 +950,6 @@ window.control-menu {
 
 .power-profile-container {
     @include control-section-container("power-profile");
-}
-
-.cpu-profile-container {
-    @include control-section-container("cpu-profile");
 }
 
 .battery-charging-container {

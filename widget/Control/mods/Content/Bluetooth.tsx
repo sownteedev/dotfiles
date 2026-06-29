@@ -81,10 +81,55 @@ const BluetoothList = () => {
         const isPairing = Variable(false);
         const isRemoving = Variable(false);
 
+        const statusLabel = Variable(
+            device.connected ? "Connected" : (device.paired ? "Saved" : "Ready to Pair")
+        );
+
+        const connHandler = device.connect("notify::connected", () => {
+            statusLabel.set(device.connected ? "Connected" : (device.paired ? "Saved" : "Ready to Pair"));
+        });
+
+        const updateStatus = () => {
+            if (isConnecting.get()) {
+                statusLabel.set("Connecting...");
+            } else if (isPairing.get()) {
+                statusLabel.set("Pairing...");
+            } else if (isRemoving.get()) {
+                statusLabel.set("Removing...");
+            } else {
+                statusLabel.set(device.connected ? "Connected" : (device.paired ? "Saved" : "Ready to Pair"));
+            }
+        };
+
+        const sub1 = isConnecting.observe(updateStatus);
+        const sub2 = isPairing.observe(updateStatus);
+        const sub3 = isRemoving.observe(updateStatus);
+
         const deviceCleanup = () => {
             isConnecting.drop();
             isPairing.drop();
             isRemoving.drop();
+            statusLabel.drop();
+            if (typeof sub1 === "function") sub1();
+            if (typeof sub2 === "function") sub2();
+            if (typeof sub3 === "function") sub3();
+            if (device && connHandler) {
+                device.disconnect(connHandler);
+            }
+        };
+
+        const handleRowClick = () => {
+            if (isConnecting.get() || isPairing.get() || isRemoving.get()) return;
+
+            if (device.paired) {
+                if (device.connected) {
+                    handleDisconnect();
+                } else {
+                    handleConnect();
+                }
+            } else {
+                handlePair();
+            }
         };
 
         const handlePair = async () => {
@@ -121,19 +166,13 @@ const BluetoothList = () => {
                 }
 
                 // bluetoothctl will handle passkey confirmation if needed
-                await execAsync(`bluetoothctl pair ${formattedMAC}`);
+                await execAsync(`bluetoothctl --agent NoInputNoOutput pair ${formattedMAC}`);
 
                 // Give it a moment for the pairing to register
                 await new Promise((resolve) => setTimeout(resolve, 1000));
 
-                // Auto-trust after successful pairing (like Blueman does)
-                if (!device.trusted) {
-                    try {
-                        device.trusted = true;
-                    } catch (e) {
-                        // Ignore trust errors
-                    }
-                }
+                // Auto-trust after successful pairing using bluetoothctl
+                await execAsync(`bluetoothctl --agent NoInputNoOutput trust ${formattedMAC}`);
             } catch (error) {
                 console.error("Failed to pair device:", error);
                 // Try fallback API method if bluetoothctl fails
@@ -190,7 +229,7 @@ const BluetoothList = () => {
                     }
                 }
 
-                await execAsync(`bluetoothctl connect ${formattedMAC}`);
+                await execAsync(`bluetoothctl --agent NoInputNoOutput connect ${formattedMAC}`);
 
                 // Give it a moment for the connection to register
                 await new Promise((resolve) => setTimeout(resolve, 500));
@@ -238,7 +277,7 @@ const BluetoothList = () => {
                     }
                 }
 
-                await execAsync(`bluetoothctl disconnect ${formattedMAC}`);
+                await execAsync(`bluetoothctl --agent NoInputNoOutput disconnect ${formattedMAC}`);
 
                 // Give it a moment for the disconnection to register
                 await new Promise((resolve) => setTimeout(resolve, 300));
@@ -294,7 +333,7 @@ const BluetoothList = () => {
                 }
 
                 // Use bluetoothctl to remove device (like Blueman's \"Remove...\")
-                await execAsync(`bluetoothctl remove ${formattedMAC}`);
+                await execAsync(`bluetoothctl --agent NoInputNoOutput remove ${formattedMAC}`);
 
                 // Give it a moment for BlueZ to update device list
                 await new Promise((resolve) => setTimeout(resolve, 500));
@@ -415,51 +454,114 @@ const BluetoothList = () => {
             detailsParts.length > 0 ? detailsParts.join(" • ") : null;
 
         return (
-            <box className="bluetooth-device" onDestroy={deviceCleanup}>
-                <box spacing={10} hexpand halign={Gtk.Align.START}>
-                    <icon
-                        icon={device?.icon || "bluetooth-symbolic"}
-                        className="bluetooth-device-icon"
-                    />
-                    <box vertical hexpand>
-                        <label
-                            label={deviceName}
-                            xalign={0}
-                            className="bluetooth-device-name"
+            <box className="bluetooth-device" onDestroy={deviceCleanup} spacing={10}>
+                <button
+                    className="bluetooth-device-info-btn"
+                    hexpand
+                    halign={Gtk.Align.FILL}
+                    cursor="hand1"
+                    onClicked={handleRowClick}
+                >
+                    <box spacing={12} valign={Gtk.Align.CENTER}>
+                        <icon
+                            icon={device?.icon || "bluetooth-symbolic"}
+                            className={bind(device, "connected").as(connected =>
+                                `bluetooth-device-icon ${connected ? "connected" : ""}`
+                            )}
                         />
-                        {deviceInfo && (
+                        <box vertical hexpand>
                             <label
-                                label={deviceInfo}
+                                label={deviceName}
                                 xalign={0}
-                                className="bluetooth-device-mac"
+                                className="bluetooth-device-name"
                             />
-                        )}
-                        {detailsText && (
-                            <label
-                                label={detailsText}
-                                xalign={0}
-                                className="bluetooth-device-details"
-                            />
-                        )}
+                            <box spacing={8} valign={Gtk.Align.CENTER}>
+                                <label
+                                    label={bind(statusLabel)}
+                                    className={bind(statusLabel).as(status => {
+                                        const lower = status.toLowerCase();
+                                        if (lower.includes("connecting") || lower.includes("pairing")) return "device-status-badge connecting";
+                                        if (lower.includes("connected")) return "device-status-badge connected";
+                                        if (lower.includes("saved") || lower.includes("paired")) return "device-status-badge saved";
+                                        return "device-status-badge";
+                                    })}
+                                    xalign={0}
+                                />
+                                {deviceInfo && (
+                                    <>
+                                        <label label="•" className="device-status-separator" />
+                                        <label
+                                            label={deviceInfo}
+                                            xalign={0}
+                                            className="bluetooth-device-mac"
+                                        />
+                                    </>
+                                )}
+                            </box>
+                            {detailsText && (
+                                <label
+                                    label={detailsText}
+                                    xalign={0}
+                                    className="bluetooth-device-details"
+                                />
+                            )}
+                        </box>
                     </box>
-                </box>
+                </button>
 
-                <box spacing={5} halign={Gtk.Align.END}>
-                    {/* Pair Button */}
-                    <eventbox cursor={"hand1"}>
+                <box spacing={8} halign={Gtk.Align.END} valign={Gtk.Align.CENTER}>
+                    {device.paired ? (
+                        <>
+                            <button
+                                className={bind(device, "connected").as(connected =>
+                                    `action-button connect-device-btn ${connected ? "connected" : ""}`
+                                )}
+                                sensitive={bind(isConnecting).as(connecting => !connecting)}
+                                onClicked={() => {
+                                    if (device.connected) {
+                                        handleDisconnect();
+                                    } else {
+                                        handleConnect();
+                                    }
+                                }}
+                                cursor={"hand1"}
+                            >
+                                <box halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER} hexpand>
+                                    <icon
+                                        icon="sync-synchronizing-symbolic"
+                                        visible={bind(isConnecting)}
+                                    />
+                                    <label
+                                        label={bind(device, "connected").as(connected => connected ? "Disconnect" : "Connect")}
+                                        visible={bind(isConnecting).as(connecting => !connecting)}
+                                        className="connect-btn-label"
+                                    />
+                                </box>
+                            </button>
+                            <button
+                                className="action-button remove"
+                                sensitive={bind(isRemoving).as(removing => !removing)}
+                                onClicked={handleRemove}
+                                tooltipText="Forget device"
+                                cursor={"hand1"}
+                            >
+                                {bind(isRemoving).as((removing) => {
+                                    if (removing) {
+                                        return (
+                                            <icon icon="sync-synchronizing-symbolic" />
+                                        );
+                                    }
+                                    return <icon icon="user-trash-symbolic" />;
+                                })}
+                            </button>
+                        </>
+                    ) : (
                         <button
-                            className={`action-button pair ${
-                                device?.paired ? "active" : ""
-                            }`}
-                            sensitive={
-                                device && !device.paired && !isPairing.get()
-                            }
+                            className="action-button pair-device-btn"
+                            sensitive={bind(isPairing).as(pairing => !pairing)}
                             onClicked={handlePair}
-                            tooltipText={
-                                device?.paired
-                                    ? "Already paired"
-                                    : "Pair device"
-                            }
+                            tooltipText="Pair device"
+                            cursor={"hand1"}
                         >
                             {bind(isPairing).as((pairing) => {
                                 if (pairing) {
@@ -467,93 +569,10 @@ const BluetoothList = () => {
                                         <icon icon="sync-synchronizing-symbolic" />
                                     );
                                 }
-                                return (
-                                    <icon
-                                        icon={
-                                            device?.paired
-                                                ? "emblem-ok-symbolic"
-                                                : "channel-secure-symbolic"
-                                        }
-                                    />
-                                );
+                                return <label label="Pair" className="pair-btn-label" />;
                             })}
                         </button>
-                    </eventbox>
-
-                    {/* Trust Button */}
-                    <button
-                        className={`action-button trust ${
-                            device?.trusted ? "active" : ""
-                        }`}
-                        sensitive={device?.paired}
-                        onClicked={toggleTrust}
-                        tooltipText={
-                            device?.trusted ? "Remove trust" : "Trust device"
-                        }
-                        cursor={"hand1"}
-                    >
-                        <icon
-                            icon={
-                                device?.trusted
-                                    ? "security-high-symbolic"
-                                    : "security-medium-symbolic"
-                            }
-                        />
-                    </button>
-
-                    {/* Connect Button */}
-                    {bind(device, "connected").as((connected) => (
-                        <button
-                            className={`action-button connect ${
-                                connected ? "active" : ""
-                            }`}
-                            sensitive={device?.paired && !isConnecting.get()}
-                            onClicked={() => {
-                                if (connected) {
-                                    handleDisconnect();
-                                } else {
-                                    handleConnect();
-                                }
-                            }}
-                            tooltipText={connected ? "Disconnect" : "Connect"}
-                            cursor={"hand1"}
-                        >
-                            {bind(isConnecting).as((connecting) => {
-                                if (connecting) {
-                                    return (
-                                        <icon icon="sync-synchronizing-symbolic" />
-                                    );
-                                }
-                                return (
-                                    <icon
-                                        icon={
-                                            connected
-                                                ? "network-wireless-symbolic"
-                                                : "network-wireless-disconnected-symbolic"
-                                        }
-                                    />
-                                );
-                            })}
-                        </button>
-                    ))}
-
-                    {/* Remove Button */}
-                    <button
-                        className="action-button remove"
-                        sensitive={!isRemoving.get()}
-                        onClicked={handleRemove}
-                        tooltipText="Remove device"
-                        cursor={"hand1"}
-                    >
-                        {bind(isRemoving).as((removing) => {
-                            if (removing) {
-                                return (
-                                    <icon icon="sync-synchronizing-symbolic" />
-                                );
-                            }
-                            return <icon icon="user-trash-symbolic" />;
-                        })}
-                    </button>
+                    )}
                 </box>
             </box>
         );
@@ -624,11 +643,9 @@ const BluetoothList = () => {
                                 />
                                 <box />
                                 <button
-                                    className={`scan-button ${bind(
-                                        isScanning,
-                                    ).as((scanning) =>
-                                        scanning ? "active" : "",
-                                    )}`}
+                                    className={bind(isScanning).as((scanning) =>
+                                        `scan-button ${scanning ? "active" : ""}`
+                                    )}
                                     halign={Gtk.Align.END}
                                     cursor={"hand1"}
                                     onClicked={() => {

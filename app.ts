@@ -9,7 +9,14 @@ App.start({
     instanceName: "sownteeastal",
     requestHandler(request, res) {
         console.log(request);
-        res("ok");
+        if (request === "toggle-control-menu" || request === "control-menu") {
+            import("./widget/Control/app").then((m) => {
+                m.toggleControlMenu();
+            }).catch(console.error);
+            res("ok");
+        } else {
+            res("ok");
+        }
     },
     async main() {
         const monitors = App.get_monitors();

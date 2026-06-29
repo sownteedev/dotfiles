@@ -122,7 +122,7 @@ const clearCalendarsCache = () => {
 
 const generateColorFromId = (
     calendarId: string,
-    calendarName?: string
+    calendarName?: string,
 ): string => {
     const source =
         calendarName && calendarName.toLowerCase().includes("tkb")
@@ -282,11 +282,11 @@ const fetchCalendarEventsApi = async (): Promise<CalendarEvent[]> => {
     const startOfDay = new Date(
         now.getFullYear(),
         now.getMonth(),
-        now.getDate()
+        now.getDate(),
     );
     const timeMin = startOfDay.toISOString();
     const timeMax = new Date(
-        now.getTime() + 30 * 24 * 60 * 60 * 1000
+        now.getTime() + 30 * 24 * 60 * 60 * 1000,
     ).toISOString();
 
     for (const calendar of calendars) {
@@ -299,11 +299,11 @@ const fetchCalendarEventsApi = async (): Promise<CalendarEvent[]> => {
                 "-H",
                 `Authorization: Bearer ${token}`,
                 `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
-                    calendar.id
+                    calendar.id,
                 )}/events?timeMin=${encodeURIComponent(
-                    timeMin
+                    timeMin,
                 )}&timeMax=${encodeURIComponent(
-                    timeMax
+                    timeMax,
                 )}&singleEvents=true&orderBy=startTime&maxResults=50`,
             ]);
 
@@ -324,7 +324,7 @@ const fetchCalendarEventsApi = async (): Promise<CalendarEvent[]> => {
 
             if (httpStatus !== 200) {
                 console.error(
-                    `HTTP ${httpStatus} when fetching events from ${calendar.name} (${calendar.id})`
+                    `HTTP ${httpStatus} when fetching events from ${calendar.name} (${calendar.id})`,
                 );
                 if (httpStatus === 401) {
                     const newToken = await getAccessToken();
@@ -343,16 +343,13 @@ const fetchCalendarEventsApi = async (): Promise<CalendarEvent[]> => {
             } catch (parseError) {
                 console.error(
                     `Failed to parse JSON response from ${calendar.name}:`,
-                    parseError
+                    parseError,
                 );
                 continue;
             }
 
             if (result.error) {
-                console.error(
-                    `API Error for ${calendar.name}:`,
-                    result.error
-                );
+                console.error(`API Error for ${calendar.name}:`, result.error);
                 continue;
             }
 
@@ -368,7 +365,7 @@ const fetchCalendarEventsApi = async (): Promise<CalendarEvent[]> => {
         } catch (e) {
             console.error(
                 `Failed to fetch events from ${calendar.name} (${calendar.id}):`,
-                e
+                e,
             );
         }
     }
@@ -439,7 +436,7 @@ const createCalendarEvent = async (form: EventForm): Promise<boolean> => {
             "-X",
             "POST",
             `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
-                calendarId
+                calendarId,
             )}/events`,
             "-H",
             `Authorization: Bearer ${token}`,
@@ -453,14 +450,14 @@ const createCalendarEvent = async (form: EventForm): Promise<boolean> => {
         if (result.error) {
             console.error(
                 "API Error creating event:",
-                JSON.stringify(result.error, null, 2)
+                JSON.stringify(result.error, null, 2),
             );
             return false;
         }
         if (!result.id) {
             console.error(
                 "No ID in response:",
-                JSON.stringify(result, null, 2)
+                JSON.stringify(result, null, 2),
             );
             return false;
         }
@@ -474,7 +471,7 @@ const createCalendarEvent = async (form: EventForm): Promise<boolean> => {
 
 const deleteCalendarEvent = async (
     eventId: string,
-    calendarId?: string
+    calendarId?: string,
 ): Promise<boolean> => {
     const token = await getAccessToken();
     if (!token) return false;
@@ -490,7 +487,7 @@ const deleteCalendarEvent = async (
             "-H",
             `Authorization: Bearer ${token}`,
             `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
-                targetCalendarId
+                targetCalendarId,
             )}/events/${eventId}`,
         ]);
         return true;
@@ -626,7 +623,7 @@ const solarToLunar = (
     dd: number,
     mm: number,
     yy: number,
-    timeZone: number = 7
+    timeZone: number = 7,
 ): LunarDate => {
     const dayNumber = dateToJd(dd, mm, yy);
     const k = Math.floor((dayNumber - 2415021.076998695) / 29.530588853);
@@ -769,7 +766,7 @@ const getEventDateKey = (event: CalendarEvent): string | null => {
 };
 
 const getEventsForDate = (
-    dateKey: string
+    dateKey: string,
 ): Array<{
     calendarId: string;
     calendarName: string;
@@ -890,7 +887,7 @@ const DayEventsView = () => {
 
     const [year, month, day] = selectedDate.split("-").map(Number);
     const formattedDate = `${String(day).padStart(2, "0")}/${String(
-        month
+        month,
     ).padStart(2, "0")}/${year}`;
 
     const handleDelete = async (eventId: string, calendarId?: string) => {
@@ -921,10 +918,7 @@ const DayEventsView = () => {
         <box vertical className="day-events-view" spacing={15}>
             <centerbox className="day-events-header">
                 <box hexpand halign={Gtk.Align.START}>
-                    <button
-                        cursor="hand1"
-                        onClicked={handleBack}
-                    >
+                    <button cursor="hand1" onClicked={handleBack}>
                         <icon icon="go-previous-symbolic" />
                     </button>
                 </box>
@@ -953,7 +947,7 @@ const DayEventsView = () => {
                 <box vertical spacing={15}>
                     {bind(calendarEvents).as((events) => {
                         const eventsForDay = events.filter(
-                            (e) => getEventDateKey(e) === selectedDate
+                            (e) => getEventDateKey(e) === selectedDate,
                         );
 
                         if (eventsForDay.length === 0) {
@@ -997,7 +991,9 @@ const DayEventsView = () => {
                                         <box spacing={10} vertical>
                                             <box spacing={10}>
                                                 <label
-                                                    label={formatEventTime(event)}
+                                                    label={formatEventTime(
+                                                        event,
+                                                    )}
                                                     className="day-event-time"
                                                     xalign={0}
                                                 />
@@ -1005,7 +1001,9 @@ const DayEventsView = () => {
                                                     label={calendarName}
                                                     className="day-event-calendar-name"
                                                     xalign={0}
-                                                    css={`color: ${calendarColor}`}
+                                                    css={`
+                                                        color: ${calendarColor};
+                                                    `}
                                                 />
                                             </box>
                                             <EventLocationDescription
@@ -1018,7 +1016,7 @@ const DayEventsView = () => {
                                         onClicked={() =>
                                             handleDelete(
                                                 event.id,
-                                                event.calendarId
+                                                event.calendarId,
                                             )
                                         }
                                         cursor="hand1"
@@ -1038,7 +1036,7 @@ const DayEventsView = () => {
 export const EventFormDialog = () => {
     const today = new Date();
     const todayStr = `${String(today.getDate()).padStart(2, "0")}/${String(
-        today.getMonth() + 1
+        today.getMonth() + 1,
     ).padStart(2, "0")}/${today.getFullYear()}`;
 
     const titleText = Variable("");
@@ -1168,11 +1166,11 @@ export const EventFormDialog = () => {
                                     {calendars.map((cal) => (
                                         <button
                                             className={bind(
-                                                selectedCalendarId
+                                                selectedCalendarId,
                                             ).as((selectedId) =>
                                                 selectedId === cal.id
                                                     ? "calendar-select-button active"
-                                                    : "calendar-select-button"
+                                                    : "calendar-select-button",
                                             )}
                                             onClicked={() =>
                                                 selectedCalendarId.set(cal.id)
@@ -1289,7 +1287,7 @@ export const EventFormDialog = () => {
                                     <label label="Saving..." />
                                 ) : (
                                     <label label="Save" />
-                                )
+                                ),
                             )}
                         </button>
                     </box>
@@ -1308,7 +1306,7 @@ export const Calendar = () => {
     const navigateMonth = (direction: number) => {
         const current = currentDate.get();
         currentDate.set(
-            new Date(current.getFullYear(), current.getMonth() + direction, 1)
+            new Date(current.getFullYear(), current.getMonth() + direction, 1),
         );
     };
 
@@ -1318,7 +1316,12 @@ export const Calendar = () => {
     };
 
     return (
-        <box vertical className="calendar-container" spacing={10} setup={initCalendar}>
+        <box
+            vertical
+            className="calendar-container"
+            spacing={10}
+            setup={initCalendar}
+        >
             {bind(selectedDateForEvents).as((selected) =>
                 selected ? (
                     <DayEventsView />
@@ -1336,7 +1339,7 @@ export const Calendar = () => {
                             <label
                                 label={bind(currentDate).as(
                                     (date) =>
-                                        `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`
+                                        `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`,
                                 )}
                                 className="calendar-solar-header"
                             />
@@ -1373,13 +1376,13 @@ export const Calendar = () => {
                                 const prevMonthLastDay = new Date(
                                     year,
                                     month,
-                                    0
+                                    0,
                                 ).getDate();
 
                                 const hasEvents = (
                                     d: number,
                                     m: number,
-                                    y: number
+                                    y: number,
                                 ) => eventsSet.has(makeDateKey(d, m, y));
 
                                 const totalCells = 42;
@@ -1397,12 +1400,12 @@ export const Calendar = () => {
                                     const prevDayHasEvents = hasEvents(
                                         dayNum,
                                         prevMonth,
-                                        prevYear
+                                        prevYear,
                                     );
                                     const prevDateKey = makeDateKey(
                                         dayNum,
                                         prevMonth,
-                                        prevYear
+                                        prevYear,
                                     );
                                     const prevDayCalendars = prevDayHasEvents
                                         ? getEventsForDate(prevDateKey)
@@ -1427,7 +1430,7 @@ export const Calendar = () => {
                                                     handleDayClick(
                                                         dayNum,
                                                         prevMonth,
-                                                        prevYear
+                                                        prevYear,
                                                     )
                                                 }
                                             >
@@ -1444,7 +1447,7 @@ export const Calendar = () => {
                                                         label={getLunarDisplay(
                                                             dayNum,
                                                             prevMonth,
-                                                            prevYear
+                                                            prevYear,
                                                         )}
                                                         className="lunar-day"
                                                     />
@@ -1469,13 +1472,13 @@ export const Calendar = () => {
                                                                             cal.calendarName
                                                                         }
                                                                     />
-                                                                )
+                                                                ),
                                                             )}
                                                         </box>
                                                     )}
                                                 </box>
                                             </button>
-                                        </box>
+                                        </box>,
                                     );
                                 }
 
@@ -1488,12 +1491,12 @@ export const Calendar = () => {
                                     const isSpecial = isLunarSpecial(
                                         d,
                                         month,
-                                        year
+                                        year,
                                     );
                                     const dayHasEvents = hasEvents(
                                         d,
                                         month,
-                                        year
+                                        year,
                                     );
                                     const dateKey = makeDateKey(d, month, year);
                                     const dayCalendars = dayHasEvents
@@ -1525,7 +1528,7 @@ export const Calendar = () => {
                                                     handleDayClick(
                                                         d,
                                                         month,
-                                                        year
+                                                        year,
                                                     )
                                                 }
                                             >
@@ -1542,7 +1545,7 @@ export const Calendar = () => {
                                                         label={getLunarDisplay(
                                                             d,
                                                             month,
-                                                            year
+                                                            year,
                                                         )}
                                                         className={`lunar-day ${
                                                             isSpecial
@@ -1571,13 +1574,13 @@ export const Calendar = () => {
                                                                             cal.calendarName
                                                                         }
                                                                     />
-                                                                )
+                                                                ),
                                                             )}
                                                         </box>
                                                     )}
                                                 </box>
                                             </button>
-                                        </box>
+                                        </box>,
                                     );
                                 }
 
@@ -1593,12 +1596,12 @@ export const Calendar = () => {
                                     const nextDayHasEvents = hasEvents(
                                         i,
                                         nextMonth,
-                                        nextYear
+                                        nextYear,
                                     );
                                     const nextDateKey = makeDateKey(
                                         i,
                                         nextMonth,
-                                        nextYear
+                                        nextYear,
                                     );
                                     const nextDayCalendars = nextDayHasEvents
                                         ? getEventsForDate(nextDateKey)
@@ -1623,7 +1626,7 @@ export const Calendar = () => {
                                                     handleDayClick(
                                                         i,
                                                         nextMonth,
-                                                        nextYear
+                                                        nextYear,
                                                     )
                                                 }
                                             >
@@ -1640,7 +1643,7 @@ export const Calendar = () => {
                                                         label={getLunarDisplay(
                                                             i,
                                                             nextMonth,
-                                                            nextYear
+                                                            nextYear,
                                                         )}
                                                         className="lunar-day"
                                                     />
@@ -1665,13 +1668,13 @@ export const Calendar = () => {
                                                                             cal.calendarName
                                                                         }
                                                                     />
-                                                                )
+                                                                ),
                                                             )}
                                                         </box>
                                                     )}
                                                 </box>
                                             </button>
-                                        </box>
+                                        </box>,
                                     );
                                 }
 
@@ -1683,7 +1686,7 @@ export const Calendar = () => {
                                             spacing={15}
                                         >
                                             {cells.slice(w * 7, (w + 1) * 7)}
-                                        </box>
+                                        </box>,
                                     );
                                 }
 
@@ -1691,7 +1694,7 @@ export const Calendar = () => {
                             })}
                         </box>
                     </box>
-                )
+                ),
             )}
         </box>
     );

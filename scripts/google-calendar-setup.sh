@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GLOBAL_TS="$SCRIPT_DIR/../Global.ts"
-TOKEN_FILE="$HOME/Dotfiles/ags/google-calendar-token.json"
+TOKEN_FILE="$HOME/Dotfiles/dotf/ags/google-calendar-token.json"
 MODE="${1:-interactive}"
 AUTH_CODE_INPUT="${2:-}"
 

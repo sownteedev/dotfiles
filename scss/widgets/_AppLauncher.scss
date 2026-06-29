@@ -119,6 +119,46 @@ window.launcher {
         margin-top: to-rem(20px);
     }
 
+    .all-apps-categories {
+        background-image: linear-gradient(to right, gtkalpha($bg1, 0.6), gtkalpha($bg, 0.3));
+        border-radius: to-rem(28px);
+        padding: to-rem(6px) to-rem(12px);
+        margin-top: to-rem(20px);
+        border: to-rem(1px) solid gtkalpha($bg3, 0.5);
+        box-shadow: 0 to-rem(10px) to-rem(30px) gtkalpha(#000, 0.3);
+
+        .category-btn {
+            background-color: transparent;
+            border-radius: to-rem(20px);
+            padding: to-rem(8px) to-rem(18px);
+            transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+            color: gtkalpha($fg, 0.7);
+
+            &:hover {
+                background-color: gtkalpha($bg2, 0.5);
+                color: $fg;
+            }
+
+            &.active {
+                background-image: linear-gradient(to bottom, gtkalpha($blue, 0.25), gtkalpha($blue, 0.1));
+                color: $blue;
+                border: to-rem(1px) solid gtkalpha($blue, 0.4);
+                box-shadow: 0 to-rem(4px) to-rem(12px) 0 gtkalpha($blue, 0.15);
+            }
+
+            .category-icon {
+                font-size: to-rem(20px);
+                min-width: to-rem(20px);
+                min-height: to-rem(20px);
+            }
+
+            .category-label {
+                font-size: to-rem(15px);
+                font-weight: 600;
+            }
+        }
+    }
+
     .all-apps-scrollable {
         background-color: transparent;
         min-height: to-rem(600px);
@@ -173,5 +213,90 @@ window.launcher {
         font-size: to-rem(18px);
         color: gtkalpha($fg, 0.6);
         font-weight: 500;
+    }
+
+    // App Folders Styling
+    .folder-icon-wrapper {
+        background-image: linear-gradient(to bottom right, gtkalpha($bg2, 0.7), gtkalpha($bg1, 0.4));
+        border-radius: to-rem(22px);
+        border: to-rem(1px) solid gtkalpha($bg4, 0.6);
+        padding: to-rem(12px);
+        box-shadow: 0 to-rem(4px) to-rem(10px) gtkalpha(#000, 0.2);
+        transition: all 200ms ease;
+
+        .folder-mini-icon {
+            font-size: to-rem(20px);
+            min-width: to-rem(20px);
+            min-height: to-rem(20px);
+            border-radius: to-rem(6px);
+            box-shadow: 0 to-rem(2px) to-rem(4px) gtkalpha(#000, 0.2);
+        }
+
+        .folder-mini-icon-placeholder {
+            min-width: to-rem(20px);
+            min-height: to-rem(20px);
+            background-color: transparent;
+        }
+    }
+
+    .folder-grid-item:hover {
+        .folder-icon-wrapper {
+            background-image: linear-gradient(to bottom right, gtkalpha($bg3, 0.8), gtkalpha($bg2, 0.5));
+            border-color: gtkalpha($blue, 0.5);
+            box-shadow: 0 to-rem(8px) to-rem(20px) gtkalpha($blue, 0.25);
+        }
+    }
+
+    // Folder Modal Overlay
+    .folder-modal-backdrop {
+        background-color: gtkalpha(#000, 0.6);
+        transition: all 300ms ease;
+    }
+
+    .folder-modal-content {
+        background-image: linear-gradient(to bottom right, gtkalpha($bg1, 0.98), gtkalpha($bg, 0.95));
+        border-radius: to-rem(28px);
+        padding: to-rem(25px) to-rem(35px);
+        border: to-rem(1px) solid gtkalpha($bg4, 0.7);
+        box-shadow: 0 to-rem(20px) to-rem(60px) gtkalpha(#000, 0.7);
+
+        .folder-modal-header {
+            margin-bottom: to-rem(20px);
+
+            .folder-modal-title {
+                font-size: to-rem(22px);
+                font-weight: 700;
+                color: $fg;
+                letter-spacing: to-rem(-0.5px);
+            }
+
+            .folder-modal-close {
+                background-color: gtkalpha($bg2, 0.6);
+                border-radius: to-rem(50px);
+                padding: to-rem(6px);
+                min-width: to-rem(32px);
+                min-height: to-rem(32px);
+                color: gtkalpha($fg, 0.8);
+                transition: all 200ms ease;
+
+                &:hover {
+                    background-color: gtkalpha($red, 0.2);
+                    color: $red;
+                    border: to-rem(1px) solid gtkalpha($red, 0.4);
+                }
+
+                icon {
+                    font-size: to-rem(18px);
+                }
+            }
+        }
+
+        .folder-modal-scroll {
+            min-height: to-rem(220px);
+        }
+
+        .folder-modal-grid {
+            padding: to-rem(10px) 0;
+        }
     }
 }

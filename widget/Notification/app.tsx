@@ -85,9 +85,30 @@ class NotifiationMap implements Subscribable {
 
     private set(key: number, value: Gtk.Widget) {
         // in case of replacecment destroy previous widget
-        this.map.get(key)?.destroy();
-        this.map.set(key, value);
+        const old = this.map.get(key);
+        if (old) {
+            old.destroy();
+        }
+
+        const revealer = (
+            <revealer
+                transitionType={Gtk.RevealerTransitionType.SLIDE_DOWN}
+                transitionDuration={350}
+                revealChild={false}
+            >
+                {value}
+            </revealer>
+        ) as Gtk.Revealer;
+
+        this.map.set(key, revealer);
         this.notifiy();
+
+        // Trigger the slide-down animation shortly after insertion
+        timeout(50, () => {
+            if (this.map.get(key) === revealer) {
+                revealer.set_reveal_child(true);
+            }
+        });
     }
 
     private delete(key: number) {
@@ -97,9 +118,20 @@ class NotifiationMap implements Subscribable {
             GLib.source_remove(timeoutId);
             this.timeouts.delete(key);
         }
-        this.map.get(key)?.destroy();
-        this.map.delete(key);
-        this.notifiy();
+
+        const revealer = this.map.get(key) as Gtk.Revealer | undefined;
+        if (revealer) {
+            revealer.set_reveal_child(false);
+
+            // Wait for slide-up animation to complete before destroying the widget
+            timeout(350, () => {
+                if (this.map.get(key) === revealer) {
+                    revealer.destroy();
+                    this.map.delete(key);
+                    this.notifiy();
+                }
+            });
+        }
     }
 
     // needed by the Subscribable interface

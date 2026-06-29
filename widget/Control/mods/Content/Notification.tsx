@@ -23,34 +23,34 @@ const isIcon = (icon: string) => {
     iconCache.set(icon, result);
     return result;
 };
-const formatTimeAgo = (time: number): string => {
-    const now = GLib.DateTime.new_now_local().to_unix();
+const formatTimeAgo = (time: number, now: number): string => {
     const diff = now - time;
-
+ 
     if (diff < 60) {
         return "now";
     }
-
+ 
     if (diff < 3600) {
         const minutes = Math.floor(diff / 60);
         return `${minutes}m ago`;
     }
-
+ 
     if (diff < 86400) {
         const hours = Math.floor(diff / 3600);
         return `${hours}h ago`;
     }
-
+ 
     const date = GLib.DateTime.new_from_unix_local(time);
     const day = date.get_day_of_month().toString().padStart(2, "0");
     const month = date.get_month().toString().padStart(2, "0");
     const year = date.get_year().toString();
-
-    const currentYear = GLib.DateTime.new_now_local().get_year();
+ 
+    const dateNow = GLib.DateTime.new_from_unix_local(now);
+    const currentYear = dateNow.get_year();
     if (date.get_year() === currentYear) {
         return `${day}/${month}`;
     }
-
+ 
     return `${day}/${month}/${year}`;
 };
 
@@ -64,7 +64,6 @@ const NotificationList = () => {
 
     // Store timeout IDs for cleanup
     let timeRefresherId: number | null = null;
-    let pollingTimeoutId: number | null = null;
     let notificationConnections: number[] = [];
 
     // Cleanup function
@@ -72,10 +71,6 @@ const NotificationList = () => {
         if (timeRefresherId) {
             GLib.source_remove(timeRefresherId);
             timeRefresherId = null;
-        }
-        if (pollingTimeoutId) {
-            GLib.source_remove(pollingTimeoutId);
-            pollingTimeoutId = null;
         }
         // Disconnect signal handlers
         notificationConnections.forEach((id) => {
@@ -143,197 +138,252 @@ const NotificationList = () => {
 
     notificationConnections.push(notifiedId, resolvedId);
 
-    // Polling with cleanup - sync both notifications and allNotifications
-    let lastCount = notifications.get().length;
-    pollingTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
-        const currentCount = notifd.notifications.length;
-        const currentNotifs = [...notifd.notifications];
-
-        // Only sync notifications (current active state)
-        // Keep allNotifications as history - don't sync it to preserve dismissed notifications
-        if (
-            currentCount !== lastCount ||
-            JSON.stringify(notifications.get().map((n) => n.id)) !==
-                JSON.stringify(currentNotifs.map((n) => n.id))
-        ) {
-            notifications.set(currentNotifs);
-            // Don't sync allNotifications - keep it as history
-            notificationCount.set(currentCount);
-            lastCount = currentCount;
-        }
-        return true;
-    });
-
     const NotificationItem = ({ notification }: { notification: any }) => {
         const showActions = Variable(false);
+        const reveal = Variable(true);
+        const dragX = Variable(0);
+        const dragOpacity = Variable(1.0);
+        let startX = 0;
+        let isDragging = false;
+        let snapTimerId: number | null = null;
+
+        const dismissWithAnim = () => {
+            reveal.set(false);
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
+                if (typeof notification.dismiss === "function") {
+                    notification.dismiss();
+                }
+
+                const currentNotifs = allNotifications.get();
+                const filteredNotifs = currentNotifs.filter(
+                    (n) => n.id !== notification.id,
+                );
+
+                allNotifications.set(filteredNotifs);
+                notifications.set(
+                    [...notifd.notifications].filter(
+                        (n) => n.id !== notification.id,
+                    ),
+                );
+                notificationCount.set(filteredNotifs.length);
+                return false;
+            });
+        };
+
+        const snapBack = () => {
+            if (snapTimerId) {
+                GLib.source_remove(snapTimerId);
+            }
+            const startValX = dragX.get();
+            const startValOpacity = dragOpacity.get();
+            const steps = 10;
+            let count = 0;
+
+            snapTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 16, () => {
+                count++;
+                if (count >= steps) {
+                    dragX.set(0);
+                    dragOpacity.set(1.0);
+                    snapTimerId = null;
+                    return false;
+                }
+                const t = count / steps;
+                const factor = 1 - (1 - t) * (1 - t);
+                dragX.set(startValX * (1 - factor));
+                dragOpacity.set(startValOpacity + (1.0 - startValOpacity) * factor);
+                return true;
+            });
+        };
 
         return (
-            <box
-                className="notification-item"
+            <revealer
+                transitionDuration={200}
+                transitionType={Gtk.RevealerTransitionType.SLIDE_DOWN}
+                revealChild={bind(reveal)}
                 onDestroy={() => {
                     showActions.drop();
+                    reveal.drop();
+                    dragX.drop();
+                    dragOpacity.drop();
+                    if (snapTimerId) {
+                        GLib.source_remove(snapTimerId);
+                    }
                 }}
             >
-                {notification.image && fileExists(notification.image) && (
+                <eventbox
+                    onButtonPressEvent={(self, event) => {
+                        const [success, x, y] = event.get_root_coords();
+                        startX = x;
+                        isDragging = true;
+                        return false;
+                    }}
+                    onButtonReleaseEvent={(self, event) => {
+                        if (!isDragging) return false;
+                        isDragging = false;
+                        const [success, x, y] = event.get_root_coords();
+                        const deltaX = x - startX;
+                        if (deltaX > 150) {
+                            dismissWithAnim();
+                        } else {
+                            snapBack();
+                        }
+                        return false;
+                    }}
+                    onMotionNotifyEvent={(self, event) => {
+                        if (!isDragging) return false;
+                        const [success, x, y] = event.get_root_coords();
+                        const deltaX = x - startX;
+                        if (deltaX > 0) {
+                            dragX.set(deltaX);
+                            dragOpacity.set(Math.max(0.1, 1 - deltaX / 350));
+                        }
+                        return false;
+                    }}
+                >
                     <box
-                        valign={Gtk.Align.START}
-                        className="image-list"
-                        css={`
-                            background-image: url("${notification.image}");
-                        `}
-                    ></box>
-                )}
-                {notification.image && isIcon(notification.image) && (
-                    <box
-                        expand={false}
-                        valign={Gtk.Align.START}
-                        className="icon-image-list"
+                        className="notification-item"
+                        marginLeft={bind(dragX)}
+                        marginRight={bind(dragX).as(x => -x)}
+                        opacity={bind(dragOpacity)}
                     >
-                        <icon
-                            icon={notification.image}
-                            expand
-                            halign={Gtk.Align.CENTER}
-                            valign={Gtk.Align.CENTER}
-                        />
-                    </box>
-                )}
-                {!notification.image && (
-                    <button
-                        className="default-icon-notification-list"
-                        valign={Gtk.Align.START}
-                    >
-                        <icon icon="default-notification" />
-                    </button>
-                )}
-                <box vertical>
-                    <box>
-                        <label
-                            className="notification-summary-list"
-                            halign={Gtk.Align.START}
-                            xalign={0}
-                            label={notification.summary}
-                            hexpand
-                            wrap
-                        />
-                        <box halign={Gtk.Align.END} valign={Gtk.Align.START}>
-                            <label
-                                className="notification-time-list"
-                                halign={Gtk.Align.START}
-                                label={bind(timeRefresher).as(() =>
-                                    formatTimeAgo(notification.time),
-                                )}
-                            />
-                            <button
-                                className="notification-expand-button-list"
-                                cursor={"hand1"}
-                                onClicked={() =>
-                                    showActions.set(!showActions.get())
-                                }
+                        {notification.image && fileExists(notification.image) && (
+                            <box
+                                valign={Gtk.Align.START}
+                                className="image-list"
                                 css={`
-                                    background-color: transparent;
+                                    background-image: url("${notification.image}");
                                 `}
+                            ></box>
+                        )}
+                        {notification.image && isIcon(notification.image) && (
+                            <box
+                                expand={false}
+                                valign={Gtk.Align.START}
+                                className="icon-image-list"
                             >
                                 <icon
-                                    icon={"expand-down"}
-                                    className={bind(showActions).as((shown) =>
-                                        shown ? "expanded" : "",
-                                    )}
+                                    icon={notification.image}
+                                    expand
+                                    halign={Gtk.Align.CENTER}
+                                    valign={Gtk.Align.CENTER}
                                 />
+                            </box>
+                        )}
+                        {!notification.image && (
+                            <button
+                                className="default-icon-notification-list"
+                                valign={Gtk.Align.START}
+                            >
+                                <icon icon="default-notification" />
                             </button>
+                        )}
+                        <box vertical>
+                            <box>
+                                <label
+                                    className="notification-summary-list"
+                                    halign={Gtk.Align.START}
+                                    xalign={0}
+                                    label={notification.summary}
+                                    hexpand
+                                    wrap
+                                />
+                                <box halign={Gtk.Align.END} valign={Gtk.Align.START}>
+                                    <label
+                                        className="notification-time-list"
+                                        halign={Gtk.Align.START}
+                                        label={bind(timeRefresher).as((refreshedTime) =>
+                                            formatTimeAgo(notification.time, Math.floor(refreshedTime / 1000)),
+                                        )}
+                                    />
+                                    <button
+                                        className="notification-expand-button-list"
+                                        cursor={"hand1"}
+                                        onClicked={() =>
+                                            showActions.set(!showActions.get())
+                                        }
+                                        css={`
+                                            background-color: transparent;
+                                        `}
+                                    >
+                                        <icon
+                                            icon={"expand-down"}
+                                            className={bind(showActions).as((shown) =>
+                                                shown ? "expanded" : "",
+                                            )}
+                                        />
+                                    </button>
+                                </box>
+                            </box>
+                            {notification.body && (
+                                <label
+                                    className="notification-body-list"
+                                    wrap
+                                    useMarkup
+                                    halign={Gtk.Align.START}
+                                    xalign={0}
+                                    justifyFill
+                                    label={notification.body}
+                                />
+                            )}
+                            <revealer
+                                transitionDuration={200}
+                                transitionType={Gtk.RevealerTransitionType.SLIDE_DOWN}
+                                revealChild={bind(showActions)}
+                            >
+                                <box className="notification-actions-list">
+                                    <box>
+                                        <button
+                                            cursor={"hand1"}
+                                            onClicked={dismissWithAnim}
+                                        >
+                                            <label
+                                                label="Close"
+                                                halign={Gtk.Align.CENTER}
+                                                hexpand
+                                            />
+                                        </button>
+                                    </box>
+                                    {notification.get_actions().length > 0 && (
+                                        <box spacing={15}>
+                                            {notification
+                                                .get_actions()
+                                                .map(
+                                                    ({
+                                                        label,
+                                                        id,
+                                                    }: {
+                                                        label: string;
+                                                        id: string;
+                                                    }) => (
+                                                        <button
+                                                            cursor={"hand1"}
+                                                            hexpand
+                                                            onClicked={() => {
+                                                                notification.invoke(id);
+                                                                // Remove setTimeout to prevent memory leak
+                                                                notifications.set([
+                                                                    ...notifd.notifications,
+                                                                ]);
+                                                            }}
+                                                        >
+                                                            <label
+                                                                label={label}
+                                                                halign={
+                                                                    Gtk.Align.CENTER
+                                                                }
+                                                                hexpand
+                                                            />
+                                                        </button>
+                                                    ),
+                                                )}
+                                        </box>
+                                    )}
+                                </box>
+                            </revealer>
                         </box>
                     </box>
-                    {notification.body && (
-                        <label
-                            className="notification-body-list"
-                            wrap
-                            useMarkup
-                            halign={Gtk.Align.START}
-                            xalign={0}
-                            justifyFill
-                            label={notification.body}
-                        />
-                    )}
-                    <revealer
-                        transitionDuration={200}
-                        transitionType={Gtk.RevealerTransitionType.SLIDE_DOWN}
-                        revealChild={bind(showActions)}
-                    >
-                        <box className="notification-actions-list">
-                            <box>
-                                <button
-                                    cursor={"hand1"}
-                                    onClicked={() => {
-                                        if (
-                                            typeof notification.dismiss ===
-                                            "function"
-                                        ) {
-                                            notification.dismiss();
-                                        }
-
-                                        const currentNotifs =
-                                            allNotifications.get();
-                                        const filteredNotifs =
-                                            currentNotifs.filter(
-                                                (n) => n.id !== notification.id,
-                                            );
-
-                                        allNotifications.set(filteredNotifs);
-                                        notifications.set(
-                                            [...notifd.notifications].filter(
-                                                (n) => n.id !== notification.id,
-                                            ),
-                                        );
-                                        notificationCount.set(
-                                            filteredNotifs.length,
-                                        );
-                                    }}
-                                >
-                                    <label
-                                        label="Close"
-                                        halign={Gtk.Align.CENTER}
-                                        hexpand
-                                    />
-                                </button>
-                            </box>
-                            {notification.get_actions().length > 0 && (
-                                <box spacing={15}>
-                                    {notification
-                                        .get_actions()
-                                        .map(
-                                            ({
-                                                label,
-                                                id,
-                                            }: {
-                                                label: string;
-                                                id: string;
-                                            }) => (
-                                                <button
-                                                    cursor={"hand1"}
-                                                    hexpand
-                                                    onClicked={() => {
-                                                        notification.invoke(id);
-                                                        // Remove setTimeout to prevent memory leak
-                                                        notifications.set([
-                                                            ...notifd.notifications,
-                                                        ]);
-                                                    }}
-                                                >
-                                                    <label
-                                                        label={label}
-                                                        halign={
-                                                            Gtk.Align.CENTER
-                                                        }
-                                                        hexpand
-                                                    />
-                                                </button>
-                                            ),
-                                        )}
-                                </box>
-                            )}
-                        </box>
-                    </revealer>
-                </box>
-            </box>
+                </eventbox>
+            </revealer>
         );
     };
 

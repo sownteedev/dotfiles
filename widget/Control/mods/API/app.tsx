@@ -1,8 +1,13 @@
 import { bind, Variable, derive } from "astal";
 import { Gtk } from "astal/gtk3";
 import { Calendar } from "./Calendar";
-import { Todo, cleanupTodo, TodoAddFormDialog } from "./Todo";
-import { Weather, weatherData, isWeatherLoading, cleanupWeather } from "./Weather";
+import { Todo, TodoAddFormDialog, cleanupTodo } from "./Todo";
+import {
+    Weather,
+    weatherData,
+    isWeatherLoading,
+    cleanupWeather,
+} from "./Weather";
 import {
     currentDate,
     calendarEvents,
@@ -13,9 +18,6 @@ import {
     datesWithEvents,
 } from "./Calendar";
 import { showEventForm, showTodoAddForm } from "./modalState";
-
-// ========== TAB MANAGEMENT (global, singleton) ==========
-const buttonSelected = Variable(0);
 
 // Factory functions to create new component instances
 // (GTK widgets are destroyed when removed from tree, so we must recreate)
@@ -31,14 +33,6 @@ const createContent = (index: number): JSX.Element => {
             return <Calendar />;
     }
 };
-
-const content = Variable<JSX.Element>(createContent(0));
-
-/** Ẩn tab Calendar/Todo/Weather khi đang mở form Calendar hoặc form thêm task */
-const showMainTabContent = derive(
-    [showEventForm, showTodoAddForm],
-    (event, todo) => !event && !todo,
-);
 
 // Button config (static)
 const buttons = [
@@ -59,32 +53,41 @@ const buttons = [
     },
 ];
 
-const cleanupAll = () => {
-    cleanupWeather();
-
-    cleanupTodo();
-
-    try {
-        currentDate.drop();
-        weatherData.drop();
-        isWeatherLoading.drop();
-        buttonSelected.drop();
-        content.drop();
-        calendarEvents.drop();
-        isCalendarLoading.drop();
-        showEventForm.drop();
-        showTodoAddForm.drop();
-        showMainTabContent.drop();
-        selectedDateForEvents.drop();
-        prefillDateForNewEvent.drop();
-        datesWithEvents.drop();
-    } catch {
-        // Variables might already be dropped
-    }
-};
-
 // Main component
 export default () => {
+    const buttonSelected = Variable(0);
+    const content = Variable<JSX.Element>(createContent(0));
+
+    /** Ẩn tab Calendar/Todo/Weather khi đang mở form Calendar hoặc form thêm task */
+    const showMainTabContent = derive(
+        [showEventForm, showTodoAddForm],
+        (event, todo) => !event && !todo,
+    );
+
+    const cleanupAll = () => {
+        cleanupWeather();
+
+        cleanupTodo();
+
+        try {
+            currentDate.drop();
+            weatherData.drop();
+            isWeatherLoading.drop();
+            buttonSelected.drop();
+            content.drop();
+            calendarEvents.drop();
+            isCalendarLoading.drop();
+            showEventForm.drop();
+            showTodoAddForm.drop();
+            showMainTabContent.drop();
+            selectedDateForEvents.drop();
+            prefillDateForNewEvent.drop();
+            datesWithEvents.drop();
+        } catch {
+            // Variables might already be dropped
+        }
+    };
+
     return (
         <box
             vertical
@@ -101,7 +104,7 @@ export default () => {
                     <button
                         cursor="hand1"
                         className={bind(buttonSelected).as((selected) =>
-                            selected === index ? "active" : ""
+                            selected === index ? "active" : "",
                         )}
                         onClicked={() => {
                             if (buttonSelected.get() !== index) {
@@ -133,22 +136,12 @@ export default () => {
             </box>
             <box vertical spacing={10}>
                 {bind(showEventForm).as((show) =>
-                    show ? (
-                        <EventFormDialog />
-                    ) : (
-                        <box visible={false} />
-                    ),
+                    show ? <EventFormDialog /> : <box visible={false} />,
                 )}
                 {bind(showTodoAddForm).as((show) =>
-                    show ? (
-                        <TodoAddFormDialog />
-                    ) : (
-                        <box visible={false} />
-                    ),
+                    show ? <TodoAddFormDialog /> : <box visible={false} />,
                 )}
-                <box visible={bind(showMainTabContent)}>
-                    {bind(content)}
-                </box>
+                <box visible={bind(showMainTabContent)}>{bind(content)}</box>
             </box>
         </box>
     );

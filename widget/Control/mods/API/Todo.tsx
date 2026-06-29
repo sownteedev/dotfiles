@@ -367,7 +367,7 @@ export const Todo = () => {
             await execAsync([
                 "bash",
                 "-lc",
-                'cd "$HOME/Dotfiles/ags" && ./scripts/google-calendar-setup.sh --open-only',
+                'cd "$HOME/Dotfiles/dotf/ags" && ./scripts/google-calendar-setup.sh --open-only',
             ]);
         } catch {
             // no-op: user can still paste code manually
@@ -380,7 +380,7 @@ export const Todo = () => {
             await execAsync([
                 "bash",
                 "-lc",
-                'cd "$HOME/Dotfiles/ags" && ./scripts/google-calendar-setup.sh --auth-code "$1"',
+                'cd "$HOME/Dotfiles/dotf/ags" && ./scripts/google-calendar-setup.sh --auth-code "$1"',
                 "--",
                 code,
             ]);

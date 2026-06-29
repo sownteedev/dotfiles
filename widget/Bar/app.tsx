@@ -7,6 +7,7 @@ import Tray from "gi://AstalTray";
 import ActiveClient from "./mods/ActiveClient";
 import Workspace from "./mods/Workspace";
 import { truncateText } from "../../utils/common";
+import { toggleControlMenu } from "../Control/app";
 
 const SysTray = () => {
     const tray = Tray.get_default();
@@ -28,7 +29,7 @@ const SysTray = () => {
                             gicon={bind(item, "gicon")}
                         />
                     </menubutton>
-                ))
+                )),
             )}
         </box>
     );
@@ -40,8 +41,8 @@ const KhoangTrang = () => {
 
 const Date = ({ format = "%a, %d %b %Y" }) => {
     const date = Variable<string>("").poll(
-        1000,
-        () => GLib.DateTime.new_now_local().format(format)!
+        60000,
+        () => GLib.DateTime.new_now_local().format(format)!,
     );
 
     return (
@@ -56,8 +57,8 @@ const Date = ({ format = "%a, %d %b %Y" }) => {
 
 const Time = ({ format = "%I : %M %p" }) => {
     const time = Variable<string>("").poll(
-        1000,
-        () => GLib.DateTime.new_now_local().format(format)!
+        10000,
+        () => GLib.DateTime.new_now_local().format(format)!,
     );
 
     return (
@@ -93,7 +94,7 @@ const BatteryLevel = () => {
                 >
                     <label
                         label={bind(bat, "percentage").as(
-                            (p) => Math.floor(p * 100) + "%"
+                            (p) => Math.floor(p * 100) + "%",
                         )}
                     />
                 </revealer>
@@ -157,7 +158,7 @@ const Media = () => {
 
     // Function to prioritize players: Spotify > Web (SoundCloud, Youtube) > Others
     const getPrioritizedPlayer = (
-        players: Mpris.Player[]
+        players: Mpris.Player[],
     ): Mpris.Player | null => {
         if (!players || players.length === 0) return null;
 
@@ -206,23 +207,24 @@ const Media = () => {
                             cursor={"hand1"}
                         >
                             <circularprogress
-                                className={bind(player, "length").as((length) =>
-                                    length >= 3600
-                                        ? "progress-media live"
-                                        : "progress-media"
+                                className={bind(player, "length").as(
+                                    (length) =>
+                                        length >= 3600
+                                            ? "progress-media live"
+                                            : "progress-media",
                                 )}
                                 endAt={bind(player, "identity").as(
                                     (identity) => {
                                         const laggyPlayers = ["spotify"];
                                         const isLaggy = laggyPlayers.some((p) =>
-                                            identity.toLowerCase().includes(p)
+                                            identity.toLowerCase().includes(p),
                                         );
                                         return isLaggy || player.length >= 3600
                                             ? 1
                                             : player.length >= 0
-                                            ? player.length
-                                            : 1;
-                                    }
+                                              ? player.length
+                                              : 1;
+                                    },
                                 )}
                                 rounded={true}
                                 value={bind(player, "position").as(
@@ -231,14 +233,14 @@ const Media = () => {
                                         const length = player.length;
                                         const laggyPlayers = ["spotify"];
                                         const isLaggy = laggyPlayers.some((p) =>
-                                            identity.toLowerCase().includes(p)
+                                            identity.toLowerCase().includes(p),
                                         );
                                         return isLaggy || length >= 3600
                                             ? 1
                                             : length > 0
-                                            ? position / length
-                                            : 1;
-                                    }
+                                              ? position / length
+                                              : 1;
+                                    },
                                 )}
                                 child={
                                     <overlay>
@@ -249,7 +251,7 @@ const Media = () => {
                                                     if (!c || c === "")
                                                         return "background-color: rgba(255, 255, 255, 0.1);";
                                                     return `background-image: url('${c}'); background-size: cover; background-position: center;`;
-                                                }
+                                                },
                                             )}
                                         />
                                         <revealer
@@ -267,19 +269,19 @@ const Media = () => {
                                                 }
                                                 visible={bind(
                                                     player,
-                                                    "canPause"
+                                                    "canPause",
                                                 )}
                                             >
                                                 <icon
                                                     icon={bind(
                                                         player,
-                                                        "playbackStatus"
+                                                        "playbackStatus",
                                                     ).as((s) =>
                                                         s ===
                                                         Mpris.PlaybackStatus
                                                             .PLAYING
                                                             ? "media-playback-pause-symbolic"
-                                                            : "media-playback-start-symbolic"
+                                                            : "media-playback-start-symbolic",
                                                     )}
                                                 />
                                             </button>
@@ -300,14 +302,14 @@ const Media = () => {
                                     className="title"
                                     halign={Gtk.Align.START}
                                     label={bind(player, "title").as((t) =>
-                                        truncateText(t || "Unknown Track", 50)
+                                        truncateText(t || "Unknown Track", 50),
                                     )}
                                 />
                                 <label
                                     className="artist"
                                     halign={Gtk.Align.START}
                                     label={bind(player, "artist").as((a) =>
-                                        truncateText(a || "Unknown Artist", 50)
+                                        truncateText(a || "Unknown Artist", 50),
                                     )}
                                 />
                             </box>
@@ -335,7 +337,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
             <centerbox>
                 <box halign={Gtk.Align.START} spacing={25}>
                     <ActiveClient />
-                    <Media />
+                    {/* <Media /> */}
                     {/* <MediaCava /> */}
                 </box>
                 <box>
@@ -351,9 +353,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
                     <BatteryLevel />
                     <KhoangTrang />
                     <button
-                        onClick={() =>
-                            execAsync("astal -i sownteeastal -t control-menu")
-                        }
+                        onClick={toggleControlMenu}
                     >
                         <box vertical>
                             <Time />

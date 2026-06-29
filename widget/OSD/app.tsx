@@ -96,7 +96,11 @@ const createBrightnessIndicator = (brightness: any) => {
     });
 };
 
-const createOSDWidget = (current_timeout_ref: any, visibleVar: any) => {
+const createOSDWidget = (
+    current_timeout_ref: any,
+    revealerVisible: Variable<boolean>,
+    windowVisible: Variable<boolean>
+) => {
     const speaker = Wp.get_default()!.defaultSpeaker;
     const mic = Wp.get_default()!.defaultMicrophone;
     const brightness = Brightness.get_default();
@@ -120,13 +124,19 @@ const createOSDWidget = (current_timeout_ref: any, visibleVar: any) => {
                     brightness_indicator.visible = false;
 
                     widget.visible = true;
-                    visibleVar.set(true);
+                    windowVisible.set(true);
+                    revealerVisible.set(true);
                     if (current_timeout_ref.timer) {
                         current_timeout_ref.timer.cancel();
                     }
 
                     current_timeout_ref.timer = timeout(SHOW_TIME, () => {
-                        visibleVar.set(false);
+                        revealerVisible.set(false);
+                        timeout(300, () => {
+                            if (!revealerVisible.get()) {
+                                windowVisible.set(false);
+                            }
+                        });
                         current_timeout_ref.timer = null;
                     });
                 };
@@ -214,21 +224,28 @@ const createOSDWidget = (current_timeout_ref: any, visibleVar: any) => {
 
 export default function OSD(gdkmonitor: Gdk.Monitor) {
     const current_timeout_ref: any = { timer: null };
-    const visible = Variable(false);
+    const revealerVisible = Variable(false);
+    const windowVisible = Variable(false);
+
+    const cleanup = () => {
+        revealerVisible.drop();
+        windowVisible.drop();
+    };
 
     return (
         <window
             gdkmonitor={gdkmonitor}
             className="OSDWindow"
             anchor={Astal.WindowAnchor.BOTTOM}
-            css={bind(visible).as((v) => (v ? "" : "pointer-events: none;"))}
+            visible={bind(windowVisible)}
+            onDestroy={cleanup}
         >
             <revealer
                 transitionType={Gtk.RevealerTransitionType.SLIDE_UP}
                 transitionDuration={300}
-                revealChild={bind(visible)}
+                revealChild={bind(revealerVisible)}
             >
-                {createOSDWidget(current_timeout_ref, visible)}
+                {createOSDWidget(current_timeout_ref, revealerVisible, windowVisible)}
             </revealer>
         </window>
     );

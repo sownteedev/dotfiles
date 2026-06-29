@@ -2,6 +2,8 @@ import Apps from "gi://AstalApps";
 import { App, Astal, Gdk, Gtk } from "astal/gtk3";
 import { bind, Variable } from "astal";
 import AllApp from "./AllApp";
+import { filterApp } from "./AppFilter";
+
 
 const MAX_ITEMS = 5;
 const CACHE_SIZE_LIMIT = 30; // Reduced cache size for better memory management
@@ -116,15 +118,14 @@ export default function Applauncher() {
         // Check cache first
         let results = queryCache.get(trimmed);
         if (!results) {
-            // Perform query
-            results = apps.fuzzy_query(trimmed);
+            // Perform query and filter results
+            const rawResults = apps.fuzzy_query(trimmed);
+            results = rawResults ? rawResults.filter(filterApp) : [];
             // Cache result (LRU will handle size limit)
-            if (results) {
-                queryCache.set(trimmed, results);
-            }
+            queryCache.set(trimmed, results);
         }
         // TypeScript: results is guaranteed to be defined here
-        const sliced = results!.slice(0, MAX_ITEMS);
+        const sliced = results.slice(0, MAX_ITEMS);
         listLength.set(sliced.length);
         return sliced;
     });
@@ -136,8 +137,9 @@ export default function Applauncher() {
             const queryText = text.get().trim();
             let fullResults = queryCache.get(queryText);
             if (!fullResults) {
-                fullResults = apps.fuzzy_query(queryText);
-                queryCache.set(queryText, fullResults!);
+                const rawResults = apps.fuzzy_query(queryText);
+                fullResults = rawResults ? rawResults.filter(filterApp) : [];
+                queryCache.set(queryText, fullResults);
             }
             if (fullResults && fullResults.length > 0) {
                 fullResults[0].launch();

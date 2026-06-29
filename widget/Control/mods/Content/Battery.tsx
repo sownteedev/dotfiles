@@ -1,4 +1,4 @@
-import { bind, exec, execAsync, Variable } from "astal";
+import { bind, exec, execAsync, GLib, Variable } from "astal";
 import { Gtk, Gdk } from "astal/gtk3";
 import Battery from "gi://AstalBattery";
 import PowerProfiles from "gi://AstalPowerProfiles";
@@ -35,10 +35,83 @@ const BatteryInfo = () => {
         const bat = getBatteryDevice();
         if (!bat) {
             console.error(
-                "Battery: Cannot create BatteryInfo: no battery device"
+                "Battery: Cannot create BatteryInfo: no battery device",
             );
             return <box />;
         }
+
+        const gpuPower = Variable("N/A");
+        let gpuPowerTimeoutId: number | null = null;
+
+        // Locate Nvidia GPU runtime status path dynamically
+        let gpuStatusPath = "/sys/bus/pci/devices/0000:01:00.0/power/runtime_status";
+        try {
+            const dir = GLib.Dir.open("/sys/bus/pci/drivers/nvidia", 0);
+            let name;
+            while ((name = dir.read_name())) {
+                if (name.startsWith("0000:")) {
+                    gpuStatusPath = `/sys/bus/pci/devices/${name}/power/runtime_status`;
+                    break;
+                }
+            }
+            dir.close();
+        } catch {
+            // Fallback to default
+        }
+
+        const refreshGpuPower = () => {
+            if (!GLib.file_test(gpuStatusPath, GLib.FileTest.EXISTS)) {
+                gpuPower.set("N/A");
+                return;
+            }
+
+            execAsync(`cat ${gpuStatusPath}`)
+                .then((status) => {
+                    if (status.toString().trim() !== "active") {
+                        gpuPower.set("Suspended");
+                        return;
+                    }
+
+                    execAsync(
+                        "nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits",
+                    )
+                        .then((value) => {
+                            const powerDraw = value
+                                .toString()
+                                .trim()
+                                .split(/\r?\n/)
+                                .find((line) => line.trim().length > 0);
+
+                            if (!powerDraw) {
+                                gpuPower.set("N/A");
+                                return;
+                            }
+
+                            const parsedPower = Number.parseFloat(powerDraw);
+                            gpuPower.set(
+                                Number.isFinite(parsedPower)
+                                    ? `${parsedPower.toFixed(1)} W`
+                                    : "N/A",
+                            );
+                        })
+                        .catch(() => {
+                            gpuPower.set("N/A");
+                        });
+                })
+                .catch(() => {
+                    gpuPower.set("N/A");
+                });
+        };
+
+        refreshGpuPower();
+        gpuPowerTimeoutId = GLib.timeout_add(
+            GLib.PRIORITY_DEFAULT,
+            5000,
+            () => {
+                refreshGpuPower();
+                return true;
+            },
+        );
 
         return (
             <box
@@ -46,6 +119,13 @@ const BatteryInfo = () => {
                 vertical
                 spacing={10}
                 hexpand
+                onDestroy={() => {
+                    if (gpuPowerTimeoutId) {
+                        GLib.source_remove(gpuPowerTimeoutId);
+                        gpuPowerTimeoutId = null;
+                    }
+                    gpuPower.drop();
+                }}
             >
                 <box>
                     <label
@@ -97,17 +177,17 @@ const BatteryInfo = () => {
                                     (
                                         state: any,
                                         timeToFull: any,
-                                        timeToEmpty: any
+                                        timeToEmpty: any,
                                     ) => {
                                         if (!state) return "Unknown";
 
                                         if (state === Battery.State.CHARGING) {
                                             if (timeToFull > 0) {
                                                 const hours = Math.floor(
-                                                    timeToFull / 3600
+                                                    timeToFull / 3600,
                                                 );
                                                 const minutes = Math.floor(
-                                                    (timeToFull % 3600) / 60
+                                                    (timeToFull % 3600) / 60,
                                                 );
                                                 return `${hours}h ${minutes}m to full`;
                                             }
@@ -117,10 +197,10 @@ const BatteryInfo = () => {
                                         ) {
                                             if (timeToEmpty > 0) {
                                                 const hours = Math.floor(
-                                                    timeToEmpty / 3600
+                                                    timeToEmpty / 3600,
                                                 );
                                                 const minutes = Math.floor(
-                                                    (timeToEmpty % 3600) / 60
+                                                    (timeToEmpty % 3600) / 60,
                                                 );
                                                 return `${hours}h ${minutes}m remaining`;
                                             }
@@ -137,8 +217,8 @@ const BatteryInfo = () => {
                                                 "Pending Discharge",
                                         };
                                         return stateMap[state] || String(state);
-                                    }
-                                )
+                                    },
+                                ),
                             )}
                             xalign={0}
                             hexpand
@@ -173,7 +253,7 @@ const BatteryInfo = () => {
                             (energyFullDesign) => {
                                 if (!energyFullDesign) return "N/A";
                                 return `${energyFullDesign.toFixed(1)} Wh`;
-                            }
+                            },
                         )}
                         xalign={1}
                         hexpand
@@ -194,7 +274,7 @@ const BatteryInfo = () => {
                     />
                 </box>
 
-                {/* <box hexpand>
+                <box hexpand>
                     <label label="Change cycles:" />
                     <label
                         label={bind(bat, "chargeCycles").as((chargeCycles) => {
@@ -206,7 +286,7 @@ const BatteryInfo = () => {
                         xalign={1}
                         hexpand
                     />
-                </box> */}
+                </box>
 
                 <box hexpand>
                     <label label="Temperature:" />
@@ -232,6 +312,11 @@ const BatteryInfo = () => {
                         xalign={1}
                         hexpand
                     />
+                </box>
+
+                <box hexpand>
+                    <label label="GPU Power:" />
+                    <label label={bind(gpuPower)} xalign={1} hexpand />
                 </box>
             </box>
         );
@@ -284,7 +369,7 @@ const BatteryInfo = () => {
                             profiles.forEach((profile) => {
                                 const menuItem = new Gtk.MenuItem();
                                 menuItem.set_label(
-                                    getProfileDisplayName(profile)
+                                    getProfileDisplayName(profile),
                                 );
 
                                 menuItem.connect("activate", () => {
@@ -300,7 +385,7 @@ const BatteryInfo = () => {
                                 self,
                                 Gdk.Gravity.SOUTH_WEST,
                                 Gdk.Gravity.NORTH_WEST,
-                                null
+                                null,
                             );
                         }}
                     >
@@ -309,7 +394,7 @@ const BatteryInfo = () => {
                                 <label
                                     label={bind(power, "activeProfile").as(
                                         (profile) =>
-                                            getProfileDisplayName(profile)
+                                            getProfileDisplayName(profile),
                                     )}
                                     xalign={0}
                                 />
@@ -319,105 +404,8 @@ const BatteryInfo = () => {
                                             profile === "power-saver"
                                                 ? "Lowest power consumption, highest battery life"
                                                 : profile === "balanced"
-                                                ? "Default power consumption, good battery life"
-                                                : "Highest performance, lowest battery life"
-                                    )}
-                                    xalign={0}
-                                />
-                            </box>
-                            <icon icon="pan-down-symbolic" />
-                        </box>
-                    </button>
-                </box>
-            </box>
-        );
-    };
-
-    const CpuProfile = () => {
-        const getCpuPowerProfile = Variable(
-            exec(
-                "cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor"
-            ).includes("powersave")
-        );
-
-        const setCpuPowerProfile = async (profile: string) => {
-            try {
-                await exec(
-                    `pkexec bash -c "cpupower frequency-set -g ${profile}"`
-                );
-                getCpuPowerProfile.set(profile === "powersave");
-            } catch (error) {
-                console.error("Failed to set CPU power profile:", error);
-            }
-        };
-
-        const getCpuProfileDisplayName = (isPowersave: boolean) => {
-            return isPowersave ? "Powersave" : "Performance";
-        };
-
-        return (
-            <box
-                className="cpu-profile-container"
-                vertical
-                spacing={10}
-                hexpand
-                onDestroy={() => getCpuPowerProfile.drop()}
-            >
-                <label
-                    label="CPU Mode"
-                    xalign={0}
-                    className="cpu-profile-title"
-                />
-                <box spacing={5}>
-                    <button
-                        className="device-dropdown-button"
-                        cursor={"hand1"}
-                        onClicked={(self: any) => {
-                            const menu = new Gtk.Menu();
-
-                            const profiles = [
-                                { name: "Powersave", value: "powersave" },
-                                { name: "Performance", value: "performance" },
-                            ];
-
-                            profiles.forEach((profile) => {
-                                const menuItem = new Gtk.MenuItem();
-                                menuItem.set_label(profile.name);
-
-                                menuItem.connect("activate", () => {
-                                    setCpuPowerProfile(profile.value);
-                                    menu.hide();
-                                });
-
-                                menu.append(menuItem);
-                            });
-
-                            menu.show_all();
-                            menu.popup_at_widget(
-                                self,
-                                Gdk.Gravity.SOUTH_WEST,
-                                Gdk.Gravity.NORTH_WEST,
-                                null
-                            );
-                        }}
-                    >
-                        <box spacing={10} className="cpu-profile-button">
-                            <box hexpand vertical spacing={5}>
-                                <label
-                                    label={bind(getCpuPowerProfile).as(
-                                        (isPowersave) =>
-                                            getCpuProfileDisplayName(
-                                                isPowersave
-                                            )
-                                    )}
-                                    xalign={0}
-                                />
-                                <label
-                                    label={bind(getCpuPowerProfile).as(
-                                        (isPowersave) =>
-                                            isPowersave
-                                                ? "Change CPU frequency to lowest"
-                                                : "Change CPU frequency to highest"
+                                                  ? "Default power consumption, good battery life"
+                                                  : "Highest performance, lowest battery life",
                                     )}
                                     xalign={0}
                                 />
@@ -433,7 +421,7 @@ const BatteryInfo = () => {
     const BatteryCharging = () => {
         const chargeMode = Variable("");
         execAsync(
-            "cat /sys/class/power_supply/BAT0/charge_control_end_threshold"
+            "cat /sys/class/power_supply/BAT0/charge_control_end_threshold",
         ).then((v) => {
             if (v === "80") {
                 chargeMode.set("preserve");
@@ -446,12 +434,12 @@ const BatteryInfo = () => {
             try {
                 if (mode === "preserve") {
                     await exec(
-                        `pkexec bash -c "echo 80 > /sys/class/power_supply/BAT0/charge_control_end_threshold && echo 75 > /sys/class/power_supply/BAT0/charge_control_start_threshold"`
+                        `pkexec bash -c "echo 80 > /sys/class/power_supply/BAT0/charge_control_end_threshold && echo 75 > /sys/class/power_supply/BAT0/charge_control_start_threshold"`,
                     );
                     chargeMode.set("preserve");
                 } else {
                     await exec(
-                        `pkexec bash -c "echo 100 > /sys/class/power_supply/BAT0/charge_control_end_threshold && echo 50 > /sys/class/power_supply/BAT0/charge_control_start_threshold"`
+                        `pkexec bash -c "echo 100 > /sys/class/power_supply/BAT0/charge_control_end_threshold && echo 50 > /sys/class/power_supply/BAT0/charge_control_start_threshold"`,
                     );
                     chargeMode.set("maximize");
                 }
@@ -513,7 +501,7 @@ const BatteryInfo = () => {
                                 self,
                                 Gdk.Gravity.SOUTH_WEST,
                                 Gdk.Gravity.NORTH_WEST,
-                                null
+                                null,
                             );
                         }}
                     >
@@ -521,7 +509,7 @@ const BatteryInfo = () => {
                             <box hexpand vertical spacing={5}>
                                 <label
                                     label={bind(chargeMode).as((mode) =>
-                                        getChargeModeDisplayName(mode)
+                                        getChargeModeDisplayName(mode),
                                     )}
                                     xalign={0}
                                 />
@@ -529,7 +517,7 @@ const BatteryInfo = () => {
                                     label={bind(chargeMode).as((mode) =>
                                         mode === "preserve"
                                             ? "Increases battery longevity by maintaining lower charge levels"
-                                            : "Uses full battery capacity. Degrades batteries more quickly"
+                                            : "Uses full battery capacity. Degrades batteries more quickly",
                                     )}
                                     xalign={0}
                                 />
@@ -543,11 +531,10 @@ const BatteryInfo = () => {
     };
 
     return (
-        <box vertical spacing={20} className="battery-container">
+        <box vertical spacing={30} className="battery-container">
             <BatteryInfo />
             <PowerProfile />
             <BatteryCharging />
-            <CpuProfile />
         </box>
     );
 };

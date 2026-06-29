@@ -119,7 +119,7 @@ const WifiList = () => {
                     <icon icon={bind(wifi, "iconName")} />
                     <label
                         label={bind(wifi, "ssid").as(
-                            (ssid) => ssid || "Not Connected"
+                            (ssid) => ssid || "Not Connected",
                         )}
                     />
                 </box>
@@ -143,7 +143,7 @@ const WifiList = () => {
                     <label label="Frequency:" />
                     <label
                         label={bind(wifi, "frequency").as((freq) =>
-                            freq ? `${(freq / 1000).toFixed(1)} GHz` : "N/A"
+                            freq ? `${(freq / 1000).toFixed(1)} GHz` : "N/A",
                         )}
                         xalign={1}
                         hexpand
@@ -153,7 +153,7 @@ const WifiList = () => {
                     <label label="Bandwidth:" />
                     <label
                         label={bind(wifi, "bandwidth").as((bw) =>
-                            bw ? `${bw} Mbps` : "N/A"
+                            bw ? `${bw} Mbps` : "N/A",
                         )}
                         xalign={1}
                         hexpand
@@ -194,7 +194,7 @@ const WifiList = () => {
                     networksReady.set(true);
                     scanTimeoutId = null;
                     return false;
-                }
+                },
             );
         }
     };
@@ -211,7 +211,7 @@ const WifiList = () => {
     const updateStoredConnections = async () => {
         try {
             const result = await execAsync(
-                "nmcli -g NAME,TYPE connection show"
+                "nmcli -g NAME,TYPE connection show",
             );
             const connections = result.toString().trim().split("\n");
             const wifiConnections = new Set<string>();
@@ -240,7 +240,7 @@ const WifiList = () => {
                 () => {
                     connectionError.set("");
                     return false;
-                }
+                },
             );
             forgetTimeoutIds.push(timeoutId);
             updateStoredConnections();
@@ -253,7 +253,7 @@ const WifiList = () => {
                 () => {
                     connectionError.set("");
                     return false;
-                }
+                },
             );
             forgetTimeoutIds.push(timeoutId);
         }
@@ -274,7 +274,7 @@ const WifiList = () => {
                 // Nếu có password, xóa connection cũ trước (nếu có) để tránh lỗi key-mgmt
                 try {
                     await execAsync(
-                        `nmcli connection delete "${accessPoint.ssid}"`
+                        `nmcli connection delete "${accessPoint.ssid}"`,
                     );
                 } catch {
                     // Ignore error if connection doesn't exist
@@ -347,10 +347,11 @@ const WifiList = () => {
                     <label label="Password" xalign={0} />
                     <entry
                         placeholderText="Enter WiFi password"
+                        visibility={false}
                         onActivate={() => {
                             connectToWifi(
                                 selectedNetwork.get(),
-                                passwordText.get()
+                                passwordText.get(),
                             );
                         }}
                         onChanged={(self: Gtk.Entry) => {
@@ -360,12 +361,26 @@ const WifiList = () => {
                             if (error.includes("Connecting")) {
                                 return "status-connecting";
                             }
-                            if (error.includes("Wrong password")) {
+                            if (error.includes("Wrong password") || error.includes("failed") || error.includes("Failed")) {
                                 return "status-error";
                             }
                             return "";
                         })}
                     />
+                    {bind(connectionError).as((error) => {
+                        if (!error) return <box />;
+                        const isConnecting = error.includes("Connecting");
+                        const isSuccess = error.includes("Forgotten") || error.includes("success") || error.includes("Success");
+                        const className = `connection-error-label${isConnecting ? " connecting" : isSuccess ? " success" : " error"}`;
+                        return (
+                            <label
+                                className={className}
+                                label={error}
+                                wrap
+                                xalign={0}
+                            />
+                        );
+                    })}
                     <box halign={Gtk.Align.END}>
                         <button
                             className="connect-button"
@@ -373,7 +388,7 @@ const WifiList = () => {
                             onClicked={() => {
                                 connectToWifi(
                                     selectedNetwork.get(),
-                                    passwordText.get()
+                                    passwordText.get(),
                                 );
                             }}
                         >
@@ -425,7 +440,9 @@ const WifiList = () => {
                     }`}
                 >
                     <button
+                        className="network-item-btn"
                         cursor={"hand1"}
+                        hexpand={true}
                         onClicked={async () => {
                             if (isActiveNetwork) {
                                 return;
@@ -441,7 +458,7 @@ const WifiList = () => {
                                     try {
                                         connectionError.set("Connecting...");
                                         const result = await execAsync(
-                                            `nmcli connection up "${item.ssid}"`
+                                            `nmcli connection up "${item.ssid}"`,
                                         );
                                         const resultStr = result.toString();
 
@@ -457,7 +474,7 @@ const WifiList = () => {
                                                 () => {
                                                     startScan();
                                                     return false;
-                                                }
+                                                },
                                             );
 
                                             // Refresh IP address after successful connection
@@ -466,10 +483,10 @@ const WifiList = () => {
                                                 2000,
                                                 () => {
                                                     getIPAddress().then((ip) =>
-                                                        IPAddress.set(ip)
+                                                        IPAddress.set(ip),
                                                     );
                                                     return false;
-                                                }
+                                                },
                                             );
                                             return;
                                         }
@@ -488,15 +505,15 @@ const WifiList = () => {
                             }
                         }}
                     >
-                        <box spacing={10}>
+                        <box spacing={10} valign={Gtk.Align.CENTER}>
                             <icon icon={item.icon_name} />
                             <label label={item.ssid} xalign={0} hexpand />
                         </box>
                     </button>
-                    <box>
+                    <box spacing={10} halign={Gtk.Align.END} valign={Gtk.Align.CENTER}>
                         {storedConnections.get().has(item.ssid) && (
                             <button
-                                className="forget-wifi-button"
+                                className="forget-wifi-button action-button remove"
                                 cursor={"hand1"}
                                 onClicked={() => forgetWifi(item.ssid)}
                             >
@@ -532,8 +549,8 @@ const WifiList = () => {
                             {bind(
                                 Variable.derive(
                                     [bind(network, "wifi")],
-                                    (wifi) => wifi
-                                )
+                                    (wifi) => wifi,
+                                ),
                             ).as((w) => (
                                 <icon
                                     icon={bind(w, "iconName")}
@@ -580,11 +597,11 @@ const WifiList = () => {
                                                             !isScanning.get()
                                                         ) {
                                                             isScanning.set(
-                                                                true
+                                                                true,
                                                             );
                                                         }
                                                         return renderNetworks();
-                                                    }
+                                                    },
                                                 )}
                                             </box>
                                         </scrollable>

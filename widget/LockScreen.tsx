@@ -12,32 +12,20 @@ function hide() {
     App.get_window("lock-screen")!.hide();
 }
 
-const Time = ({ format = "%H : %M" }) => {
-    const time = Variable<string>("").poll(
-        1000,
-        () => GLib.DateTime.new_now_local().format(format)!
-    );
-
+const Time = ({ time }: { time: Variable<string> }) => {
     return (
         <label
             className="TimeLockScreen"
-            onDestroy={() => time.drop()}
-            label={time()}
+            label={bind(time)}
         />
     );
 };
 
-const Date = ({ format = "%A, %d %B %Y" }) => {
-    const date = Variable<string>("").poll(
-        1000,
-        () => GLib.DateTime.new_now_local().format(format)!
-    );
-
+const Date = ({ date }: { date: Variable<string> }) => {
     return (
         <label
             className={"DateLockScreen"}
-            onDestroy={() => date.drop()}
-            label={date()}
+            label={bind(date)}
         />
     );
 };
@@ -48,6 +36,31 @@ export const LockScreen = () => {
     let pam: any = null;
     let timeoutId: number | null = null;
     let passwordEntry: Gtk.Entry | null = null;
+    let clockTimerId: number | null = null;
+
+    const time = Variable("");
+    const date = Variable("");
+
+    const updateClock = () => {
+        const now = GLib.DateTime.new_now_local();
+        time.set(now.format("%H : %M")!);
+        date.set(now.format("%A, %d %B %Y")!);
+        return true;
+    };
+
+    const startClock = () => {
+        updateClock();
+        if (!clockTimerId) {
+            clockTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, updateClock);
+        }
+    };
+
+    const stopClock = () => {
+        if (clockTimerId) {
+            GLib.source_remove(clockTimerId);
+            clockTimerId = null;
+        }
+    };
 
     const resetState = () => {
         authenticating.set(false);
@@ -125,11 +138,13 @@ export const LockScreen = () => {
             GLib.source_remove(timeoutId);
             timeoutId = null;
         }
-
+        stopClock();
         passwordVar.drop();
         authenticating.drop();
         errorMessage.drop();
         hasPasswordError.drop();
+        time.drop();
+        date.drop();
     };
 
     return (
@@ -148,6 +163,11 @@ export const LockScreen = () => {
             css={css}
             exclusivity={Astal.Exclusivity.IGNORE}
             visible={false}
+            onShow={startClock}
+            onHide={() => {
+                stopClock();
+                resetState();
+            }}
             onDestroy={cleanup}
         >
             <centerbox vertical>
@@ -156,8 +176,8 @@ export const LockScreen = () => {
                     valign={Gtk.Align.CENTER}
                     vertical
                 >
-                    <Time />
-                    <Date />
+                    <Time time={time} />
+                    <Date date={date} />
                 </box>
                 <box halign={Gtk.Align.CENTER}>{/* <MediaPlayer /> */}</box>
                 <box halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER}>
