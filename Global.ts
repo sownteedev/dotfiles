@@ -8,12 +8,11 @@ export default {
     LatLon: "21.0294498,105.8544441",
     // Google Calendar OAuth - Run setup script first to get tokens
     GoogleCalendar: {
-        clientId:
-            "", // Paste your OAuth client ID here
-        clientSecret: "", // Paste your OAuth client secret here
+        clientId: "",
+        clientSecret: "",
         tokenFile:
-            "/home/nguyenthanhson/Dotfiles/ags/google-calendar-token.json",
-        calendarId: "",
+            "/home/nguyenthanhson/Dotfiles/dotf/ags/google-calendar-token.json",
+        calendarId: "primary",
     },
     Todo: {
         taskListId: "",

@@ -22,8 +22,8 @@ fi
 # Parse clientId and clientSecret from Global.ts (handles multi-line format)
 # Remove newlines and extra spaces, then extract values
 GLOBAL_CONTENT=$(tr -d '\n' < "$GLOBAL_TS" | tr -s ' ')
-CLIENT_ID=$(echo "$GLOBAL_CONTENT" | grep -oP 'clientId:\s*"\K[^"]+')
-CLIENT_SECRET=$(echo "$GLOBAL_CONTENT" | grep -oP 'clientSecret:\s*"\K[^"]+')
+CLIENT_ID=$(echo "$GLOBAL_CONTENT" | grep -oP 'clientId:\s*"\K[^"]*' || true)
+CLIENT_SECRET=$(echo "$GLOBAL_CONTENT" | grep -oP 'clientSecret:\s*"\K[^"]*' || true)
 
 if [[ -z "$CLIENT_ID" || -z "$CLIENT_SECRET" ]]; then
     echo "Error: Could not find clientId or clientSecret in Global.ts"
