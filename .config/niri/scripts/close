@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Niri Close Window - Close the currently focused window (sownteedev)
+# If no window is focused, show the power menu
+
+WINDOWS=$(niri msg --json windows)
+
+if [ -z "$WINDOWS" ] || [ "$WINDOWS" = "[]" ]; then
+    quickshell -p "$HOME/Dotfiles/dotf/quickshell/shell.qml" ipc call power toggle
+    exit 0
+fi
+
+if command -v jq >/dev/null 2>&1; then
+    FOCUSED_COUNT=$(echo "$WINDOWS" | jq '[.[] | select(.is_focused == true)] | length')
+
+    if [ "$FOCUSED_COUNT" -eq 0 ]; then
+        quickshell -p "$HOME/Dotfiles/dotf/quickshell/shell.qml" ipc call power toggle
+        exit 0
+    fi
+else
+    if ! echo "$WINDOWS" | grep -q '"is_focused":true'; then
+        quickshell -p "$HOME/Dotfiles/dotf/quickshell/shell.qml" ipc call power toggle
+        exit 0
+    fi
+fi
+
+niri msg action close-window

@@ -24,8 +24,8 @@ claude_execute() {
 }
 alias ce="noglob claude_execute"
 
-alias ll="exa --all --long --icons --group --git"
-alias ls="exa --icons"
+alias ll="exa --all --long --icons=auto --group --git"
+alias ls="exa --icons=auto"
 
 alias fzf="fzf --layout=reverse --prompt ' ' --pointer '=>' --preview='less {}' --bind shift-up:preview-page-up,shift-down:preview-page-down"
 
@@ -35,8 +35,6 @@ alias ....='cd ../../../'
 alias .....='cd ../../../../'
 alias ......='cd ../../../../../'
 
-alias awesomewm="sed -i 's/dbus-run-session .*/dbus-run-session awesome/' ~/.xinitrc && startx"
-
 alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
@@ -45,7 +43,6 @@ alias dotpush='git add . && git commit -m ":>" && git push'
 alias syncfont='sudo fc-cache -fv'
 alias cleanarch='sudo paccache -ruk0 && yay -Sc --noconfirm && sudo pacman -Scc --noconfirm && sudo pacman -Rns $(pacman -Qtdq) --noconfirm'
 
-bindkey -s ^o "startx\n"
 bindkey '^e' "autosuggest-accept"
 
 # vim:ft=zsh

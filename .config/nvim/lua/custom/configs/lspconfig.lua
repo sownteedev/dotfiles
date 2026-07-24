@@ -53,3 +53,5 @@ vim.lsp.config("ts_ls", {
 		},
 	},
 })
+
+vim.lsp.enable(vim.list_extend(servers, { "lua_ls", "ts_ls" }))

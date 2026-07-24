@@ -1,18 +1,18 @@
-output "eDP-1" {
+output "BOE 0x0A0B Unknown" {
     mode "2560x1600@165.004"
-    scale 1.0
+    scale 1
     transform "normal"
     position x=0 y=0
     focus-at-startup
-    // variable-refresh-rate
+    variable-refresh-rate
 }
 
-output "eDP-2" {
-    mode "2560x1600@165.004"
+output "DP-1" {
+    mode "3840x2160@59.997"
     scale 1.0
 	transform "normal"
     position x=0 y=0
-	focus-at-startup
+	// focus-at-startup
     // variable-refresh-rate
 }
 
@@ -22,5 +22,23 @@ output "HDMI-A-1" {
     transform "normal"
     position x=2560 y=0
 	// variable-refresh-rate
+    // focus-at-startup
+}
+
+output "DP-2" {
+    mode "3840x2160@59.997"
+    scale 1.0
+    transform "normal"
+    position x=0 y=0
+    // focus-at-startup
+    // variable-refresh-rate
+}
+
+output "HDMI-A-2" {
+    mode "1920x1080@60.000"
+    scale 1.0
+    transform "normal"
+    position x=2560 y=0
+    // variable-refresh-rate
     // focus-at-startup
 }

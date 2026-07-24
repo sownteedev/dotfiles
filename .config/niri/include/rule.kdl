@@ -1,53 +1,49 @@
 window-rule {
     geometry-corner-radius 15
     clip-to-geometry true
-	open-floating true // managed-by-toggle-floating-workspace
-}
-
-// Common transient dialogs and file pickers.
-window-rule {
-    match title=r#"^(Open|Save) (File|Folder|As).*$"#
-    match title=r#"^(Choose|Select).*(File|Folder).*$"#
-    open-floating true
-}
-
-// Frequently-used utility apps that are usually better as floating.
-window-rule {
-    match app-id=r#"^com\.raggesilver\.BlackBox$"#
-    match app-id=r#"^pavucontrol$"#
-    match app-id=r#"^blueman-manager$"#
-    match app-id=r#"^nm-connection-editor$"#
-    match app-id=r#"^qalculate-gtk$"#
-    match app-id=r#"^org\.gnome\.Calculator$"#
-    match app-id=r#"^org\.gnome\.Settings$"#
-    match app-id=r#"^io\.missioncenter\.MissionCenter$"#
-    match app-id=r#"^org\.gnome\.Nautilus$"#
-    open-floating true
-}
-
-// Browser Picture-in-Picture windows.
-window-rule {
-    match app-id=r#"^(firefox|chromium|google-chrome|Brave-browser|zen)$"# title="^Picture-in-Picture$"
-    open-floating true
-    default-column-width { fixed 480; }
-    default-window-height { fixed 270; }
-}
-
-// Telegram media viewer behaves better as floating.
-window-rule {
-    match app-id=r#"^org\.telegram\.desktop$"# title="^Media viewer$"
-    open-floating true
-}
-
-// Common auth/password prompts (polkit, keyring) should stay on top.
-window-rule {
-    match app-id=r#"^(polkit-gnome-authentication-agent-1|polkit-kde-authentication-agent-1)$"#
-    match title=r#"(?i)(Authentication|Password|Unlock|Keyring)"#
-    open-floating true
-    open-focused true
 }
 
 layer-rule {
     match namespace="^backdrop-"
     place-within-backdrop true
+}
+
+layer-rule {
+    match namespace="^blur-"
+    background-effect {
+        blur true
+        xray true
+    }
+}
+
+// Frequently-used utility apps that are usually better as floating.
+window-rule {
+    match app-id=r#"^(pavucontrol|neovide|vmware|Spotify|blueman-manager|mpv|org\.gnome\.Calculator|org\.gnome\.Settings|io\.missioncenter\.MissionCenter|org\.gnome\.Nautilus|org\.gnome\.Loupe|org\.gnome\.FileRoller)$"#
+    open-floating true
+}
+
+window-rule {
+    match app-id=r#".*\.exe$"#
+    open-floating true
+}
+
+// Telegram Media Viewer
+window-rule {
+    match app-id=r#"^org\.telegram\.desktop$"# title="^Media viewer$"
+    open-floating true
+}
+
+window-rule {
+	match app-id=r#"^com\.raggesilver\.BlackBox$"#
+	open-floating true
+    default-column-width { fixed 900; }
+    default-window-height { fixed 570; }
+}
+
+// Picture in Picture for various browsers
+window-rule {
+    match title="^[Pp]icture[- ][Ii]n[- ][Pp]icture$"
+    open-floating true
+    default-column-width { fixed 480; }
+    default-window-height { fixed 270; }
 }

@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Window
-import Qt5Compat.GraphicalEffects
 import Qt.labs.folderlistmodel
 import SddmComponents 2.0
 
@@ -16,28 +15,28 @@ Rectangle {
     property bool isQuickshell: typeof sddm === "undefined" || sddm.hostName === undefined
 
     // Config
-    readonly property string themeMode: config.themeMode || "dark"
     readonly property bool enableWindup: config.enableWindup === "true"
-    readonly property bool isLight: themeMode === "light"
+    readonly property bool isLight: false
 
-    readonly property color bgColor: isLight ? "#ffffff" : "#000000"
-    readonly property color mainText: isLight ? "#000000" : "#ffffff"
-    readonly property color dimText: isLight ? "#666666" : "#666666"
-    readonly property color subColor: isLight ? "#666666" : "#555555"
-    readonly property color pillColor: isLight ? "#e8e8e8" : "#080808"
-    readonly property color pillBorder: isLight ? (root.isWindup ? "#aaaaaa" : "#cccccc") : (root.isWindup ? "#444" : "#1a1a1a")
-    readonly property color pillInnerLine: isLight ? (root.isWindup ? "#000000" : "#bbbbbb") : (root.isWindup ? "#ffffff" : "#222222")
-    readonly property color sparkColor: isLight ? "#000000" : "#ffffff"
-    readonly property color blastColor: isLight ? "#000000" : "#ffffff"
-    readonly property color userItemInactive: isLight ? "#cccccc" : "#444"
-    readonly property color inputWaitColor: isLight ? "#bbbbbb" : "#333333"
+    readonly property color bgColor: "#000000"
+    readonly property color mainText: "#ffffff"
+    readonly property color dimText: "#666666"
+    readonly property color subColor: "#555555"
+    readonly property color pillColor: "#080808"
+    readonly property color pillBorder: root.isWindup ? "#444444" : "#1a1a1a"
+    readonly property color pillInnerLine: root.isWindup ? "#ffffff" : "#222222"
+    readonly property color sparkColor: "#ffffff"
+    readonly property color userItemInactive: "#444444"
+    readonly property color inputWaitColor: "#333333"
 
     // State
     property int sessionIndex: (typeof sessionModel !== "undefined" && sessionModel.lastIndex >= 0) ? sessionModel.lastIndex : 0
     property int userIndex: (typeof userModel !== "undefined" && userModel.lastIndex >= 0) ? userModel.lastIndex : 0
     property bool userMenuOpen: false
+    property bool authenticating: false
     property bool isWindup: false
     property real uiOpacity: 0
+    property real slideX: 0
     readonly property real marginR: 80 * s
 
     // Time
@@ -47,10 +46,9 @@ Rectangle {
     property int curMS: new Date().getMilliseconds()
     readonly property real localTimeMS: (curH * 3600000) + (curM * 60000) + (curS * 1000) + curMS
 
-    Timer {
-        interval: 16
+    FrameAnimation {
         running: true
-        repeat: true
+
         onTriggered: {
             var d = new Date()
             root.curH = d.getHours()
@@ -63,8 +61,6 @@ Rectangle {
     // Animation
     property real windupOffset: 0
     property real windupProgress: windupOffset / 150000
-    property real boomScale: 1.0
-    property real boomOpacity: 0.0
     property real jitterX: 0
     property real jitterY: 0
     property real sparkIntensity: 0.0
@@ -95,17 +91,17 @@ Rectangle {
         id: boomSequence
         NumberAnimation {
             target: root
-            property: "boomScale"
-            to: 35.0
-            duration: 150
-            easing.type: Easing.InQuad
+            property: "slideX"
+            to: 500 * root.s
+            duration: 350
+            easing.type: Easing.OutCubic
         }
         NumberAnimation {
             target: root
-            property: "boomOpacity"
-            to: 1.0
-            duration: 120
-            easing.type: Easing.InQuad
+            property: "uiOpacity"
+            to: 0
+            duration: 300
+            easing.type: Easing.OutCubic
         }
     }
 
@@ -122,10 +118,6 @@ Rectangle {
         id: outfitFont
         source: fontFolder.count > 0 ? "font/" + fontFolder.get(0, "fileName") : ""
     }
-    TextConstants {
-        id: textConstants
-    }
-
     // Models
     ListView {
         id: userHelper
@@ -171,14 +163,8 @@ Rectangle {
         id: blastContainer
         anchors.fill: parent
         opacity: root.uiOpacity
-        x: root.jitterX
+        x: root.jitterX - root.slideX
         y: root.jitterY
-        transform: Scale {
-            origin.x: 400 * s
-            origin.y: blastContainer.height * 0.5
-            xScale: root.boomScale
-            yScale: root.boomScale
-        }
 
         Item {
             id: clockContainer
@@ -229,86 +215,116 @@ Rectangle {
                 }
             }
 
-            Repeater {
-                model: 60
-                delegate: Item {
-                    z: 10
-                    property real base: index * 6
-                    property real relAngle: {
-                        var a = (base + root.smoothMinAngle) % 360
-                        if (a > 180) a -= 360
-                        if (a < -180) a += 360
-                        return a
-                    }
-                    property real spotlight: Math.max(0, 1.0 - Math.abs(relAngle) / 4.0)
-                    property bool isMajor: index % 5 == 0
-                    property real disp: (base + root.smoothMinAngle) * Math.PI / 180
-                    property real tx: clockContainer.cx + clockContainer.minR * Math.cos(disp)
-                    property real ty: clockContainer.cy + clockContainer.minR * Math.sin(disp)
-                    visible: tx > -600 * s && tx < 1800 * s
-                    Rectangle {
-                        x: parent.tx - width/2
-                        y: parent.ty - height/2
-                        width: isMajor ? 2 * s : 1 * s
-                        height: isMajor ? 18 * s : 10 * s
-                        color: isLight ? Qt.rgba(0, 0, 0, spotlight > 0 ? 1.0 : (isMajor ? 0.8 : 0.6)) : Qt.rgba(1, 1, 1, spotlight > 0 ? 1.0 : (isMajor ? 0.3 : 0.15))
-                        rotation: disp * 180 / Math.PI + 90
-                    }
-                    Text {
-                        visible: isMajor
-                        property real nRad: clockContainer.minR - 35 * s
-                        x: clockContainer.cx + nRad * Math.cos(disp) - width/2
-                        y: clockContainer.cy + nRad * Math.sin(disp) - height/2
-                        text: String(index).padStart(2, '0')
-                        font.family: outfitFont.name
-                        font.pixelSize: 22 * s
-                        font.weight: spotlight > 0.5 ? Font.Bold : Font.Normal
-                        color: isLight ? Qt.rgba(0, 0, 0, spotlight > 0 ? (0.6 + 0.4 * spotlight) : 0.6) : Qt.rgba(1, 1, 1, spotlight > 0 ? (0.4 + spotlight * 0.6) : 0.25)
-                        rotation: disp * 180 / Math.PI
-                        transformOrigin: Item.Center
+            Item {
+                id: minuteRing
+                anchors.fill: parent
+                z: 10
+
+                transform: Rotation {
+                    origin.x: clockContainer.cx
+                    origin.y: clockContainer.cy
+                    angle: root.smoothMinAngle
+                }
+
+                Repeater {
+                    model: 60
+
+                    delegate: Item {
+                        property real base: index * 6
+                        property real disp: base * Math.PI / 180
+                        property bool isMajor: index % 5 === 0
+
+                        Rectangle {
+                            x: clockContainer.cx + clockContainer.minR * Math.cos(parent.disp) - width / 2
+                            y: clockContainer.cy + clockContainer.minR * Math.sin(parent.disp) - height / 2
+                            width: parent.isMajor ? 2 * s : 1 * s
+                            height: parent.isMajor ? 18 * s : 10 * s
+                            color: parent.isMajor ? "#4dffffff" : "#26ffffff"
+                            rotation: parent.base + 90
+                        }
+
+                        Text {
+                            readonly property real nRad: clockContainer.minR - 35 * s
+                            visible: parent.isMajor
+                            x: clockContainer.cx + nRad * Math.cos(parent.disp) - width / 2
+                            y: clockContainer.cy + nRad * Math.sin(parent.disp) - height / 2
+                            text: String(index).padStart(2, '0')
+                            font.family: outfitFont.name
+                            font.pixelSize: 22 * s
+                            font.weight: Font.ExtraBold
+                            color: "#40ffffff"
+                            rotation: parent.base
+                            transformOrigin: Item.Center
+                        }
                     }
                 }
             }
 
-            Repeater {
-                model: 60
-                delegate: Item {
-                    z: 10
-                    property real base: index * 6
-                    property real relAngle: {
-                        var a = (base + root.smoothSecAngle) % 360
-                        if (a > 180) a -= 360
-                        if (a < -180) a += 360
-                        return a
-                    }
-                    property real spotlight: Math.max(0, 1.0 - Math.abs(relAngle) / 4.0)
-                    property bool isMajor: index % 5 == 0
-                    property real disp: (base + root.smoothSecAngle) * Math.PI / 180
-                    property real tx: clockContainer.cx + clockContainer.secR * Math.cos(disp)
-                    property real ty: clockContainer.cy + clockContainer.secR * Math.sin(disp)
-                    visible: tx > -600 * s && tx < 1800 * s
-                    Rectangle {
-                        x: parent.tx - width/2
-                        y: parent.ty - height/2
-                        width: isMajor ? 1.5 * s : 1 * s
-                        height: isMajor ? 13 * s : 8 * s
-                        color: isLight ? Qt.rgba(0, 0, 0, spotlight > 0 ? 1.0 : (isMajor ? 0.8 : 0.6)) : Qt.rgba(1, 1, 1, spotlight > 0 ? 1.0 : (isMajor ? 0.3 : 0.15))
-                        rotation: disp * 180 / Math.PI + 90
-                    }
-                    Text {
-                        visible: isMajor
-                        property real nRad: clockContainer.secR - 30 * s
-                        x: clockContainer.cx + nRad * Math.cos(disp) - width/2
-                        y: clockContainer.cy + nRad * Math.sin(disp) - height/2
-                        text: String(index).padStart(2, '0')
-                        font.family: outfitFont.name
-                        font.pixelSize: 16 * s
-                        font.weight: spotlight > 0.5 ? Font.Bold : Font.Normal
-                        color: isLight ? Qt.rgba(0, 0, 0, spotlight > 0 ? (0.6 + 0.4 * spotlight) : 0.6) : Qt.rgba(1, 1, 1, spotlight > 0 ? (0.4 + spotlight * 0.6) : 0.25)
-                        rotation: disp * 180 / Math.PI
-                        transformOrigin: Item.Center
+            Item {
+                id: secondRing
+                anchors.fill: parent
+                z: 10
+
+                transform: Rotation {
+                    origin.x: clockContainer.cx
+                    origin.y: clockContainer.cy
+                    angle: root.smoothSecAngle
+                }
+
+                Repeater {
+                    model: 60
+
+                    delegate: Item {
+                        property real base: index * 6
+                        property real disp: base * Math.PI / 180
+                        property bool isMajor: index % 5 === 0
+
+                        Rectangle {
+                            x: clockContainer.cx + clockContainer.secR * Math.cos(parent.disp) - width / 2
+                            y: clockContainer.cy + clockContainer.secR * Math.sin(parent.disp) - height / 2
+                            width: parent.isMajor ? 1.5 * s : 1 * s
+                            height: parent.isMajor ? 13 * s : 8 * s
+                            color: parent.isMajor ? "#4dffffff" : "#26ffffff"
+                            rotation: parent.base + 90
+                        }
+
+                        Text {
+                            readonly property real nRad: clockContainer.secR - 30 * s
+                            visible: parent.isMajor
+                            x: clockContainer.cx + nRad * Math.cos(parent.disp) - width / 2
+                            y: clockContainer.cy + nRad * Math.sin(parent.disp) - height / 2
+                            text: String(index).padStart(2, '0')
+                            font.family: outfitFont.name
+                            font.pixelSize: 18 * s
+                            font.weight: Font.ExtraBold
+                            color: "#40ffffff"
+                            rotation: parent.base
+                            transformOrigin: Item.Center
+                        }
                     }
                 }
+            }
+
+            Rectangle {
+                z: 11
+                x: clockContainer.cx + clockContainer.minR - width / 2
+                y: clockContainer.cy - height / 2
+                width: 2 * s
+                height: 18 * s
+                radius: width / 2
+                rotation: 90
+                color: root.mainText
+            }
+
+            Rectangle {
+                z: 11
+                x: clockContainer.cx + clockContainer.secR - width / 2
+                y: clockContainer.cy - height / 2
+                width: 1.5 * s
+                height: 13 * s
+                radius: width / 2
+                rotation: 90
+                color: root.mainText
             }
 
             Text {
@@ -329,35 +345,31 @@ Rectangle {
                 Text {
                     text: Qt.formatDate(new Date(), "dd MMM yyyy").toUpperCase()
                     font.family: outfitFont.name
-                    font.pixelSize: 13 * s
-                    font.letterSpacing: 4 * s
+                    font.pixelSize: 20 * s
+                    font.letterSpacing: 3 * s
+                    font.weight: Font.Medium
                     color: root.subColor
                 }
                 Text {
                     text: Qt.formatDate(new Date(), "dddd").toUpperCase()
                     font.family: outfitFont.name
-                    font.pixelSize: 18 * s
+                    font.pixelSize: 50 * s
                     font.letterSpacing: 8 * s
-                    font.weight: Font.Bold
+                    font.weight: Font.ExtraBold
                     color: root.mainText
                 }
             }
         }
     }
 
-    // Flash
-    Rectangle {
-        anchors.fill: parent
-        color: root.blastColor
-        opacity: root.boomOpacity
-        z: 9999
-    }
-
     // UI
     Item {
         id: hudContainer
         anchors.fill: parent
-        opacity: root.uiOpacity * (root.boomOpacity > 0 ? 0 : 1)
+        opacity: root.uiOpacity
+        transform: Translate {
+            x: root.slideX
+        }
         Row {
             anchors.right: parent.right
             anchors.rightMargin: root.marginR
@@ -525,24 +537,87 @@ Rectangle {
             Item {
                 width: parent.width
                 height: 30 * s
+
+                TextMetrics {
+                    id: passMetrics
+                    font.family: outfitFont.name
+                    font.letterSpacing: 0
+                    font.pixelSize: 14 * s
+                    text: "✦"
+                }
+
                 TextInput {
                     id: passInput
+                    property bool wasClicked: false
+
                     anchors.fill: parent
                     echoMode: TextInput.Password
                     passwordCharacter: "✦"
-                    color: root.dimText
+                    color: "transparent"
                     font.family: outfitFont.name
                     font.pixelSize: 14 * s
-                    font.letterSpacing: 10 * s
+                    font.letterSpacing: (22 * s) - passMetrics.advanceWidth
                     horizontalAlignment: TextInput.AlignRight
                     verticalAlignment: TextInput.AlignVCenter
                     focus: true
-                    property bool wasClicked: false
                     cursorVisible: false
-                    cursorDelegate: Item { width: 0; height: 0 }
+                    selectedTextColor: "transparent"
+                    selectionColor: "transparent"
+
+                    cursorDelegate: Item {
+                        width: 0
+                        height: 0
+                    }
+
                     Keys.onReturnPressed: {
                         startLoginSequence()
                     }
+
+                    onTextChanged: {
+                        if (errText.text !== "")
+                            errText.text = ""
+                    }
+
+                    Row {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 0
+
+                        Repeater {
+                            model: 64
+
+                            Item {
+                                width: index < passInput.text.length ? 22 * s : 0
+                                height: 12 * s
+                                opacity: index < passInput.text.length ? 1 : 0
+
+                                Behavior on width {
+                                    NumberAnimation {
+                                        duration: 150
+                                        easing.type: Easing.OutQuad
+                                    }
+                                }
+
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 250
+                                        easing.type: Easing.InOutQuad
+                                    }
+                                }
+
+                                Text {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: (22 * s - width) / 2
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: root.dimText
+                                    font.family: outfitFont.name
+                                    font.pixelSize: 20 * s
+                                    text: "✦"
+                                }
+                            }
+                        }
+                    }
+
                     Text {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
@@ -553,6 +628,7 @@ Rectangle {
                         color: root.inputWaitColor
                         
                         opacity: passInput.text.length === 0 ? 0.4 : 0
+
                         Behavior on opacity {
                             NumberAnimation {
                                 duration: 400
@@ -569,16 +645,36 @@ Rectangle {
                         x: passInput.cursorRectangle.x
                         visible: passInput.focus && (passInput.text.length > 0 || passInput.wasClicked)
 
+                        Behavior on x {
+                            NumberAnimation {
+                                duration: 150
+                                easing.type: Easing.OutQuad
+                            }
+                        }
+
                         SequentialAnimation {
                             loops: Animation.Infinite
                             running: needleCursor.visible
-                            NumberAnimation { target: needleCursor; property: "opacity"; from: 1; to: 0.1; duration: 450 }
-                            NumberAnimation { target: needleCursor; property: "opacity"; from: 0.1; to: 1; duration: 450 }
+
+                            NumberAnimation {
+                                target: needleCursor
+                                property: "opacity"
+                                from: 1
+                                to: 0.1
+                                duration: 450
+                            }
+
+                            NumberAnimation {
+                                target: needleCursor
+                                property: "opacity"
+                                from: 0.1
+                                to: 1
+                                duration: 450
+                            }
                         }
                     }
                 }
                 MouseArea {
-                    id: pMa_FixedFinal_Simple
                     anchors.fill: parent
                     cursorShape: Qt.ArrowCursor
                     onClicked: {
@@ -594,7 +690,7 @@ Rectangle {
                     id: loginBtn
                     anchors.right: parent.right
                     anchors.rightMargin: btnMa.containsMouse ? 25 * s : 0
-                    text: "ENTER KEY"
+                    text: root.authenticating ? "CHECKING KEY" : "ENTER KEY"
                     font.family: outfitFont.name
                     font.pixelSize: 11 * s
                     font.letterSpacing: 4 * s
@@ -655,12 +751,17 @@ Rectangle {
         }
     }
     function startLoginSequence() {
-        if (passInput.text.length === 0) return
+        if (passInput.text.length === 0 || root.authenticating)
+            return
+
         doLogin()
     }
     function doLogin() {
         var uname = (userHelper.currentItem && userHelper.currentItem.uLogin) ? userHelper.currentItem.uLogin : (typeof userModel !== "undefined" ? userModel.lastUser : "user")
-        if (typeof sddm !== "undefined") sddm.login(uname, passInput.text, root.sessionIndex)
+        if (typeof sddm !== "undefined") {
+            root.authenticating = true
+            sddm.login(uname, passInput.text, root.sessionIndex)
+        }
     }
     function capitalizeFirst(str) {
         if (!str) return ""
@@ -669,6 +770,7 @@ Rectangle {
     Connections {
         target: typeof sddm !== "undefined" ? sddm : null
         function onLoginSucceeded() {
+            root.authenticating = false
             if (root.enableWindup) {
                 isWindup = true
                 windupAnim.start()
@@ -676,12 +778,13 @@ Rectangle {
             }
         }
         function onLoginFailed() {
+            root.authenticating = false
             isWindup = false
             windupAnim.stop()
             boomTriggerTimer.stop()
             root.windupOffset = 0
-            root.boomScale = 1.0
-            root.boomOpacity = 0.0
+            root.slideX = 0
+            root.uiOpacity = 1
             root.sparkIntensity = 0
             errText.text = "ACCESS DENIED"
             passInput.text = ""

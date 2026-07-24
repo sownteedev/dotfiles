@@ -1,11 +1,12 @@
 binds {
     Mod+Shift+Slash								{ show-hotkey-overlay; }
 
-    Mod+Return									{ spawn "blackbox"; }
-    Alt+Space									{ spawn-sh "astal -i sownteeastal -t launcher"; }
-    Mod+L										{ spawn-sh "astal -i sownteeastal -t lock-screen"; }
-	Ctrl+Alt+R									{ spawn-sh "agsv2 quit -i sownteeastal; agsv2 run -d ~/Dotfiles/ags"; }
-	Alt+F4										{ spawn "~/.config/niri/close"; }
+    Mod+Return									{ spawn "blackbox-terminal"; }
+    Alt+Space									{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/dotf/quickshell/shell.qml\" call launcher toggle"; }
+    Mod+L										{ spawn-sh "env QML2_IMPORT_PATH=\"$HOME/Dotfiles/dotf\" quickshell -p \"$HOME/Dotfiles/dotf/quickshell/widget/lockscreen/Lockscreen.qml\""; }
+	Mod+M										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/dotf/quickshell/shell.qml\" call wallpaper toggle"; }
+	Ctrl+Alt+R repeat=false					{ spawn-sh "killall quickshell; ~/Dotfiles/dotf/quickshell/run-quickshell -d"; }
+	Alt+F4										{ spawn "~/.config/niri/scripts/close"; }
 	Mod+E										{ spawn "nautilus"; }
 	Ctrl+Shift+Escape							{ spawn "missioncenter"; }
 	Alt+P										{ spawn-sh "hyprpicker -a"; }
@@ -15,7 +16,7 @@ binds {
     XF86AudioLowerVolume     allow-when-locked=true { spawn-sh "pactl set-sink-volume @DEFAULT_SINK@ -2%"; }
     Mod+XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "pactl set-source-volume @DEFAULT_SOURCE@ +2%"; }
     Mod+XF86AudioLowerVolume allow-when-locked=true { spawn-sh "pactl set-source-volume @DEFAULT_SOURCE@ -2%"; }
-    XF86AudioMute            allow-when-locked=true { spawn-sh "~/.config/niri/mute"; }
+    XF86AudioMute            allow-when-locked=true { spawn-sh "LAST=/tmp/mute_toggle_last_event; NOW=$(date +%s%3N); if [ ! -f $LAST ] || [ $((NOW - $(cat $LAST))) -ge 500 ]; then echo $NOW > $LAST; pactl set-sink-mute @DEFAULT_SINK@ toggle; fi"; }
     XF86AudioMicMute         allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
 	XF86MonBrightnessUp      allow-when-locked=true { spawn-sh "brightnessctl s 5%+"; }
 	XF86MonBrightnessDown    allow-when-locked=true { spawn-sh "brightnessctl s 5%-"; }
@@ -52,8 +53,8 @@ binds {
     // Mod+Shift+Ctrl+Left  { move-window-to-monitor-left; }
     // Mod+Shift+Ctrl+Left  { move-workspace-to-monitor-left; }
 
-    Mod+Alt+Left { spawn-sh "~/.config/niri/transform left"; }
-    Mod+Alt+Right { spawn-sh "~/.config/niri/transform right"; }
+    Mod+Alt+Left { spawn-sh "~/.config/niri/scripts/transform left"; }
+    Mod+Alt+Right { spawn-sh "~/.config/niri/scripts/transform right"; }
 
 	// ------------------------------------ WORKSPACE -----------------------------
 	Mod+O repeat=false	  { toggle-overview; }
@@ -61,15 +62,15 @@ binds {
 	Mod+Ctrl+Down         { move-workspace-down; }
     Mod+Ctrl+Up           { move-workspace-up; }
 
-	Alt+1 { spawn-sh "~/.config/niri/focus-app 1"; }
-	Alt+2 { spawn-sh "~/.config/niri/focus-app 2"; }
-	Alt+3 { spawn-sh "~/.config/niri/focus-app 3"; }
-	Alt+4 { spawn-sh "~/.config/niri/focus-app 4"; }
-	Alt+5 { spawn-sh "~/.config/niri/focus-app 5"; }
-	Alt+6 { spawn-sh "~/.config/niri/focus-app 6"; }
-	Alt+7 { spawn-sh "~/.config/niri/focus-app 7"; }
-	Alt+8 { spawn-sh "~/.config/niri/focus-app 8"; }
-	Alt+9 { spawn-sh "~/.config/niri/focus-app 9"; }
+	Alt+1 { spawn-sh "~/.config/niri/scripts/focus-app 1"; }
+	Alt+2 { spawn-sh "~/.config/niri/scripts/focus-app 2"; }
+	Alt+3 { spawn-sh "~/.config/niri/scripts/focus-app 3"; }
+	Alt+4 { spawn-sh "~/.config/niri/scripts/focus-app 4"; }
+	Alt+5 { spawn-sh "~/.config/niri/scripts/focus-app 5"; }
+	Alt+6 { spawn-sh "~/.config/niri/scripts/focus-app 6"; }
+	Alt+7 { spawn-sh "~/.config/niri/scripts/focus-app 7"; }
+	Alt+8 { spawn-sh "~/.config/niri/scripts/focus-app 8"; }
+	Alt+9 { spawn-sh "~/.config/niri/scripts/focus-app 9"; }
 
 	Mod+1 { focus-workspace 1; }
     Mod+2 { focus-workspace 2; }
@@ -110,12 +111,12 @@ binds {
 	Ctrl+TouchpadScrollRight { spawn-sh "brightnessctl s 5%-"; }
 
 	// ------------------------------------- OTHER ----------------------------------------
-    Mod+Shift+F					{ fullscreen-window; }
-	Mod+F						{ maximize-column; }
+    Mod+Shift+F					{ maximize-window-to-edges; }
+    Mod+F						{ fullscreen-window; }
 
 	Mod+V						{ toggle-window-floating; }
     Mod+Ctrl+V					{ switch-focus-between-floating-and-tiling; }
-	Mod+Shift+V					{ spawn "~/.config/niri/toogle-floating-workspace"; }
+	Mod+Shift+V					{ spawn "~/.config/niri/scripts/toogle-floating-workspace"; }
 
 	Mod+Minus					{ set-column-width "-10%"; }
     Mod+Equal					{ set-column-width "+10%"; }
@@ -132,8 +133,8 @@ binds {
 
     Mod+W						{ toggle-column-tabbed-display; }
 
-    Mod+Shift+S					{ screenshot; }
-	Mod+Shift+R					{ spawn "~/.config/niri/record"; }
+    Mod+Shift+S repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/dotf/quickshell/shell.qml\" call capture screenshot"; }
+	Mod+Shift+R repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/dotf/quickshell/shell.qml\" call capture toggleRecording"; }
 
     Mod+Alt+Q { quit; }
 }

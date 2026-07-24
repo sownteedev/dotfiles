@@ -6,10 +6,6 @@ return {
 	-- 	lazy = false,
 	-- },
 	{
-		"williamboman/mason.nvim",
-		opts = overrides.mason,
-	},
-	{
 		"neovim/nvim-lspconfig",
 		config = function()
 			require("tevim.plugins.configs.lspconfig")

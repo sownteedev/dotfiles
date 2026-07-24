@@ -1,0 +1,35 @@
+[config]
+version_check = false
+
+[templates.quickshell_colors]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/quickshell/color.json'
+output_path = '~/Dotfiles/dotf/quickshell/colors.json'
+
+[templates.gtk4]
+input_path = "~/Dotfiles/dotf/.config/matugen/templates/gtk-4.0/gtk.css"
+output_path = "~/.config/gtk-4.0/gtk.css"
+
+[templates.gtk3]
+input_path = "~/Dotfiles/dotf/.config/matugen/templates/gtk-3.0/gtk.css"
+output_path = "~/.config/gtk-3.0/gtk.css"
+
+[templates.qt5ct]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/qt/qt.conf'
+output_path = '~/.config/qt5ct/colors/matugen.conf'
+
+[templates.qt6ct]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/qt/qt.conf'
+output_path = '~/.config/qt6ct/colors/matugen.conf'
+
+[templates.vesktop]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/vesktop/midnight-discord.css'
+output_path = '~/.config/vesktop/themes/midnight-discord.css'
+
+[templates.blackbox]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/blackbox/custom.json'
+output_path = '~/.local/share/blackbox/schemes/custom.json'
+
+[templates.nvim]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/nvim/custom.lua'
+output_path = '~/Dotfiles/dotf/.config/nvim/lua/custom/themes/schemes/matugen.lua'
+post_hook = 'pkill -SIGUSR1 nvim || true'
