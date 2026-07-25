@@ -42,10 +42,11 @@ if [ ! -e "/dev/$disk" ]; then
 fi
 
 cfdisk /dev/$disk || {
-    echo "Check disk."
+    echo "Failed to partition disk."
     exit 1
 }
 
+echo ">>> Verify partition layout:"
 lsblk /dev/$disk
 read -p "All right? Press Enter to continue..."
 
@@ -68,7 +69,7 @@ clear
 
 # Chroot
 echo ">>> Basic install..."
-pacstrap /mnt base base-devel linux linux-firmware linux-headers sbctl neovim
+pacstrap /mnt base base-devel linux-zen linux-zen-headers linux-firmware sbctl
 
 echo ">>> Create fstab and go to chroot..."
 genfstab -U /mnt >> /mnt/etc/fstab
@@ -110,12 +111,12 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
 echo ">>> Installing NetworkManager..."
 pacman -S --noconfirm networkmanager wpa_supplicant wireless_tools
-systemctl enable NetworkManager wpa_supplicant
+systemctl enable NetworkManager
 
 echo ">>> Installing GRUB..."
 pacman -S --noconfirm grub os-prober efibootmgr ntfs-3g mtools dosfstools
 sed -i 's/^#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub
-grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --removable
 grub-mkconfig -o /boot/grub/grub.cfg
 
 EOF

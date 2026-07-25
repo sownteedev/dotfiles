@@ -2,6 +2,23 @@
 
 # WARNING: THIS IS MY PERSONAL SCRIPT WHEN I REINSTALL ARCH, IT MAY NOT WORK FOR YOU!
 
+# Fail fast and reduce word-splitting issues
+set -euo pipefail
+IFS=$'\n\t'
+# Color helpers
+GREEN='\033[0;32m'
+NC='\033[0m'
+green_echo() {
+    printf "%b\n" "${GREEN}$1${NC}"
+}
+RED='\033[0;31m'
+red_echo() {
+    printf "%b\n" "${RED}$1${NC}"
+}
+BLUE='\033[0;34m'
+blue_echo() {
+    printf "%b\n" "${BLUE}$1${NC}"
+}
 pkg_installed() {
 	local PKG=$1
 	if pacman -Qi "$PKG" &>/dev/null; then
@@ -16,142 +33,176 @@ sudo pacman -Syu --noconfirm
 sleep 3 && clear
 
 # Git
-echo "[*] Installing git ..."
+red_echo "[*] Installing git ..."
 if pkg_installed git; then
-	echo "[*] Git already installed, skipping ..."
+	green_echo "[*] Git already installed, skipping ..."
 else
 	sudo pacman -S git --noconfirm
-	echo "[*] Git Installed."
+	green_echo "[*] Git Installed."
 fi
 
 # Yay
-echo "[*] Installing AUR helper(yay) ..."
+red_echo "[*] Installing AUR helper(yay) ..."
 if pkg_installed yay; then
-	echo "[*] Yay already installed, skipping ..."
+	green_echo "[*] Yay already installed, skipping ..."
 else
 	git clone https://aur.archlinux.org/yay.git && cd yay
 	makepkg -si --noconfirm
 	cd .. && rm -rf yay
-	echo "[*] Yay Installed."
+	green_echo "[*] Yay Installed."
 fi
 cd ~
 sleep 3 && clear
 
 # Install Dotf
-echo "[*] Installing dotfiles ..."
-git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf ~/Dotfiles/dotf
-clear
-git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=install ~/Dotfiles/install
-echo "[*] Done."
+red_echo "[*] Installing dotfiles ..."
+if [ ! -d "$HOME/Dotfiles/dotf" ]; then
+    git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=dotf "$HOME/Dotfiles/dotf"
+else
+    green_echo "[*] ~/Dotfiles/dotf already exists, skipping clone."
+fi
+if [ ! -d "$HOME/Dotfiles/install" ]; then
+    git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=install "$HOME/Dotfiles/install"
+else
+    green_echo "[*] ~/Dotfiles/install already exists, skipping clone."
+fi
+green_echo "[*] Done."
 sleep 3 && clear
 
 #################################################### INSTALL DRIVER AND APPS ####################################################
 # Install library
-echo "[*] Installing library ..."
-sudo pacman -S nodejs npm yarn python python-pip clang jdk-openjdk rustup cargo --noconfirm && yay -S nvm --noconfirm
-echo "[*] Done."
+red_echo "[*] Installing library ..."
+sudo pacman -S --needed nodejs npm pnpm yarn python python-pip clang jdk-openjdk rustup --noconfirm && yay -S nvm --noconfirm
+rustup default stable
+green_echo "[*] Done."
 sleep 3 && clear
 
 # Audio
-echo "[*] Installing audio & mic driver ..."
-sudo pacman -S pipewire pipewire-audio pipewire-pulse wireplumber alsa-ucm-conf sof-firmware playerctl --noconfirm
-sudo systemctl --user enable pipewire pipewire-pulse wireplumber
-echo "[*] Done."
+red_echo "[*] Installing audio & mic driver ..."
+sudo pacman -S --needed pipewire pipewire-audio pipewire-pulse wireplumber alsa-ucm-conf sof-firmware playerctl --noconfirm
+systemctl --user enable pipewire pipewire-pulse wireplumber
+green_echo "[*] Done."
 sleep 3 && clear
 
 # Brightness
-echo "[*] Installing brightness ..."
-sudo pacman -S brightnessctl --noconfirm
-echo "[*] Done."
+red_echo "[*] Installing brightness ..."
+sudo pacman -S --needed brightnessctl --noconfirm
+green_echo "[*] Done."
 sleep 3 && clear
 
 # Battery
-echo "[*] Installing battery ..."
-sudo pacman -S acpi acpid upower power-profiles-daemon cpupower --noconfirm
-sudo systemctl enable acpid upower power-profiles-daemon
-echo "[*] Done."
+red_echo "[*] Installing battery ..."
+sudo pacman -S --needed acpi acpid upower power-profiles-daemon --noconfirm
+sudo systemctl enable --now acpid upower
+green_echo "[*] Done."
 sleep 3 && clear
 
 # Network
-echo "[*] Installing network ..."
-sudo pacman -S networkmanager wpa_supplicant wireless_tools --noconfirm
-sudo systemctl enable NetworkManager wpa_supplicant
+red_echo "[*] Installing network ..."
+sudo pacman -S --needed networkmanager wpa_supplicant wireless_tools --noconfirm
+sudo systemctl enable --now NetworkManager
+green_echo "[*] Done."
+sleep 2 && clear
+blue_echo "[*] Disabling wifi power save mode to prevent wifi disconnecting randomly ..."
 LOC="/etc/NetworkManager/conf.d/wifi-powersave.conf"
 echo -e "The following has been added to $LOC.\n"
-echo -e "[connection]\nwifi.powersave = 2" | sudo tee -a $LOC
-echo "[*] Done."
+echo -e "[connection]\nwifi.powersave = 2" | sudo tee -a "$LOC"
+green_echo "[*] Done."
 sleep 3 && clear
 
 # Bluetooth
-echo "[*] Installing bluetooth driver ..."
-sudo pacman -S bluez bluez-utils bluez-libs bluez-deprecated-tools --noconfirm
-sudo systemctl enable bluetooth.service
+red_echo "[*] Installing bluetooth driver ..."
+sudo pacman -S --needed bluez bluez-utils bluez-libs bluez-deprecated-tools --noconfirm
+sudo systemctl enable --now bluetooth.service
+systemctl --user enable --now mpris-proxy.service
+green_echo "[*] Done."
 sleep 3 && clear
 
 # File manager
-echo "[*] Installing file manager ..."
-sudo pacman -S nautilus ffmpegthumbnailer tumbler exa zip gzip tar unzip unrar mpv dconf xdg-user-dirs gvfs --noconfirm
-echo "[*] Done."
+red_echo "[*] Installing file manager ..."
+sudo pacman -S --needed nautilus ffmpegthumbnailer tumbler eza zip gzip tar unzip unrar mpv dconf xdg-user-dirs gvfs --noconfirm
+green_echo "[*] Done."
 sleep 3 && clear
 
 # Monitor and Theme
-echo "[*] Installing monitor and theme ..."
-sudo pacman -S nwg-look imagemagick fastfetch qt5-wayland qt6-wayland qt5ct qt6ct xdg-desktop-portal-gtk gnome-control-center --noconfirm
+red_echo "[*] Installing monitor and theme ..."
+sudo pacman -S --needed nwg-look imagemagick fastfetch xdg-desktop-portal-gtk gnome-control-center --noconfirm
 echo "[*] Done."
 sleep 3 && clear
 
 # Other
-echo "[*] Installing other ..."
-sudo pacman -S --noconfirm devtools libgnome-keyring polkit-gnome pacman-contrib github-cli wget zsh && yay -S --noconfirm inotify-tools mission-center
-echo "[*] Done."
+red_echo "[*] Installing other ..."
+sudo pacman -S --needed --noconfirm devtools polkit-gnome pacman-contrib github-cli wget zsh fzf jq usbutils cliphist cava pciutils && yay -S --needed --noconfirm inotify-tools mission-center gnome-keyring tesseract tesseract-data-eng tesseract-data-vie intel-ucode
+green_echo "[*] Done."
+sleep 3 && clear
+
+# Install driver web mouse keyboard
+red_echo "[*] Installing driver mouse keyboard ..."
+RULE_CONTENT='# AULA WIN 60 HE
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2e3c", ATTRS{idProduct}=="c365", MODE="0666"
+
+# MCHOSE A7 Ultra
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="5253", ATTRS{idProduct}=="1020", MODE="0666"'
+echo "$RULE_CONTENT" | sudo tee /etc/udev/rules.d/99-webhid.rules > /dev/null
+
+blue_echo "[*] Reloading udev rules ..."
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+green_echo "[*] Done. Please reconnect your mouse and keyboard if you are using those devices."
 sleep 3 && clear
 
 # Fix Driver audio (DELL G16 7620)
-echo "[*] Fixing audio driver ..."
-sudo pacman -S rsync --noconfirm && cd ~
-mkdir -p ~/old-sof-backup
-sudo mv /lib/firmware/intel/sof* ~/old-sof-backup
-sudo mv /usr/local/bin/sof-* ~/old-sof-backup
+cd ~
+red_echo "[*] Fixing audio driver ..."
+sudo pacman -S rsync --noconfirm
+mkdir -p "$HOME/old-sof-backup"
+sudo mv /lib/firmware/intel/sof* "$HOME/old-sof-backup" || true
+sudo mv /usr/local/bin/sof-* "$HOME/old-sof-backup" || true
+sudo chown -R "$USER":"$USER" "$HOME/old-sof-backup" || true
 
 git clone https://github.com/thesofproject/sof-bin.git && cd sof-bin/v2.1.x
-sudo rsync -a sof*v2.1.1 /lib/firmware/intel/
-sudo ln -s sof-v2.1.1 /lib/firmware/intel/sof
-sudo ln -s sof-tplg-v2.1.1 /lib/firmware/intel/sof-tplg
-sudo rsync tools-v2.1.1/* /usr/local/bin
+sudo rsync -a sof*v2.1.1 /lib/firmware/intel/ || true
+sudo ln -sfn sof-v2.1.1 /lib/firmware/intel/sof || true
+sudo ln -sfn sof-tplg-v2.1.1 /lib/firmware/intel/sof-tplg || true
+sudo rsync tools-v2.1.1/* /usr/local/bin || true
 
 cd ~ && git clone https://github.com/thesofproject/alsa-ucm-conf.git && cd alsa-ucm-conf
-sudo rm -r /usr/share/alsa/ucm
+if [ -d /usr/share/alsa/ucm ]; then
+	sudo rm -r /usr/share/alsa/ucm
+fi
 sudo mv ./ucm /usr/share/alsa
 
-cd ~ && sudo rm -rf sof-bin alsa-ucm-conf old-sof-backup
-echo "[*] Done."
+cd ~ && sudo rm -rf sof-bin alsa-ucm-conf || true
+green_echo "[*] Done."
 sleep 3 && clear
 
-echo ">>> Config Secure Boot..."
+red_echo ">>> Config Secure Boot..."
 sudo grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
-# Craete keys and sign Secure Boot
-sudo sbctl create-keys
-sudo sbctl sign -s /boot/EFI/GRUB/grubx64.efi
-sudo sbctl sign -s /boot/EFI/Boot/bootx64.efi
-sudo sbctl sign -s /boot/vmlinuz-linux
-sudo sbctl enroll-keys -mi
-
+# Create keys and sign Secure Boot
+if ! sudo sbctl status &>/dev/null; then
+    sudo sbctl create-keys
+fi
+sudo sbctl sign -s /boot/EFI/GRUB/grubx64.efi || true
+sudo sbctl sign -s /boot/EFI/Boot/bootx64.efi || true
+for k in /boot/vmlinuz-*; do
+    if [ -f "$k" ]; then
+        sudo sbctl sign -s "$k" || true
+    fi
+done
+sudo sbctl enroll-keys -mi || true
 sleep 3 && clear
 
-echo ">>> Config driver NVIDIA..."
-# Open [multilib] repository
+# Nvidia
+red_echo ">>> Config driver NVIDIA..."
 sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
-
-# Reupdate all
 sudo pacman -Syu --needed --noconfirm
-sudo pacman -S --needed nvidia-open lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime mesa-utils --noconfirm
-# yay -S envycontrol awcc-git --noconfirm
+sudo pacman -S --needed nvidia-open-dkms nvidia-utils nvidia-settings lib32-nvidia-utils vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime mesa-utils --noconfirm
 
 # Add nvidia_drm.modeset=1 on GRUB
-# sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1 nvidia.NVreg_EnableGpuFirmware=0/' /etc/default/grub
-# sudo grub-mkconfig -o /boot/grub/grub.cfg
+sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1/' /etc/default/grub
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 # Add enviroment
 # sudo bash -c 'echo -e "GBM_BACKEND=nvidia-drm\n__NV_PRIME_RENDER_OFFLOAD=1\n__GLX_VENDOR_LIBRARY_NAME=nvidia" >> /etc/environment'
@@ -159,6 +210,31 @@ sudo pacman -S --needed nvidia-open lib32-nvidia-utils nvidia-settings vulkan-ic
 # Edit Mkinitcpio
 sudo sed -i 's/^MODULES=(.*)/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
 sudo mkinitcpio -P
+sleep 3 && clear
 
-echo "[*] Done. Rebooting your system..."
+red_echo "[*] Config access file Windows (NTFS) ..."
+sudo pacman -S --needed ntfs-3g ntfsprogs --noconfirm
+lsblk -f | grep -i ntfs || true
+read -p "Enter the Windows partition number (e.g., 3): " WIN_PART
+
+if [ -n "$WIN_PART" ] && [ -b "/dev/nvme0n1p${WIN_PART}" ]; then
+    PART_PATH="/dev/nvme0n1p${WIN_PART}"
+    UUID=$(lsblk -dno UUID "$PART_PATH")
+    
+    if [ -n "$UUID" ]; then
+        sudo mkdir -p /mnt/windows
+        sudo ntfsfix -d "$PART_PATH" &>/dev/null || true
+        
+        if ! grep -q "$UUID" /etc/fstab; then
+            echo "UUID=$UUID /mnt/windows ntfs-3g defaults,uid=1000,gid=1000,umask=022 0 0" | sudo tee -a /etc/fstab > /dev/null
+            sudo systemctl daemon-reload
+            sudo mount -a
+        fi
+    else
+        red_echo "Can't get UUID for $PART_PATH."
+    fi
+fi
+sleep 3 && clear
+
+green_echo "[*] Done. Rebooting your system..."
 sleep 3 && reboot

@@ -3,120 +3,160 @@ cd ~
 
 DOTFILES_DIR="$HOME/Dotfiles/dotf"
 
+# Fail fast and safer word splitting
+set -euo pipefail
+IFS=$'\n\t'
+# Color helpers
+GREEN='\033[0;32m'
+NC='\033[0m'
+green_echo() {
+    printf "%b\n" "${GREEN}$1${NC}"
+}
+RED='\033[0;31m'
+red_echo() {
+    printf "%b\n" "${RED}$1${NC}"
+}
+BLUE='\033[0;34m'
+blue_echo() {
+    printf "%b\n" "${BLUE}$1${NC}"
+}
+
+# Helper to create/replace symlinks safely
+safe_link() {
+    src="$1"
+    dst="$2"
+    if [ -e "$dst" ] || [ -L "$dst" ]; then
+        rm -rf "$dst"
+    fi
+    mkdir -p "$(dirname "$dst")"
+    ln -s "$src" "$dst"
+}
+
+write_gtk_bookmarks() {
+    local bookmarks="$HOME/.config/gtk-3.0/bookmarks"
+    local directory
+
+    {
+        for directory in Documents Downloads Pictures Templates Videos Music Public .local .config .fonts .icons Dotfiles Projects; do
+            printf 'file://%s/%s %s\n' "$HOME" "$directory" "$directory"
+        done
+
+        if [ -d /mnt/windows ]; then
+            printf 'file:///mnt/windows windows\n'
+        fi
+        if [ -d "/mnt/windows/Users/Nguyen Thanh Son/Downloads" ]; then
+            printf 'file:///mnt/windows/Users/Nguyen%%20Thanh%%20Son/Downloads Downloads\n'
+        fi
+
+        printf 'admin:///var/lib/tailscale/files files\n'
+    } > "$bookmarks"
+}
+
 setup_dotfiles() {
     # Font
-    echo "[*] Installing fonts..."
-    sudo pacman -S noto-fonts noto-fonts-cjk noto-fonts-emoji --noconfirm && yay -S apple-fonts ttf-rubik-vf ttf-ms-win11-auto ttf-ms-win11-auto-korean ttf-ms-win11-auto-zh_cn --noconfirm
-    echo "[*] Copy fonts ..."
-    ln -s $DOTFILES_DIR/.fonts ~/.fonts
+    red_echo "[*] Installing fonts..."
+    sudo pacman -S --needed inter-font otf-geist-mono-nerd noto-fonts noto-fonts-cjk noto-fonts-emoji noto-fonts-extra ttf-nerd-fonts-symbols ttf-dejavu --noconfirm && yay -S --needed nerd-fonts-sf-mono-ligatures apple-fonts ttf-ms-fonts otf-takao ttf-rubik-vf --noconfirm
+    blue_echo "[*] Copy fonts ..."
+    safe_link "$DOTFILES_DIR/.fonts" "$HOME/.fonts"
     fc-cache -fv
-    echo "[*] Done."
+    green_echo "[*] Done."
     sleep 3 && clear
 
     # Icon theme & Cursor theme
-    echo "[*] Copy icons ..."
-    ln -s $DOTFILES_DIR/.icons ~/.icons
-    echo "[*] Done."
+    red_echo "[*] Copy icons ..."
+	yay -S --needed whitesur-icon-theme-git --noconfirm
+    safe_link "$DOTFILES_DIR/.icons" "$HOME/.icons"
+    green_echo "[*] Done."
     sleep 3 && clear
 
     # Themes
-    echo "[*] Copy themes ..."
-    ln -s $DOTFILES_DIR/.themes ~/.themes
-    echo "[*] Done."
+    red_echo "[*] Copy themes ..."
+	yay -S adw-gtk-theme matugen-bin qt5-wayland qt6-wayland qt6ct-kde qt5ct-kde breeze-gtk breeze-icons --noconfirm
+    green_echo "[*] Done."
     sleep 3 && clear
 
     # Config
-    echo "[*] Copy config ..."
-    if ! [ -d $HOME/.config ]; then
-        mkdir -p $HOME/.config
+    red_echo "[*] Copy config ..."
+    if ! [ -d "$HOME/.config" ]; then
+        mkdir -p "$HOME/.config"
     fi
-    ln -s $DOTFILES_DIR/.config/zsh ~/.config/zsh
-    ln -s $DOTFILES_DIR/.config/fontconfig ~/.config/fontconfig
-    ln -s $DOTFILES_DIR/.config/gtk-3.0 ~/.config/gtk-3.0
-    ln -s $DOTFILES_DIR/.config/gtk-4.0 ~/.config/gtk-4.0
-    echo "[*] Done."
+    
+    safe_link "$DOTFILES_DIR/.config/zsh" "$HOME/.config/zsh"
+    if ! grep -q 'source "$HOME/.config/zsh/.zshrc"' "$HOME/.zshrc" 2>/dev/null; then
+        printf '%s\n' 'source "$HOME/.config/zsh/.zshrc"' >> "$HOME/.zshrc"
+    fi
+    # Set default shell to Zsh
+    if [ "$SHELL" != "/usr/bin/zsh" ] && [ "$SHELL" != "/bin/zsh" ]; then
+        sudo chsh -s /usr/bin/zsh "$USER"
+    fi
+    safe_link "$DOTFILES_DIR/.config/fontconfig" "$HOME/.config/fontconfig"
+
+    rm -rf "$HOME/.config/gtk-3.0"
+    mkdir -p "$HOME/.config/gtk-3.0"
+    safe_link "$DOTFILES_DIR/.config/gtk-3.0/settings.ini" "$HOME/.config/gtk-3.0/settings.ini"
+    write_gtk_bookmarks
+
+    rm -rf "$HOME/.config/gtk-4.0"
+    mkdir -p "$HOME/.config/gtk-4.0"
+    safe_link "$DOTFILES_DIR/.config/gtk-4.0/settings.ini" "$HOME/.config/gtk-4.0/settings.ini"
+    safe_link "/usr/share/themes/adw-gtk3/gtk-4.0/assets" "$HOME/.config/gtk-4.0/assets"
+
+    safe_link "$DOTFILES_DIR/.config/matugen" "$HOME/.config/matugen"
+
+	safe_link "$DOTFILES_DIR/.config/qt5ct" "$HOME/.config/qt5ct"
+	safe_link "$DOTFILES_DIR/.config/qt6ct" "$HOME/.config/qt6ct"
+    mkdir -p "$HOME/.config/qt5ct/colors"
+    mkdir -p "$HOME/.config/qt6ct/colors"
+
+    mkdir -p "$HOME/.config/vesktop/themes"
+    green_echo "[*] Done."
     sleep 3 && clear
 
     # Local
-    echo "[*] Copy local ..."
-    if ! [ -d $HOME/.local ]; then
-        mkdir -p $HOME/.local
+    red_echo "[*] Copy local ..."
+    if ! [ -d "$HOME/.local" ]; then
+        mkdir -p "$HOME/.local"
     fi
-    mkdir -p ~/.local/share/applications
-    ln -s $DOTFILES_DIR/.local/bin ~/.local/bin
-	ln -s $DOTFILES_DIR/.local/share/blackbox ~/.local/share
-    echo "[*] Done."
+    mkdir -p "$HOME/.local/share/applications"
+    mkdir -p "$HOME/.local/share/blackbox/schemes"
+    green_echo "[*] Done."
     sleep 3 && clear
     cd ~
 }
 
 setup_env() {
-    read -p "[*] Do you want to use my WM configs? ( 1 for X / 2 for W ): " choice
-    if [ "$choice" = "1" ]; then
-        sudo pacman -S --noconfirm xorg xorg-xinit redshift maim xsettingsd arandr xss-lock gpick xclip xsel
-        yay -S --noconfirm picom-git
-        clear
+    red_echo "[*] Installing Niri Wayland environment ..."
+    yay -S --needed --noconfirm niri xwayland-satellite
+    yay -S --needed --noconfirm slurp gpu-screen-recorder wl-clipboard hyprpicker gammastep swayidle
+    yay -S --needed --noconfirm fcitx5 fcitx5-bamboo fcitx5-configtool fcitx5-gtk
+    rm -rf "$HOME/.config/niri"
+    safe_link "$DOTFILES_DIR/.config/niri" "$HOME/.config/niri"
+    clear
 
-        echo "[*] Enable touchpad for laptop and set time to sleep ..."
-        yay -S xf86-input-libinput xf86-input-synaptics libinput-gestures xdotool wmctrl --noconfirm
-        sudo rm -rf /etc/X11/xorg.conf.d
-        sudo ln -s $DOTFILES_DIR/.root/xorg.conf.d /etc/X11/xorg.conf.d
-		ln -s $DOTFILES_DIR/.config/libinput-gestures.conf ~/.config/libinput-gestures.conf
-        sudo gpasswd -a $USER input
-        libinput-gestures-setup stop desktop autostart start
-        sleep 3 && clear
-		
-		echo "[*] Copy .Xresources ..."
-		rm -f ~/.Xresources && ln -s $DOTFILES_DIR/.Xresources ~/.Xresources
-		echo "[*] Done."
-		sleep 3 && clear
+    # red_echo "[*] Installing Ags/Astal ..."
+    # yay -S --needed --noconfirm libastal-meta aylurs-gtk-shell-git libastal-gjs
+    # rm -rf "$DOTFILES_DIR/ags"
+    # git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=ags/astal "$DOTFILES_DIR/ags" || { red_echo "Failed to clone ags branch"; exit 1; }
+    # cd "$HOME"
+    # mkdir -p installagsv2
+    # cp "$DOTFILES_DIR/ags/PKGBUILD" "$HOME/installagsv2/PKGBUILD"
+    # cd "$HOME/installagsv2"
+    # makepkg -si --noconfirm
+    # cd "$HOME"
+    # rm -rf installagsv2
 
-        echo "[*] Override .xinitrc ..."
-        rm -f ~/.xinitrc && ln -s $DOTFILES_DIR/.xinitrc ~/.xinitrc
-        echo "[*] Done"
-        sleep 3 && clear
+    red_echo "[*] Installing Quickshell ..."
+    yay -S --needed --noconfirm quickshell-git
+    rm -rf "$DOTFILES_DIR/quickshell"
+    git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=quickshell "$DOTFILES_DIR/quickshell" || { red_echo "Failed to clone quickshell branch"; exit 1; }
+    green_echo "[*] Done."
 
-		echo "[*] Install ibus"
-		yay -S ibus ibus-bamboo --noconfirm
-		env DCONF_PROFILE=ibus dconf write /desktop/ibus/general/preload-engines "['xkb:us::eng', 'Bamboo']" && gsettings set org.gnome.desktop.input-sources sources "[('xkb', 'us'), ('ibus', 'Bamboo')]"
-
-		echo "[*] Installing AwesomeWM ..."
-		yay -S awesome-luajit-git lua-pam-git --noconfirm
-        rm -rf ~/.config/awesome
-		clear
-        read -p "[*] What version AwesomeWM? ( 1 for default / 2 for mAWMcos ): " choice
-        if [ "$choice" = "1" ]; then
-            echo "[*] Installing Default ..."
-            git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=awesome $DOTFILES_DIR/awesome
-            ln -s $DOTFILES_DIR/awesome ~/.config/awesome
-            echo "[*] Done."
-        else
-            echo "[*] Installing mAWMcos ..."
-            git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=mAWMcos $DOTFILES_DIR/mAWMcos
-            ln -s $DOTFILES_DIR/mAWMcos ~/.config/awesome
-            echo "[*] Done."
-        fi
-    elif [ "$choice" = "2" ]; then
-        echo "[*] Installing Niri ..."
-        yay -S niri xwayland-satellite --noconfirm
-		yay -S slurp gpu-screen-recorder wl-clipboard hyprpicker gammastep swayidle --noconfirm
-        yay -S fcitx5 fcitx5-bamboo fcitx5-configtool fcitx5-gtk --noconfirm
-        rm -rf ~/.config/niri
-        ln -s $DOTFILES_DIR/.config/niri ~/.config/niri
-		echo "[*] Installing Ags/Astal ..."
-		yay -S libastal-meta aylurs-gtk-shell-git libastal-gjs --noconfirm
-		git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=ags/astal $DOTFILES_DIR/ags
-		cp $DOTFILES_DIR/ags/PKGBUILD ~/Downloads/PKGBUILD
-		cd ~/Downloads && makepkg -si --noconfirm
-        echo "[*] Done."
-    fi
 	sleep 3 && clear
-	# echo "[*] Installing Gnome ..."
-	# yay -S gnome --noconfirm
-	# yay -S gnome-tweaks extension-manager --noconfirm
+	# Gnome App
+	yay -S --needed evince loupe --noconfirm
 	gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
 	gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'
-	gsettings set org.gnome.desktop.interface gtk-theme phocus
+	gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3
 	gsettings set org.gnome.desktop.interface icon-theme WhiteSur
 	gsettings set org.gnome.desktop.interface cursor-theme Dark_Cursor
 
@@ -125,82 +165,183 @@ setup_env() {
 }
 
 select_theme_sddm() {
-    THEMES=$(ls "$DOTFILES_DIR/.root/sddm-theme")
-    echo "[*] Themes available:"
-    for theme in ${THEMES}; do
-        echo "  - ${theme}"
+    sudo mkdir -p /etc/sddm.conf.d
+    red_echo "[*] Themes available:"
+    for theme_path in "$DOTFILES_DIR/.root/sddm-theme"/*; do
+        [ -e "$theme_path" ] || continue
+        blue_echo "  - $(basename "$theme_path")"
     done
     while true; do
         read -p "[*] Type theme you want use: " THEME_NAMES
-        if echo "${THEMES}" | grep -q "${THEME_NAMES}"; then
+        if [ -d "$DOTFILES_DIR/.root/sddm-theme/$THEME_NAMES" ]; then
             break
         else
-            echo "[*] Theme not found, please try again."
+            red_echo "[*] Theme not found, please try again."
         fi
     done
-    sudo sed -i "s/^Current=.*/Current=${THEME_NAMES}/" /usr/lib/sddm/sddm.conf.d/default.conf
+    printf '[Theme]\nCurrent=%s\n' "$THEME_NAMES" | sudo tee /etc/sddm.conf.d/20-theme.conf >/dev/null
     sudo systemctl enable sddm
 }
 
 select_theme_grub() {
-    THEMES=$(ls "$DOTFILES_DIR/.root/grub/themes")
-    echo "[*] Themes available:"
-    for theme in ${THEMES}; do
-        echo "  - ${theme}"
+    red_echo "[*] Themes available:"
+    for theme_path in "$DOTFILES_DIR/.root/grub/themes"/*; do
+        [ -e "$theme_path" ] || continue
+        blue_echo "  - $(basename "$theme_path")"
     done
     while true; do
         read -p "[*] Type theme you want use: " THEME_NAMES
-        if echo "${THEMES}" | grep -q "${THEME_NAMES}"; then
+        if [ -d "$DOTFILES_DIR/.root/grub/themes/$THEME_NAMES" ]; then
             break
         else
-            echo "[*] Theme not found, please try again."
+            red_echo "[*] Theme not found, please try again."
         fi
     done
-    sudo sed -i "s|#GRUB_THEME=.*|GRUB_THEME=/usr/share/grub/themes/${THEME_NAMES}/theme.txt|g" /etc/default/grub
+    sudo sed -i "s|^#\?GRUB_THEME=.*|GRUB_THEME=/usr/share/grub/themes/${THEME_NAMES}/theme.txt|g" /etc/default/grub
     sudo grub-mkconfig -o /boot/grub/grub.cfg
 }
 
+patch_wayland_flags() {
+    local LOCAL_DIR="$HOME/.local/share/applications"
+    mkdir -p "$LOCAL_DIR"
+
+	local BASE_FLAGS="--test-type --ozone-platform-hint=wayland --ignore-gpu-blocklist --enable-wayland-ime --disable-gpu-sandbox --password-store=gnome-libsecret"
+    local CHROME_FLAGS="$BASE_FLAGS --enable-features=TouchpadOverscrollHistoryNavigation --disable-features=ExtensionManifestV2Unsupported"
+    local ELECTRON_FLAGS="$BASE_FLAGS --gtk-version=4"
+
+    local ELECTRON_APPS=("code.desktop" "postman.desktop" "vesktop.desktop" "spotify.desktop" "cursor.desktop" "antigravity-ide.desktop")
+    local CHROME_APPS=("google-chrome.desktop")
+
+    inject_flags() {
+        local app=$1
+        local flags=$2
+        local target="$LOCAL_DIR/$app"
+        local original="/usr/share/applications/$app"
+
+        if [ -f "$original" ]; then
+            cp "$original" "$target"
+            if ! grep -q "ozone-platform-hint" "$target"; then
+                sed -i '/^Exec=/s/ / '"$flags"' /' "$target"
+            fi
+        fi
+    }
+
+    for app in "${ELECTRON_APPS[@]}"; do
+        inject_flags "$app" "$ELECTRON_FLAGS"
+    done
+
+    for app in "${CHROME_APPS[@]}"; do
+        inject_flags "$app" "$CHROME_FLAGS"
+    done
+}
+
+ensure_warp_registration() {
+    local attempt
+
+    for attempt in {1..15}; do
+        if warp-cli registration show >/dev/null 2>&1; then
+            green_echo "[*] WARP is already registered."
+            return 0
+        fi
+
+        if warp-cli registration new >/dev/null 2>&1; then
+            green_echo "[*] WARP registration created."
+            return 0
+        fi
+
+        sleep 1
+    done
+
+    red_echo "[!] Unable to verify or create the WARP registration."
+    return 1
+}
+
+setting_blackbox() {
+    readonly -a keys=(
+        cursor-shape
+        easy-copy-paste
+        font
+        pretty
+        style-preference
+        terminal-cell-height
+        terminal-padding
+        theme-bold-is-bright
+        theme-dark
+    )
+    readonly -a values=(
+        "1"
+        "true"
+        "GeistMono Nerd Font 11"
+        "true"
+        "0"
+        "1.0"
+        "(uint32 30, uint32 30, uint32 30, uint32 30)"
+        "true"
+        "Custom"
+    )
+    for ((index = 0; index < ${#keys[@]}; index++)); do
+        gsettings set com.raggesilver.BlackBox "${keys[index]}" "${values[index]}"
+    done
+    green_echo "[*] Blackbox Setting Applied."
+}
+
 install_workspace() {
-    echo "[*] Installing Grub Theme ..."
-    sudo mkdir -p /usr/share/grub/themes && sudo cp -a $DOTFILES_DIR/.root/grub/themes/. /usr/share/grub/themes/
+    red_echo "[*] Installing Grub Theme ..."
+    sudo mkdir -p /usr/share/grub/themes && sudo cp -a "$DOTFILES_DIR/.root/grub/themes/." /usr/share/grub/themes/
+	sudo chmod -x /etc/grub.d/30_uefi-firmware
+	sudo sed -i 's/^#GRUB_DISABLE_SUBMENU=y/GRUB_DISABLE_SUBMENU=y/' /etc/default/grub
     select_theme_grub
-    echo "[*] Grub Theme setup done."
+	sudo sed -i "/^[[:space:]]*echo[[:space:]]*'Loading /d" /boot/grub/grub.cfg
+    green_echo "[*] Grub Theme setup done."
     sleep 3 && clear
 
-    echo "[*] Installing Display Manager (SDDM)"
-    yay -S --noconfirm sddm qt6 qt6-svg qt6-multimedia qt5-graphicaleffects qt5-multimedia qt5-quickcontrols qt5-quickcontrols2 qt5-svg gst-libav gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-plugins-base
-    sudo mkdir -p /usr/share/sddm/themes && sudo cp -a $DOTFILES_DIR/.root/sddm-theme/. /usr/share/sddm/themes/
+    red_echo "[*] Installing Display Manager (SDDM)"
+    yay -S --needed --noconfirm sddm qt6-svg qt6-base qt6-multimedia qt6-5compat qt6-imageformats qt6-declarative gst-libav gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-plugins-base
+    sudo mkdir -p /usr/share/sddm/themes && sudo cp -a "$DOTFILES_DIR/.root/sddm-theme/." /usr/share/sddm/themes/
     select_theme_sddm
-    echo "[*] Display Manager setup done."
+    green_echo "[*] Display Manager setup done."
     sleep 3 && clear
 
-    echo "[*] Installing TeVim ..."
-    yay -S --noconfirm lazygit fzf ripgrep neovim
-    git clone https://github.com/sownteedev/TeVim.git --depth 1 ~/.config/nvim
-    ln -s $DOTFILES_DIR/.config/nvim/lua/custom ~/.config/nvim/lua/custom
-    echo "[*] TeVim setup done."
+    red_echo "[*] Installing TeVim ..."
+    yay -S --needed --noconfirm lazygit fzf ripgrep neovim neovide chafa thefuck
+    rm -rf "$HOME/.config/nvim"
+    git clone https://github.com/sownteedev/TeVim.git --depth 1 "$HOME/.config/nvim"
+    safe_link "$DOTFILES_DIR/.config/nvim/lua/custom" "$HOME/.config/nvim/lua/custom"
+    green_echo "[*] TeVim setup done."
     sleep 3 && clear
 
-    echo "[*] Installing Development Applications..."
-    yay -S --noconfirm visual-studio-code-bin cursor-bin jetbrains-toolbox docker postman-bin blackbox-terminal
-    # rm -rf ~/.config/systemd/user/graphical-session.target.wants/docker-desktop.service
-    # yay -S --noconfirm vmware-keymaps open-vm-tools xf86-video-vmware xf86-input-vmmouse vmware-workstation
-    # sudo systemctl enable vmware-networks vmware-usbarbitrator vmtoolsd
-
-    echo "[*] Installing Other Applications..."
-    yay -S --noconfirm vesktop-bin telegram-desktop-bin cloudflare-warp-bin spotify zen-browser-bin
-	xdg-settings set default-web-browser zen.desktop
-	sudo systemctl enable warp-svc.service
-	warp-cli registration new
-
-    # sh -c "$(curl -sSL https://raw.githubusercontent.com/realdtn2/zalo-linux-unofficial/main/install_curl.sh)"
-
-    echo "[*] Environment setup complete."
+    red_echo "[*] Installing Development Applications..."
+    yay -S --needed --noconfirm visual-studio-code-bin jetbrains-toolbox docker docker-compose lazydocker postman-bin blackbox-terminal
+    setting_blackbox
+	sudo usermod -aG docker $USER
+    sudo systemctl enable --now docker.service
+    yay -S --needed --noconfirm vmware-keymaps vmware-workstation
+    sudo systemctl enable --now vmware-networks.service vmware-usbarbitrator.service
+    green_echo "[*] Done."
     sleep 3 && clear
 
-    echo "[*] Installing Oh My Zsh ..."
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    echo "[*] Oh My Zsh installation done."
+    red_echo "[*] Installing Other Applications..."
+    yay -S --needed --noconfirm vesktop-bin telegram-desktop-bin cloudflare-warp-bin spotify onlyoffice-bin google-chrome antigravity-ide rustdesk-bin sunshine-bin tailscale mpvpaper linux-wallpaperengine-git steam
+	sudo systemctl enable --now warp-svc.service tailscaled.service
+    systemctl --user enable --now warp-taskbar sunshine.service
+	ensure_warp_registration
+
+	patch_wayland_flags
+
+	sudo pacman -S --needed flatpak --noconfirm
+	flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+	flatpak install -y flathub com.usebottles.bottles
+	flatpak override --user --filesystem=home com.usebottles.bottles
+	flatpak override --user --socket=session-bus com.usebottles.bottles
+	flatpak override --user --talk-name=org.fcitx.Fcitx5 com.usebottles.bottles
+	flatpak override --user --talk-name=org.freedesktop.portal.Fcitx com.usebottles.bottles
+	flatpak override --user --env=XMODIFIERS=@im=fcitx com.usebottles.bottles
+	flatpak override --user --env=GTK_IM_MODULE=fcitx com.usebottles.bottles
+	# --disable-gpu-compositing --disable-smooth-scrolling
+
+    green_echo "[*] Environment setup complete."
+    sleep 3 && clear
+
 }
 
 
@@ -226,6 +367,10 @@ while [[ $# -gt 0 ]]; do
 			setup_dotfiles
 			exit 0
             ;;
+        --waylandflag)
+			patch_wayland_flags
+			exit 0
+			;;
 		--all)
 			setup_dotfiles
 			setup_env
