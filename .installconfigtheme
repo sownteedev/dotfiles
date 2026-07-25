@@ -80,7 +80,7 @@ setup_dotfiles() {
     if ! [ -d "$HOME/.config" ]; then
         mkdir -p "$HOME/.config"
     fi
-    
+
     safe_link "$DOTFILES_DIR/.config/zsh" "$HOME/.config/zsh"
     if ! grep -q 'source "$HOME/.config/zsh/.zshrc"' "$HOME/.zshrc" 2>/dev/null; then
         printf '%s\n' 'source "$HOME/.config/zsh/.zshrc"' >> "$HOME/.zshrc"
@@ -274,7 +274,7 @@ setting_blackbox() {
         "GeistMono Nerd Font 11"
         "true"
         "0"
-        "1.0"
+        "1.25"
         "(uint32 30, uint32 30, uint32 30, uint32 30)"
         "true"
         "Custom"
