@@ -36,8 +36,8 @@ window-rule {
 window-rule {
 	match app-id=r#"^com\.raggesilver\.BlackBox$"#
 	open-floating true
-    default-column-width { fixed 900; }
-    default-window-height { fixed 570; }
+    default-column-width { fixed 1100; }
+    default-window-height { fixed 750; }
 }
 
 // Picture in Picture for various browsers

@@ -24,8 +24,8 @@ claude_execute() {
 }
 alias ce="noglob claude_execute"
 
-alias ll="exa --all --long --icons=auto --group --git"
-alias ls="exa --icons=auto"
+alias ll="eza --all --long --icons=auto --group --git"
+alias ls="eza --icons=auto"
 
 alias fzf="fzf --layout=reverse --prompt ' ' --pointer '=>' --preview='less {}' --bind shift-up:preview-page-up,shift-down:preview-page-down"
 
@@ -44,5 +44,9 @@ alias syncfont='sudo fc-cache -fv'
 alias cleanarch='sudo paccache -ruk0 && yay -Sc --noconfirm && sudo pacman -Scc --noconfirm && sudo pacman -Rns $(pacman -Qtdq) --noconfirm'
 
 bindkey '^e' "autosuggest-accept"
+
+if command -v thefuck >/dev/null 2>&1; then
+    eval $(thefuck --alias)
+fi
 
 # vim:ft=zsh

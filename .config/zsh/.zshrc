@@ -1,28 +1,14 @@
 # source /usr/share/nvm/init-nvm.sh
 
-while read file
-do 
-  source "$HOME/.config/zsh/$file.zsh"
-done <<-EOF
-plugs
-alias
-opts
-prompt
-EOF
+typeset -gr ZSH_CONFIG_DIR="${${(%):-%N}:A:h}"
 
-# preexec() {
-#     local cmd="$1"
-#     local dir="${PWD/#$HOME/~}"
+for module in opts completion prompt alias plugins; do
+    source "$ZSH_CONFIG_DIR/$module.zsh"
+done
+unset module
 
-#     if [[ ! "$cmd" =~ ^cd\ .* ]]; then
-#        print -Pn "\e]0;$cmd  $dir\a"
-#     fi
-# }
+typeset -U path PATH
+path+=("$HOME/.local/bin" "$HOME/.local/share/nvim/mason/bin")
 
-# precmd() {
-#     print -Pn "\e]0;${PWD/#$HOME/~}\a"
-# }
-
-export PATH=$PATH:~/.local/share/nvim/mason/bin
-export VISUAL=nvim;
-export EDITOR=nvim;
+export EDITOR="nvim"
+export VISUAL="$EDITOR"

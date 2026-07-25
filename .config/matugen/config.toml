@@ -1,6 +1,14 @@
 [config]
 version_check = false
 
+[config.custom_colors]
+red = "#ff4444"
+green = "#44ff44"
+yellow = "#ffff44"
+blue = "#4444ff"
+magenta = "#ff44ff"
+cyan = "#44ffff"
+
 [templates.quickshell_colors]
 input_path = '~/Dotfiles/dotf/.config/matugen/templates/quickshell/color.json'
 output_path = '~/Dotfiles/dotf/quickshell/colors.json'
