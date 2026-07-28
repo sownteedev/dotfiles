@@ -2,6 +2,7 @@
 cd ~
 
 DOTFILES_DIR="$HOME/Dotfiles/dotf"
+QUICKSHELL_DIR="$HOME/Dotfiles/quickshell"
 
 # Fail fast and safer word splitting
 set -euo pipefail
@@ -91,14 +92,14 @@ setup_dotfiles() {
     fi
     safe_link "$DOTFILES_DIR/.config/fontconfig" "$HOME/.config/fontconfig"
 
-    rm -rf "$HOME/.config/gtk-3.0"
-    mkdir -p "$HOME/.config/gtk-3.0"
+    rm -rf "$HOME/.config/gtk-3.0" && mkdir -p "$HOME/.config/gtk-3.0"
     safe_link "$DOTFILES_DIR/.config/gtk-3.0/settings.ini" "$HOME/.config/gtk-3.0/settings.ini"
+    safe_link "$DOTFILES_DIR/.config/gtk-3.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css"
     write_gtk_bookmarks
 
-    rm -rf "$HOME/.config/gtk-4.0"
-    mkdir -p "$HOME/.config/gtk-4.0"
+    rm -rf "$HOME/.config/gtk-4.0" && mkdir -p "$HOME/.config/gtk-4.0"
     safe_link "$DOTFILES_DIR/.config/gtk-4.0/settings.ini" "$HOME/.config/gtk-4.0/settings.ini"
+    safe_link "$DOTFILES_DIR/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-4.0/gtk.css"
     safe_link "/usr/share/themes/adw-gtk3/gtk-4.0/assets" "$HOME/.config/gtk-4.0/assets"
 
     safe_link "$DOTFILES_DIR/.config/matugen" "$HOME/.config/matugen"
@@ -147,8 +148,8 @@ setup_env() {
 
     red_echo "[*] Installing Quickshell ..."
     yay -S --needed --noconfirm quickshell-git
-    rm -rf "$DOTFILES_DIR/quickshell"
-    git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=quickshell "$DOTFILES_DIR/quickshell" || { red_echo "Failed to clone quickshell branch"; exit 1; }
+    rm -rf "$QUICKSHELL_DIR"
+    git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=sownteeshell "$QUICKSHELL_DIR" || { red_echo "Failed to clone sownteeshell branch"; exit 1; }
     green_echo "[*] Done."
 
 	sleep 3 && clear
