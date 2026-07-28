@@ -1,0 +1,38 @@
+# Local credentials and environment
+google-calendar-token.json
+settings.local.json
+settings-hub-payload.json
+secrets/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Generated runtime/theme data
+colors.json
+
+# Python caches
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+
+# Rust backend artifacts
+backend/target/
+
+# Native image-cache plugin artifacts
+plugin/imagecache/build/
+plugin/imagecache/qml/Native/ImageCache/libnativeimagecacheplugin.so
+
+# Editor and temporary files
+.DS_Store
+*~
+*.swp
+*.swo
+*.tmp
+*.log
+core
+core.*
+.qmlls.ini

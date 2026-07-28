@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -eu
+
+root="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+output="$root/qml/Native/ImageCache/libnativeimagecacheplugin.so"
+build="$root/build"
+
+needs_build=false
+if [[ ! -s "$output" ]]; then
+    needs_build=true
+else
+    for source in "$root"/*.cpp "$root"/*.hpp "$root/imagecache.pro"; do
+        if [[ "$source" -nt "$output" ]]; then
+            needs_build=true
+            break
+        fi
+    done
+fi
+
+if [[ "$needs_build" == false ]]; then
+    exit 0
+fi
+
+if ! command -v qmake6 >/dev/null 2>&1 || ! command -v make >/dev/null 2>&1; then
+    echo "Image cache plugin requires qmake6, make and a C++ compiler." >&2
+    exit 1
+fi
+
+mkdir -p "$build"
+qmake6 "$root/imagecache.pro" -o "$build/Makefile"
+make -C "$build" -j2
+touch "$output"

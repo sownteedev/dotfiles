@@ -1,0 +1,60 @@
+AnimatedWaves 1.0 animate/AnimatedWaves.qml
+AnimatedBubbles 1.0 animate/AnimatedBubbles.qml
+AnimatedWeather 1.0 animate/AnimatedWeather.qml
+AnimatedPulse 1.0 animate/AnimatedPulse.qml
+AnimatedStars 1.0 animate/AnimatedStars.qml
+AnimatedConfetti 1.0 animate/AnimatedConfetti.qml
+AnimatedFireflies 1.0 animate/AnimatedFireflies.qml
+AnimatedRays 1.0 animate/AnimatedRays.qml
+AnimatedSpinner 1.0 animate/AnimatedSpinner.qml
+
+CachingImage 1.0 common/CachingImage.qml
+CustomVolumeSlider 1.0 common/CustomVolumeSlider.qml
+FormTextField 1.0 common/FormTextField.qml
+SelectPopup 1.0 common/SelectPopup.qml
+SlimScrollBar 1.0 common/SlimScrollBar.qml
+SettingsPageTransition 1.0 common/SettingsPageTransition.qml
+SettingsTextField 1.0 common/SettingsTextField.qml
+StatChart 1.0 common/StatChart.qml
+ToggleSwitch 1.0 common/ToggleSwitch.qml
+
+ClockTimePicker 1.0 datetime/ClockTimePicker.qml
+CountdownControls 1.0 datetime/CountdownControls.qml
+CountdownDial 1.0 datetime/CountdownDial.qml
+DatePickerPopup 1.0 datetime/DatePickerPopup.qml
+DurationWheel 1.0 datetime/DurationWheel.qml
+TimerDurationPicker 1.0 datetime/TimerDurationPicker.qml
+
+BluetoothDeviceRow 1.0 settings/BluetoothDeviceRow.qml
+EditableKeybindPill 1.0 settings/EditableKeybindPill.qml
+KeybindCard 1.0 settings/KeybindCard.qml
+NightLightControl 1.0 settings/NightLightControl.qml
+NiriConfigEditor 1.0 settings/NiriConfigEditor.qml
+SettingsActionButton 1.0 settings/SettingsActionButton.qml
+SettingsChoiceRow 1.0 settings/SettingsChoiceRow.qml
+SettingsExpandableCard 1.0 settings/SettingsExpandableCard.qml
+SettingsSectionCard 1.0 settings/SettingsSectionCard.qml
+SettingsNavButton 1.0 settings/SettingsNavButton.qml
+SettingsToggleRow 1.0 settings/SettingsToggleRow.qml
+WallpaperModeSwitch 1.0 settings/WallpaperModeSwitch.qml
+WifiNetworkRow 1.0 settings/WifiNetworkRow.qml
+WifiSettingsPanel 1.0 settings/WifiSettingsPanel.qml
+
+CalendarEventEditor 1.0 productivity/CalendarEventEditor.qml
+GoogleAuthPanel 1.0 productivity/GoogleAuthPanel.qml
+
+MusicArtwork 1.0 media/MusicArtwork.qml
+MusicControls 1.0 media/MusicControls.qml
+MusicLyrics 1.0 media/MusicLyrics.qml
+MusicProgress 1.0 media/MusicProgress.qml
+
+PixelateRegion 1.0 capture/PixelateRegion.qml
+ScreenshotColorSlider 1.0 capture/ScreenshotColorSlider.qml
+ScreenshotEditorToolbar 1.0 capture/ScreenshotEditorToolbar.qml
+ScreenshotToolButton 1.0 capture/ScreenshotToolButton.qml
+
+NotificationActionButton 1.0 notification/NotificationActionButton.qml
+NotificationIcon 1.0 notification/NotificationIcon.qml
+AnimatedLiquid 1.0 animate/AnimatedLiquid.qml
+LoadingIndicator 1.0 animate/LoadingIndicator.qml
+EdgeTrigger 1.0 common/EdgeTrigger.qml

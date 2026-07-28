@@ -1,0 +1,30 @@
+singleton BackdropService 1.0 wallpaper/BackdropService.qml
+singleton EngineWallpaperService 1.0 wallpaper/EngineWallpaperService.qml
+singleton LiveWallpaperService 1.0 wallpaper/LiveWallpaperService.qml
+singleton ThemeService 1.0 wallpaper/ThemeService.qml
+singleton WallpaperPlaybackPolicy 1.0 wallpaper/WallpaperPlaybackPolicy.qml
+singleton WallpaperPreviewService 1.0 wallpaper/WallpaperPreviewService.qml
+singleton WallpaperService 1.0 wallpaper/WallpaperService.qml
+
+singleton BatteryService 1.0 system/BatteryService.qml
+singleton BluetoothService 1.0 system/BluetoothService.qml
+singleton BrightnessService 1.0 system/BrightnessService.qml
+singleton DisplayService 1.0 system/DisplayService.qml
+singleton NotificationHistory 1.0 system/NotificationHistory.qml
+singleton PolkitService 1.0 system/PolkitService.qml
+singleton QuickSettingsService 1.0 system/QuickSettingsService.qml
+singleton SettingsHubService 1.0 system/SettingsHubService.qml
+singleton SysStats 1.0 system/SysStats.qml
+singleton WifiService 1.0 system/WifiService.qml
+singleton WorkspaceService 1.0 system/WorkspaceService.qml
+
+singleton AudioService 1.0 media/AudioService.qml
+singleton CavaService 1.0 media/CavaService.qml
+singleton MediaService 1.0 media/MediaService.qml
+
+singleton CountdownService 1.0 productivity/CountdownService.qml
+singleton GoogleService 1.0 productivity/GoogleService.qml
+singleton WeatherService 1.0 productivity/WeatherService.qml
+
+singleton CaptureService 1.0 capture/CaptureService.qml
+singleton OcrService 1.0 capture/OcrService.qml

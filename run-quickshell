@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -eu
+
+root="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+"$root/plugin/imagecache/build-imagecache"
+
+import_path="$root/plugin/imagecache/qml"
+export QML_IMPORT_PATH="$import_path${QML_IMPORT_PATH:+:$QML_IMPORT_PATH}"
+export QML2_IMPORT_PATH="$import_path${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
+exec quickshell -p "$root/shell.qml" "$@"

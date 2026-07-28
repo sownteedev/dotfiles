@@ -1,0 +1,3 @@
+module quickshell
+singleton Config 1.0 Config.qml
+singleton StateManager 1.0 StateManager.qml

@@ -1,0 +1,28 @@
+#!/bin/sh
+
+backend_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+binary="$backend_dir/target/release/qs-stats"
+manifest="$backend_dir/Cargo.toml"
+python_fallback="$backend_dir/../scripts/sysstats.py"
+needs_build=false
+
+if [ ! -x "$binary" ] || [ "$manifest" -nt "$binary" ] || [ "$backend_dir/Cargo.lock" -nt "$binary" ]; then
+    needs_build=true
+elif find "$backend_dir/src" -type f -newer "$binary" -print -quit | grep -q .; then
+    needs_build=true
+fi
+
+if [ "$needs_build" = true ] && command -v cargo >/dev/null 2>&1; then
+    mkdir -p "$backend_dir/target"
+    lock_file="$backend_dir/target/qs-stats-build.lock"
+    exec 9>"$lock_file"
+    if flock -n 9; then
+        if cargo build --release --quiet --manifest-path "$manifest"; then
+            exec "$binary" "$@"
+        fi
+    fi
+elif [ "$needs_build" = false ]; then
+    exec "$binary" "$@"
+fi
+
+exec python3 -u "$python_fallback" "$@"

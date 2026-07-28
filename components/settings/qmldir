@@ -1,0 +1,3 @@
+module QuickshellSettingsComponents
+EditableKeybindPill 1.0 EditableKeybindPill.qml
+SettingsToggleRow 1.0 SettingsToggleRow.qml
