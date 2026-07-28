@@ -50,18 +50,20 @@ QtObject {
     function isSelected(player) {
         return !!player && player === activePlayer;
     }
-    function selectPlayer(player) {
-        if (player)
-            preferredPlayerName = player.dbusName || "";
-    }
     function selectNextPlayer() {
-        if (!players || players.length <= 1) return;
+        if (!players || players.length <= 1)
+            return;
         var currentIndex = players.indexOf(activePlayer);
         var nextIndex = (currentIndex + 1) % players.length;
         selectPlayer(players[nextIndex]);
     }
+    function selectPlayer(player) {
+        if (player)
+            preferredPlayerName = player.dbusName || "";
+    }
     function selectPrevPlayer() {
-        if (!players || players.length <= 1) return;
+        if (!players || players.length <= 1)
+            return;
         var currentIndex = players.indexOf(activePlayer);
         var prevIndex = (currentIndex - 1 + players.length) % players.length;
         selectPlayer(players[prevIndex]);

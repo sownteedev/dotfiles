@@ -1,13 +1,11 @@
 import "../../"
 import "../../components"
 import "../../service"
-import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
-import Quickshell.Widgets
 
 PanelWindow {
     // Starts false for entry transition

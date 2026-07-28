@@ -52,38 +52,8 @@ Item {
 
         anchors.fill: parent
         color: buttonRoot.active ? "transparent" : (mouseArea.pressed ? Config.md3.surface_container_highest : (mouseArea.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container))
-        
         radius: buttonRoot.active ? 16 : 27
         scale: mouseArea.pressed ? 0.93 : 1.0
-        
-        Item {
-            anchors.fill: parent
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: maskRect
-            }
-            
-            // Background tint when active (behind the liquid)
-            Rectangle {
-                anchors.fill: parent
-                color: buttonRoot.active ? (mouseArea.pressed ? Config.alpha(buttonRoot.activeColor, 0.2) : (mouseArea.containsMouse ? Config.alpha(buttonRoot.activeColor, 0.15) : Config.alpha(buttonRoot.activeColor, 0.1))) : "transparent"
-                Behavior on color { ColorAnimation { duration: 150 } }
-            }
-
-            AnimatedLiquid {
-                anchors.fill: parent
-                active: buttonRoot.active
-                color: mouseArea.pressed ? Config.alpha(buttonRoot.activeColor, 0.85) : Config.alpha(buttonRoot.activeColor, 1.0)
-            }
-        }
-        
-        Rectangle {
-            id: maskRect
-            anchors.fill: parent
-            radius: btnRect.radius
-            color: "black"
-            visible: false
-        }
 
         Behavior on color {
             ColorAnimation {
@@ -103,6 +73,39 @@ Item {
             }
         }
 
+        Item {
+            anchors.fill: parent
+            layer.enabled: true
+
+            layer.effect: OpacityMask {
+                maskSource: maskRect
+            }
+
+            // Background tint when active (behind the liquid)
+            Rectangle {
+                anchors.fill: parent
+                color: buttonRoot.active ? (mouseArea.pressed ? Config.alpha(buttonRoot.activeColor, 0.2) : (mouseArea.containsMouse ? Config.alpha(buttonRoot.activeColor, 0.15) : Config.alpha(buttonRoot.activeColor, 0.1))) : "transparent"
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 150
+                    }
+                }
+            }
+            AnimatedLiquid {
+                active: buttonRoot.active
+                anchors.fill: parent
+                color: mouseArea.pressed ? Config.alpha(buttonRoot.activeColor, 0.85) : Config.alpha(buttonRoot.activeColor, 1.0)
+            }
+        }
+        Rectangle {
+            id: maskRect
+
+            anchors.fill: parent
+            color: "black"
+            radius: btnRect.radius
+            visible: false
+        }
         IconImage {
             id: iconImg
 

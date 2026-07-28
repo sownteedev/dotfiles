@@ -138,8 +138,6 @@ Item {
             refreshIntegrations();
     }
 
-
-
     Connections {
         function onQuickshellSettingsChanged() {
             root.syncFields();

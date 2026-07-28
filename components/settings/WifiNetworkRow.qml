@@ -59,7 +59,7 @@ Rectangle {
 
     onExpandedChanged: {
         if (expanded) {
-            Qt.callLater(function() {
+            Qt.callLater(function () {
                 if (!root.expanded || !passwordInput.enabled)
                     return;
                 passwordInput.forceActiveFocus();

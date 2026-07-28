@@ -18,11 +18,11 @@ MouseArea {
     implicitHeight: 30
     implicitWidth: 26
     visible: AudioService.microphoneInUse
+
     onClicked: popupLoader.active = !popupLoader.active
     onVisibleChanged: {
         if (!visible)
             popupLoader.active = false;
-
     }
 
     Item {
@@ -41,11 +41,8 @@ MouseArea {
                 ColorAnimation {
                     duration: 150
                 }
-
             }
-
         }
-
         IconImage {
             id: microphoneIcon
 
@@ -55,13 +52,11 @@ MouseArea {
             visible: false
             width: 19
         }
-
         ColorOverlay {
             anchors.fill: microphoneIcon
             color: Config.md3.tertiary
             source: microphoneIcon
         }
-
         Rectangle {
             anchors.bottom: parent.bottom
             anchors.right: parent.right
@@ -72,9 +67,7 @@ MouseArea {
             radius: 3
             width: 6
         }
-
     }
-
     LazyLoader {
         id: popupLoader
 
@@ -96,16 +89,15 @@ MouseArea {
             implicitHeight: popupColumn.implicitHeight + 50
             implicitWidth: 320
             visible: true
+
             onVisibleChanged: {
                 if (!visible)
                     popupLoader.active = false;
-
             }
 
             PwObjectTracker {
                 objects: microphonePopup.inputNode ? [microphonePopup.inputNode] : []
             }
-
             Rectangle {
                 id: popupCard
 
@@ -120,6 +112,14 @@ MouseArea {
                 color: Config.md3.surface_container
                 layer.enabled: true
                 radius: 16
+
+                layer.effect: DropShadow {
+                    color: "#70000000"
+                    horizontalOffset: 0
+                    radius: 9
+                    samples: 19
+                    verticalOffset: 4
+                }
 
                 ColumnLayout {
                     id: popupColumn
@@ -147,15 +147,12 @@ MouseArea {
                                 visible: false
                                 width: 21
                             }
-
                             ColorOverlay {
                                 anchors.fill: headerMicIcon
                                 color: Config.md3.tertiary
                                 source: headerMicIcon
                             }
-
                         }
-
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 1
@@ -168,7 +165,6 @@ MouseArea {
                                 font.weight: Font.Bold
                                 text: "Microphone in use"
                             }
-
                             Text {
                                 Layout.fillWidth: true
                                 color: Config.md3.on_surface_variant
@@ -177,17 +173,13 @@ MouseArea {
                                 font.pixelSize: 13
                                 text: AudioService.microphoneApps.length + (AudioService.microphoneApps.length === 1 ? " application" : " applications") + " · base input " + Math.round(microphonePopup.inputGain * 100) + "%"
                             }
-
                         }
-
                     }
-
                     Rectangle {
                         Layout.fillWidth: true
                         color: Config.alpha(Config.md3.on_surface, 0.08)
                         height: 1
                     }
-
                     Repeater {
                         model: AudioService.microphoneApps.slice(0, 4)
 
@@ -213,7 +205,6 @@ MouseArea {
                                 enabled: microphonePopup.visible && appCard.streamAvailable && !appCard.streamMuted
                                 node: appCard.streamNode
                             }
-
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
@@ -235,9 +226,7 @@ MouseArea {
                                             source: Quickshell.iconPath(appCard.modelData.icon || "audio-input-microphone-symbolic")
                                             width: 19
                                         }
-
                                     }
-
                                     ColumnLayout {
                                         Layout.fillWidth: true
 
@@ -250,14 +239,18 @@ MouseArea {
                                             font.weight: Font.Bold
                                             text: appCard.modelData.name
                                         }
-
                                     }
-
                                     Rectangle {
                                         Layout.preferredHeight: 30
                                         Layout.preferredWidth: 30
                                         color: streamMuteMouse.containsMouse ? Config.alpha(appCard.streamMuted ? Config.md3.error : Config.md3.tertiary, 0.22) : Config.alpha(appCard.streamMuted ? Config.md3.error : Config.md3.on_surface, 0.1)
                                         radius: 9
+
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: 120
+                                            }
+                                        }
 
                                         IconImage {
                                             id: streamMuteIcon
@@ -268,13 +261,11 @@ MouseArea {
                                             visible: false
                                             width: 17
                                         }
-
                                         ColorOverlay {
                                             anchors.fill: streamMuteIcon
                                             color: appCard.streamMuted ? Config.md3.error : Config.md3.on_surface
                                             source: streamMuteIcon
                                         }
-
                                         MouseArea {
                                             id: streamMuteMouse
 
@@ -282,20 +273,11 @@ MouseArea {
                                             cursorShape: Qt.PointingHandCursor
                                             enabled: appCard.streamAvailable
                                             hoverEnabled: true
+
                                             onClicked: appCard.streamNode.audio.muted = !appCard.streamNode.audio.muted
                                         }
-
-                                        Behavior on color {
-                                            ColorAnimation {
-                                                duration: 120
-                                            }
-
-                                        }
-
                                     }
-
                                 }
-
                                 CustomVolumeSlider {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 20
@@ -305,19 +287,15 @@ MouseArea {
                                     peakValue: appCard.streamPeak
                                     showPeak: true
                                     value: appCard.streamGain
-                                    onSliderMoved: (value) => {
+
+                                    onSliderMoved: value => {
                                         if (appCard.streamAvailable)
                                             appCard.streamNode.audio.volume = value;
-
                                     }
                                 }
-
                             }
-
                         }
-
                     }
-
                     Text {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface_variant
@@ -327,19 +305,8 @@ MouseArea {
                         text: "+" + (AudioService.microphoneApps.length - 4) + " more"
                         visible: AudioService.microphoneApps.length > 4
                     }
-
                 }
-
-                layer.effect: DropShadow {
-                    color: "#70000000"
-                    horizontalOffset: 0
-                    radius: 9
-                    samples: 19
-                    verticalOffset: 4
-                }
-
             }
-
             Rectangle {
                 border.color: Config.alpha(Config.md3.tertiary, 0.32)
                 border.width: 1
@@ -350,7 +317,6 @@ MouseArea {
                 x: popupCard.x + 40 - width / 2
                 y: popupCard.y - height / 2
             }
-
             Rectangle {
                 color: Config.md3.surface_container
                 height: 6
@@ -358,9 +324,6 @@ MouseArea {
                 x: popupCard.x + 40 - width / 2
                 y: popupCard.y
             }
-
         }
-
     }
-
 }

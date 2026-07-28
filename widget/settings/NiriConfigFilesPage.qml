@@ -34,10 +34,16 @@ Item {
             delegate: Rectangle {
                 required property int index
 
-                height: 42
-                width: fileLabel.implicitWidth + 32
                 color: root.activeFile === index ? Config.alpha(Config.md3.primary, 0.2) : (fileMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.045))
+                height: 42
                 radius: 12
+                width: fileLabel.implicitWidth + 32
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 140
+                    }
+                }
 
                 Text {
                     id: fileLabel
@@ -49,26 +55,17 @@ Item {
                     font.weight: Font.DemiBold
                     text: root.fileLabels[index]
                 }
-
                 MouseArea {
                     id: fileMouse
 
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
+
                     onClicked: root.activeFile = index
                 }
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 140
-                    }
-                }
-
             }
-
         }
-
         NiriConfigEditor {
             id: editor
 
@@ -79,7 +76,5 @@ Item {
             fileName: root.fileNames[root.activeFile]
             title: root.fileLabels[root.activeFile] + " · " + fileName
         }
-
     }
-
 }

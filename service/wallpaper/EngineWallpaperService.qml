@@ -168,7 +168,7 @@ QtObject {
     }
     readonly property string readyProbeScript: Config.quickshellDir + "/scripts/wallpaper_frame_probe.py"
     property Timer readyTimer: Timer {
-        interval: 3800
+        interval: 5200
         repeat: false
 
         onTriggered: {
@@ -268,7 +268,11 @@ QtObject {
         var currentFrame = String(Config.wallpaper || "");
         var nextSlot = currentFrame === cacheDir + "/render-frame-1.jpg" ? 0 : 1;
         readyFramePath = cacheDir + "/render-frame-" + String(nextSlot) + ".jpg";
-        var args = ["linux-wallpaperengine", "--silent", "--fps", String(WallpaperPlaybackPolicy.targetFps), "--layer", "background", "--fullscreen-pause-only-active", "--screenshot", readyFramePath, "--screenshot-delay", "2", "--assets-dir", Config.wallpaperEngineAssetsDir];
+        // linux-wallpaperengine counts --screenshot-delay in frames, not
+        // seconds. Two frames captured several projects before their shaders
+        // had initialized, producing black/noisy lock-screen backdrops.
+        var screenshotDelayFrames = Math.max(45, Math.round(WallpaperPlaybackPolicy.targetFps * 2));
+        var args = ["linux-wallpaperengine", "--silent", "--fps", String(WallpaperPlaybackPolicy.targetFps), "--layer", "background", "--fullscreen-pause-only-active", "--screenshot", readyFramePath, "--screenshot-delay", String(screenshotDelayFrames), "--assets-dir", Config.wallpaperEngineAssetsDir];
         for (var i = 0; i < Quickshell.screens.length; ++i) {
             args.push("--screen-root", Quickshell.screens[i].name, "--bg", startedPath, "--scaling", "fill", "--clamp", "border");
         }
@@ -410,7 +414,7 @@ QtObject {
 
         if (readyProbe.running)
             readyProbe.running = false;
-        readyProbe.command = ["python3", readyProbeScript, readyFramePath, "3.5"];
+        readyProbe.command = ["python3", readyProbeScript, readyFramePath, "4.8"];
         readyProbe.running = true;
     }
     function startScan() {

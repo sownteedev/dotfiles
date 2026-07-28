@@ -4,10 +4,11 @@ import "../../"
 
 Item {
     id: root
-    property bool running: true
-    property color color: Config.md3.primary
+
     property int bubbleCount: 15
     property var bubbles: []
+    property color color: Config.md3.primary
+    property bool running: true
 
     Component.onCompleted: {
         var newBubbles = [];
@@ -26,8 +27,9 @@ Item {
 
     Timer {
         interval: 40
-        running: root.running
         repeat: true
+        running: root.running
+
         onTriggered: {
             var b = root.bubbles;
             for (var i = 0; i < b.length; i++) {
@@ -41,11 +43,11 @@ Item {
             bubbleCanvas.requestPaint();
         }
     }
-
     Canvas {
         id: bubbleCanvas
+
         anchors.fill: parent
-        
+
         onPaint: {
             var ctx = getContext("2d");
             ctx.clearRect(0, 0, width, height);
@@ -55,7 +57,7 @@ Item {
                 var bubble = b[i];
                 var bx = (bubble.x * width) + Math.sin(bubble.phase) * 20;
                 var by = bubble.y * height;
-                
+
                 ctx.beginPath();
                 ctx.arc(bx, by, bubble.r, 0, 2 * Math.PI);
                 ctx.fillStyle = Config.alpha(root.color, bubble.alpha * 0.12);

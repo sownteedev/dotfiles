@@ -743,512 +743,511 @@ Item {
                     }
                     Item {
                         Layout.fillWidth: true
-                        implicitHeight: Math.max(shadowCard.y + shadowCard.height, tabIndicatorCard.y + tabIndicatorCard.height)
+                        implicitHeight: Math.max(blurCard.y + blurCard.height, tabIndicatorCard.y + tabIndicatorCard.height)
 
-                            SettingsExpandableCard {
-                                id: borderCard
+                        SettingsExpandableCard {
+                            id: borderCard
 
-                                anchors.left: parent.left
-                                anchors.top: parent.top
-                                accentColor: Config.md3.primary
-                                note: "Draw a configurable border around windows"
-                                title: "Window border"
-                                width: (parent.width - 16) / 2
+                            accentColor: Config.md3.primary
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            note: "Draw a configurable border around windows"
+                            title: "Window border"
+                            width: (parent.width - 16) / 2
 
-                                onToggled: checked => {
-                                    return borderCard.checked = checked;
+                            onToggled: checked => {
+                                return borderCard.checked = checked;
+                            }
+
+                            SettingsTextField {
+                                id: borderField
+
+                                Layout.fillWidth: true
+                                label: "Width"
+                                placeholder: "12"
+
+                                inputItem.validator: DoubleValidator {
+                                    bottom: 0
+                                    top: 64
                                 }
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
 
                                 SettingsTextField {
-                                    id: borderField
+                                    id: borderActiveColor
 
                                     Layout.fillWidth: true
-                                    label: "Width"
-                                    placeholder: "12"
-
-                                    inputItem.validator: DoubleValidator {
-                                        bottom: 0
-                                        top: 64
-                                    }
+                                    label: "Active"
                                 }
-                                RowLayout {
+                                SettingsTextField {
+                                    id: borderInactiveColor
+
                                     Layout.fillWidth: true
-                                    spacing: 10
-
-                                    SettingsTextField {
-                                        id: borderActiveColor
-
-                                        Layout.fillWidth: true
-                                        label: "Active"
-                                    }
-                                    SettingsTextField {
-                                        id: borderInactiveColor
-
-                                        Layout.fillWidth: true
-                                        label: "Inactive"
-                                    }
-                                    SettingsTextField {
-                                        id: borderUrgentColor
-
-                                        Layout.fillWidth: true
-                                        label: "Urgent"
-                                    }
+                                    label: "Inactive"
                                 }
-                                SettingsExpandableCard {
-                                    id: borderGradientCard
+                                SettingsTextField {
+                                    id: borderUrgentColor
 
                                     Layout.fillWidth: true
-                                    accentColor: Config.md3.primary
-                                    note: "Gradient overrides the solid colors above"
-                                    title: "Gradient colors"
-
-                                    onToggled: checked => {
-                                        return borderGradientCard.checked = checked;
-                                    }
-
-                                    SettingsTextField {
-                                        id: borderActiveGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Active gradient"
-                                    }
-                                    SettingsTextField {
-                                        id: borderInactiveGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Inactive gradient"
-                                    }
-                                    SettingsTextField {
-                                        id: borderUrgentGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Urgent gradient"
-                                    }
+                                    label: "Urgent"
                                 }
                             }
                             SettingsExpandableCard {
-                                id: focusRingCard
+                                id: borderGradientCard
 
-                                anchors.right: parent.right
-                                anchors.top: parent.top
+                                Layout.fillWidth: true
+                                accentColor: Config.md3.primary
+                                note: "Gradient overrides the solid colors above"
+                                title: "Gradient colors"
+
+                                onToggled: checked => {
+                                    return borderGradientCard.checked = checked;
+                                }
+
+                                SettingsTextField {
+                                    id: borderActiveGradient
+
+                                    Layout.fillWidth: true
+                                    label: "Active gradient"
+                                }
+                                SettingsTextField {
+                                    id: borderInactiveGradient
+
+                                    Layout.fillWidth: true
+                                    label: "Inactive gradient"
+                                }
+                                SettingsTextField {
+                                    id: borderUrgentGradient
+
+                                    Layout.fillWidth: true
+                                    label: "Urgent gradient"
+                                }
+                            }
+                        }
+                        SettingsExpandableCard {
+                            id: focusRingCard
+
+                            accentColor: Config.md3.secondary
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            note: "Highlight the currently focused window"
+                            title: "Focus ring"
+                            width: (parent.width - 16) / 2
+
+                            onToggled: checked => {
+                                return focusRingCard.checked = checked;
+                            }
+
+                            SettingsTextField {
+                                id: focusRingWidth
+
+                                Layout.fillWidth: true
+                                label: "Width"
+
+                                inputItem.validator: DoubleValidator {
+                                    bottom: 0
+                                    top: 64
+                                }
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                SettingsTextField {
+                                    id: focusRingActiveColor
+
+                                    Layout.fillWidth: true
+                                    label: "Active"
+                                }
+                                SettingsTextField {
+                                    id: focusRingInactiveColor
+
+                                    Layout.fillWidth: true
+                                    label: "Inactive"
+                                }
+                                SettingsTextField {
+                                    id: focusRingUrgentColor
+
+                                    Layout.fillWidth: true
+                                    label: "Urgent"
+                                }
+                            }
+                            SettingsExpandableCard {
+                                id: focusGradientCard
+
+                                Layout.fillWidth: true
                                 accentColor: Config.md3.secondary
-                                note: "Highlight the currently focused window"
-                                title: "Focus ring"
-                                width: (parent.width - 16) / 2
+                                note: "Gradient overrides the solid colors above"
+                                title: "Gradient colors"
 
                                 onToggled: checked => {
-                                    return focusRingCard.checked = checked;
+                                    return focusGradientCard.checked = checked;
                                 }
 
                                 SettingsTextField {
-                                    id: focusRingWidth
+                                    id: focusActiveGradient
 
                                     Layout.fillWidth: true
-                                    label: "Width"
+                                    label: "Active gradient"
+                                }
+                                SettingsTextField {
+                                    id: focusInactiveGradient
+
+                                    Layout.fillWidth: true
+                                    label: "Inactive gradient"
+                                }
+                                SettingsTextField {
+                                    id: focusUrgentGradient
+
+                                    Layout.fillWidth: true
+                                    label: "Urgent gradient"
+                                }
+                            }
+                        }
+                        SettingsExpandableCard {
+                            id: insertHintCard
+
+                            accentColor: Config.md3.tertiary
+                            anchors.left: parent.left
+                            anchors.top: borderCard.bottom
+                            anchors.topMargin: 16
+                            note: "Show where a dragged window will be inserted"
+                            title: "Drag insert hint"
+                            width: (parent.width - 16) / 2
+
+                            onToggled: checked => {
+                                return insertHintCard.checked = checked;
+                            }
+
+                            SettingsTextField {
+                                id: insertHintColor
+
+                                Layout.fillWidth: true
+                                label: "Hint color"
+                                placeholder: "#7fc8ff80"
+                            }
+                            SettingsExpandableCard {
+                                id: insertGradientCard
+
+                                Layout.fillWidth: true
+                                accentColor: Config.md3.tertiary
+                                note: "Gradient overrides the solid hint color"
+                                title: "Gradient"
+
+                                onToggled: checked => {
+                                    return insertGradientCard.checked = checked;
+                                }
+
+                                SettingsTextField {
+                                    id: insertHintGradient
+
+                                    Layout.fillWidth: true
+                                    label: "Gradient specification"
+                                }
+                            }
+                        }
+                        SettingsExpandableCard {
+                            id: blurCard
+
+                            accentColor: Config.md3.primary
+                            anchors.left: parent.left
+                            anchors.top: insertHintCard.bottom
+                            anchors.topMargin: 16
+                            note: "GPU blur quality and performance controls"
+                            title: "Experimental blur"
+                            width: (parent.width - 16) / 2
+
+                            onToggled: checked => {
+                                return blurCard.checked = checked;
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                SettingsTextField {
+                                    id: blurPasses
+
+                                    Layout.fillWidth: true
+                                    label: "Passes"
+
+                                    inputItem.validator: IntValidator {
+                                        bottom: 1
+                                        top: 8
+                                    }
+                                }
+                                SettingsTextField {
+                                    id: blurOffset
+
+                                    Layout.fillWidth: true
+                                    label: "Offset"
+
+                                    inputItem.validator: DoubleValidator {
+                                        bottom: 0.1
+                                        top: 10
+                                    }
+                                }
+                                SettingsTextField {
+                                    id: blurNoise
+
+                                    Layout.fillWidth: true
+                                    label: "Noise"
 
                                     inputItem.validator: DoubleValidator {
                                         bottom: 0
-                                        top: 64
+                                        top: 1
                                     }
                                 }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 10
-
-                                    SettingsTextField {
-                                        id: focusRingActiveColor
-
-                                        Layout.fillWidth: true
-                                        label: "Active"
-                                    }
-                                    SettingsTextField {
-                                        id: focusRingInactiveColor
-
-                                        Layout.fillWidth: true
-                                        label: "Inactive"
-                                    }
-                                    SettingsTextField {
-                                        id: focusRingUrgentColor
-
-                                        Layout.fillWidth: true
-                                        label: "Urgent"
-                                    }
-                                }
-                                SettingsExpandableCard {
-                                    id: focusGradientCard
+                                SettingsTextField {
+                                    id: blurSaturation
 
                                     Layout.fillWidth: true
-                                    accentColor: Config.md3.secondary
-                                    note: "Gradient overrides the solid colors above"
-                                    title: "Gradient colors"
+                                    label: "Saturation"
 
-                                    onToggled: checked => {
-                                        return focusGradientCard.checked = checked;
-                                    }
-
-                                    SettingsTextField {
-                                        id: focusActiveGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Active gradient"
-                                    }
-                                    SettingsTextField {
-                                        id: focusInactiveGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Inactive gradient"
-                                    }
-                                    SettingsTextField {
-                                        id: focusUrgentGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Urgent gradient"
+                                    inputItem.validator: DoubleValidator {
+                                        bottom: 0
+                                        top: 5
                                     }
                                 }
                             }
-                            SettingsExpandableCard {
-                                id: insertHintCard
+                        }
+                        SettingsExpandableCard {
+                            id: shadowCard
 
-                                anchors.left: parent.left
-                                anchors.top: borderCard.bottom
-                                anchors.topMargin: 16
-                                accentColor: Config.md3.tertiary
-                                note: "Show where a dragged window will be inserted"
-                                title: "Drag insert hint"
-                                width: (parent.width - 16) / 2
+                            accentColor: Config.md3.tertiary
+                            anchors.right: parent.right
+                            anchors.top: focusRingCard.bottom
+                            anchors.topMargin: 16
+                            note: "Draw a configurable shadow behind windows"
+                            title: "Window shadow"
+                            width: (parent.width - 16) / 2
+
+                            onToggled: checked => {
+                                return shadowCard.checked = checked;
+                            }
+
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columnSpacing: 10
+                                columns: 2
+                                rowSpacing: 10
+
+                                SettingsTextField {
+                                    id: shadowSoftness
+
+                                    Layout.fillWidth: true
+                                    label: "Softness"
+                                }
+                                SettingsTextField {
+                                    id: shadowSpread
+
+                                    Layout.fillWidth: true
+                                    label: "Spread"
+                                }
+                                SettingsTextField {
+                                    id: shadowOffsetX
+
+                                    Layout.fillWidth: true
+                                    label: "Offset X"
+                                }
+                                SettingsTextField {
+                                    id: shadowOffsetY
+
+                                    Layout.fillWidth: true
+                                    label: "Offset Y"
+                                }
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                SettingsTextField {
+                                    id: shadowColor
+
+                                    Layout.fillWidth: true
+                                    label: "Color"
+                                }
+                                SettingsTextField {
+                                    id: shadowInactiveColor
+
+                                    Layout.fillWidth: true
+                                    label: "Inactive"
+                                }
+                            }
+                            SettingsToggleRow {
+                                id: shadowDrawBehind
+
+                                label: "Draw behind window"
+                                note: "Keep the shadow behind the complete window"
 
                                 onToggled: checked => {
-                                    return insertHintCard.checked = checked;
+                                    return shadowDrawBehind.checked = checked;
+                                }
+                            }
+                        }
+                        SettingsExpandableCard {
+                            id: tabIndicatorCard
+
+                            accentColor: Config.md3.primary
+                            anchors.right: parent.right
+                            anchors.top: shadowCard.bottom
+                            anchors.topMargin: 16
+                            note: "Marker for tabs in a tabbed column"
+                            title: "Tabbed column indicator"
+                            width: (parent.width - 16) / 2
+
+                            onToggled: checked => {
+                                return tabIndicatorCard.checked = checked;
+                            }
+
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columnSpacing: 10
+                                columns: 2
+                                rowSpacing: 10
+
+                                SettingsTextField {
+                                    id: tabGap
+
+                                    Layout.fillWidth: true
+                                    label: "Outer gap"
+                                }
+                                SettingsTextField {
+                                    id: tabWidth
+
+                                    Layout.fillWidth: true
+                                    label: "Width"
+                                }
+                                SettingsTextField {
+                                    id: tabGapsBetween
+
+                                    Layout.fillWidth: true
+                                    label: "Gap between tabs"
+                                }
+                                SettingsTextField {
+                                    id: tabCornerRadius
+
+                                    Layout.fillWidth: true
+                                    label: "Corner radius"
+                                }
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                SettingsTextField {
+                                    id: tabLength
+
+                                    Layout.preferredWidth: 170
+                                    label: "Total length"
+
+                                    inputItem.validator: DoubleValidator {
+                                        bottom: 0.05
+                                        top: 1
+                                    }
+                                }
+                                SettingsChoiceRow {
+                                    id: tabPosition
+
+                                    Layout.fillWidth: true
+                                    label: "Position"
+                                    options: [
+                                        {
+                                            "label": "Left",
+                                            "value": "left"
+                                        },
+                                        {
+                                            "label": "Right",
+                                            "value": "right"
+                                        },
+                                        {
+                                            "label": "Top",
+                                            "value": "top"
+                                        },
+                                        {
+                                            "label": "Bottom",
+                                            "value": "bottom"
+                                        }
+                                    ]
+                                }
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                SettingsTextField {
+                                    id: tabActiveColor
+
+                                    Layout.fillWidth: true
+                                    label: "Active"
+                                }
+                                SettingsTextField {
+                                    id: tabInactiveColor
+
+                                    Layout.fillWidth: true
+                                    label: "Inactive"
+                                }
+                                SettingsTextField {
+                                    id: tabUrgentColor
+
+                                    Layout.fillWidth: true
+                                    label: "Urgent"
+                                }
+                            }
+                            SettingsExpandableCard {
+                                id: tabGradientCard
+
+                                Layout.fillWidth: true
+                                accentColor: Config.md3.primary
+                                note: "Gradient overrides the solid colors above"
+                                title: "Gradient colors"
+
+                                onToggled: checked => {
+                                    return tabGradientCard.checked = checked;
                                 }
 
                                 SettingsTextField {
-                                    id: insertHintColor
+                                    id: tabActiveGradient
 
                                     Layout.fillWidth: true
-                                    label: "Hint color"
-                                    placeholder: "#7fc8ff80"
+                                    label: "Active gradient"
                                 }
-                                SettingsExpandableCard {
-                                    id: insertGradientCard
+                                SettingsTextField {
+                                    id: tabInactiveGradient
 
                                     Layout.fillWidth: true
-                                    accentColor: Config.md3.tertiary
-                                    note: "Gradient overrides the solid hint color"
-                                    title: "Gradient"
+                                    label: "Inactive gradient"
+                                }
+                                SettingsTextField {
+                                    id: tabUrgentGradient
 
-                                    onToggled: checked => {
-                                        return insertGradientCard.checked = checked;
-                                    }
-
-                                    SettingsTextField {
-                                        id: insertHintGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Gradient specification"
-                                    }
+                                    Layout.fillWidth: true
+                                    label: "Urgent gradient"
                                 }
                             }
-                            SettingsExpandableCard {
-                                id: blurCard
+                            SettingsToggleRow {
+                                id: tabHideSingle
 
-                                anchors.right: parent.right
-                                anchors.top: focusRingCard.bottom
-                                anchors.topMargin: 16
-                                accentColor: Config.md3.primary
-                                note: "GPU blur quality and performance controls"
-                                title: "Experimental blur"
-                                width: (parent.width - 16) / 2
+                                label: "Hide with one tab"
+                                note: "Do not draw the indicator for a single tab"
 
                                 onToggled: checked => {
-                                    return blurCard.checked = checked;
-                                }
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 16
-
-                                    SettingsTextField {
-                                        id: blurPasses
-
-                                        Layout.fillWidth: true
-                                        label: "Passes"
-
-                                        inputItem.validator: IntValidator {
-                                            bottom: 1
-                                            top: 8
-                                        }
-                                    }
-                                    SettingsTextField {
-                                        id: blurOffset
-
-                                        Layout.fillWidth: true
-                                        label: "Offset"
-
-                                        inputItem.validator: DoubleValidator {
-                                            bottom: 0.1
-                                            top: 10
-                                        }
-                                    }
-                                    SettingsTextField {
-                                        id: blurNoise
-
-                                        Layout.fillWidth: true
-                                        label: "Noise"
-
-                                        inputItem.validator: DoubleValidator {
-                                            bottom: 0
-                                            top: 1
-                                        }
-                                    }
-                                    SettingsTextField {
-                                        id: blurSaturation
-
-                                        Layout.fillWidth: true
-                                        label: "Saturation"
-
-                                        inputItem.validator: DoubleValidator {
-                                            bottom: 0
-                                            top: 5
-                                        }
-                                    }
+                                    return tabHideSingle.checked = checked;
                                 }
                             }
+                            SettingsToggleRow {
+                                id: tabPlaceWithin
 
-                            SettingsExpandableCard {
-                                id: shadowCard
-
-                                anchors.left: parent.left
-                                anchors.top: insertHintCard.bottom
-                                anchors.topMargin: 16
-                                accentColor: Config.md3.tertiary
-                                note: "Draw a configurable shadow behind windows"
-                                title: "Window shadow"
-                                width: (parent.width - 16) / 2
+                                label: "Place inside column"
+                                note: "Keep the indicator within the column bounds"
 
                                 onToggled: checked => {
-                                    return shadowCard.checked = checked;
-                                }
-
-                                GridLayout {
-                                    Layout.fillWidth: true
-                                    columnSpacing: 10
-                                    columns: 2
-                                    rowSpacing: 10
-
-                                    SettingsTextField {
-                                        id: shadowSoftness
-
-                                        Layout.fillWidth: true
-                                        label: "Softness"
-                                    }
-                                    SettingsTextField {
-                                        id: shadowSpread
-
-                                        Layout.fillWidth: true
-                                        label: "Spread"
-                                    }
-                                    SettingsTextField {
-                                        id: shadowOffsetX
-
-                                        Layout.fillWidth: true
-                                        label: "Offset X"
-                                    }
-                                    SettingsTextField {
-                                        id: shadowOffsetY
-
-                                        Layout.fillWidth: true
-                                        label: "Offset Y"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 10
-
-                                    SettingsTextField {
-                                        id: shadowColor
-
-                                        Layout.fillWidth: true
-                                        label: "Color"
-                                    }
-                                    SettingsTextField {
-                                        id: shadowInactiveColor
-
-                                        Layout.fillWidth: true
-                                        label: "Inactive"
-                                    }
-                                }
-                                SettingsToggleRow {
-                                    id: shadowDrawBehind
-
-                                    label: "Draw behind window"
-                                    note: "Keep the shadow behind the complete window"
-
-                                    onToggled: checked => {
-                                        return shadowDrawBehind.checked = checked;
-                                    }
+                                    return tabPlaceWithin.checked = checked;
                                 }
                             }
-                            SettingsExpandableCard {
-                                id: tabIndicatorCard
-
-                                anchors.right: parent.right
-                                anchors.top: blurCard.bottom
-                                anchors.topMargin: 16
-                                accentColor: Config.md3.primary
-                                note: "Marker for tabs in a tabbed column"
-                                title: "Tabbed column indicator"
-                                width: (parent.width - 16) / 2
-
-                                onToggled: checked => {
-                                    return tabIndicatorCard.checked = checked;
-                                }
-
-                                GridLayout {
-                                    Layout.fillWidth: true
-                                    columnSpacing: 10
-                                    columns: 2
-                                    rowSpacing: 10
-
-                                    SettingsTextField {
-                                        id: tabGap
-
-                                        Layout.fillWidth: true
-                                        label: "Outer gap"
-                                    }
-                                    SettingsTextField {
-                                        id: tabWidth
-
-                                        Layout.fillWidth: true
-                                        label: "Width"
-                                    }
-                                    SettingsTextField {
-                                        id: tabGapsBetween
-
-                                        Layout.fillWidth: true
-                                        label: "Gap between tabs"
-                                    }
-                                    SettingsTextField {
-                                        id: tabCornerRadius
-
-                                        Layout.fillWidth: true
-                                        label: "Corner radius"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 10
-
-                                    SettingsTextField {
-                                        id: tabLength
-
-                                        Layout.preferredWidth: 170
-                                        label: "Total length"
-
-                                        inputItem.validator: DoubleValidator {
-                                            bottom: 0.05
-                                            top: 1
-                                        }
-                                    }
-                                    SettingsChoiceRow {
-                                        id: tabPosition
-
-                                        Layout.fillWidth: true
-                                        label: "Position"
-                                        options: [
-                                            {
-                                                "label": "Left",
-                                                "value": "left"
-                                            },
-                                            {
-                                                "label": "Right",
-                                                "value": "right"
-                                            },
-                                            {
-                                                "label": "Top",
-                                                "value": "top"
-                                            },
-                                            {
-                                                "label": "Bottom",
-                                                "value": "bottom"
-                                            }
-                                        ]
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 10
-
-                                    SettingsTextField {
-                                        id: tabActiveColor
-
-                                        Layout.fillWidth: true
-                                        label: "Active"
-                                    }
-                                    SettingsTextField {
-                                        id: tabInactiveColor
-
-                                        Layout.fillWidth: true
-                                        label: "Inactive"
-                                    }
-                                    SettingsTextField {
-                                        id: tabUrgentColor
-
-                                        Layout.fillWidth: true
-                                        label: "Urgent"
-                                    }
-                                }
-                                SettingsExpandableCard {
-                                    id: tabGradientCard
-
-                                    Layout.fillWidth: true
-                                    accentColor: Config.md3.primary
-                                    note: "Gradient overrides the solid colors above"
-                                    title: "Gradient colors"
-
-                                    onToggled: checked => {
-                                        return tabGradientCard.checked = checked;
-                                    }
-
-                                    SettingsTextField {
-                                        id: tabActiveGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Active gradient"
-                                    }
-                                    SettingsTextField {
-                                        id: tabInactiveGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Inactive gradient"
-                                    }
-                                    SettingsTextField {
-                                        id: tabUrgentGradient
-
-                                        Layout.fillWidth: true
-                                        label: "Urgent gradient"
-                                    }
-                                }
-                                SettingsToggleRow {
-                                    id: tabHideSingle
-
-                                    label: "Hide with one tab"
-                                    note: "Do not draw the indicator for a single tab"
-
-                                    onToggled: checked => {
-                                        return tabHideSingle.checked = checked;
-                                    }
-                                }
-                                SettingsToggleRow {
-                                    id: tabPlaceWithin
-
-                                    label: "Place inside column"
-                                    note: "Keep the indicator within the column bounds"
-
-                                    onToggled: checked => {
-                                        return tabPlaceWithin.checked = checked;
-                                    }
-                                }
-                            }
+                        }
                     }
                     SettingsExpandableCard {
                         id: recentWindowsCard
@@ -1269,185 +1268,185 @@ Item {
                             note: "Controls how quickly the switcher opens and reacts"
                             title: "Timing"
 
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 16
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
 
-                                        SettingsTextField {
-                                            id: recentDebounce
+                                SettingsTextField {
+                                    id: recentDebounce
 
-                                            Layout.fillWidth: true
-                                            label: "Debounce (ms)"
+                                    Layout.fillWidth: true
+                                    label: "Debounce (ms)"
 
-                                            inputItem.validator: IntValidator {
-                                                bottom: 0
-                                                top: 5000
-                                            }
-                                        }
-                                        SettingsTextField {
-                                            id: recentDelay
-
-                                            Layout.fillWidth: true
-                                            label: "Open delay (ms)"
-
-                                            inputItem.validator: IntValidator {
-                                                bottom: 0
-                                                top: 5000
-                                            }
-                                        }
+                                    inputItem.validator: IntValidator {
+                                        bottom: 0
+                                        top: 5000
                                     }
                                 }
-                                SettingsSectionCard {
+                                SettingsTextField {
+                                    id: recentDelay
+
                                     Layout.fillWidth: true
-                                    accentColor: Config.md3.primary
-                                    note: "Appearance of the currently selected preview"
-                                    title: "Highlight"
+                                    label: "Open delay (ms)"
 
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 16
-
-                                        SettingsTextField {
-                                            id: recentHighlightActiveColor
-
-                                            Layout.fillWidth: true
-                                            label: "Active color"
-                                            placeholder: "#999999ff"
-                                        }
-                                        SettingsTextField {
-                                            id: recentHighlightUrgentColor
-
-                                            Layout.fillWidth: true
-                                            label: "Urgent color"
-                                            placeholder: "#ff9999ff"
-                                        }
-                                        SettingsTextField {
-                                            id: recentHighlightPadding
-
-                                            Layout.fillWidth: true
-                                            label: "Padding"
-
-                                            inputItem.validator: IntValidator {
-                                                bottom: 0
-                                                top: 256
-                                            }
-                                        }
-                                        SettingsTextField {
-                                            id: recentHighlightCornerRadius
-
-                                            Layout.fillWidth: true
-                                            label: "Corner radius"
-
-                                            inputItem.validator: IntValidator {
-                                                bottom: 0
-                                                top: 256
-                                            }
-                                        }
+                                    inputItem.validator: IntValidator {
+                                        bottom: 0
+                                        top: 5000
                                     }
                                 }
-                                SettingsSectionCard {
+                            }
+                        }
+                        SettingsSectionCard {
+                            Layout.fillWidth: true
+                            accentColor: Config.md3.primary
+                            note: "Appearance of the currently selected preview"
+                            title: "Highlight"
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                SettingsTextField {
+                                    id: recentHighlightActiveColor
+
                                     Layout.fillWidth: true
-                                    accentColor: Config.md3.tertiary
-                                    note: "Limits preview size to keep the switcher responsive"
-                                    title: "Previews"
+                                    label: "Active color"
+                                    placeholder: "#999999ff"
+                                }
+                                SettingsTextField {
+                                    id: recentHighlightUrgentColor
 
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 16
+                                    Layout.fillWidth: true
+                                    label: "Urgent color"
+                                    placeholder: "#ff9999ff"
+                                }
+                                SettingsTextField {
+                                    id: recentHighlightPadding
 
-                                        SettingsTextField {
-                                            id: recentPreviewHeight
+                                    Layout.fillWidth: true
+                                    label: "Padding"
 
-                                            Layout.fillWidth: true
-                                            label: "Maximum height"
-
-                                            inputItem.validator: IntValidator {
-                                                bottom: 64
-                                                top: 2160
-                                            }
-                                        }
-                                        SettingsTextField {
-                                            id: recentPreviewScale
-
-                                            Layout.fillWidth: true
-                                            label: "Maximum scale"
-
-                                            inputItem.validator: DoubleValidator {
-                                                bottom: 0.05
-                                                top: 1
-                                            }
-                                        }
+                                    inputItem.validator: IntValidator {
+                                        bottom: 0
+                                        top: 256
                                     }
                                 }
-                                SettingsSectionCard {
+                                SettingsTextField {
+                                    id: recentHighlightCornerRadius
+
                                     Layout.fillWidth: true
-                                    accentColor: Config.md3.error
-                                    note: "Alt+Tab cycles every app; grave shortcuts stay within the same application"
-                                    title: "Shortcuts"
+                                    label: "Corner radius"
 
-                                    Repeater {
-                                        model: root.recentBindValues
+                                    inputItem.validator: IntValidator {
+                                        bottom: 0
+                                        top: 256
+                                    }
+                                }
+                            }
+                        }
+                        SettingsSectionCard {
+                            Layout.fillWidth: true
+                            accentColor: Config.md3.tertiary
+                            note: "Limits preview size to keep the switcher responsive"
+                            title: "Previews"
 
-                                        delegate: Rectangle {
-                                            required property int index
-                                            required property var modelData
-                                            readonly property bool previous: modelData.direction === "previous-window"
-                                            readonly property bool sameApp: modelData.filter === "app-id"
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
 
+                                SettingsTextField {
+                                    id: recentPreviewHeight
+
+                                    Layout.fillWidth: true
+                                    label: "Maximum height"
+
+                                    inputItem.validator: IntValidator {
+                                        bottom: 64
+                                        top: 2160
+                                    }
+                                }
+                                SettingsTextField {
+                                    id: recentPreviewScale
+
+                                    Layout.fillWidth: true
+                                    label: "Maximum scale"
+
+                                    inputItem.validator: DoubleValidator {
+                                        bottom: 0.05
+                                        top: 1
+                                    }
+                                }
+                            }
+                        }
+                        SettingsSectionCard {
+                            Layout.fillWidth: true
+                            accentColor: Config.md3.error
+                            note: "Alt+Tab cycles every app; grave shortcuts stay within the same application"
+                            title: "Shortcuts"
+
+                            Repeater {
+                                model: root.recentBindValues
+
+                                delegate: Rectangle {
+                                    required property int index
+                                    required property var modelData
+                                    readonly property bool previous: modelData.direction === "previous-window"
+                                    readonly property bool sameApp: modelData.filter === "app-id"
+
+                                    Layout.fillWidth: true
+                                    border.color: Config.alpha(Config.md3.on_surface, 0.055)
+                                    border.width: 1
+                                    color: Config.alpha(Config.md3.on_surface, 0.04)
+                                    implicitHeight: recentBindRow.implicitHeight + 32
+                                    radius: 12
+
+                                    RowLayout {
+                                        id: recentBindRow
+
+                                        anchors.fill: parent
+                                        anchors.margins: 16
+                                        spacing: 24
+
+                                        ColumnLayout {
                                             Layout.fillWidth: true
-                                            border.color: Config.alpha(Config.md3.on_surface, 0.055)
-                                            border.width: 1
-                                            color: Config.alpha(Config.md3.on_surface, 0.04)
-                                            implicitHeight: recentBindRow.implicitHeight + 32
-                                            radius: 12
+                                            spacing: 5
 
-                                            RowLayout {
-                                                id: recentBindRow
+                                            Text {
+                                                Layout.fillWidth: true
+                                                color: Config.md3.on_surface
+                                                font.family: Config.fontName
+                                                font.pixelSize: 15
+                                                font.weight: Font.DemiBold
+                                                text: (sameApp ? "Same application · " : "All applications · ") + (previous ? "Previous window" : "Next window")
+                                            }
+                                            Text {
+                                                Layout.fillWidth: true
+                                                color: Config.alpha(Config.md3.on_surface, 0.45)
+                                                font.family: Config.fontName
+                                                font.pixelSize: 12
+                                                text: sameApp ? "Matches the app ID of the initially focused window" : "Uses Niri's remembered initial window set"
+                                            }
+                                        }
+                                        SettingsTextField {
+                                            id: recentBindKey
 
-                                                anchors.fill: parent
-                                                anchors.margins: 16
-                                                spacing: 24
+                                            Layout.preferredWidth: 280
+                                            fieldHeight: 40
+                                            label: "Shortcut"
+                                            text: modelData.key
 
-                                                ColumnLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 5
-
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        color: Config.md3.on_surface
-                                                        font.family: Config.fontName
-                                                        font.pixelSize: 15
-                                                        font.weight: Font.DemiBold
-                                                        text: (sameApp ? "Same application · " : "All applications · ") + (previous ? "Previous window" : "Next window")
-                                                    }
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        color: Config.alpha(Config.md3.on_surface, 0.45)
-                                                        font.family: Config.fontName
-                                                        font.pixelSize: 12
-                                                        text: sameApp ? "Matches the app ID of the initially focused window" : "Uses Niri's remembered initial window set"
-                                                    }
+                                            Connections {
+                                                function onEditingFinished() {
+                                                    root.updateRecentBind(index, "key", recentBindKey.text);
                                                 }
-                                                SettingsTextField {
-                                                    id: recentBindKey
 
-                                                    Layout.preferredWidth: 280
-                                                    fieldHeight: 40
-                                                    label: "Shortcut"
-                                                    text: modelData.key
-
-                                                    Connections {
-                                                        function onEditingFinished() {
-                                                            root.updateRecentBind(index, "key", recentBindKey.text);
-                                                        }
-
-                                                        target: recentBindKey.inputItem
-                                                    }
-                                                }
+                                                target: recentBindKey.inputItem
                                             }
                                         }
                                     }
                                 }
+                            }
+                        }
                         Item {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 10

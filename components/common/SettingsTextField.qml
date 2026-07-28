@@ -6,6 +6,7 @@ import "../../components"
 ColumnLayout {
     id: root
 
+    property string actionIcon: ""
     property alias echoMode: input.echoMode
     property bool editable: true
     property int fieldHeight: 44
@@ -18,8 +19,8 @@ ColumnLayout {
     property string placeholder: ""
     property alias text: input.text
     property alias verticalAlignment: input.verticalAlignment
-    property string actionIcon: ""
-    signal actionClicked()
+
+    signal actionClicked
 
     spacing: 8
 
@@ -77,11 +78,11 @@ ColumnLayout {
                 visible: input.text === ""
             }
         }
-
         SettingsActionButton {
             Layout.alignment: Qt.AlignVCenter
             iconName: root.actionIcon
             visible: root.actionIcon !== ""
+
             onClicked: root.actionClicked()
         }
     }

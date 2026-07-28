@@ -4,14 +4,13 @@ import "../../"
 Item {
     id: root
 
+    readonly property int _multiplier: 10000
+    property int _realCount: maximumValue + 1
     property bool interactive: true
     property int maximumValue: 59
     readonly property int rowHeight: 40
     property string unitLabel: ""
     property int value: 0
-
-    property int _realCount: maximumValue + 1
-    readonly property int _multiplier: 10000
 
     signal valueSelected(int value)
 
@@ -61,9 +60,9 @@ Item {
         delegate: Item {
             id: delegateItem
 
-            readonly property int realIndex: index % root._realCount
             readonly property int distance: Math.abs(index - wheel.currentIndex)
             required property int index
+            readonly property int realIndex: index % root._realCount
             readonly property bool selected: index === wheel.currentIndex
 
             height: root.rowHeight
@@ -74,9 +73,10 @@ Item {
 
                 Text {
                     id: numberText
-                    anchors.verticalCenter: parent.verticalCenter
+
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.horizontalCenterOffset: -12
+                    anchors.verticalCenter: parent.verticalCenter
                     color: Config.md3.on_surface
                     font.family: Config.fontName
                     font.features: {
@@ -107,9 +107,10 @@ Item {
                     font.family: Config.fontName
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
+                    opacity: delegateItem.selected ? 1 : 0
                     renderType: Text.NativeRendering
                     text: root.unitLabel
-                    opacity: delegateItem.selected ? 1 : 0
+
                     Behavior on opacity {
                         NumberAnimation {
                             duration: 110

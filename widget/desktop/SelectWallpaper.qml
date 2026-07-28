@@ -11,8 +11,8 @@ PanelWindow {
     readonly property int activeCount: activeModel.count
     readonly property var activeModel: selectedMode === "video" ? videoModel : staticModel
     property bool changingMode: false
-    property bool selectionCommitted: false
     property string selectedMode: "static"
+    property bool selectionCommitted: false
     property int staticIndex: 0
     property int videoIndex: 0
 
@@ -55,14 +55,19 @@ PanelWindow {
     function pathAt(index) {
         return roleAt(index, "filePath", "");
     }
-    function rememberCurrentIndex() {
-        if (pathView.currentIndex < 0)
+    function preloadNeighbours() {
+        if (!wallpaperWindow.visible || changingMode || selectedMode !== "static" || activeCount < 2)
             return;
 
-        if (selectedMode === "video")
-            videoIndex = pathView.currentIndex;
-        else
-            staticIndex = pathView.currentIndex;
+        WallpaperPreviewService.resetPreloads();
+        var current = pathView.currentIndex;
+        var offsets = [1, -1, 2, -2];
+        for (var i = 0; i < offsets.length; ++i) {
+            var index = (current + offsets[i] + activeCount) % activeCount;
+            if (index === current)
+                continue;
+            WallpaperPreviewService.preload(pathAt(index), roleAt(index, "fileModified", 0));
+        }
     }
     function previewCurrent() {
         if (!wallpaperWindow.visible || changingMode || selectedMode !== "static" || pathView.currentIndex < 0)
@@ -77,19 +82,14 @@ PanelWindow {
         WallpaperPreviewService.preview(path, modified);
         preloadTimer.restart();
     }
-    function preloadNeighbours() {
-        if (!wallpaperWindow.visible || changingMode || selectedMode !== "static" || activeCount < 2)
+    function rememberCurrentIndex() {
+        if (pathView.currentIndex < 0)
             return;
 
-        WallpaperPreviewService.resetPreloads();
-        var current = pathView.currentIndex;
-        var offsets = [1, -1, 2, -2];
-        for (var i = 0; i < offsets.length; ++i) {
-            var index = (current + offsets[i] + activeCount) % activeCount;
-            if (index === current)
-                continue;
-            WallpaperPreviewService.preload(pathAt(index), roleAt(index, "fileModified", 0));
-        }
+        if (selectedMode === "video")
+            videoIndex = pathView.currentIndex;
+        else
+            staticIndex = pathView.currentIndex;
     }
     function restoreModeIndex() {
         if (activeCount === 0) {
@@ -109,6 +109,11 @@ PanelWindow {
         var value = staticModel.get(index, role);
         return value !== undefined ? value : fallbackValue;
     }
+    function schedulePreview() {
+        if (selectedMode === "static" && !changingMode) {
+            previewTimer.restart();
+        }
+    }
     function selectCurrentWallpaper() {
         if (!pathView.currentItem)
             return;
@@ -116,11 +121,6 @@ PanelWindow {
         selectionCommitted = true;
         WallpaperService.apply(pathView.currentItem.filePath, selectedMode, pathView.currentItem.fileModified);
         closeSelector();
-    }
-    function schedulePreview() {
-        if (selectedMode === "static" && !changingMode) {
-            previewTimer.restart();
-        }
     }
     function switchMode(mode) {
         if (mode !== "static" && mode !== "video" || mode === selectedMode)
@@ -434,6 +434,9 @@ PanelWindow {
         Item {
             id: delegateRoot
 
+            readonly property bool convertedEnginePreview: isEngine && EngineWallpaperService.previewNeedsConversion(previewPath)
+            readonly property string engineThumbnail: convertedEnginePreview ? EngineWallpaperService.previewThumbnailPath(previewPath, fileModified) : previewPath
+            property bool engineThumbnailAvailable: !convertedEnginePreview || EngineWallpaperService.previewThumbnailKnown(previewPath, fileModified)
             readonly property var fileModified: wallpaperWindow.roleAt(index, "fileModified", 0)
             readonly property string filePath: wallpaperWindow.roleAt(index, "filePath", "")
             readonly property string fileUrl: wallpaperWindow.roleAt(index, "fileUrl", "")
@@ -442,11 +445,18 @@ PanelWindow {
             readonly property bool live: wallpaperWindow.selectedMode === "video" && !isEngine && LiveWallpaperService.isLivePath(filePath)
             readonly property string liveThumbnail: live ? LiveWallpaperService.thumbnailPath(filePath, fileModified) : ""
             readonly property string previewPath: wallpaperWindow.roleAt(index, "preview", "")
-            readonly property bool convertedEnginePreview: isEngine && EngineWallpaperService.previewNeedsConversion(previewPath)
-            readonly property string engineThumbnail: convertedEnginePreview ? EngineWallpaperService.previewThumbnailPath(previewPath, fileModified) : previewPath
             property bool thumbnailAvailable: !live || LiveWallpaperService.thumbnailKnown(filePath, fileModified)
-            property bool engineThumbnailAvailable: !convertedEnginePreview || EngineWallpaperService.previewThumbnailKnown(previewPath, fileModified)
             property int thumbnailRevision: 0
+
+            function requestCurrentThumbnail() {
+                if (live) {
+                    thumbnailAvailable = LiveWallpaperService.thumbnailKnown(filePath, fileModified);
+                    LiveWallpaperService.requestThumbnail(filePath, fileModified, PathView.isCurrentItem);
+                } else if (convertedEnginePreview) {
+                    engineThumbnailAvailable = EngineWallpaperService.previewThumbnailKnown(previewPath, fileModified);
+                    EngineWallpaperService.requestPreviewThumbnail(previewPath, fileModified, PathView.isCurrentItem);
+                }
+            }
 
             height: 240
             opacity: PathView.itemOpacity !== undefined ? PathView.itemOpacity : 0
@@ -466,6 +476,9 @@ PanelWindow {
                 else if (convertedEnginePreview)
                     EngineWallpaperService.requestPreviewThumbnail(previewPath, fileModified);
             }
+            onFileModifiedChanged: Qt.callLater(delegateRoot.requestCurrentThumbnail)
+            onFilePathChanged: Qt.callLater(delegateRoot.requestCurrentThumbnail)
+            onPreviewPathChanged: Qt.callLater(delegateRoot.requestCurrentThumbnail)
 
             Connections {
                 function onThumbnailReady(sourcePath, thumbnailPath) {
@@ -486,19 +499,6 @@ PanelWindow {
                 }
 
                 target: EngineWallpaperService
-            }
-            onFileModifiedChanged: Qt.callLater(delegateRoot.requestCurrentThumbnail)
-            onFilePathChanged: Qt.callLater(delegateRoot.requestCurrentThumbnail)
-            onPreviewPathChanged: Qt.callLater(delegateRoot.requestCurrentThumbnail)
-
-            function requestCurrentThumbnail() {
-                if (live) {
-                    thumbnailAvailable = LiveWallpaperService.thumbnailKnown(filePath, fileModified);
-                    LiveWallpaperService.requestThumbnail(filePath, fileModified, PathView.isCurrentItem);
-                } else if (convertedEnginePreview) {
-                    engineThumbnailAvailable = EngineWallpaperService.previewThumbnailKnown(previewPath, fileModified);
-                    EngineWallpaperService.requestPreviewThumbnail(previewPath, fileModified, PathView.isCurrentItem);
-                }
             }
             Rectangle {
                 anchors.fill: parent

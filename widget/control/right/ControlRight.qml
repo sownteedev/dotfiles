@@ -131,17 +131,11 @@ PanelWindow {
         anchors.topMargin: 10
         border.color: Config.alpha(Config.md3.on_surface, 0.06)
         border.width: 1
+        clip: true // Prevent bubbles from flying completely outside the panel bounds
+
         color: Config.alpha(Config.md3.background, 0.95)
         radius: 20
         width: 650
-        clip: true // Prevent bubbles from flying completely outside the panel bounds
-
-        AnimatedBubbles {
-            anchors.fill: parent
-            color: Config.alpha(Config.md3.primary, 0.6)
-            bubbleCount: 35
-            running: controlRightWindow.active
-        }
 
         Behavior on xOffset {
             NumberAnimation {
@@ -157,6 +151,12 @@ PanelWindow {
             }
         }
 
+        AnimatedBubbles {
+            anchors.fill: parent
+            bubbleCount: 35
+            color: Config.alpha(Config.md3.primary, 0.6)
+            running: controlRightWindow.active
+        }
         MouseArea {
             anchors.fill: parent
             propagateComposedEvents: false
@@ -342,7 +342,6 @@ PanelWindow {
                                 }
                             }
                         }
-
                         Item {
                             Layout.fillWidth: true
                         }

@@ -1,64 +1,123 @@
 import Qt.labs.folderlistmodel
-import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Window
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pam
 import Quickshell.Wayland
-import quickshell
+import "../.."
 import "../../service"
 
-ShellRoot {
+Scope {
     id: root
 
-    readonly property color bgColor: isLight ? "#ffffff" : Config.md3.background
-    readonly property color blastColor: isLight ? "#000000" : Config.md3.on_surface
+    readonly property string backdropPath: BackdropService.ready ? BackdropService.activeBackdrop : ""
+    readonly property string cacheRoot: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") || "") + "/.cache") + "/quickshell"
+    readonly property bool clock24h: settingValue("clock24h", true)
     // Time
     property int curH: new Date().getHours()
     property int curM: new Date().getMinutes()
     property int curMS: new Date().getMilliseconds()
     property int curS: new Date().getSeconds()
-    readonly property color dimText: isLight ? "#666666" : Config.md3.on_surface_variant
     readonly property bool enableWindup: true
+    readonly property string fallbackWallpaper: wallpaperState.frame || wallpaperState.thumbnail || (wallpaperState.mode === "static" ? wallpaperState.path : "")
     // Fonts
-    readonly property string fontName: Config.fontName
-    readonly property color inputWaitColor: isLight ? "#bbbbbb" : Config.md3.surface_container
-    readonly property bool isLight: themeMode === "light"
+    readonly property string fontName: settingValue("fontName", "Inter")
     // State
     property bool isWindup: false
     readonly property real localTimeMS: (curH * 3.6e+06) + (curM * 60000) + (curS * 1000) + curMS
-    readonly property color mainText: isLight ? "#000000" : Config.md3.on_surface
-    readonly property string lockMarkerPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/quickshell-wallpaper-lock.active"
-    readonly property color pillBorder: isLight ? (root.isWindup ? "#aaaaaa" : "#cccccc") : (root.isWindup ? Config.md3.surface_container_highest : Config.md3.surface_container)
-    readonly property color pillColor: isLight ? "#e8e8e8" : Config.md3.surface
-    readonly property color pillInnerLine: isLight ? (root.isWindup ? "#000000" : "#bbbbbb") : (root.isWindup ? Config.md3.on_surface : Config.md3.surface_container_high)
-    readonly property color sparkColor: isLight ? "#000000" : Config.md3.on_surface
-    readonly property color subColor: isLight ? "#666666" : Config.md3.outline
-    // Config
-    readonly property string themeMode: "dark"
-    readonly property color userItemInactive: isLight ? "#cccccc" : Config.md3.surface_container_high
+    readonly property QtObject lockscreenColors: QtObject {
+        readonly property color background: Config.md3.background
+        readonly property color backgroundOverlay: Config.alpha(Config.md3.background, 0.62)
+        readonly property color border: Config.md3.outline_variant
+        readonly property color dimText: Config.alpha(Config.md3.on_surface_variant, 0.76)
+        readonly property color error: Config.md3.error
+        readonly property color panel: Config.alpha(Config.md3.surface_container_high, 0.92)
+        readonly property color primary: Config.md3.primary
+        readonly property color secondaryText: Config.md3.on_surface_variant
+        readonly property color text: Config.md3.on_surface
+        readonly property color waitingText: Config.alpha(Config.md3.on_surface_variant, 0.62)
+    }
+    property var runtimeSettings: ({})
     property string username: Quickshell.env("USER") || "sownteedev"
+    property var wallpaperState: ({})
 
-    Component.onCompleted: {
-        // Lockscreen is launched as a separate Quickshell process. Starting
-        // WallpaperService here also starts its own mpvpaper instance, which
-        // replaces the desktop-owned player and then dies again on unlock.
-        // The lock screen already uses the generated /tmp/backdrop-lock.png.
-        ThemeService.reloadTheme();
+    signal dismissed
+
+    function clockLabelColor(spotlight) {
+        var base = spotlight > 0 ? root.lockscreenColors.primary : root.lockscreenColors.secondaryText;
+        return Config.alpha(base, spotlight > 0 ? 0.6 + 0.4 * spotlight : 0.48);
     }
-    Component.onDestruction: {
-        lockMarker.running = false;
-        Quickshell.execDetached(["rm", "-f", lockMarkerPath]);
+    function clockMarkColor(spotlight, isMajor) {
+        var base = spotlight > 0 ? root.lockscreenColors.primary : root.lockscreenColors.secondaryText;
+        return Config.alpha(base, spotlight > 0 ? 0.65 + 0.35 * spotlight : (isMajor ? 0.52 : 0.28));
+    }
+    function loadRuntimeSettings() {
+        if (!settingsFile.loaded)
+            return;
+        try {
+            var parsed = JSON.parse(settingsFile.text());
+            runtimeSettings = parsed || {};
+        } catch (error) {
+            console.warn("[Lockscreen] Invalid settings.json:", error);
+        }
+    }
+    function loadWallpaperState() {
+        if (!wallpaperStateFile.loaded)
+            return;
+        try {
+            var parsed = JSON.parse(wallpaperStateFile.text());
+            wallpaperState = parsed || {};
+        } catch (error) {
+            console.warn("[Lockscreen] Invalid wallpaper state:", error);
+        }
+    }
+    function localFileUrl(path) {
+        var value = String(path || "");
+        return value.indexOf("file:") === 0 ? value : "file://" + value;
+    }
+    function settingValue(name, fallback) {
+        var value = runtimeSettings ? runtimeSettings[name] : undefined;
+        return value !== undefined && value !== null ? value : fallback;
     }
 
-    Process {
-        id: lockMarker
+    Component.onCompleted: StateManager.sessionLocked = true
+    Component.onDestruction: StateManager.sessionLocked = false
 
-        command: ["python3", "-c", "import pathlib,signal,sys; p=pathlib.Path(sys.argv[1]); p.touch(); done=lambda *_:(p.unlink(missing_ok=True),sys.exit(0)); signal.signal(signal.SIGTERM,done); signal.signal(signal.SIGINT,done); signal.pause()", root.lockMarkerPath]
-        running: true
+    FileView {
+        id: settingsFile
+
+        blockLoading: true
+        path: root.cacheRoot + "/settings.json"
+        printErrors: false
+        watchChanges: true
+
+        onLoadedChanged: {
+            if (loaded)
+                root.loadRuntimeSettings();
+        }
+        onTextChanged: {
+            if (loaded)
+                root.loadRuntimeSettings();
+        }
     }
+    FileView {
+        id: wallpaperStateFile
 
+        blockLoading: true
+        path: root.cacheRoot + "/quickshell_wallpaper.txt"
+        printErrors: false
+        watchChanges: true
+
+        onLoadedChanged: {
+            if (loaded)
+                root.loadWallpaperState();
+        }
+        onTextChanged: {
+            if (loaded)
+                root.loadWallpaperState();
+        }
+    }
     Timer {
         interval: 16
         repeat: true
@@ -79,9 +138,8 @@ ShellRoot {
 
         onLockedChanged: {
             if (!locked) {
-                lockMarker.running = false;
-                Quickshell.execDetached(["rm", "-f", root.lockMarkerPath]);
-                Qt.quit();
+                StateManager.sessionLocked = false;
+                root.dismissed();
             }
         }
 
@@ -89,7 +147,7 @@ ShellRoot {
         WlSessionLockSurface {
             id: lockSurface
 
-            color: "#000000"
+            color: root.lockscreenColors.background
 
             Item {
                 id: container
@@ -147,7 +205,6 @@ ShellRoot {
 
                     onFinished: {
                         sessionLock.locked = false;
-                        Qt.quit();
                     }
 
                     NumberAnimation {
@@ -177,20 +234,30 @@ ShellRoot {
 
                 // Wallpaper background (blurred)
                 Image {
+                    id: backgroundImage
+
+                    property bool useBackdrop: true
+
                     anchors.fill: parent
+                    // The generated image is intentionally tiny. Loading it
+                    // synchronously prevents a blank/partial first frame while
+                    // the session-lock surface is being mapped.
+                    asynchronous: false
+                    cache: false
                     fillMode: Image.PreserveAspectCrop
-                    source: "file:///tmp/backdrop-lock.png"
+                    source: root.localFileUrl(useBackdrop ? root.backdropPath : root.fallbackWallpaper)
 
                     onStatusChanged: {
-                        if (status === Image.Error)
-                            source = "file://" + Config.wallpaper;
+                        if (status === Image.Error && useBackdrop && root.fallbackWallpaper !== "")
+                            useBackdrop = false;
                     }
                 }
 
-                // Dark overlay
+                // Match Control's MD3 background while keeping the blurred
+                // wallpaper visible underneath.
                 Rectangle {
                     anchors.fill: parent
-                    color: root.isLight ? '#44ffffff' : '#45000000'
+                    color: root.lockscreenColors.backgroundOverlay
                 }
 
                 // Focus helper
@@ -236,9 +303,9 @@ ShellRoot {
                             id: indicatorPill
 
                             anchors.verticalCenter: parent.verticalCenter
-                            border.color: root.pillBorder
+                            border.color: root.isWindup ? root.lockscreenColors.primary : root.lockscreenColors.border
                             border.width: 1 * container.s
-                            color: root.pillColor
+                            color: root.lockscreenColors.panel
                             height: 90 * container.s
                             radius: 45 * container.s
                             width: 330 * container.s
@@ -247,7 +314,7 @@ ShellRoot {
 
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: root.pillInnerLine
+                                color: root.isWindup ? root.lockscreenColors.primary : root.lockscreenColors.secondaryText
                                 height: 35 * container.s
                                 width: 1 * container.s
                                 x: 170 * container.s
@@ -260,7 +327,7 @@ ShellRoot {
                                 property real randA: Math.random() * 6.28
                                 property real randV: 400 * container.s + Math.random() * 900 * container.s
 
-                                color: root.sparkColor
+                                color: root.lockscreenColors.primary
                                 height: (1 + 12 * container.sparkIntensity) * container.s
                                 opacity: container.sparkIntensity * (Math.random() > 0.4 ? 1 : 0.2)
                                 radius: width / 2
@@ -297,7 +364,7 @@ ShellRoot {
                                 z: 10
 
                                 Rectangle {
-                                    color: root.isLight ? Qt.rgba(0, 0, 0, spotlight > 0 ? 1 : (isMajor ? 0.8 : 0.6)) : Qt.rgba(1, 1, 1, spotlight > 0 ? 1 : (isMajor ? 0.3 : 0.15))
+                                    color: root.clockMarkColor(spotlight, isMajor)
                                     height: isMajor ? 18 * container.s : 10 * container.s
                                     rotation: disp * 180 / Math.PI + 90
                                     width: isMajor ? 2 * container.s : 1 * container.s
@@ -307,7 +374,7 @@ ShellRoot {
                                 Text {
                                     property real nRad: clockContainer.minR - 35 * container.s
 
-                                    color: root.isLight ? Qt.rgba(0, 0, 0, spotlight > 0 ? (0.6 + 0.4 * spotlight) : 0.6) : Qt.rgba(1, 1, 1, spotlight > 0 ? (0.4 + spotlight * 0.6) : 0.25)
+                                    color: root.clockLabelColor(spotlight)
                                     font.family: root.fontName
                                     font.pixelSize: 22 * container.s
                                     font.weight: spotlight > 0.5 ? Font.ExtraBold : Font.ExtraBold
@@ -345,7 +412,7 @@ ShellRoot {
                                 z: 10
 
                                 Rectangle {
-                                    color: root.isLight ? Qt.rgba(0, 0, 0, spotlight > 0 ? 1 : (isMajor ? 0.8 : 0.6)) : Qt.rgba(1, 1, 1, spotlight > 0 ? 1 : (isMajor ? 0.3 : 0.15))
+                                    color: root.clockMarkColor(spotlight, isMajor)
                                     height: isMajor ? 13 * container.s : 8 * container.s
                                     rotation: disp * 180 / Math.PI + 90
                                     width: isMajor ? 1.5 * container.s : 1 * container.s
@@ -355,7 +422,7 @@ ShellRoot {
                                 Text {
                                     property real nRad: clockContainer.secR - 30 * container.s
 
-                                    color: root.isLight ? Qt.rgba(0, 0, 0, spotlight > 0 ? (0.6 + 0.4 * spotlight) : 0.6) : Qt.rgba(1, 1, 1, spotlight > 0 ? (0.4 + spotlight * 0.6) : 0.25)
+                                    color: root.clockLabelColor(spotlight)
                                     font.family: root.fontName
                                     font.pixelSize: 18 * container.s
                                     font.weight: spotlight > 0.5 ? Font.ExtraBold : Font.ExtraBold
@@ -372,11 +439,11 @@ ShellRoot {
                             anchors.right: indicatorPill.left
                             anchors.rightMargin: 40 * container.s
                             anchors.verticalCenter: parent.verticalCenter
-                            color: root.mainText
+                            color: root.lockscreenColors.text
                             font.family: root.fontName
                             font.pixelSize: 110 * container.s
                             font.weight: Font.Black
-                            text: String(Config.clock24h ? root.curH : (root.curH % 12 || 12)).padStart(2, '0')
+                            text: String(root.clock24h ? root.curH : (root.curH % 12 || 12)).padStart(2, '0')
                         }
                         Column {
                             anchors.left: indicatorPill.right
@@ -385,7 +452,7 @@ ShellRoot {
                             spacing: 5 * container.s
 
                             Text {
-                                color: root.subColor
+                                color: root.lockscreenColors.secondaryText
                                 font.family: root.fontName
                                 font.letterSpacing: 3 * container.s
                                 font.pixelSize: 20 * container.s
@@ -393,7 +460,7 @@ ShellRoot {
                                 text: Qt.formatDate(new Date(), "dd MMM yyyy").toUpperCase()
                             }
                             Text {
-                                color: root.mainText
+                                color: root.lockscreenColors.text
                                 font.family: root.fontName
                                 font.letterSpacing: 8 * container.s
                                 font.pixelSize: 50 * container.s
@@ -520,7 +587,7 @@ ShellRoot {
                                                 anchors.right: parent.right
                                                 anchors.rightMargin: (22 * container.s - width) / 2
                                                 anchors.verticalCenter: parent.verticalCenter
-                                                color: root.dimText
+                                                color: root.lockscreenColors.dimText
                                                 font.family: root.fontName
                                                 font.pixelSize: 20 * container.s
                                                 text: "✦"
@@ -531,7 +598,7 @@ ShellRoot {
                                 Text {
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
-                                    color: root.inputWaitColor
+                                    color: root.lockscreenColors.waitingText
                                     font.family: root.fontName
                                     font.letterSpacing: 4 * container.s
                                     font.pixelSize: 10 * container.s
@@ -549,7 +616,7 @@ ShellRoot {
                                     id: needleCursor
 
                                     anchors.verticalCenter: parent.verticalCenter
-                                    color: root.mainText
+                                    color: root.lockscreenColors.text
                                     height: 12 * container.s
                                     visible: passInput.focus && (passInput.text.length > 0 || passInput.wasClicked)
                                     width: 1.5 * container.s
@@ -602,7 +669,7 @@ ShellRoot {
 
                                 anchors.right: parent.right
                                 anchors.rightMargin: btnMa.containsMouse ? 25 * container.s : 0
-                                color: passInput.text.length > 0 ? (btnMa.containsMouse ? root.mainText : root.dimText) : "transparent"
+                                color: passInput.text.length > 0 ? (btnMa.containsMouse ? root.lockscreenColors.text : root.lockscreenColors.dimText) : "transparent"
                                 font.family: root.fontName
                                 font.letterSpacing: 4 * container.s
                                 font.pixelSize: 11 * container.s
@@ -621,7 +688,7 @@ ShellRoot {
                                 anchors.left: loginBtn.right
                                 anchors.leftMargin: 8 * container.s
                                 anchors.verticalCenter: loginBtn.verticalCenter
-                                color: root.mainText
+                                color: root.lockscreenColors.text
                                 font.pixelSize: 10 * container.s
                                 opacity: (btnMa.containsMouse && passInput.text.length > 0) ? 1 : 0
                                 text: "✦"
@@ -647,7 +714,7 @@ ShellRoot {
                         Text {
                             id: errText
 
-                            color: Config.md3.error
+                            color: root.lockscreenColors.error
                             font.family: root.fontName
                             font.letterSpacing: 2 * container.s
                             font.pixelSize: 10 * container.s
@@ -670,7 +737,6 @@ ShellRoot {
                                 boomTriggerTimer.start();
                             } else {
                                 sessionLock.locked = false;
-                                Qt.quit();
                             }
                         } else {
                             errText.text = "ACCESS DENIED";

@@ -690,13 +690,23 @@ Item {
                         SettingsChoiceRow {
                             Layout.fillWidth: true
                             label: "Governor Override"
-                            value: batteryPageRoot.governorOverride
                             options: [
-                                { "label": "Default", "value": "default" },
-                                { "label": "Powersave", "value": "powersave" },
-                                { "label": "Performance", "value": "performance" }
+                                {
+                                    "label": "Default",
+                                    "value": "default"
+                                },
+                                {
+                                    "label": "Powersave",
+                                    "value": "powersave"
+                                },
+                                {
+                                    "label": "Performance",
+                                    "value": "performance"
+                                }
                             ]
-                            onSelected: function(v) {
+                            value: batteryPageRoot.governorOverride
+
+                            onSelected: function (v) {
                                 batteryPageRoot.runCommand("pkexec auto-cpufreq --force " + (v === "default" ? "reset" : v));
                                 BatteryService.governorOverride = v;
                             }
@@ -713,13 +723,23 @@ Item {
                         SettingsChoiceRow {
                             Layout.fillWidth: true
                             label: "CPU Turbo Override"
-                            value: batteryPageRoot.turboOverride
                             options: [
-                                { "label": "Auto", "value": "auto" },
-                                { "label": "Never", "value": "never" },
-                                { "label": "Always", "value": "always" }
+                                {
+                                    "label": "Auto",
+                                    "value": "auto"
+                                },
+                                {
+                                    "label": "Never",
+                                    "value": "never"
+                                },
+                                {
+                                    "label": "Always",
+                                    "value": "always"
+                                }
                             ]
-                            onSelected: function(v) {
+                            value: batteryPageRoot.turboOverride
+
+                            onSelected: function (v) {
                                 batteryPageRoot.runCommand("pkexec auto-cpufreq --turbo " + v);
                                 BatteryService.turboOverride = v;
                             }

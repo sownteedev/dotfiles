@@ -4,27 +4,31 @@ import "../../"
 
 Item {
     id: root
-    property bool running: false
+
     property color color: Config.md3.primary
-    
-    property var pulses: []
     property bool hasPulses: false
-    
+    property var pulses: []
+    property bool running: false
+
     Timer {
         interval: 1200 // 1.2s per pulse
-        running: root.running
         repeat: true
+        running: root.running
+
         onTriggered: {
             var p = root.pulses;
-            p.push({ scale: 0.9, alpha: 1.0 });
+            p.push({
+                scale: 0.9,
+                alpha: 1.0
+            });
             root.hasPulses = true;
         }
     }
-    
     Timer {
         interval: 33
-        running: root.running || root.hasPulses
         repeat: true
+        running: root.running || root.hasPulses
+
         onTriggered: {
             var p = root.pulses;
             for (var i = p.length - 1; i >= 0; i--) {
@@ -38,27 +42,29 @@ Item {
             pulseCanvas.requestPaint();
         }
     }
-    
     Canvas {
         id: pulseCanvas
+
         anchors.fill: parent
-        anchors.margins: -100 
-        
+        anchors.margins: -100
+
         onPaint: {
             var ctx = getContext("2d");
             ctx.clearRect(0, 0, width, height);
-            
+
             var centerX = width / 2;
             var centerY = height / 2;
-            
+
             // pulseCanvas is expanded by 100 on all sides, so its width is parent.width + 200.
             // Base radius of the dial is half of the original parent's width.
             var baseRadius = (Math.min(width, height) - 200) / 2;
-            if (baseRadius <= 0) return;
-            
+            if (baseRadius <= 0)
+                return;
+
             var p = root.pulses;
-            if (!p) return;
-            
+            if (!p)
+                return;
+
             for (var i = 0; i < p.length; i++) {
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, baseRadius * p[i].scale, 0, 2 * Math.PI);

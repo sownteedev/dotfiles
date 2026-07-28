@@ -156,13 +156,6 @@ QtObject {
     function getStatsLauncherPath() {
         return resolveLocalPath("../../backend/run-qs-stats");
     }
-    function resolveLocalPath(relativePath) {
-        var path = Qt.resolvedUrl(relativePath).toString();
-        if (path.startsWith("file://")) {
-            path = path.substring(7);
-        }
-        return path;
-    }
     function initStatsHistory(cpuVal, ramVal, gpuVal, gpuMemVal) {
         var arrCpu = [];
         var arrRam = [];
@@ -186,11 +179,12 @@ QtObject {
         txHistory = arrTx;
         statsInitialized = true;
     }
-    function updateUptime(secondsValue) {
-        var seconds = Math.max(0, Number(secondsValue) || 0);
-        var hours = Math.floor(seconds / 3600);
-        var minutes = Math.floor((seconds % 3600) / 60);
-        uptimeText = "Uptime " + hours + "h, " + minutes + "m";
+    function resolveLocalPath(relativePath) {
+        var path = Qt.resolvedUrl(relativePath).toString();
+        if (path.startsWith("file://")) {
+            path = path.substring(7);
+        }
+        return path;
     }
     function sendProcessMode() {
         if (statsStream.running)
@@ -225,6 +219,12 @@ QtObject {
                     "val": Number(item.val) || 0
                 });
         }
+    }
+    function updateUptime(secondsValue) {
+        var seconds = Math.max(0, Number(secondsValue) || 0);
+        var hours = Math.floor(seconds / 3600);
+        var minutes = Math.floor((seconds % 3600) / 60);
+        uptimeText = "Uptime " + hours + "h, " + minutes + "m";
     }
 
     onPollingEnabledChanged: {

@@ -229,9 +229,6 @@ QtObject {
         forecastProcess.command = ["curl", "-fsS", "--connect-timeout", "10", "--max-time", "25", forecastUrl];
         forecastProcess.running = true;
     }
-    function needsRefresh() {
-        return !hasData || !lastUpdated || Date.now() - lastUpdated.getTime() >= refreshTimer.interval;
-    }
     function flagForCountry(countryCode) {
         var code = String(countryCode || "").trim().toUpperCase();
         if (code.length !== 2)
@@ -251,6 +248,9 @@ QtObject {
         if (hour === 12)
             return "12PM";
         return hour < 12 ? hour + "AM" : (hour - 12) + "PM";
+    }
+    function needsRefresh() {
+        return !hasData || !lastUpdated || Date.now() - lastUpdated.getTime() >= refreshTimer.interval;
     }
     function timeText(timestamp) {
         var date = new Date(timestamp * 1000);

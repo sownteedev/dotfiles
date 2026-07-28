@@ -20,7 +20,6 @@ ScrollBar {
         implicitWidth: root.orientation === Qt.Vertical ? 4 : 0
         radius: 2
     }
-
     contentItem: Rectangle {
         color: root.pressed ? root.accentColor : Config.alpha(root.accentColor, root.hovered ? 0.78 : 0.48)
         implicitHeight: root.orientation === Qt.Horizontal ? 4 : 24
@@ -33,7 +32,6 @@ ScrollBar {
             }
         }
     }
-
     Behavior on opacity {
         NumberAnimation {
             duration: 160

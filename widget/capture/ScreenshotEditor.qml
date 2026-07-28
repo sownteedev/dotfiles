@@ -37,13 +37,6 @@ PanelWindow {
     property real selectedWidth: Config.captureEditorWidth
     property var shapes: []
 
-    function resetEditorDefaults() {
-        selectedTool = Config.captureEditorTool || "pen";
-        selectedColor = Config.captureEditorColor || "#ff3b30";
-        selectedWidth = Math.max(1, Number(Config.captureEditorWidth) || 6);
-        clearAll();
-    }
-
     function addNumberMarker(x, y) {
         var size = markerSize();
         var radius = size / 2;
@@ -164,6 +157,49 @@ PanelWindow {
         ctx.bezierCurveTo(cx + rx * kappa, cy - ry, cx + rx, cy - ry * kappa, cx + rx, cy);
         ctx.stroke();
     }
+    function drawIncrementalPen(ctx, shape) {
+        var points = shape && shape.points ? shape.points : [];
+        if (points.length === 0)
+            return;
+
+        // Once a midpoint segment has two neighbours its curve can no longer
+        // change, so bake only those new segments into the live canvas.
+        ctx.save();
+        ctx.strokeStyle = shape.color;
+        ctx.fillStyle = shape.color;
+        ctx.lineWidth = shape.width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        if (!liveCanvas.penStartPainted) {
+            ctx.beginPath();
+            ctx.arc(points[0].x, points[0].y, shape.width / 2, 0, Math.PI * 2);
+            ctx.fill();
+            liveCanvas.penStartPainted = true;
+        }
+
+        var lastStableControl = points.length - 2;
+        var firstControl = liveCanvas.nextPenControlPoint;
+        if (lastStableControl >= firstControl) {
+            ctx.beginPath();
+            if (firstControl === 1) {
+                ctx.moveTo(points[0].x, points[0].y);
+            } else {
+                var previousPoint = points[firstControl - 1];
+                var controlPoint = points[firstControl];
+                ctx.moveTo((previousPoint.x + controlPoint.x) / 2, (previousPoint.y + controlPoint.y) / 2);
+            }
+
+            for (var i = firstControl; i <= lastStableControl; ++i) {
+                var endX = (points[i].x + points[i + 1].x) / 2;
+                var endY = (points[i].y + points[i + 1].y) / 2;
+                ctx.quadraticCurveTo(points[i].x, points[i].y, endX, endY);
+            }
+            ctx.stroke();
+            liveCanvas.nextPenControlPoint = lastStableControl + 1;
+        }
+        ctx.restore();
+    }
     function drawShape(ctx, shape) {
         if (!shape || shape.tool === "blur" || shape.tool === "pixelate")
             return;
@@ -233,49 +269,6 @@ PanelWindow {
         }
         ctx.restore();
     }
-    function drawIncrementalPen(ctx, shape) {
-        var points = shape && shape.points ? shape.points : [];
-        if (points.length === 0)
-            return;
-
-        // Once a midpoint segment has two neighbours its curve can no longer
-        // change, so bake only those new segments into the live canvas.
-        ctx.save();
-        ctx.strokeStyle = shape.color;
-        ctx.fillStyle = shape.color;
-        ctx.lineWidth = shape.width;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-
-        if (!liveCanvas.penStartPainted) {
-            ctx.beginPath();
-            ctx.arc(points[0].x, points[0].y, shape.width / 2, 0, Math.PI * 2);
-            ctx.fill();
-            liveCanvas.penStartPainted = true;
-        }
-
-        var lastStableControl = points.length - 2;
-        var firstControl = liveCanvas.nextPenControlPoint;
-        if (lastStableControl >= firstControl) {
-            ctx.beginPath();
-            if (firstControl === 1) {
-                ctx.moveTo(points[0].x, points[0].y);
-            } else {
-                var previousPoint = points[firstControl - 1];
-                var controlPoint = points[firstControl];
-                ctx.moveTo((previousPoint.x + controlPoint.x) / 2, (previousPoint.y + controlPoint.y) / 2);
-            }
-
-            for (var i = firstControl; i <= lastStableControl; ++i) {
-                var endX = (points[i].x + points[i + 1].x) / 2;
-                var endY = (points[i].y + points[i + 1].y) / 2;
-                ctx.quadraticCurveTo(points[i].x, points[i].y, endX, endY);
-            }
-            ctx.stroke();
-            liveCanvas.nextPenControlPoint = lastStableControl + 1;
-        }
-        ctx.restore();
-    }
     function eraseAt(x, y) {
         var radius = 14 + selectedWidth;
         var nextShapes = shapes.slice();
@@ -299,6 +292,16 @@ PanelWindow {
         var right = Math.max(0, Math.min(captureSurface.width, Math.max(startX, endX)));
         var bottom = Math.max(0, Math.min(captureSurface.height, Math.max(startY, endY)));
         return Qt.rect(left, top, Math.max(0, right - left), Math.max(0, bottom - top));
+    }
+    function prepareLiveCanvas() {
+        if (livePaintFrameId >= 0) {
+            liveCanvas.cancelRequestAnimationFrame(livePaintFrameId);
+            livePaintFrameId = -1;
+        }
+        liveCanvas.clearBeforePaint = true;
+        liveCanvas.nextPenControlPoint = 1;
+        liveCanvas.penStartPainted = false;
+        liveDirtyRect = Qt.rect(0, 0, 0, 0);
     }
     function recognizeRegion(region) {
         if (OcrService.busy || region.width < 8 || region.height < 8)
@@ -335,6 +338,12 @@ PanelWindow {
         }
         nextMarkerNumber = highest + 1;
     }
+    function resetEditorDefaults() {
+        selectedTool = Config.captureEditorTool || "pen";
+        selectedColor = Config.captureEditorColor || "#ff3b30";
+        selectedWidth = Math.max(1, Number(Config.captureEditorWidth) || 6);
+        clearAll();
+    }
     function saveEditedImage() {
         if (inlineTextEditor.visible)
             commitText();
@@ -366,16 +375,6 @@ PanelWindow {
                 root.saveError = "Could not render the edited screenshot";
             }
         });
-    }
-    function prepareLiveCanvas() {
-        if (livePaintFrameId >= 0) {
-            liveCanvas.cancelRequestAnimationFrame(livePaintFrameId);
-            livePaintFrameId = -1;
-        }
-        liveCanvas.clearBeforePaint = true;
-        liveCanvas.nextPenControlPoint = 1;
-        liveCanvas.penStartPainted = false;
-        liveDirtyRect = Qt.rect(0, 0, 0, 0);
     }
     function scheduleLivePaint(dirtyRect) {
         if (dirtyRect && dirtyRect.width > 0 && dirtyRect.height > 0) {
@@ -482,7 +481,6 @@ PanelWindow {
 
         target: CaptureService
     }
-
     Item {
         id: keyScope
 

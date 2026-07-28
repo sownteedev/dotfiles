@@ -10,7 +10,9 @@ QtObject {
     property var controlPanelLoader: null
     property bool keyboardFocusRequested: false
     property bool leftPanelOpenPending: false
+    property var lockscreenLoader: null
     property int rightPanelTabPending: -2
+    property bool sessionLocked: false
     property var settingsHubLoader: null
     property bool settingsHubOpenPending: false
     property bool wallpaperLoaded: false
@@ -65,6 +67,15 @@ QtObject {
             panel.switchTab(tab);
 
         panel.showControl();
+    }
+
+    function lockScreen() {
+        if (!lockscreenLoader || sessionLocked || lockscreenLoader.active || lockscreenLoader.loading)
+            return;
+
+        // Session locking is security-sensitive: instantiate it immediately
+        // instead of waiting for an asynchronous panel-style open animation.
+        lockscreenLoader.active = true;
     }
 
     function showControlPanel(tab) {

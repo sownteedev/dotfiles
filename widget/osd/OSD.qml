@@ -66,9 +66,9 @@ PanelWindow {
 
     // Helper to get active properties
     readonly property bool isMute: activeIndicator === "volume-mute" || activeIndicator === "mic-mute"
-    readonly property string muteIconName: activeIndicator.indexOf("mic") === 0 ? "microphone-sensitivity-muted-symbolic" : "audio-volume-muted-symbolic"
     readonly property bool micMuted: (Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio) ? Pipewire.defaultAudioSource.audio.muted : false
     readonly property real micVal: (Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio) ? Pipewire.defaultAudioSource.audio.volume : 0.0
+    readonly property string muteIconName: activeIndicator.indexOf("mic") === 0 ? "microphone-sensitivity-muted-symbolic" : "audio-volume-muted-symbolic"
     readonly property bool volumeMuted: (Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.audio) ? Pipewire.defaultAudioSink.audio.muted : false
     readonly property real volumeVal: {
         if (!Pipewire.defaultAudioSink || !Pipewire.defaultAudioSink.audio)

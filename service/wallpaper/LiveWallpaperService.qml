@@ -44,8 +44,6 @@ QtObject {
     property bool availabilityRestartPending: false
     property bool available: false
     readonly property string cacheDir: Config.homeDir + "/.cache/quickshell/live-wallpapers"
-    readonly property string ipcPath: cacheDir + "/mpvpaper.sock"
-    readonly property string ipcScript: Config.quickshellDir + "/scripts/mpv_wallpaper_ipc.py"
     property Timer cleanupRestart: Timer {
         interval: 60
         repeat: false
@@ -62,40 +60,9 @@ QtObject {
     property bool cleanupRestartPending: false
     property string desiredPath: ""
     property string errorMessage: ""
-    property bool playbackReadyState: false
-    property string readyFramePath: ""
-    property Connections policyConnections: Connections {
-        function onShouldPauseChanged() {
-            root.syncPolicy();
-        }
-        function onTargetFpsChanged() {
-            root.syncPolicy();
-        }
-
-        target: WallpaperPlaybackPolicy
-    }
-    property Process policyController: Process {
-        onExited: {
-            if (root.policySyncPending) {
-                root.policySyncPending = false;
-                root.syncPolicy();
-            }
-        }
-    }
-    property bool policySyncPending: false
+    readonly property string ipcPath: cacheDir + "/mpvpaper.sock"
+    readonly property string ipcScript: Config.quickshellDir + "/scripts/mpv_wallpaper_ipc.py"
     property var knownThumbnails: ({})
-    property FolderListModel thumbnailCacheModel: FolderListModel {
-        folder: "file://" + root.cacheDir
-        nameFilters: ["*.jpg"]
-        showDirs: false
-        showFiles: true
-
-        onCountChanged: root.indexThumbnailCache()
-        onStatusChanged: {
-            if (status === FolderListModel.Ready)
-                root.indexThumbnailCache();
-        }
-    }
     property Process ownedProcessStopper: Process {
         onExited: (exitCode, exitStatus) => {
             if (root.cleanupRestartPending) {
@@ -110,6 +77,7 @@ QtObject {
         }
     }
     readonly property string pidPath: cacheDir + "/mpvpaper.pid"
+    property bool playbackReadyState: false
     property Process player: Process {
         onExited: (exitCode, exitStatus) => {
             var exitedPath = root.startedPath;
@@ -130,6 +98,25 @@ QtObject {
             root.syncPolicy();
         }
     }
+    property Connections policyConnections: Connections {
+        function onShouldPauseChanged() {
+            root.syncPolicy();
+        }
+        function onTargetFpsChanged() {
+            root.syncPolicy();
+        }
+
+        target: WallpaperPlaybackPolicy
+    }
+    property Process policyController: Process {
+        onExited: {
+            if (root.policySyncPending) {
+                root.policySyncPending = false;
+                root.syncPolicy();
+            }
+        }
+    }
+    property bool policySyncPending: false
     property Timer readyFallback: Timer {
         interval: 2800
         repeat: false
@@ -139,6 +126,7 @@ QtObject {
                 root.markReady(root.startedPath, "");
         }
     }
+    property string readyFramePath: ""
     property Process readyProbe: Process {
         onExited: (exitCode, exitStatus) => {
             if (exitCode === 0 && root.player.running && root.startedPath === root.desiredPath)
@@ -147,6 +135,18 @@ QtObject {
     }
     property bool startAfterCleanup: false
     property string startedPath: ""
+    property FolderListModel thumbnailCacheModel: FolderListModel {
+        folder: "file://" + root.cacheDir
+        nameFilters: ["*.jpg"]
+        showDirs: false
+        showFiles: true
+
+        onCountChanged: root.indexThumbnailCache()
+        onStatusChanged: {
+            if (status === FolderListModel.Ready)
+                root.indexThumbnailCache();
+        }
+    }
     property var thumbnailJob: null
     property var thumbnailQueue: []
     property Process thumbnailWorker: Process {
@@ -165,8 +165,8 @@ QtObject {
         }
     }
 
-    signal thumbnailReady(string sourcePath, string thumbnailPath)
     signal playbackReady(string sourcePath, string framePath)
+    signal thumbnailReady(string sourcePath, string thumbnailPath)
 
     function checkAvailability() {
         availabilityKnown = false;
@@ -175,10 +175,6 @@ QtObject {
             availabilityQuery.running = false;
 
         availabilityRestart.restart();
-    }
-    function isLivePath(path) {
-        var cleanPath = String(path || "").split("?")[0].toLowerCase();
-        return cleanPath.endsWith(".gif") || cleanPath.endsWith(".mp4") || cleanPath.endsWith(".webm") || cleanPath.endsWith(".mkv") || cleanPath.endsWith(".mov") || cleanPath.endsWith(".m4v");
     }
     function indexThumbnailCache() {
         var indexed = {};
@@ -194,6 +190,10 @@ QtObject {
                 indexed[knownPath] = true;
         }
         knownThumbnails = indexed;
+    }
+    function isLivePath(path) {
+        var cleanPath = String(path || "").split("?")[0].toLowerCase();
+        return cleanPath.endsWith(".gif") || cleanPath.endsWith(".mp4") || cleanPath.endsWith(".webm") || cleanPath.endsWith(".mkv") || cleanPath.endsWith(".mov") || cleanPath.endsWith(".m4v");
     }
     function launchDesired() {
         if (!available || !desiredPath || player.running)
@@ -270,27 +270,6 @@ QtObject {
         startAfterCleanup = true;
         stopOwnedProcess();
     }
-    function startReadyProbe() {
-        if (!player.running)
-            return;
-
-        if (readyProbe.running)
-            readyProbe.running = false;
-        readyProbe.command = ["python3", ipcScript, "wait-ready", ipcPath, "2.5", readyFramePath];
-        readyProbe.running = true;
-        readyFallback.restart();
-    }
-    function syncPolicy() {
-        if (!player.running)
-            return;
-        if (policyController.running) {
-            policySyncPending = true;
-            return;
-        }
-
-        policyController.command = ["python3", ipcScript, "configure", ipcPath, WallpaperPlaybackPolicy.shouldPause ? "true" : "false", String(WallpaperPlaybackPolicy.targetFps)];
-        policyController.running = true;
-    }
     function requestThumbnail(path, modified, priority) {
         if (!isLivePath(path))
             return "";
@@ -331,6 +310,16 @@ QtObject {
         }
         return "v2-" + ("00000000" + hash.toString(16)).slice(-8);
     }
+    function startReadyProbe() {
+        if (!player.running)
+            return;
+
+        if (readyProbe.running)
+            readyProbe.running = false;
+        readyProbe.command = ["python3", ipcScript, "wait-ready", ipcPath, "2.5", readyFramePath];
+        readyProbe.running = true;
+        readyFallback.restart();
+    }
     function stop() {
         desiredPath = "";
         activePath = "";
@@ -353,6 +342,17 @@ QtObject {
             ownedProcessStopper.running = false;
 
         cleanupRestart.restart();
+    }
+    function syncPolicy() {
+        if (!player.running)
+            return;
+        if (policyController.running) {
+            policySyncPending = true;
+            return;
+        }
+
+        policyController.command = ["python3", ipcScript, "configure", ipcPath, WallpaperPlaybackPolicy.shouldPause ? "true" : "false", String(WallpaperPlaybackPolicy.targetFps)];
+        policyController.running = true;
     }
     function thumbnailKnown(path, modified) {
         return knownThumbnails[thumbnailPath(path, modified)] === true;

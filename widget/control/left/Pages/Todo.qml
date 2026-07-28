@@ -56,7 +56,6 @@ Item {
         color: Config.md3.primary
         running: root.visible
     }
-
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 20
@@ -78,19 +77,18 @@ Item {
                 Rectangle {
                     color: Config.md3.primary
                     height: 30
+                    layer.enabled: true
                     radius: 15
                     width: (parent.width - 6) / 2
                     x: 3 + currentTab * width
                     y: 3
 
-                    layer.enabled: true
                     layer.effect: DropShadow {
                         color: Config.alpha(Config.md3.background, 0.5)
                         radius: 4
                         samples: 9
                         verticalOffset: 2
                     }
-
                     Behavior on x {
                         NumberAnimation {
                             duration: 250
@@ -499,7 +497,6 @@ Item {
                     }
                 }
             }
-
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50

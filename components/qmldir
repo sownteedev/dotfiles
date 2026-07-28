@@ -7,6 +7,8 @@ AnimatedConfetti 1.0 animate/AnimatedConfetti.qml
 AnimatedFireflies 1.0 animate/AnimatedFireflies.qml
 AnimatedRays 1.0 animate/AnimatedRays.qml
 AnimatedSpinner 1.0 animate/AnimatedSpinner.qml
+AnimatedLiquid 1.0 animate/AnimatedLiquid.qml
+LoadingIndicator 1.0 animate/LoadingIndicator.qml
 
 CachingImage 1.0 common/CachingImage.qml
 CustomVolumeSlider 1.0 common/CustomVolumeSlider.qml
@@ -17,6 +19,7 @@ SettingsPageTransition 1.0 common/SettingsPageTransition.qml
 SettingsTextField 1.0 common/SettingsTextField.qml
 StatChart 1.0 common/StatChart.qml
 ToggleSwitch 1.0 common/ToggleSwitch.qml
+EdgeTrigger 1.0 common/EdgeTrigger.qml
 
 ClockTimePicker 1.0 datetime/ClockTimePicker.qml
 CountdownControls 1.0 datetime/CountdownControls.qml
@@ -55,6 +58,3 @@ ScreenshotToolButton 1.0 capture/ScreenshotToolButton.qml
 
 NotificationActionButton 1.0 notification/NotificationActionButton.qml
 NotificationIcon 1.0 notification/NotificationIcon.qml
-AnimatedLiquid 1.0 animate/AnimatedLiquid.qml
-LoadingIndicator 1.0 animate/LoadingIndicator.qml
-EdgeTrigger 1.0 common/EdgeTrigger.qml

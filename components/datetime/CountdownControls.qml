@@ -114,7 +114,6 @@ RowLayout {
             onClicked: root.toggleRequested()
         }
     }
-
     Item {
         Layout.preferredHeight: 50
         Layout.preferredWidth: 50

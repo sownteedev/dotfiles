@@ -46,7 +46,6 @@ RowLayout {
                     }
                 }
             }
-
             ColumnLayout {
                 spacing: 0
 
@@ -59,7 +58,6 @@ RowLayout {
                     font.weight: Font.DemiBold
                     text: "System uptime"
                 }
-
                 Text {
                     color: Config.md3.on_surface
                     font.family: Config.fontName
@@ -70,7 +68,6 @@ RowLayout {
             }
         }
     }
-
     Item {
         Layout.fillWidth: true
     }

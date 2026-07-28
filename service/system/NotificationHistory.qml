@@ -13,6 +13,12 @@ QtObject {
 
     id: root
 
+    property Timer groupRebuildTimer: Timer {
+        interval: 16
+        repeat: false
+
+        onTriggered: root.rebuildNotificationGroups()
+    }
     property FileView historyFile: FileView {
         id: historyFile
 
@@ -65,12 +71,6 @@ QtObject {
     property ListModel notifications: ListModel {
     }
     property var rawMap: ({})
-    property Timer groupRebuildTimer: Timer {
-        interval: 16
-        repeat: false
-
-        onTriggered: root.rebuildNotificationGroups()
-    }
     property Timer saveTimer: Timer {
         id: saveTimer
 
@@ -244,9 +244,6 @@ QtObject {
         delete cleanRawMap[nid];
         rawMap = cleanRawMap;
     }
-    function scheduleGroupRebuild() {
-        groupRebuildTimer.restart();
-    }
     function remove(nid) {
         for (var i = 0; i < notifications.count; i++) {
             if (notifications.get(i).nid === nid) {
@@ -262,6 +259,9 @@ QtObject {
     }
     function saveHistory() {
         saveTimer.restart();
+    }
+    function scheduleGroupRebuild() {
+        groupRebuildTimer.restart();
     }
 
     Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", Config.homeDir + "/.cache/quickshell"])

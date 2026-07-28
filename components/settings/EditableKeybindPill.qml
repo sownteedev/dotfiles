@@ -16,13 +16,13 @@ Rectangle {
     function displayFromRaw(raw) {
         var parts = raw.split("+");
         var output = [];
-        for (var i = 0; i < parts.length; i++) output.push(parts[i] === "Mod" ? "Super" : parts[i])
+        for (var i = 0; i < parts.length; i++)
+            output.push(parts[i] === "Mod" ? "Super" : parts[i]);
         return output.join(" + ");
     }
-
     function finishCapture() {
         if (!capturing)
-            return ;
+            return;
 
         capturing = false;
         if (pendingRaw !== "")
@@ -31,7 +31,6 @@ Rectangle {
         pendingRaw = "";
         pendingDisplay = "";
     }
-
     function keyName(event) {
         if (event.key >= Qt.Key_A && event.key <= Qt.Key_Z)
             return String.fromCharCode(event.key);
@@ -99,7 +98,6 @@ Rectangle {
             return "";
         }
     }
-
     function rawFromEvent(event) {
         var key = keyName(event);
         if (key === "")
@@ -132,21 +130,28 @@ Rectangle {
     implicitWidth: keyText.implicitWidth + 24
     opacity: interactive ? 1 : 0.5
     radius: 15
-    Keys.onPressed: (event) => {
+
+    Behavior on color {
+        ColorAnimation {
+            duration: 130
+        }
+    }
+
+    Keys.onPressed: event => {
         if (!capturing)
-            return ;
+            return;
 
         if (event.key === Qt.Key_Escape) {
             capturing = false;
             pendingRaw = "";
             pendingDisplay = "";
             event.accepted = true;
-            return ;
+            return;
         }
         var raw = rawFromEvent(event);
         if (raw === "") {
             event.accepted = true;
-            return ;
+            return;
         }
         pendingRaw = raw;
         pendingDisplay = displayFromRaw(raw);
@@ -155,7 +160,6 @@ Rectangle {
     onActiveFocusChanged: {
         if (!activeFocus)
             finishCapture();
-
     }
 
     Text {
@@ -168,11 +172,11 @@ Rectangle {
         font.weight: Font.DemiBold
         text: root.capturing ? (root.pendingDisplay === "" ? "Press shortcut…" : root.pendingDisplay) : root.displayKey
     }
-
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         enabled: root.interactive
+
         onClicked: {
             root.pendingRaw = "";
             root.pendingDisplay = "";
@@ -180,12 +184,4 @@ Rectangle {
             root.forceActiveFocus(Qt.MouseFocusReason);
         }
     }
-
-    Behavior on color {
-        ColorAnimation {
-            duration: 130
-        }
-
-    }
-
 }

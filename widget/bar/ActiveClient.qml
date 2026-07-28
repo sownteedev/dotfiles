@@ -18,10 +18,18 @@ MouseArea {
     implicitHeight: contentLayout.implicitHeight
     implicitWidth: contentLayout.implicitWidth
 
+    Behavior on implicitWidth {
+        NumberAnimation {
+            duration: 350
+            easing.type: Easing.OutCubic
+        }
+    }
+
     Process {
         id: toggleScriptProcess
 
         command: [Config.dotfilesDir + "/.config/niri/scripts/toogle-floating-workspace"]
+
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0)
                 console.warn("[ActiveClient] Workspace layout toggle failed:", exitCode);
@@ -29,7 +37,6 @@ MouseArea {
             WorkspaceService.refresh();
         }
     }
-
     RowLayout {
         id: contentLayout
 
@@ -47,11 +54,11 @@ MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 enabled: !toggleScriptProcess.running
+
                 onClicked: {
                     toggleScriptProcess.running = true;
                 }
             }
-
             IconImage {
                 anchors.centerIn: parent
                 height: 20
@@ -66,15 +73,10 @@ MouseArea {
                         ColorAnimation {
                             duration: 150
                         }
-
                     }
-
                 }
-
             }
-
         }
-
         ColumnLayout {
             Layout.alignment: Qt.AlignVCenter
             spacing: 2
@@ -86,7 +88,6 @@ MouseArea {
                 font.weight: Font.Medium
                 text: root.appId
             }
-
             Text {
                 color: Config.md3.on_surface
                 font.family: Config.fontName
@@ -94,17 +95,6 @@ MouseArea {
                 font.weight: Font.DemiBold
                 text: root.title.length > 40 ? root.title.substring(0, 40) + "..." : root.title
             }
-
         }
-
     }
-
-    Behavior on implicitWidth {
-        NumberAnimation {
-            duration: 350
-            easing.type: Easing.OutCubic
-        }
-
-    }
-
 }

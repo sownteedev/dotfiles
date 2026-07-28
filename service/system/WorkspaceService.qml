@@ -8,32 +8,25 @@ QtObject {
 
     property string activeWindowId: ""
     property int activeWorkspaceId: -1
-    property Timer debounceTimer
-
-    debounceTimer: Timer {
+    property Timer debounceTimer: Timer {
         interval: 50
         repeat: false
+
         onTriggered: root.refresh()
     }
-
-    property Process eventStream
-
-    eventStream: Process {
+    property Process eventStream: Process {
         command: ["niri", "msg", "event-stream"]
         running: true
-        Component.onDestruction: running = false
 
         stdout: SplitParser {
             onRead: root.debounceTimer.restart()
         }
 
+        Component.onDestruction: running = false
     }
-
     readonly property string floatingStatePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/niri-floating-workspaces.json"
     property bool isWorkspaceFloating: false
-    property Process queryData
-
-    queryData: Process {
+    property Process queryData: Process {
         command: ["sh", "-c", "workspaces=$(niri msg --json workspaces) || exit 1; windows=$(niri msg --json windows) || exit 1; floating=$(cat \"$1\" 2>/dev/null || printf '{}'); printf '{\"workspaces\":%s,\"windows\":%s,\"floating\":%s}\\n' \"$workspaces\" \"$windows\" \"$floating\"", "workspace-query", root.floatingStatePath]
         running: false
 
@@ -42,22 +35,18 @@ QtObject {
                 var rawText = text.trim();
                 if (rawText !== "")
                     root.parseNiriData(rawText);
-
             }
         }
-
     }
 
     // Process objects survive hot reload. Force a fresh authoritative snapshot
     // after the new engine has restored the singleton and its event stream.
-    property Timer reloadRefreshTimer
-
-    reloadRefreshTimer: Timer {
+    property Timer reloadRefreshTimer: Timer {
         interval: 120
         running: true
+
         onTriggered: root.refresh()
     }
-
     property var workspaces: []
 
     function parseNiriData(text) {
@@ -70,21 +59,17 @@ QtObject {
             for (var i = 0; i < winList.length; i++) {
                 if (winList[i].is_focused)
                     newActiveWindowId = String(winList[i].id);
-
             }
             for (var j = 0; j < wsList.length; j++) {
                 if (wsList[j].is_focused)
                     newActiveWorkspaceId = wsList[j].id;
-
             }
-            var floatingData = data.floating || {
-            };
+            var floatingData = data.floating || {};
             var floating = false;
             if (newActiveWorkspaceId !== -1 && floatingData[String(newActiveWorkspaceId)])
                 floating = true;
 
-            var windowsByWorkspace = {
-            };
+            var windowsByWorkspace = {};
             for (var k = 0; k < winList.length; k++) {
                 var win = winList[k];
                 var wsId = win.workspace_id;
@@ -94,7 +79,7 @@ QtObject {
                 windowsByWorkspace[wsId].push(win);
             }
             for (var wsIdKey in windowsByWorkspace) {
-                windowsByWorkspace[wsIdKey].sort(function(a, b) {
+                windowsByWorkspace[wsIdKey].sort(function (a, b) {
                     var posA = a.layout && a.layout.pos_in_scrolling_layout ? a.layout.pos_in_scrolling_layout[0] : 999999;
                     var posB = b.layout && b.layout.pos_in_scrolling_layout ? b.layout.pos_in_scrolling_layout[0] : 999999;
                     return posA - posB;
@@ -111,9 +96,8 @@ QtObject {
                         "is_active": ws.is_active,
                         "windows": wsWins
                     });
-
             }
-            processed.sort(function(a, b) {
+            processed.sort(function (a, b) {
                 return a.idx - b.idx;
             });
             var needsRebuild = root.workspaces.length !== processed.length;
@@ -138,19 +122,15 @@ QtObject {
 
             if (needsRebuild)
                 root.workspaces = processed;
-
         } catch (error) {
             console.error("Failed to parse workspaces data:", error);
         }
     }
-
     function refresh() {
         queryData.running = false;
         queryData.running = true;
     }
-
     function windowMetadataChanged(previous, current) {
         return String(previous.app_id || "") !== String(current.app_id || "") || String(previous.title || "") !== String(current.title || "") || previous.workspace_id !== current.workspace_id;
     }
-
 }

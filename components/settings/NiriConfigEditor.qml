@@ -8,11 +8,11 @@ import QtQuick.Layouts
 Item {
     id: root
 
+    readonly property bool canApply: !SettingsHubService.busy && editor.text.trim() !== ""
     property string description: "Advanced KDL editor. Changes are validated before Niri reloads."
     property int editorHeight: 520
     property string fileName: ""
     property string title: fileName
-    readonly property bool canApply: !SettingsHubService.busy && editor.text.trim() !== ""
 
     function apply() {
         if (!canApply)
@@ -20,19 +20,17 @@ Item {
         editor.focus = false;
         SettingsHubService.saveNiriFile(root.fileName, editor.text);
     }
-
-    implicitHeight: content.implicitHeight
-
     function syncSource() {
         if (editor.activeFocus)
             return;
 
-        var files = SettingsHubService.niriFiles || {
-        };
+        var files = SettingsHubService.niriFiles || {};
         var source = files[root.fileName];
         if (source !== undefined && editor.text !== source)
             editor.text = source;
     }
+
+    implicitHeight: content.implicitHeight
 
     Component.onCompleted: syncSource()
     onFileNameChanged: {
@@ -47,7 +45,6 @@ Item {
 
         target: SettingsHubService
     }
-
     ColumnLayout {
         id: content
 
@@ -67,7 +64,6 @@ Item {
                 font.weight: Font.DemiBold
                 text: root.title
             }
-
             Text {
                 Layout.fillWidth: true
                 color: Config.alpha(Config.md3.on_surface, 0.48)
@@ -76,9 +72,7 @@ Item {
                 text: root.description
                 wrapMode: Text.Wrap
             }
-
         }
-
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: root.editorHeight
@@ -100,7 +94,6 @@ Item {
 
                 ScrollBar.horizontal: SlimScrollBar {
                 }
-
                 ScrollBar.vertical: SlimScrollBar {
                 }
 
@@ -120,11 +113,8 @@ Item {
                     background: Item {
                     }
                 }
-
             }
-
         }
-
         Text {
             Layout.fillWidth: true
             color: Config.alpha(Config.md3.on_surface, 0.4)
@@ -132,7 +122,5 @@ Item {
             font.pixelSize: 12
             text: "If validation fails, the original file is restored automatically."
         }
-
     }
-
 }

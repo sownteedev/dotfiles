@@ -6,15 +6,15 @@ import QtQuick.Layouts
 Rectangle {
     id: root
 
-    default property alias contentData: details.data
     property color accentColor: Config.md3.primary
     property bool checked: false
+    default property alias contentData: details.data
     property int contentPadding: 20
     property int detailsSpacing: 16
+    readonly property bool expanded: !toggleVisible || checked
     property string note: ""
     property string title: ""
     property bool toggleVisible: true
-    readonly property bool expanded: !toggleVisible || checked
 
     signal toggled(bool checked)
 
@@ -23,13 +23,20 @@ Rectangle {
     implicitHeight: content.implicitHeight + root.contentPadding * 2
     radius: 18
 
+    Behavior on implicitHeight {
+        NumberAnimation {
+            duration: 180
+            easing.type: Easing.OutCubic
+        }
+    }
+
     ColumnLayout {
         id: content
 
         anchors.left: parent.left
+        anchors.margins: root.contentPadding
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: root.contentPadding
         spacing: root.expanded && details.children.length > 0 ? 20 : 0
 
         RowLayout {
@@ -52,7 +59,6 @@ Rectangle {
                     width: 15
                 }
             }
-
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 4
@@ -65,7 +71,6 @@ Rectangle {
                     font.weight: Font.DemiBold
                     text: root.title
                 }
-
                 Text {
                     Layout.fillWidth: true
                     color: Config.alpha(Config.md3.on_surface, 0.45)
@@ -76,22 +81,21 @@ Rectangle {
                     wrapMode: Text.Wrap
                 }
             }
-
             ToggleSwitch {
                 accessibleName: root.title
                 checked: root.checked
                 visible: root.toggleVisible
-                onToggled: (checked) => root.toggled(checked)
+
+                onToggled: checked => root.toggled(checked)
             }
         }
-
         ColumnLayout {
             id: details
 
             Layout.fillWidth: true
-            spacing: root.detailsSpacing
             enabled: root.expanded
             opacity: root.expanded ? 1 : 0
+            spacing: root.detailsSpacing
             visible: opacity > 0
 
             Behavior on opacity {
@@ -99,13 +103,6 @@ Rectangle {
                     duration: 150
                 }
             }
-        }
-    }
-
-    Behavior on implicitHeight {
-        NumberAnimation {
-            duration: 180
-            easing.type: Easing.OutCubic
         }
     }
 }

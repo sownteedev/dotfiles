@@ -27,7 +27,6 @@ RowLayout {
             font.weight: Font.DemiBold
             text: root.label
         }
-
         Text {
             Layout.fillWidth: true
             color: Config.alpha(Config.md3.on_surface, 0.45)
@@ -37,13 +36,11 @@ RowLayout {
             visible: text !== ""
             wrapMode: Text.Wrap
         }
-
     }
-
     ToggleSwitch {
         accessibleName: root.label
         checked: root.checked
-        onToggled: (checked) => root.toggled(checked)
-    }
 
+        onToggled: checked => root.toggled(checked)
+    }
 }

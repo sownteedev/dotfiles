@@ -146,11 +146,11 @@ Item {
 
                             AnimatedSpinner {
                                 anchors.centerIn: parent
-                                height: 25
-                                width: 25
                                 color: Config.md3.on_surface
-                                running: wifiPageRoot.isScanning
+                                height: 25
                                 lineWidth: 2.5
+                                running: wifiPageRoot.isScanning
+                                width: 25
                             }
                             MouseArea {
                                 id: reloadMouse

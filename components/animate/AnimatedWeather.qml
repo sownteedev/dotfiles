@@ -4,21 +4,25 @@ import "../../"
 
 Item {
     id: root
-    property bool running: true
-    property string weatherIcon: "weather-clear-symbolic"
-
-    property string type: {
-        var icon = weatherIcon || "";
-        if (icon.includes("showers") || icon.includes("storm") || icon.includes("rain")) return "rain";
-        if (icon.includes("snow")) return "snow";
-        if (icon.includes("clouds") || icon.includes("overcast") || icon.includes("fog")) return "clouds";
-        if (icon.includes("night")) return "stars";
-        return "sun";
-    }
 
     property var particles: []
     property real phase: 0
+    property bool running: true
+    property string type: {
+        var icon = weatherIcon || "";
+        if (icon.includes("showers") || icon.includes("storm") || icon.includes("rain"))
+            return "rain";
+        if (icon.includes("snow"))
+            return "snow";
+        if (icon.includes("clouds") || icon.includes("overcast") || icon.includes("fog"))
+            return "clouds";
+        if (icon.includes("night"))
+            return "stars";
+        return "sun";
+    }
+    property string weatherIcon: "weather-clear-symbolic"
 
+    Component.onCompleted: typeChanged()
     onTypeChanged: {
         particles = [];
         if (type === "rain") {
@@ -64,16 +68,15 @@ Item {
         weatherCanvas.requestPaint();
     }
 
-    Component.onCompleted: typeChanged()
-
     Timer {
         interval: 33
-        running: root.running
         repeat: true
+        running: root.running
+
         onTriggered: {
             root.phase += 0.02;
             var p = root.particles;
-            
+
             if (root.type === "rain") {
                 for (var i = 0; i < p.length; i++) {
                     p[i].y += p[i].speed;
@@ -105,15 +108,15 @@ Item {
                     p[i].phase += p[i].speed;
                 }
             }
-            
+
             weatherCanvas.requestPaint();
         }
     }
-
     Canvas {
         id: weatherCanvas
+
         anchors.fill: parent
-        
+
         onPaint: {
             var ctx = getContext("2d");
             ctx.clearRect(0, 0, width, height);
@@ -178,7 +181,7 @@ Item {
                     ctx.rotate(Math.PI * 2 / 12);
                 }
                 ctx.restore();
-                
+
                 // Inner sun
                 ctx.beginPath();
                 ctx.arc(width * 0.8, height * 0.2, 50, 0, Math.PI * 2);

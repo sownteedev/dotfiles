@@ -13,6 +13,11 @@ ScrollView {
     readonly property string headerActionText: SettingsHubService.busy ? "Applying…" : "Apply animations"
     readonly property bool headerActionVisible: true
 
+    function syncGlobal() {
+        var settings = SettingsHubService.animationSettings || {};
+        animationToggle.checked = settings.enabled !== false;
+        slowdownField.text = String(settings.slowdown === undefined ? 1 : settings.slowdown);
+    }
     function triggerHeaderAction() {
         SettingsHubService.saveAnimationGlobal(animationToggle.checked, Number(slowdownField.text));
     }
@@ -21,13 +26,6 @@ ScrollView {
 
     ScrollBar.vertical: SlimScrollBar {
         accentColor: Config.md3.secondary
-    }
-
-    function syncGlobal() {
-        var settings = SettingsHubService.animationSettings || {
-        };
-        animationToggle.checked = settings.enabled !== false;
-        slowdownField.text = String(settings.slowdown === undefined ? 1 : settings.slowdown);
     }
 
     Component.onCompleted: syncGlobal()
@@ -39,10 +37,9 @@ ScrollView {
 
         target: SettingsHubService
     }
-
     ColumnLayout {
-        width: root.availableWidth
         spacing: 14
+        width: root.availableWidth
 
         Rectangle {
             Layout.fillWidth: true
@@ -54,9 +51,9 @@ ScrollView {
                 id: globalContent
 
                 anchors.left: parent.left
+                anchors.margins: 18
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: 18
                 spacing: 16
 
                 Text {
@@ -67,7 +64,6 @@ ScrollView {
                     font.weight: Font.DemiBold
                     text: "Animation engine"
                 }
-
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 18
@@ -83,28 +79,24 @@ ScrollView {
                             font.weight: Font.DemiBold
                             text: "Enable Niri animations"
                         }
-
                         Text {
                             color: Config.alpha(Config.md3.on_surface, 0.5)
                             font.family: Config.fontName
                             font.pixelSize: 12
                             text: "A global switch for every compositor animation"
                         }
-
                     }
-
                     ToggleSwitch {
                         id: animationToggle
 
                         accessibleName: "Enable Niri animations"
                         enabled: !SettingsHubService.busy
-                        onToggled: (checked) => {
+
+                        onToggled: checked => {
                             animationToggle.checked = checked;
                         }
                     }
-
                 }
-
                 RowLayout {
                     Layout.fillWidth: true
 
@@ -115,9 +107,7 @@ ScrollView {
                         label: "Speed multiplier"
                         placeholder: "1.0"
                     }
-
                 }
-
                 Text {
                     Layout.fillWidth: true
                     color: Config.alpha(Config.md3.on_surface, 0.42)
@@ -125,31 +115,28 @@ ScrollView {
                     font.pixelSize: 11
                     text: "1.0 is normal. Larger values make animations slower."
                 }
-
             }
-
         }
-
         GridLayout {
             Layout.fillWidth: true
-            columns: 2
             columnSpacing: 12
+            columns: 2
             rowSpacing: 12
 
             Repeater {
                 model: (SettingsHubService.animationSettings || {
-                    "entries": []
-                }).entries || []
+                        "entries": []
+                    }).entries || []
 
                 delegate: Rectangle {
                     id: animationCard
 
-                    required property var modelData
                     property bool enabledState: modelData.enabled === true
+                    required property var modelData
 
                     Layout.fillWidth: true
-                    implicitHeight: 82
                     color: Config.alpha(Config.md3.on_surface, 0.04)
+                    implicitHeight: 82
                     radius: 15
 
                     RowLayout {
@@ -171,7 +158,6 @@ ScrollView {
                                 font.weight: Font.DemiBold
                                 text: String(animationCard.modelData.name).replace(/-/g, " ")
                             }
-
                             Text {
                                 Layout.fillWidth: true
                                 color: Config.alpha(Config.md3.on_surface, 0.46)
@@ -180,31 +166,23 @@ ScrollView {
                                 font.pixelSize: 11
                                 text: animationCard.modelData.spec || "Uses Niri defaults"
                             }
-
                         }
-
                         ToggleSwitch {
                             accessibleName: "Toggle " + animationCard.modelData.name
                             checked: animationCard.enabledState
                             enabled: !SettingsHubService.busy
-                            onToggled: (checked) => {
+
+                            onToggled: checked => {
                                 animationCard.enabledState = checked;
                                 SettingsHubService.saveAnimationEntry(animationCard.modelData.name, checked);
                             }
                         }
-
                     }
-
                 }
-
             }
-
         }
-
         Item {
             Layout.preferredHeight: 4
         }
-
     }
-
 }

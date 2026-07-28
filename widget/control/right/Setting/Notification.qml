@@ -11,9 +11,25 @@ Item {
     id: notificationPageRoot
 
     property bool clearAllAnimationActive: false
+    property real currentTimeTick: Date.now()
     property var expandedGroups: ({})
     property var renderedCounts: ({})
 
+    function formatRelativeTime(timestamp, tick) {
+        if (!timestamp)
+            return "now";
+        var diff = Math.floor((tick - timestamp) / 1000);
+        if (diff < 60)
+            return "now";
+        var diffMins = Math.floor(diff / 60);
+        if (diffMins < 60)
+            return diffMins + "m ago";
+        var diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24)
+            return diffHours + "h ago";
+        var date = new Date(timestamp);
+        return date.toLocaleDateString(Qt.locale(), "MMM d");
+    }
     function groupKey(appName) {
         return "$" + appName;
     }
@@ -38,27 +54,6 @@ Item {
         state[key] = (state[key] || 12) + 12;
         renderedCounts = state;
     }
-    
-    property real currentTimeTick: Date.now()
-    Timer {
-        interval: 60000
-        running: notificationPageRoot.visible
-        repeat: true
-        onTriggered: notificationPageRoot.currentTimeTick = Date.now()
-    }
-
-    function formatRelativeTime(timestamp, tick) {
-        if (!timestamp) return "now";
-        var diff = Math.floor((tick - timestamp) / 1000);
-        if (diff < 60) return "now";
-        var diffMins = Math.floor(diff / 60);
-        if (diffMins < 60) return diffMins + "m ago";
-        var diffHours = Math.floor(diffMins / 60);
-        if (diffHours < 24) return diffHours + "h ago";
-        var date = new Date(timestamp);
-        return date.toLocaleDateString(Qt.locale(), "MMM d");
-    }
-
     function triggerClearAllAnimation() {
         var count = NotificationHistory.notificationGroups.length;
         if (count === 0)
@@ -75,6 +70,13 @@ Item {
 
     anchors.fill: parent
 
+    Timer {
+        interval: 60000
+        repeat: true
+        running: notificationPageRoot.visible
+
+        onTriggered: notificationPageRoot.currentTimeTick = Date.now()
+    }
     Timer {
         id: clearAllTimer
 
@@ -419,7 +421,6 @@ Item {
 
                                         onTriggered: NotificationHistory.dismiss(modelData.nid)
                                     }
-
                                     Loader {
                                         id: rowLoader
 
@@ -516,7 +517,6 @@ Item {
                                                             text: notifItem.modelData.timestamp ? notificationPageRoot.formatRelativeTime(notifItem.modelData.timestamp, notificationPageRoot.currentTimeTick) : (notifItem.modelData.timeText || "now")
                                                         }
                                                     }
-
                                                     Text {
                                                         Layout.fillWidth: true
                                                         color: Config.md3.on_surface_variant
@@ -530,7 +530,6 @@ Item {
                                                     }
                                                 }
                                             }
-
                                             RowLayout {
                                                 Layout.fillWidth: true
                                                 Layout.leftMargin: 50

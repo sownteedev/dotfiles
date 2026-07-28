@@ -2,21 +2,13 @@ import QtQuick
 import "."
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Widgets
 import "../../"
 
 PanelWindow {
     id: powerWindow
 
     // Command array corresponding to each button index (0 to 5)
-    property var commands: [
-        ["poweroff"],
-        ["reboot"],
-        ["env", "QML2_IMPORT_PATH=" + Config.dotfilesRoot, "quickshell", "-p", Config.quickshellDir + "/widget/lockscreen/Lockscreen.qml"],
-        ["systemctl", "hibernate"],
-        ["systemctl", "suspend"],
-        ["niri", "msg", "action", "quit"]
-    ]
+    property var commands: [["poweroff"], ["reboot"], [], ["systemctl", "hibernate"], ["systemctl", "suspend"], ["niri", "msg", "action", "quit"]]
     property bool menuOpen: false
     readonly property real s: 1.0
 
@@ -28,7 +20,10 @@ PanelWindow {
     }
     function executeAction(index) {
         if (index >= 0 && index < commands.length) {
-            Quickshell.execDetached(commands[index]);
+            if (index === 2)
+                StateManager.lockScreen();
+            else
+                Quickshell.execDetached(commands[index]);
             closeMenu();
         }
     }

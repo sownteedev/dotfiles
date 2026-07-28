@@ -21,9 +21,6 @@ Variants {
                 wallpaperPath: WallpaperService.displayWallpaper
                 windowNamespace: "wallpaper-" + wallpaperLoader.modelData.name
             }
-
         }
-
     }
-
 }

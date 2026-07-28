@@ -111,26 +111,25 @@ Item {
                 });
             }
         }
-        matches.sort(function(a, b) {
+        matches.sort(function (a, b) {
             if (a.score !== b.score)
                 return a.score - b.score;
 
             return a.name.localeCompare(b.name);
         });
-        return matches.map((m) => {
+        return matches.map(m => {
             return m.entry;
         });
     }
     property int selectedIndex: 0
 
-    signal resultLaunched()
+    signal resultLaunched
 
     function getFileIcon(filename) {
         var ext = filename.split('.').pop().toLowerCase();
         var icon = extensionMap[ext];
         return icon ? icon : "text-x-generic-symbolic";
     }
-
     function isImageFile(filename) {
         if (!filename)
             return false;
@@ -138,7 +137,6 @@ Item {
         var ext = filename.split('.').pop().toLowerCase();
         return ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"].indexOf(ext) !== -1;
     }
-
     function launchSelected() {
         if (combinedResults.length > 0) {
             var idx = Math.max(0, Math.min(selectedIndex, combinedResults.length - 1));
@@ -156,29 +154,24 @@ Item {
             searchRoot.resultLaunched();
         }
     }
-
     function openInNeovide(path) {
         Quickshell.execDetached(["neovide", path]);
     }
-
     function selectNext() {
         if (combinedResults.length > 0)
             selectedIndex = (selectedIndex + 1) % combinedResults.length;
-
     }
-
     function selectPrev() {
         if (combinedResults.length > 0)
             selectedIndex = (selectedIndex - 1 + combinedResults.length) % combinedResults.length;
-
     }
 
     clip: true
     // Auto-fit height: show up to 5 items (apps + files + clipboards), scroll for more
     implicitHeight: Math.min(combinedResults.length, 5) * (80 + 12) - (combinedResults.length > 0 ? 12 : 0)
+
     onQueryChanged: selectedIndex = 0
-    onSelectedIndexChanged: {
-    }
+    onSelectedIndexChanged: {}
 
     Loader {
         id: filesSearch
@@ -188,18 +181,17 @@ Item {
         function removeFile(path) {
             if (item)
                 item["removeFile"](path);
-
         }
 
         active: searchRoot.isFileMode
         source: Qt.resolvedUrl("LauncherFiles.qml")
+
         onLoaded: {
-            item["query"] = Qt.binding(function() {
+            item["query"] = Qt.binding(function () {
                 return searchRoot.query;
             });
         }
     }
-
     Loader {
         id: clipboardSearch
 
@@ -208,18 +200,17 @@ Item {
         function copySelected(id) {
             if (item)
                 item["copySelected"](id);
-
         }
 
         active: searchRoot.isClipboardMode
         source: Qt.resolvedUrl("LauncherClipboard.qml")
+
         onLoaded: {
-            item["query"] = Qt.binding(function() {
+            item["query"] = Qt.binding(function () {
                 return searchRoot.query;
             });
         }
     }
-
     Loader {
         id: emojiLoader
 
@@ -230,18 +221,17 @@ Item {
         function copyEntry(entry) {
             if (item)
                 item["copy"](entry);
-
         }
 
         active: searchRoot.isEmojiMode
         source: Qt.resolvedUrl("LauncherEmoji.qml")
+
         onLoaded: {
-            item["query"] = Qt.binding(function() {
+            item["query"] = Qt.binding(function () {
                 return searchRoot.query;
             });
         }
     }
-
     ListView {
         id: searchList
 
@@ -258,45 +248,6 @@ Item {
         preferredHighlightEnd: Math.max(0, searchList.height - 80)
         spacing: 12
 
-        // Our actual visible custom highlight
-        Rectangle {
-            color: Config.alpha(Config.md3.on_surface, 0.06)
-            height: searchList.currentItem ? searchList.currentItem.height : 80
-            parent: searchList.contentItem
-            radius: 28
-            visible: searchList.currentItem !== null && searchRoot.combinedResults.length > 0
-            width: searchList.width
-            y: searchList.currentItem ? searchList.currentItem.y : 0
-            z: -1
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.leftMargin: 4
-                anchors.verticalCenter: parent.verticalCenter
-                color: searchList.currentItem ? searchList.currentItem.accentColor : "transparent"
-                height: 36
-                radius: 2
-                width: 3
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 150
-                    }
-
-                }
-
-            }
-
-            Behavior on y {
-                NumberAnimation {
-                    duration: 250
-                    easing.type: Easing.OutBack
-                }
-
-            }
-
-        }
-
         ScrollBar.vertical: ScrollBar {
             id: searchScrollBar
 
@@ -308,23 +259,18 @@ Item {
 
             background: Item {
             }
-
             contentItem: Rectangle {
                 color: searchScrollBar.pressed ? Config.alpha(Config.md3.on_surface, 0.75) : (searchScrollBar.hovered ? Config.alpha(Config.md3.on_surface_variant, 0.45) : Config.alpha(Config.md3.on_surface_variant, 0.28))
                 implicitHeight: 36
                 implicitWidth: 3
                 radius: 999
             }
-
             Behavior on opacity {
                 NumberAnimation {
                     duration: 500
                 }
-
             }
-
         }
-
         delegate: Rectangle {
             id: delegateRoot
 
@@ -342,14 +288,12 @@ Item {
             function snapBack() {
                 swipeContent.x = 0;
             }
-
             function snapToReveal() {
                 swipeContent.x = 80;
             }
-
             function triggerDelete() {
                 if (isDeleting)
-                    return ;
+                    return;
 
                 isDeleting = true;
                 swipeContent.x = swipeContent.width;
@@ -364,12 +308,25 @@ Item {
             radius: 28
             width: searchList.width
 
+            Behavior on height {
+                NumberAnimation {
+                    duration: 250
+                    easing.type: Easing.InOutQuad
+                }
+            }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 200
+                }
+            }
+
             Timer {
                 id: collapseTimer
 
                 interval: 250
                 repeat: false
                 running: false
+
                 onTriggered: {
                     filesSearch.removeFile(itemData.path);
                 }
@@ -393,6 +350,12 @@ Item {
                     scale: swipeContent.x > 120 ? 1.2 : 1
                     spacing: 8
 
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: 100
+                        }
+                    }
+
                     IconImage {
                         anchors.verticalCenter: parent.verticalCenter
                         height: 24
@@ -403,9 +366,7 @@ Item {
                         layer.effect: ColorOverlay {
                             color: "#ffffff"
                         }
-
                     }
-
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         color: "#ffffff"
@@ -414,23 +375,14 @@ Item {
                         font.weight: Font.Bold
                         text: "Trash"
                     }
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 100
-                        }
-
-                    }
-
                 }
-
                 MouseArea {
                     anchors.fill: parent
+
                     onClicked: {
                         delegateRoot.triggerDelete();
                     }
                 }
-
             }
 
             // Sliding panel containing actual item UI
@@ -441,6 +393,22 @@ Item {
                 height: parent.height
                 radius: 28
                 width: parent.width
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 100
+                    }
+                }
+                Behavior on x {
+                    id: xBehavior
+
+                    enabled: !listMouse.drag.active
+
+                    NumberAnimation {
+                        duration: 200
+                        easing.type: Easing.OutCubic
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -476,7 +444,6 @@ Item {
                             source: isClipboard ? Quickshell.iconPath("edit-copy-symbolic") : Quickshell.iconPath(isApp ? (itemData.icon || "application-x-executable") : (isFolder ? "folder-symbolic" : getFileIcon(itemData.name)))
                             visible: !iconContainer.isImagePreview && !isEmoji
                         }
-
                         Text {
                             anchors.centerIn: parent
                             font.family: "Noto Color Emoji"
@@ -500,19 +467,14 @@ Item {
                             visible: iconContainer.isImagePreview
 
                             layer.effect: OpacityMask {
-
                                 maskSource: Rectangle {
                                     height: iconContainer.height
                                     radius: 8
                                     width: iconContainer.width
                                 }
-
                             }
-
                         }
-
                     }
-
                     ColumnLayout {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.fillWidth: true
@@ -527,7 +489,6 @@ Item {
                             font.weight: Font.DemiBold
                             text: isClipboard ? (clipData.isImage ? "Image " + clipData.content.replace("[[ binary data ", "").replace(" ]]", "") : clipData.content.trim().split("\n")[0]) : itemData.name
                         }
-
                         Text {
                             Layout.fillWidth: true
                             color: Config.alpha(Config.md3.on_surface, 0.6)
@@ -536,32 +497,9 @@ Item {
                             font.pixelSize: 15
                             text: isClipboard ? (clipData.isImage ? "Clipboard History (Image)" : "Clipboard History") : (isEmoji ? "Emoji & Symbol · " + itemData.keywords : (isApp ? (itemData.comment || itemData.genericName || "") : itemData.path.replace(Config.homeDir, "~")))
                         }
-
                     }
-
                 }
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 100
-                    }
-
-                }
-
-                Behavior on x {
-                    id: xBehavior
-
-                    enabled: !listMouse.drag.active
-
-                    NumberAnimation {
-                        duration: 200
-                        easing.type: Easing.OutCubic
-                    }
-
-                }
-
             }
-
             MouseArea {
                 id: listMouse
 
@@ -573,10 +511,11 @@ Item {
                 drag.target: isFile ? swipeContent : null
                 drag.threshold: 10
                 hoverEnabled: true
+
                 onClicked: {
                     if (isFile && swipeContent.x > 10) {
                         delegateRoot.snapBack();
-                        return ;
+                        return;
                     }
                     searchRoot.selectedIndex = index;
                     if (isClipboard)
@@ -594,7 +533,6 @@ Item {
                 onEntered: {
                     if (!isFile || swipeContent.x === 0)
                         searchRoot.selectedIndex = index;
-
                 }
                 onPressed: {
                     searchRoot.selectedIndex = index;
@@ -610,28 +548,45 @@ Item {
                     }
                 }
             }
-
-            Behavior on height {
-                NumberAnimation {
-                    duration: 250
-                    easing.type: Easing.InOutQuad
-                }
-
-            }
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 200
-                }
-
-            }
-
         }
 
         // Invisible highlight just for the engine
         highlight: Item {
         }
 
-    }
+        // Our actual visible custom highlight
+        Rectangle {
+            color: Config.alpha(Config.md3.on_surface, 0.06)
+            height: searchList.currentItem ? searchList.currentItem.height : 80
+            parent: searchList.contentItem
+            radius: 28
+            visible: searchList.currentItem !== null && searchRoot.combinedResults.length > 0
+            width: searchList.width
+            y: searchList.currentItem ? searchList.currentItem.y : 0
+            z: -1
 
+            Behavior on y {
+                NumberAnimation {
+                    duration: 250
+                    easing.type: Easing.OutBack
+                }
+            }
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.leftMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                color: searchList.currentItem ? searchList.currentItem.accentColor : "transparent"
+                height: 36
+                radius: 2
+                width: 3
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 150
+                    }
+                }
+            }
+        }
+    }
 }

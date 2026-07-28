@@ -20,9 +20,9 @@ Rectangle {
     property bool loading: false
     property var lyricsCache: ({})
     property string lyricsSource: ""
-    property string plainLyrics: ""
     property var pendingCommand: []
     property string pendingRequestKey: ""
+    property string plainLyrics: ""
     property var player: null
     property string processRequestKey: ""
     property string requestKey: ""
@@ -107,16 +107,6 @@ Rectangle {
         lyricsCache = updatedCache;
         if (completedKey === currentKey())
             applyLyrics(cacheEntry.plainLyrics, cacheEntry.syncedLyrics, cacheEntry.instrumental, cacheEntry.source);
-    }
-    function startPendingLookup() {
-        if (lyricsProcess.running || pendingRequestKey === "" || pendingCommand.length === 0)
-            return;
-
-        processRequestKey = pendingRequestKey;
-        pendingRequestKey = "";
-        lyricsProcess.command = pendingCommand;
-        pendingCommand = [];
-        lyricsProcess.running = true;
     }
     function lookup() {
         requestKey = currentKey();
@@ -207,6 +197,16 @@ Rectangle {
     }
     function scheduleLookup() {
         lookupDelay.restart();
+    }
+    function startPendingLookup() {
+        if (lyricsProcess.running || pendingRequestKey === "" || pendingCommand.length === 0)
+            return;
+
+        processRequestKey = pendingRequestKey;
+        pendingRequestKey = "";
+        lyricsProcess.command = pendingCommand;
+        pendingCommand = [];
+        lyricsProcess.running = true;
     }
     function stripSyncedLyrics(value) {
         return String(value || "").split(/\r?\n/).map(function (line) {

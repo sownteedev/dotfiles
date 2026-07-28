@@ -62,6 +62,7 @@ ShellRoot {
         BackdropService.generate();
         StateManager.controlPanelLoader = controlRightLoader;
         StateManager.controlLeftPanelLoader = controlLeftLoader;
+        StateManager.lockscreenLoader = lockscreenLoader;
         StateManager.settingsHubLoader = settingsHubLoader;
     }
 
@@ -205,6 +206,13 @@ ShellRoot {
     }
 
     LazyLoader {
+        id: lockscreenLoader
+
+        active: false
+        source: Qt.resolvedUrl("widget/lockscreen/Lockscreen.qml")
+    }
+
+    LazyLoader {
         id: polkitDialogLoader
 
         active: PolkitService.active
@@ -273,6 +281,16 @@ ShellRoot {
         }
 
         target: settingsHubLoader.item
+    }
+
+    Connections {
+        function onDismissed() {
+            Qt.callLater(() => {
+                return lockscreenLoader.active = false;
+            });
+        }
+
+        target: lockscreenLoader.item
     }
 
     IpcHandler {
@@ -376,6 +394,32 @@ ShellRoot {
         }
 
         target: "settings"
+    }
+
+    IpcHandler {
+        function lock() {
+            StateManager.lockScreen();
+        }
+
+        function show() {
+            StateManager.lockScreen();
+        }
+
+        function status() : string {
+            return JSON.stringify({
+                "active": lockscreenLoader.active,
+                "loading": lockscreenLoader.loading,
+                "locked": StateManager.sessionLocked
+            });
+        }
+
+        // Toggle intentionally never unlocks an active session. Unlocking is
+        // only possible through the PAM flow inside the lock surface.
+        function toggle() {
+            StateManager.lockScreen();
+        }
+
+        target: "lockscreen"
     }
 
     IpcHandler {

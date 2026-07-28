@@ -4,30 +4,32 @@ import "../../"
 
 Item {
     id: root
-    property bool running: true
+
     property color color: Config.md3.primary
+    property bool running: true
     property real wavePhase: 0
 
     Timer {
         interval: 40
-        running: root.running
         repeat: true
+        running: root.running
+
         onTriggered: {
             root.wavePhase += 0.06;
             bgWave.requestPaint();
         }
     }
-
     Canvas {
         id: bgWave
+
         anchors.fill: parent
-        
+
         onPaint: {
             var ctx = getContext("2d");
             ctx.clearRect(0, 0, width, height);
 
             var centerY = height * 0.65;
-            
+
             // Back Wave
             ctx.beginPath();
             ctx.moveTo(0, height);

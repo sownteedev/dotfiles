@@ -13,12 +13,13 @@ Item {
     id: root
 
     readonly property real artworkSize: Math.max(100, Math.min(280, playerArea.height - 290))
-    readonly property var player: MediaService.activePlayer
-    
-    property real swipeOffset: 0
     property bool isSwipingOut: false
+    readonly property var player: MediaService.activePlayer
     property int swipeDirection: 1
+    property real swipeOffset: 0
     property bool swipeTimerRunning: swipeActionTimer.running
+
+    anchors.fill: parent
 
     Behavior on swipeOffset {
         enabled: !musicDrag.active && !root.isSwipingOut
@@ -31,7 +32,9 @@ Item {
 
     Timer {
         id: swipeActionTimer
+
         interval: 150
+
         onTriggered: {
             root.isSwipingOut = true;
             if (root.swipeDirection === 1) {
@@ -43,18 +46,16 @@ Item {
             swipeInTimer.start();
         }
     }
-
     Timer {
         id: swipeInTimer
+
         interval: 20
+
         onTriggered: {
             root.isSwipingOut = false;
             root.swipeOffset = 0;
         }
     }
-
-    anchors.fill: parent
-
     ColumnLayout {
         anchors.fill: parent
         spacing: 10
@@ -100,9 +101,9 @@ Item {
                         anchors.fill: parent
                         player: root.player
                     }
-                    
                     DragHandler {
                         id: musicDrag
+
                         target: null
                         xAxis.enabled: true
                         yAxis.enabled: false

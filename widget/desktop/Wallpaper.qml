@@ -12,13 +12,14 @@ PanelWindow {
     property Item candidateImage: null
     property string currentWall: ""
     property Item displayedImage: null
-    property bool isVideoWallpaper: allowVideoFade && WallpaperService.currentMode === "video"
     property bool isTransitionPending: WallpaperService.isTransitionPending
+    property bool isVideoWallpaper: allowVideoFade && WallpaperService.currentMode === "video"
     property Item outgoingImage: null
+    readonly property bool revealVideo: isVideoWallpaper && !isTransitionPending && !waitingForPolicyRestart && transitionStarted && !WallpaperService.previewActive
     property int sourceGeneration: 0
     property bool transitionStarted: false
+    property bool useNativeCache: true
     readonly property bool waitingForPolicyRestart: WallpaperService.isEngineVideo && EngineWallpaperService.policyRestarting && !EngineWallpaperService.playbackReadyState
-    readonly property bool revealVideo: isVideoWallpaper && !isTransitionPending && !waitingForPolicyRestart && transitionStarted && !WallpaperService.previewActive
     property string wallpaperPath: ""
     property string windowNamespace: "wallpaper"
 
@@ -28,24 +29,6 @@ PanelWindow {
 
         var path = String(wallpaperPath || "");
         return path.startsWith("/") ? "file://" + path : path;
-    }
-    function normalizedPath(path) {
-        return String(path || "").replace(/^file:\/\//, "");
-    }
-    function isPendingVideoCover(image) {
-        return allowVideoFade
-            && WallpaperService.currentMode === "video"
-            && WallpaperService.isTransitionPending
-            && image
-            && normalizedPath(image.sourceKey) === normalizedPath(WallpaperService.pendingVideoThumbnail);
-    }
-    function reportVideoCoverReady(image) {
-        if (!isPendingVideoCover(image))
-            return;
-        WallpaperService.markVideoCoverReady(
-            wallpaperPath,
-            screen ? screen.name : windowNamespace
-        );
     }
     function finishCoverSwap(reportReady) {
         if (outgoingImage) {
@@ -87,6 +70,12 @@ PanelWindow {
         var cleanSource = String(source || "").split("?")[0].toLowerCase();
         return cleanSource.endsWith(".gif");
     }
+    function isPendingVideoCover(image) {
+        return allowVideoFade && WallpaperService.currentMode === "video" && WallpaperService.isTransitionPending && image && normalizedPath(image.sourceKey) === normalizedPath(WallpaperService.pendingVideoThumbnail);
+    }
+    function normalizedPath(path) {
+        return String(path || "").replace(/^file:\/\//, "");
+    }
     function promoteCandidate(image, generation) {
         if (!image || image !== candidateImage || generation !== sourceGeneration)
             return;
@@ -127,6 +116,11 @@ PanelWindow {
         transitionStarted = true;
         transitionAnimation.restart();
     }
+    function reportVideoCoverReady(image) {
+        if (!isPendingVideoCover(image))
+            return;
+        WallpaperService.markVideoCoverReady(wallpaperPath, screen ? screen.name : windowNamespace);
+    }
     function requestWallpaper() {
         var source = effectiveSource();
         if (candidateImage && candidateImage.sourceKey === source)
@@ -153,7 +147,7 @@ PanelWindow {
         // frame, including GIF previews, instead of starting another animated
         // decoder while the real renderer is launching underneath.
         var animateSource = WallpaperService.currentMode !== "video" && isAnimated(source);
-        var component = source === "" ? transparentWallpaper : (animateSource ? animatedWallpaper : staticWallpaper);
+        var component = source === "" ? transparentWallpaper : (animateSource ? animatedWallpaper : (useNativeCache ? staticWallpaper : directStaticWallpaper));
         candidateImage = component.createObject(imageHost, {
             "requestId": sourceGeneration,
             "sourceKey": source
@@ -198,11 +192,11 @@ PanelWindow {
     onWallpaperPathChanged: requestWallpaper()
 
     Connections {
-        target: WallpaperService
-
         function onPendingVideoThumbnailChanged() {
             wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
         }
+
+        target: WallpaperService
     }
     Item {
         id: imageHost
@@ -219,14 +213,31 @@ PanelWindow {
             property string sourceKey: ""
 
             anchors.fill: parent
-            cacheKey: wallpaperWindow.allowVideoFade && WallpaperService.currentMode === "video"
-                ? String(WallpaperService.videoTransitionGeneration)
-                : ""
+            cacheKey: wallpaperWindow.allowVideoFade && WallpaperService.currentMode === "video" ? String(WallpaperService.videoTransitionGeneration) : ""
             fillMode: WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
             opacity: 0
             path: sourceKey
 
             onStatusChanged: wallpaperWindow.imageStatusChanged(staticImage, status)
+        }
+    }
+    Component {
+        id: directStaticWallpaper
+
+        Image {
+            id: directImage
+
+            property int requestId: 0
+            property string sourceKey: ""
+
+            anchors.fill: parent
+            asynchronous: true
+            cache: true
+            fillMode: WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
+            opacity: 0
+            source: sourceKey
+
+            onStatusChanged: wallpaperWindow.imageStatusChanged(directImage, status)
         }
     }
     Component {
@@ -261,12 +272,13 @@ PanelWindow {
 
             anchors.fill: parent
             opacity: 0
-
         }
     }
     ParallelAnimation {
         id: coverFadeAnimation
 
+        onFinished: wallpaperWindow.finishCoverSwap(true)
+
         NumberAnimation {
             duration: Math.max(0, Math.round(Config.wallpaperTransitionDuration / 2))
             easing.type: Easing.OutCubic
@@ -283,12 +295,12 @@ PanelWindow {
             target: wallpaperWindow.outgoingImage
             to: 0
         }
-
-        onFinished: wallpaperWindow.finishCoverSwap(true)
     }
     ParallelAnimation {
         id: transitionAnimation
 
+        onFinished: wallpaperWindow.finishTransition()
+
         NumberAnimation {
             duration: Config.wallpaperTransitionDuration
             easing.type: Easing.OutCubic
@@ -305,6 +317,5 @@ PanelWindow {
             target: wallpaperWindow.outgoingImage
             to: 0
         }
-        onFinished: wallpaperWindow.finishTransition()
     }
 }

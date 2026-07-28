@@ -102,6 +102,9 @@ QtObject {
     property string turboOverride: "auto"
     property string voltage: "N/A"
 
+    function formatValue(value, precision, suffix) {
+        return value === null || value === undefined || !isFinite(Number(value)) || Number(value) <= 0 ? "N/A" : Number(value).toFixed(precision) + suffix;
+    }
     function refresh() {
         if (!active)
             return;
@@ -115,9 +118,6 @@ QtObject {
             cpuQuery.running = false;
             cpuQuery.running = true;
         }
-    }
-    function formatValue(value, precision, suffix) {
-        return value === null || value === undefined || !isFinite(Number(value)) || Number(value) <= 0 ? "N/A" : Number(value).toFixed(precision) + suffix;
     }
     function runCommand(command) {
         commandExecutor.command = ["sh", "-c", command];

@@ -63,10 +63,10 @@ QtObject {
 
             root.fallbackVideoThumbnail = thumbnailPath;
             root.saveState(thumbnailPath);
+            if (root.isTransitionPending && !root.pendingVideoThumbnail)
+                root.stageVideoThumbnail(thumbnailPath, false);
             if (root.isTransitionPending && !root.videoQuickThemeReady && !root.pendingVideoThemeSource)
                 root.prepareVideoTheme(thumbnailPath, root.selectedModified);
-            if (root.backendReadyPath === root.selectedPath && !root.pendingVideoThumbnail)
-                root.stageVideoThumbnail(thumbnailPath, true);
         }
 
         target: LiveWallpaperService
@@ -238,6 +238,12 @@ QtObject {
                 root.fallbackVideoThumbnail = preview || Config.wallpaper;
                 root.saveState(root.fallbackVideoThumbnail);
                 if (preview) {
+                    // The Workshop preview is already available locally. Use
+                    // it as the temporary desktop cover while the renderer
+                    // starts. BackdropService deliberately waits for the
+                    // validated full-screen frame because this preview can be
+                    // square or use a different crop.
+                    root.stageVideoThumbnail(preview, false);
                     if (EngineWallpaperService.previewNeedsConversion(preview)) {
                         root.pendingEnginePreviewSource = preview;
                         var engineThumbnail = EngineWallpaperService.requestPreviewThumbnail(preview, selectedModified, true);
@@ -255,6 +261,8 @@ QtObject {
                 var liveThumbnail = LiveWallpaperService.requestThumbnail(path, selectedModified, true);
                 root.fallbackVideoThumbnail = liveThumbnail;
                 root.saveState(liveThumbnail);
+                if (LiveWallpaperService.thumbnailKnown(path, selectedModified))
+                    root.stageVideoThumbnail(liveThumbnail, false);
                 LiveWallpaperService.play(path);
             }
             return;
@@ -353,11 +361,16 @@ QtObject {
             if (state.thumbnail) {
                 fallbackVideoThumbnail = String(state.thumbnail);
             }
-            var restoredCover = state.frame ? String(state.frame) : fallbackVideoThumbnail;
+            // Engine screenshots are generated renderer output and can be
+            // stale or corrupt after an interrupted startup. Always restore
+            // the stable Workshop preview first; a newly validated frame will
+            // replace it once this renderer is ready.
+            var restoredFrame = state.frame ? String(state.frame) : "";
+            var restoredCover = isEngine ? fallbackVideoThumbnail : (restoredFrame || fallbackVideoThumbnail);
             if (restoredCover) {
                 Config.wallpaper = restoredCover;
                 pendingVideoThumbnail = restoredCover;
-                lastVideoFrame = state.frame ? String(state.frame) : "";
+                lastVideoFrame = isEngine ? "" : restoredFrame;
             }
 
             if (isEngine) {

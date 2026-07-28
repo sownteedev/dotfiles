@@ -11,18 +11,24 @@ Rectangle {
     property bool active: false
     property bool compact: false
     property bool dense: false
-    property bool expanded: false
     property bool expandable: false
-    property bool indented: false
+    property bool expanded: false
     property color iconColor: Config.md3.primary
     property string iconName: ""
+    property bool indented: false
     property string text: ""
 
-    signal clicked()
+    signal clicked
 
     color: active ? Config.alpha(root.iconColor, 0.17) : (mouse.containsMouse ? Config.alpha(root.iconColor, 0.08) : "transparent")
     implicitHeight: dense ? 44 : 50
     radius: 14
+
+    Behavior on color {
+        ColorAnimation {
+            duration: 140
+        }
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -35,14 +41,14 @@ Rectangle {
             Layout.preferredWidth: root.indented ? 18 : 22
             height: 22
             layer.enabled: true
-            layer.effect: ColorOverlay {
-                color: root.active ? root.iconColor : Config.alpha(root.iconColor, root.indented ? 0.66 : 0.82)
-            }
             source: Quickshell.iconPath(root.iconName)
             visible: root.iconName !== ""
             width: 22
-        }
 
+            layer.effect: ColorOverlay {
+                color: root.active ? root.iconColor : Config.alpha(root.iconColor, root.indented ? 0.66 : 0.82)
+            }
+        }
         Text {
             Layout.fillWidth: true
             color: root.active ? root.iconColor : Config.md3.on_surface
@@ -52,7 +58,6 @@ Rectangle {
             text: root.text
             visible: !root.compact
         }
-
         Text {
             color: root.active ? root.iconColor : Config.alpha(root.iconColor, 0.7)
             font.family: Config.fontName
@@ -60,23 +65,14 @@ Rectangle {
             text: root.expanded ? "⌄" : "›"
             visible: root.expandable && !root.compact
         }
-
     }
-
     MouseArea {
         id: mouse
 
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         hoverEnabled: true
+
         onClicked: root.clicked()
     }
-
-    Behavior on color {
-        ColorAnimation {
-            duration: 140
-        }
-
-    }
-
 }

@@ -1,5 +1,6 @@
 pragma Singleton
 import "../../"
+import ".."
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -8,6 +9,8 @@ QtObject {
     id: root
 
     property string activeBackdrop: ""
+    property string activeRequestKey: ""
+    readonly property string cacheDir: Config.homeDir + "/.cache/quickshell/backdrops"
     property Connections configConnections: Connections {
         function onWallpaperChanged() {
             if (StateManager.wallpaperLoaded)
@@ -16,7 +19,11 @@ QtObject {
 
         target: Config
     }
+    property string generatedBackdrop: ""
+    property bool generationCanCreate: true
+    property string generationIdentity: ""
     property bool generationPending: false
+    property string generationRequestKey: ""
     property int generationSerial: 0
     property string generationSource: ""
     property Timer generationStart: Timer {
@@ -25,6 +32,34 @@ QtObject {
 
         onTriggered: root.startPendingGeneration()
     }
+    property Process generator: Process {
+        property int jobSerial: 0
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (generator.jobSerial === root.generationSerial)
+                    root.generatedBackdrop = text.trim();
+            }
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            if (root.generationPending) {
+                root.generationStart.restart();
+                return;
+            }
+            if (jobSerial !== root.generationSerial)
+                return;
+
+            if (exitCode === 0 && root.generatedBackdrop !== "") {
+                root.activeBackdrop = root.generatedBackdrop;
+                root.activeRequestKey = root.generationRequestKey;
+                root.ready = true;
+            } else if (root.generationCanCreate) {
+                console.warn("[BackdropService] Failed to generate cached backdrop for", root.generationSource);
+            }
+        }
+    }
+    readonly property string generatorScript: Config.quickshellDir + "/scripts/wallpaper_backdrop_cache.py"
     property Connections globalConnections: Connections {
         function onWallpaperLoadedChanged() {
             if (StateManager.wallpaperLoaded)
@@ -33,96 +68,94 @@ QtObject {
 
         target: StateManager
     }
-    property Process lockBlur: Process {
-        property int jobSerial: 0
-
-        onExited: (exitCode, exitStatus) => {
-            if (root.generationPending) {
-                root.generationStart.restart();
-                return;
-            }
-            if (jobSerial !== root.generationSerial)
-                return;
-
-            root.lockFinished = true;
-            root.finishIfReady();
-        }
-    }
-    property bool lockFinished: false
-    property Process mainBlur: Process {
-        property int jobSerial: 0
-
-        onExited: (exitCode, exitStatus) => {
-            if (root.generationPending) {
-                root.generationStart.restart();
-                return;
-            }
-            if (jobSerial !== root.generationSerial)
-                return;
-
-            root.mainFinished = true;
-            root.mainSucceeded = exitCode === 0;
-            root.finishIfReady();
-        }
-    }
-    property bool mainFinished: false
-    property bool mainSucceeded: false
-    property int nextIndex: 1
-    property string pendingBackdrop: ""
+    property bool pendingCanCreate: true
+    property string pendingIdentity: ""
+    property string pendingRequestKey: ""
     property string pendingSource: ""
     property bool ready: false
-
-    function backdropSource(path) {
-        return String(path || "").toLowerCase().endsWith(".gif") ? path + "[0]" : path;
-    }
-    function finishIfReady() {
-        if (!mainFinished || !lockFinished)
-            return;
-
-        if (mainSucceeded) {
-            activeBackdrop = pendingBackdrop;
-            ready = true;
-        } else {
-            console.warn("[BackdropService] Failed to generate backdrop for", generationSource);
+    property Connections wallpaperConnections: Connections {
+        function onCurrentModeChanged() {
+            root.generate();
         }
+        function onDisplayWallpaperChanged() {
+            root.generate();
+        }
+        function onFallbackVideoThumbnailChanged() {
+            root.generate();
+        }
+        function onLastVideoFrameChanged() {
+            root.generate();
+        }
+        function onSelectedModifiedChanged() {
+            root.generate();
+        }
+
+        target: WallpaperService
+    }
+
+    function canCreateCurrentBackdrop() {
+        if (WallpaperService.currentMode !== "video")
+            return true;
+        if (!WallpaperService.isEngineVideo)
+            return WallpaperService.lastVideoFrame !== "" || WallpaperService.fallbackVideoThumbnail !== "";
+        return WallpaperService.lastVideoFrame !== "";
+    }
+    function currentIdentity(source) {
+        if (WallpaperService.currentMode === "video")
+            return "video|" + WallpaperService.currentWallpaper + "|" + String(WallpaperService.selectedModified || "0");
+        return "";
+    }
+    function currentRequestKey(source, identity, canCreate) {
+        return String(identity || source) + "|" + String(source) + "|" + String(canCreate);
+    }
+    function currentSource() {
+        // Workshop previews are not guaranteed to match the monitor aspect
+        // ratio. They may only be used to look up an existing per-video cache;
+        // creation waits for the validated full renderer frame.
+        if (WallpaperService.currentMode === "video")
+            return WallpaperService.lastVideoFrame || WallpaperService.fallbackVideoThumbnail;
+        return WallpaperService.displayWallpaper || Config.wallpaper;
     }
     function generate() {
-        if (!StateManager.wallpaperLoaded || Config.wallpaper === "")
+        if (!StateManager.wallpaperLoaded)
             return;
 
-        pendingSource = Config.wallpaper;
+        var source = currentSource();
+        if (source === "")
+            return;
+        var identity = currentIdentity(source);
+        var canCreate = canCreateCurrentBackdrop();
+        var requestKey = currentRequestKey(source, identity, canCreate);
+        if (requestKey === activeRequestKey && ready)
+            return;
+        if (requestKey === pendingRequestKey && (generationPending || generator.running))
+            return;
+
+        pendingSource = source;
+        pendingIdentity = identity;
+        pendingCanCreate = canCreate;
+        pendingRequestKey = requestKey;
         generationPending = true;
-        if (mainBlur.running)
-            mainBlur.running = false;
-
-        if (lockBlur.running)
-            lockBlur.running = false;
-
         generationStart.restart();
     }
     function startPendingGeneration() {
         if (!generationPending)
             return;
 
-        if (mainBlur.running || lockBlur.running) {
+        if (generator.running) {
             generationStart.restart();
             return;
         }
         generationPending = false;
         generationSource = pendingSource;
+        generationIdentity = pendingIdentity;
+        generationCanCreate = pendingCanCreate;
+        generationRequestKey = pendingRequestKey;
         ++generationSerial;
-        pendingBackdrop = "/tmp/backdrop_" + nextIndex + ".png";
-        nextIndex = nextIndex === 1 ? 2 : 1;
-        mainFinished = false;
-        lockFinished = false;
-        mainSucceeded = false;
-        mainBlur.jobSerial = generationSerial;
-        var source = backdropSource(generationSource);
-        mainBlur.command = ["magick", source, "-resize", "10%", "-blur", "0x5", pendingBackdrop];
-        lockBlur.jobSerial = generationSerial;
-        lockBlur.command = ["magick", source, "-resize", "20%", "-blur", "0x4", "/tmp/backdrop-lock.png"];
-        mainBlur.running = true;
-        lockBlur.running = true;
+        generatedBackdrop = "";
+        generator.jobSerial = generationSerial;
+        generator.command = ["python3", generatorScript, generationSource, cacheDir, generationIdentity, generationCanCreate ? "true" : "false"];
+        generator.running = true;
     }
 
     Component.onCompleted: {

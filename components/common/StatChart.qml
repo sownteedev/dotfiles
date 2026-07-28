@@ -248,7 +248,6 @@ Item {
                 }
             }
             Rectangle {
-                visible: root.valueText !== ""
                 anchors.margins: 8
                 anchors.right: parent.right
                 anchors.top: parent.top
@@ -257,6 +256,7 @@ Item {
                 color: Config.alpha(Config.md3.background, 0.65)
                 height: 22
                 radius: 6
+                visible: root.valueText !== ""
                 width: overlayText.implicitWidth + 16
 
                 Text {

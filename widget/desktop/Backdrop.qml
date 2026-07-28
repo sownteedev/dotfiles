@@ -15,6 +15,7 @@ Scope {
 
                 allowVideoFade: false
                 screen: modelData
+                useNativeCache: false
                 wallpaperPath: BackdropService.ready ? BackdropService.activeBackdrop : ""
                 windowNamespace: "backdrop-" + modelData.name
             }
