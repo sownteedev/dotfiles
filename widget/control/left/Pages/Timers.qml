@@ -7,6 +7,7 @@ import "../../../../components"
 Item {
     id: root
 
+    readonly property point dialCenter: countdownDial.mapToItem(root, countdownDial.width / 2, countdownDial.height / 2)
     readonly property real dialSize: Math.min(400, Math.max(270, Math.min(width - 56, height - 246)))
 
     anchors.fill: parent
@@ -17,6 +18,8 @@ Item {
         spacing: 12
 
         CountdownDial {
+            id: countdownDial
+
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredHeight: root.dialSize
             Layout.preferredWidth: root.dialSize

@@ -229,7 +229,6 @@ QtObject {
             "captureEditorWidth": Config.captureEditorWidth,
             "wallpaperEngineAssetsDirPath": Config.wallpaperEngineAssetsDirPath,
             "wallpaperEngineWorkshopDirPath": Config.wallpaperEngineWorkshopDirPath,
-            "profileImagePath": Config.profileImagePath,
             "clock24h": Config.clock24h,
             "dependencies": ({})
         })

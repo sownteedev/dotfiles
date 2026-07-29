@@ -9,8 +9,6 @@ import Quickshell.Services.Notifications
 
 PanelWindow {
     // Starts false for entry transition
-    // Avoid uploading Niri's full-resolution screenshot just to draw a
-    // 55 px popup icon. Edit/Open still use CaptureService's file path.
 
     id: notifWindow
 
@@ -62,7 +60,6 @@ PanelWindow {
             "body": notification.body || "",
             "image": notification.image || "",
             "isCritical": isCritical,
-            "receivedAt": Date.now(),
             "showActions": false,
             "active": false,
             "rawNotification": notification
@@ -200,6 +197,11 @@ PanelWindow {
             if (QuickSettingsService.dndActive)
                 return;
 
+            // Screenshot notifications have their own Windows-style toast
+            // anchored to the bottom-right corner.
+            if (String(notification.summary || "").toLowerCase().indexOf("screenshot captured") !== -1)
+                return;
+
             // Do not show popups in DND mode
             handleNotify(notification);
         }
@@ -276,47 +278,15 @@ PanelWindow {
                 Item {
                     id: delegateWrapper
 
-                    property var actionsList: {
-                        if (hasScreenshotActions)
-                            return [
-                                {
-                                    "text": "Edit",
-                                    "invoke": function () {
-                                        CaptureService.openScreenshotEditor(notifWindow.screen ? notifWindow.screen.name : "");
-                                    }
-                                },
-                                {
-                                    "text": "Open",
-                                    "invoke": function () {
-                                        CaptureService.openScreenshot();
-                                    }
-                                },
-                                {
-                                    "text": "Folder",
-                                    "invoke": function () {
-                                        CaptureService.openScreenshotFolder();
-                                    }
-                                },
-                                {
-                                    "text": "Delete",
-                                    "invoke": function () {
-                                        CaptureService.trashScreenshot();
-                                    }
-                                }
-                            ];
-
-                        return notifObj ? notifObj.actions : [];
-                    }
+                    property var actionsList: notifObj ? notifObj.actions : []
                     property bool active: model.active
                     property string appIcon: model.appIcon
                     property string appName: model.appName
                     property string body: model.body
                     property bool completed: false
-                    readonly property bool hasScreenshotActions: isScreenshotNotification && CaptureService.screenshotPath !== "" && Math.abs(CaptureService.screenshotCapturedAt - receivedAt) < 5000
                     property string image: model.image
                     property bool isCritical: model.isCritical
                     property bool isDismissing: false
-                    readonly property bool isScreenshotNotification: summary.toLowerCase().indexOf("screenshot captured") !== -1
                     readonly property real naturalTextWidth: Math.max(summaryText.implicitWidth, bodyText.implicitWidth, 100 + delegateWrapper.actionsList.length * 115)
 
                     // Cache model properties on wrapper to avoid name conflicts in nested repeaters
@@ -324,7 +294,6 @@ PanelWindow {
                     property var notifObj: model.rawNotification
                     // Countdown progress bar properties and animation
                     property real progress: 1
-                    property double receivedAt: model.receivedAt
                     property bool showActions: model.showActions
                     property string summary: model.summary
 
@@ -428,7 +397,7 @@ PanelWindow {
                         property real yOffset: -50
 
                         anchors.horizontalCenter: parent.horizontalCenter
-                        border.color: delegateWrapper.isCritical ? Config.alpha(Config.md3.error, 0.8) : Config.alpha(Config.md3.surface_container_high, 0.8)
+                        border.color: delegateWrapper.isCritical ? Config.alpha(Config.md3.error, 0.72) : Config.alpha(Config.md3.outline_variant, 0.26)
                         border.width: 1
                         clip: true // Clean rounded clipping of actions panel
                         color: Config.md3.background
@@ -580,7 +549,7 @@ PanelWindow {
                                     appIcon: delegateWrapper.appIcon
                                     appName: delegateWrapper.appName
                                     asynchronous: true
-                                    backgroundColor: Config.md3.surface_container
+                                    backgroundColor: delegateWrapper.isCritical ? Config.md3.error_container : Config.md3.surface_container_high
                                     cacheImage: false
                                     height: 55
                                     iconSize: hasProvidedIcon ? 40 : 25
@@ -590,7 +559,7 @@ PanelWindow {
                                     radius: hasProvidedIcon ? 14 : width / 2
                                     sourceSizeScale: 2
                                     tintAllIcons: true
-                                    tintColor: delegateWrapper.isCritical ? Config.alpha(Config.md3.error, 0.8) : Config.md3.on_surface
+                                    tintColor: delegateWrapper.isCritical ? Config.md3.on_error_container : Config.md3.on_surface
                                     width: 55
                                 }
 
@@ -622,7 +591,7 @@ PanelWindow {
 
                                         Layout.fillWidth: true
                                         Layout.maximumWidth: container.width - 145
-                                        color: Config.alpha(Config.md3.on_surface, 0.7)
+                                        color: Config.md3.on_surface_variant
                                         font.family: Config.fontName
                                         font.pixelSize: 15
                                         font.weight: Font.Medium

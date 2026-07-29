@@ -51,11 +51,6 @@ Item {
 
     anchors.fill: parent
 
-    AnimatedStars {
-        anchors.fill: parent
-        color: Config.md3.primary
-        running: root.visible
-    }
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 20

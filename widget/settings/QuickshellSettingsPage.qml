@@ -72,7 +72,6 @@ Item {
     function syncFields() {
         var settings = SettingsHubService.quickshellSettings || ({});
         fontField.text = settings.fontName || Config.fontName;
-        profileField.text = settings.profileImagePath || Config.profileImagePath;
         clockToggle.checked = settings.clock24h ?? Config.clock24h;
         locationField.text = settings.latLon || Config.latLon;
         apiField.text = settings.apiWeather || Config.apiWeather;
@@ -93,16 +92,12 @@ Item {
         recordingFpsField.text = String(settings.captureRecordingFps ?? Config.captureRecordingFps);
         recordingCodecChoice.value = settings.captureRecordingCodec || Config.captureRecordingCodec;
         recordingQualityChoice.value = settings.captureRecordingQuality || Config.captureRecordingQuality;
-        editorToolChoice.value = settings.captureEditorTool || Config.captureEditorTool;
-        editorColorField.text = settings.captureEditorColor || Config.captureEditorColor;
-        editorWidthField.text = String(settings.captureEditorWidth ?? Config.captureEditorWidth);
         engineAssetsField.text = settings.wallpaperEngineAssetsDirPath || Config.wallpaperEngineAssetsDirPath;
         engineWorkshopField.text = settings.wallpaperEngineWorkshopDirPath || Config.wallpaperEngineWorkshopDirPath;
     }
     function triggerHeaderAction() {
         SettingsHubService.saveQuickshell({
             "fontName": fontField.text,
-            "profileImagePath": profileField.text,
             "clock24h": clockToggle.checked,
             "latLon": locationField.text,
             "apiWeather": apiField.text,
@@ -123,9 +118,9 @@ Item {
             "captureRecordingFps": Number(recordingFpsField.text),
             "captureRecordingCodec": recordingCodecChoice.value,
             "captureRecordingQuality": recordingQualityChoice.value,
-            "captureEditorTool": editorToolChoice.value,
-            "captureEditorColor": editorColorField.text,
-            "captureEditorWidth": Number(editorWidthField.text),
+            "captureEditorTool": SettingsHubService.quickshellSettings.captureEditorTool ?? Config.captureEditorTool,
+            "captureEditorColor": SettingsHubService.quickshellSettings.captureEditorColor ?? Config.captureEditorColor,
+            "captureEditorWidth": SettingsHubService.quickshellSettings.captureEditorWidth ?? Config.captureEditorWidth,
             "wallpaperEngineAssetsDirPath": engineAssetsField.text,
             "wallpaperEngineWorkshopDirPath": engineWorkshopField.text
         });
@@ -172,26 +167,6 @@ Item {
                     Layout.fillWidth: true
                     label: "Font family"
                     placeholder: "Inter"
-                }
-            }
-            SettingsSectionCard {
-                Layout.fillWidth: true
-                accentColor: Config.md3.secondary
-                note: "Personalize your shell identity"
-                title: "Profile"
-                visible: root.activeSection === 0
-
-                SettingsTextField {
-                    id: profileField
-
-                    Layout.fillWidth: true
-                    actionIcon: "document-open-symbolic"
-                    label: "Profile image path"
-                    placeholder: "~/Dotfiles/quickshell/assets/images/sownteedev.png"
-
-                    onActionClicked: {
-                        SettingsHubService.filePickerDialog.open(profileField, "file://" + Config.expandHomePath("~"), false);
-                    }
                 }
             }
             SettingsSectionCard {
@@ -465,8 +440,8 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
-                note: "Initial values used whenever the screenshot editor opens"
-                title: "Screenshot editor"
+                note: "Clipboard behavior after editing a screenshot"
+                title: "Screenshot"
                 visible: root.activeSection === 2
 
                 SettingsToggleRow {
@@ -476,62 +451,6 @@ Item {
                     note: "Automatically places the saved PNG on the clipboard"
 
                     onToggled: value => checked = value
-                }
-                SettingsChoiceRow {
-                    id: editorToolChoice
-
-                    Layout.fillWidth: true
-                    label: "Default tool"
-                    options: [
-                        {
-                            "label": "Pen",
-                            "value": "pen"
-                        },
-                        {
-                            "label": "Arrow",
-                            "value": "arrow"
-                        },
-                        {
-                            "label": "Rectangle",
-                            "value": "rectangle"
-                        },
-                        {
-                            "label": "Blur",
-                            "value": "blur"
-                        },
-                        {
-                            "label": "Pixelate",
-                            "value": "pixelate"
-                        },
-                        {
-                            "label": "Text",
-                            "value": "text"
-                        }
-                    ]
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 14
-
-                    SettingsTextField {
-                        id: editorColorField
-
-                        Layout.fillWidth: true
-                        label: "Default color"
-                        placeholder: "#ff3b30"
-                    }
-                    SettingsTextField {
-                        id: editorWidthField
-
-                        Layout.fillWidth: true
-                        label: "Default width"
-                        placeholder: "6"
-
-                        inputItem.validator: IntValidator {
-                            bottom: 1
-                            top: 96
-                        }
-                    }
                 }
             }
             SettingsSectionCard {

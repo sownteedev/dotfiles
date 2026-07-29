@@ -406,7 +406,7 @@ QtObject {
             hash ^= text.charCodeAt(i);
             hash = (hash + (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)) >>> 0;
         }
-        return "v2-" + ("00000000" + hash.toString(16)).slice(-8);
+        return ("00000000" + hash.toString(16)).slice(-8);
     }
     function startReadyProbe() {
         if (!player.running || !readyFramePath)

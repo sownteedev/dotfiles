@@ -1110,9 +1110,7 @@ Item {
                                 ToggleSwitch {
                                     checked: displayPageRoot.getKdlOption(displayPageRoot.selectedOutputName, "focus")
                                     height: 22
-                                    thumbCheckedColor: Config.md3.on_surface
                                     thumbMargin: 3
-                                    thumbUncheckedColor: Config.md3.on_surface
                                     width: 42
 
                                     onToggled: checked => {
@@ -1160,9 +1158,7 @@ Item {
                                     enabled: parent.parent.isVrrSupported
                                     height: 22
                                     opacity: parent.parent.isVrrSupported ? 1.0 : 0.4
-                                    thumbCheckedColor: Config.md3.on_surface
                                     thumbMargin: 3
-                                    thumbUncheckedColor: Config.md3.on_surface
                                     width: 42
 
                                     onToggled: checked => {

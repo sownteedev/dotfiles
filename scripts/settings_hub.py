@@ -244,7 +244,8 @@ def render_dimension_entries(block: str, raw_value: str, label: str) -> str:
             raise ValueError(f"{label} proportion must be between 0 and 1")
         if kind == "fixed" and value <= 0:
             raise ValueError(f"{label} fixed size must be positive")
-        rendered.append(f"        {kind} {kdl_float(value)}")
+        encoded = str(int(round(value))) if kind == "fixed" else kdl_float(value)
+        rendered.append(f"        {kind} {encoded}")
     return "\n" + "\n".join(rendered) + "\n    "
 
 
@@ -1127,7 +1128,15 @@ def set_layout(payload: dict[str, object]) -> dict[str, object]:
     updated = update_block(
         updated,
         "default-column-width",
-        lambda _block: "" if default_width_mode == "auto" else f" {default_width_mode} {kdl_float(default_width)}; ",
+        lambda _block: (
+            ""
+            if default_width_mode == "auto"
+            else (
+                f" fixed {int(round(default_width))}; "
+                if default_width_mode == "fixed"
+                else f" proportion {kdl_float(default_width)}; "
+            )
+        ),
     )
     updated = toggle_block(updated, "preset-column-widths", preset_widths_enabled)
     updated = update_block(updated, "preset-column-widths", lambda block: render_dimension_entries(block, preset_widths, "preset column widths"))
@@ -1743,7 +1752,6 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "captureEditorColor": str(payload.get("captureEditorColor", "#ff3b30")).strip(),
         "wallpaperEngineAssetsDirPath": str(payload.get("wallpaperEngineAssetsDirPath", "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets")).strip(),
         "wallpaperEngineWorkshopDirPath": str(payload.get("wallpaperEngineWorkshopDirPath", "~/.local/share/Steam/steamapps/workshop/content/431960")).strip(),
-        "profileImagePath": str(payload.get("profileImagePath", "~/Dotfiles/quickshell/assets/images/sownteedev.png")).strip(),
     }
     if settings["captureRecordingCodec"] not in ("h264", "hevc", "av1"):
         settings["captureRecordingCodec"] = "hevc"

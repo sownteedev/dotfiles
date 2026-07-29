@@ -465,7 +465,7 @@ PanelWindow {
     anchors.left: true
     anchors.right: true
     anchors.top: true
-    color: Config.alpha(Config.md3.background, 0.94)
+    color: Config.alpha(Config.md3.background, 0.95)
     exclusiveZone: 0
     focusable: true
 

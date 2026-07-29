@@ -15,6 +15,7 @@ singleton PolkitService 1.0 system/PolkitService.qml
 singleton QuickSettingsService 1.0 system/QuickSettingsService.qml
 singleton SettingsHubService 1.0 system/SettingsHubService.qml
 singleton SysStats 1.0 system/SysStats.qml
+singleton UpdateService 1.0 system/UpdateService.qml
 singleton WifiService 1.0 system/WifiService.qml
 singleton WorkspaceService 1.0 system/WorkspaceService.qml
 

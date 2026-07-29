@@ -361,16 +361,18 @@ QtObject {
             if (state.thumbnail) {
                 fallbackVideoThumbnail = String(state.thumbnail);
             }
-            // Engine screenshots are generated renderer output and can be
-            // stale or corrupt after an interrupted startup. Always restore
-            // the stable Workshop preview first; a newly validated frame will
-            // replace it once this renderer is ready.
+            // Prefer the last renderer frame at startup. Engine frames reach
+            // this state only after wallpaper_frame_probe has validated them,
+            // and EngineWallpaperService writes the next launch into the
+            // opposite slot, so this full-screen cover remains intact until
+            // the new renderer is ready. Fall back to the smaller Workshop
+            // preview only on the first launch, before a frame exists.
             var restoredFrame = state.frame ? String(state.frame) : "";
-            var restoredCover = isEngine ? fallbackVideoThumbnail : (restoredFrame || fallbackVideoThumbnail);
+            var restoredCover = restoredFrame || fallbackVideoThumbnail;
             if (restoredCover) {
                 Config.wallpaper = restoredCover;
                 pendingVideoThumbnail = restoredCover;
-                lastVideoFrame = isEngine ? "" : restoredFrame;
+                lastVideoFrame = restoredFrame;
             }
 
             if (isEngine) {

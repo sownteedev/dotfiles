@@ -1,27 +1,13 @@
-import QtQuick
 pragma Singleton
+import QtQuick
 
 QtObject {
     id: root
 
-    property var controlLeftPanel: null
-    property var controlLeftPanelLoader: null
-    property var controlPanel: null
-    property var controlPanelLoader: null
-    property bool keyboardFocusRequested: false
-    property bool leftPanelOpenPending: false
-    property var lockscreenLoader: null
-    property int rightPanelTabPending: -2
-    property bool sessionLocked: false
-    property var settingsHubLoader: null
-    property bool settingsHubOpenPending: false
-    property bool wallpaperLoaded: false
-    property Connections controlLeftLoaderConnections
-
-    controlLeftLoaderConnections: Connections {
+    property Connections controlLeftLoaderConnections: Connections {
         function onActiveChanged() {
             if (!target.active || !root.leftPanelOpenPending || !target.item)
-                return ;
+                return;
 
             root.leftPanelOpenPending = false;
             target.item.showControl();
@@ -29,13 +15,14 @@ QtObject {
 
         target: root.controlLeftPanelLoader
     }
-
-    property Connections controlRightLoaderConnections
-
-    controlRightLoaderConnections: Connections {
+    property var controlLeftPanel: null
+    property var controlLeftPanelLoader: null
+    property var controlPanel: null
+    property var controlPanelLoader: null
+    property Connections controlRightLoaderConnections: Connections {
         function onActiveChanged() {
             if (!target.active || root.rightPanelTabPending === -2 || !target.item)
-                return ;
+                return;
 
             var requestedTab = root.rightPanelTabPending;
             root.rightPanelTabPending = -2;
@@ -44,10 +31,13 @@ QtObject {
 
         target: root.controlPanelLoader
     }
-
-    property Connections settingsHubLoaderConnections
-
-    settingsHubLoaderConnections: Connections {
+    property bool keyboardFocusRequested: false
+    property bool leftPanelOpenPending: false
+    property var lockscreenLoader: null
+    property int rightPanelTabPending: -2
+    property bool sessionLocked: false
+    property var settingsHubLoader: null
+    property Connections settingsHubLoaderConnections: Connections {
         function onActiveChanged() {
             if (!target.active || !root.settingsHubOpenPending || !target.item)
                 return;
@@ -58,17 +48,13 @@ QtObject {
 
         target: root.settingsHubLoader
     }
+    property bool settingsHubOpenPending: false
+    property bool wallpaperLoaded: false
 
-    function openControlPanel(panel, tab) {
-        if (!panel)
-            return ;
-
-        if (tab >= 0)
-            panel.switchTab(tab);
-
-        panel.showControl();
+    function hideSettingsHub() {
+        if (settingsHubLoader && settingsHubLoader.active && settingsHubLoader.item)
+            settingsHubLoader.item.closeSettings();
     }
-
     function lockScreen() {
         if (!lockscreenLoader || sessionLocked || lockscreenLoader.active || lockscreenLoader.loading)
             return;
@@ -77,25 +63,27 @@ QtObject {
         // instead of waiting for an asynchronous panel-style open animation.
         lockscreenLoader.active = true;
     }
+    function openControlPanel(panel, tab) {
+        if (!panel)
+            return;
 
+        if (tab >= 0)
+            panel.switchTab(tab);
+
+        panel.showControl();
+    }
     function showControlPanel(tab) {
         if (!controlPanelLoader)
-            return ;
+            return;
 
         var requestedTab = tab === undefined ? -1 : tab;
         if (controlPanelLoader.active && controlPanelLoader.item) {
             openControlPanel(controlPanelLoader.item, requestedTab);
-            return ;
+            return;
         }
         rightPanelTabPending = requestedTab;
         controlPanelLoader.loading = true;
     }
-
-    function hideSettingsHub() {
-        if (settingsHubLoader && settingsHubLoader.active && settingsHubLoader.item)
-            settingsHubLoader.item.closeSettings();
-    }
-
     function showSettingsHub() {
         if (!settingsHubLoader)
             return;
@@ -106,34 +94,31 @@ QtObject {
         settingsHubOpenPending = true;
         settingsHubLoader.loading = true;
     }
-
     function toggleControlLeftPanel() {
         if (!controlLeftPanelLoader)
-            return ;
+            return;
 
         if (controlLeftPanelLoader.active && controlLeftPanel && controlLeftPanel.active) {
             controlLeftPanel.hideControl();
-            return ;
+            return;
         }
         if (controlLeftPanelLoader.active && controlLeftPanelLoader.item) {
             controlLeftPanelLoader.item.showControl();
-            return ;
+            return;
         }
         leftPanelOpenPending = true;
         controlLeftPanelLoader.loading = true;
     }
-
     function toggleControlPanel(tab) {
         var requestedTab = tab === undefined ? -1 : tab;
         if (controlPanelLoader && controlPanelLoader.active && controlPanel) {
             if (controlPanel.active && (requestedTab < 0 || controlPanel.activeTab === requestedTab)) {
                 controlPanel.hideControl();
-                return ;
+                return;
             }
         }
         showControlPanel(requestedTab);
     }
-
     function toggleSettingsHub() {
         if (settingsHubLoader && settingsHubLoader.active && settingsHubLoader.item && settingsHubLoader.item.active) {
             settingsHubLoader.item.closeSettings();
@@ -141,5 +126,4 @@ QtObject {
         }
         showSettingsHub();
     }
-
 }

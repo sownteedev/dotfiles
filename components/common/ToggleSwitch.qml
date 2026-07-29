@@ -8,9 +8,9 @@ Rectangle {
     property bool checked: false
     property color checkedColor: Config.md3.primary
     property bool interactive: true
-    property color thumbCheckedColor: "white"
+    property color thumbCheckedColor: Config.md3.on_primary
     property real thumbMargin: 2
-    property color thumbUncheckedColor: "white"
+    property color thumbUncheckedColor: Config.md3.outline
     property color uncheckedColor: Config.md3.surface_container_high
 
     signal toggled(bool checked)

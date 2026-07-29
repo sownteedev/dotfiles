@@ -25,18 +25,16 @@ ShellRoot {
     function hideLazyWindow(loader, methodName) {
         if (loader.active && loader.item && loader.item[methodName])
             loader.item[methodName]();
-
     }
-
     function showLazyWindow(loader, methodName) {
         if (loader.active) {
             if (loader.item && loader.item[methodName])
                 loader.item[methodName]();
 
-            return ;
+            return;
         }
         if (loader.loading)
-            return ;
+            return;
 
         var handler = function handler() {
             if (loader.active && loader.item) {
@@ -49,7 +47,6 @@ ShellRoot {
         loader.activeChanged.connect(handler);
         loader.loading = true;
     }
-
     function toggleLazyWindow(loader, openMethod, closeMethod, isOpen) {
         if (loader.active && loader.item && isOpen(loader.item))
             loader.item[closeMethod]();
@@ -58,6 +55,7 @@ ShellRoot {
     }
 
     settings.watchFiles: true
+
     Component.onCompleted: {
         BackdropService.generate();
         StateManager.controlPanelLoader = controlRightLoader;
@@ -68,17 +66,18 @@ ShellRoot {
 
     Backdrop {
     }
-
     Desktop {
     }
-
     Variants {
         model: Quickshell.screens
+
         delegate: Component {
             EdgeTrigger {
                 required property var modelData
-                screen: modelData
+
                 edgeSide: Qt.LeftEdge
+                screen: modelData
+
                 onTriggered: {
                     if (!controlLeftLoader.item || !controlLeftLoader.item.active)
                         StateManager.toggleControlLeftPanel();
@@ -86,14 +85,16 @@ ShellRoot {
             }
         }
     }
-
     Variants {
         model: Quickshell.screens
+
         delegate: Component {
             EdgeTrigger {
                 required property var modelData
-                screen: modelData
+
                 edgeSide: Qt.RightEdge
+                screen: modelData
+
                 onTriggered: {
                     if (!controlRightLoader.item || !controlRightLoader.item.active)
                         StateManager.showControlPanel();
@@ -101,7 +102,6 @@ ShellRoot {
             }
         }
     }
-
     Variants {
         model: Quickshell.screens
 
@@ -111,11 +111,8 @@ ShellRoot {
 
                 screen: modelData
             }
-
         }
-
     }
-
     Variants {
         model: Quickshell.screens
 
@@ -128,13 +125,9 @@ ShellRoot {
                 ScreenshotEditor {
                     screen: modelData
                 }
-
             }
-
         }
-
     }
-
     Variants {
         model: Quickshell.screens
 
@@ -144,11 +137,8 @@ ShellRoot {
 
                 screen: modelData
             }
-
         }
-
     }
-
     Variants {
         model: Quickshell.screens
 
@@ -158,60 +148,61 @@ ShellRoot {
 
                 screen: modelData
             }
-
         }
-
     }
+    Variants {
+        model: Quickshell.screens
 
+        delegate: Component {
+            ScreenshotNotificationPopup {
+                required property var modelData
+
+                screen: modelData
+            }
+        }
+    }
     LazyLoader {
         id: powerLoader
 
         active: false
         source: Qt.resolvedUrl("widget/power/Power.qml")
     }
-
     LazyLoader {
         id: wallpaperSelectorLoader
 
         active: false
         source: Qt.resolvedUrl("widget/desktop/SelectWallpaper.qml")
     }
-
     LazyLoader {
         id: launcherLoader
 
         active: false
         source: Qt.resolvedUrl("widget/launcher/Launcher.qml")
     }
-
     LazyLoader {
         id: controlLeftLoader
 
         active: false
         source: Qt.resolvedUrl("widget/control/left/ControlLeft.qml")
     }
-
     LazyLoader {
         id: controlRightLoader
 
         active: false
         source: Qt.resolvedUrl("widget/control/right/ControlRight.qml")
     }
-
     LazyLoader {
         id: settingsHubLoader
 
         active: false
         source: Qt.resolvedUrl("widget/settings/SettingsHub.qml")
     }
-
     LazyLoader {
         id: lockscreenLoader
 
         active: false
         source: Qt.resolvedUrl("widget/lockscreen/Lockscreen.qml")
     }
-
     LazyLoader {
         id: polkitDialogLoader
 
@@ -220,9 +211,7 @@ ShellRoot {
         PolkitDialog {
             flow: PolkitService.flow
         }
-
     }
-
     Connections {
         function onDismissed() {
             Qt.callLater(() => {
@@ -232,7 +221,6 @@ ShellRoot {
 
         target: powerLoader.item
     }
-
     Connections {
         function onDismissed() {
             Qt.callLater(() => {
@@ -242,7 +230,6 @@ ShellRoot {
 
         target: wallpaperSelectorLoader.item
     }
-
     Connections {
         function onDismissed() {
             Qt.callLater(() => {
@@ -252,7 +239,6 @@ ShellRoot {
 
         target: launcherLoader.item
     }
-
     Connections {
         function onDismissed() {
             Qt.callLater(() => {
@@ -262,7 +248,6 @@ ShellRoot {
 
         target: controlLeftLoader.item
     }
-
     Connections {
         function onDismissed() {
             Qt.callLater(() => {
@@ -272,7 +257,6 @@ ShellRoot {
 
         target: controlRightLoader.item
     }
-
     Connections {
         function onDismissed() {
             Qt.callLater(() => {
@@ -282,7 +266,6 @@ ShellRoot {
 
         target: settingsHubLoader.item
     }
-
     Connections {
         function onDismissed() {
             Qt.callLater(() => {
@@ -292,39 +275,32 @@ ShellRoot {
 
         target: lockscreenLoader.item
     }
-
     IpcHandler {
         function hide() {
             root.hideLazyWindow(powerLoader, "closeMenu");
         }
-
         function show() {
             root.showLazyWindow(powerLoader, "openMenu");
         }
-
         function toggle() {
-            root.toggleLazyWindow(powerLoader, "openMenu", "closeMenu", (item) => {
+            root.toggleLazyWindow(powerLoader, "openMenu", "closeMenu", item => {
                 return item.visible && item.menuOpen;
             });
         }
 
         target: "power"
     }
-
     IpcHandler {
         function hide() {
             root.hideLazyWindow(wallpaperSelectorLoader, "closeSelector");
         }
-
-        function show() {
-            root.showLazyWindow(wallpaperSelectorLoader, "openSelector");
-        }
-
         function refreshTheme() {
             WallpaperService.applyTheme(WallpaperService.displayWallpaper);
         }
-
-        function status() : string {
+        function show() {
+            root.showLazyWindow(wallpaperSelectorLoader, "openSelector");
+        }
+        function status(): string {
             return JSON.stringify({
                 "mode": WallpaperService.currentMode,
                 "selectedPath": WallpaperService.currentWallpaper,
@@ -340,44 +316,37 @@ ShellRoot {
                 "error": LiveWallpaperService.errorMessage
             });
         }
-
         function toggle() {
-            root.toggleLazyWindow(wallpaperSelectorLoader, "openSelector", "closeSelector", (item) => {
+            root.toggleLazyWindow(wallpaperSelectorLoader, "openSelector", "closeSelector", item => {
                 return item.visible;
             });
         }
 
         target: "wallpaper"
     }
-
     IpcHandler {
         function hide() {
             root.hideLazyWindow(launcherLoader, "closeLauncher");
         }
-
         function show() {
             root.showLazyWindow(launcherLoader, "openLauncher");
         }
-
         function toggle() {
-            root.toggleLazyWindow(launcherLoader, "openLauncher", "closeLauncher", (item) => {
+            root.toggleLazyWindow(launcherLoader, "openLauncher", "closeLauncher", item => {
                 return item.visible && item.active;
             });
         }
 
         target: "launcher"
     }
-
     IpcHandler {
         function hide() {
             root.hideLazyWindow(settingsHubLoader, "closeSettings");
         }
-
         function show() {
             root.showLazyWindow(settingsHubLoader, "openSettings");
         }
-
-        function status() : string {
+        function status(): string {
             return JSON.stringify({
                 "active": settingsHubLoader.active,
                 "loading": settingsHubLoader.loading,
@@ -386,26 +355,22 @@ ShellRoot {
                 "open": settingsHubLoader.item ? settingsHubLoader.item.active : false
             });
         }
-
         function toggle() {
-            root.toggleLazyWindow(settingsHubLoader, "openSettings", "closeSettings", (item) => {
+            root.toggleLazyWindow(settingsHubLoader, "openSettings", "closeSettings", item => {
                 return item.visible && item.active;
             });
         }
 
         target: "settings"
     }
-
     IpcHandler {
         function lock() {
             StateManager.lockScreen();
         }
-
         function show() {
             StateManager.lockScreen();
         }
-
-        function status() : string {
+        function status(): string {
             return JSON.stringify({
                 "active": lockscreenLoader.active,
                 "loading": lockscreenLoader.loading,
@@ -421,31 +386,27 @@ ShellRoot {
 
         target: "lockscreen"
     }
-
     IpcHandler {
         function screenshot() {
             CaptureService.screenshot();
         }
-
         function stopRecording() {
             CaptureService.stopRecording();
         }
-
         function toggleRecording() {
             CaptureService.toggleRecording();
         }
 
         target: "capture"
     }
-
     NotificationServer {
         id: globalNotificationManager
 
         actionsSupported: true
-        onNotification: (n) => {
+
+        onNotification: n => {
             n.tracked = true;
             NotificationHistory.add(n);
         }
     }
-
 }

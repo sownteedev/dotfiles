@@ -168,11 +168,6 @@ Item {
             }
         }
     }
-    AnimatedFireflies {
-        anchors.fill: parent
-        color: Config.md3.tertiary
-        running: calendarRoot.visible
-    }
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12

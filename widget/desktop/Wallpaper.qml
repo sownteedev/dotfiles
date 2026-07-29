@@ -1,6 +1,7 @@
 import "../.."
 import "../../service"
 import "../../components"
+import Qt5Compat.GraphicalEffects
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
@@ -61,6 +62,8 @@ PanelWindow {
         if (status === Image.Ready)
             promoteCandidate(image, image.requestId);
         else if (status === Image.Error) {
+            if (image.scheduleRetry && image.scheduleRetry())
+                return;
             console.warn("[Wallpaper] Could not load", image.sourceKey);
             candidateImage = null;
             image.destroy();
@@ -75,6 +78,14 @@ PanelWindow {
     }
     function normalizedPath(path) {
         return String(path || "").replace(/^file:\/\//, "");
+    }
+    function shouldBlurEngineCover(path) {
+        if (!allowVideoFade || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo || WallpaperService.lastVideoFrame !== "")
+            return false;
+
+        var cover = normalizedPath(path);
+        var preview = normalizedPath(WallpaperService.fallbackVideoThumbnail);
+        return cover !== "" && preview !== "" && cover === preview;
     }
     function promoteCandidate(image, generation) {
         if (!image || image !== candidateImage || generation !== sourceGeneration)
@@ -211,10 +222,16 @@ PanelWindow {
 
             property int requestId: 0
             property string sourceKey: ""
+            readonly property bool blurEngineCover: wallpaperWindow.shouldBlurEngineCover(sourceKey)
 
             anchors.fill: parent
             cacheKey: wallpaperWindow.allowVideoFade && WallpaperService.currentMode === "video" ? String(WallpaperService.videoTransitionGeneration) : ""
-            fillMode: WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
+            fillMode: blurEngineCover || WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
+            layer.enabled: blurEngineCover
+            layer.effect: FastBlur {
+                radius: 56
+                transparentBorder: false
+            }
             opacity: 0
             path: sourceKey
 
@@ -229,11 +246,17 @@ PanelWindow {
 
             property int requestId: 0
             property string sourceKey: ""
+            readonly property bool blurEngineCover: wallpaperWindow.shouldBlurEngineCover(sourceKey)
 
             anchors.fill: parent
             asynchronous: true
             cache: true
-            fillMode: WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
+            fillMode: blurEngineCover || WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
+            layer.enabled: blurEngineCover
+            layer.effect: FastBlur {
+                radius: 56
+                transparentBorder: false
+            }
             opacity: 0
             source: sourceKey
 

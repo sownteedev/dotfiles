@@ -5,24 +5,29 @@ import "../../"
 Item {
     id: root
 
+    property real centerX: width / 2
+    property real centerY: height / 2
     property color color: Config.md3.primary
+    property real endRadius: Math.hypot(Math.max(centerX, width - centerX), Math.max(centerY, height - centerY))
     property bool hasPulses: false
     property var pulses: []
     property bool running: false
+    property real startRadius: Math.min(width, height) * 0.32
+
+    function addPulse() {
+        root.pulses.push({
+            progress: 0
+        });
+        root.hasPulses = true;
+        pulseCanvas.requestPaint();
+    }
 
     Timer {
-        interval: 1200 // 1.2s per pulse
+        interval: 850
         repeat: true
         running: root.running
 
-        onTriggered: {
-            var p = root.pulses;
-            p.push({
-                scale: 0.9,
-                alpha: 1.0
-            });
-            root.hasPulses = true;
-        }
+        onTriggered: root.addPulse()
     }
     Timer {
         interval: 33
@@ -32,9 +37,8 @@ Item {
         onTriggered: {
             var p = root.pulses;
             for (var i = p.length - 1; i >= 0; i--) {
-                p[i].scale += 0.006;
-                p[i].alpha -= 0.015;
-                if (p[i].alpha <= 0) {
+                p[i].progress += 0.0075;
+                if (p[i].progress >= 1) {
                     p.splice(i, 1);
                 }
             }
@@ -46,19 +50,14 @@ Item {
         id: pulseCanvas
 
         anchors.fill: parent
-        anchors.margins: -100
 
         onPaint: {
             var ctx = getContext("2d");
             ctx.clearRect(0, 0, width, height);
 
-            var centerX = width / 2;
-            var centerY = height / 2;
-
-            // pulseCanvas is expanded by 100 on all sides, so its width is parent.width + 200.
-            // Base radius of the dial is half of the original parent's width.
-            var baseRadius = (Math.min(width, height) - 200) / 2;
-            if (baseRadius <= 0)
+            var startRadius = Math.max(0, root.startRadius);
+            var endRadius = Math.max(startRadius, root.endRadius);
+            if (endRadius <= 0)
                 return;
 
             var p = root.pulses;
@@ -66,12 +65,26 @@ Item {
                 return;
 
             for (var i = 0; i < p.length; i++) {
+                var progress = Math.max(0, Math.min(1, p[i].progress));
+                var easedProgress = progress;
+                var alpha = Math.pow(1 - progress, 1.1);
+                var radius = startRadius + (endRadius - startRadius) * easedProgress;
+
                 ctx.beginPath();
-                ctx.arc(centerX, centerY, baseRadius * p[i].scale, 0, 2 * Math.PI);
-                ctx.lineWidth = 12 * p[i].alpha;
-                ctx.strokeStyle = Config.alpha(root.color, p[i].alpha * 0.4);
+                ctx.arc(root.centerX, root.centerY, radius, 0, 2 * Math.PI);
+                ctx.lineWidth = 2 + 8 * alpha;
+                ctx.strokeStyle = Config.alpha(root.color, alpha * 0.22);
                 ctx.stroke();
             }
         }
     }
+
+    onCenterXChanged: pulseCanvas.requestPaint()
+    onCenterYChanged: pulseCanvas.requestPaint()
+    onEndRadiusChanged: pulseCanvas.requestPaint()
+    onRunningChanged: {
+        if (running)
+            addPulse();
+    }
+    onStartRadiusChanged: pulseCanvas.requestPaint()
 }

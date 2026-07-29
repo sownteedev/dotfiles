@@ -1,4 +1,6 @@
 import "../../../" // for Config and StateManager
+import "../../../components"
+import "../../../service"
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
@@ -22,6 +24,8 @@ PanelWindow {
     property bool destroyed: false
     property int previousBottomTab: 0
     property int previousTopTab: 0
+    readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, 0.065)
+    readonly property color sectionColor: Config.md3.surface
     readonly property var topPages: ["Calendar", "Todo", "Timers"]
     readonly property var topTabIcons: ["x-office-calendar-symbolic", "checkbox-checked-symbolic", "preferences-system-time-symbolic"]
     readonly property var topTabLabels: ["Calendar", "Todo", "Timer"]
@@ -84,7 +88,7 @@ PanelWindow {
         anchors.leftMargin: 10 + xOffset
         anchors.top: parent.top
         anchors.topMargin: 10
-        color: Config.alpha(Config.md3.background, 0.97)
+        color: Config.alpha(Config.md3.background, 0.98)
         layer.enabled: controlLeftWindow.visible
         radius: 20
         width: 650
@@ -117,21 +121,51 @@ PanelWindow {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 20
-            spacing: 20
+            spacing: 12
 
             // ── 1. Top Tab Content Box ────────────────────────────────────────────
-            Rectangle {
+            ClippingRectangle {
+                id: topSection
+
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                border.color: controlLeftWindow.sectionBorderColor
+                border.width: 1
                 clip: true
-                color: Config.md3.surface
+                color: controlLeftWindow.sectionColor
                 layer.enabled: controlLeftWindow.visible && !slideAnim.running
-                radius: 15
+                radius: 18
 
+                AnimatedFireflies {
+                    anchors.fill: parent
+                    color: Config.md3.tertiary
+                    running: controlLeftWindow.active && activeTopTab === 0
+                    visible: activeTopTab === 0
+                }
+                AnimatedStars {
+                    anchors.fill: parent
+                    color: Config.md3.primary
+                    running: controlLeftWindow.active && activeTopTab === 1
+                    visible: activeTopTab === 1
+                }
+                AnimatedPulse {
+                    readonly property bool hasTimerGeometry: activeTopTab === 2 && topCurrentPage.status === Loader.Ready && topCurrentPage.item && typeof topCurrentPage.item.dialCenter !== "undefined" && typeof topCurrentPage.item.dialSize !== "undefined"
+                    readonly property point timerCenter: hasTimerGeometry ? topCurrentPage.item.mapToItem(topSection, topCurrentPage.item.dialCenter.x, topCurrentPage.item.dialCenter.y) : Qt.point(width / 2, height / 2)
+
+                    anchors.fill: parent
+                    centerX: timerCenter.x
+                    centerY: timerCenter.y
+                    color: CountdownService.completed ? Config.md3.secondary : Config.md3.primary
+                    endRadius: Math.hypot(Math.max(centerX, width - centerX), Math.max(centerY, height - centerY)) + 12
+                    running: controlLeftWindow.active && activeTopTab === 2 && CountdownService.running
+                    startRadius: hasTimerGeometry ? topCurrentPage.item.dialSize / 2 - 20 : Math.min(width, height) * 0.3
+                    visible: activeTopTab === 2
+                }
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 20
                     spacing: 20
+                    z: 1
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -318,18 +352,39 @@ PanelWindow {
             }
 
             // ── 2. Bottom Tab Content Box ─────────────────────────────────────────
-            Rectangle {
+            ClippingRectangle {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                border.color: controlLeftWindow.sectionBorderColor
+                border.width: 1
                 clip: true
-                color: Config.md3.surface
+                color: controlLeftWindow.sectionColor
                 layer.enabled: controlLeftWindow.visible && !slideAnim.running
-                radius: 15
+                radius: 18
 
+                AnimatedWeather {
+                    anchors.fill: parent
+                    running: controlLeftWindow.active && activeBottomTab === 0 && WeatherService.icon !== ""
+                    visible: activeBottomTab === 0
+                    weatherIcon: WeatherService.icon
+                }
+                AnimatedWaves {
+                    anchors.fill: parent
+                    color: Config.md3.primary
+                    running: controlLeftWindow.active && activeBottomTab === 1 && !!MediaService.activePlayer && MediaService.playing
+                    visible: activeBottomTab === 1
+                }
+                AnimatedBubbles {
+                    anchors.fill: parent
+                    color: Config.md3.primary
+                    running: controlLeftWindow.active && activeBottomTab === 1 && !!MediaService.activePlayer && MediaService.playing
+                    visible: activeBottomTab === 1
+                }
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 20
                     spacing: 20
+                    z: 1
 
                     RowLayout {
                         Layout.fillWidth: true

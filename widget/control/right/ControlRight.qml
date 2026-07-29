@@ -133,7 +133,7 @@ PanelWindow {
         border.width: 1
         clip: true // Prevent bubbles from flying completely outside the panel bounds
 
-        color: Config.alpha(Config.md3.background, 0.95)
+        color: Config.alpha(Config.md3.background, 0.98)
         radius: 20
         width: 650
 
@@ -164,7 +164,7 @@ PanelWindow {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 20
-            spacing: 20
+            spacing: 12
 
             // ── 1. Top Control ────────────────────────────────────────────────
             TopControl {
@@ -245,11 +245,11 @@ PanelWindow {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.preferredHeight: 600
-                border.color: Config.alpha(Config.md3.on_surface, 0.055)
+                border.color: Config.alpha(Config.md3.on_surface, 0.065)
                 border.width: 1
                 clip: true
                 color: Config.md3.surface
-                radius: 15
+                radius: 18
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -392,11 +392,11 @@ PanelWindow {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.preferredHeight: 600
-                border.color: Config.alpha(Config.md3.on_surface, 0.055)
+                border.color: Config.alpha(Config.md3.on_surface, 0.065)
                 border.width: 1
                 clip: true
                 color: Config.md3.surface
-                radius: 15
+                radius: 18
 
                 ColumnLayout {
                     anchors.fill: parent

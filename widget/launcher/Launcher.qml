@@ -85,15 +85,13 @@ PanelWindow {
         readonly property real targetWidth: showAllApps ? 900 : (searchQuery.trim() !== "" ? 500 : 380)
 
         anchors.centerIn: parent
-        border.color: Config.md3.surface_container
+        border.color: Config.alpha(Config.md3.outline_variant, 0.38)
         border.width: 1
         clip: true
-        color: Config.alpha(Config.md3.background, 0.95)
+        color: Config.alpha(Config.md3.background, 0.98)
         focus: true
         height: targetHeight
         layer.enabled: launcherWindow.visible
-
-        // Native QML pop-in/out scale and opacity transitions
         opacity: launcherWindow.active ? 1.0 : 0.0
         radius: 40
         scale: launcherWindow.active ? 1.0 : 0.92
@@ -106,12 +104,12 @@ PanelWindow {
             }
         }
         layer.effect: DropShadow {
-            color: "#80000000"
+            color: Config.alpha(Config.md3.shadow, 0.58)
             horizontalOffset: 0
-            radius: 12
-            samples: 17
+            radius: 14
+            samples: 21
             transparentBorder: true
-            verticalOffset: 0
+            verticalOffset: 2
         }
 
         // Unified transition behaviors
@@ -163,7 +161,7 @@ PanelWindow {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 15 // Padding 15px from scss
+            anchors.margins: 15
             spacing: 15
 
             // Search & Navigation Row
@@ -172,16 +170,17 @@ PanelWindow {
                 Layout.preferredHeight: 52
                 spacing: 15
 
-                // Leftmost: Search Icon
                 IconImage {
                     Layout.alignment: Qt.AlignVCenter
-                    height: 35
-                    opacity: 0.9
+                    height: 28
+                    layer.enabled: true
                     source: Quickshell.iconPath("system-search-symbolic")
-                    width: 35
-                }
+                    width: 28
 
-                // Middle: Text Entry
+                    layer.effect: ColorOverlay {
+                        color: Config.md3.on_surface_variant
+                    }
+                }
                 TextInput {
                     id: searchEntry
 
@@ -191,9 +190,9 @@ PanelWindow {
                     color: Config.md3.on_surface
                     font.family: Config.fontName
                     font.pixelSize: 16
+                    font.weight: Font.Medium
                     selectByMouse: true
 
-                    // Handle navigation keys - TextInput consumes them before window-level handler sees them
                     Keys.onPressed: event => {
                         if (event.key === Qt.Key_Escape) {
                             closeLauncher();
@@ -215,28 +214,23 @@ PanelWindow {
                             }
                         }
                     }
-                    onTextChanged: {
-                        searchQuery = text;
-                    }
+                    onTextChanged: searchQuery = text
 
-                    // Placeholder
                     Text {
-                        color: Config.alpha(Config.md3.on_surface, 0.35)
+                        color: Config.alpha(Config.md3.on_surface_variant, 0.62)
                         font: parent.font
                         text: "Search"
                         visible: parent.text === ""
                     }
                 }
-
-                // Rightmost: All Apps Toggle Button
                 Rectangle {
                     id: toggleRect
 
                     Layout.alignment: Qt.AlignVCenter
-                    color: toggleMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.07) : "transparent"
+                    color: toggleMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"
                     height: 40
                     radius: 20
-                    scale: toggleMouse.containsMouse ? 1.1 : 1.0
+                    scale: toggleMouse.containsMouse ? 1.06 : 1
                     width: 40
 
                     Behavior on color {
@@ -246,20 +240,22 @@ PanelWindow {
                     }
                     Behavior on scale {
                         NumberAnimation {
-                            duration: 250
+                            duration: 220
                             easing.type: Easing.OutBack
                         }
                     }
 
                     IconImage {
                         anchors.centerIn: parent
-                        height: 24
-
-                        // Rotate animation when toggling
+                        height: 23
+                        layer.enabled: true
                         rotation: showAllApps ? 90 : 0
                         source: Quickshell.iconPath(showAllApps ? "view-list-symbolic" : "view-grid-symbolic")
-                        width: 24
+                        width: 23
 
+                        layer.effect: ColorOverlay {
+                            color: Config.md3.on_surface_variant
+                        }
                         Behavior on rotation {
                             NumberAnimation {
                                 duration: 350
@@ -276,9 +272,8 @@ PanelWindow {
 
                         onClicked: {
                             showAllApps = !showAllApps;
-                            if (showAllApps) {
+                            if (showAllApps)
                                 searchEntry.text = "";
-                            }
                         }
                     }
                 }

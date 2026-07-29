@@ -592,7 +592,8 @@ QtObject {
         pendingGenerationPath = "";
         var matugenConfig = Config.dotfilesDir + "/.config/matugen/config.toml";
         var prepareGtk = Config.dotfilesDir + "/.config/matugen/scripts/prepare-gtk-runtime.sh";
-        generator.command = ["sh", "-c", "\"$1\" && exec matugen --config \"$2\" image \"$3\" --source-color-index 0", "wallpaper-theme", prepareGtk, matugenConfig, path];
+        var matugenRunner = Config.quickshellDir + "/scripts/matugen-auto-scheme.sh";
+        generator.command = ["sh", "-c", "\"$1\" && exec \"$2\" --config \"$3\" \"$4\"", "wallpaper-theme", prepareGtk, matugenRunner, matugenConfig, path];
         generator.running = true;
     }
 

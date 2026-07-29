@@ -10,6 +10,7 @@ QtObject {
     // Private values are loaded from XDG_CACHE_HOME/quickshell/settings.json.
     // Keep public source defaults empty so this repository is safe to share.
     property string apiWeather: ""
+    property var base16: ({})
     // Pre-defined alpha variants (0.8 opacity)
     property bool captureAutoCopyRecording: true
     property bool captureAutoCopyScreenshot: true
@@ -37,8 +38,6 @@ QtObject {
     property bool matugenAnimateColors: true
     property bool matugenEnabled: true
     property int matugenTransitionDuration: 300
-    property var palette: ({})
-    property var base16: ({})
     property QtObject md3: QtObject {
         property color background: "#ffffff"
         property color error: "#ffffff"
@@ -90,8 +89,7 @@ QtObject {
         property color tertiary_fixed_dim: "#ffffff"
     }
     readonly property string niriOutputConfig: dotfilesDir + "/.config/niri/include/outputs.kdl"
-    readonly property string profileImage: expandHomePath(profileImagePath)
-    property string profileImagePath: quickshellDir + "/assets/images/sownteedev.png"
+    property var palette: ({})
     readonly property string quickshellDir: dotfilesRoot + "/quickshell"
     // Color
     property FileView runtimeSettingsFile: FileView {
@@ -131,7 +129,7 @@ QtObject {
         return Qt.rgba(c.r, c.g, c.b, opacity);
     }
     function applyRuntimeSettings(settings) {
-        var names = ["fontName", "latLon", "apiWeather", "wallFolderPath", "liveWallFolderPath", "wallpaperBatteryFps", "wallpaperEngineFps", "wallpaperPauseOnFullscreen", "wallpaperPauseOnLock", "wallpaperTransitionDuration", "matugenEnabled", "matugenAnimateColors", "matugenTransitionDuration", "captureScreenshotDirPath", "captureRecordingDirPath", "captureAutoCopyScreenshot", "captureAutoCopyRecording", "captureRecordingFps", "captureRecordingCodec", "captureRecordingQuality", "captureEditorTool", "captureEditorColor", "captureEditorWidth", "wallpaperEngineAssetsDirPath", "wallpaperEngineWorkshopDirPath", "profileImagePath", "clock24h"];
+        var names = ["fontName", "latLon", "apiWeather", "wallFolderPath", "liveWallFolderPath", "wallpaperBatteryFps", "wallpaperEngineFps", "wallpaperPauseOnFullscreen", "wallpaperPauseOnLock", "wallpaperTransitionDuration", "matugenEnabled", "matugenAnimateColors", "matugenTransitionDuration", "captureScreenshotDirPath", "captureRecordingDirPath", "captureAutoCopyScreenshot", "captureAutoCopyRecording", "captureRecordingFps", "captureRecordingCodec", "captureRecordingQuality", "captureEditorTool", "captureEditorColor", "captureEditorWidth", "wallpaperEngineAssetsDirPath", "wallpaperEngineWorkshopDirPath", "clock24h"];
         for (var i = 0; i < names.length; ++i) {
             var name = names[i];
             if (settings[name] !== undefined)

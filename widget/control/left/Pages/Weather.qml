@@ -16,12 +16,6 @@ Item {
     Component.onCompleted: WeatherService.active = true
     Component.onDestruction: WeatherService.active = false
 
-    AnimatedWeather {
-        anchors.fill: parent
-        running: root.visible && !!weatherIcon
-        weatherIcon: WeatherService.icon
-    }
-
     // The whole page can scroll vertically on shorter screens while the hourly
     // forecast keeps its own horizontal flick gesture.
     Flickable {
@@ -164,8 +158,10 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 108
                 clip: true
-                color: Config.alpha(Config.md3.surface_container, 0.5)
-                radius: 12
+                border.color: Config.alpha(Config.md3.on_surface, 0.07)
+                border.width: 1
+                color: Config.alpha(Config.md3.surface_container_high, 0.36)
+                radius: 14
 
                 ListView {
                     id: hourlyList
@@ -347,8 +343,10 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 170
-                color: Config.alpha(Config.md3.surface_container, 0.38)
-                radius: 12
+                border.color: Config.alpha(Config.md3.on_surface, 0.07)
+                border.width: 1
+                color: Config.alpha(Config.md3.surface_container_high, 0.32)
+                radius: 14
 
                 GridLayout {
                     anchors.fill: parent

@@ -444,10 +444,16 @@ PanelWindow {
             readonly property bool isEngine: wallpaperWindow.roleAt(index, "isEngine", false)
             readonly property bool live: wallpaperWindow.selectedMode === "video" && !isEngine && LiveWallpaperService.isLivePath(filePath)
             readonly property string liveThumbnail: live ? LiveWallpaperService.thumbnailPath(filePath, fileModified) : ""
+            property bool permitThumbnailLoad: false
             readonly property string previewPath: wallpaperWindow.roleAt(index, "preview", "")
             property bool thumbnailAvailable: !live || LiveWallpaperService.thumbnailKnown(filePath, fileModified)
             property int thumbnailRevision: 0
 
+            function circularDistanceFromCurrent() {
+                var count = Math.max(1, wallpaperWindow.activeCount);
+                var distance = Math.abs(index - pathView.currentIndex);
+                return Math.min(distance, count - distance);
+            }
             function requestCurrentThumbnail() {
                 if (live) {
                     thumbnailAvailable = LiveWallpaperService.thumbnailKnown(filePath, fileModified);
@@ -456,6 +462,10 @@ PanelWindow {
                     engineThumbnailAvailable = EngineWallpaperService.previewThumbnailKnown(previewPath, fileModified);
                     EngineWallpaperService.requestPreviewThumbnail(previewPath, fileModified, PathView.isCurrentItem);
                 }
+            }
+            function scheduleThumbnailLoad() {
+                thumbnailLoadTimer.interval = PathView.isCurrentItem ? 1 : 90 * Math.max(1, circularDistanceFromCurrent());
+                thumbnailLoadTimer.restart();
             }
 
             height: 240
@@ -471,14 +481,41 @@ PanelWindow {
             }
 
             Component.onCompleted: {
-                if (live)
-                    LiveWallpaperService.requestThumbnail(filePath, fileModified);
-                else if (convertedEnginePreview)
-                    EngineWallpaperService.requestPreviewThumbnail(previewPath, fileModified);
+                scheduleThumbnailLoad();
             }
-            onFileModifiedChanged: Qt.callLater(delegateRoot.requestCurrentThumbnail)
-            onFilePathChanged: Qt.callLater(delegateRoot.requestCurrentThumbnail)
-            onPreviewPathChanged: Qt.callLater(delegateRoot.requestCurrentThumbnail)
+            onFileModifiedChanged: {
+                permitThumbnailLoad = false;
+                Qt.callLater(delegateRoot.scheduleThumbnailLoad);
+            }
+            onFilePathChanged: {
+                permitThumbnailLoad = false;
+                Qt.callLater(delegateRoot.scheduleThumbnailLoad);
+            }
+            onPreviewPathChanged: {
+                permitThumbnailLoad = false;
+                Qt.callLater(delegateRoot.scheduleThumbnailLoad);
+            }
+
+            Connections {
+                function onCurrentIndexChanged() {
+                    if (!delegateRoot.permitThumbnailLoad)
+                        delegateRoot.scheduleThumbnailLoad();
+                    else
+                        delegateRoot.requestCurrentThumbnail();
+                }
+
+                target: pathView
+            }
+            Timer {
+                id: thumbnailLoadTimer
+
+                repeat: false
+
+                onTriggered: {
+                    delegateRoot.permitThumbnailLoad = true;
+                    delegateRoot.requestCurrentThumbnail();
+                }
+            }
 
             Connections {
                 function onThumbnailReady(sourcePath, thumbnailPath) {
@@ -513,6 +550,9 @@ PanelWindow {
                     cacheKey: String(delegateRoot.fileModified) + "-" + String(delegateRoot.thumbnailRevision)
                     fillMode: Image.PreserveAspectCrop
                     path: {
+                        if (!delegateRoot.permitThumbnailLoad)
+                            return "";
+
                         if (delegateRoot.live)
                             return delegateRoot.thumbnailAvailable ? delegateRoot.liveThumbnail : "";
 

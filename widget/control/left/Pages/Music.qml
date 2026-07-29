@@ -12,7 +12,10 @@ import "../../../../components/common"
 Item {
     id: root
 
-    readonly property real artworkSize: Math.max(100, Math.min(280, playerArea.height - 290))
+    // Everything below the artwork needs roughly 370 px including margins and
+    // spacing. Scale the record from the actual remaining height so compact
+    // panels do not push it above the visible area.
+    readonly property real artworkSize: Math.max(96, Math.min(280, playerArea.height - 370))
     property bool isSwipingOut: false
     readonly property var player: MediaService.activePlayer
     property int swipeDirection: 1
@@ -65,22 +68,11 @@ Item {
 
             Layout.fillHeight: true
             Layout.fillWidth: true
-            clip: true // Ensure waves don't overflow the rounded corners
+            clip: true
 
             color: "transparent"
             radius: 18
 
-            // Background Animated Waves & Bubbles
-            AnimatedWaves {
-                anchors.fill: parent
-                color: Config.md3.primary
-                running: !!root.player && MediaService.playing
-            }
-            AnimatedBubbles {
-                anchors.fill: parent
-                color: Config.md3.primary
-                running: !!root.player && MediaService.playing
-            }
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 20

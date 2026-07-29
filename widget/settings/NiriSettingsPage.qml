@@ -36,7 +36,7 @@ Item {
             "defaultColumnDisplay": defaultDisplayChoice.value,
             "backgroundColor": layoutBackgroundField.text,
             "defaultColumnWidthMode": defaultWidthMode.value,
-            "defaultColumnWidth": Number(defaultWidthField.text),
+            "defaultColumnWidth": defaultWidthMode.value === "fixed" ? Math.round(Number(defaultWidthField.text)) : Number(defaultWidthField.text),
             "presetColumnWidthsEnabled": presetWidthsCard.checked,
             "presetColumnWidths": presetWidthsField.text,
             "presetWindowHeightsEnabled": presetHeightsCard.checked,
@@ -443,7 +443,9 @@ Item {
                             SettingsTextField {
                                 id: gapsField
 
-                                Layout.preferredWidth: 220
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 label: "Gaps"
                                 placeholder: "10"
 
@@ -456,6 +458,8 @@ Item {
                                 id: layoutBackgroundField
 
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 label: "Background color"
                                 placeholder: "transparent"
                             }
@@ -468,6 +472,8 @@ Item {
                                 id: defaultWidthMode
 
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 label: "Default width mode"
                                 options: [
                                     {
@@ -488,12 +494,15 @@ Item {
                                 id: defaultWidthField
 
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 label: defaultWidthMode.value === "fixed" ? "Default width (px)" : "Default width proportion"
                                 placeholder: defaultWidthMode.value === "fixed" ? "1280" : "1.0"
                                 visible: defaultWidthMode.value !== "auto"
 
                                 inputItem.validator: DoubleValidator {
                                     bottom: defaultWidthMode.value === "fixed" ? 1 : 0.01
+                                    decimals: defaultWidthMode.value === "fixed" ? 0 : 6
                                     top: defaultWidthMode.value === "fixed" ? 16384 : 1
                                 }
                             }
@@ -506,6 +515,8 @@ Item {
                                 id: centerFocusedChoice
 
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 label: "Center focused column"
                                 options: [
                                     {
@@ -526,6 +537,8 @@ Item {
                                 id: defaultDisplayChoice
 
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 label: "Default column display"
                                 options: [
                                     {
@@ -541,13 +554,16 @@ Item {
                         }
                         GridLayout {
                             Layout.fillWidth: true
-                            columnSpacing: 22
+                            columnSpacing: 12
                             columns: 2
                             rowSpacing: 12
+                            uniformCellWidths: true
 
                             SettingsToggleRow {
                                 id: alwaysCenterToggle
 
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 label: "Center a single column"
                                 note: "Keep one visible column centered"
 
@@ -558,6 +574,8 @@ Item {
                             SettingsToggleRow {
                                 id: emptyWorkspaceToggle
 
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 label: "Empty workspace above first"
                                 note: "Allow an empty workspace before workspace one"
 
@@ -575,6 +593,8 @@ Item {
 
                                 Layout.alignment: Qt.AlignTop
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 accentColor: Config.md3.primary
                                 note: "Widths used by Niri's preset-column-width action"
                                 title: "Preset column widths"
@@ -596,6 +616,8 @@ Item {
 
                                 Layout.alignment: Qt.AlignTop
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredWidth: 1
                                 accentColor: Config.md3.secondary
                                 note: "Heights used by Niri's preset-window-height action"
                                 title: "Preset window heights"
@@ -625,9 +647,12 @@ Item {
                                 return strutsCard.checked = checked;
                             }
 
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 10
+                                columnSpacing: 10
+                                columns: 4
+                                rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: strutLeft
@@ -663,9 +688,12 @@ Item {
                         title: "Overview"
                         toggleVisible: false
 
-                        RowLayout {
+                        GridLayout {
                             Layout.fillWidth: true
-                            spacing: 12
+                            columnSpacing: 12
+                            columns: 2
+                            rowSpacing: 12
+                            uniformCellWidths: true
 
                             SettingsTextField {
                                 id: overviewZoomField
@@ -699,9 +727,12 @@ Item {
                                 return workspaceShadowCard.checked = checked;
                             }
 
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 10
+                                columnSpacing: 10
+                                columns: 5
+                                rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: workspaceShadowSoftness
@@ -771,9 +802,12 @@ Item {
                                     top: 64
                                 }
                             }
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 10
+                                columnSpacing: 10
+                                columns: 3
+                                rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: borderActiveColor
@@ -851,9 +885,12 @@ Item {
                                     top: 64
                                 }
                             }
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 10
+                                columnSpacing: 10
+                                columns: 3
+                                rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: focusRingActiveColor
@@ -963,9 +1000,12 @@ Item {
                                 return blurCard.checked = checked;
                             }
 
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 16
+                                columnSpacing: 10
+                                columns: 4
+                                rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: blurPasses
@@ -1033,6 +1073,7 @@ Item {
                                 columnSpacing: 10
                                 columns: 2
                                 rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: shadowSoftness
@@ -1059,9 +1100,12 @@ Item {
                                     label: "Offset Y"
                                 }
                             }
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 10
+                                columnSpacing: 10
+                                columns: 2
+                                rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: shadowColor
@@ -1107,6 +1151,7 @@ Item {
                                 columnSpacing: 10
                                 columns: 2
                                 rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: tabGap
@@ -1133,14 +1178,17 @@ Item {
                                     label: "Corner radius"
                                 }
                             }
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 10
+                                columnSpacing: 10
+                                columns: 2
+                                rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: tabLength
 
-                                    Layout.preferredWidth: 170
+                                    Layout.fillWidth: true
                                     label: "Total length"
 
                                     inputItem.validator: DoubleValidator {
@@ -1173,9 +1221,12 @@ Item {
                                     ]
                                 }
                             }
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 10
+                                columnSpacing: 10
+                                columns: 3
+                                rowSpacing: 10
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: tabActiveColor
@@ -1268,9 +1319,12 @@ Item {
                             note: "Controls how quickly the switcher opens and reacts"
                             title: "Timing"
 
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 16
+                                columnSpacing: 16
+                                columns: 2
+                                rowSpacing: 12
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: recentDebounce
@@ -1302,9 +1356,12 @@ Item {
                             note: "Appearance of the currently selected preview"
                             title: "Highlight"
 
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 16
+                                columnSpacing: 16
+                                columns: 4
+                                rowSpacing: 12
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: recentHighlightActiveColor
@@ -1350,9 +1407,12 @@ Item {
                             note: "Limits preview size to keep the switcher responsive"
                             title: "Previews"
 
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
-                                spacing: 16
+                                columnSpacing: 16
+                                columns: 2
+                                rowSpacing: 12
+                                uniformCellWidths: true
 
                                 SettingsTextField {
                                     id: recentPreviewHeight
@@ -1381,7 +1441,7 @@ Item {
                         SettingsSectionCard {
                             Layout.fillWidth: true
                             accentColor: Config.md3.error
-                            note: "Alt+Tab cycles every app; grave shortcuts stay within the same application"
+                            note: "Click a shortcut and press a new combination; save it with Apply layout"
                             title: "Shortcuts"
 
                             Repeater {
@@ -1397,15 +1457,15 @@ Item {
                                     border.color: Config.alpha(Config.md3.on_surface, 0.055)
                                     border.width: 1
                                     color: Config.alpha(Config.md3.on_surface, 0.04)
-                                    implicitHeight: recentBindRow.implicitHeight + 32
+                                    implicitHeight: recentBindRow.implicitHeight + 24
                                     radius: 12
 
                                     RowLayout {
                                         id: recentBindRow
 
                                         anchors.fill: parent
-                                        anchors.margins: 16
-                                        spacing: 24
+                                        anchors.margins: 12
+                                        spacing: 16
 
                                         ColumnLayout {
                                             Layout.fillWidth: true
@@ -1415,7 +1475,7 @@ Item {
                                                 Layout.fillWidth: true
                                                 color: Config.md3.on_surface
                                                 font.family: Config.fontName
-                                                font.pixelSize: 15
+                                                font.pixelSize: 14
                                                 font.weight: Font.DemiBold
                                                 text: (sameApp ? "Same application · " : "All applications · ") + (previous ? "Previous window" : "Next window")
                                             }
@@ -1423,24 +1483,20 @@ Item {
                                                 Layout.fillWidth: true
                                                 color: Config.alpha(Config.md3.on_surface, 0.45)
                                                 font.family: Config.fontName
-                                                font.pixelSize: 12
+                                                font.pixelSize: 11
                                                 text: sameApp ? "Matches the app ID of the initially focused window" : "Uses Niri's remembered initial window set"
                                             }
                                         }
-                                        SettingsTextField {
+                                        EditableKeybindPill {
                                             id: recentBindKey
 
-                                            Layout.preferredWidth: 280
-                                            fieldHeight: 40
-                                            label: "Shortcut"
-                                            text: modelData.key
+                                            Layout.alignment: Qt.AlignVCenter
+                                            displayKey: recentBindKey.displayFromRaw(modelData.key)
+                                            interactive: !SettingsHubService.busy
+                                            oldHeader: modelData.key
 
-                                            Connections {
-                                                function onEditingFinished() {
-                                                    root.updateRecentBind(index, "key", recentBindKey.text);
-                                                }
-
-                                                target: recentBindKey.inputItem
+                                            onCommitted: (_oldKey, newKey) => {
+                                                root.updateRecentBind(index, "key", newKey);
                                             }
                                         }
                                     }

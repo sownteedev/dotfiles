@@ -15,6 +15,14 @@ PanelWindow {
         if (flow && !flow.isCompleted)
             flow.cancelAuthenticationRequest();
     }
+    function focusPasswordInput() {
+        if (!visible || !flow || !flow.isResponseRequired)
+            return;
+
+        passwordInput.forceActiveFocus(Qt.ActiveWindowFocusReason);
+        focusRetry.attempts = 0;
+        focusRetry.restart();
+    }
     function selectNextIdentity() {
         if (!flow || !flow.identities || flow.identities.length < 2)
             return;
@@ -30,6 +38,7 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
     WlrLayershell.namespace: "quickshell-polkit"
     aboveWindows: true
     anchors.bottom: true
@@ -44,7 +53,34 @@ PanelWindow {
     onFlowChanged: {
         passwordInput.text = "";
         if (flow)
-            Qt.callLater(() => passwordInput.forceActiveFocus());
+            Qt.callLater(root.focusPasswordInput);
+    }
+    onVisibleChanged: {
+        if (visible)
+            Qt.callLater(root.focusPasswordInput);
+        else
+            focusRetry.stop();
+    }
+
+    Timer {
+        id: focusRetry
+
+        property int attempts: 0
+
+        interval: 55
+        repeat: true
+
+        onTriggered: {
+            if (!root.visible || !root.flow || !root.flow.isResponseRequired) {
+                stop();
+                return;
+            }
+
+            passwordInput.forceActiveFocus(Qt.ActiveWindowFocusReason);
+            attempts++;
+            if (passwordInput.activeFocus || attempts >= 8)
+                stop();
+        }
     }
 
     Rectangle {
@@ -65,7 +101,7 @@ PanelWindow {
         anchors.centerIn: parent
         border.color: Config.alpha(Config.md3.on_surface, 0.13)
         border.width: 1
-        color: Config.alpha(Config.md3.surface, 0.98)
+        color: Config.alpha(Config.md3.background, 0.98)
         height: content.implicitHeight + 56
         opacity: 0
         radius: 28
@@ -428,12 +464,16 @@ PanelWindow {
         function onAuthenticationFailed() {
             passwordInput.text = "";
             failureShake.restart();
-            Qt.callLater(() => passwordInput.forceActiveFocus());
+            Qt.callLater(root.focusPasswordInput);
         }
         function onInputPromptChanged() {
             passwordInput.text = "";
             if (root.flow && root.flow.isResponseRequired)
-                Qt.callLater(() => passwordInput.forceActiveFocus());
+                Qt.callLater(root.focusPasswordInput);
+        }
+        function onIsResponseRequiredChanged() {
+            if (root.flow && root.flow.isResponseRequired)
+                Qt.callLater(root.focusPasswordInput);
         }
 
         enabled: root.flow !== null
