@@ -38,6 +38,17 @@ ScrollView {
             "workspaceAutoBackAndForth": workspaceBackForth.checked,
             "modKey": modKey.value,
             "modKeyNested": modKeyNested.value,
+            "dndViewTriggerWidth": Number(dndViewTriggerWidth.text),
+            "dndViewDelayMs": Number(dndViewDelay.text),
+            "dndViewMaxSpeed": Number(dndViewMaxSpeed.text),
+            "dndWorkspaceTriggerHeight": Number(dndWorkspaceTriggerHeight.text),
+            "dndWorkspaceDelayMs": Number(dndWorkspaceDelay.text),
+            "dndWorkspaceMaxSpeed": Number(dndWorkspaceMaxSpeed.text),
+            "hotCornersEnabled": hotCornersCard.checked,
+            "hotCornerTopLeft": hotCornerTopLeft.checked,
+            "hotCornerTopRight": hotCornerTopRight.checked,
+            "hotCornerBottomLeft": hotCornerBottomLeft.checked,
+            "hotCornerBottomRight": hotCornerBottomRight.checked,
             "switchEvents": switchEventsCard.checked,
             "lidCloseAction": lidCloseAction.text,
             "lidOpenAction": lidOpenAction.text,
@@ -69,6 +80,17 @@ ScrollView {
         workspaceBackForth.checked = value.workspaceAutoBackAndForth === true;
         modKey.value = value.modKey || "";
         modKeyNested.value = value.modKeyNested || "";
+        dndViewTriggerWidth.text = String(value.dndViewTriggerWidth === undefined ? 30 : value.dndViewTriggerWidth);
+        dndViewDelay.text = String(value.dndViewDelayMs === undefined ? 100 : value.dndViewDelayMs);
+        dndViewMaxSpeed.text = String(value.dndViewMaxSpeed === undefined ? 1500 : value.dndViewMaxSpeed);
+        dndWorkspaceTriggerHeight.text = String(value.dndWorkspaceTriggerHeight === undefined ? 50 : value.dndWorkspaceTriggerHeight);
+        dndWorkspaceDelay.text = String(value.dndWorkspaceDelayMs === undefined ? 100 : value.dndWorkspaceDelayMs);
+        dndWorkspaceMaxSpeed.text = String(value.dndWorkspaceMaxSpeed === undefined ? 1500 : value.dndWorkspaceMaxSpeed);
+        hotCornersCard.checked = value.hotCornersEnabled !== false;
+        hotCornerTopLeft.checked = value.hotCornerTopLeft !== false;
+        hotCornerTopRight.checked = value.hotCornerTopRight === true;
+        hotCornerBottomLeft.checked = value.hotCornerBottomLeft === true;
+        hotCornerBottomRight.checked = value.hotCornerBottomRight === true;
         switchEventsCard.checked = value.switchEvents === true;
         lidCloseAction.text = value.lidCloseAction || "";
         lidOpenAction.text = value.lidOpenAction || "";
@@ -328,119 +350,6 @@ ScrollView {
                     }
                 }
             }
-        }
-        ColumnLayout {
-            Layout.alignment: Qt.AlignTop
-            Layout.fillWidth: true
-            Layout.preferredWidth: 1
-            spacing: 16
-
-            SettingsExpandableCard {
-                Layout.fillWidth: true
-                accentColor: Config.md3.secondary
-                note: "Window decorations, clipboard and error reporting"
-                title: "Windows & system behavior"
-                toggleVisible: false
-
-                SettingsComponents.SettingsToggleRow {
-                    id: preferNoCsd
-
-                    label: "Prefer server-side decorations"
-                    note: "Restart applications to fully remove their title bars"
-
-                    onToggled: checked => {
-                        return preferNoCsd.checked = checked;
-                    }
-                }
-                SettingsComponents.SettingsToggleRow {
-                    id: disablePrimary
-
-                    label: "Disable primary selection"
-                    note: "Do not copy selected text to the middle-click clipboard"
-
-                    onToggled: checked => {
-                        return disablePrimary.checked = checked;
-                    }
-                }
-                SettingsComponents.SettingsToggleRow {
-                    id: disableConfigError
-
-                    label: "Hide failed-config overlay"
-                    note: "Useful only when another tool reports Niri validation errors"
-
-                    onToggled: checked => {
-                        return disableConfigError.checked = checked;
-                    }
-                }
-            }
-            SettingsExpandableCard {
-                Layout.fillWidth: true
-                accentColor: Config.md3.tertiary
-                note: "Theme, size and automatic cursor hiding"
-                title: "Cursor"
-                toggleVisible: false
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
-
-                    SettingsTextField {
-                        id: cursorTheme
-
-                        Layout.fillWidth: true
-                        label: "Theme"
-                        placeholder: "Dark_Cursor"
-                    }
-                    SettingsTextField {
-                        id: cursorSize
-
-                        Layout.preferredWidth: 170
-                        label: "Size"
-                        placeholder: "24"
-
-                        inputItem.validator: IntValidator {
-                            bottom: 8
-                            top: 128
-                        }
-                    }
-                }
-                SettingsComponents.SettingsToggleRow {
-                    id: hideCursor
-
-                    label: "Hide while typing"
-                    note: "The cursor returns as soon as the pointer moves"
-
-                    onToggled: checked => {
-                        return hideCursor.checked = checked;
-                    }
-                }
-                SettingsExpandableCard {
-                    id: cursorTimeoutCard
-
-                    Layout.fillWidth: true
-                    accentColor: Config.md3.tertiary
-                    contentPadding: 15
-                    note: "Hide the pointer after it remains idle"
-                    title: "Idle cursor timeout"
-
-                    onToggled: checked => {
-                        return cursorTimeoutCard.checked = checked;
-                    }
-
-                    SettingsTextField {
-                        id: cursorTimeout
-
-                        Layout.fillWidth: true
-                        label: "Delay (ms)"
-                        placeholder: "1000"
-
-                        inputItem.validator: IntValidator {
-                            bottom: 100
-                            top: 600000
-                        }
-                    }
-                }
-            }
             SettingsExpandableCard {
                 id: xwaylandCard
 
@@ -500,6 +409,290 @@ ScrollView {
                     Layout.fillWidth: true
                     label: "Tablet mode off action (KDL)"
                     placeholder: "spawn-sh \"command\""
+                }
+            }
+        }
+        ColumnLayout {
+            Layout.alignment: Qt.AlignTop
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            spacing: 16
+
+            SettingsExpandableCard {
+                Layout.fillWidth: true
+                accentColor: Config.md3.secondary
+                note: "Window decorations, clipboard and error reporting"
+                title: "Windows & system behavior"
+                toggleVisible: false
+
+                SettingsComponents.SettingsToggleRow {
+                    id: preferNoCsd
+
+                    label: "Prefer server-side decorations"
+                    note: "Restart applications to fully remove their title bars"
+
+                    onToggled: checked => {
+                        return preferNoCsd.checked = checked;
+                    }
+                }
+                SettingsComponents.SettingsToggleRow {
+                    id: disablePrimary
+
+                    label: "Disable primary selection"
+                    note: "Do not copy selected text to the middle-click clipboard"
+
+                    onToggled: checked => {
+                        return disablePrimary.checked = checked;
+                    }
+                }
+                SettingsComponents.SettingsToggleRow {
+                    id: disableConfigError
+
+                    label: "Hide failed-config overlay"
+                    note: "Useful only when another tool reports Niri validation errors"
+
+                    onToggled: checked => {
+                        return disableConfigError.checked = checked;
+                    }
+                }
+            }
+            SettingsExpandableCard {
+                Layout.fillWidth: true
+                accentColor: Config.md3.primary
+                note: "Drag behavior at screen edges and configurable hot corners"
+                title: "Gestures"
+                toggleVisible: false
+
+                SettingsExpandableCard {
+                    Layout.fillWidth: true
+                    accentColor: Config.md3.primary
+                    contentPadding: 15
+                    note: "Scroll the overview while dragging near a horizontal edge"
+                    title: "Drag edge view scroll"
+                    toggleVisible: false
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+
+                        SettingsTextField {
+                            id: dndViewTriggerWidth
+
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            label: "Trigger width"
+                            placeholder: "30"
+
+                            inputItem.validator: IntValidator {
+                                bottom: 1
+                                top: 1000
+                            }
+                        }
+                        SettingsTextField {
+                            id: dndViewDelay
+
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            label: "Delay (ms)"
+                            placeholder: "100"
+
+                            inputItem.validator: IntValidator {
+                                bottom: 0
+                                top: 60000
+                            }
+                        }
+                        SettingsTextField {
+                            id: dndViewMaxSpeed
+
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            label: "Maximum speed"
+                            placeholder: "1500"
+
+                            inputItem.validator: IntValidator {
+                                bottom: 1
+                                top: 100000
+                            }
+                        }
+                    }
+                }
+                SettingsExpandableCard {
+                    Layout.fillWidth: true
+                    accentColor: Config.md3.secondary
+                    contentPadding: 15
+                    note: "Switch workspaces while dragging near the top or bottom edge"
+                    title: "Drag edge workspace switch"
+                    toggleVisible: false
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+
+                        SettingsTextField {
+                            id: dndWorkspaceTriggerHeight
+
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            label: "Trigger height"
+                            placeholder: "50"
+
+                            inputItem.validator: IntValidator {
+                                bottom: 1
+                                top: 1000
+                            }
+                        }
+                        SettingsTextField {
+                            id: dndWorkspaceDelay
+
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            label: "Delay (ms)"
+                            placeholder: "100"
+
+                            inputItem.validator: IntValidator {
+                                bottom: 0
+                                top: 60000
+                            }
+                        }
+                        SettingsTextField {
+                            id: dndWorkspaceMaxSpeed
+
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            label: "Maximum speed"
+                            placeholder: "1500"
+
+                            inputItem.validator: IntValidator {
+                                bottom: 1
+                                top: 100000
+                            }
+                        }
+                    }
+                }
+                SettingsExpandableCard {
+                    id: hotCornersCard
+
+                    Layout.fillWidth: true
+                    accentColor: Config.md3.tertiary
+                    contentPadding: 15
+                    note: "Open the overview when the pointer reaches a selected corner"
+                    title: "Hot corners"
+
+                    onToggled: checked => {
+                        hotCornersCard.checked = checked;
+                        if (checked && !hotCornerTopLeft.checked && !hotCornerTopRight.checked && !hotCornerBottomLeft.checked && !hotCornerBottomRight.checked)
+                            hotCornerTopLeft.checked = true;
+                    }
+
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columnSpacing: 18
+                        columns: 2
+                        rowSpacing: 14
+
+                        SettingsComponents.SettingsToggleRow {
+                            id: hotCornerTopLeft
+
+                            Layout.fillWidth: true
+                            label: "Top left"
+
+                            onToggled: checked => hotCornerTopLeft.checked = checked
+                        }
+                        SettingsComponents.SettingsToggleRow {
+                            id: hotCornerTopRight
+
+                            Layout.fillWidth: true
+                            label: "Top right"
+
+                            onToggled: checked => hotCornerTopRight.checked = checked
+                        }
+                        SettingsComponents.SettingsToggleRow {
+                            id: hotCornerBottomLeft
+
+                            Layout.fillWidth: true
+                            label: "Bottom left"
+
+                            onToggled: checked => hotCornerBottomLeft.checked = checked
+                        }
+                        SettingsComponents.SettingsToggleRow {
+                            id: hotCornerBottomRight
+
+                            Layout.fillWidth: true
+                            label: "Bottom right"
+
+                            onToggled: checked => hotCornerBottomRight.checked = checked
+                        }
+                    }
+                }
+            }
+            SettingsExpandableCard {
+                Layout.fillWidth: true
+                accentColor: Config.md3.tertiary
+                note: "Theme, size and automatic cursor hiding"
+                title: "Cursor"
+                toggleVisible: false
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+
+                    SettingsTextField {
+                        id: cursorTheme
+
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        label: "Theme"
+                        placeholder: "Dark_Cursor"
+                    }
+                    SettingsTextField {
+                        id: cursorSize
+
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        label: "Size"
+                        placeholder: "24"
+
+                        inputItem.validator: IntValidator {
+                            bottom: 8
+                            top: 128
+                        }
+                    }
+                }
+                SettingsComponents.SettingsToggleRow {
+                    id: hideCursor
+
+                    label: "Hide while typing"
+                    note: "The cursor returns as soon as the pointer moves"
+
+                    onToggled: checked => {
+                        return hideCursor.checked = checked;
+                    }
+                }
+                SettingsExpandableCard {
+                    id: cursorTimeoutCard
+
+                    Layout.fillWidth: true
+                    accentColor: Config.md3.tertiary
+                    contentPadding: 15
+                    note: "Hide the pointer after it remains idle"
+                    title: "Idle cursor timeout"
+
+                    onToggled: checked => {
+                        return cursorTimeoutCard.checked = checked;
+                    }
+
+                    SettingsTextField {
+                        id: cursorTimeout
+
+                        Layout.fillWidth: true
+                        label: "Delay (ms)"
+                        placeholder: "1000"
+
+                        inputItem.validator: IntValidator {
+                            bottom: 100
+                            top: 600000
+                        }
+                    }
                 }
             }
         }

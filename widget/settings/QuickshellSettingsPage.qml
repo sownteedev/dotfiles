@@ -92,6 +92,7 @@ Item {
         recordingFpsField.text = String(settings.captureRecordingFps ?? Config.captureRecordingFps);
         recordingCodecChoice.value = settings.captureRecordingCodec || Config.captureRecordingCodec;
         recordingQualityChoice.value = settings.captureRecordingQuality || Config.captureRecordingQuality;
+        recordingMicrophoneToggle.checked = settings.captureRecordingMicrophone ?? Config.captureRecordingMicrophone;
         engineAssetsField.text = settings.wallpaperEngineAssetsDirPath || Config.wallpaperEngineAssetsDirPath;
         engineWorkshopField.text = settings.wallpaperEngineWorkshopDirPath || Config.wallpaperEngineWorkshopDirPath;
     }
@@ -118,6 +119,7 @@ Item {
             "captureRecordingFps": Number(recordingFpsField.text),
             "captureRecordingCodec": recordingCodecChoice.value,
             "captureRecordingQuality": recordingQualityChoice.value,
+            "captureRecordingMicrophone": recordingMicrophoneToggle.checked,
             "captureEditorTool": SettingsHubService.quickshellSettings.captureEditorTool ?? Config.captureEditorTool,
             "captureEditorColor": SettingsHubService.quickshellSettings.captureEditorColor ?? Config.captureEditorColor,
             "captureEditorWidth": SettingsHubService.quickshellSettings.captureEditorWidth ?? Config.captureEditorWidth,
@@ -401,10 +403,6 @@ Item {
                                 "label": "HEVC",
                                 "value": "hevc"
                             },
-                            {
-                                "label": "AV1",
-                                "value": "av1"
-                            }
                         ]
                     }
                     SettingsChoiceRow {
@@ -427,6 +425,14 @@ Item {
                             }
                         ]
                     }
+                }
+                SettingsToggleRow {
+                    id: recordingMicrophoneToggle
+
+                    label: "Record microphone"
+                    note: "Mixes the default microphone with system audio directly"
+
+                    onToggled: value => checked = value
                 }
                 SettingsToggleRow {
                     id: copyRecordingToggle

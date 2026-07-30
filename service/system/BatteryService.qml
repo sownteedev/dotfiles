@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.UPower
 import "../../"
 
 QtObject {
@@ -49,25 +50,22 @@ QtObject {
         Component.onDestruction: running = false
     }
     property string chargeMode: "maximize"
-    property Process chargeQuery: Process {
-        command: ["cat", "/sys/class/power_supply/BAT0/charge_control_end_threshold"]
-
-        stdout: StdioCollector {
-            onStreamFinished: root.chargeMode = text.trim() === "80" ? "preserve" : "maximize"
-        }
-    }
     property Process commandExecutor: Process {
+        onExited: root.refreshDelay.restart()
     }
-    property Process cpuQuery: Process {
-        command: ["sh", "-c", "gov_current=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo N/A)\n" + "python3 -c '\n" + "import os, pickle\n" + "gov = \"default\"\n" + "if os.path.exists(\"/opt/auto-cpufreq/override.pickle\"):\n" + "    try:\n" + "        with open(\"/opt/auto-cpufreq/override.pickle\", \"rb\") as f: gov = pickle.load(f)\n" + "    except: pass\n" + "turbo = \"auto\"\n" + "if os.path.exists(\"/opt/auto-cpufreq/turbo-override.pickle\"):\n" + "    try:\n" + "        with open(\"/opt/auto-cpufreq/turbo-override.pickle\", \"rb\") as f: turbo = pickle.load(f)\n" + "    except: pass\n" + "print(f\"{gov}|{turbo}\")\n" + "' | while read line; do echo \"$gov_current|$line\"; done"]
+    property Process controlQuery: Process {
+        command: [Config.quickshellDir + "/backend/run-qs-stats", "--battery-control"]
 
         stdout: StdioCollector {
             onStreamFinished: {
-                var parts = text.trim().split("|");
-                if (parts.length >= 3) {
-                    root.currentGovernor = parts[0];
-                    root.governorOverride = parts[1];
-                    root.turboOverride = parts[2];
+                try {
+                    var data = JSON.parse(text.trim());
+                    root.chargeMode = data.charge_mode || "maximize";
+                    root.currentGovernor = data.current_governor || "N/A";
+                    root.governorOverride = data.governor_override || "default";
+                    root.turboOverride = data.turbo_override || "auto";
+                } catch (error) {
+                    console.warn("[BatteryService] Invalid control output:", error);
                 }
             }
         }
@@ -81,6 +79,18 @@ QtObject {
     property string health: "N/A"
     property string powerDraw: "N/A"
     property bool powerProfilesAvailable: false
+    readonly property bool performanceDegraded: PowerProfiles.degradationReason !== PerformanceDegradationReason.None
+    readonly property int performanceDegradationReason: PowerProfiles.degradationReason
+    readonly property string performanceDegradationText: {
+        switch (performanceDegradationReason) {
+        case PerformanceDegradationReason.LapDetected:
+            return "Performance is limited because the laptop is on a lap";
+        case PerformanceDegradationReason.HighTemperature:
+            return "Performance is limited by high temperature";
+        default:
+            return "";
+        }
+    }
     property Process profileQuery: Process {
         command: ["powerprofilesctl", "get"]
 
@@ -112,18 +122,18 @@ QtObject {
             profileQuery.running = false;
             profileQuery.running = true;
         }
-        chargeQuery.running = false;
-        chargeQuery.running = true;
-        if (autoCpufreqAvailable) {
-            cpuQuery.running = false;
-            cpuQuery.running = true;
-        }
+        controlQuery.running = false;
+        controlQuery.running = true;
     }
     function runCommand(command) {
         commandExecutor.command = ["sh", "-c", command];
         commandExecutor.running = false;
         commandExecutor.running = true;
-        refreshDelay.restart();
+    }
+    function setChargeMode(mode) {
+        commandExecutor.command = ["pkexec", Config.quickshellDir + "/backend/run-qs-stats", "--set-charge-mode", mode];
+        commandExecutor.running = false;
+        commandExecutor.running = true;
     }
 
     onActiveChanged: {
@@ -131,8 +141,7 @@ QtObject {
             refresh();
         } else {
             profileQuery.running = false;
-            chargeQuery.running = false;
-            cpuQuery.running = false;
+            controlQuery.running = false;
         }
     }
 }

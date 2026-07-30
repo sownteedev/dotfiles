@@ -14,9 +14,11 @@ Rectangle {
     readonly property int minimumTemperature: 2500
     property bool nightLightEnabled: false
     property int temperature: 4000
+    readonly property int visualTemperature: Math.round((maximumTemperature - visualWarmth * (maximumTemperature - minimumTemperature)) / 50) * 50
     property real visualWarmth: warmth
     readonly property real warmth: Math.max(0, Math.min(1, (maximumTemperature - temperature) / (maximumTemperature - minimumTemperature)))
 
+    signal temperatureCommitted(int temperature)
     signal temperatureRequested(int temperature)
     signal toggleRequested(bool enabled)
 
@@ -94,7 +96,7 @@ Rectangle {
                 font.pixelSize: 13
                 font.weight: Font.Medium
                 renderType: Text.NativeRendering
-                text: root.nightLightEnabled ? root.temperature + "K · " + Math.round(root.warmth * 100) + "% warmth" : "Warm colors to reduce eye strain"
+                text: root.nightLightEnabled ? root.visualTemperature + "K · " + Math.round(root.visualWarmth * 100) + "% warmth" : "Warm colors to reduce eye strain"
                 width: parent.width
             }
         }
@@ -159,6 +161,8 @@ Rectangle {
             }
 
             Rectangle {
+                id: warmthThumb
+
                 anchors.verticalCenter: parent.verticalCenter
                 border.color: Config.alpha(Config.md3.background, 0.28)
                 border.width: 1
@@ -177,10 +181,10 @@ Rectangle {
             }
             MouseArea {
                 function updateTemperature(mouse) {
-                    var ratio = Math.max(0, Math.min(1, mouse.x / width));
+                    var travel = Math.max(1, width - warmthThumb.width);
+                    var ratio = Math.max(0, Math.min(1, (mouse.x - warmthThumb.width / 2) / travel));
                     root.visualWarmth = ratio;
-                    var value = root.maximumTemperature - ratio * (root.maximumTemperature - root.minimumTemperature);
-                    root.temperatureRequested(Math.round(value / 50) * 50);
+                    root.temperatureRequested(root.visualTemperature);
                 }
 
                 anchors.bottomMargin: -8
@@ -204,7 +208,7 @@ Rectangle {
                 }
                 onReleased: {
                     root.dragging = false;
-                    root.visualWarmth = root.warmth;
+                    root.temperatureCommitted(root.visualTemperature);
                 }
             }
         }

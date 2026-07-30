@@ -39,23 +39,31 @@ QtObject {
     }
     property string internalHardwareId: ""
     property var kdlOptions: ({})
+    property int nightlightAppliedTemperature: 4000
     property Timer nightlightApplyDelay: Timer {
-        interval: 160
+        // Keep the visual thumb frame-perfect while capping compositor updates
+        // to 20 Hz. wl-gammarelay-rs applies these updates without restarting.
+        interval: 50
         repeat: false
 
-        onTriggered: {
-            if (root.nightlightEnabled) {
-                actionExecutor.command = ["sh", "-c", "pkill -x gammastep >/dev/null 2>&1; gammastep -O " + root.nightlightTemperature + " >/dev/null 2>&1 &"];
-                actionExecutor.running = false;
-                actionExecutor.running = true;
-            }
-        }
+        onTriggered: root.applyNightlightTemperature()
     }
+    property int nightlightApplyingTemperature: -1
+    property bool nightlightAvailable: false
+    property FileView nightlightConfigFile: FileView {
+        atomicWrites: true
+        path: root.nightlightConfigPath
+        printErrors: false
+        watchChanges: false
+    }
+    readonly property string nightlightConfigPath: (Quickshell.env("XDG_CACHE_HOME") || Config.homeDir + "/.cache") + "/quickshell/nightlight.conf"
+    property bool nightlightControllerReady: false
+    property bool nightlightControllerStarting: false
 
     // Night Light
     property bool nightlightEnabled: false
     property Process nightlightQuery: Process {
-        command: ["sh", "-c", "night_temp=$(pgrep -ax gammastep | sed -n 's/.* -O \\([0-9][0-9]*\\).*/\\1/p' | head -n 1); " + "if pgrep -x gammastep >/dev/null; then echo on:${night_temp:-4000}; " + "else echo off:4000; fi"]
+        command: ["sh", "-c", "saved=$(sed -n -e '/^[0-9][0-9]*$/p' -e 's/^temp-day=\\([0-9][0-9]*\\)$/\\1/p' '" + root.nightlightConfigPath + "' 2>/dev/null | head -n 1); " + "[ -n \"$saved\" ] || saved=4000; " + "if ! command -v wl-gammarelay-rs >/dev/null 2>&1; then printf 'unavailable:off:%s:stopped\\n' \"$saved\"; exit 0; fi; " + "current=$(busctl --user get-property rs.wl-gammarelay / rs.wl.gammarelay Temperature 2>/dev/null | awk '{print $2}'); " + "if [ -n \"$current\" ]; then " + "if [ \"$current\" -lt 6500 ]; then printf 'relay:on:%s:ready\\n' \"$current\"; else printf 'relay:off:%s:ready\\n' \"$saved\"; fi; " + "else printf 'relay:off:%s:stopped\\n' \"$saved\"; fi"]
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -63,16 +71,41 @@ QtObject {
                 if (cleaned === "")
                     return;
                 var nightState = cleaned.split(":");
-                root.nightlightEnabled = nightState[0] === "on";
-                if (nightState.length > 1) {
-                    var detectedTemperature = parseInt(nightState[1], 10);
-                    if (!isNaN(detectedTemperature))
+                root.nightlightAvailable = nightState[0] === "relay";
+                root.nightlightControllerReady = root.nightlightAvailable && nightState.length > 3 && nightState[3] === "ready";
+                root.nightlightEnabled = nightState.length > 1 && nightState[1] === "on";
+                if (nightState.length > 2) {
+                    var detectedTemperature = parseInt(nightState[2], 10);
+                    if (!isNaN(detectedTemperature)) {
                         root.nightlightTemperature = detectedTemperature;
+                        root.nightlightRequestedTemperature = detectedTemperature;
+                        root.nightlightAppliedTemperature = detectedTemperature;
+                    }
                 }
             }
         }
     }
+    property int nightlightRequestedTemperature: 4000
+    property Process nightlightSetter: Process {
+        onExited: (exitCode, exitStatus) => {
+            var completedTemperature = root.nightlightApplyingTemperature;
+            if (exitCode === 0) {
+                root.nightlightAppliedTemperature = completedTemperature;
+                if (root.nightlightControllerStarting)
+                    root.nightlightControllerReady = true;
+            } else {
+                root.nightlightControllerReady = false;
+                console.warn("[DisplayService] Night Light update failed:", exitCode);
+            }
+            root.nightlightApplyingTemperature = -1;
+            root.nightlightControllerStarting = false;
+            if (exitCode === 0 && root.nightlightEnabled && root.nightlightRequestedTemperature !== root.nightlightAppliedTemperature && !root.nightlightApplyDelay.running)
+                root.nightlightApplyDelay.start();
+        }
+    }
     property int nightlightTemperature: 4000
+    property Process nightlightToggleProcess: Process {
+    }
     property Process optionsQuery: Process {
         command: ["python3", Config.quickshellDir + "/scripts/display_config_parser.py", root.configPath]
 
@@ -119,6 +152,20 @@ QtObject {
         }
     }
 
+    function applyNightlightTemperature() {
+        if (!nightlightEnabled || !nightlightAvailable || nightlightSetter.running)
+            return;
+        var nextTemperature = nightlightRequestedTemperature;
+        nightlightApplyingTemperature = nextTemperature;
+        if (nightlightControllerReady) {
+            nightlightControllerStarting = false;
+            nightlightSetter.command = ["busctl", "--user", "set-property", "rs.wl-gammarelay", "/", "rs.wl.gammarelay", "Temperature", "q", String(nextTemperature)];
+        } else {
+            nightlightControllerStarting = true;
+            nightlightSetter.command = ["sh", "-c", "if ! busctl --user get-property rs.wl-gammarelay / rs.wl.gammarelay Temperature >/dev/null 2>&1; then " + "wl-gammarelay-rs run >/dev/null 2>&1 & " + "i=0; while [ \"$i\" -lt 25 ]; do " + "busctl --user get-property rs.wl-gammarelay / rs.wl.gammarelay Temperature >/dev/null 2>&1 && break; " + "i=$((i + 1)); sleep 0.02; done; fi; " + "busctl --user set-property rs.wl-gammarelay / rs.wl.gammarelay Temperature q " + nextTemperature];
+        }
+        nightlightSetter.running = true;
+    }
     function applyPositions(positions) {
         var commands = [];
         for (var output in positions) {
@@ -134,6 +181,12 @@ QtObject {
         if (commands.length > 0)
             executeConfigCommand(commands.join("; "));
     }
+    function commitNightlightTemperature(temperature) {
+        setNightlightTemperature(temperature);
+        writeNightlightConfig(nightlightTemperature);
+        if (nightlightEnabled && nightlightRequestedTemperature !== nightlightAppliedTemperature && !nightlightApplyDelay.running)
+            nightlightApplyDelay.start();
+    }
     function ensureOutputCommand(output, sourceOutput) {
         var defaults = outputDefaults(sourceOutput || output);
         return "if ! grep -q 'output \"" + output + "\" {' " + configPath + "; then echo -e '\\noutput \"" + output + "\" {\\n    mode \"" + defaults.mode + "\"\\n    scale " + defaults.scale + "\\n    transform \"" + defaults.transform + "\"\\n    position x=" + defaults.x + " y=" + defaults.y + "\\n}' >> " + configPath + "; fi";
@@ -142,6 +195,9 @@ QtObject {
         configUpdater.command = ["sh", "-c", command + "; niri msg action load-config-file"];
         configUpdater.running = false;
         configUpdater.running = true;
+    }
+    function nightlightConfigText(temperature) {
+        return String(temperature) + "\n";
     }
     function optionEnabled(output, option) {
         var values = kdlOptions[output];
@@ -206,23 +262,31 @@ QtObject {
         darkmodeApply.running = true;
     }
     function setNightlightEnabled(enabled) {
+        if (enabled && !nightlightAvailable) {
+            nightlightEnabled = false;
+            console.warn("[DisplayService] wl-gammarelay-rs is not installed");
+            return;
+        }
         nightlightEnabled = enabled;
         nightlightApplyDelay.stop();
+        nightlightSetter.running = false;
         if (enabled) {
-            actionExecutor.command = ["sh", "-c", "pkill -x gammastep >/dev/null 2>&1; gammastep -O " + nightlightTemperature + " >/dev/null 2>&1 &"];
-            actionExecutor.running = false;
-            actionExecutor.running = true;
+            nightlightRequestedTemperature = nightlightTemperature;
+            nightlightAppliedTemperature = -1;
+            writeNightlightConfig(nightlightTemperature);
+            applyNightlightTemperature();
         } else {
-            actionExecutor.command = ["sh", "-c", "pkill -x gammastep >/dev/null 2>&1 || true"];
-            actionExecutor.running = false;
-            actionExecutor.running = true;
+            nightlightToggleProcess.command = ["busctl", "--user", "set-property", "rs.wl-gammarelay", "/", "rs.wl.gammarelay", "Temperature", "q", "6500"];
+            nightlightToggleProcess.running = false;
+            nightlightToggleProcess.running = true;
         }
         delayedRefresh.restart();
     }
     function setNightlightTemperature(temperature) {
         nightlightTemperature = Math.max(2500, Math.min(6500, Math.round(temperature / 50) * 50));
-        if (nightlightEnabled)
-            nightlightApplyDelay.restart();
+        nightlightRequestedTemperature = nightlightTemperature;
+        if (nightlightEnabled && !nightlightApplyDelay.running)
+            nightlightApplyDelay.start();
     }
     function toggleOption(output, option, enabled) {
         if (output === "")
@@ -265,6 +329,9 @@ QtObject {
             }
         }
         executeConfigCommand(commands.join("; "));
+    }
+    function writeNightlightConfig(temperature) {
+        nightlightConfigFile.setText(nightlightConfigText(temperature));
     }
 
     Component.onCompleted: refresh()

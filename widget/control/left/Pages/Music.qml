@@ -369,46 +369,18 @@ Item {
                 } // Bottom spacer to push everything up
             }
 
-            // Nothing Playing State
-            Column {
+            MusicEmptyState {
                 anchors.centerIn: parent
-                spacing: 15
+                height: Math.min(480, parent.height - 36)
+                opacity: root.player ? 0 : 1
                 visible: !root.player
+                width: Math.min(440, parent.width - 32)
 
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    color: Config.alpha(Config.md3.on_surface, 0.055)
-                    height: 96
-                    radius: 48
-                    width: 96
-
-                    IconImage {
-                        anchors.centerIn: parent
-                        implicitHeight: 48
-                        implicitWidth: 48
-                        layer.enabled: true
-                        source: Quickshell.iconPath("multimedia-audio-player-symbolic")
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_surface_variant
-                        }
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 220
+                        easing.type: Easing.OutCubic
                     }
-                }
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    color: Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: 22
-                    font.weight: Font.Bold
-                    text: "Nothing playing"
-                }
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    color: Config.md3.on_surface_variant
-                    font.family: Config.fontName
-                    font.pixelSize: 15
-                    font.weight: Font.Medium
-                    text: "Start media in an MPRIS-compatible app"
                 }
             }
         }

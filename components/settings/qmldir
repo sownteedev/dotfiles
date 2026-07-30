@@ -1,3 +1,4 @@
 module QuickshellSettingsComponents
 EditableKeybindPill 1.0 EditableKeybindPill.qml
+SettingsSegmentedControl 1.0 SettingsSegmentedControl.qml
 SettingsToggleRow 1.0 SettingsToggleRow.qml

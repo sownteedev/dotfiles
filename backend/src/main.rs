@@ -184,9 +184,21 @@ fn stdin_modes() -> Receiver<ProcessMode> {
 }
 
 fn main() -> io::Result<()> {
-    match std::env::args().nth(1).as_deref() {
+    let mut arguments = std::env::args().skip(1);
+    match arguments.next().as_deref() {
         Some("--battery") => {
             println!("{}", battery::BatteryReader::new().encode());
+            return Ok(());
+        }
+        Some("--battery-control") => {
+            println!("{}", battery::encode_control());
+            return Ok(());
+        }
+        Some("--set-charge-mode") => {
+            let mode = arguments.next().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidInput, "missing charge mode")
+            })?;
+            battery::set_charge_mode(&mode)?;
             return Ok(());
         }
         Some("--battery-stream") => {

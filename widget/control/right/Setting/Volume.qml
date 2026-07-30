@@ -149,6 +149,7 @@ Item {
                                 id: appDelegate
 
                                 readonly property bool isAppStream: modelData && modelData.isStream && modelData.audio && AudioService.isPlaybackStream(modelData)
+                                readonly property real streamPeak: Math.max(0, Math.min(1, appPeakMonitor.peak))
 
                                 height: isAppStream ? 86 : 0
                                 spacing: 6
@@ -157,6 +158,12 @@ Item {
 
                                 PwObjectTracker {
                                     objects: modelData ? [modelData] : []
+                                }
+                                PwNodePeakMonitor {
+                                    id: appPeakMonitor
+
+                                    enabled: controlRightWindow.active && appDelegate.visible && modelData && modelData.audio && !modelData.audio.muted
+                                    node: appDelegate.isAppStream ? modelData : null
                                 }
                                 RowLayout {
                                     spacing: 12
@@ -306,6 +313,9 @@ Item {
                                         CustomVolumeSlider {
                                             Layout.fillWidth: true
                                             isMuted: (modelData && modelData.audio) ? modelData.audio.muted : false
+                                            peakColor: appDelegate.streamPeak > 0.88 ? Config.md3.error : appDelegate.streamPeak > 0.68 ? Config.md3.tertiary : Config.md3.secondary
+                                            peakValue: appDelegate.streamPeak
+                                            showPeak: true
                                             value: (modelData && modelData.audio) ? modelData.audio.volume : 0.0
 
                                             onSliderMoved: val => {

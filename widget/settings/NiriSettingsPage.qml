@@ -146,13 +146,12 @@ Item {
             "Trackpoint": Config.md3.tertiary,
             "Trackball": Config.md3.primary,
             "Tablet": Config.md3.error,
-            "Touch": Config.md3.secondary,
-            "Gestures": Config.md3.tertiary
+            "Touch": Config.md3.secondary
         };
         return colors[section] || Config.md3.primary;
     }
     function inputSectionsForColumn(column) {
-        return column === 0 ? ["Keyboard", "Mouse", "Trackball", "Touch"] : ["Touchpad", "Trackpoint", "Tablet", "Gestures"];
+        return column === 0 ? ["Keyboard", "Mouse", "Trackball", "Touch"] : ["Touchpad", "Trackpoint", "Tablet"];
     }
     function syncLayoutFields() {
         var settings = SettingsHubService.layoutSettings || {};
@@ -1548,7 +1547,7 @@ Item {
                                 delegate: SettingsExpandableCard {
                                     id: inputCard
 
-                                    readonly property bool canDisable: sectionName !== "Keyboard" && sectionName !== "Gestures"
+                                    readonly property bool canDisable: sectionName !== "Keyboard"
                                     required property string modelData
                                     property bool sectionEnabled: !canDisable || SettingsHubService.inputEnabled[sectionName] !== false
                                     property string sectionName: modelData

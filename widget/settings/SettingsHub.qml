@@ -25,6 +25,8 @@ PanelWindow {
     readonly property var quickshellSectionNames: ["General", "Wallpaper", "Capture", "Integrations"]
     property bool sidebarExpanded: true
     property real sidebarWidth: sidebarExpanded ? 264 : 84
+    property int pendingPage: 0
+    property int pendingSection: 0
 
     signal dismissed
 
@@ -34,10 +36,22 @@ PanelWindow {
     }
     function openSettings() {
         closeTimer.stop();
+        sectionTransition.stop();
+        pageFrame.opacity = 1;
+        pageFrame.x = 0;
         visible = true;
         active = true;
         panel.forceActiveFocus();
         SettingsHubService.refresh();
+    }
+    function switchSection(page, section) {
+        if (activePage === page && (page === 0 ? activeNiriSection : activeQuickshellSection) === section)
+            return;
+
+        pendingPage = page;
+        pendingSection = section;
+        sectionTransition.stop();
+        sectionTransition.restart();
     }
 
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
@@ -67,6 +81,52 @@ PanelWindow {
         onTriggered: {
             root.visible = false;
             root.dismissed();
+        }
+    }
+    SequentialAnimation {
+        id: sectionTransition
+
+        ParallelAnimation {
+            NumberAnimation {
+                target: pageFrame
+                property: "opacity"
+                to: 0
+                duration: 85
+                easing.type: Easing.InQuad
+            }
+            NumberAnimation {
+                target: pageFrame
+                property: "x"
+                to: 10
+                duration: 85
+                easing.type: Easing.InQuad
+            }
+        }
+        ScriptAction {
+            script: {
+                root.activePage = root.pendingPage;
+                if (root.pendingPage === 0)
+                    root.activeNiriSection = root.pendingSection;
+                else
+                    root.activeQuickshellSection = root.pendingSection;
+                pageFrame.x = -10;
+            }
+        }
+        ParallelAnimation {
+            NumberAnimation {
+                target: pageFrame
+                property: "opacity"
+                to: 1
+                duration: 175
+                easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+                target: pageFrame
+                property: "x"
+                to: 0
+                duration: 175
+                easing.type: Easing.OutCubic
+            }
         }
     }
     MouseArea {
@@ -203,7 +263,6 @@ PanelWindow {
 
                         onClicked: {
                             const wasActive = root.activePage === 0;
-                            root.activePage = 0;
                             if (!root.sidebarExpanded) {
                                 root.sidebarExpanded = true;
                                 root.niriExpanded = true;
@@ -212,6 +271,8 @@ PanelWindow {
                             } else {
                                 root.niriExpanded = !root.niriExpanded;
                             }
+                            if (!wasActive)
+                                root.switchSection(0, root.activeNiriSection);
                         }
                     }
                     ColumnLayout {
@@ -234,8 +295,7 @@ PanelWindow {
                                 text: root.niriSectionNames[index]
 
                                 onClicked: {
-                                    root.activePage = 0;
-                                    root.activeNiriSection = index;
+                                    root.switchSection(0, index);
                                 }
                             }
                         }
@@ -252,7 +312,6 @@ PanelWindow {
 
                         onClicked: {
                             const wasActive = root.activePage === 1;
-                            root.activePage = 1;
                             if (!root.sidebarExpanded) {
                                 root.sidebarExpanded = true;
                                 root.quickshellExpanded = true;
@@ -261,6 +320,8 @@ PanelWindow {
                             } else {
                                 root.quickshellExpanded = !root.quickshellExpanded;
                             }
+                            if (!wasActive)
+                                root.switchSection(1, root.activeQuickshellSection);
                         }
                     }
                     ColumnLayout {
@@ -283,8 +344,7 @@ PanelWindow {
                                 text: root.quickshellSectionNames[index]
 
                                 onClicked: {
-                                    root.activePage = 1;
-                                    root.activeQuickshellSection = index;
+                                    root.switchSection(1, index);
                                 }
                             }
                         }
@@ -418,6 +478,8 @@ PanelWindow {
                     }
                 }
                 Item {
+                    id: pageFrame
+
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 

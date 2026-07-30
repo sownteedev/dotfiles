@@ -61,6 +61,8 @@ Item {
     property real popupY: 0
     readonly property string powerDrawVal: BatteryService.powerDraw
     property bool powerDropOpen: false
+    readonly property bool performanceDegraded: BatteryService.performanceDegraded
+    readonly property string performanceDegradationText: BatteryService.performanceDegradationText
     readonly property bool powerProfilesAvailable: BatteryService.powerProfilesAvailable
     readonly property string tempVal: BatteryService.temperature
     readonly property string turboOverride: BatteryService.turboOverride
@@ -347,6 +349,56 @@ Item {
                 }
             }
 
+            Rectangle {
+                Layout.fillWidth: true
+                border.color: Config.alpha(Config.md3.error, 0.3)
+                border.width: 1
+                color: Config.md3.error_container
+                implicitHeight: degradationContent.implicitHeight + 24
+                radius: 12
+                visible: batteryPageRoot.performanceDegraded
+
+                RowLayout {
+                    id: degradationContent
+
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 12
+
+                    IconImage {
+                        Layout.alignment: Qt.AlignTop
+                        Layout.preferredHeight: 20
+                        Layout.preferredWidth: 20
+                        source: Quickshell.iconPath("dialog-warning-symbolic")
+
+                        layer.enabled: true
+                        layer.effect: ColorOverlay {
+                            color: Config.md3.on_error_container
+                        }
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+
+                        Text {
+                            color: Config.md3.on_error_container
+                            font.family: Config.fontName
+                            font.pixelSize: 15
+                            font.weight: Font.Bold
+                            text: "Performance limited"
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.alpha(Config.md3.on_error_container, 0.78)
+                            font.family: Config.fontName
+                            font.pixelSize: 13
+                            text: batteryPageRoot.performanceDegradationText
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+                }
+            }
+
             // 3. Power Mode Dropdown Section
             ColumnLayout {
                 Layout.fillWidth: true
@@ -609,13 +661,11 @@ Item {
                                 batteryPageRoot.popupModel = [
                                     {
                                         label: "Maximize Charge",
-                                        value: "maximize",
-                                        cmd: "pkexec bash -c 'echo 100 > /sys/class/power_supply/BAT0/charge_control_end_threshold && echo 50 > /sys/class/power_supply/BAT0/charge_control_start_threshold'"
+                                        value: "maximize"
                                     },
                                     {
                                         label: "Preserve Battery Health",
-                                        value: "preserve",
-                                        cmd: "pkexec bash -c 'echo 80 > /sys/class/power_supply/BAT0/charge_control_end_threshold && echo 75 > /sys/class/power_supply/BAT0/charge_control_start_threshold'"
+                                        value: "preserve"
                                     }
                                 ];
                                 batteryPageRoot.popupType = "charge";
@@ -769,7 +819,7 @@ Item {
                 batteryPageRoot.runCommand("powerprofilesctl set " + item.profile);
                 batteryPageRoot.powerDropOpen = false;
             } else {
-                batteryPageRoot.runCommand(item.cmd);
+                BatteryService.setChargeMode(item.value);
                 BatteryService.chargeMode = item.value;
                 batteryPageRoot.chargeDropOpen = false;
             }

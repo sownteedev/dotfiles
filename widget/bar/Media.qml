@@ -53,7 +53,8 @@ Item {
                 anchors.centerIn: parent
                 antialiasing: true
                 height: parent.height + 16
-                visible: root.playing && CavaService.available
+                opacity: CavaService.levelScale
+                visible: CavaService.available
                 width: parent.width + 16
 
                 onPaint: {
@@ -71,7 +72,7 @@ Item {
                     var points = [];
                     for (var i = 0; i < numBars; i++) {
                         var angle = (i / numBars) * Math.PI * 2 - Math.PI / 2;
-                        var level = Number(bars[i] || 0);
+                        var level = Number(bars[i] || 0) * CavaService.levelScale;
                         var radius = 16.5;
                         if (level >= 0.01) {
                             var visualLevel = Math.min(1, Math.pow(level, 0.68) * 1.28);

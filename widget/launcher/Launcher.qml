@@ -178,7 +178,7 @@ PanelWindow {
                     width: 28
 
                     layer.effect: ColorOverlay {
-                        color: Config.md3.on_surface_variant
+                        color: searchEntry.activeFocus ? Config.md3.primary : Config.md3.on_surface_variant
                     }
                 }
                 TextInput {
@@ -254,7 +254,7 @@ PanelWindow {
                         width: 23
 
                         layer.effect: ColorOverlay {
-                            color: Config.md3.on_surface_variant
+                            color: showAllApps ? Config.md3.primary : Config.md3.on_surface_variant
                         }
                         Behavior on rotation {
                             NumberAnimation {

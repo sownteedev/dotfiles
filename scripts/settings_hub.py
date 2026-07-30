@@ -98,7 +98,6 @@ INPUT_SECTION_NAMES = {
     "Trackball": "trackball",
     "Tablet": "tablet",
     "Touch": "touch",
-    "Gestures": "gestures",
 }
 
 
@@ -254,6 +253,15 @@ def set_number_line(block: str, name: str, value: float, label: str) -> str:
         block,
         rf"(?m)^([ \t]*)(?://[ \t]*)?{re.escape(name)}\s+[-\d.]+",
         lambda match: f"{match.group(1)}{name} {kdl_float(value)}",
+        label,
+    )
+
+
+def set_integer_line(block: str, name: str, value: int, label: str) -> str:
+    return replace_once(
+        block,
+        rf"(?m)^([ \t]*)(?://[ \t]*)?{re.escape(name)}\s+[-\d.]+",
+        lambda match: f"{match.group(1)}{name} {int(value)}",
         label,
     )
 
@@ -567,6 +575,21 @@ def behavior_snapshot(
     xwayland = find_any_block(behavior_source, "xwayland-satellite")
     cursor = find_block(cursor_source, "cursor")
     input_block = find_block(input_source, "input")
+    gestures = find_block(behavior_source, "gestures")
+    dnd_view = find_block(gestures, "dnd-edge-view-scroll")
+    dnd_workspace = find_block(gestures, "dnd-edge-workspace-switch")
+    hot_corners = find_block(gestures, "hot-corners")
+    hot_corners_enabled = not flag_enabled(hot_corners, "off")
+    hot_corner_states = {
+        "top-left": flag_enabled(hot_corners, "top-left"),
+        "top-right": flag_enabled(hot_corners, "top-right"),
+        "bottom-left": flag_enabled(hot_corners, "bottom-left"),
+        "bottom-right": flag_enabled(hot_corners, "bottom-right"),
+    }
+    # Niri uses top-left when hot corners are enabled without an explicit
+    # corner, so reflect the effective state in the settings UI.
+    if hot_corners_enabled and not any(hot_corner_states.values()):
+        hot_corner_states["top-left"] = True
     warp = re.search(r'(?m)^\s*warp-mouse-to-focus(?:\s+mode="([^"]+)")?\s*$', input_block)
     focus_follows = re.search(
         r'(?m)^\s*focus-follows-mouse(?:\s+max-scroll-amount="([^"]+)")?\s*$',
@@ -609,6 +632,17 @@ def behavior_snapshot(
         "workspaceAutoBackAndForth": flag_enabled(input_block, "workspace-auto-back-and-forth"),
         "modKey": active_mod_key.group(1) if active_mod_key else "",
         "modKeyNested": active_nested_mod_key.group(1) if active_nested_mod_key else "",
+        "dndViewTriggerWidth": int(number(dnd_view, "trigger-width", 30)),
+        "dndViewDelayMs": int(number(dnd_view, "delay-ms", 100)),
+        "dndViewMaxSpeed": int(number(dnd_view, "max-speed", 1500)),
+        "dndWorkspaceTriggerHeight": int(number(dnd_workspace, "trigger-height", 50)),
+        "dndWorkspaceDelayMs": int(number(dnd_workspace, "delay-ms", 100)),
+        "dndWorkspaceMaxSpeed": int(number(dnd_workspace, "max-speed", 1500)),
+        "hotCornersEnabled": hot_corners_enabled,
+        "hotCornerTopLeft": hot_corner_states["top-left"],
+        "hotCornerTopRight": hot_corner_states["top-right"],
+        "hotCornerBottomLeft": hot_corner_states["bottom-left"],
+        "hotCornerBottomRight": hot_corner_states["bottom-right"],
         "lidCloseAction": event_action(switch_events_source, "lid-close"),
         "lidOpenAction": event_action(switch_events_source, "lid-open"),
         "tabletModeOnAction": event_action(switch_events_source, "tablet-mode-on"),
@@ -833,6 +867,7 @@ def snapshot() -> dict[str, object]:
         "captureRecordingFps": qml_int(config_source, "captureRecordingFps", 60),
         "captureRecordingCodec": qml_string(config_source, "captureRecordingCodec", "hevc"),
         "captureRecordingQuality": qml_string(config_source, "captureRecordingQuality", "high"),
+        "captureRecordingMicrophone": qml_bool(config_source, "captureRecordingMicrophone", False),
         "captureEditorTool": qml_string(config_source, "captureEditorTool", "pen"),
         "captureEditorColor": qml_string(config_source, "captureEditorColor", "#ff3b30"),
         "captureEditorWidth": qml_int(config_source, "captureEditorWidth", 6),
@@ -981,7 +1016,6 @@ def snapshot() -> dict[str, object]:
                 "Trackball": input_lines(find_block(input_source, "trackball")),
                 "Tablet": input_lines(find_block(input_source, "tablet")),
                 "Touch": input_lines(find_block(input_source, "touch")),
-                "Gestures": input_lines(find_block(input_source, "gestures")),
             },
             "inputEnabled": {
                 "Touchpad": not flag_enabled(find_block(input_source, "touchpad"), "off"),
@@ -1551,6 +1585,73 @@ def set_behavior(payload: dict[str, object]) -> dict[str, object]:
     input_source = set_unique_option_line(input_source, "mod-key", bool(mod_key), json.dumps(mod_key) if mod_key else '"Super"')
     input_source = set_unique_option_line(input_source, "mod-key-nested", bool(mod_key_nested), json.dumps(mod_key_nested) if mod_key_nested else '"Alt"')
 
+    dnd_view_trigger_width = max(1, min(1000, int(payload.get("dndViewTriggerWidth", 30))))
+    dnd_view_delay = max(0, min(60000, int(payload.get("dndViewDelayMs", 100))))
+    dnd_view_max_speed = max(1, min(100000, int(payload.get("dndViewMaxSpeed", 1500))))
+    dnd_workspace_trigger_height = max(1, min(1000, int(payload.get("dndWorkspaceTriggerHeight", 50))))
+    dnd_workspace_delay = max(0, min(60000, int(payload.get("dndWorkspaceDelayMs", 100))))
+    dnd_workspace_max_speed = max(1, min(100000, int(payload.get("dndWorkspaceMaxSpeed", 1500))))
+    hot_corners_enabled = bool(payload.get("hotCornersEnabled", True))
+    hot_corner_top_left = bool(payload.get("hotCornerTopLeft", True))
+    hot_corner_top_right = bool(payload.get("hotCornerTopRight", False))
+    hot_corner_bottom_left = bool(payload.get("hotCornerBottomLeft", False))
+    hot_corner_bottom_right = bool(payload.get("hotCornerBottomRight", False))
+    if hot_corners_enabled and not any((
+        hot_corner_top_left,
+        hot_corner_top_right,
+        hot_corner_bottom_left,
+        hot_corner_bottom_right,
+    )):
+        hot_corner_top_left = True
+
+    def update_gestures(block: str) -> str:
+        block = update_block(
+            block,
+            "dnd-edge-view-scroll",
+            lambda inner: set_integer_line(
+                set_integer_line(
+                    set_integer_line(inner, "trigger-width", dnd_view_trigger_width, "DnD view trigger width"),
+                    "delay-ms",
+                    dnd_view_delay,
+                    "DnD view delay",
+                ),
+                "max-speed",
+                dnd_view_max_speed,
+                "DnD view maximum speed",
+            ),
+        )
+        block = update_block(
+            block,
+            "dnd-edge-workspace-switch",
+            lambda inner: set_integer_line(
+                set_integer_line(
+                    set_integer_line(
+                        inner,
+                        "trigger-height",
+                        dnd_workspace_trigger_height,
+                        "DnD workspace trigger height",
+                    ),
+                    "delay-ms",
+                    dnd_workspace_delay,
+                    "DnD workspace delay",
+                ),
+                "max-speed",
+                dnd_workspace_max_speed,
+                "DnD workspace maximum speed",
+            ),
+        )
+
+        def update_hot_corners(inner: str) -> str:
+            inner = set_flag(inner, "off", not hot_corners_enabled)
+            inner = set_flag(inner, "top-left", hot_corner_top_left)
+            inner = set_flag(inner, "top-right", hot_corner_top_right)
+            inner = set_flag(inner, "bottom-left", hot_corner_bottom_left)
+            return set_flag(inner, "bottom-right", hot_corner_bottom_right)
+
+        return update_block(block, "hot-corners", update_hot_corners)
+
+    behavior = update_block(behavior, "gestures", update_gestures)
+
     switch_events = set_event_action(switch_events, "lid-close", str(payload.get("lidCloseAction", "")))
     switch_events = set_event_action(switch_events, "lid-open", str(payload.get("lidOpenAction", "")))
     switch_events = set_event_action(switch_events, "tablet-mode-on", str(payload.get("tabletModeOnAction", "")))
@@ -1703,7 +1804,7 @@ def set_input_enabled(payload: dict[str, object]) -> dict[str, object]:
     block_names = {
         name: block
         for name, block in INPUT_SECTION_NAMES.items()
-        if name not in ("Keyboard", "Gestures")
+        if name != "Keyboard"
     }
     block_name = block_names.get(section)
     if not block_name:
@@ -1753,7 +1854,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "wallpaperEngineAssetsDirPath": str(payload.get("wallpaperEngineAssetsDirPath", "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets")).strip(),
         "wallpaperEngineWorkshopDirPath": str(payload.get("wallpaperEngineWorkshopDirPath", "~/.local/share/Steam/steamapps/workshop/content/431960")).strip(),
     }
-    if settings["captureRecordingCodec"] not in ("h264", "hevc", "av1"):
+    if settings["captureRecordingCodec"] not in ("h264", "hevc"):
         settings["captureRecordingCodec"] = "hevc"
     if settings["captureRecordingQuality"] not in ("medium", "high", "very_high"):
         settings["captureRecordingQuality"] = "high"
@@ -1784,6 +1885,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         ("matugenAnimateColors", True),
         ("captureAutoCopyScreenshot", True),
         ("captureAutoCopyRecording", True),
+        ("captureRecordingMicrophone", False),
         ("clock24h", True),
     ):
         settings[name] = bool(payload.get(name, fallback))

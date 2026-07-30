@@ -336,8 +336,7 @@ def read_process_mode(current_mode):
 def find_battery():
     try:
         for entry in os.scandir("/sys/class/power_supply"):
-            if entry.name.startswith("BAT") and read_text(
-                    os.path.join(entry.path, "type")) == "Battery":
+            if read_text(os.path.join(entry.path, "type")) == "Battery":
                 return entry.path
     except OSError:
         pass
@@ -345,6 +344,50 @@ def find_battery():
 
 
 BATTERY_PATH = find_battery()
+
+
+def read_pickle_choice(path, choices, fallback):
+    try:
+        import pickle
+        with open(path, "rb") as handle:
+            value = pickle.load(handle)
+        return value if value in choices else fallback
+    except (OSError, ValueError, TypeError, EOFError, pickle.UnpicklingError):
+        return fallback
+
+
+def battery_control_payload():
+    threshold = read_text(os.path.join(
+        BATTERY_PATH, "charge_control_end_threshold")) if BATTERY_PATH else ""
+    governor = read_text(
+        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
+    return {
+        "charge_mode": "preserve" if threshold == "80" else "maximize",
+        "current_governor": governor or "N/A",
+        "governor_override": read_pickle_choice(
+            "/opt/auto-cpufreq/override.pickle",
+            {"default", "powersave", "performance"}, "default"),
+        "turbo_override": read_pickle_choice(
+            "/opt/auto-cpufreq/turbo-override.pickle",
+            {"auto", "never", "always"}, "auto"),
+    }
+
+
+def set_charge_mode(mode):
+    if mode not in {"preserve", "maximize"}:
+        raise ValueError("charge mode must be preserve or maximize")
+    if not BATTERY_PATH:
+        raise FileNotFoundError("battery not found")
+
+    start, end = ("75", "80") if mode == "preserve" else ("50", "100")
+    with open(os.path.join(BATTERY_PATH, "charge_control_end_threshold"),
+              "w", encoding="utf-8") as handle:
+        handle.write(end)
+    start_path = os.path.join(BATTERY_PATH,
+                              "charge_control_start_threshold")
+    if os.path.exists(start_path):
+        with open(start_path, "w", encoding="utf-8") as handle:
+            handle.write(start)
 
 
 def battery_payload():
@@ -397,6 +440,14 @@ def battery_payload():
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--battery-control":
+        print(json.dumps(battery_control_payload()))
+        return
+
+    if len(sys.argv) > 2 and sys.argv[1] == "--set-charge-mode":
+        set_charge_mode(sys.argv[2])
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] in {"--battery", "--battery-stream"}:
         stream = sys.argv[1] == "--battery-stream"
         while True:

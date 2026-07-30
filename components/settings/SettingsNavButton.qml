@@ -16,25 +16,51 @@ Rectangle {
     property color iconColor: Config.md3.primary
     property string iconName: ""
     property bool indented: false
+    property real selectionProgress: active ? 1 : 0
     property string text: ""
 
     signal clicked
 
-    color: active ? Config.alpha(root.iconColor, 0.17) : (mouse.containsMouse ? Config.alpha(root.iconColor, 0.08) : "transparent")
+    color: mouse.containsMouse && !active ? Config.alpha(root.iconColor, 0.075) : "transparent"
     implicitHeight: dense ? 44 : 50
     radius: 14
+    scale: mouse.pressed ? 0.985 : 1
 
     Behavior on color {
         ColorAnimation {
-            duration: 140
+            duration: 180
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on scale {
+        NumberAnimation {
+            duration: 120
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on selectionProgress {
+        NumberAnimation {
+            duration: 240
+            easing.type: Easing.OutCubic
         }
     }
 
+    Rectangle {
+        anchors.fill: parent
+        color: Config.alpha(root.iconColor, 0.17)
+        opacity: root.selectionProgress
+        radius: root.radius
+        scale: 0.9 + root.selectionProgress * 0.1
+    }
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: root.compact ? (root.width - 22) / 2 : (root.indented ? 28 : 16)
         anchors.rightMargin: root.compact ? 0 : 14
         spacing: root.indented ? 11 : 13
+
+        transform: Translate {
+            x: root.selectionProgress * 3
+        }
 
         IconImage {
             Layout.preferredHeight: root.indented ? 18 : 22

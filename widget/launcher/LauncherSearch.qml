@@ -239,7 +239,6 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         currentIndex: searchRoot.selectedIndex
-        // Let ListView handle smooth scrolling for contentY natively
         highlightFollowsCurrentItem: true
         highlightMoveDuration: 250
         highlightRangeMode: ListView.ApplyRange
@@ -247,6 +246,42 @@ Item {
         preferredHighlightBegin: 0
         preferredHighlightEnd: Math.max(0, searchList.height - 80)
         spacing: 12
+
+        function smoothWheelScroll(delta) {
+            var minimumY = searchList.originY;
+            var maximumY = minimumY + Math.max(0, searchList.contentHeight - searchList.height);
+            var currentTarget = wheelScrollAnimation.running ? wheelScrollAnimation.to : searchList.contentY;
+            var targetY = Math.max(minimumY, Math.min(maximumY, currentTarget - delta));
+
+            if (Math.abs(targetY - searchList.contentY) < 0.5)
+                return;
+
+            wheelScrollAnimation.stop();
+            wheelScrollAnimation.from = searchList.contentY;
+            wheelScrollAnimation.to = targetY;
+            wheelScrollAnimation.start();
+        }
+
+        NumberAnimation {
+            id: wheelScrollAnimation
+
+            duration: 220
+            easing.type: Easing.OutCubic
+            property: "contentY"
+            target: searchList
+        }
+
+        WheelHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            target: null
+
+            onWheel: event => {
+                var pixelDelta = event.pixelDelta.y;
+                var delta = pixelDelta !== 0 ? pixelDelta : (event.angleDelta.y / 120) * 82;
+                searchList.smoothWheelScroll(delta);
+                event.accepted = true;
+            }
+        }
 
         ScrollBar.vertical: ScrollBar {
             id: searchScrollBar
@@ -274,7 +309,7 @@ Item {
         delegate: Rectangle {
             id: delegateRoot
 
-            readonly property color accentColor: isClipboard ? Config.md3.secondary : (isApp ? Config.md3.primary : (isEmoji ? Config.md3.error : Config.md3.tertiary))
+            readonly property color accentColor: isClipboard ? Config.md3.secondary : (isFolder ? Config.md3.primary : (isApp ? Config.md3.primary : (isEmoji ? Config.md3.error : Config.md3.tertiary)))
             readonly property var clipData: modelData
             readonly property bool isApp: !isClipboard && modelData.type === "app"
             readonly property bool isClipboard: searchRoot.isClipboardMode
@@ -419,6 +454,7 @@ Item {
                     Item {
                         id: iconContainer
 
+                        readonly property color iconColor: delegateRoot.isSelected ? delegateRoot.accentColor : Config.md3.on_surface_variant
                         readonly property string imagePreviewSource: {
                             if (isClipboard)
                                 return clipData.isImage ? clipData.imagePath : "";
@@ -436,13 +472,49 @@ Item {
                         height: 50
                         width: 50
 
+                        Rectangle {
+                            anchors.fill: parent
+                            border.color: Config.alpha(iconContainer.iconColor, delegateRoot.isSelected ? 0.28 : 0.14)
+                            border.width: 1
+                            color: delegateRoot.isSelected ? Config.alpha(delegateRoot.accentColor, 0.16) : Config.md3.surface_container_high
+                            radius: 14
+                            visible: !iconContainer.isImagePreview && !isEmoji
+
+                            Behavior on border.color {
+                                ColorAnimation {
+                                    duration: 160
+                                }
+                            }
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 160
+                                }
+                            }
+                        }
+
                         // Show standard IconImage for apps, non-image files, and text clipboard items
                         IconImage {
-                            anchors.fill: parent
+                            id: standardIcon
+
+                            anchors.centerIn: parent
+                            height: isApp ? 38 : 28
                             mipmap: true
                             smooth: true
                             source: isClipboard ? Quickshell.iconPath("edit-copy-symbolic") : Quickshell.iconPath(isApp ? (itemData.icon || "application-x-executable") : (isFolder ? "folder-symbolic" : getFileIcon(itemData.name)))
                             visible: !iconContainer.isImagePreview && !isEmoji
+                            width: height
+                        }
+                        ColorOverlay {
+                            anchors.fill: standardIcon
+                            color: iconContainer.iconColor
+                            source: standardIcon
+                            visible: standardIcon.visible && !isApp
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 160
+                                }
+                            }
                         }
                         Text {
                             anchors.centerIn: parent
@@ -531,7 +603,7 @@ Item {
                     searchRoot.resultLaunched();
                 }
                 onEntered: {
-                    if (!isFile || swipeContent.x === 0)
+                    if (!wheelScrollAnimation.running && (!isFile || swipeContent.x === 0))
                         searchRoot.selectedIndex = index;
                 }
                 onPressed: {
@@ -556,7 +628,7 @@ Item {
 
         // Our actual visible custom highlight
         Rectangle {
-            color: Config.alpha(Config.md3.on_surface, 0.06)
+            color: searchList.currentItem ? Config.alpha(searchList.currentItem.accentColor, 0.13) : "transparent"
             height: searchList.currentItem ? searchList.currentItem.height : 80
             parent: searchList.contentItem
             radius: 28
@@ -583,7 +655,7 @@ Item {
 
                 Behavior on color {
                     ColorAnimation {
-                        duration: 150
+                        duration: 160
                     }
                 }
             }

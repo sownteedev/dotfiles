@@ -78,8 +78,16 @@ Item {
         target: SysStats
     }
     Connections {
-        function onSettingsLoaded(ssid, method, dns, address, gateway, autoConnect) {
-            settingsPanel.loadSettings(ssid, method, dns, address, gateway, autoConnect);
+        function onSettingsLoaded(ssid, settings) {
+            settingsPanel.loadSettings(ssid, settings);
+        }
+        function onSettingsSaveFailed(ssid, message) {
+            if (settingsPanel.networkSsid === ssid)
+                settingsPanel.markSaveFailed(message);
+        }
+        function onSettingsSaveSucceeded(ssid) {
+            if (settingsPanel.networkSsid === ssid)
+                settingsPanel.markSaveSucceeded();
         }
 
         target: WifiService
@@ -417,9 +425,7 @@ Item {
 
             anchors.fill: parent
 
-            onApplyRequested: (ssid, method, dns, address, gateway, autoConnect) => {
-                WifiService.saveSettings(ssid, method, dns, address, gateway, autoConnect);
-            }
+            onApplyRequested: (ssid, settings) => WifiService.saveSettings(ssid, settings)
             onForgetRequested: ssid => WifiService.forgetNetwork(ssid)
         }
     } // root Item

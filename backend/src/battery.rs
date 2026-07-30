@@ -2,6 +2,7 @@ use crate::nvidia::NvidiaReader;
 use crate::system::read_text;
 use std::fmt::Write;
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 
 pub struct BatteryReader {
@@ -102,6 +103,70 @@ impl BatteryReader {
     }
 }
 
+pub fn encode_control() -> String {
+    let battery = find_battery();
+    let threshold = battery
+        .as_ref()
+        .map(|path| read_text(path.join("charge_control_end_threshold")))
+        .unwrap_or_default();
+    let charge_mode = if threshold.trim() == "80" {
+        "preserve"
+    } else {
+        "maximize"
+    };
+    let governor = read_text("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+    let governor_override = read_pickle_choice(
+        "/opt/auto-cpufreq/override.pickle",
+        &["default", "powersave", "performance"],
+        "default",
+    );
+    let turbo_override = read_pickle_choice(
+        "/opt/auto-cpufreq/turbo-override.pickle",
+        &["auto", "never", "always"],
+        "auto",
+    );
+
+    let mut output = String::with_capacity(160);
+    output.push('{');
+    append_string(&mut output, "charge_mode", charge_mode, false);
+    append_string(
+        &mut output,
+        "current_governor",
+        if governor.is_empty() {
+            "N/A"
+        } else {
+            &governor
+        },
+        true,
+    );
+    append_string(&mut output, "governor_override", &governor_override, true);
+    append_string(&mut output, "turbo_override", &turbo_override, true);
+    output.push('}');
+    output
+}
+
+pub fn set_charge_mode(mode: &str) -> io::Result<()> {
+    let battery = find_battery()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "battery not found"))?;
+    let (start, end) = match mode {
+        "preserve" => ("75", "80"),
+        "maximize" => ("50", "100"),
+        _ => {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "charge mode must be preserve or maximize",
+            ));
+        }
+    };
+
+    fs::write(battery.join("charge_control_end_threshold"), end)?;
+    let start_path = battery.join("charge_control_start_threshold");
+    if start_path.exists() {
+        fs::write(start_path, start)?;
+    }
+    Ok(())
+}
+
 fn append_number(output: &mut String, name: &str, value: Option<f64>, comma: bool) {
     if comma {
         output.push(',');
@@ -112,15 +177,37 @@ fn append_number(output: &mut String, name: &str, value: Option<f64>, comma: boo
     }
 }
 
+fn append_string(output: &mut String, name: &str, value: &str, comma: bool) {
+    if comma {
+        output.push(',');
+    }
+    write!(output, "\"{name}\":\"").unwrap();
+    crate::json::escape_into(value, output);
+    output.push('"');
+}
+
 fn find_battery() -> Option<PathBuf> {
     fs::read_dir("/sys/class/power_supply")
         .ok()?
         .flatten()
-        .find(|entry| {
-            read_text(entry.path().join("type")) == "Battery"
-                && entry.file_name().to_string_lossy().starts_with("BAT")
-        })
+        .find(|entry| read_text(entry.path().join("type")) == "Battery")
         .map(|entry| entry.path())
+}
+
+fn read_pickle_choice(path: impl AsRef<Path>, choices: &[&str], fallback: &str) -> String {
+    fs::read(path)
+        .ok()
+        .and_then(|bytes| find_choice(&bytes, choices))
+        .unwrap_or(fallback)
+        .to_string()
+}
+
+fn find_choice<'a>(bytes: &[u8], choices: &'a [&str]) -> Option<&'a str> {
+    choices.iter().copied().find(|choice| {
+        bytes
+            .windows(choice.len())
+            .any(|window| window == choice.as_bytes())
+    })
 }
 
 fn positive(value: f64) -> Option<f64> {
@@ -137,7 +224,7 @@ fn read_number(path: impl AsRef<Path>) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{positive, ratio};
+    use super::{find_choice, positive, ratio};
 
     #[test]
     fn rejects_missing_or_invalid_telemetry() {
@@ -149,5 +236,15 @@ mod tests {
     #[test]
     fn calculates_battery_health_percentage() {
         assert_eq!(ratio(60.0, 80.0), Some(75.0));
+    }
+
+    #[test]
+    fn reads_known_auto_cpufreq_pickle_values_without_python() {
+        let pickle = b"\x80\x04\x95\x0bperformance\x94.";
+        assert_eq!(
+            find_choice(pickle, &["default", "powersave", "performance"]),
+            Some("performance")
+        );
+        assert_eq!(find_choice(pickle, &["auto", "never", "always"]), None);
     }
 }

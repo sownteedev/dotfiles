@@ -10,7 +10,7 @@ Item {
 
     property var player: null
     readonly property bool playing: MediaService.playing
-    property real vinylSize: Math.max(10, Math.min(root.width, root.height) - (playing && CavaService.available ? visualizerPadding : 0))
+    property real vinylSize: Math.max(10, Math.min(root.width, root.height) - (CavaService.available ? visualizerPadding : 0))
 
     // Calculate sizes to leave room for visualizer
     readonly property real visualizerPadding: 44
@@ -33,15 +33,9 @@ Item {
 
         anchors.centerIn: parent
         height: width
-        opacity: visible ? 1 : 0
-        visible: root.playing && CavaService.available
+        opacity: CavaService.levelScale
+        visible: CavaService.available
         width: root.vinylSize
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 350
-            }
-        }
 
         Canvas {
             id: visualizerCanvas
@@ -68,7 +62,7 @@ Item {
                 var points = [];
                 for (var i = 0; i < numBars; i++) {
                     var angle = (i / numBars) * Math.PI * 2 - Math.PI / 2;
-                    var rawLevel = (rawBars.length > i) ? Number(rawBars[i] || 0) : 0;
+                    var rawLevel = (rawBars.length > i) ? Number(rawBars[i] || 0) * CavaService.levelScale : 0;
                     var level = Math.min(1, Math.pow(rawLevel, 0.65) * 1.3);
                     var radius = baseRadius + (level * maxAmplitude);
                     points.push({

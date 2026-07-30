@@ -9,35 +9,36 @@ QtObject {
     // Weather
     // Private values are loaded from XDG_CACHE_HOME/quickshell/settings.json.
     // Keep public source defaults empty so this repository is safe to share.
-    property string apiWeather: ""
+    property alias apiWeather: runtimeSettings.apiWeather
     property var base16: ({})
     // Pre-defined alpha variants (0.8 opacity)
-    property bool captureAutoCopyRecording: true
-    property bool captureAutoCopyScreenshot: true
-    property string captureEditorColor: "#ff3b30"
-    property string captureEditorTool: "pen"
-    property int captureEditorWidth: 6
-    property string captureRecordingCodec: "hevc"
+    property alias captureAutoCopyRecording: runtimeSettings.captureAutoCopyRecording
+    property alias captureAutoCopyScreenshot: runtimeSettings.captureAutoCopyScreenshot
+    property alias captureEditorColor: runtimeSettings.captureEditorColor
+    property alias captureEditorTool: runtimeSettings.captureEditorTool
+    property alias captureEditorWidth: runtimeSettings.captureEditorWidth
+    property alias captureRecordingCodec: runtimeSettings.captureRecordingCodec
     readonly property string captureRecordingDir: expandHomePath(captureRecordingDirPath)
-    property string captureRecordingDirPath: "~/Videos"
-    property int captureRecordingFps: 60
-    property string captureRecordingQuality: "high"
+    property alias captureRecordingDirPath: runtimeSettings.captureRecordingDirPath
+    property alias captureRecordingFps: runtimeSettings.captureRecordingFps
+    property alias captureRecordingMicrophone: runtimeSettings.captureRecordingMicrophone
+    property alias captureRecordingQuality: runtimeSettings.captureRecordingQuality
     readonly property string captureScreenshotDir: expandHomePath(captureScreenshotDirPath)
-    property string captureScreenshotDirPath: "~/Pictures/Screenshots"
-    property bool clock24h: true
+    property alias captureScreenshotDirPath: runtimeSettings.captureScreenshotDirPath
+    property alias clock24h: runtimeSettings.clock24h
     readonly property string dotfilesDir: dotfilesRoot + "/dotf"
     readonly property string dotfilesRoot: homeDir + "/Dotfiles"
     // Font
-    property string fontName: "Inter"
+    property alias fontName: runtimeSettings.fontName
     // Paths
     readonly property string homeDir: Quickshell.env("HOME")
-    property string latLon: ""
+    property alias latLon: runtimeSettings.latLon
     readonly property string legacyWallpaperEngineWorkshopDir: homeDir + "/.steam/steam/steamapps/workshop/content/431960"
     readonly property string liveWallFolder: expandHomePath(liveWallFolderPath)
-    property string liveWallFolderPath: "~/Dotfiles/dotf/.walls/live"
-    property bool matugenAnimateColors: true
-    property bool matugenEnabled: true
-    property int matugenTransitionDuration: 300
+    property alias liveWallFolderPath: runtimeSettings.liveWallFolderPath
+    property alias matugenAnimateColors: runtimeSettings.matugenAnimateColors
+    property alias matugenEnabled: runtimeSettings.matugenEnabled
+    property alias matugenTransitionDuration: runtimeSettings.matugenTransitionDuration
     property QtObject md3: QtObject {
         property color background: "#ffffff"
         property color error: "#ffffff"
@@ -93,33 +94,59 @@ QtObject {
     readonly property string quickshellDir: dotfilesRoot + "/quickshell"
     // Color
     property FileView runtimeSettingsFile: FileView {
+        atomicWrites: true
         path: configRoot.runtimeSettingsPath
         printErrors: false
         watchChanges: true
 
-        onLoadedChanged: {
-            if (loaded)
-                configRoot.loadRuntimeSettings();
+        adapter: JsonAdapter {
+            id: runtimeSettings
+
+            property string apiWeather: ""
+            property bool captureAutoCopyRecording: true
+            property bool captureAutoCopyScreenshot: true
+            property string captureEditorColor: "#ff3b30"
+            property string captureEditorTool: "pen"
+            property int captureEditorWidth: 6
+            property string captureRecordingCodec: "hevc"
+            property string captureRecordingDirPath: "~/Videos"
+            property int captureRecordingFps: 60
+            property bool captureRecordingMicrophone: false
+            property string captureRecordingQuality: "high"
+            property string captureScreenshotDirPath: "~/Pictures/Screenshots"
+            property bool clock24h: true
+            property string fontName: "Inter"
+            property string latLon: ""
+            property string liveWallFolderPath: "~/Dotfiles/dotf/.walls/live"
+            property bool matugenAnimateColors: true
+            property bool matugenEnabled: true
+            property int matugenTransitionDuration: 300
+            property string wallFolderPath: "~/Dotfiles/dotf/.walls"
+            property int wallpaperBatteryFps: 20
+            property string wallpaperEngineAssetsDirPath: "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets"
+            property int wallpaperEngineFps: 30
+            property string wallpaperEngineWorkshopDirPath: "~/.local/share/Steam/steamapps/workshop/content/431960"
+            property bool wallpaperPauseOnFullscreen: true
+            property bool wallpaperPauseOnLock: true
+            property int wallpaperTransitionDuration: 360
         }
-        onTextChanged: {
-            if (loaded)
-                configRoot.loadRuntimeSettings();
-        }
+
+        onAdapterUpdated: writeAdapter()
     }
     readonly property string runtimeSettingsPath: (Quickshell.env("XDG_CACHE_HOME") || homeDir + "/.cache") + "/quickshell/settings.json"
     readonly property string steamDir: homeDir + "/.local/share/Steam"
     readonly property string wallFolder: expandHomePath(wallFolderPath)
-    property string wallFolderPath: "~/Dotfiles/dotf/.walls"
+    property alias wallFolderPath: runtimeSettings.wallFolderPath
     property string wallpaper: wallFolder + "/mori.jpg"
-    property int wallpaperBatteryFps: 20
+    property alias wallpaperBatteryFps: runtimeSettings.wallpaperBatteryFps
     readonly property string wallpaperEngineAssetsDir: expandHomePath(wallpaperEngineAssetsDirPath)
-    property string wallpaperEngineAssetsDirPath: "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets"
-    property int wallpaperEngineFps: 30
+    property alias wallpaperEngineAssetsDirPath: runtimeSettings.wallpaperEngineAssetsDirPath
+    property alias wallpaperEngineFps: runtimeSettings.wallpaperEngineFps
     readonly property string wallpaperEngineWorkshopDir: expandHomePath(wallpaperEngineWorkshopDirPath)
-    property string wallpaperEngineWorkshopDirPath: "~/.local/share/Steam/steamapps/workshop/content/431960"
-    property bool wallpaperPauseOnFullscreen: true
-    property bool wallpaperPauseOnLock: true
-    property int wallpaperTransitionDuration: 360
+    property alias wallpaperEngineWorkshopDirPath: runtimeSettings.wallpaperEngineWorkshopDirPath
+    property alias wallpaperPauseOnFullscreen: runtimeSettings.wallpaperPauseOnFullscreen
+    property alias wallpaperPauseOnLock: runtimeSettings.wallpaperPauseOnLock
+    property alias wallpaperTransitionDuration: runtimeSettings.wallpaperTransitionDuration
 
     function alpha(colorVal, opacity) {
         if (colorVal === undefined || colorVal === null || String(colorVal) === "")
@@ -128,14 +155,6 @@ QtObject {
         var c = Qt.color(colorVal);
         return Qt.rgba(c.r, c.g, c.b, opacity);
     }
-    function applyRuntimeSettings(settings) {
-        var names = ["fontName", "latLon", "apiWeather", "wallFolderPath", "liveWallFolderPath", "wallpaperBatteryFps", "wallpaperEngineFps", "wallpaperPauseOnFullscreen", "wallpaperPauseOnLock", "wallpaperTransitionDuration", "matugenEnabled", "matugenAnimateColors", "matugenTransitionDuration", "captureScreenshotDirPath", "captureRecordingDirPath", "captureAutoCopyScreenshot", "captureAutoCopyRecording", "captureRecordingFps", "captureRecordingCodec", "captureRecordingQuality", "captureEditorTool", "captureEditorColor", "captureEditorWidth", "wallpaperEngineAssetsDirPath", "wallpaperEngineWorkshopDirPath", "clock24h"];
-        for (var i = 0; i < names.length; ++i) {
-            var name = names[i];
-            if (settings[name] !== undefined)
-                configRoot[name] = settings[name];
-        }
-    }
     function expandHomePath(path) {
         var value = String(path || "");
         if (value === "~")
@@ -143,18 +162,6 @@ QtObject {
         if (value.indexOf("~/") === 0)
             return homeDir + value.substring(1);
         return value;
-    }
-    function loadRuntimeSettings() {
-        if (!runtimeSettingsFile.loaded)
-            return;
-        var text = runtimeSettingsFile.text().trim();
-        if (text === "")
-            return;
-        try {
-            applyRuntimeSettings(JSON.parse(text));
-        } catch (error) {
-            console.warn("[Config] Invalid runtime settings:", error);
-        }
     }
     function updateColors(colors) {
         // Legacy colors are removed

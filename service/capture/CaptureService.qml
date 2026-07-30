@@ -86,7 +86,8 @@ QtObject {
 
                 var stamp = Qt.formatDateTime(new Date(), "dd-MM-yyyy_HH-mm-ss");
                 root.recordingPath = root.recordingDir + "/recording_" + stamp + ".mp4";
-                recorder.command = ["gpu-screen-recorder", "-w", "region", "-region", region, "-f", String(Config.captureRecordingFps), "-a", "default_output", "-ac", "opus", "-q", Config.captureRecordingQuality, "-k", Config.captureRecordingCodec, "-cr", "limited", "-fm", "vfr", "-o", root.recordingPath];
+                var audioSource = Config.captureRecordingMicrophone ? "default_output|default_input" : "default_output";
+                recorder.command = ["gpu-screen-recorder", "-w", "region", "-region", region, "-f", String(Config.captureRecordingFps), "-a", audioSource, "-ac", "opus", "-ab", "160", "-k", Config.captureRecordingCodec, "-q", Config.captureRecordingQuality, "-bm", "qp", "-encoder", "gpu", "-tune", "performance", "-cr", "limited", "-fm", "vfr", "-keyint", "2", "-cursor", "yes", "-o", root.recordingPath];
                 recorder.running = true;
             }
         }

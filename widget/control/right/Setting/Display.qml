@@ -357,6 +357,7 @@ Item {
                 nightLightEnabled: DisplayService.nightlightEnabled
                 temperature: DisplayService.nightlightTemperature
 
+                onTemperatureCommitted: temperature => DisplayService.commitNightlightTemperature(temperature)
                 onTemperatureRequested: temperature => DisplayService.setNightlightTemperature(temperature)
                 onToggleRequested: enabled => DisplayService.setNightlightEnabled(enabled)
             }

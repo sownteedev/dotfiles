@@ -38,6 +38,7 @@ SettingsChoiceRow 1.0 settings/SettingsChoiceRow.qml
 SettingsExpandableCard 1.0 settings/SettingsExpandableCard.qml
 SettingsSectionCard 1.0 settings/SettingsSectionCard.qml
 SettingsNavButton 1.0 settings/SettingsNavButton.qml
+SettingsSegmentedControl 1.0 settings/SettingsSegmentedControl.qml
 SettingsToggleRow 1.0 settings/SettingsToggleRow.qml
 WallpaperModeSwitch 1.0 settings/WallpaperModeSwitch.qml
 WifiNetworkRow 1.0 settings/WifiNetworkRow.qml
@@ -48,6 +49,7 @@ GoogleAuthPanel 1.0 productivity/GoogleAuthPanel.qml
 
 MusicArtwork 1.0 media/MusicArtwork.qml
 MusicControls 1.0 media/MusicControls.qml
+MusicEmptyState 1.0 media/MusicEmptyState.qml
 MusicLyrics 1.0 media/MusicLyrics.qml
 MusicProgress 1.0 media/MusicProgress.qml
 

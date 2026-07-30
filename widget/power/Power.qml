@@ -1,57 +1,104 @@
 import QtQuick
-import "."
-import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import "../../"
 
 PanelWindow {
     id: powerWindow
 
-    // Command array corresponding to each button index (0 to 5)
+    property var actions: [
+        {
+            "actionIndex": 0,
+            "label": "Shut down",
+            "description": "Power off",
+            "icon": "system-shutdown-symbolic",
+            "accent": Config.md3.error
+        },
+        {
+            "actionIndex": 1,
+            "label": "Restart",
+            "description": "Restart the system",
+            "icon": "system-reboot-symbolic",
+            "accent": Config.md3.primary
+        },
+        {
+            "actionIndex": 2,
+            "label": "Lock",
+            "description": "Lock the screen",
+            "icon": "system-lock-screen-symbolic",
+            "accent": Config.md3.secondary
+        },
+        {
+            "actionIndex": 3,
+            "label": "Hibernate",
+            "description": "Save session to disk",
+            "icon": "system-hibernate-symbolic",
+            "accent": Config.md3.tertiary
+        },
+        {
+            "actionIndex": 4,
+            "label": "Suspend",
+            "description": "Sleep until resumed",
+            "icon": "system-suspend-symbolic",
+            "accent": Config.md3.secondary
+        },
+        {
+            "actionIndex": 5,
+            "label": "Log out",
+            "description": "Exit the Niri session",
+            "icon": "system-log-out-symbolic",
+            "accent": Config.md3.primary
+        }
+    ]
     property var commands: [["poweroff"], ["reboot"], [], ["systemctl", "hibernate"], ["systemctl", "suspend"], ["niri", "msg", "action", "quit"]]
     property bool menuOpen: false
-    readonly property real s: 1.0
+    readonly property var selectedAction: actions[contentRoot.activeIndex]
 
     signal dismissed
 
     function closeMenu() {
+        if (!visible || !menuOpen)
+            return;
         menuOpen = false;
-        contentRoot.opacity = 0.0;
+        closeTimer.restart();
     }
     function executeAction(index) {
-        if (index >= 0 && index < commands.length) {
-            if (index === 2)
-                StateManager.lockScreen();
-            else
-                Quickshell.execDetached(commands[index]);
-            closeMenu();
-        }
-    }
+        if (index < 0 || index >= commands.length)
+            return;
 
-    // Show/hide helper functions
+        closeMenu();
+        if (index === 2)
+            StateManager.lockScreen();
+        else
+            Quickshell.execDetached(commands[index]);
+    }
     function openMenu() {
+        closeTimer.stop();
+        contentRoot.activeIndex = 0;
         visible = true;
         menuOpen = true;
-        contentRoot.opacity = 1.0;
-        contentRoot.activeIndex = 0; // Default to first button (Shutdown)
         contentRoot.forceActiveFocus();
     }
 
-    // Above standard windows, focusable to grab escape key / keyboard inputs
     aboveWindows: true
     anchors.bottom: true
     anchors.left: true
     anchors.right: true
-
-    // Cover the entire screen
     anchors.top: true
-
-    // Transparent window frame (blending is handled by QML components inside)
     color: "transparent"
     focusable: true
     visible: false
 
-    // Root item for content animation and focus handling
+    Timer {
+        id: closeTimer
+
+        interval: 220
+
+        onTriggered: {
+            powerWindow.visible = false;
+            powerWindow.dismissed();
+        }
+    }
     Item {
         id: contentRoot
 
@@ -59,114 +106,118 @@ PanelWindow {
 
         anchors.fill: parent
         focus: true
-        opacity: 0.0
+        opacity: powerWindow.menuOpen ? 1 : 0
 
-        // Smooth transition on opacity for fade-in/fade-out effect
         Behavior on opacity {
             NumberAnimation {
-                duration: 200
-                easing.type: Easing.OutQuad
+                duration: powerWindow.menuOpen ? 190 : 150
+                easing.type: Easing.OutCubic
             }
         }
 
-        Keys.onEscapePressed: {
-            closeMenu();
-        }
-        Keys.onLeftPressed: {
-            activeIndex = (activeIndex - 1 + 6) % 6;
-        }
-        Keys.onReturnPressed: {
-            executeAction(activeIndex);
-        }
-        Keys.onRightPressed: {
-            activeIndex = (activeIndex + 1) % 6;
-        }
-        Keys.onSpacePressed: {
-            executeAction(activeIndex);
-        }
-        Keys.onTabPressed: {
-            activeIndex = (activeIndex + 1) % 6;
-        }
+        Keys.onEscapePressed: powerWindow.closeMenu()
+        Keys.onLeftPressed: activeIndex = (activeIndex - 1 + powerWindow.actions.length) % powerWindow.actions.length
+        Keys.onReturnPressed: powerWindow.executeAction(activeIndex)
+        Keys.onRightPressed: activeIndex = (activeIndex + 1) % powerWindow.actions.length
+        Keys.onSpacePressed: powerWindow.executeAction(activeIndex)
+        Keys.onTabPressed: activeIndex = (activeIndex + 1) % powerWindow.actions.length
 
-        // When opacity reaches 0 after fade out, hide the window
-        onOpacityChanged: {
-            if (opacity === 0.0) {
-                powerWindow.visible = false;
-                powerWindow.dismissed();
-            }
-        }
-
-        // Transparent background overlay to capture click outside
         Rectangle {
             anchors.fill: parent
-            color: "transparent"
+            color: Config.alpha(Config.md3.scrim, powerWindow.menuOpen ? 0.16 : 0)
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 180
+                }
+            }
 
             MouseArea {
                 anchors.fill: parent
 
-                onClicked: {
-                    closeMenu();
-                }
+                onClicked: powerWindow.closeMenu()
             }
         }
-
-        // Centered popup panel containing the power actions
-        Rectangle {
-            id: popup
+        Item {
+            id: popupGroup
 
             anchors.centerIn: parent
-            border.color: Config.md3.surface_container
-            border.width: 1
-
-            // Styling matches SCSS exactly
-            color: Config.md3.background
-            height: layout.implicitHeight + 30
-            radius: 50
-            scale: powerWindow.menuOpen ? 1.0 : 0.85
-            width: layout.implicitWidth + 30
+            height: popup.height
+            scale: powerWindow.menuOpen ? 1 : 0.94
+            width: popup.width
 
             Behavior on scale {
                 NumberAnimation {
-                    duration: 400
-                    easing.type: Easing.OutBack
+                    duration: powerWindow.menuOpen ? 240 : 140
+                    easing.type: powerWindow.menuOpen ? Easing.OutCubic : Easing.InCubic
+                }
+            }
+            transform: Translate {
+                y: powerWindow.menuOpen ? 0 : 8
+
+                Behavior on y {
+                    NumberAnimation {
+                        duration: powerWindow.menuOpen ? 240 : 140
+                        easing.type: powerWindow.menuOpen ? Easing.OutCubic : Easing.InCubic
+                    }
                 }
             }
 
-            // Prevent click-through to the background overlay
-            MouseArea {
-                anchors.fill: parent
+            Rectangle {
+                id: popup
 
-                onClicked: {}
-            }
-            RowLayout {
-                id: layout
+                anchors.horizontalCenter: parent.horizontalCenter
+                border.color: Config.alpha(Config.md3.outline_variant, 0.48)
+                border.width: 1
+                color: Config.alpha(Config.md3.background, 0.97)
+                height: 104
+                layer.enabled: powerWindow.visible
+                radius: height / 2
+                width: 572
 
-                anchors.centerIn: parent
-                spacing: 16
+                layer.effect: DropShadow {
+                    color: Config.alpha(Config.md3.shadow, 0.55)
+                    horizontalOffset: 0
+                    radius: 22
+                    samples: 29
+                    transparentBorder: true
+                    verticalOffset: 8
+                }
 
-                PowerButton {
-                    iconName: "system-shutdown-symbolic"
-                    index: 0
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    border.color: Config.alpha(Config.md3.on_surface, 0.075)
+                    border.width: 1
+                    color: Config.alpha(Config.md3.background, 0.38)
+                    radius: height / 2
                 }
-                PowerButton {
-                    iconName: "system-reboot-symbolic"
-                    index: 1
-                }
-                PowerButton {
-                    iconName: "system-lock-screen-symbolic"
-                    index: 2
-                }
-                PowerButton {
-                    iconName: "system-hibernate-symbolic"
-                    index: 3
-                }
-                PowerButton {
-                    iconName: "system-suspend-symbolic"
-                    index: 4
-                }
-                PowerButton {
-                    iconName: "system-log-out-symbolic"
-                    index: 5
+                Row {
+                    id: actionsRow
+
+                    anchors.centerIn: parent
+                    spacing: 10
+
+                    Repeater {
+                        model: powerWindow.actions
+
+                        delegate: PowerButton {
+                            required property var modelData
+
+                            accent: modelData.accent
+                            actionIndex: modelData.actionIndex
+                            active: contentRoot.activeIndex === modelData.actionIndex
+                            iconName: modelData.icon
+                            label: modelData.label
+                            menuOpen: powerWindow.menuOpen
+
+                            onContainsMouseChanged: {
+                                if (containsMouse)
+                                    contentRoot.activeIndex = modelData.actionIndex;
+                            }
+                            onTriggered: powerWindow.executeAction(modelData.actionIndex)
+                        }
+                    }
                 }
             }
         }
