@@ -128,7 +128,7 @@ setup_dotfiles() {
 setup_env() {
     red_echo "[*] Installing Niri Wayland environment ..."
     yay -S --needed --noconfirm niri xwayland-satellite
-    yay -S --needed --noconfirm slurp gpu-screen-recorder wl-clipboard hyprpicker gammastep swayidle
+    yay -S --needed --noconfirm slurp gpu-screen-recorder wl-clipboard hyprpicker wl-gammarelay-rs swayidle
     yay -S --needed --noconfirm fcitx5 fcitx5-bamboo fcitx5-configtool fcitx5-gtk
     rm -rf "$HOME/.config/niri"
     safe_link "$DOTFILES_DIR/.config/niri" "$HOME/.config/niri"
