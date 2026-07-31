@@ -1,0 +1,15 @@
+// Laptop-lid and convertible-tablet events. These run even while locked.
+/-switch-events {
+    lid-close {
+        spawn "notify-send" "Laptop lid closed"
+    }
+    lid-open {
+        spawn "notify-send" "Laptop lid opened"
+    }
+    tablet-mode-on {
+        spawn "bash" "-c" "gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true"
+    }
+    tablet-mode-off {
+        spawn "bash" "-c" "gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled false"
+    }
+}

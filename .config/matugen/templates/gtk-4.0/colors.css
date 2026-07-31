@@ -1,5 +1,3 @@
-@import url('/usr/share/themes/adw-gtk3/gtk-4.0/gtk.css');
-
 @define-color surface-strongest {{colors.surface_container_lowest.dark.hex}};
 @define-color surface-strong {{colors.background.dark.hex}};
 @define-color surface-moderate {{colors.surface_container_low.dark.hex}};

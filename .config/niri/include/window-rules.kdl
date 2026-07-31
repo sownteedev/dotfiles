@@ -1,0 +1,93 @@
+window-rule {
+    geometry-corner-radius 15
+    clip-to-geometry true
+}
+
+// Frequently-used utility apps that are usually better as floating.
+window-rule {
+    match app-id=r#"^(pavucontrol|neovide|vmware|Spotify|blueman-manager|mpv|org\.gnome\.Calculator|org\.gnome\.Settings|io\.missioncenter\.MissionCenter|org\.gnome\.Nautilus|org\.gnome\.Loupe|org\.gnome\.FileRoller)$"#
+    open-floating true
+}
+
+window-rule {
+    match app-id=r#".*\.exe$"#
+    open-floating true
+}
+
+// Telegram Media Viewer
+window-rule {
+    match app-id=r#"^org\.telegram\.desktop$"# title="^Media viewer$"
+    open-floating true
+}
+
+window-rule {
+	match app-id=r#"^com\.raggesilver\.BlackBox$"#
+	open-floating true
+    default-column-width { fixed 1100; }
+    default-window-height { fixed 750; }
+}
+
+// Picture in Picture for various browsers
+window-rule {
+    match title="^[Pp]icture[- ][Ii]n[- ][Pp]icture$"
+    open-floating true
+    default-column-width { fixed 480; }
+    default-window-height { fixed 270; }
+}
+
+// Privacy example: hide password managers from all screenshots and screencasts.
+/-window-rule {
+    match app-id=r#"^org\.keepassxc\.KeePassXC$"#
+    match app-id=r#"^org\.gnome\.World\.Secrets$"#
+    block-out-from "screen-capture"
+    // block-out-from "screencast"
+}
+
+
+
+
+/////////////// EXAMPLE /////////////////////
+// Window-rule reference. Replace the matcher and keep only the options needed.
+/-window-rule {
+    match app-id="example"
+    // exclude title="Settings"
+
+    default-column-width { proportion 0.75; }
+    default-window-height { fixed 700; }
+    open-on-output "DP-1"
+    open-on-workspace "browser"
+    open-maximized true
+    open-maximized-to-edges false
+    open-fullscreen false
+    open-floating false
+    open-focused true
+
+    opacity 0.95
+    variable-refresh-rate true
+    default-column-display "tabbed"
+    default-floating-position x=40 y=40 relative-to="top-left"
+    scroll-factor 1.0
+
+    focus-ring {
+        on
+        width 4
+        active-color "#7fc8ff"
+        inactive-color "#505050"
+        urgent-color "#9b0000"
+    }
+
+    shadow {
+        on
+        softness 30
+        spread 5
+        offset x=0 y=5
+        color "#00000070"
+    }
+
+    geometry-corner-radius 15
+    clip-to-geometry true
+    min-width 320
+    min-height 180
+    max-width 1920
+    max-height 1080
+}

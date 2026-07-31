@@ -1,8 +1,18 @@
 input {
     keyboard {
         xkb {
+            // layout "us,vi"
+            // variant ""
+            // options "compose:ralt,ctrl:nocaps"
+            // model ""
+            // rules ""
+            // file "~/.config/keymap.xkb"
         }
 		numlock
+
+        // repeat-delay 600
+        // repeat-rate 25
+        // track-layout "global"
     }
 
     touchpad {
@@ -15,9 +25,11 @@ input {
         natural-scroll
         accel-speed 0.6
         // accel-profile "flat"
-        //scroll-factor 1.0
+        // scroll-factor 1.0
+        // scroll-factor vertical=1.0 horizontal=-1.0
         // scroll-method "two-finger"
         // scroll-button 273
+        // scroll-button-lock
         // tap-button-map "left-middle-right"
         // click-method "clickfinger"
         // left-handed
@@ -33,52 +45,52 @@ input {
         scroll-factor 2.0
         scroll-method "no-scroll"
         scroll-button 273
+        // scroll-button-lock
         //left-handed
 		//middle-emulation
     }
 
-    /-trackpoint {
-        // off
+    trackpoint {
+        off
         natural-scroll
         accel-speed 0.2
         accel-profile "flat"
         scroll-method "on-button-down"
         scroll-button 273
+        scroll-button-lock
         middle-emulation
     }
 
-	/-tablet {
+    trackball {
+        off
+        natural-scroll
+        accel-speed 0.2
+        accel-profile "flat"
+        scroll-method "on-button-down"
+        scroll-button 273
+        scroll-button-lock
+        left-handed
+        middle-emulation
+    }
+
+	tablet {
 		off
 		map-to-output "eDP-1"
+        // map-to-focused-output
 		left-handed
 		calibration-matrix 1.0 0.0 0.0 0.0 1.0 0.0
 	}
 
-    /-touch {
+    touch {
 		off
 		map-to-output "eDP-1"
+        // map-to-focused-output
 	}
 
 	// disable-power-key-handling
     // warp-mouse-to-focus
     // focus-follows-mouse max-scroll-amount="0%"
     // workspace-auto-back-and-forth
-}
-
-gestures {
-    dnd-edge-view-scroll {
-        trigger-width 30
-        delay-ms 100
-        max-speed 1500
-    }
-
-    dnd-edge-workspace-switch {
-        trigger-height 50
-        delay-ms 100
-        max-speed 1500
-    }
-
-    hot-corners {
-        // off
-    }
+    mod-key "Super"
+    // mod-key-nested "Alt"
 }

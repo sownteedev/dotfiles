@@ -1,0 +1,3 @@
+/* Stable GTK 4 entrypoint. Keep the base theme separate from generated colors. */
+@import url("/usr/share/themes/adw-gtk3/gtk-4.0/gtk.css");
+@import url("colors.css");

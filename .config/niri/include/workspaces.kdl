@@ -1,0 +1,5 @@
+// Named workspace examples. Remove /- and choose your own names/output.
+/-workspace "browser"
+/-workspace "chat" {
+    open-on-output "DP-1"
+}

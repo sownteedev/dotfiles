@@ -1,11 +1,10 @@
 layout {
-    gaps 10
+    gaps 10.0
 	background-color "transparent"
 
     center-focused-column "on-overflow"
 	always-center-single-column
     // empty-workspace-above-first
-    // default-column-display "tabbed"
 
     /-preset-column-widths {
         proportion 0.33333
@@ -13,35 +12,76 @@ layout {
         proportion 0.66667
     }
 
-    // preset-window-heights { }
+    /-preset-window-heights {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+    }
 
     default-column-width { proportion 1.0; }
 
+    /-struts {
+        left 0.0
+        right 0.0
+        top 0.0
+        bottom 0.0
+    }
+
     focus-ring {
         off
+        width 4.0
+        active-color "#7fc8ff"
+        inactive-color "#505050"
+        urgent-color "#9b0000"
+        // active-gradient from="#80c8ff" to="#bbddff" angle=45
+        // inactive-gradient from="#505050" to="#808080" angle=45
+        // urgent-gradient from="#800" to="#a33" angle=45
     }
 
     border {
-        // off
-        width 1
+        on
+        width 1.0
         active-color "#222222"
         inactive-color "#222222"
+        urgent-color "#9b0000"
+        // active-gradient from="#80c8ff" to="#c7ff7f" angle=45
+        // inactive-gradient from="#505050" to="#808080" angle=45
+        // urgent-gradient from="#800" to="#a33" angle=45
     }
 
     shadow {
         on
-        softness 20
-        spread 5
-        offset x=0 y=0
+        softness 20.0
+        spread 5.0
+        offset x=0.0 y=0.0
 		draw-behind-window true
-        color "#000"
+        color "#000000"
+        inactive-color "#00000054"
     }
 
-    /-struts {
-        left 64
-        right 64
-        top 64
-        bottom 64
+    // default-column-display "tabbed"
+    tab-indicator {
+        off
+        hide-when-single-tab
+        place-within-column
+        gap 5.0
+        width 4.0
+        length total-proportion=1.0
+        position "right"
+        gaps-between-tabs 2.0
+        corner-radius 8.0
+        active-color "#7fc8ff"
+        inactive-color "#505050"
+        urgent-color "#9b0000"
+        // active-gradient from="#80c8ff" to="#bbddff" angle=45
+        // inactive-gradient from="#505050" to="#808080" angle=45
+        // urgent-gradient from="#800" to="#a33" angle=45
+    }
+
+    insert-hint {
+        off
+        color "#7fc8ff80"
+        // gradient from="#ffbb6680" to="#ffc88080" angle=45
     }
 }
 
@@ -50,10 +90,44 @@ overview {
 	backdrop-color "#0a0a0a"
 	
     workspace-shadow {
-        // off
-		softness 30
-        spread 5
-        offset x=0 y=0
-        color "#000"
+        on
+		softness 30.0
+        spread 5.0
+        offset x=0.0 y=0.0
+        color "#000000"
     }
+}
+
+recent-windows {
+    // off
+    debounce-ms 750
+    open-delay-ms 150
+
+    highlight {
+        active-color "#999999ff"
+        urgent-color "#ff9999ff"
+        padding 40
+        corner-radius 15
+    }
+
+    previews {
+        max-height 360
+        max-scale 0.5
+    }
+
+    binds {
+        Alt+Tab { next-window; }
+        Alt+Shift+Tab { previous-window; }
+        Alt+grave { next-window filter="app-id"; }
+        Alt+Shift+grave { previous-window filter="app-id"; }
+    }
+}
+
+// Global blur quality/performance settings (Niri 26.04 defaults).
+blur {
+    // off
+    passes 3
+    offset 3.0
+    noise 0.02
+    saturation 1.5
 }

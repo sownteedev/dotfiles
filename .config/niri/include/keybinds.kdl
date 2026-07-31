@@ -2,10 +2,11 @@ binds {
     Mod+Shift+Slash								{ show-hotkey-overlay; }
 
     Mod+Return									{ spawn "blackbox-terminal"; }
-    Alt+Space									{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/dotf/quickshell/shell.qml\" call launcher toggle"; }
-    Mod+L										{ spawn-sh "env QML2_IMPORT_PATH=\"$HOME/Dotfiles/dotf\" quickshell -p \"$HOME/Dotfiles/dotf/quickshell/widget/lockscreen/Lockscreen.qml\""; }
-	Mod+M										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/dotf/quickshell/shell.qml\" call wallpaper toggle"; }
-	Ctrl+Alt+R repeat=false					{ spawn-sh "killall quickshell; ~/Dotfiles/dotf/quickshell/run-quickshell -d"; }
+    Alt+Space									{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call launcher toggle"; }
+    Alt+I repeat=false							{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call settings toggle"; }
+    Mod+L										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call lockscreen lock"; }
+	Mod+M										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call wallpaper toggle"; }
+	Ctrl+Alt+R repeat=false					{ spawn-sh "killall quickshell; \"$HOME/Dotfiles/quickshell/run-quickshell\" -d"; }
 	Alt+F4										{ spawn "~/.config/niri/scripts/close"; }
 	Mod+E										{ spawn "nautilus"; }
 	Ctrl+Shift+Escape							{ spawn "missioncenter"; }
@@ -133,8 +134,8 @@ binds {
 
     Mod+W						{ toggle-column-tabbed-display; }
 
-    Mod+Shift+S repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/dotf/quickshell/shell.qml\" call capture screenshot"; }
-	Mod+Shift+R repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/dotf/quickshell/shell.qml\" call capture toggleRecording"; }
+    Mod+Shift+S repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call capture screenshot"; }
+	Mod+Shift+R repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call capture toggleRecording"; }
 
     Mod+Alt+Q { quit; }
 }

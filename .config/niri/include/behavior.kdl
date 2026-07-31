@@ -1,0 +1,46 @@
+hotkey-overlay {
+    skip-at-startup
+    // hide-not-bound
+}
+
+prefer-no-csd
+
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+// Niri-managed Xwayland integration. This is an alternative to the
+// xwayland-satellite process currently started in startup.kdl.
+/-xwayland-satellite {
+    path "xwayland-satellite"
+    // off
+}
+
+// Disable middle-click primary selection for newly launched applications.
+/-clipboard {
+    disable-primary
+}
+
+// Keep this disabled unless another tool already reports config errors.
+/-config-notification {
+    disable-failed
+}
+
+gestures {
+    dnd-edge-view-scroll {
+        trigger-width 30
+        delay-ms 100
+        max-speed 1500
+    }
+
+    dnd-edge-workspace-switch {
+        trigger-height 50
+        delay-ms 100
+        max-speed 1500
+    }
+
+    hot-corners {
+        // off
+        top-left
+        // top-right
+        // bottom-left
+        // bottom-right
+    }
+}

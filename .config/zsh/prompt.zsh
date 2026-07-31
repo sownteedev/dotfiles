@@ -5,10 +5,10 @@ zmodload zsh/parameter
 # Git information.
 zstyle ':vcs_info:*' enable git
 zstyle ':vcs_info:git:*' check-for-changes true
-zstyle ':vcs_info:git:*' stagedstr ' %F{10}+%f'
-zstyle ':vcs_info:git:*' unstagedstr ' %F{9}!%f'
-zstyle ':vcs_info:git:*' formats '%F{10} %b%f%u%c'
-zstyle ':vcs_info:git:*' actionformats '%F{10} %b%f %F{11}(%a)%f%u%c'
+zstyle ':vcs_info:git:*' stagedstr ' +'
+zstyle ':vcs_info:git:*' unstagedstr ' !'
+zstyle ':vcs_info:git:*' formats '%b%u%c'
+zstyle ':vcs_info:git:*' actionformats '%b (%a)%u%c'
 
 typeset -g _prompt_command_started=0
 typeset -g _prompt_directory=''
@@ -18,6 +18,16 @@ typeset -g _prompt_last_project_dir=''
 typeset -g _prompt_right=''
 typeset -g _prompt_symbol_color='10'
 
+# Build the paired icon/value blocks used by the right prompt. Indexed terminal
+# colors keep the prompt in sync with the palette generated for Blackbox.
+_prompt_segment() {
+    local icon="$1"
+    local value="$2"
+    local accent="${3:-4}"
+
+    REPLY="%K{${accent}}%F{232} ${icon} %k%K{237}%F{15} ${value} %k"
+}
+
 _prompt_project_environment() {
     [[ "$PWD" == "$_prompt_last_project_dir" ]] && return
     _prompt_last_project_dir="$PWD"
@@ -26,47 +36,67 @@ _prompt_project_environment() {
     local version
 
     if [[ -n "$VIRTUAL_ENV" ]]; then
-        environments+=("%F{4} ${VIRTUAL_ENV:t}%f")
+        _prompt_segment '' "${VIRTUAL_ENV:t}"
+        environments+=("$REPLY")
     elif [[ -n "$PYENV_VERSION" ]]; then
-        environments+=("%F{4} ${PYENV_VERSION}%f")
+        _prompt_segment '' "$PYENV_VERSION"
+        environments+=("$REPLY")
     elif [[ -f .python-version ]]; then
         version="$(<.python-version)"
         version="${version%%$'\n'*}"
         version="${version//[[:space:]]/}"
-        [[ -n "$version" ]] && environments+=("%F{4} ${version}%f")
+        if [[ -n "$version" ]]; then
+            _prompt_segment '' "$version"
+            environments+=("$REPLY")
+        fi
     fi
 
     if [[ -n "$NVM_BIN" ]]; then
-        environments+=("%F{2} ${NVM_BIN:h:t}%f")
+        _prompt_segment '' "${NVM_BIN:h:t}"
+        environments+=("$REPLY")
     elif [[ -f .nvmrc ]]; then
         version="$(<.nvmrc)"
         version="${version%%$'\n'*}"
         version="${version//[[:space:]]/}"
-        [[ -n "$version" ]] && environments+=("%F{2} ${version}%f")
+        if [[ -n "$version" ]]; then
+            _prompt_segment '' "$version"
+            environments+=("$REPLY")
+        fi
     elif [[ -f package.json && -n "${commands[node]-}" ]]; then
         version="$("${commands[node]}" --version 2>/dev/null)"
-        [[ -n "$version" ]] && environments+=("%F{2} ${version}%f")
+        if [[ -n "$version" ]]; then
+            _prompt_segment '' "$version"
+            environments+=("$REPLY")
+        fi
     fi
 
     if [[ -f go.mod && -n "${commands[go]-}" ]]; then
         version="$("${commands[go]}" version 2>/dev/null)"
         version="${version#go version }"
         version="${version%% *}"
-        [[ -n "$version" ]] && environments+=("%F{6} ${version}%f")
+        if [[ -n "$version" ]]; then
+            _prompt_segment '' "$version"
+            environments+=("$REPLY")
+        fi
     fi
 
     if [[ -n "$RUSTUP_TOOLCHAIN" ]]; then
-        environments+=("%F{3} ${RUSTUP_TOOLCHAIN%%-*}%f")
+        _prompt_segment '' "${RUSTUP_TOOLCHAIN%%-*}"
+        environments+=("$REPLY")
     elif [[ -f Cargo.toml && -n "${commands[rustc]-}" ]]; then
         version="$("${commands[rustc]}" --version 2>/dev/null)"
         version="${version#rustc }"
         version="${version%% *}"
-        [[ -n "$version" ]] && environments+=("%F{3} ${version}%f")
+        if [[ -n "$version" ]]; then
+            _prompt_segment '' "$version"
+            environments+=("$REPLY")
+        fi
     fi
 
     if [[ -n "$JAVA_HOME" ]]; then
         version="${JAVA_HOME:t}"
-        environments+=("%F{1} ${version}%f")
+        _prompt_segment '' "$version"
+        environments+=("$REPLY")
     elif [[ -f pom.xml || -f build.gradle || -f build.gradle.kts ]] && [[ -n "${commands[java]-}" ]]; then
         version="$("${commands[java]}" -version 2>&1)"
         if [[ "$version" =~ '"([^"]+)"' ]]; then
@@ -74,7 +104,10 @@ _prompt_project_environment() {
         else
             version=''
         fi
-        [[ -n "$version" ]] && environments+=("%F{1} ${version}%f")
+        if [[ -n "$version" ]]; then
+            _prompt_segment '' "$version"
+            environments+=("$REPLY")
+        fi
     fi
 
     _prompt_environment="${(j: :)environments}"
@@ -87,8 +120,10 @@ _prompt_preexec() {
 _prompt_precmd() {
     local last_status=$?
     local -a right_segments
+    local -a job_commands
     local elapsed
-    local segment
+    local elapsed_seconds
+    local job_label
 
     vcs_info
     _prompt_project_environment
@@ -99,7 +134,8 @@ _prompt_precmd() {
         _prompt_symbol_color='10'
     else
         _prompt_symbol_color='9'
-        right_segments+=("%F{9}✘ ${last_status}%f")
+        _prompt_segment '' "$last_status" 1
+        right_segments+=("$REPLY")
     fi
 
     _prompt_duration=''
@@ -107,20 +143,36 @@ _prompt_precmd() {
         elapsed=$(( EPOCHREALTIME - _prompt_command_started ))
         if (( elapsed >= 1.0 )); then
             if (( elapsed >= 60.0 )); then
-                _prompt_duration="$(( int(elapsed / 60) ))m $(( int(elapsed) % 60 ))s"
+                elapsed_seconds="${elapsed%.*}"
+                _prompt_duration="$(( elapsed_seconds / 60 ))m $(( elapsed_seconds % 60 ))s"
             else
                 printf -v _prompt_duration '%.1fs' "$elapsed"
             fi
-            right_segments+=("%F{11}󱎫 ${_prompt_duration}%f")
+            _prompt_segment '󱎫' "$_prompt_duration"
+            right_segments+=("$REPLY")
         fi
     fi
     _prompt_command_started=0
 
-    (( ${#jobstates} > 0 )) && right_segments+=("%F{11}󰜎 ${#jobstates}%f")
-    
-    [[ -n "$_prompt_environment" ]] && right_segments+=("%F{4}${_prompt_environment}%f")
-    
-    [[ -n "$vcs_info_msg_0_" ]] && right_segments+=("%F{12}${vcs_info_msg_0_}%f")
+    if (( ${#jobstates} > 0 )); then
+        job_commands=("${(v)jobtexts[@]}")
+        job_label="${job_commands[1]%% *}"
+        job_label="${job_label:t}"
+        [[ -z "$job_label" ]] && job_label="${#jobstates} running"
+        (( ${#jobstates} > 1 )) && job_label+=" +$(( ${#jobstates} - 1 ))"
+        _prompt_segment '󰜎' "$job_label"
+        right_segments+=("$REPLY")
+    fi
+
+    [[ -n "$_prompt_environment" ]] && right_segments+=("${_prompt_environment}")
+
+    if [[ -n "$vcs_info_msg_0_" ]]; then
+        _prompt_segment '' "$vcs_info_msg_0_"
+        right_segments+=("$REPLY")
+    fi
+
+    _prompt_segment '󰒋' '%m'
+    right_segments+=("$REPLY")
 
     _prompt_right="${(j: :)right_segments}"
 }
@@ -128,5 +180,5 @@ _prompt_precmd() {
 add-zsh-hook preexec _prompt_preexec
 add-zsh-hook precmd _prompt_precmd
 
-PROMPT=$'\n''%F{4} %f %F{8}❯%f %F{15}${_prompt_directory}%f %F{${_prompt_symbol_color}}❯%f '
+PROMPT=$'\n''%K{4}%F{232}   %k%K{237}%F{15} ${_prompt_directory} %k %F{${_prompt_symbol_color}}❯%f '
 RPROMPT='${_prompt_right}'

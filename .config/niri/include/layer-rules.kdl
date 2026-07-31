@@ -1,0 +1,42 @@
+layer-rule {
+    match namespace="^backdrop-"
+    place-within-backdrop true
+}
+
+layer-rule {
+    match namespace=r"^blur-"
+    background-effect {
+        blur true
+        xray false
+    }
+}
+
+/////////////// EXAMPLE /////////////////////
+/-layer-rule {
+    match namespace="example"
+    // match layer="overlay"
+    opacity 0.95
+    block-out-from "screencast"
+    geometry-corner-radius 15
+    place-within-backdrop true
+
+    shadow {
+        on
+        softness 30
+        spread 5
+        offset x=0 y=5
+        color "#00000070"
+    }
+
+    background-effect {
+        blur true
+        xray true
+        noise 0.02
+        saturation 1.5
+    }
+
+    popups {
+        opacity 0.95
+        geometry-corner-radius 12
+    }
+}

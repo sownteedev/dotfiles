@@ -3,7 +3,7 @@
 # Niri Transform - Rotate display orientation (sownteedev)
 # Usage: transform left|right
 
-CONFIG="$HOME/.config/niri/include/output.kdl"
+CONFIG="$HOME/.config/niri/include/outputs.kdl"
 
 FOCUSED_JSON=$(niri msg -j focused-output)
 OUTPUT=$(echo "$FOCUSED_JSON" | jq -r '.name')

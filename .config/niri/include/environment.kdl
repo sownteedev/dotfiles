@@ -1,0 +1,18 @@
+environment {
+	QT_QPA_PLATFORM "wayland;xcb"
+	QT_QPA_PLATFORMTHEME "qt6ct"
+
+	ELECTRON_OZONE_PLATFORM_HINT "auto"
+
+	QT_IM_MODULE "fcitx"
+	XMODIFIERS "@im=fcitx"
+	SDL_IM_MODULE "fcitx"
+	GLFW_IM_MODULE "ibus"
+	INPUT_METHOD "fcitx"
+
+	DISPLAY ":1"
+	GBM_BACKEND "nvidia-drm"
+	// __NV_PRIME_RENDER_OFFLOAD "1"
+	LIBVA_DRIVER_NAME "nvidia"
+	__GLX_VENDOR_LIBRARY_NAME "nvidia"
+}

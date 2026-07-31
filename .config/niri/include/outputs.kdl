@@ -42,3 +42,32 @@ output "HDMI-A-2" {
     // variable-refresh-rate
     // focus-at-startup
 }
+
+
+
+/////////////// EXAMPLE /////////////////////
+/-output "EXAMPLE MONITOR NAME" {
+    // off
+    mode "1920x1080@60.000"
+    scale 1.0
+    transform "normal"
+    position x=0 y=0
+    variable-refresh-rate on-demand=true
+    focus-at-startup
+    backdrop-color "#0a0a0a"
+    // max-bpc 8
+
+    hot-corners {
+        // off
+        top-left
+        // top-right
+        // bottom-left
+        // bottom-right
+    }
+
+    // Per-output overrides accept the same options as the main layout block.
+    layout {
+        default-column-width { proportion 0.5; }
+        always-center-single-column false
+    }
+}

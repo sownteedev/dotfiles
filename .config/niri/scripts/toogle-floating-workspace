@@ -4,7 +4,7 @@
 # Usage: toogle-floating-workspace
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="$SCRIPT_DIR/../include/rule.kdl"
+CONFIG_FILE="$SCRIPT_DIR/../include/window-rules.kdl"
 
 STATE_FILE="${XDG_RUNTIME_DIR:-/tmp}/niri-floating-workspaces.json"
 
