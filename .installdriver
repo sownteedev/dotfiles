@@ -93,7 +93,7 @@ sleep 3 && clear
 # Battery
 red_echo "[*] Installing battery ..."
 sudo pacman -S --needed acpi acpid upower power-profiles-daemon --noconfirm
-sudo systemctl enable --now acpid upower
+sudo systemctl enable --now acpid upower power-profiles-daemon
 green_echo "[*] Done."
 sleep 3 && clear
 
@@ -106,13 +106,13 @@ sleep 2 && clear
 blue_echo "[*] Disabling wifi power save mode to prevent wifi disconnecting randomly ..."
 LOC="/etc/NetworkManager/conf.d/wifi-powersave.conf"
 echo -e "The following has been added to $LOC.\n"
-echo -e "[connection]\nwifi.powersave = 2" | sudo tee -a "$LOC"
+printf '[connection]\nwifi.powersave = 2\n' | sudo tee "$LOC" >/dev/null
 green_echo "[*] Done."
 sleep 3 && clear
 
 # Bluetooth
 red_echo "[*] Installing bluetooth driver ..."
-sudo pacman -S --needed bluez bluez-utils bluez-libs bluez-deprecated-tools --noconfirm
+sudo pacman -S --needed bluez bluez-utils bluez-libs bluez-deprecated-tools qt6-connectivity --noconfirm
 sudo systemctl enable --now bluetooth.service
 systemctl --user enable --now mpris-proxy.service
 green_echo "[*] Done."
@@ -132,7 +132,7 @@ sleep 3 && clear
 
 # Other
 red_echo "[*] Installing other ..."
-sudo pacman -S --needed --noconfirm devtools polkit-gnome pacman-contrib github-cli wget zsh fzf jq usbutils cliphist cava pciutils && yay -S --needed --noconfirm inotify-tools mission-center gnome-keyring tesseract tesseract-data-eng tesseract-data-vie intel-ucode
+sudo pacman -S --needed --noconfirm devtools polkit-gnome pacman-contrib github-cli wget curl zsh fzf jq usbutils cliphist cava pciutils inotify-tools libnotify libcanberra zenity tesseract tesseract-data-eng tesseract-data-vie && yay -S --needed --noconfirm mission-center gnome-keyring
 green_echo "[*] Done."
 sleep 3 && clear
 

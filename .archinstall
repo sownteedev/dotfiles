@@ -69,7 +69,7 @@ clear
 
 # Chroot
 echo ">>> Basic install..."
-pacstrap /mnt base base-devel linux-zen linux-zen-headers linux-firmware sbctl
+pacstrap /mnt base base-devel linux-zen linux-zen-headers linux-firmware sbctl intel-ucode
 
 echo ">>> Create fstab and go to chroot..."
 genfstab -U /mnt >> /mnt/etc/fstab
