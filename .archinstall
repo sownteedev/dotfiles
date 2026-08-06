@@ -116,7 +116,9 @@ systemctl enable NetworkManager
 echo ">>> Installing GRUB..."
 pacman -S --noconfirm grub os-prober efibootmgr ntfs-3g mtools dosfstools
 sed -i 's/^#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub
-grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --removable
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB \
+    --modules="tpm" --disable-shim-lock --removable --no-nvram
 grub-mkconfig -o /boot/grub/grub.cfg
 
 EOF

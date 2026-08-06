@@ -177,21 +177,26 @@ green_echo "[*] Done."
 sleep 3 && clear
 
 red_echo ">>> Config Secure Boot..."
-sudo grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
+sudo grub-install --target=x86_64-efi --efi-directory=/boot \
+    --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
+
+sudo grub-install --target=x86_64-efi --efi-directory=/boot \
+    --bootloader-id=GRUB --modules="tpm" --disable-shim-lock \
+    --removable --no-nvram
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 # Create keys and sign Secure Boot
-if ! sudo sbctl status &>/dev/null; then
+if [[ ! -f /var/lib/sbctl/keys/db/db.key ]]; then
     sudo sbctl create-keys
 fi
-sudo sbctl sign -s /boot/EFI/GRUB/grubx64.efi || true
-sudo sbctl sign -s /boot/EFI/Boot/bootx64.efi || true
+sudo sbctl sign -s /boot/EFI/GRUB/grubx64.efi
+sudo sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
 for k in /boot/vmlinuz-*; do
     if [ -f "$k" ]; then
-        sudo sbctl sign -s "$k" || true
+        sudo sbctl sign -s "$k"
     fi
 done
-sudo sbctl enroll-keys -mi || true
+sudo sbctl enroll-keys -m
 sleep 3 && clear
 
 # Nvidia
@@ -208,7 +213,7 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 # sudo bash -c 'echo -e "GBM_BACKEND=nvidia-drm\n__NV_PRIME_RENDER_OFFLOAD=1\n__GLX_VENDOR_LIBRARY_NAME=nvidia" >> /etc/environment'
 
 # Edit Mkinitcpio
-sudo sed -i 's/^MODULES=(.*)/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
+sudo sed -i 's/^MODULES=.*/MODULES=(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
 sudo mkinitcpio -P
 sleep 3 && clear
 

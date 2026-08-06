@@ -137,7 +137,7 @@ setup_dotfiles() {
 
     # Themes
     red_echo "[*] Copy themes ..."
-	yay -S adw-gtk-theme matugen-bin qt5-wayland qt6-wayland qt6ct-kde qt5ct-kde breeze-gtk breeze-icons --noconfirm
+	yay -S adw-gtk-theme matugen-bin qt5-wayland qt6-wayland qt6ct-kde qt5ct-kde kvantum kvantum-qt5 breeze-gtk breeze-icons --noconfirm
     green_echo "[*] Done."
     sleep 3 && clear
 
@@ -171,6 +171,7 @@ setup_dotfiles() {
 
 	safe_link "$DOTFILES_DIR/.config/qt5ct" "$HOME/.config/qt5ct"
 	safe_link "$DOTFILES_DIR/.config/qt6ct" "$HOME/.config/qt6ct"
+	safe_link "$DOTFILES_DIR/.config/Kvantum" "$HOME/.config/Kvantum"
     mkdir -p "$HOME/.config/qt5ct/colors"
     mkdir -p "$HOME/.config/qt6ct/colors"
 
