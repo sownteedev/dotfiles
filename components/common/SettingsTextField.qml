@@ -39,7 +39,7 @@ ColumnLayout {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 42
+            Layout.preferredHeight: root.fieldHeight
             border.color: input.activeFocus ? Config.alpha(Config.md3.primary, 0.65) : "transparent"
             border.width: 1
             color: Config.alpha(Config.md3.on_surface, 0.05)
@@ -81,6 +81,7 @@ ColumnLayout {
         SettingsActionButton {
             Layout.alignment: Qt.AlignVCenter
             iconName: root.actionIcon
+            enabled: root.enabled && root.editable
             visible: root.actionIcon !== ""
 
             onClicked: root.actionClicked()

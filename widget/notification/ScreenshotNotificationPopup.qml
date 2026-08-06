@@ -13,6 +13,7 @@ PanelWindow {
 
     property bool active: false
     property string body: ""
+    readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
     property int notificationId: -1
     property var notificationObject: null
     property var pendingNotification: null
@@ -31,13 +32,19 @@ PanelWindow {
             return;
 
         var id = notificationId;
+        // The history service owns dismissal from this point. Clear the local
+        // reference first so removeTimer cannot dismiss the same object twice.
+        notificationObject = null;
+        notificationId = -1;
         callback();
         closeToast();
         if (id >= 0)
             NotificationHistory.dismiss(id);
     }
     function isScreenshotNotification(notification) {
-        return String(notification.summary || "").toLowerCase().indexOf("screenshot captured") !== -1;
+        var matchingSummary = String(notification.summary || "").toLowerCase().indexOf("screenshot captured") !== -1;
+        var recentCapture = CaptureService.screenshotCapturedAt > 0 && Date.now() - CaptureService.screenshotCapturedAt < 10000;
+        return matchingSummary && (CaptureService.screenshotBusy || recentCapture);
     }
     function revealToast() {
         pendingShowTimer.stop();
@@ -50,6 +57,13 @@ PanelWindow {
         });
     }
     function showNotification(notification) {
+        if (notificationObject && notificationObject !== notification) {
+            try {
+                notificationObject.expire();
+            } catch (error) {
+                console.log("[ScreenshotToast] Replaced notification already closed:", error);
+            }
+        }
         removeTimer.stop();
         toast.swipeOffset = 0;
         notificationId = notification.id;
@@ -67,6 +81,14 @@ PanelWindow {
         notification.closed.connect(function () {
             if (root.notificationObject === notification)
                 root.closeToast();
+        });
+        notification.summaryChanged.connect(function () {
+            if (root.notificationObject === notification)
+                root.summary = notification.summary || "Screenshot captured";
+        });
+        notification.bodyChanged.connect(function () {
+            if (root.notificationObject === notification)
+                root.body = notification.body || "The screenshot is ready.";
         });
     }
 
@@ -88,6 +110,7 @@ PanelWindow {
             root.showNotification(notification);
         }
 
+        enabled: root.isNotificationScreen
         target: globalNotificationManager
     }
     Connections {
@@ -267,12 +290,13 @@ PanelWindow {
                         }
                     }
 
-                    CachingImage {
+                    Image {
                         anchors.fill: parent
-                        cacheKey: String(CaptureService.screenshotCapturedAt)
+                        asynchronous: true
+                        cache: false
                         fillMode: Image.PreserveAspectFit
                         horizontalAlignment: Image.AlignHCenter
-                        path: CaptureService.screenshotPath
+                        source: CaptureService.screenshotPath ? ("file://" + CaptureService.screenshotPath) : ""
                         verticalAlignment: Image.AlignVCenter
                     }
                     Rectangle {
@@ -343,6 +367,7 @@ PanelWindow {
                             font.pixelSize: 15
                             font.weight: Font.DemiBold
                             text: root.summary
+                            textFormat: Text.PlainText
                         }
                         Text {
                             Layout.fillWidth: true
@@ -351,6 +376,7 @@ PanelWindow {
                             font.pixelSize: 13
                             maximumLineCount: 2
                             text: root.body
+                            textFormat: Text.PlainText
                             wrapMode: Text.Wrap
                         }
                     }

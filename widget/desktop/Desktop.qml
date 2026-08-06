@@ -13,14 +13,27 @@ Variants {
             id: wallpaperLoader
 
             required property var modelData
+            readonly property bool requested: (!LiveWallpaperService.active && !EngineWallpaperService.active) || WallpaperService.liveRevealActive || WallpaperService.previewActive || EngineWallpaperService.policyRestarting
 
-            activeAsync: (!LiveWallpaperService.active && !EngineWallpaperService.active) || WallpaperService.liveRevealActive || WallpaperService.previewActive || EngineWallpaperService.policyRestarting
+            function syncRequestedState() {
+                if (requested) {
+                    if (!active && !loading)
+                        loading = true;
+                } else if (active) {
+                    active = false;
+                } else if (loading) {
+                    loading = false;
+                }
+            }
 
             Wallpaper {
                 screen: wallpaperLoader.modelData
                 wallpaperPath: WallpaperService.displayWallpaper
                 windowNamespace: "wallpaper-" + wallpaperLoader.modelData.name
             }
+
+            Component.onCompleted: syncRequestedState()
+            onRequestedChanged: syncRequestedState()
         }
     }
 }

@@ -206,13 +206,6 @@ QtObject {
             "recentBinds": []
         })
     property var niriFiles: ({})
-    property FileView payloadFile: FileView {
-        atomicWrites: true
-        path: root.payloadPath
-        printErrors: false
-        watchChanges: false
-    }
-    readonly property string payloadPath: Config.homeDir + "/.cache/quickshell/settings-hub-payload.json"
     property var pendingPayload: ({})
     property var quickshellSettings: ({
             "fontName": Config.fontName,
@@ -249,8 +242,11 @@ QtObject {
         id: saveProcess
 
         property string operation: ""
+        property string payloadJson: "{}"
+        property bool timedOut: false
 
-        command: ["python3", root.helperPath, operation, root.payloadPath]
+        command: ["python3", root.helperPath, operation, "-"]
+        stdinEnabled: true
 
         stderr: StdioCollector {
             id: saveError
@@ -260,7 +256,14 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            saveWatchdog.stop();
             root.busy = false;
+            if (timedOut) {
+                timedOut = false;
+                root.pendingPayload = {};
+                root.setStatus(false, "Settings apply timed out after 30 seconds");
+                return;
+            }
             var response = null;
             try {
                 response = JSON.parse(saveOutput.text);
@@ -278,6 +281,25 @@ QtObject {
                 root.refresh();
             }
             root.pendingPayload = {};
+        }
+        onStarted: {
+            timedOut = false;
+            saveWatchdog.restart();
+            // settings_hub.py reads one JSON line. Without the newline it waits
+            // for EOF, which only happened when Quickshell was reloaded.
+            write(payloadJson + "\n");
+            payloadJson = "{}";
+        }
+    }
+    property Timer saveWatchdog: Timer {
+        interval: 30000
+        repeat: false
+
+        onTriggered: {
+            if (!saveProcess.running)
+                return;
+            saveProcess.timedOut = true;
+            saveProcess.signal(15);
         }
     }
     property Process snapshotProcess: Process {
@@ -344,9 +366,8 @@ QtObject {
         if (busy)
             return;
 
-        Quickshell.execDetached(["mkdir", "-p", Config.homeDir + "/.cache/quickshell"]);
         pendingPayload = payload;
-        payloadFile.setText(JSON.stringify(payload));
+        saveProcess.payloadJson = JSON.stringify(payload);
         saveProcess.operation = operation;
         busy = true;
         Qt.callLater(function () {

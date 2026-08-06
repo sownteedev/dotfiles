@@ -23,21 +23,58 @@ QtObject {
     }
     property bool available: false
     property bool busy: false
+    property string cancellationReason: ""
     property bool dependencyChecked: false
-    property bool discardingResult: false
+    property int generation: 0
     property string language: ""
+    property int pendingGeneration: 0
     property string pendingImagePath: ""
+    property int runningGeneration: 0
+    property Timer recognizeStopTimer: Timer {
+        interval: 1000
+        repeat: false
+
+        onTriggered: {
+            if (root.recognizeProcess.running && root.runningGeneration !== root.generation)
+                root.recognizeProcess.signal(9);
+        }
+    }
+    property Timer recognizeWatchdog: Timer {
+        interval: 15000
+        repeat: false
+
+        onTriggered: {
+            if (!root.recognizeProcess.running || root.runningGeneration !== root.generation)
+                return;
+
+            root.generation += 1;
+            root.cancellationReason = "timeout";
+            root.recognizedText = "";
+            root.statusText = "OCR timed out after 15 seconds";
+            root.statusIsError = true;
+            root.cleanupInput();
+            root.recognizeProcess.signal(15);
+            root.recognizeStopTimer.restart();
+            root.finished(false, "");
+        }
+    }
     property Process recognizeProcess: Process {
         stdout: StdioCollector {
-            onStreamFinished: root.recognizedText = text.trim()
+            onStreamFinished: {
+                if (root.runningGeneration === root.generation && root.cancellationReason === "")
+                    root.recognizedText = text.trim();
+            }
         }
 
         onExited: (exitCode, exitStatus) => {
+            var resultIsCurrent = root.runningGeneration === root.generation && root.cancellationReason === "";
+            root.recognizeWatchdog.stop();
+            root.recognizeStopTimer.stop();
             root.busy = false;
             root.cleanupInput();
-
-            if (root.discardingResult) {
-                root.discardingResult = false;
+            root.runningGeneration = 0;
+            root.cancellationReason = "";
+            if (!resultIsCurrent) {
                 root.recognizedText = "";
                 return;
             }
@@ -79,11 +116,13 @@ QtObject {
         }
 
         busy = true;
+        runningGeneration = pendingGeneration;
+        cancellationReason = "";
         statusText = "Recognizing text…";
         statusIsError = false;
         recognizeProcess.command = ["tesseract", pendingImagePath, "stdout", "-l", language, "--psm", "6"];
-        recognizeProcess.running = false;
         recognizeProcess.running = true;
+        recognizeWatchdog.restart();
     }
     function cleanupInput() {
         if (pendingImagePath)
@@ -96,12 +135,19 @@ QtObject {
             statusIsError = false;
         }
     }
+    function discardFile(path) {
+        if (path)
+            Quickshell.execDetached(["rm", "-f", path]);
+    }
     function recognize(imagePath) {
         if (!imagePath || busy)
             return;
 
+        generation += 1;
+        pendingGeneration = generation;
         pendingImagePath = imagePath;
         recognizedText = "";
+        cancellationReason = "";
         statusIsError = false;
 
         if (!dependencyChecked || !available) {
@@ -119,13 +165,20 @@ QtObject {
         finished(false, "");
     }
     function reset() {
-        discardingResult = recognizeProcess.running;
-        if (recognizeProcess.running)
+        generation += 1;
+        cancellationReason = "reset";
+        recognizeWatchdog.stop();
+        if (recognizeProcess.running) {
             recognizeProcess.signal(15);
+            recognizeStopTimer.restart();
+        }
         cleanupInput();
         busy = recognizeProcess.running;
+        pendingGeneration = 0;
         recognizedText = "";
         statusText = "";
         statusIsError = false;
     }
+
+    Component.onDestruction: reset()
 }

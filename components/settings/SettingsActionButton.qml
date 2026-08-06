@@ -16,11 +16,17 @@ Rectangle {
     color: primary ? (mouse.containsMouse ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary) : (mouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.055))
     implicitHeight: 44
     implicitWidth: content.implicitWidth + 34
+    opacity: enabled ? 1 : 0.42
     radius: 13
 
     Behavior on color {
         ColorAnimation {
             duration: 140
+        }
+    }
+    Behavior on opacity {
+        NumberAnimation {
+            duration: 120
         }
     }
 
@@ -55,7 +61,8 @@ Rectangle {
         id: mouse
 
         anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+        enabled: root.enabled
         hoverEnabled: true
 
         onClicked: root.clicked()

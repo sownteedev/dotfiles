@@ -121,6 +121,62 @@ def atomic_write(path: Path, text: str) -> None:
             os.unlink(tmp_name)
 
 
+def apply_niri_changes(
+    updates: dict[Path, str], success_message: str
+) -> dict[str, object]:
+    """Validate a complete candidate tree before exposing any live changes."""
+    if not shutil.which("niri"):
+        return {"ok": False, "message": "Niri is not installed"}
+
+    for path in updates:
+        try:
+            path.relative_to(NIRI_DIR)
+        except ValueError as error:
+            raise ValueError(f"Refusing to edit a file outside {NIRI_DIR}") from error
+
+    with tempfile.TemporaryDirectory(prefix="quickshell-niri-") as temp_dir:
+        candidate_dir = Path(temp_dir) / "niri"
+        shutil.copytree(NIRI_DIR, candidate_dir)
+        for path, content in updates.items():
+            atomic_write(candidate_dir / path.relative_to(NIRI_DIR), content)
+        validation = subprocess.run(
+            ["niri", "validate", "-c", str(candidate_dir / "config.kdl")],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=20,
+        )
+    if validation.returncode != 0:
+        message = (validation.stderr or validation.stdout).strip()
+        return {"ok": False, "message": f"Niri rejected the change: {message}"}
+
+    originals = {path: read(path) for path in updates}
+    try:
+        for path, content in updates.items():
+            atomic_write(path, content)
+        reload_result = subprocess.run(
+            ["niri", "msg", "action", "load-config-file"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+        if reload_result.returncode != 0:
+            message = (reload_result.stderr or reload_result.stdout).strip()
+            raise RuntimeError(message or "Niri did not reload the config")
+    except Exception as error:
+        for path, content in originals.items():
+            atomic_write(path, content)
+        subprocess.run(
+            ["niri", "msg", "action", "load-config-file"],
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+        return {"ok": False, "message": f"Could not apply Niri config: {error}"}
+    return {"ok": True, "message": success_message}
+
+
 def qml_string(source: str, name: str, default: str = "") -> str:
     match = re.search(rf"property\s+string\s+{re.escape(name)}\s*:\s*\"((?:\\.|[^\"])*)\"", source)
     if not match:
@@ -1418,35 +1474,7 @@ def set_layout(payload: dict[str, object]) -> dict[str, object]:
 
     updated = update_block(updated, "recent-windows", update_recent_windows)
 
-    atomic_write(layout_path, updated)
-
-    validation = subprocess.run(
-        ["niri", "validate", "-c", str(NIRI_DIR / "config.kdl")],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if validation.returncode != 0:
-        atomic_write(layout_path, original)
-        message = (validation.stderr or validation.stdout).strip()
-        return {"ok": False, "message": f"Niri rejected the change: {message}"}
-    subprocess.run(["niri", "msg", "action", "load-config-file"], capture_output=True, check=False)
-    return {"ok": True, "message": "Niri layout applied"}
-
-
-def validate_and_reload_niri(path: Path, original: str, success_message: str) -> dict[str, object]:
-    validation = subprocess.run(
-        ["niri", "validate", "-c", str(NIRI_DIR / "config.kdl")],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if validation.returncode != 0:
-        atomic_write(path, original)
-        message = (validation.stderr or validation.stdout).strip()
-        return {"ok": False, "message": f"Niri rejected the change: {message}"}
-    subprocess.run(["niri", "msg", "action", "load-config-file"], capture_output=True, check=False)
-    return {"ok": True, "message": success_message}
+    return apply_niri_changes({layout_path: updated}, "Niri layout applied")
 
 
 def set_animation_global(payload: dict[str, object]) -> dict[str, object]:
@@ -1466,8 +1494,7 @@ def set_animation_global(payload: dict[str, object]) -> dict[str, object]:
         rf"\g<1>slowdown {slowdown:g}",
         "animation slowdown",
     )
-    atomic_write(path, updated)
-    return validate_and_reload_niri(path, original, "Animation settings applied")
+    return apply_niri_changes({path: updated}, "Animation settings applied")
 
 
 def set_animation_entry(payload: dict[str, object]) -> dict[str, object]:
@@ -1477,8 +1504,7 @@ def set_animation_entry(payload: dict[str, object]) -> dict[str, object]:
     if name not in ANIMATION_NAMES:
         return {"ok": False, "message": "Unknown animation"}
     updated = toggle_block(original, name, bool(payload.get("enabled", False)))
-    atomic_write(path, updated)
-    return validate_and_reload_niri(path, original, f"{name} animation updated")
+    return apply_niri_changes({path: updated}, f"{name} animation updated")
 
 
 def set_behavior(payload: dict[str, object]) -> dict[str, object]:
@@ -1663,21 +1689,7 @@ def set_behavior(payload: dict[str, object]) -> dict[str, object]:
         input_path: input_source,
         switch_events_path: switch_events,
     }
-    for path, content in updated_files.items():
-        atomic_write(path, content)
-    validation = subprocess.run(
-        ["niri", "validate", "-c", str(NIRI_DIR / "config.kdl")],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if validation.returncode != 0:
-        for path, content in originals.items():
-            atomic_write(path, content)
-        message = (validation.stderr or validation.stdout).strip()
-        return {"ok": False, "message": f"Niri rejected the change: {message}"}
-    subprocess.run(["niri", "msg", "action", "load-config-file"], capture_output=True, check=False)
-    return {"ok": True, "message": "Niri behavior applied"}
+    return apply_niri_changes(updated_files, "Niri behavior applied")
 
 
 def set_niri_file(payload: dict[str, object]) -> dict[str, object]:
@@ -1690,9 +1702,7 @@ def set_niri_file(payload: dict[str, object]) -> dict[str, object]:
     if not content.endswith("\n"):
         content += "\n"
     path = INCLUDE_DIR / name
-    original = read(path)
-    atomic_write(path, content)
-    return validate_and_reload_niri(path, original, f"{name} applied")
+    return apply_niri_changes({path: content}, f"{name} applied")
 
 
 def set_keybind(payload: dict[str, object]) -> dict[str, object]:
@@ -1729,8 +1739,9 @@ def set_keybind(payload: dict[str, object]) -> dict[str, object]:
     if not replaced:
         return {"ok": False, "message": "The keybind changed on disk; refresh and try again"}
 
-    atomic_write(path, "".join(lines))
-    return validate_and_reload_niri(path, original, f"Keybind changed to {pretty_key(new_key)}")
+    return apply_niri_changes(
+        {path: "".join(lines)}, f"Keybind changed to {pretty_key(new_key)}"
+    )
 
 
 def update_input_entry(original: str, block_name: str, entry_index: int, updater) -> str:
@@ -1793,8 +1804,7 @@ def set_input(payload: dict[str, object]) -> dict[str, object]:
         updated = update_input_entry(original, block_name, entry_index, replace_value)
     except ValueError as error:
         return {"ok": False, "message": str(error)}
-    atomic_write(path, updated)
-    return validate_and_reload_niri(path, original, f"{section} setting updated")
+    return apply_niri_changes({path: updated}, f"{section} setting updated")
 
 
 def set_input_enabled(payload: dict[str, object]) -> dict[str, object]:
@@ -1810,8 +1820,7 @@ def set_input_enabled(payload: dict[str, object]) -> dict[str, object]:
     if not block_name:
         return {"ok": False, "message": "This input section cannot be disabled"}
     updated = set_block_flag(original, block_name, "off", not bool(payload.get("enabled", True)))
-    atomic_write(path, updated)
-    return validate_and_reload_niri(path, original, f"{section} state updated")
+    return apply_niri_changes({path: updated}, f"{section} state updated")
 
 
 def set_input_entry_enabled(payload: dict[str, object]) -> dict[str, object]:
@@ -1834,8 +1843,7 @@ def set_input_entry_enabled(payload: dict[str, object]) -> dict[str, object]:
         updated = update_input_entry(original, block_name, entry_index, toggle_value)
     except ValueError as error:
         return {"ok": False, "message": str(error)}
-    atomic_write(path, updated)
-    return validate_and_reload_niri(path, original, f"{section} option updated")
+    return apply_niri_changes({path: updated}, f"{section} option updated")
 
 
 def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
@@ -1901,10 +1909,8 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "Niri screenshot path",
     )
     if behavior_updated != behavior_original:
-        atomic_write(behavior_path, behavior_updated)
-        result = validate_and_reload_niri(
-            behavior_path,
-            behavior_original,
+        result = apply_niri_changes(
+            {behavior_path: behavior_updated},
             "Quickshell settings and Niri screenshot path saved",
         )
         if not result["ok"]:
@@ -1919,6 +1925,27 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
 
 
 def load_payload(path: str) -> dict[str, object]:
+    if path == "-":
+        # Accept both the current newline-delimited protocol and older live
+        # Quickshell singletons that wrote JSON without closing stdin. Return
+        # as soon as one complete object has arrived instead of waiting for EOF.
+        payload = ""
+        while True:
+            character = sys.stdin.read(1)
+            if character == "":
+                if not payload.strip():
+                    raise ValueError("Settings payload was empty")
+                return json.loads(payload)
+            payload += character
+            if character not in "}]":
+                continue
+            try:
+                decoded = json.loads(payload)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(decoded, dict):
+                raise ValueError("Settings payload must be a JSON object")
+            return decoded
     payload_path = Path(path)
     try:
         payload_path.chmod(0o600)

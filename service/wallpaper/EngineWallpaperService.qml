@@ -326,7 +326,7 @@ QtObject {
         return knownPreviewThumbnails[previewThumbnailPath(path, modified)] === true;
     }
     function previewThumbnailPath(path, modified) {
-        return previewCacheDir + "/" + stableHash(String(path) + "|" + String(modified || "0")) + ".jpg";
+        return previewCacheDir + "/" + WallpaperService.stableHash(String(path) + "|" + String(modified || "0")) + ".jpg";
     }
     function processNextPreviewThumbnail() {
         if (previewThumbnailWorker.running || previewThumbnailJob || previewThumbnailQueue.length === 0)
@@ -399,15 +399,7 @@ QtObject {
         }
         scanDebounce.restart();
     }
-    function stableHash(value) {
-        var text = String(value || "");
-        var hash = 2166136261;
-        for (var i = 0; i < text.length; ++i) {
-            hash ^= text.charCodeAt(i);
-            hash = (hash + (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)) >>> 0;
-        }
-        return ("00000000" + hash.toString(16)).slice(-8);
-    }
+
     function startReadyProbe() {
         if (!player.running || !readyFramePath)
             return;

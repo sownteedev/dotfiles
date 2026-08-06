@@ -46,10 +46,23 @@ Item {
         newTaskTitle = "";
         newTaskDue = "";
         newTaskNotes = "";
+        titleField.text = "";
+        notesField.text = "";
         showAddEvent = true;
     }
 
     anchors.fill: parent
+
+    Component.onCompleted: {
+        if (typeof GoogleService.acquire === "function")
+            GoogleService.acquire();
+        else if (GoogleService.authenticated)
+            GoogleService.fetchAll();
+    }
+    Component.onDestruction: {
+        if (typeof GoogleService.release === "function")
+            GoogleService.release();
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -278,6 +291,8 @@ Item {
                                 editingTaskId = modelData.id;
                                 newTaskTitle = modelData.title || "";
                                 newTaskNotes = modelData.notes || "";
+                                titleField.text = newTaskTitle;
+                                notesField.text = newTaskNotes;
                                 if (modelData.due) {
                                     var d = new Date(modelData.due);
                                     newTaskDue = String(d.getDate()).padStart(2, '0') + "/" + String(d.getMonth() + 1).padStart(2, '0') + "/" + d.getFullYear();
@@ -465,6 +480,8 @@ Item {
                     width: formFlickable.width
 
                     FormTextField {
+                        id: titleField
+
                         Layout.fillWidth: true
                         label: "Title"
                         placeholder: "What needs to be done?"
@@ -482,6 +499,8 @@ Item {
                         onClicked: datePickerPopup.open()
                     }
                     FormTextField {
+                        id: notesField
+
                         Layout.fillWidth: true
                         label: "Notes"
                         multiline: true
@@ -495,12 +514,12 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
-                color: saveBtn.pressed ? Config.alpha(Config.md3.primary, 0.8) : Config.md3.primary
+                color: newTaskTitle.trim() !== "" ? (saveBtn.pressed ? Config.alpha(Config.md3.primary, 0.8) : Config.md3.primary) : Config.alpha(Config.md3.on_surface, 0.10)
                 radius: 15
 
                 Text {
                     anchors.centerIn: parent
-                    color: Config.md3.background
+                    color: newTaskTitle.trim() !== "" ? Config.md3.on_primary : Config.md3.outline
                     font.family: Config.fontName
                     font.pixelSize: 16
                     font.weight: Font.Bold
@@ -510,6 +529,8 @@ Item {
                     id: saveBtn
 
                     anchors.fill: parent
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    enabled: newTaskTitle.trim() !== ""
 
                     onClicked: {
                         var isoDue = undefined;
@@ -525,6 +546,12 @@ Item {
                         } else {
                             GoogleService.createTask("@default", newTaskTitle, isoDue, newTaskNotes);
                         }
+                        editingTaskId = "";
+                        newTaskTitle = "";
+                        newTaskDue = "";
+                        newTaskNotes = "";
+                        titleField.text = "";
+                        notesField.text = "";
                         showAddEvent = false;
                     }
                 }

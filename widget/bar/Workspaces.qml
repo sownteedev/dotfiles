@@ -66,7 +66,7 @@ RowLayout {
 
             border.color: dropArea.containsDrag ? Config.md3.surface_container_highest : "transparent"
             border.width: 1
-            color: dropArea.containsDrag ? Config.alpha(Config.md3.surface_container_high, 0.8) : (modelData.id === root.activeWorkspaceId ? Config.alpha(Config.md3.surface_container_highest, 0.8) : Config.alpha(Config.md3.surface_container, 0.8))
+            color: dropArea.containsDrag ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.8 : 0.6) : (modelData.id === root.activeWorkspaceId ? Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.7 : 0.5) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.7 : 0.5))
             implicitHeight: 38
             implicitWidth: wsLayout.implicitWidth + 30
             radius: 7
@@ -318,7 +318,7 @@ RowLayout {
 
             border.color: dropNewArea.containsDrag ? Config.md3.primary : Config.md3.surface_container_highest
             border.width: 1
-            color: dropNewArea.containsDrag ? Config.alpha(Config.md3.primary, 0.35) : Config.alpha(Config.md3.surface, 0.8)
+            color: dropNewArea.containsDrag ? Config.alpha(Config.md3.primary, 0.35) : Config.alpha(Config.md3.surface, Config.lightTheme ? 0.7 : 0.5)
             implicitHeight: 38
             implicitWidth: 38
             radius: 7

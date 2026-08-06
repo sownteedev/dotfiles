@@ -196,10 +196,21 @@ Item {
         id: clipboardSearch
 
         readonly property var clipboardResults: item ? item["clipboardResults"] : []
+        readonly property var readyPreviewIds: item ? item["readyPreviewIds"] : ({})
 
         function copySelected(id) {
             if (item)
                 item["copySelected"](id);
+        }
+        function ensurePreview(id) {
+            if (item)
+                item["ensurePreview"](id);
+        }
+        function isPreviewReady(id) {
+            return !!readyPreviewIds[id];
+        }
+        function previewPath(id) {
+            return readyPreviewIds[id] || "";
         }
 
         active: searchRoot.isClipboardMode
@@ -235,18 +246,6 @@ Item {
     ListView {
         id: searchList
 
-        anchors.fill: parent
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-        currentIndex: searchRoot.selectedIndex
-        highlightFollowsCurrentItem: true
-        highlightMoveDuration: 250
-        highlightRangeMode: ListView.ApplyRange
-        model: searchRoot.combinedResults
-        preferredHighlightBegin: 0
-        preferredHighlightEnd: Math.max(0, searchList.height - 80)
-        spacing: 12
-
         function smoothWheelScroll(delta) {
             var minimumY = searchList.originY;
             var maximumY = minimumY + Math.max(0, searchList.contentHeight - searchList.height);
@@ -262,26 +261,17 @@ Item {
             wheelScrollAnimation.start();
         }
 
-        NumberAnimation {
-            id: wheelScrollAnimation
-
-            duration: 220
-            easing.type: Easing.OutCubic
-            property: "contentY"
-            target: searchList
-        }
-
-        WheelHandler {
-            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            target: null
-
-            onWheel: event => {
-                var pixelDelta = event.pixelDelta.y;
-                var delta = pixelDelta !== 0 ? pixelDelta : (event.angleDelta.y / 120) * 82;
-                searchList.smoothWheelScroll(delta);
-                event.accepted = true;
-            }
-        }
+        anchors.fill: parent
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
+        currentIndex: searchRoot.selectedIndex
+        highlightFollowsCurrentItem: true
+        highlightMoveDuration: 250
+        highlightRangeMode: ListView.ApplyRange
+        model: searchRoot.combinedResults
+        preferredHighlightBegin: 0
+        preferredHighlightEnd: Math.max(0, searchList.height - 80)
+        spacing: 12
 
         ScrollBar.vertical: ScrollBar {
             id: searchScrollBar
@@ -320,6 +310,10 @@ Item {
             readonly property bool isSelected: index === searchRoot.selectedIndex
             readonly property var itemData: !isClipboard ? modelData.data : null
 
+            function requestClipboardPreview() {
+                if (isClipboard && clipData && clipData.isImage && !clipboardSearch.isPreviewReady(clipData.id))
+                    clipboardSearch.ensurePreview(clipData.id);
+            }
             function snapBack() {
                 swipeContent.x = 0;
             }
@@ -354,6 +348,9 @@ Item {
                     duration: 200
                 }
             }
+
+            Component.onCompleted: requestClipboardPreview()
+            onClipDataChanged: requestClipboardPreview()
 
             Timer {
                 id: collapseTimer
@@ -457,13 +454,13 @@ Item {
                         readonly property color iconColor: delegateRoot.isSelected ? delegateRoot.accentColor : Config.md3.on_surface_variant
                         readonly property string imagePreviewSource: {
                             if (isClipboard)
-                                return clipData.isImage ? clipData.imagePath : "";
+                                return clipData.isImage ? clipboardSearch.previewPath(clipData.id) : "";
 
                             return (isFile && isImageFile(itemData.name)) ? "file://" + itemData.path : "";
                         }
                         readonly property bool isImagePreview: {
                             if (isClipboard)
-                                return clipData.isImage;
+                                return clipData.isImage && clipboardSearch.isPreviewReady(clipData.id);
 
                             return isFile && isImageFile(itemData.name);
                         }
@@ -624,6 +621,26 @@ Item {
 
         // Invisible highlight just for the engine
         highlight: Item {
+        }
+
+        NumberAnimation {
+            id: wheelScrollAnimation
+
+            duration: 220
+            easing.type: Easing.OutCubic
+            property: "contentY"
+            target: searchList
+        }
+        WheelHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            target: null
+
+            onWheel: event => {
+                var pixelDelta = event.pixelDelta.y;
+                var delta = pixelDelta !== 0 ? pixelDelta : (event.angleDelta.y / 120) * 82;
+                searchList.smoothWheelScroll(delta);
+                event.accepted = true;
+            }
         }
 
         // Our actual visible custom highlight

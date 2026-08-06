@@ -13,7 +13,7 @@ Item {
     property real vinylSize: Math.max(10, Math.min(root.width, root.height) - (CavaService.available ? visualizerPadding : 0))
 
     // Calculate sizes to leave room for visualizer
-    readonly property real visualizerPadding: 44
+    readonly property real visualizerPadding: 80
 
     implicitHeight: 190
     implicitWidth: 250
@@ -57,13 +57,13 @@ Item {
                 var cx = width / 2;
                 var cy = height / 2;
                 var baseRadius = (visualizerRing.width / 2) + 4;
-                var maxAmplitude = (visualizerPadding / 2) + 6;
+                var maxAmplitude = (visualizerPadding / 2) + 10;
 
                 var points = [];
                 for (var i = 0; i < numBars; i++) {
                     var angle = (i / numBars) * Math.PI * 2 - Math.PI / 2;
                     var rawLevel = (rawBars.length > i) ? Number(rawBars[i] || 0) * CavaService.levelScale : 0;
-                    var level = Math.min(1, Math.pow(rawLevel, 0.65) * 1.3);
+                    var level = Math.min(1.2, Math.pow(rawLevel, 0.6) * 1.5);
                     var radius = baseRadius + (level * maxAmplitude);
                     points.push({
                         x: cx + Math.cos(angle) * radius,

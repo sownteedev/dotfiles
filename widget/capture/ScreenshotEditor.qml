@@ -22,11 +22,15 @@ PanelWindow {
     readonly property rect displayedOcrRect: ocrDragging ? ocrDraftRect : ocrRect
     property rect liveDirtyRect: Qt.rect(0, 0, 0, 0)
     property int livePaintFrameId: -1
+    property var lastMoveUndo: null
+    property int movingShapeIndex: -1
+    property var movingShapeOriginal: null
     property int nextMarkerNumber: 1
     property rect ocrDraftRect: Qt.rect(0, 0, 0, 0)
     property bool ocrDragging: false
     property bool ocrPreparing: false
     property rect ocrRect: Qt.rect(0, 0, 0, 0)
+    property int ocrSessionToken: 0
     readonly property var pixelateShapes: shapes.filter(function (shape) {
         return shape.tool === "pixelate";
     })
@@ -38,6 +42,7 @@ PanelWindow {
     property var shapes: []
 
     function addNumberMarker(x, y) {
+        lastMoveUndo = null;
         var size = markerSize();
         var radius = size / 2;
         var centerX = Math.max(radius, Math.min(captureSurface.width - radius, x));
@@ -77,8 +82,12 @@ PanelWindow {
         keyScope.forceActiveFocus();
     }
     function clearAll() {
+        cancelOcrSession();
         shapes = [];
         currentShape = null;
+        lastMoveUndo = null;
+        movingShapeIndex = -1;
+        movingShapeOriginal = null;
         cropRect = Qt.rect(0, 0, 0, 0);
         cropDraftRect = Qt.rect(0, 0, 0, 0);
         cropDragging = false;
@@ -87,7 +96,6 @@ PanelWindow {
         ocrRect = Qt.rect(0, 0, 0, 0);
         ocrDraftRect = Qt.rect(0, 0, 0, 0);
         ocrDragging = false;
-        OcrService.clearStatus();
         inlineTextEditor.visible = false;
         inlineTextEditor.text = "";
         prepareLiveCanvas();
@@ -96,6 +104,7 @@ PanelWindow {
     function commitText() {
         var value = inlineTextEditor.text.trim();
         if (value !== "") {
+            lastMoveUndo = null;
             var fontSize = textFontSize();
             var nextShapes = shapes.slice();
             nextShapes.push({
@@ -118,11 +127,29 @@ PanelWindow {
         inlineTextEditor.visible = false;
         keyScope.forceActiveFocus();
     }
+    function cancelEditor() {
+        cancelOcrSession();
+        CaptureService.closeScreenshotEditor();
+    }
+    function cancelOcrSession() {
+        ocrSessionToken += 1;
+        ocrPreparing = false;
+        OcrService.reset();
+    }
     function contrastingTextColor(colorValue) {
         var luminance = colorValue.r * 0.299 + colorValue.g * 0.587 + colorValue.b * 0.114;
         return luminance > 0.58 ? "#151515" : "#ffffff";
     }
     function copyShape(shape) {
+        var copiedPoints = [];
+        if (shape.points) {
+            for (var i = 0; i < shape.points.length; ++i) {
+                copiedPoints.push({
+                    "x": shape.points[i].x,
+                    "y": shape.points[i].y
+                });
+            }
+        }
         return {
             "tool": shape.tool,
             "color": shape.color,
@@ -136,8 +163,44 @@ PanelWindow {
             "markerNumber": shape.markerNumber || 0,
             "markerSize": shape.markerSize || 0,
             "textColor": shape.textColor || "",
-            "points": shape.points ? shape.points.slice() : []
+            "points": copiedPoints
         };
+    }
+    function cancelShapeMove() {
+        if (movingShapeIndex >= 0 && movingShapeOriginal) {
+            var nextShapes = shapes.slice();
+            var restoreIndex = Math.max(0, Math.min(movingShapeIndex, nextShapes.length));
+            nextShapes.splice(restoreIndex, 0, copyShape(movingShapeOriginal));
+            shapes = nextShapes;
+            recomputeMarkerNumber();
+        }
+
+        movingShapeIndex = -1;
+        movingShapeOriginal = null;
+        liveCanvasTranslate.x = 0;
+        liveCanvasTranslate.y = 0;
+        currentShape = null;
+        prepareLiveCanvas();
+        committedCanvas.requestPaint();
+        scheduleLivePaint();
+    }
+    function distanceSquaredToSegment(px, py, x1, y1, x2, y2) {
+        var segmentX = x2 - x1;
+        var segmentY = y2 - y1;
+        var lengthSquared = segmentX * segmentX + segmentY * segmentY;
+        if (lengthSquared <= 0.0001) {
+            var pointDx = px - x1;
+            var pointDy = py - y1;
+            return pointDx * pointDx + pointDy * pointDy;
+        }
+
+        var t = ((px - x1) * segmentX + (py - y1) * segmentY) / lengthSquared;
+        t = Math.max(0, Math.min(1, t));
+        var nearestX = x1 + t * segmentX;
+        var nearestY = y1 + t * segmentY;
+        var dx = px - nearestX;
+        var dy = py - nearestY;
+        return dx * dx + dy * dy;
     }
     function drawEllipse(ctx, shape) {
         var left = Math.min(shape.startX, shape.endX);
@@ -275,6 +338,7 @@ PanelWindow {
         for (var i = nextShapes.length - 1; i >= 0; --i) {
             var bounds = shapeBounds(nextShapes[i]);
             if (x >= bounds.minX - radius && x <= bounds.maxX + radius && y >= bounds.minY - radius && y <= bounds.maxY + radius) {
+                lastMoveUndo = null;
                 nextShapes.splice(i, 1);
                 shapes = nextShapes;
                 recomputeMarkerNumber();
@@ -282,6 +346,79 @@ PanelWindow {
                 return;
             }
         }
+    }
+    function hitTestShape(shape, x, y) {
+        var threshold = 15;
+        if (!shape || shape.tool === "crop" || shape.tool === "ocr")
+            return false;
+
+        if (shape.tool === "blur" || shape.tool === "pixelate") {
+            var bMinX = Math.min(shape.startX, shape.endX);
+            var bMaxX = Math.max(shape.startX, shape.endX);
+            var bMinY = Math.min(shape.startY, shape.endY);
+            var bMaxY = Math.max(shape.startY, shape.endY);
+            return x >= bMinX && x <= bMaxX && y >= bMinY && y <= bMaxY;
+        }
+
+        if (shape.tool === "number") {
+            var cx = shape.startX + shape.markerSize / 2;
+            var cy = shape.startY + shape.markerSize / 2;
+            var dist = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+            return dist <= (shape.markerSize / 2) + threshold;
+        }
+        if (shape.tool === "text") {
+            var estW = (shape.text || "").length * shape.fontSize * 0.6;
+            return x >= shape.startX - threshold && x <= shape.startX + estW + threshold && y >= shape.startY - threshold && y <= shape.startY + shape.fontSize + threshold;
+        }
+
+        if (shape.tool === "line" || shape.tool === "arrow") {
+            var lineRadius = shape.width / 2 + 10;
+            var lineRadiusSquared = lineRadius * lineRadius;
+            if (distanceSquaredToSegment(x, y, shape.startX, shape.startY, shape.endX, shape.endY) <= lineRadiusSquared)
+                return true;
+
+            if (shape.tool === "arrow") {
+                var angle = Math.atan2(shape.endY - shape.startY, shape.endX - shape.startX);
+                var head = 12 + shape.width * 1.4;
+                var headX1 = shape.endX - head * Math.cos(angle - Math.PI / 6);
+                var headY1 = shape.endY - head * Math.sin(angle - Math.PI / 6);
+                var headX2 = shape.endX - head * Math.cos(angle + Math.PI / 6);
+                var headY2 = shape.endY - head * Math.sin(angle + Math.PI / 6);
+                return distanceSquaredToSegment(x, y, shape.endX, shape.endY, headX1, headY1) <= lineRadiusSquared || distanceSquaredToSegment(x, y, shape.endX, shape.endY, headX2, headY2) <= lineRadiusSquared;
+            }
+            return false;
+        }
+
+        if (shape.tool === "pen" || shape.tool === "highlight") {
+            var pts = shape.points;
+            if (!pts || pts.length === 0)
+                pts = [
+                    {
+                        "x": shape.startX,
+                        "y": shape.startY
+                    },
+                    {
+                        "x": shape.endX,
+                        "y": shape.endY
+                    }
+                ];
+            var strokeRadius = shape.tool === "highlight" ? shape.width * 1.5 + 8 : shape.width / 2 + 10;
+            var strokeRadiusSquared = strokeRadius * strokeRadius;
+            if (pts.length === 1)
+                return distanceSquaredToSegment(x, y, pts[0].x, pts[0].y, pts[0].x, pts[0].y) <= strokeRadiusSquared;
+
+            for (var i = 1; i < pts.length; ++i) {
+                if (distanceSquaredToSegment(x, y, pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y) <= strokeRadiusSquared)
+                    return true;
+            }
+            return false;
+        }
+
+        var minX = Math.min(shape.startX, shape.endX);
+        var maxX = Math.max(shape.startX, shape.endX);
+        var minY = Math.min(shape.startY, shape.endY);
+        var maxY = Math.max(shape.startY, shape.endY);
+        return x >= minX - threshold && x <= maxX + threshold && y >= minY - threshold && y <= maxY + threshold;
     }
     function markerSize() {
         return Math.round(24 + selectedWidth);
@@ -310,17 +447,24 @@ PanelWindow {
         ocrRect = region;
         ocrPreparing = true;
         OcrService.clearStatus();
+        var editorSession = ocrSessionToken;
         Qt.callLater(function () {
+            if (editorSession !== root.ocrSessionToken || !CaptureService.screenshotEditorVisible)
+                return;
             var scaleX = sourceImage.sourceSize.width / Math.max(1, captureSurface.width);
             var scaleY = sourceImage.sourceSize.height / Math.max(1, captureSurface.height);
             var targetWidth = Math.max(1, Math.round(region.width * scaleX));
             var targetHeight = Math.max(1, Math.round(region.height * scaleY));
             var started = ocrExportSurface.grabToImage(function (result) {
+                if (editorSession !== root.ocrSessionToken || !CaptureService.screenshotEditorVisible)
+                    return;
                 var path = "/tmp/quickshell-ocr-" + Date.now() + ".png";
                 var saved = result.saveToFile(path);
                 root.ocrPreparing = false;
-                if (saved)
+                if (saved && editorSession === root.ocrSessionToken && CaptureService.screenshotEditorVisible)
                     OcrService.recognize(path);
+                else if (saved)
+                    OcrService.discardFile(path);
                 else
                     OcrService.reportCaptureError();
             }, Qt.size(targetWidth, targetHeight));
@@ -351,6 +495,7 @@ PanelWindow {
         if (saving || sourceImage.status !== Image.Ready)
             return;
 
+        cancelOcrSession();
         saving = true;
         saveError = "";
         committedCanvas.requestPaint();
@@ -447,6 +592,20 @@ PanelWindow {
             cropWasLastAction = false;
             return;
         }
+        if (lastMoveUndo) {
+            var restoredShapes = shapes.slice();
+            var restoreIndex = Math.max(0, Math.min(lastMoveUndo.index, restoredShapes.length - 1));
+            if (restoredShapes.length > 0)
+                restoredShapes.splice(restoreIndex, 1, copyShape(lastMoveUndo.shape));
+            else
+                restoredShapes.push(copyShape(lastMoveUndo.shape));
+            shapes = restoredShapes;
+            lastMoveUndo = null;
+            cropWasLastAction = false;
+            recomputeMarkerNumber();
+            committedCanvas.requestPaint();
+            return;
+        }
         if (shapes.length === 0)
             return;
 
@@ -470,9 +629,9 @@ PanelWindow {
     focusable: true
 
     Component.onCompleted: {
-        OcrService.reset();
         resetEditorDefaults();
     }
+    Component.onDestruction: cancelOcrSession()
 
     Connections {
         function onScreenshotEditorSessionChanged() {
@@ -487,7 +646,7 @@ PanelWindow {
         anchors.fill: parent
         focus: true
 
-        Keys.onEscapePressed: CaptureService.closeScreenshotEditor()
+        Keys.onEscapePressed: root.cancelEditor()
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                 root.saveEditedImage();
@@ -643,6 +802,19 @@ PanelWindow {
                             for (var i = 0; i < root.shapes.length; ++i)
                                 root.drawShape(ctx, root.shapes[i]);
                         }
+                        onPainted: {
+                            if (root.currentShape && root.currentShape.__hideLiveCanvas) {
+                                liveCanvas.opacity = 0;
+                                liveCanvasTranslate.x = 0;
+                                liveCanvasTranslate.y = 0;
+                                root.currentShape = null;
+                                root.prepareLiveCanvas();
+                                root.scheduleLivePaint();
+                            }
+                            if (root.currentShape && root.currentShape.__waitingForCommit) {
+                                root.currentShape.__waitingForCommit = false;
+                            }
+                        }
                     }
                     Canvas {
                         id: liveCanvas
@@ -654,7 +826,11 @@ PanelWindow {
                         anchors.fill: parent
                         antialiasing: true
                         renderStrategy: Canvas.Immediate
-                        visible: root.currentShape !== null && root.currentShape.tool !== "blur" && root.currentShape.tool !== "pixelate" && root.currentShape.tool !== "crop" && root.currentShape.tool !== "ocr"
+                        visible: true
+
+                        transform: Translate {
+                            id: liveCanvasTranslate
+                        }
 
                         onPaint: {
                             var ctx = getContext("2d");
@@ -667,23 +843,59 @@ PanelWindow {
                                 root.drawIncrementalPen(ctx, shape);
                             else
                                 root.drawShape(ctx, shape);
+
+                            liveCanvas.opacity = 1;
                         }
                     }
                     MouseArea {
                         anchors.fill: parent
-                        cursorShape: root.selectedTool === "eraser" || root.selectedTool === "text" || root.selectedTool === "number" ? Qt.PointingHandCursor : Qt.CrossCursor
+                        cursorShape: root.selectedTool === "select" ? Qt.ArrowCursor : (root.selectedTool === "eraser" || root.selectedTool === "text" || root.selectedTool === "number" ? Qt.PointingHandCursor : Qt.CrossCursor)
 
                         onCanceled: {
                             root.cropDragging = false;
                             root.cropDraftRect = Qt.rect(0, 0, 0, 0);
                             root.ocrDragging = false;
                             root.ocrDraftRect = Qt.rect(0, 0, 0, 0);
-                            root.currentShape = null;
-                            root.prepareLiveCanvas();
+                            if (root.selectedTool === "select") {
+                                root.cancelShapeMove();
+                            } else {
+                                root.currentShape = null;
+                                root.prepareLiveCanvas();
+                            }
                         }
                         onPositionChanged: mouse => {
                             if (!pressed)
                                 return;
+
+                            if (root.selectedTool === "select") {
+                                if (root.currentShape && root.currentShape.__dragStartX !== undefined) {
+                                    if (root.currentShape.__waitingForCommit)
+                                        return;
+
+                                    var dx = mouse.x - root.currentShape.__dragStartX;
+                                    var dy = mouse.y - root.currentShape.__dragStartY;
+
+                                    if (root.currentShape.tool === "blur" || root.currentShape.tool === "pixelate") {
+                                        var s = root.copyShape(root.currentShape);
+                                        s.__dragStartX = mouse.x;
+                                        s.__dragStartY = mouse.y;
+
+                                        if (s.startX !== undefined)
+                                            s.startX += dx;
+                                        if (s.startY !== undefined)
+                                            s.startY += dy;
+                                        if (s.endX !== undefined)
+                                            s.endX += dx;
+                                        if (s.endY !== undefined)
+                                            s.endY += dy;
+                                        root.currentShape = s;
+                                    } else {
+                                        liveCanvasTranslate.x = mouse.x - root.currentShape.__dragStartX;
+                                        liveCanvasTranslate.y = mouse.y - root.currentShape.__dragStartY;
+                                    }
+                                }
+                                return;
+                            }
 
                             if (root.selectedTool === "eraser") {
                                 root.eraseAt(mouse.x, mouse.y);
@@ -734,6 +946,37 @@ PanelWindow {
                                 root.scheduleLivePaint();
                         }
                         onPressed: mouse => {
+                            if (root.selectedTool === "select") {
+                                for (var i = root.shapes.length - 1; i >= 0; i--) {
+                                    if (root.hitTestShape(root.shapes[i], mouse.x, mouse.y)) {
+                                        root.movingShapeIndex = i;
+                                        root.movingShapeOriginal = root.copyShape(root.shapes[i]);
+                                        var selectedShape = root.copyShape(root.shapes[i]);
+                                        selectedShape.__dragStartX = mouse.x;
+                                        selectedShape.__dragStartY = mouse.y;
+
+                                        var nextShapes = root.shapes.slice();
+                                        nextShapes.splice(i, 1);
+                                        root.shapes = nextShapes;
+
+                                        liveCanvasTranslate.x = 0;
+                                        liveCanvasTranslate.y = 0;
+                                        root.currentShape = selectedShape;
+
+                                        if (selectedShape.tool !== "blur" && selectedShape.tool !== "pixelate") {
+                                            root.currentShape.__waitingForCommit = true;
+                                            root.prepareLiveCanvas();
+                                            root.scheduleLivePaint();
+                                        }
+                                        committedCanvas.requestPaint();
+                                        return;
+                                    }
+                                }
+                                root.movingShapeIndex = -1;
+                                root.movingShapeOriginal = null;
+                                root.currentShape = null;
+                                return;
+                            }
                             if (root.selectedTool === "text") {
                                 root.beginText(mouse.x, mouse.y);
                                 return;
@@ -788,11 +1031,74 @@ PanelWindow {
                             root.scheduleLivePaint(Qt.rect(mouse.x - padding, mouse.y - padding, padding * 2, padding * 2));
                         }
                         onReleased: mouse => {
+                            if (root.selectedTool === "select") {
+                                if (root.currentShape && root.currentShape.__dragStartX !== undefined) {
+                                    var finalShape = root.copyShape(root.currentShape);
+                                    var moveDx = finalShape.startX - root.movingShapeOriginal.startX;
+                                    var moveDy = finalShape.startY - root.movingShapeOriginal.startY;
+
+                                    if (finalShape.tool !== "blur" && finalShape.tool !== "pixelate") {
+                                        var dx = liveCanvasTranslate.x;
+                                        var dy = liveCanvasTranslate.y;
+                                        moveDx = dx;
+                                        moveDy = dy;
+                                        if (finalShape.startX !== undefined)
+                                            finalShape.startX += dx;
+                                        if (finalShape.startY !== undefined)
+                                            finalShape.startY += dy;
+                                        if (finalShape.endX !== undefined)
+                                            finalShape.endX += dx;
+                                        if (finalShape.endY !== undefined)
+                                            finalShape.endY += dy;
+                                        if (finalShape.points) {
+                                            for (var j = 0; j < finalShape.points.length; j++) {
+                                                if (finalShape.points[j].x !== undefined)
+                                                    finalShape.points[j].x += dx;
+                                                if (finalShape.points[j].y !== undefined)
+                                                    finalShape.points[j].y += dy;
+                                            }
+                                        }
+                                    }
+
+                                    delete finalShape.__dragStartX;
+                                    delete finalShape.__dragStartY;
+                                    delete finalShape.__waitingForCommit;
+                                    delete finalShape.__hideLiveCanvas;
+
+                                    var nextShapesList = root.shapes.slice();
+                                    var insertionIndex = Math.max(0, Math.min(root.movingShapeIndex, nextShapesList.length));
+                                    nextShapesList.splice(insertionIndex, 0, finalShape);
+                                    root.shapes = nextShapesList;
+                                    if (Math.abs(moveDx) > 0.01 || Math.abs(moveDy) > 0.01) {
+                                        root.lastMoveUndo = {
+                                            "index": insertionIndex,
+                                            "shape": root.copyShape(root.movingShapeOriginal)
+                                        };
+                                        root.cropWasLastAction = false;
+                                    }
+                                    root.movingShapeIndex = -1;
+                                    root.movingShapeOriginal = null;
+
+                                    if (finalShape.tool !== "blur" && finalShape.tool !== "pixelate") {
+                                        root.currentShape.__hideLiveCanvas = true;
+                                        committedCanvas.requestPaint();
+                                    } else {
+                                        liveCanvasTranslate.x = 0;
+                                        liveCanvasTranslate.y = 0;
+                                        root.currentShape = null;
+                                        root.prepareLiveCanvas();
+                                        committedCanvas.requestPaint();
+                                        root.scheduleLivePaint();
+                                    }
+                                }
+                                return;
+                            }
                             if (root.selectedTool === "crop" && root.cropDragging && root.currentShape) {
                                 var nextCrop = root.normalizeCropRect(root.currentShape.startX, root.currentShape.startY, mouse.x, mouse.y);
                                 root.cropDragging = false;
                                 root.currentShape = null;
                                 if (nextCrop.width >= 8 && nextCrop.height >= 8) {
+                                    root.lastMoveUndo = null;
                                     root.cropRect = nextCrop;
                                     root.cropWasLastAction = true;
                                 }
@@ -812,13 +1118,21 @@ PanelWindow {
 
                             root.currentShape.endX = mouse.x;
                             root.currentShape.endY = mouse.y;
+                            root.lastMoveUndo = null;
                             var nextShapes = root.shapes.slice();
                             nextShapes.push(root.copyShape(root.currentShape));
                             root.shapes = nextShapes;
                             root.cropWasLastAction = false;
-                            root.currentShape = null;
-                            root.prepareLiveCanvas();
-                            committedCanvas.requestPaint();
+
+                            if (root.currentShape.tool !== "blur" && root.currentShape.tool !== "pixelate") {
+                                root.currentShape.__hideLiveCanvas = true;
+                                committedCanvas.requestPaint();
+                            } else {
+                                root.currentShape = null;
+                                root.prepareLiveCanvas();
+                                committedCanvas.requestPaint();
+                                root.scheduleLivePaint();
+                            }
                         }
                     }
                     Item {

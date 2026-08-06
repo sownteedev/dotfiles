@@ -82,7 +82,7 @@ RowLayout {
 
         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
         Layout.preferredHeight: 42
-        Layout.preferredWidth: UpdateService.checking ? 42 : updateContent.implicitWidth + 22
+        Layout.preferredWidth: UpdateService.busy ? 42 : updateContent.implicitWidth + 22
         border.color: root.pillBorder
         border.width: 1
         clip: true
@@ -112,7 +112,7 @@ RowLayout {
 
             anchors.fill: parent
             anchors.leftMargin: 7
-            anchors.rightMargin: UpdateService.checking ? 7 : 12
+            anchors.rightMargin: UpdateService.busy ? 7 : 12
             spacing: 9
 
             Rectangle {
@@ -134,7 +134,7 @@ RowLayout {
                     height: 16
                     layer.enabled: true
                     source: Quickshell.iconPath(UpdateService.available ? UpdateService.updateCount > 0 ? "software-update-available-symbolic" : "emblem-ok-symbolic" : "dialog-warning-symbolic")
-                    visible: !UpdateService.checking
+                    visible: !UpdateService.busy
                     width: 16
 
                     layer.effect: ColorOverlay {
@@ -147,14 +147,14 @@ RowLayout {
                     anchors.centerIn: parent
                     height: 17
                     renderTarget: Canvas.FramebufferObject
-                    visible: UpdateService.checking
+                    visible: UpdateService.busy
                     width: 17
 
                     RotationAnimator on rotation {
                         duration: 680
                         from: 0
                         loops: Animation.Infinite
-                        running: UpdateService.checking
+                        running: UpdateService.busy
                         to: 360
 
                         onRunningChanged: {
@@ -177,7 +177,7 @@ RowLayout {
             }
             ColumnLayout {
                 spacing: 0
-                visible: !UpdateService.checking
+                visible: !UpdateService.busy
 
                 Text {
                     color: Config.alpha(Config.md3.on_surface, 0.42)

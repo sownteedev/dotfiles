@@ -45,7 +45,7 @@ MouseArea {
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Layout.rightMargin: 10
-            color: Config.md3.surface
+            color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.7 : 0.5)
             height: 38
             radius: 10
             width: 38

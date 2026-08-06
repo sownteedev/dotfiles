@@ -12,7 +12,34 @@ ColumnLayout {
 
     signal selected(string value)
 
+    function moveSelection(offset) {
+        if (!enabled || options.length === 0)
+            return;
+        var current = 0;
+        for (var i = 0; i < options.length; ++i) {
+            if (String(options[i].value) === value) {
+                current = i;
+                break;
+            }
+        }
+        var next = (current + offset + options.length) % options.length;
+        value = String(options[next].value);
+        selected(value);
+    }
+
+    Accessible.name: label
+    Accessible.role: Accessible.Grouping
+    activeFocusOnTab: enabled
     spacing: 8
+
+    Keys.onLeftPressed: event => {
+        moveSelection(-1);
+        event.accepted = true;
+    }
+    Keys.onRightPressed: event => {
+        moveSelection(1);
+        event.accepted = true;
+    }
 
     Text {
         Layout.fillWidth: true
@@ -51,6 +78,10 @@ ColumnLayout {
                 implicitHeight: 42
                 radius: 11
 
+                Accessible.checked: active
+                Accessible.name: String(optionButton.modelData.label)
+                Accessible.role: Accessible.RadioButton
+
                 Behavior on border.color {
                     ColorAnimation {
                         duration: 130
@@ -74,13 +105,18 @@ ColumnLayout {
                     id: optionMouse
 
                     anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    enabled: root.enabled
                     hoverEnabled: true
 
                     onClicked: {
                         root.value = String(optionButton.modelData.value);
                         root.selected(root.value);
                     }
+                }
+                Accessible.onPressAction: {
+                    root.value = String(optionButton.modelData.value);
+                    root.selected(root.value);
                 }
             }
         }

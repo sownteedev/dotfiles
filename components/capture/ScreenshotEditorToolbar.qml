@@ -37,12 +37,25 @@ Rectangle {
             Repeater {
                 model: [
                     {
+                        "tool": "select",
+                        "glyph": "",
+                        "iconName": "screenshot-ui-show-pointer-symbolic"
+                    },
+                    {
                         "tool": "pen",
                         "glyph": "✎"
                     },
                     {
+                        "tool": "highlight",
+                        "glyph": "▰"
+                    },
+                    {
                         "tool": "line",
                         "glyph": "╱"
+                    },
+                    {
+                        "tool": "arrow",
+                        "glyph": "➜"
                     },
                     {
                         "tool": "rectangle",
@@ -51,14 +64,6 @@ Rectangle {
                     {
                         "tool": "ellipse",
                         "glyph": "○"
-                    },
-                    {
-                        "tool": "arrow",
-                        "glyph": "➜"
-                    },
-                    {
-                        "tool": "highlight",
-                        "glyph": "▰"
                     },
                     {
                         "tool": "blur",
@@ -115,6 +120,7 @@ Rectangle {
                 Layout.preferredHeight: 32
                 Layout.preferredWidth: 360
                 selectedColor: root.selectedColor
+                visible: root.selectedTool !== "select"
 
                 onColorSelected: colorValue => {
                     return root.colorSelected(colorValue);
@@ -126,6 +132,7 @@ Rectangle {
                 Layout.preferredWidth: 1
                 Layout.rightMargin: 4
                 color: Config.alpha(Config.md3.on_surface, 0.12)
+                visible: root.selectedTool !== "select"
             }
             RowLayout {
                 Layout.fillWidth: true
@@ -133,6 +140,7 @@ Rectangle {
                 Layout.preferredHeight: 32
                 Layout.preferredWidth: 170
                 spacing: 8
+                visible: root.selectedTool !== "select"
 
                 Text {
                     Layout.preferredWidth: 38

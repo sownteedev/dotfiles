@@ -12,7 +12,7 @@ import sys
 import tempfile
 
 
-CACHE_VERSION = "backdrop-v3|resize15-blur4"
+CACHE_VERSION = "backdrop-v5|resize15-blur3"
 MAX_CACHE_BYTES = 96 * 1024 * 1024
 MAX_CACHE_FILES = 128
 
@@ -58,7 +58,7 @@ def generate_backdrop(source: str, target: Path) -> None:
     temporary = Path(temporary_name)
     try:
         subprocess.run(
-            ["magick", source, "-resize", "15%", "-blur", "0x4", str(temporary)],
+            ["magick", source, "-resize", "15%", "-blur", "0x3", str(temporary)],
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,

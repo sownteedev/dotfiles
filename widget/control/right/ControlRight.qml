@@ -15,6 +15,10 @@ PanelWindow {
     id: controlRightWindow
 
     property bool active: false
+    property real edgeDragProgress: 0
+    property bool edgeDragging: false
+    property int edgeSnapDuration: 300
+    property bool edgeSnapAnimating: false
 
     // Bottom Tab navigation
     property int activeBottomTab: 0
@@ -38,14 +42,60 @@ PanelWindow {
     signal dismissed
     signal statsUpdated
 
+    function animatePopup(targetOffset, duration, easingType) {
+        slideAnim.stop();
+        slideAnim.duration = duration;
+        slideAnim.easing.type = easingType;
+        slideAnim.to = targetOffset;
+        slideAnim.start();
+    }
+    function beginEdgeDrag() {
+        if (active)
+            return;
+        slideAnim.stop();
+        edgeSnapAnimating = false;
+        edgeDragProgress = 0;
+        edgeDragging = true;
+        active = true;
+        popup.xOffset = 640;
+    }
+    function finishEdgeDrag(shouldOpen) {
+        if (!edgeDragging)
+            return;
+
+        var releasedProgress = edgeDragProgress;
+        edgeSnapDuration = 300;
+        edgeSnapAnimating = true;
+        active = shouldOpen;
+        edgeDragging = false;
+        edgeDragProgress = 0;
+
+        if (!shouldOpen && releasedProgress <= 0.001) {
+            popup.xOffset = 640;
+            Qt.callLater(function () {
+                if (!active && !edgeDragging && !slideAnim.running)
+                    dismissed();
+            });
+            return;
+        }
+        animatePopup(shouldOpen ? 0 : 640, edgeSnapDuration, Easing.InOutSine);
+    }
     function hideControl() {
+        edgeSnapAnimating = false;
+        edgeDragging = false;
+        edgeDragProgress = 0;
         active = false;
+        animatePopup(640, 300, Easing.OutCubic);
     }
     function runAction(cmd) {
         QuickSettingsService.runAction(cmd);
     }
     function showControl() {
+        edgeSnapAnimating = false;
+        edgeDragging = false;
+        edgeDragProgress = 0;
         active = true;
+        animatePopup(0, 300, Easing.OutCubic);
     }
     function switchBottomTab(newTab) {
         previousBottomTab = activeBottomTab;
@@ -58,7 +108,16 @@ PanelWindow {
         activeTab = newTab;
     }
     function toggleControl() {
-        active = !active;
+        if (active)
+            hideControl();
+        else
+            showControl();
+    }
+    function updateEdgeDrag(progress) {
+        if (!edgeDragging)
+            return;
+        edgeDragProgress = Math.max(0, Math.min(1, progress));
+        popup.xOffset = 640 * (1 - edgeDragProgress);
     }
     function updateStatsPolling() {
         SysStats.pollingEnabled = active && (activeBottomTab === 0 || activeTab === 1);
@@ -72,7 +131,7 @@ PanelWindow {
     anchors.top: true
     color: "transparent"
     focusable: true
-    visible: active || slideAnim.running
+    visible: active || edgeDragging || slideAnim.running || popup.xOffset < 639.5
 
     Component.onCompleted: {
         if (activeBottomTab >= bottomPages.length)
@@ -121,7 +180,7 @@ PanelWindow {
     Rectangle {
         id: popup
 
-        property real xOffset: active ? 0 : 640
+        property real xOffset: 640
 
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 10
@@ -137,17 +196,16 @@ PanelWindow {
         radius: 20
         width: 650
 
-        Behavior on xOffset {
-            NumberAnimation {
-                id: slideAnim
+        NumberAnimation {
+            id: slideAnim
 
-                duration: 300
-                easing.type: Easing.OutCubic
+            target: popup
+            property: "xOffset"
 
-                onFinished: {
-                    if (!controlRightWindow.active)
-                        controlRightWindow.dismissed();
-                }
+            onFinished: {
+                controlRightWindow.edgeSnapAnimating = false;
+                if (!controlRightWindow.active)
+                    controlRightWindow.dismissed();
             }
         }
 

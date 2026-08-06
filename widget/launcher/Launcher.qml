@@ -11,6 +11,7 @@ PanelWindow {
     id: launcherWindow
 
     property bool active: false
+    property bool allAppsReady: false
     property string searchQuery: ""
     property bool showAllApps: false
 
@@ -43,10 +44,29 @@ PanelWindow {
     // Toggle visibility logic
     visible: false
 
+    onShowAllAppsChanged: {
+        allAppsRevealTimer.stop();
+        allAppsReady = false;
+        if (showAllApps)
+            allAppsRevealTimer.start();
+    }
     onVisibleChanged: {
         if (visible) {
             searchEntry.text = "";
             searchEntry.forceActiveFocus();
+        }
+    }
+
+    // Let the 350ms container resize finish before starting delegate animations.
+    Timer {
+        id: allAppsRevealTimer
+
+        interval: 370
+        repeat: false
+
+        onTriggered: {
+            if (showAllApps)
+                allAppsReady = true;
         }
     }
 
@@ -318,13 +338,20 @@ PanelWindow {
                     }
                 }
 
-                // All Apps Grid
-                LauncherApps {
-                    anchors.fill: parent
-                    query: searchQuery
-                    visible: showAllApps
+                // All Apps is comparatively expensive (model sorting + animated delegates),
+                // so do not instantiate it during the launcher's normal search path.
+                Loader {
+                    id: allAppsLoader
 
-                    onAppLaunched: closeLauncher()
+                    active: showAllApps
+                    anchors.fill: parent
+
+                    sourceComponent: LauncherApps {
+                        entranceReady: launcherWindow.allAppsReady
+                        query: searchQuery
+
+                        onAppLaunched: closeLauncher()
+                    }
                 }
             }
         }

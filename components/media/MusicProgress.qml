@@ -147,13 +147,41 @@ Item {
                 }
             }
         }
-        Text {
+        Item {
+            Layout.alignment: Qt.AlignVCenter
             Layout.minimumWidth: 40
-            color: Config.alpha(Config.md3.on_surface, 0.6)
-            font.family: Config.fontName
-            font.pixelSize: 12
-            font.weight: Font.DemiBold
-            text: root.duration > 0 ? root.formatTime(root.duration) : "--:--"
+            Layout.preferredHeight: 16
+
+            Text {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                color: Config.alpha(Config.md3.on_surface, 0.6)
+                font.family: Config.fontName
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                text: root.duration > 0 ? root.formatTime(root.duration) : ""
+                visible: root.duration > 0
+            }
+            Rectangle {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                color: Config.md3.error
+                height: 16
+                radius: 4
+                visible: root.duration <= 0 && !!root.player
+                width: liveText.implicitWidth + 10
+
+                Text {
+                    id: liveText
+
+                    anchors.centerIn: parent
+                    color: Config.md3.on_error
+                    font.family: Config.fontName
+                    font.pixelSize: 10
+                    font.weight: Font.ExtraBold
+                    text: "LIVE"
+                }
+            }
         }
     }
 }

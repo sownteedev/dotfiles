@@ -13,8 +13,18 @@ Item {
 
     anchors.fill: parent
 
-    Component.onCompleted: WeatherService.active = true
-    Component.onDestruction: WeatherService.active = false
+    Component.onCompleted: {
+        if (typeof WeatherService.acquire === "function")
+            WeatherService.acquire();
+        else
+            WeatherService["active"] = true;
+    }
+    Component.onDestruction: {
+        if (typeof WeatherService.release === "function")
+            WeatherService.release();
+        else
+            WeatherService["active"] = false;
+    }
 
     // The whole page can scroll vertically on shorter screens while the hourly
     // forecast keeps its own horizontal flick gesture.

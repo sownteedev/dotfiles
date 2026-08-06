@@ -34,6 +34,7 @@ QtObject {
     readonly property string homeDir: Quickshell.env("HOME")
     property alias latLon: runtimeSettings.latLon
     readonly property string legacyWallpaperEngineWorkshopDir: homeDir + "/.steam/steam/steamapps/workshop/content/431960"
+    readonly property bool lightTheme: themeLuminance > 0.58
     readonly property string liveWallFolder: expandHomePath(liveWallFolderPath)
     property alias liveWallFolderPath: runtimeSettings.liveWallFolderPath
     property alias matugenAnimateColors: runtimeSettings.matugenAnimateColors
@@ -135,6 +136,7 @@ QtObject {
     }
     readonly property string runtimeSettingsPath: (Quickshell.env("XDG_CACHE_HOME") || homeDir + "/.cache") + "/quickshell/settings.json"
     readonly property string steamDir: homeDir + "/.local/share/Steam"
+    readonly property real themeLuminance: md3.background.r * 0.299 + md3.background.g * 0.587 + md3.background.b * 0.114
     readonly property string wallFolder: expandHomePath(wallFolderPath)
     property alias wallFolderPath: runtimeSettings.wallFolderPath
     property string wallpaper: wallFolder + "/mori.jpg"

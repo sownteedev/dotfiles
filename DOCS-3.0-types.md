@@ -177,8 +177,8 @@ Checklist này được đối chiếu với code trong thư mục `quickshell/`
 
 - [x] Quickshell.Services.UPower
     - [x] PerformanceDegradationReason — cảnh báo khi profile hiệu năng bị giới hạn vì nhiệt độ cao hoặc đặt máy trên đùi.
-    - ⛔ PowerProfile — setup ưu tiên auto-cpufreq; power-profiles-daemon chỉ là fallback.
-    - ⛔ PowerProfiles
+    - [x] PowerProfile
+    - [x] PowerProfiles
     - [x] UPower
     - [x] UPowerDevice
     - [x] UPowerDeviceState

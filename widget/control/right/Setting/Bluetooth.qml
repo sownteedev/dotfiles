@@ -6,45 +6,101 @@ import Quickshell.Bluetooth
 import Quickshell.Widgets
 import "../../../../"
 import "../../../../components"
+import "../../../../service"
 
 Item {
     id: root
 
+    property bool manualScanActive: false
+    property bool ownsDiscovery: false
     readonly property var adapter: Bluetooth.defaultAdapter
     readonly property var availableDevices: {
+        var nearbyRevision = BluetoothService.nearbyRevision;
         var result = [];
         for (var i = 0; i < devices.length; ++i) {
-            if (!devices[i].paired && !devices[i].bonded)
+            if (!isRememberedDevice(devices[i]) && BluetoothService.isNearby(devices[i].address))
                 result.push(devices[i]);
         }
         return result;
     }
     readonly property var devices: adapter ? adapter.devices.values : []
+    readonly property string connectedAirpodsAddress: {
+        for (var i = 0; i < pairedDevices.length; ++i) {
+            var name = String(pairedDevices[i].name || pairedDevices[i].deviceName || "").toLowerCase();
+            if (name.indexOf("airpods") !== -1 && pairedDevices[i].connected)
+                return String(pairedDevices[i].address || "");
+        }
+        return "";
+    }
+    onConnectedAirpodsAddressChanged: syncAirpodsReader()
     readonly property var pairedDevices: {
         var result = [];
         for (var i = 0; i < devices.length; ++i) {
-            if (devices[i].paired || devices[i].bonded)
+            if (isPairedDevice(devices[i]))
+                result.push(devices[i]);
+        }
+        return result;
+    }
+    readonly property var savedDevices: {
+        var result = [];
+        for (var i = 0; i < devices.length; ++i) {
+            if (!isPairedDevice(devices[i]) && (devices[i].paired || devices[i].trusted))
                 result.push(devices[i]);
         }
         return result;
     }
 
+    function isPairedDevice(device) {
+        return device && device.bonded;
+    }
+    function isRememberedDevice(device) {
+        return device && (device.paired || device.bonded || device.trusted);
+    }
+    function refreshNearbyDevices() {
+        if (manualScanActive)
+            BluetoothService.probeNearbyDevices(devices);
+    }
     function startScan() {
         if (!adapter || !adapter.enabled)
             return;
-        adapter.discovering = true;
+        manualScanActive = true;
+        ownsDiscovery = !adapter.discovering;
+        if (ownsDiscovery)
+            adapter.discovering = true;
+        BluetoothService.beginNearbyScan();
+        Qt.callLater(refreshNearbyDevices);
         scanStopTimer.restart();
     }
     function stopScan() {
         scanStopTimer.stop();
-        if (adapter && adapter.discovering)
+        manualScanActive = false;
+        if (ownsDiscovery && adapter && adapter.discovering)
             adapter.discovering = false;
+        ownsDiscovery = false;
     }
-
+    function syncAirpodsReader() {
+        var enabled = visible && controlRightWindow.active && connectedAirpodsAddress !== "";
+        BluetoothService.setAirpodsDevice(connectedAirpodsAddress, enabled);
+    }
     anchors.fill: parent
 
-    Component.onCompleted: startScan()
-    Component.onDestruction: stopScan()
+    onVisibleChanged: syncAirpodsReader()
+    Component.onCompleted: {
+        startScan();
+        syncAirpodsReader();
+    }
+    Component.onDestruction: {
+        stopScan();
+        BluetoothService.setAirpodsDevice("", false);
+    }
+
+    Connections {
+        function onActiveChanged() {
+            root.syncAirpodsReader();
+        }
+
+        target: controlRightWindow
+    }
 
     Timer {
         id: scanStopTimer
@@ -52,6 +108,13 @@ Item {
         interval: 15000
 
         onTriggered: root.stopScan()
+    }
+    Timer {
+        interval: 800
+        repeat: true
+        running: root.manualScanActive
+
+        onTriggered: root.refreshNearbyDevices()
     }
     SettingsPageTransition {
         panelActive: controlRightWindow.active
@@ -139,6 +202,25 @@ Item {
                         text: "No paired devices"
                         visible: root.pairedDevices.length === 0
                     }
+                    Text {
+                        color: Config.md3.on_surface
+                        font.family: Config.fontName
+                        font.pixelSize: 16
+                        font.weight: Font.DemiBold
+                        opacity: 0.82
+                        text: "Saved devices"
+                        visible: root.savedDevices.length > 0
+                    }
+                    Repeater {
+                        model: root.savedDevices
+
+                        BluetoothDeviceRow {
+                            required property var modelData
+
+                            device: modelData
+                            savedDevice: true
+                        }
+                    }
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.topMargin: 8
@@ -164,7 +246,7 @@ Item {
                                 color: Config.md3.on_surface
                                 height: 25
                                 lineWidth: 2.5
-                                running: root.adapter && root.adapter.discovering
+                                running: root.manualScanActive
                                 width: 25
                             }
                             MouseArea {
@@ -176,7 +258,7 @@ Item {
                                 hoverEnabled: true
 
                                 onClicked: {
-                                    if (!root.adapter.discovering)
+                                    if (!root.manualScanActive)
                                         root.startScan();
                                 }
                             }

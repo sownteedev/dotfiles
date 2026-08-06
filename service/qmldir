@@ -10,6 +10,7 @@ singleton BatteryService 1.0 system/BatteryService.qml
 singleton BluetoothService 1.0 system/BluetoothService.qml
 singleton BrightnessService 1.0 system/BrightnessService.qml
 singleton DisplayService 1.0 system/DisplayService.qml
+singleton FaceAuthService 1.0 system/FaceAuthService.qml
 singleton NotificationHistory 1.0 system/NotificationHistory.qml
 singleton PolkitService 1.0 system/PolkitService.qml
 singleton QuickSettingsService 1.0 system/QuickSettingsService.qml

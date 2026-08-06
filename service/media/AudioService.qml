@@ -34,7 +34,7 @@ QtObject {
     property PwNodeLinkTracker microphoneLinkTracker: PwNodeLinkTracker {
         node: Pipewire.defaultAudioSource
     }
-    readonly property var microphoneNodes: {
+    readonly property var rawMicrophoneNodes: {
         var groups = microphoneLinkTracker.linkGroups;
         var nodes = [];
         var seen = {};
@@ -48,12 +48,45 @@ QtObject {
             seen[key] = true;
             nodes.push(target);
         }
+
+        // The default-source tracker does not see applications recording from
+        // another microphone or a monitor source. Capture links run from a
+        // non-stream source node into an application stream, so include those
+        // targets as well and let PwObjectTracker retain their audio metadata.
+        var links = Pipewire.links && Pipewire.links.values ? Pipewire.links.values : [];
+        for (var linkIndex = 0; linkIndex < links.length; ++linkIndex) {
+            var link = links[linkIndex];
+            var source = link ? link.source : null;
+            var linkTarget = link ? link.target : null;
+            if (!source || source.isStream || !linkTarget || !linkTarget.isStream)
+                continue;
+            var linkKey = linkTarget.id.toString();
+            if (seen[linkKey])
+                continue;
+            seen[linkKey] = true;
+            nodes.push(linkTarget);
+        }
+        return nodes;
+    }
+    readonly property var microphoneNodes: {
+        var nodes = [];
+        for (var nodeIndex = 0; nodeIndex < rawMicrophoneNodes.length; ++nodeIndex) {
+            var node = rawMicrophoneNodes[nodeIndex];
+            if (root.isApplicationCapture(node))
+                nodes.push(node);
+        }
         return nodes;
     }
     property PwObjectTracker microphoneObjectTracker: PwObjectTracker {
-        objects: root.microphoneNodes
+        objects: root.rawMicrophoneNodes
     }
+    property var pendingRoutes: []
     property Process routeProcess: Process {
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0)
+                console.warn("[AudioService] Failed to route audio stream:", exitCode);
+            root.startNextRoute();
+        }
     }
 
     function applicationName(node) {
@@ -81,7 +114,37 @@ QtObject {
         return clean === "" ? name : clean;
     }
     function isDevice(node, isSink) {
-        return node && !node.isStream && node.audio && (isSink ? node.isSink : !node.isSink);
+        if (!node || node.isStream || !node.audio || !node.properties)
+            return false;
+
+        var mediaClass = String(node.properties["media.class"] || "");
+        if (isSink)
+            return node.isSink && mediaClass.indexOf("Audio/Sink") === 0;
+
+        // A plain `!isSink` also includes filters, adapters and other virtual
+        // PipeWire nodes. Only real source-class nodes belong in the input list.
+        var name = String(node.name || "");
+        var deviceClass = String(node.properties["device.class"] || "");
+        var virtualNode = String(node.properties["node.virtual"] || "") === "true";
+        return !node.isSink && mediaClass.indexOf("Audio/Source") === 0 && deviceClass !== "monitor" && !virtualNode && !name.endsWith(".monitor");
+    }
+    function isApplicationCapture(node) {
+        if (!node || !node.isStream)
+            return false;
+        var properties = node.properties || {};
+        var mediaClass = String(properties["media.class"] || "");
+        if (mediaClass !== "" && mediaClass !== "Stream/Input/Audio")
+            return false;
+        var applicationName = String(properties["application.name"] || "").trim();
+        var processBinary = String(properties["application.process.binary"] || "").trim();
+        if (applicationName !== "" || processBinary !== "")
+            return true;
+
+        // Quickshell 0.3 may expose an empty properties object for linked
+        // capture streams. Keep real streams in that case, but exclude our own
+        // Cava monitor helper so playback visualization never trips mic privacy.
+        var nodeName = String(node.name || "").trim().toLowerCase();
+        return nodeName !== "" && nodeName !== "cava" && nodeName !== "quickshell-cava";
     }
     function isPlaybackStream(node) {
         if (!node || !node.properties)
@@ -93,8 +156,27 @@ QtObject {
         if (!stream || !device)
             return;
         var serial = stream.properties && stream.properties["object.serial"] ? stream.properties["object.serial"] : stream.id;
-        routeProcess.command = ["pactl", isSink ? "move-sink-input" : "move-source-output", serial.toString(), device.name];
-        routeProcess.running = false;
+        var routeKey = (isSink ? "sink:" : "source:") + serial.toString();
+        var queued = [];
+        for (var i = 0; i < pendingRoutes.length; ++i) {
+            if (pendingRoutes[i].key !== routeKey)
+                queued.push(pendingRoutes[i]);
+        }
+        queued.push({
+            "key": routeKey,
+            "command": ["pactl", isSink ? "move-sink-input" : "move-source-output", serial.toString(), device.name]
+        });
+        pendingRoutes = queued;
+        startNextRoute();
+    }
+    function startNextRoute() {
+        if (routeProcess.running || pendingRoutes.length === 0)
+            return;
+
+        var queued = pendingRoutes.slice();
+        var nextRoute = queued.shift();
+        pendingRoutes = queued;
+        routeProcess.command = nextRoute.command;
         routeProcess.running = true;
     }
     function resolveAppIcon(node, fallbackIcon) {

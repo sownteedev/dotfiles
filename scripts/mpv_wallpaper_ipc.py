@@ -46,7 +46,7 @@ def wait_for_file(path, deadline):
         except OSError:
             previous_size = -1
             stable_reads = 0
-        time.sleep(0.04)
+        time.sleep(0.08)
     return False
 
 
@@ -68,7 +68,7 @@ def wait_ready(socket_path, timeout, screenshot_path=""):
                 return 0
         except (FileNotFoundError, ConnectionRefusedError, socket.timeout, OSError, json.JSONDecodeError):
             pass
-        time.sleep(0.04)
+        time.sleep(0.08)
     return 1
 
 

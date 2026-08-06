@@ -66,7 +66,8 @@ QtObject {
             completed = true;
             remainingMilliseconds = 0;
             finished();
-            Quickshell.execDetached(["notify-send", "-u", "normal", "-t", "5000", "-r", "82471", "-a", "Timer", "-i", "preferences-system-time-symbolic", "Timer finished", "Your countdown has ended."]);
+            Quickshell.execDetached(["canberra-gtk-play", "-i", "alarm-clock-elapsed", "-d", "Timer finished"]);
+            Quickshell.execDetached(["notify-send", "-u", "normal", "-t", "5000", "-r", "82471", "-a", "Timer", "-i", "preferences-system-time-symbolic", "-h", "boolean:transient:true", "Timer finished", "Your countdown has ended."]);
         }
     }
 }

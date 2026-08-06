@@ -284,166 +284,201 @@ Rectangle {
                 Qt.callLater(root.startPendingLookup);
         }
     }
-    ColumnLayout {
+    ListView {
+        id: syncedList
+
         anchors.fill: parent
-        spacing: 9
+        boundsBehavior: Flickable.StopAtBounds
+        cacheBuffer: 128
+        clip: true
+        currentIndex: root.followLyrics ? root.activeLineIndex : -1
+        highlightMoveDuration: 350
+        highlightRangeMode: root.followLyrics ? ListView.StrictlyEnforceRange : ListView.NoHighlightRange
+        model: root.syncedLines
+        preferredHighlightBegin: height / 2 - 16
+        preferredHighlightEnd: height / 2 + 16
+        spacing: 0
+        visible: root.hasSyncedLyrics
 
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: visible ? 22 : 0
-            spacing: 8
-            visible: root.hasSyncedLyrics && !root.followLyrics
+        delegate: Item {
+            readonly property int distance: Math.abs(index - root.activeLineIndex)
+            required property int index
+            required property var modelData
 
-            Text {
-                color: Config.md3.on_surface
-                font.family: Config.fontName
-                font.pixelSize: 14
-                font.weight: Font.Bold
-                text: "Lyrics"
-            }
+            height: 32
+            width: syncedList.width
+
             Item {
-                Layout.fillWidth: true
-            }
-            Rectangle {
-                Layout.preferredHeight: 26
-                Layout.preferredWidth: 26
-                color: followMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.12) : "transparent"
-                radius: 13
+                anchors.centerIn: parent
+                height: parent.height
+                width: parent.width
 
-                IconImage {
+                Text {
                     anchors.centerIn: parent
-                    implicitHeight: 16
-                    implicitWidth: 16
-                    layer.enabled: true
-                    source: Quickshell.iconPath("go-bottom-symbolic", "go-bottom")
+                    color: Config.md3.on_surface
+                    elide: Text.ElideRight
+                    font.family: Config.fontName
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    horizontalAlignment: Text.AlignHCenter
+                    maximumLineCount: 1
+                    opacity: index === root.activeLineIndex ? 0.0 : (distance === 1 ? 0.58 : 0.24)
+                    renderType: Text.NativeRendering
+                    scale: index === root.activeLineIndex ? (18.0 / 14.0) : 1.0
+                    text: modelData.text
+                    width: parent.width
 
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.primary
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 350
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: 350
+                            easing.type: Easing.OutCubic
+                        }
                     }
                 }
-                MouseArea {
-                    id: followMouse
+                Text {
+                    anchors.centerIn: parent
+                    color: Config.md3.primary
+                    elide: Text.ElideRight
+                    font.family: Config.fontName
+                    font.pixelSize: 18
+                    font.weight: Font.Bold
+                    horizontalAlignment: Text.AlignHCenter
+                    maximumLineCount: 1
+                    opacity: index === root.activeLineIndex ? 1.0 : 0.0
+                    renderType: Text.NativeRendering
+                    scale: index === root.activeLineIndex ? 1.0 : (14.0 / 18.0)
+                    text: modelData.text
+                    width: parent.width
 
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    hoverEnabled: true
-
-                    onClicked: {
-                        root.followLyrics = true;
-                        root.updateActiveLine();
-                        if (root.activeLineIndex >= 0)
-                            syncedList.positionViewAtIndex(root.activeLineIndex, ListView.Center);
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 350
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: 350
+                            easing.type: Easing.OutCubic
+                        }
                     }
                 }
             }
         }
-        Item {
-            Layout.fillHeight: true
-            Layout.fillWidth: true
 
-            ListView {
-                id: syncedList
+        onDraggingChanged: {
+            if (dragging && root.followLyrics)
+                root.followLyrics = false;
+        }
+        onFlickingChanged: {
+            if (flicking && root.followLyrics)
+                root.followLyrics = false;
+        }
 
-                anchors.fill: parent
-                boundsBehavior: Flickable.StopAtBounds
-                clip: true
-                currentIndex: root.activeLineIndex
-                highlightMoveDuration: 350
-                highlightRangeMode: root.followLyrics ? ListView.StrictlyEnforceRange : ListView.NoHighlightRange
-                model: root.syncedLines
-                preferredHighlightBegin: height / 2 - 9
-                preferredHighlightEnd: height / 2 + 9
-                spacing: 16
-                visible: root.hasSyncedLyrics
-
-                delegate: Text {
-                    readonly property int distance: Math.abs(index - root.activeLineIndex)
-                    required property int index
-                    required property var modelData
-
-                    color: index === root.activeLineIndex ? Config.md3.primary : Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: index === root.activeLineIndex ? 18 : 14
-                    font.weight: index === root.activeLineIndex ? Font.Bold : Font.Medium
-                    horizontalAlignment: Text.AlignHCenter
-                    opacity: index === root.activeLineIndex ? 1.0 : (distance === 1 ? 0.6 : 0.3)
-                    text: modelData.text
-                    width: syncedList.width
-                    wrapMode: Text.Wrap
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 180
-                        }
-                    }
-                    Behavior on font.pixelSize {
-                        NumberAnimation {
-                            duration: 180
-                        }
-                    }
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 180
-                        }
-                    }
-                }
-
-                onMovementStarted: root.followLyrics = false
+        WheelHandler {
+            onWheel: event => {
+                if (root.followLyrics)
+                    root.followLyrics = false;
+                event.accepted = false;
             }
-            Flickable {
-                id: plainFlick
+        }
+    }
+    Flickable {
+        id: plainFlick
 
-                anchors.fill: parent
-                boundsBehavior: Flickable.StopAtBounds
-                clip: true
-                contentHeight: plainText.implicitHeight
-                contentWidth: width
-                visible: !root.hasSyncedLyrics && root.plainLyrics !== ""
+        anchors.fill: parent
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
+        contentHeight: plainText.implicitHeight
+        contentWidth: width
+        visible: !root.hasSyncedLyrics && root.plainLyrics !== ""
 
-                Text {
-                    id: plainText
+        Text {
+            id: plainText
 
-                    color: Config.alpha(Config.md3.on_surface, 0.8)
-                    font.family: Config.fontName
-                    font.pixelSize: 14
-                    font.weight: Font.Medium
-                    lineHeight: 1.25
-                    text: root.plainLyrics
-                    width: plainFlick.width
-                    wrapMode: Text.Wrap
-                }
+            color: Config.alpha(Config.md3.on_surface, 0.8)
+            font.family: Config.fontName
+            font.pixelSize: 14
+            font.weight: Font.Medium
+            lineHeight: 1.25
+            text: root.plainLyrics
+            width: plainFlick.width
+            wrapMode: Text.Wrap
+        }
+    }
+    Column {
+        anchors.centerIn: parent
+        spacing: 6
+        visible: !root.hasLyrics
+        width: parent.width
+
+        AnimatedImage {
+            anchors.horizontalCenter: parent.horizontalCenter
+            fillMode: Image.PreserveAspectFit
+            height: 70
+            playing: !root.hasLyrics && !root.loading
+            source: "file://" + Config.quickshellDir + "/assets/kurukuru.gif"
+            visible: !root.loading && !root.instrumental
+        }
+        LoadingIndicator {
+            anchors.horizontalCenter: parent.horizontalCenter
+            animated: root.loading
+            color: Config.md3.primary
+            height: 60
+            visible: root.loading
+            width: 60
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: Config.md3.primary
+            font.family: Config.fontName
+            font.pixelSize: 14
+            font.weight: Font.DemiBold
+            text: "Instrumental track"
+            visible: root.instrumental
+        }
+    }
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.margins: 12
+        anchors.right: parent.right
+        color: followMouse.containsMouse ? Config.md3.primary : Config.alpha(Config.md3.primary, 0.8)
+        height: 28
+        radius: 14
+        visible: root.hasSyncedLyrics && !root.followLyrics
+        width: 28
+        z: 10
+
+        IconImage {
+            anchors.centerIn: parent
+            anchors.horizontalCenterOffset: 1
+            implicitHeight: 14
+            implicitWidth: 14
+            layer.enabled: true
+            source: Quickshell.iconPath("media-playback-start-symbolic", "media-playback-start")
+
+            layer.effect: ColorOverlay {
+                color: Config.md3.on_primary
             }
-            Column {
-                anchors.centerIn: parent
-                spacing: 6
-                visible: !root.hasLyrics
-                width: parent.width
+        }
+        MouseArea {
+            id: followMouse
 
-                AnimatedImage {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    fillMode: Image.PreserveAspectFit
-                    height: 70
-                    playing: !root.hasLyrics && !root.loading
-                    source: "file://" + Config.quickshellDir + "/assets/kurukuru.gif"
-                    visible: !root.loading && !root.instrumental
-                }
-                LoadingIndicator {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    animated: root.loading
-                    color: Config.md3.primary
-                    height: 60
-                    visible: root.loading
-                    width: 60
-                }
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    color: Config.md3.primary
-                    font.family: Config.fontName
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                    text: "Instrumental track"
-                    visible: root.instrumental
-                }
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            hoverEnabled: true
+
+            onClicked: {
+                root.followLyrics = true;
+                root.updateActiveLine();
+                if (root.activeLineIndex >= 0)
+                    syncedList.positionViewAtIndex(root.activeLineIndex, ListView.Center);
             }
         }
     }

@@ -39,16 +39,17 @@ PanelWindow {
             EngineWallpaperService.beginBrowsing();
             LiveWallpaperService.checkAvailability();
             syncVideoModel();
+            WallpaperPreviewService.begin();
         } else {
             WallpaperService.beginPreview();
             WallpaperPreviewService.begin();
         }
         wallpaperWindow.visible = true;
-        contentRoot.opacity = 1;
         contentRoot.forceActiveFocus();
         Qt.callLater(() => {
             syncCurrentWallpaper();
             changingMode = false;
+            contentRoot.opacity = 1;
             schedulePreview();
         });
     }
@@ -56,7 +57,7 @@ PanelWindow {
         return roleAt(index, "filePath", "");
     }
     function preloadNeighbours() {
-        if (!wallpaperWindow.visible || changingMode || selectedMode !== "static" || activeCount < 2)
+        if (!wallpaperWindow.visible || changingMode || activeCount < 2)
             return;
 
         WallpaperPreviewService.resetPreloads();
@@ -66,21 +67,31 @@ PanelWindow {
             var index = (current + offsets[i] + activeCount) % activeCount;
             if (index === current)
                 continue;
-            WallpaperPreviewService.preload(pathAt(index), roleAt(index, "fileModified", 0));
+            var preloadPath = selectedMode === "video" ? videoPreviewImageAt(index) : pathAt(index);
+            if (preloadPath)
+                WallpaperPreviewService.preload(preloadPath, roleAt(index, "fileModified", 0));
         }
     }
     function previewCurrent() {
-        if (!wallpaperWindow.visible || changingMode || selectedMode !== "static" || pathView.currentIndex < 0)
+        if (!wallpaperWindow.visible || changingMode || pathView.currentIndex < 0)
             return;
 
-        var path = pathAt(pathView.currentIndex);
-        if (!path)
-            return;
-
-        var modified = roleAt(pathView.currentIndex, "fileModified", 0);
-        WallpaperService.previewStatic(path);
-        WallpaperPreviewService.preview(path, modified);
-        preloadTimer.restart();
+        if (selectedMode === "static") {
+            var path = pathAt(pathView.currentIndex);
+            if (!path)
+                return;
+            var modified = roleAt(pathView.currentIndex, "fileModified", 0);
+            WallpaperService.previewStatic(path);
+            WallpaperPreviewService.preview(path, modified);
+            preloadTimer.restart();
+        } else if (selectedMode === "video") {
+            var previewImage = videoPreviewImageAt(pathView.currentIndex);
+            if (!previewImage)
+                return;
+            var videoModified = roleAt(pathView.currentIndex, "fileModified", 0);
+            WallpaperPreviewService.preview(previewImage, videoModified);
+            preloadTimer.restart();
+        }
     }
     function rememberCurrentIndex() {
         if (pathView.currentIndex < 0)
@@ -110,7 +121,7 @@ PanelWindow {
         return value !== undefined ? value : fallbackValue;
     }
     function schedulePreview() {
-        if (selectedMode === "static" && !changingMode) {
+        if (!changingMode) {
             previewTimer.restart();
         }
     }
@@ -134,6 +145,7 @@ PanelWindow {
             preloadTimer.stop();
             WallpaperService.cancelPreview();
             WallpaperPreviewService.cancel();
+            WallpaperPreviewService.begin();
             EngineWallpaperService.beginBrowsing();
             LiveWallpaperService.checkAvailability();
             syncVideoModel();
@@ -149,6 +161,29 @@ PanelWindow {
             contentRoot.forceActiveFocus();
             schedulePreview();
         });
+    }
+    function videoPreviewImageAt(index) {
+        if (index < 0 || index >= activeCount || selectedMode !== "video")
+            return "";
+
+        var isEngine = roleAt(index, "isEngine", false);
+        var filePath = pathAt(index);
+        var modified = roleAt(index, "fileModified", 0);
+
+        if (isEngine) {
+            var preview = roleAt(index, "preview", "");
+            if (!preview)
+                return "";
+            if (EngineWallpaperService.previewNeedsConversion(preview)) {
+                var thumbPath = EngineWallpaperService.previewThumbnailPath(preview, modified);
+                return EngineWallpaperService.previewThumbnailKnown(preview, modified) ? thumbPath : "";
+            }
+            return preview;
+        }
+
+        // Live wallpaper — use the ffmpeg-generated thumbnail.
+        var livePath = LiveWallpaperService.thumbnailPath(filePath, modified);
+        return LiveWallpaperService.thumbnailKnown(filePath, modified) ? livePath : "";
     }
     function syncCurrentWallpaper() {
         var currentWall = WallpaperService.currentWallpaper;
@@ -464,7 +499,14 @@ PanelWindow {
                 }
             }
             function scheduleThumbnailLoad() {
-                thumbnailLoadTimer.interval = PathView.isCurrentItem ? 1 : 90 * Math.max(1, circularDistanceFromCurrent());
+                if (PathView.isCurrentItem || (!live && !convertedEnginePreview)) {
+                    // Static images and current item: load immediately.
+                    permitThumbnailLoad = true;
+                    requestCurrentThumbnail();
+                    return;
+                }
+                // Video thumbnails that need generation: short staggered delay.
+                thumbnailLoadTimer.interval = 40 * Math.max(1, circularDistanceFromCurrent());
                 thumbnailLoadTimer.restart();
             }
 
@@ -522,6 +564,8 @@ PanelWindow {
                     if (delegateRoot.live && sourcePath === delegateRoot.filePath && thumbnailPath === delegateRoot.liveThumbnail) {
                         delegateRoot.thumbnailAvailable = true;
                         ++delegateRoot.thumbnailRevision;
+                        if (delegateRoot.PathView.isCurrentItem)
+                            wallpaperWindow.schedulePreview();
                     }
                 }
 
@@ -532,6 +576,8 @@ PanelWindow {
                     if (delegateRoot.convertedEnginePreview && sourcePath === delegateRoot.previewPath && thumbnailPath === delegateRoot.engineThumbnail) {
                         delegateRoot.engineThumbnailAvailable = true;
                         ++delegateRoot.thumbnailRevision;
+                        if (delegateRoot.PathView.isCurrentItem)
+                            wallpaperWindow.schedulePreview();
                     }
                 }
 
@@ -550,14 +596,14 @@ PanelWindow {
                     cacheKey: String(delegateRoot.fileModified) + "-" + String(delegateRoot.thumbnailRevision)
                     fillMode: Image.PreserveAspectCrop
                     path: {
-                        if (!delegateRoot.permitThumbnailLoad)
-                            return "";
-
                         if (delegateRoot.live)
-                            return delegateRoot.thumbnailAvailable ? delegateRoot.liveThumbnail : "";
+                            return (delegateRoot.permitThumbnailLoad && delegateRoot.thumbnailAvailable) ? delegateRoot.liveThumbnail : "";
 
-                        if (delegateRoot.isEngine)
-                            return delegateRoot.engineThumbnailAvailable ? delegateRoot.engineThumbnail : "";
+                        if (delegateRoot.isEngine) {
+                            if (delegateRoot.convertedEnginePreview)
+                                return (delegateRoot.permitThumbnailLoad && delegateRoot.engineThumbnailAvailable) ? delegateRoot.engineThumbnail : "";
+                            return delegateRoot.engineThumbnail;
+                        }
 
                         return delegateRoot.filePath;
                     }

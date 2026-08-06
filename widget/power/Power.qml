@@ -52,6 +52,7 @@ PanelWindow {
     ]
     property var commands: [["poweroff"], ["reboot"], [], ["systemctl", "hibernate"], ["systemctl", "suspend"], ["niri", "msg", "action", "quit"]]
     property bool menuOpen: false
+    property int pendingActionIndex: -1
     readonly property var selectedAction: actions[contentRoot.activeIndex]
 
     signal dismissed
@@ -63,16 +64,15 @@ PanelWindow {
         closeTimer.restart();
     }
     function executeAction(index) {
-        if (index < 0 || index >= commands.length)
+        if (!menuOpen || pendingActionIndex >= 0 || index < 0 || index >= commands.length)
             return;
 
+        pendingActionIndex = index;
         closeMenu();
-        if (index === 2)
-            StateManager.lockScreen();
-        else
-            Quickshell.execDetached(commands[index]);
     }
     function openMenu() {
+        if (pendingActionIndex >= 0)
+            return;
         closeTimer.stop();
         contentRoot.activeIndex = 0;
         visible = true;
@@ -96,7 +96,13 @@ PanelWindow {
 
         onTriggered: {
             powerWindow.visible = false;
+            var actionIndex = powerWindow.pendingActionIndex;
+            powerWindow.pendingActionIndex = -1;
             powerWindow.dismissed();
+            if (actionIndex === 2)
+                StateManager.lockScreen();
+            else if (actionIndex >= 0 && actionIndex < powerWindow.commands.length)
+                Quickshell.execDetached(powerWindow.commands[actionIndex]);
         }
     }
     Item {

@@ -9,11 +9,17 @@ import "../../"
 PanelWindow {
     id: root
 
+    property bool cancelPending: false
     property var flow: null
+    property bool submitPending: false
 
     function cancelAuthentication() {
-        if (flow && !flow.isCompleted)
-            flow.cancelAuthenticationRequest();
+        if (!flow || flow.isCompleted || cancelPending)
+            return;
+
+        cancelPending = true;
+        passwordInput.text = "";
+        flow.cancelAuthenticationRequest();
     }
     function focusPasswordInput() {
         if (!visible || !flow || !flow.isResponseRequired)
@@ -24,15 +30,17 @@ PanelWindow {
         focusRetry.restart();
     }
     function selectNextIdentity() {
-        if (!flow || !flow.identities || flow.identities.length < 2)
+        if (!flow || cancelPending || submitPending || !flow.identities || flow.identities.length < 2)
             return;
 
         var selectedIndex = flow.identities.indexOf(flow.selectedIdentity);
+        passwordInput.text = "";
         flow.selectedIdentity = flow.identities[(selectedIndex + 1) % flow.identities.length];
     }
     function submitAuthentication() {
-        if (!flow || !flow.isResponseRequired)
+        if (!flow || !flow.isResponseRequired || submitPending || cancelPending)
             return;
+        submitPending = true;
         flow.submit(passwordInput.text);
         passwordInput.text = "";
     }
@@ -51,6 +59,10 @@ PanelWindow {
     visible: flow !== null
 
     onFlowChanged: {
+        cancelPending = false;
+        submitPending = false;
+        failureShake.stop();
+        shakeTransform.x = 0;
         passwordInput.text = "";
         if (flow)
             Qt.callLater(root.focusPasswordInput);
@@ -58,8 +70,12 @@ PanelWindow {
     onVisibleChanged: {
         if (visible)
             Qt.callLater(root.focusPasswordInput);
-        else
+        else {
             focusRetry.stop();
+            cancelPending = false;
+            submitPending = false;
+            passwordInput.text = "";
+        }
     }
 
     Timer {
@@ -281,7 +297,7 @@ PanelWindow {
 
                     anchors.fill: parent
                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    enabled: root.flow && root.flow.identities && root.flow.identities.length > 1
+                    enabled: root.flow && !root.cancelPending && !root.submitPending && root.flow.identities && root.flow.identities.length > 1
                     hoverEnabled: enabled
 
                     onClicked: root.selectNextIdentity()
@@ -405,13 +421,14 @@ PanelWindow {
                         font.family: Config.fontName
                         font.pixelSize: 14
                         font.weight: Font.DemiBold
-                        text: "Cancel"
+                        text: root.cancelPending ? "Canceling…" : "Cancel"
                     }
                     MouseArea {
                         id: cancelMouse
 
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
+                        enabled: !root.cancelPending
                         hoverEnabled: true
 
                         onClicked: root.cancelAuthentication()
@@ -451,7 +468,7 @@ PanelWindow {
 
                         anchors.fill: parent
                         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: root.flow && root.flow.isResponseRequired
+                        enabled: root.flow && root.flow.isResponseRequired && !root.submitPending && !root.cancelPending
                         hoverEnabled: enabled
 
                         onClicked: root.submitAuthentication()
@@ -462,18 +479,23 @@ PanelWindow {
     }
     Connections {
         function onAuthenticationFailed() {
+            root.submitPending = false;
             passwordInput.text = "";
             failureShake.restart();
             Qt.callLater(root.focusPasswordInput);
         }
         function onInputPromptChanged() {
             passwordInput.text = "";
-            if (root.flow && root.flow.isResponseRequired)
+            if (root.flow && root.flow.isResponseRequired) {
+                root.submitPending = false;
                 Qt.callLater(root.focusPasswordInput);
+            }
         }
         function onIsResponseRequiredChanged() {
-            if (root.flow && root.flow.isResponseRequired)
+            if (root.flow && root.flow.isResponseRequired) {
+                root.submitPending = false;
                 Qt.callLater(root.focusPasswordInput);
+            }
         }
 
         enabled: root.flow !== null

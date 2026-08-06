@@ -22,9 +22,48 @@ import "components"
 ShellRoot {
     id: root
 
+    property var lazyOpenRequests: ({})
+
+    function clearLazyOpenRequest(loader) {
+        if (!loader || !loader.objectName)
+            return;
+        var request = lazyOpenRequests[loader.objectName];
+        if (!request)
+            return;
+
+        try {
+            loader.activeChanged.disconnect(request.activeHandler);
+        } catch (error) {}
+        try {
+            loader.loadingChanged.disconnect(request.loadingHandler);
+        } catch (error) {}
+        var requests = Object.assign({}, lazyOpenRequests);
+        delete requests[loader.objectName];
+        lazyOpenRequests = requests;
+    }
     function hideLazyWindow(loader, methodName) {
-        if (loader.active && loader.item && loader.item[methodName])
+        clearLazyOpenRequest(loader);
+        if (loader.active && loader.item && loader.item[methodName]) {
             loader.item[methodName]();
+            return;
+        }
+        if (loader.loading) {
+            loader.loading = false;
+            return;
+        }
+    }
+    function scheduleLazyUnload(loader, dismissedItem) {
+        Qt.callLater(function () {
+            if (!loader.active || loader.item !== dismissedItem)
+                return;
+
+            // A window may be reopened between `dismissed` and this deferred
+            // cleanup. Never destroy the newly reopened instance.
+            if (dismissedItem && dismissedItem.visible)
+                return;
+            root.clearLazyOpenRequest(loader);
+            loader.active = false;
+        });
     }
     function showLazyWindow(loader, methodName) {
         if (loader.active) {
@@ -36,20 +75,33 @@ ShellRoot {
         if (loader.loading)
             return;
 
-        var handler = function handler() {
+        clearLazyOpenRequest(loader);
+        var activeHandler = function activeHandler() {
             if (loader.active && loader.item) {
                 if (loader.item[methodName])
                     loader.item[methodName]();
-
-                loader.activeChanged.disconnect(handler);
+                root.clearLazyOpenRequest(loader);
             }
         };
-        loader.activeChanged.connect(handler);
+        var loadingHandler = function loadingHandler() {
+            if (!loader.loading && !loader.active)
+                root.clearLazyOpenRequest(loader);
+        };
+        var requests = Object.assign({}, lazyOpenRequests);
+        requests[loader.objectName] = {
+            "activeHandler": activeHandler,
+            "loadingHandler": loadingHandler
+        };
+        lazyOpenRequests = requests;
+        loader.activeChanged.connect(activeHandler);
+        loader.loadingChanged.connect(loadingHandler);
         loader.loading = true;
     }
     function toggleLazyWindow(loader, openMethod, closeMethod, isOpen) {
         if (loader.active && loader.item && isOpen(loader.item))
             loader.item[closeMethod]();
+        else if (loader.loading)
+            hideLazyWindow(loader, closeMethod);
         else
             showLazyWindow(loader, openMethod);
     }
@@ -62,6 +114,16 @@ ShellRoot {
         StateManager.controlLeftPanelLoader = controlLeftLoader;
         StateManager.lockscreenLoader = lockscreenLoader;
         StateManager.settingsHubLoader = settingsHubLoader;
+    }
+    Component.onDestruction: {
+        if (StateManager.controlPanelLoader === controlRightLoader)
+            StateManager.controlPanelLoader = null;
+        if (StateManager.controlLeftPanelLoader === controlLeftLoader)
+            StateManager.controlLeftPanelLoader = null;
+        if (StateManager.lockscreenLoader === lockscreenLoader)
+            StateManager.lockscreenLoader = null;
+        if (StateManager.settingsHubLoader === settingsHubLoader)
+            StateManager.settingsHubLoader = null;
     }
 
     Backdrop {
@@ -78,10 +140,9 @@ ShellRoot {
                 edgeSide: Qt.LeftEdge
                 screen: modelData
 
-                onTriggered: {
-                    if (!controlLeftLoader.item || !controlLeftLoader.item.active)
-                        StateManager.toggleControlLeftPanel();
-                }
+                onDragFinished: shouldOpen => StateManager.finishControlLeftEdgeDrag(shouldOpen)
+                onDragMoved: progress => StateManager.updateControlLeftEdgeDrag(progress)
+                onDragStarted: StateManager.beginControlLeftEdgeDrag()
             }
         }
     }
@@ -95,10 +156,9 @@ ShellRoot {
                 edgeSide: Qt.RightEdge
                 screen: modelData
 
-                onTriggered: {
-                    if (!controlRightLoader.item || !controlRightLoader.item.active)
-                        StateManager.showControlPanel();
-                }
+                onDragFinished: shouldOpen => StateManager.finishControlRightEdgeDrag(shouldOpen)
+                onDragMoved: progress => StateManager.updateControlRightEdgeDrag(progress)
+                onDragStarted: StateManager.beginControlRightEdgeDrag()
             }
         }
     }
@@ -119,8 +179,21 @@ ShellRoot {
         delegate: Component {
             LazyLoader {
                 required property var modelData
+                readonly property bool requested: CaptureService.screenshotEditorVisible && (CaptureService.screenshotEditorScreenName === "" || CaptureService.screenshotEditorScreenName === modelData.name)
 
-                activeAsync: CaptureService.screenshotEditorVisible && (CaptureService.screenshotEditorScreenName === "" || CaptureService.screenshotEditorScreenName === modelData.name)
+                function syncRequestedState() {
+                    if (requested) {
+                        if (!active && !loading)
+                            loading = true;
+                    } else if (active) {
+                        active = false;
+                    } else if (loading) {
+                        loading = false;
+                    }
+                }
+
+                Component.onCompleted: syncRequestedState()
+                onRequestedChanged: syncRequestedState()
 
                 ScreenshotEditor {
                     screen: modelData
@@ -165,42 +238,49 @@ ShellRoot {
         id: powerLoader
 
         active: false
+        objectName: "powerLoader"
         source: Qt.resolvedUrl("widget/power/Power.qml")
     }
     LazyLoader {
         id: wallpaperSelectorLoader
 
         active: false
+        objectName: "wallpaperSelectorLoader"
         source: Qt.resolvedUrl("widget/desktop/SelectWallpaper.qml")
     }
     LazyLoader {
         id: launcherLoader
 
         active: false
+        objectName: "launcherLoader"
         source: Qt.resolvedUrl("widget/launcher/Launcher.qml")
     }
     LazyLoader {
         id: controlLeftLoader
 
         active: false
+        objectName: "controlLeftLoader"
         source: Qt.resolvedUrl("widget/control/left/ControlLeft.qml")
     }
     LazyLoader {
         id: controlRightLoader
 
         active: false
+        objectName: "controlRightLoader"
         source: Qt.resolvedUrl("widget/control/right/ControlRight.qml")
     }
     LazyLoader {
         id: settingsHubLoader
 
         active: false
+        objectName: "settingsHubLoader"
         source: Qt.resolvedUrl("widget/settings/SettingsHub.qml")
     }
     LazyLoader {
         id: lockscreenLoader
 
         active: false
+        objectName: "lockscreenLoader"
         source: Qt.resolvedUrl("widget/lockscreen/Lockscreen.qml")
     }
     LazyLoader {
@@ -214,63 +294,49 @@ ShellRoot {
     }
     Connections {
         function onDismissed() {
-            Qt.callLater(() => {
-                return powerLoader.active = false;
-            });
+            root.scheduleLazyUnload(powerLoader, target);
         }
 
         target: powerLoader.item
     }
     Connections {
         function onDismissed() {
-            Qt.callLater(() => {
-                return wallpaperSelectorLoader.active = false;
-            });
+            root.scheduleLazyUnload(wallpaperSelectorLoader, target);
         }
 
         target: wallpaperSelectorLoader.item
     }
     Connections {
         function onDismissed() {
-            Qt.callLater(() => {
-                return launcherLoader.active = false;
-            });
+            root.scheduleLazyUnload(launcherLoader, target);
         }
 
         target: launcherLoader.item
     }
     Connections {
         function onDismissed() {
-            Qt.callLater(() => {
-                return controlLeftLoader.active = false;
-            });
+            root.scheduleLazyUnload(controlLeftLoader, target);
         }
 
         target: controlLeftLoader.item
     }
     Connections {
         function onDismissed() {
-            Qt.callLater(() => {
-                return controlRightLoader.active = false;
-            });
+            root.scheduleLazyUnload(controlRightLoader, target);
         }
 
         target: controlRightLoader.item
     }
     Connections {
         function onDismissed() {
-            Qt.callLater(() => {
-                return settingsHubLoader.active = false;
-            });
+            root.scheduleLazyUnload(settingsHubLoader, target);
         }
 
         target: settingsHubLoader.item
     }
     Connections {
         function onDismissed() {
-            Qt.callLater(() => {
-                return lockscreenLoader.active = false;
-            });
+            root.scheduleLazyUnload(lockscreenLoader, target);
         }
 
         target: lockscreenLoader.item
@@ -367,6 +433,11 @@ ShellRoot {
         function lock() {
             StateManager.lockScreen();
         }
+        function retryFace() {
+            if (lockscreenLoader.active && lockscreenLoader.item && typeof lockscreenLoader.item.retryFace === "function") {
+                lockscreenLoader.item.retryFace();
+            }
+        }
         function show() {
             StateManager.lockScreen();
         }
@@ -403,10 +474,19 @@ ShellRoot {
         id: globalNotificationManager
 
         actionsSupported: true
+        imageSupported: true
+        keepOnReload: false
+        persistenceSupported: true
 
         onNotification: n => {
             n.tracked = true;
             NotificationHistory.add(n);
+            if (n.transient && QuickSettingsService.dndActive) {
+                Qt.callLater(function () {
+                    if (n && n.tracked)
+                        n.expire();
+                });
+            }
         }
     }
 }

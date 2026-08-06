@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../../"
+import ".."
 
 QtObject {
     id: root
@@ -10,17 +11,45 @@ QtObject {
     property Process actionExecutor: Process {
     }
     readonly property string configPath: Config.niriOutputConfig
+    property var pendingConfigCommands: []
+    property Timer configApplyDebounce: Timer {
+        interval: 70
+        repeat: false
+
+        onTriggered: root.startPendingConfigUpdate()
+    }
     property Process configUpdater: Process {
-        onRunningChanged: {
-            if (!running) {
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0)
+                console.warn("[DisplayService] Failed to update output configuration:", exitCode);
+
+            if (root.pendingConfigCommands.length > 0)
+                root.startPendingConfigUpdate();
+            else
                 delayedRefresh.restart();
-            }
         }
     }
     property Process darkmodeApply: Process {
+        onExited: (exitCode, exitStatus) => {
+            var completedMode = root.applyingDarkmodeMode;
+            root.applyingDarkmodeMode = "";
+            if (root.pendingDarkmodeMode !== "") {
+                root.startPendingDarkmodeApply();
+                return;
+            }
+            if (exitCode !== 0) {
+                console.warn("[DisplayService] Failed to apply color mode:", exitCode);
+                root.delayedRefresh.restart();
+                return;
+            }
+
+            if (completedMode !== "")
+                ThemeService.generate(WallpaperService.displayWallpaper, completedMode, true);
+        }
     }
 
     // Dark mode
+    property string applyingDarkmodeMode: ""
     property bool darkmodeEnabled: false
     property Process darkmodeQuery: Process {
         command: ["sh", "-c", "gsettings get org.gnome.desktop.interface color-scheme"]
@@ -28,9 +57,11 @@ QtObject {
         stdout: StdioCollector {
             onStreamFinished: {
                 root.darkmodeEnabled = text.trim().indexOf("prefer-dark") >= 0;
+                ThemeService.colorMode = root.darkmodeEnabled ? "dark" : "light";
             }
         }
     }
+    property string pendingDarkmodeMode: ""
     property Timer delayedRefresh: Timer {
         interval: 400
         repeat: false
@@ -192,8 +223,22 @@ QtObject {
         return "if ! grep -q 'output \"" + output + "\" {' " + configPath + "; then echo -e '\\noutput \"" + output + "\" {\\n    mode \"" + defaults.mode + "\"\\n    scale " + defaults.scale + "\\n    transform \"" + defaults.transform + "\"\\n    position x=" + defaults.x + " y=" + defaults.y + "\\n}' >> " + configPath + "; fi";
     }
     function executeConfigCommand(command) {
-        configUpdater.command = ["sh", "-c", command + "; niri msg action load-config-file"];
-        configUpdater.running = false;
+        if (!command)
+            return;
+
+        var queued = pendingConfigCommands.slice();
+        queued.push(command);
+        pendingConfigCommands = queued;
+        if (!configUpdater.running)
+            configApplyDebounce.restart();
+    }
+    function startPendingConfigUpdate() {
+        if (configUpdater.running || pendingConfigCommands.length === 0)
+            return;
+
+        var commands = pendingConfigCommands.slice();
+        pendingConfigCommands = [];
+        configUpdater.command = ["sh", "-c", commands.join("; ") + "; niri msg action load-config-file"];
         configUpdater.running = true;
     }
     function nightlightConfigText(temperature) {
@@ -257,8 +302,18 @@ QtObject {
     }
     function setDarkmodeEnabled(enabled) {
         darkmodeEnabled = enabled;
-        darkmodeApply.command = ["sh", "-c", "gsettings set org.gnome.desktop.interface color-scheme '" + (enabled ? "prefer-dark" : "prefer-light") + "'" + " && gsettings set org.gnome.desktop.interface gtk-theme '" + (enabled ? "adw-gtk3-dark" : "adw-gtk3") + "'"];
-        darkmodeApply.running = false;
+        pendingDarkmodeMode = enabled ? "dark" : "light";
+        if (!darkmodeApply.running)
+            startPendingDarkmodeApply();
+    }
+    function startPendingDarkmodeApply() {
+        if (darkmodeApply.running || pendingDarkmodeMode === "")
+            return;
+
+        var mode = pendingDarkmodeMode;
+        pendingDarkmodeMode = "";
+        applyingDarkmodeMode = mode;
+        darkmodeApply.command = ["sh", "-c", "gsettings set org.gnome.desktop.interface color-scheme '" + (mode === "dark" ? "prefer-dark" : "prefer-light") + "'" + " && gsettings set org.gnome.desktop.interface gtk-theme '" + (mode === "dark" ? "adw-gtk3-dark" : "adw-gtk3") + "'"];
         darkmodeApply.running = true;
     }
     function setNightlightEnabled(enabled) {

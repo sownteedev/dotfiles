@@ -8,6 +8,7 @@ QtObject {
 
     property string activeWindowId: ""
     property int activeWorkspaceId: -1
+    property string focusedOutputName: ""
     property Timer debounceTimer: Timer {
         interval: 50
         repeat: false
@@ -56,13 +57,16 @@ QtObject {
             var winList = data.windows || [];
             var newActiveWindowId = "";
             var newActiveWorkspaceId = -1;
+            var newFocusedOutputName = "";
             for (var i = 0; i < winList.length; i++) {
                 if (winList[i].is_focused)
                     newActiveWindowId = String(winList[i].id);
             }
             for (var j = 0; j < wsList.length; j++) {
-                if (wsList[j].is_focused)
+                if (wsList[j].is_focused) {
                     newActiveWorkspaceId = wsList[j].id;
+                    newFocusedOutputName = String(wsList[j].output || "");
+                }
             }
             var floatingData = data.floating || {};
             var floating = false;
@@ -117,6 +121,7 @@ QtObject {
             }
             root.activeWindowId = newActiveWindowId;
             root.activeWorkspaceId = newActiveWorkspaceId;
+            root.focusedOutputName = newFocusedOutputName;
             if (root.isWorkspaceFloating !== floating)
                 root.isWorkspaceFloating = floating;
 

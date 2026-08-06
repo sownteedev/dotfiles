@@ -301,15 +301,7 @@ QtObject {
         processNextThumbnail();
         return target;
     }
-    function stableHash(value) {
-        var text = String(value || "");
-        var hash = 2166136261;
-        for (var i = 0; i < text.length; ++i) {
-            hash ^= text.charCodeAt(i);
-            hash = (hash + (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)) >>> 0;
-        }
-        return ("00000000" + hash.toString(16)).slice(-8);
-    }
+
     function startReadyProbe() {
         if (!player.running)
             return;
@@ -358,6 +350,6 @@ QtObject {
         return knownThumbnails[thumbnailPath(path, modified)] === true;
     }
     function thumbnailPath(path, modified) {
-        return cacheDir + "/" + stableHash(String(path) + "|" + modifiedKey(modified)) + ".jpg";
+        return cacheDir + "/" + WallpaperService.stableHash(String(path) + "|" + modifiedKey(modified)) + ".jpg";
     }
 }

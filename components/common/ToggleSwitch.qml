@@ -23,7 +23,7 @@ Rectangle {
     Accessible.checked: checked
     Accessible.name: accessibleName
     Accessible.role: Accessible.CheckBox
-    activeFocusOnTab: interactive
+    activeFocusOnTab: enabled && interactive
     border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.75) : Config.alpha(Config.md3.on_surface, 0.1)
     border.width: 1
     color: checked ? checkedColor : uncheckedColor
@@ -80,7 +80,7 @@ Rectangle {
     }
     MouseArea {
         anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         enabled: root.enabled && root.interactive
 
         onClicked: {

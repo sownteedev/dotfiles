@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
-import Quickshell.Io
 import Quickshell.Widgets
 import Quickshell.Services.Pipewire
 import "../../"
@@ -54,6 +53,7 @@ PanelWindow {
         return 0.0;
     }
     readonly property real brightnessVal: BrightnessService.value
+    readonly property bool brightnessReady: BrightnessService.initialized && BrightnessService.available
     readonly property color highlightColor: {
         if (activeIndicator === "volume" || activeIndicator === "volume-mute")
             return Config.md3.primary;
@@ -66,18 +66,13 @@ PanelWindow {
 
     // Helper to get active properties
     readonly property bool isMute: activeIndicator === "volume-mute" || activeIndicator === "mic-mute"
+    readonly property bool micReady: Pipewire.ready && !!(Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio)
     readonly property bool micMuted: (Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio) ? Pipewire.defaultAudioSource.audio.muted : false
-    readonly property real micVal: (Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio) ? Pipewire.defaultAudioSource.audio.volume : 0.0
+    readonly property real micVal: maximumAudioVolume(Pipewire.defaultAudioSource ? Pipewire.defaultAudioSource.audio : null)
     readonly property string muteIconName: activeIndicator.indexOf("mic") === 0 ? "microphone-sensitivity-muted-symbolic" : "audio-volume-muted-symbolic"
+    readonly property bool speakerReady: Pipewire.ready && !!(Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.audio)
     readonly property bool volumeMuted: (Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.audio) ? Pipewire.defaultAudioSink.audio.muted : false
-    readonly property real volumeVal: {
-        if (!Pipewire.defaultAudioSink || !Pipewire.defaultAudioSink.audio)
-            return 0.0;
-        var vols = Pipewire.defaultAudioSink.audio.volumes;
-        if (!vols || vols.length === 0)
-            return Pipewire.defaultAudioSink.audio.volume;
-        return Math.max(vols[0] || 0.0, vols[1] || vols[0] || 0.0);
-    }
+    readonly property real volumeVal: maximumAudioVolume(Pipewire.defaultAudioSink ? Pipewire.defaultAudioSink.audio : null)
 
     function getVolumeIcon(val, muted) {
         if (muted)
@@ -89,6 +84,21 @@ PanelWindow {
         if (val > 0)
             return "audio-volume-low-symbolic";
         return "audio-volume-muted-symbolic";
+    }
+    function maximumAudioVolume(audio) {
+        if (!audio)
+            return 0.0;
+        var volumes = audio.volumes;
+        if (!volumes || volumes.length === 0)
+            return Math.max(0.0, audio.volume || 0.0);
+
+        var maximum = 0.0;
+        for (var i = 0; i < volumes.length; ++i) {
+            var channelVolume = Number(volumes[i]);
+            if (!isNaN(channelVolume))
+                maximum = Math.max(maximum, channelVolume);
+        }
+        return maximum;
     }
 
     // Core OSD display logic
@@ -124,6 +134,12 @@ PanelWindow {
         if (activeBrightnessInit)
             showOSD("brightness");
     }
+    onBrightnessReadyChanged: {
+        brightnessInitTimer.stop();
+        activeBrightnessInit = false;
+        if (brightnessReady)
+            brightnessInitTimer.start();
+    }
     onMicMutedChanged: {
         if (activeMicInit)
             showOSD(micMuted ? "mic-mute" : "mic");
@@ -132,6 +148,12 @@ PanelWindow {
         if (activeMicInit)
             showOSD("mic");
     }
+    onMicReadyChanged: {
+        micInitTimer.stop();
+        activeMicInit = false;
+        if (micReady)
+            micInitTimer.start();
+    }
     onVolumeMutedChanged: {
         if (activeSpeakerInit)
             showOSD(volumeMuted ? "volume-mute" : "volume");
@@ -139,6 +161,21 @@ PanelWindow {
     onVolumeValChanged: {
         if (activeSpeakerInit)
             showOSD("volume");
+    }
+    onSpeakerReadyChanged: {
+        speakerInitTimer.stop();
+        activeSpeakerInit = false;
+        if (speakerReady)
+            speakerInitTimer.start();
+    }
+
+    Component.onCompleted: {
+        if (brightnessReady)
+            brightnessInitTimer.start();
+        if (micReady)
+            micInitTimer.start();
+        if (speakerReady)
+            speakerInitTimer.start();
     }
 
     Timer {
@@ -157,17 +194,28 @@ PanelWindow {
         objects: [Pipewire.defaultAudioSink, Pipewire.defaultAudioSource]
     }
     Timer {
-        id: initTimer
+        id: brightnessInitTimer
 
-        interval: 1000
+        interval: 50
         repeat: false
-        running: true
 
-        onTriggered: {
-            activeSpeakerInit = true;
-            activeMicInit = true;
-            activeBrightnessInit = true;
-        }
+        onTriggered: activeBrightnessInit = brightnessReady
+    }
+    Timer {
+        id: micInitTimer
+
+        interval: 50
+        repeat: false
+
+        onTriggered: activeMicInit = micReady
+    }
+    Timer {
+        id: speakerInitTimer
+
+        interval: 50
+        repeat: false
+
+        onTriggered: activeSpeakerInit = speakerReady
     }
 
     // Window root content holder to contain drop shadow bounds
@@ -178,7 +226,7 @@ PanelWindow {
         // Premium drop shadow for floating glassmorphism effect
         DropShadow {
             anchors.fill: popup
-            cached: false // Disable cache to allow real-time shape morphing redraws
+            cached: true
             color: "#66000000"
             horizontalOffset: 3
             radius: 14

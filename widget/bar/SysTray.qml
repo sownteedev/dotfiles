@@ -19,17 +19,52 @@ RowLayout {
         delegate: MouseArea {
             id: itemArea
 
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            readonly property var trayItem: modelData
+
+            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
             cursorShape: Qt.PointingHandCursor
             height: 24
             hoverEnabled: true
             width: 24
 
-            onClicked: mouse => {
-                if (modelData.hasMenu)
-                    menuPopupLoader.active = !menuPopupLoader.active;
+            function closeMenuPopup() {
+                if (menuPopupLoader.active)
+                    menuPopupLoader.active = false;
+                else if (menuPopupLoader.loading)
+                    menuPopupLoader.loading = false;
+            }
+            function toggleMenuPopup() {
+                if (menuPopupLoader.active)
+                    menuPopupLoader.active = false;
+                else if (menuPopupLoader.loading)
+                    menuPopupLoader.loading = false;
                 else
-                    modelData.activate();
+                    menuPopupLoader.loading = true;
+            }
+
+            onClicked: mouse => {
+                if (!itemArea.trayItem)
+                    return;
+
+                if (mouse.button === Qt.MiddleButton) {
+                    itemArea.closeMenuPopup();
+                    itemArea.trayItem.secondaryActivate();
+                    return;
+                }
+
+                if (mouse.button === Qt.RightButton) {
+                    if (itemArea.trayItem.hasMenu)
+                        itemArea.toggleMenuPopup();
+                    return;
+                }
+
+                if (itemArea.trayItem.onlyMenu && itemArea.trayItem.hasMenu) {
+                    itemArea.toggleMenuPopup();
+                    return;
+                }
+
+                itemArea.closeMenuPopup();
+                itemArea.trayItem.activate();
             }
 
             // PopupWindow is created only when the tray item is clicked.
@@ -40,6 +75,26 @@ RowLayout {
 
                 PopupWindow {
                     id: menuPopup
+
+                    readonly property var activeMenu: menuStack.length > 0 ? menuStack[menuStack.length - 1] : rootMenu
+                    readonly property string activeMenuTitle: menuStack.length > 0 ? String(menuStack[menuStack.length - 1].text || "Menu") : ""
+                    property var menuStack: []
+                    readonly property var rootMenu: itemArea.trayItem && itemArea.trayItem.hasMenu ? itemArea.trayItem.menu : null
+
+                    function closeMenu() {
+                        menuStack = [];
+                        itemArea.closeMenuPopup();
+                    }
+                    function openSubmenu(entry) {
+                        if (!entry || !entry.enabled || !entry.hasChildren)
+                            return;
+                        menuStack = menuStack.concat([entry]);
+                    }
+                    function returnToParentMenu() {
+                        if (menuStack.length === 0)
+                            return;
+                        menuStack = menuStack.slice(0, menuStack.length - 1);
+                    }
 
                     anchor.edges: Edges.Bottom | Edges.Left
                     // ONLY set anchor.item (setting anchor.window unsets anchor.item, causing positioning/crash issues)
@@ -55,13 +110,13 @@ RowLayout {
                     // Auto-destroy the window when focus is lost (dismissOnOutsideClick via grabFocus)
                     onVisibleChanged: {
                         if (!visible)
-                            menuPopupLoader.active = false;
+                            menuPopup.closeMenu();
                     }
 
                     QsMenuOpener {
                         id: menuOpener
 
-                        menu: modelData.hasMenu ? modelData.menu : null
+                        menu: menuPopup.activeMenu
                     }
                     Rectangle {
                         id: bgRect
@@ -95,8 +150,54 @@ RowLayout {
                             anchors.margins: 10
                             spacing: 4
 
+                            Rectangle {
+                                Layout.fillWidth: true
+                                color: backMouse.containsMouse ? Config.md3.surface_container_high : "transparent"
+                                implicitHeight: 34
+                                radius: 8
+                                visible: menuPopup.menuStack.length > 0
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 9
+
+                                    Text {
+                                        color: Config.md3.on_surface
+                                        font.family: Config.fontName
+                                        font.pixelSize: 18
+                                        font.weight: Font.Bold
+                                        text: "‹"
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: Config.md3.on_surface
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 14
+                                        font.weight: Font.DemiBold
+                                        text: menuPopup.activeMenuTitle
+                                    }
+                                }
+                                MouseArea {
+                                    id: backMouse
+
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+
+                                    onClicked: menuPopup.returnToParentMenu()
+                                }
+                            }
+                            Rectangle {
+                                Layout.fillWidth: true
+                                color: Config.alpha(Config.md3.on_surface, 0.08)
+                                height: 1
+                                visible: menuPopup.menuStack.length > 0
+                            }
                             Repeater {
-                                model: modelData.hasMenu ? menuOpener.children : null
+                                model: menuOpener.children
 
                                 delegate: Rectangle {
                                     id: entryItem
@@ -104,6 +205,7 @@ RowLayout {
                                     Layout.fillWidth: true
                                     color: modelData.isSeparator ? "transparent" : (entryMouse.containsMouse ? Config.md3.surface_container_high : "transparent")
                                     implicitHeight: modelData.isSeparator ? 8 : 34
+                                    opacity: modelData.isSeparator || modelData.enabled ? 1 : 0.42
                                     radius: 8
 
                                     // Separator line
@@ -166,19 +268,31 @@ RowLayout {
                                             font.weight: Font.Medium
                                             text: modelData.text || ""
                                         }
+                                        Text {
+                                            color: Config.md3.on_surface_variant
+                                            font.family: Config.fontName
+                                            font.pixelSize: 17
+                                            font.weight: Font.Bold
+                                            text: "›"
+                                            visible: modelData.hasChildren
+                                        }
                                     }
                                     MouseArea {
                                         id: entryMouse
 
                                         anchors.fill: parent
-                                        cursorShape: modelData.isSeparator ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                        enabled: !modelData.isSeparator && modelData.enabled
                                         hoverEnabled: true
 
                                         onClicked: {
-                                            if (!modelData.isSeparator) {
-                                                modelData.triggered();
-                                                menuPopupLoader.active = false;
+                                            if (modelData.hasChildren) {
+                                                menuPopup.openSubmenu(modelData);
+                                                return;
                                             }
+
+                                            modelData.triggered();
+                                            menuPopup.closeMenu();
                                         }
                                     }
                                 }
@@ -213,7 +327,7 @@ RowLayout {
             IconImage {
                 anchors.fill: parent
                 opacity: itemArea.containsMouse ? 1 : 0.75
-                source: modelData.icon && modelData.icon.toString() !== "" ? modelData.icon : Quickshell.iconPath("application-x-executable")
+                source: itemArea.trayItem.icon && itemArea.trayItem.icon.toString() !== "" ? itemArea.trayItem.icon : Quickshell.iconPath("application-x-executable")
 
                 Behavior on opacity {
                     NumberAnimation {

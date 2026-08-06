@@ -7,6 +7,7 @@ Rectangle {
 
     property var options: []
     property string selectedValue: ""
+    property string accessibleName: ""
 
     signal selected(string value)
 
@@ -15,6 +16,32 @@ Rectangle {
     color: Config.md3.surface_container_high
     implicitHeight: 44
     radius: 14
+
+    function moveSelection(offset) {
+        if (!enabled || options.length === 0)
+            return;
+        var current = 0;
+        for (var i = 0; i < options.length; ++i) {
+            if (String(options[i].value) === selectedValue) {
+                current = i;
+                break;
+            }
+        }
+        var next = (current + offset + options.length) % options.length;
+        selected(String(options[next].value));
+    }
+
+    Accessible.name: accessibleName
+    Accessible.role: Accessible.Grouping
+    activeFocusOnTab: enabled
+    Keys.onLeftPressed: event => {
+        moveSelection(-1);
+        event.accepted = true;
+    }
+    Keys.onRightPressed: event => {
+        moveSelection(1);
+        event.accepted = true;
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -36,6 +63,10 @@ Rectangle {
                 border.width: 1
                 color: active ? Config.alpha(Config.md3.primary, 0.16) : (segmentArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.07) : "transparent")
                 radius: 10
+
+                Accessible.checked: active
+                Accessible.name: String(segment.modelData.label)
+                Accessible.role: Accessible.RadioButton
 
                 Behavior on border.color {
                     ColorAnimation {
@@ -72,6 +103,7 @@ Rectangle {
 
                     onClicked: root.selected(segment.modelData.value)
                 }
+                Accessible.onPressAction: root.selected(segment.modelData.value)
             }
         }
     }

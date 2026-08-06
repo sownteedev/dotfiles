@@ -8,6 +8,7 @@ GridView {
     id: appsGrid
 
     readonly property int columns: 5
+    property bool entranceReady: false
     readonly property var gridItems: {
         var apps = DesktopEntries.applications.values;
         if (!apps)
@@ -69,6 +70,24 @@ GridView {
     delegate: Item {
         id: delegateRoot
 
+        readonly property bool entranceReady: appsGrid.entranceReady
+
+        function resetEntrance() {
+            entryTimer.stop();
+            entryAnim.stop();
+            opacity = 0;
+            scale = 0.8;
+            entryTranslate.y = 30;
+        }
+        function scheduleEntrance() {
+            resetEntrance();
+            var col = index % appsGrid.columns;
+            var row = Math.floor(index / appsGrid.columns);
+            // Staggered delay: 25ms per column/row step
+            entryTimer.interval = (col + row) * 25 + 10;
+            entryTimer.start();
+        }
+
         height: appsGrid.cellHeight
         opacity: 0
         scale: 0.8
@@ -81,11 +100,15 @@ GridView {
         }
 
         Component.onCompleted: {
-            var col = index % appsGrid.columns;
-            var row = Math.floor(index / appsGrid.columns);
-            // Staggered delay: 25ms per column/row step
-            entryTimer.interval = (col + row) * 25 + 10;
-            entryTimer.start();
+            resetEntrance();
+            if (appsGrid.entranceReady)
+                scheduleEntrance();
+        }
+        onEntranceReadyChanged: {
+            if (entranceReady)
+                scheduleEntrance();
+            else
+                resetEntrance();
         }
 
         Timer {

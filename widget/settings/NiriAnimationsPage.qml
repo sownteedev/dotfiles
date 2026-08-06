@@ -8,10 +8,12 @@ import QtQuick.Layouts
 ScrollView {
     id: root
 
-    readonly property bool headerActionEnabled: !SettingsHubService.busy
+    readonly property bool slowdownValid: isFinite(Number(slowdownField.text)) && Number(slowdownField.text) >= 0.05 && Number(slowdownField.text) <= 10
+    readonly property bool headerActionEnabled: !SettingsHubService.busy && slowdownValid
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Applying…" : "Apply animations"
     readonly property bool headerActionVisible: true
+    readonly property bool headerResetVisible: true
 
     function syncGlobal() {
         var settings = SettingsHubService.animationSettings || {};
@@ -20,6 +22,9 @@ ScrollView {
     }
     function triggerHeaderAction() {
         SettingsHubService.saveAnimationGlobal(animationToggle.checked, Number(slowdownField.text));
+    }
+    function resetPage() {
+        syncGlobal();
     }
 
     clip: true
@@ -110,10 +115,10 @@ ScrollView {
                 }
                 Text {
                     Layout.fillWidth: true
-                    color: Config.alpha(Config.md3.on_surface, 0.42)
                     font.family: Config.fontName
                     font.pixelSize: 11
-                    text: "1.0 is normal. Larger values make animations slower."
+                    color: root.slowdownValid ? Config.alpha(Config.md3.on_surface, 0.42) : Config.md3.error
+                    text: root.slowdownValid ? "1.0 is normal. Larger values make animations slower." : "Enter a value from 0.05 to 10."
                 }
             }
         }

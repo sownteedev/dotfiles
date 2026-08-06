@@ -62,6 +62,7 @@ Item {
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Saving…" : "Apply & save"
     readonly property bool headerActionVisible: true
+    readonly property bool headerResetVisible: true
     property bool revealApiKey: false
 
     function refreshIntegrations() {
@@ -126,6 +127,9 @@ Item {
             "wallpaperEngineAssetsDirPath": engineAssetsField.text,
             "wallpaperEngineWorkshopDirPath": engineWorkshopField.text
         });
+    }
+    function resetPage() {
+        syncFields();
     }
 
     Component.onCompleted: syncFields()

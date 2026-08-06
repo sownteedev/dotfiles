@@ -23,6 +23,15 @@ Rectangle {
         }
     }
 
+    scale: pointer.pressed ? 0.85 : 1.0
+    Behavior on scale {
+        NumberAnimation {
+            duration: 200
+            easing.overshoot: 2.5
+            easing.type: Easing.OutBack
+        }
+    }
+
     Text {
         anchors.centerIn: parent
         color: root.selectedTool === root.toolData.tool ? Config.md3.background : Config.md3.on_surface
@@ -31,6 +40,12 @@ Rectangle {
         font.weight: Font.Bold
         text: root.toolData.glyph || ""
         visible: !root.toolData.iconName
+
+        Behavior on color {
+            ColorAnimation {
+                duration: 120
+            }
+        }
     }
     IconImage {
         anchors.centerIn: parent
@@ -42,6 +57,11 @@ Rectangle {
 
         layer.effect: ColorOverlay {
             color: root.selectedTool === root.toolData.tool ? Config.md3.background : Config.md3.on_surface
+            Behavior on color {
+                ColorAnimation {
+                    duration: 120
+                }
+            }
         }
     }
     MouseArea {

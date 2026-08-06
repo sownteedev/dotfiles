@@ -13,6 +13,7 @@ ScrollView {
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Validating…" : "Apply behavior"
     readonly property bool headerActionVisible: true
+    readonly property bool headerResetVisible: true
 
     function apply() {
         SettingsHubService.saveBehavior({
@@ -99,6 +100,9 @@ ScrollView {
     }
     function triggerHeaderAction() {
         apply();
+    }
+    function resetPage() {
+        syncFields();
     }
 
     clip: true

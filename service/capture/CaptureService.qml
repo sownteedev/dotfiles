@@ -9,7 +9,12 @@ QtObject {
 
     property double lastRecordingToggleAt: 0
     property string latestRecordingPath: ""
+    property bool recordingStopRequested: false
     property Process recorder: Process {
+        stderr: StdioCollector {
+            id: recorderError
+        }
+
         onExited: (exitCode, exitStatus) => {
             console.log("[Capture] Screen recording stopped with code:", exitCode);
             recordingTicker.stop();
@@ -17,7 +22,19 @@ QtObject {
                 return;
             root.recordingElapsedSeconds = Math.max(0, Math.floor((Date.now() - root.recordingStartedAt) / 1000));
             root.recordingStartedAt = 0;
-            root.latestRecordingPath = root.recordingPath;
+            var completedPath = root.recordingPath;
+            root.recordingPath = "";
+            var stoppedByUser = root.recordingStopRequested;
+            root.recordingStopRequested = false;
+            if (exitCode !== 0 && !stoppedByUser) {
+                var errorText = recorderError.text.trim();
+                console.warn("[Capture] Screen recording failed:", errorText || "exit code " + exitCode);
+                root.recordingSavedVisible = false;
+                Quickshell.execDetached(["notify-send", "-a", "Screen Recording", "-u", "normal", "-h", "boolean:transient:true", "Recording failed", "The recorder stopped with exit code " + exitCode]);
+                return;
+            }
+
+            root.latestRecordingPath = completedPath;
             if (Config.captureAutoCopyRecording)
                 root.copyRecording(root.latestRecordingPath);
             root.recordingSavedVisible = true;
@@ -25,6 +42,7 @@ QtObject {
         }
         onStarted: {
             console.log("[Capture] Screen recording started:", root.recordingPath);
+            root.recordingStopRequested = false;
             root.recordingStartedAt = Date.now();
             root.recordingElapsedSeconds = 0;
             recordingTicker.start();
@@ -100,6 +118,7 @@ QtObject {
         onStarted: console.log("[Capture] slurp process started")
     }
     property bool screenshotBusy: false
+    property int screenshotCaptureSession: 0
     property double screenshotCapturedAt: 0
     readonly property string screenshotDir: Config.captureScreenshotDir
     property string screenshotEditorScreenName: ""
@@ -111,25 +130,40 @@ QtObject {
 
         onTriggered: Quickshell.execDetached(["niri", "msg", "action", "screenshot"])
     }
+    property double screenshotStartedAt: 0
     property string screenshotPath: ""
-    property Process screenshotWatcher: Process {
-        command: ["inotifywait", "-q", "-t", "60", "-e", "close_write,moved_to", "--include", "\\.(png|jpg|jpeg)$", "--format", "%w%f", root.screenshotDir]
+    property Timer screenshotWatchdog: Timer {
+        interval: 61500
+        repeat: false
 
+        onTriggered: {
+            if (!root.screenshotBusy)
+                return;
+            root.screenshotBusy = false;
+            root.screenshotWatcher.running = false;
+            console.warn("[Capture] Screenshot watcher timed out");
+        }
+    }
+    property Process screenshotWatcher: Process {
         stdout: StdioCollector {
             onStreamFinished: {
                 var lines = text.trim().split("\n");
-                var path = lines.length > 0 ? lines[lines.length - 1].trim() : "";
+                var result = lines.length > 0 ? lines[lines.length - 1].trim() : "";
+                var separator = result.indexOf("\t");
+                if (separator < 0)
+                    return;
+                var session = parseInt(result.substring(0, separator), 10);
+                if (session !== root.screenshotCaptureSession || !root.screenshotBusy)
+                    return;
+
+                var path = result.substring(separator + 1).trim();
+                root.screenshotWatchdog.stop();
                 root.screenshotBusy = false;
-                if (!path)
+                if (!path || path === "__NO_MATCH__")
                     return;
                 root.screenshotPath = path;
                 root.screenshotCapturedAt = Date.now();
             }
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                root.screenshotBusy = false;
         }
     }
     property bool selectingRegion: false
@@ -142,12 +176,15 @@ QtObject {
     }
     function beginScreenshotCapture() {
         screenshotWatcher.running = false;
+        var watcherCommand = "path=$(inotifywait -q -t 60 -e close_write,moved_to --include '(^|/)Screenshot from .*\\.(png|jpg|jpeg)$' --format '%w%f' \"$3\") || { printf '%s\\t__NO_MATCH__\\n' \"$1\"; exit 0; }; " + "modified=$(stat -c %Y -- \"$path\" 2>/dev/null || printf 0); " + "if [ \"$modified\" -lt \"$2\" ]; then printf '%s\\t__NO_MATCH__\\n' \"$1\"; exit 0; fi; " + "printf '%s\\t%s\\n' \"$1\" \"$path\"";
+        screenshotWatcher.command = ["sh", "-c", watcherCommand, "screenshot-watch", String(screenshotCaptureSession), String(Math.floor(screenshotStartedAt / 1000)), screenshotDir];
         screenshotWatcher.running = true;
+        screenshotWatchdog.restart();
         screenshotLaunchDelay.restart();
     }
     function closeScreenshotEditor() {
         screenshotEditorVisible = false;
-        Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-u", "low", "Canceled", "Screenshot editing canceled"]);
+        Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-u", "low", "-h", "boolean:transient:true", "Canceled", "Screenshot editing canceled"]);
     }
     function copyRecording(path) {
         var target = path || latestRecordingPath;
@@ -172,9 +209,9 @@ QtObject {
         screenshotEditorVisible = false;
         if (Config.captureAutoCopyScreenshot) {
             Quickshell.execDetached(["sh", "-c", "wl-copy --type image/png < \"$1\"", "copy-edited-screenshot", path]);
-            Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-i", path, "Copied to Clipboard", "The edited screenshot has been saved to your clipboard"]);
+            Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-i", path, "-h", "boolean:transient:true", "Copied to Clipboard", "The edited screenshot has been saved to your clipboard"]);
         } else {
-            Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-i", path, "Screenshot saved", path]);
+            Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-i", path, "-h", "boolean:transient:true", "Screenshot saved", path]);
         }
     }
     function formatDuration(totalSeconds) {
@@ -227,6 +264,8 @@ QtObject {
         }
 
         screenshotBusy = true;
+        screenshotCaptureSession += 1;
+        screenshotStartedAt = Date.now();
         screenshotPath = "";
         screenshotCapturedAt = 0;
         beginScreenshotCapture();
@@ -251,8 +290,10 @@ QtObject {
             return;
         }
 
-        if (recorder.running)
+        if (recorder.running) {
+            recordingStopRequested = true;
             recorder.signal(2);
+        }
     }
     function toggleRecording() {
         var now = Date.now();

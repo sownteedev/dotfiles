@@ -198,6 +198,16 @@ QtObject {
     }
     property int videoTransitionGeneration: 0
 
+    function stableHash(value) {
+        var text = String(value || "");
+        var hash = 2166136261;
+        for (var i = 0; i < text.length; ++i) {
+            hash ^= text.charCodeAt(i);
+            hash = (hash + (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)) >>> 0;
+        }
+        return ("00000000" + hash.toString(16)).slice(-8);
+    }
+
     function apply(path, mode, modified) {
         if (!path)
             return;

@@ -13,6 +13,11 @@ QtObject {
 
     id: root
 
+    property Timer clearAllDelayTimer: Timer {
+        repeat: false
+
+        onTriggered: root.clearAll()
+    }
     property Timer groupRebuildTimer: Timer {
         interval: 16
         repeat: false
@@ -68,6 +73,7 @@ QtObject {
     }
     readonly property string historyPath: Config.homeDir + "/.cache/quickshell/notifications.json"
     property var notificationGroups: []
+    property var pendingNativeUpdates: ({})
     property ListModel notifications: ListModel {
     }
     property var rawMap: ({})
@@ -96,8 +102,19 @@ QtObject {
             historyFile.setText(JSON.stringify(list));
         }
     }
+    property Timer updateTimer: Timer {
+        interval: 0
+        repeat: false
+
+        onTriggered: root.flushNativeUpdates()
+    }
 
     function add(n) {
+        // Transient notifications are intentionally popup-only and must not be
+        // retained or serialized in the notification centre.
+        if (!n || n.transient)
+            return;
+
         // Check if it already exists (update in place)
         var index = -1;
         for (var i = 0; i < notifications.count; i++) {
@@ -106,18 +123,7 @@ QtObject {
                 break;
             }
         }
-        var isCritical = n.urgency === 2;
-        var notifData = {
-            "nid": n.id,
-            "appName": n.appName || "",
-            "appIcon": n.appIcon || "",
-            "summary": n.summary || "",
-            "body": n.body || "",
-            "image": n.image || "",
-            "isCritical": isCritical,
-            "timeText": new Date().toLocaleTimeString(Qt.locale(), "hh:mm"),
-            "timestamp": Date.now()
-        };
+        var notifData = snapshotFor(n, Date.now());
         if (index !== -1)
             notifications.remove(index);
 
@@ -129,15 +135,93 @@ QtObject {
         n.closed.connect(function () {
             root.releaseNative(notificationId, n);
         });
+        connectNativeUpdates(n);
         // 2. Insert into the ListModel and trigger UI update
         notifications.insert(0, notifData);
         // Cap history at 100 items to prevent infinite file/memory growth
         while (notifications.count > 100) {
             var oldestId = notifications.get(notifications.count - 1).nid;
+            var oldestNative = rawMap[oldestId];
             var cleanRawMap = Object.assign({}, rawMap);
             delete cleanRawMap[oldestId];
             rawMap = cleanRawMap;
             notifications.remove(notifications.count - 1);
+            // Once an entry falls out of the bounded history there is no UI
+            // left that can invoke its actions. Release the native object too.
+            if (oldestNative) {
+                try {
+                    oldestNative.expire();
+                } catch (error) {
+                    console.log("[NotificationHistory] Evicted object already closed:", error);
+                }
+            }
+        }
+        scheduleGroupRebuild();
+        saveHistory();
+    }
+    function clearAllAfter(delayMs) {
+        clearAllDelayTimer.interval = Math.max(0, delayMs);
+        clearAllDelayTimer.restart();
+    }
+    function connectNativeUpdates(n) {
+        var schedule = function () {
+            root.scheduleNativeUpdate(n);
+        };
+        n.appNameChanged.connect(schedule);
+        n.appIconChanged.connect(schedule);
+        n.summaryChanged.connect(schedule);
+        n.bodyChanged.connect(schedule);
+        n.imageChanged.connect(schedule);
+        n.urgencyChanged.connect(schedule);
+        n.transientChanged.connect(schedule);
+    }
+    function flushNativeUpdates() {
+        var updates = pendingNativeUpdates;
+        pendingNativeUpdates = {};
+        for (var nid in updates)
+            updateFromNative(updates[nid]);
+    }
+    function scheduleNativeUpdate(n) {
+        if (!n)
+            return;
+        var updates = Object.assign({}, pendingNativeUpdates);
+        updates[n.id] = n;
+        pendingNativeUpdates = updates;
+        updateTimer.restart();
+    }
+    function snapshotFor(n, timestamp) {
+        return {
+            "nid": n.id,
+            "appName": n.appName || "",
+            "appIcon": n.appIcon || "",
+            "summary": n.summary || "",
+            "body": n.body || "",
+            "image": n.image || "",
+            "isCritical": n.urgency === 2,
+            "timeText": new Date(timestamp).toLocaleTimeString(Qt.locale(), "hh:mm"),
+            "timestamp": timestamp
+        };
+    }
+    function updateFromNative(n) {
+        if (!n)
+            return;
+
+        var index = -1;
+        for (var i = 0; i < notifications.count; i++) {
+            if (notifications.get(i).nid === n.id) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0)
+            return;
+
+        if (n.transient) {
+            notifications.remove(index);
+            releaseNative(n.id, n);
+        } else {
+            var oldItem = notifications.get(index);
+            notifications.set(index, snapshotFor(n, oldItem.timestamp || Date.now()));
         }
         scheduleGroupRebuild();
         saveHistory();

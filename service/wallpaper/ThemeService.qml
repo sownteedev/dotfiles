@@ -409,6 +409,8 @@ QtObject {
     }
     property bool hasAppliedTheme: false
     property string lastFileText: ""
+    property string colorMode: "auto"
+    property string pendingGenerationMode: "auto"
     property string pendingGenerationPath: ""
     readonly property bool themeAvailable: themeFileValid
     property FileView themeFile: FileView {
@@ -573,13 +575,18 @@ QtObject {
             console.warn("[ThemeService] Invalid colors.json:", error);
         }
     }
-    function generate(path) {
-        if (!path || !Config.matugenEnabled)
+    function generate(path, mode, forceModeVariant) {
+        if (!path || (!Config.matugenEnabled && forceModeVariant !== true))
             return;
 
+        colorMode = normalizeMode(mode === undefined ? colorMode : mode);
+        pendingGenerationMode = colorMode;
         pendingGenerationPath = path;
         if (!generator.running)
             startPendingGeneration();
+    }
+    function normalizeMode(mode) {
+        return mode === "light" || mode === "dark" ? mode : "auto";
     }
     function reloadTheme() {
         themeFile.reload();
@@ -589,11 +596,12 @@ QtObject {
             return;
 
         var path = pendingGenerationPath;
+        var mode = pendingGenerationMode;
         pendingGenerationPath = "";
         var matugenConfig = Config.dotfilesDir + "/.config/matugen/config.toml";
         var prepareGtk = Config.dotfilesDir + "/.config/matugen/scripts/prepare-gtk-runtime.sh";
         var matugenRunner = Config.quickshellDir + "/scripts/matugen-auto-scheme.sh";
-        generator.command = ["sh", "-c", "\"$1\" && exec \"$2\" --config \"$3\" \"$4\"", "wallpaper-theme", prepareGtk, matugenRunner, matugenConfig, path];
+        generator.command = ["sh", "-c", "\"$1\" && exec \"$2\" --config \"$3\" --mode \"$5\" \"$4\"", "wallpaper-theme", prepareGtk, matugenRunner, matugenConfig, path, mode];
         generator.running = true;
     }
 

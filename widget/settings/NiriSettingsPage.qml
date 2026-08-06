@@ -17,6 +17,7 @@ Item {
     readonly property string headerActionIcon: activeActionPage ? activeActionPage.headerActionIcon || "document-save-symbolic" : "document-save-symbolic"
     readonly property string headerActionText: activeSection === 1 ? (SettingsHubService.busy ? "Applying…" : "Apply layout") : activeActionPage ? activeActionPage.headerActionText || "Apply" : ""
     readonly property bool headerActionVisible: activeSection === 1 || Boolean(activeActionPage && activeActionPage.headerActionVisible === true)
+    readonly property bool headerResetVisible: activeSection === 1 || Boolean(activeActionPage && activeActionPage.headerResetVisible === true)
     property var recentBindValues: []
     readonly property var sectionNames: ["Keybinds", "Layout", "Input", "Animations", "Behavior", "Rules", "Config files"]
 
@@ -251,6 +252,14 @@ Item {
         }
         if (activeActionPage && activeActionPage.triggerHeaderAction)
             activeActionPage.triggerHeaderAction();
+    }
+    function resetPage() {
+        if (activeSection === 1) {
+            syncLayoutFields();
+            return;
+        }
+        if (activeActionPage && activeActionPage.resetPage)
+            activeActionPage.resetPage();
     }
     function updateRecentBind(index, propertyName, value) {
         var updated = recentBindValues.slice();

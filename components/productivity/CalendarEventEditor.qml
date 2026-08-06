@@ -73,6 +73,8 @@ Rectangle {
         description = "";
     }
     function save() {
+        if (eventTitle.trim() === "")
+            return;
         if (calendarId === "" && GoogleService.calendars.length > 0)
             calendarId = GoogleService.calendars[0].id;
         var date = selectedYear + "-" + String(selectedMonth + 1).padStart(2, "0") + "-" + String(selectedDay).padStart(2, "0");
@@ -300,17 +302,19 @@ Rectangle {
     Rectangle {
         id: saveButton
 
+        readonly property bool ready: root.eventTitle.trim() !== ""
+
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.margins: 12
         anchors.right: parent.right
-        color: saveMouse.pressed ? Qt.darker(Config.md3.primary, 1.2) : saveMouse.containsMouse ? Qt.lighter(Config.md3.primary, 1.1) : Config.md3.primary
+        color: ready ? (saveMouse.pressed ? Qt.darker(Config.md3.primary, 1.2) : saveMouse.containsMouse ? Qt.lighter(Config.md3.primary, 1.1) : Config.md3.primary) : Config.alpha(Config.md3.on_surface, 0.10)
         height: 50
         radius: 12
 
         Text {
             anchors.centerIn: parent
-            color: Config.md3.background
+            color: saveButton.ready ? Config.md3.on_primary : Config.md3.outline
             font.family: Config.fontName
             font.pixelSize: 16
             font.weight: Font.Bold
@@ -320,7 +324,8 @@ Rectangle {
             id: saveMouse
 
             anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            enabled: saveButton.ready
             hoverEnabled: true
 
             onClicked: root.save()

@@ -7,6 +7,7 @@ QtObject {
     id: root
 
     property bool available: true
+    readonly property bool busy: checking || upgrading
     property Process checkProcess: Process {
         command: ["sh", "-c", "if ! command -v yay >/dev/null 2>&1; then printf '__YAY_MISSING__\\n'; exit 0; fi\n" + "if command -v checkupdates >/dev/null 2>&1; then\n" + "    repo_updates=$(checkupdates 2>&1); repo_status=$?\n" + "    if [ \"$repo_status\" -eq 2 ]; then repo_updates=''; repo_status=0; fi\n" + "else\n" + "    repo_updates=$(yay -Qu --repo --color never 2>&1); repo_status=$?\n" + "    if [ \"$repo_status\" -eq 1 ] && [ -z \"$repo_updates\" ]; then repo_status=0; fi\n" + "fi\n" + "aur_updates=$(yay -Qua --color never 2>&1); aur_status=$?\n" + "if [ \"$aur_status\" -eq 1 ] && [ -z \"$aur_updates\" ]; then aur_status=0; fi\n" + "if [ \"$repo_status\" -ne 0 ] || [ \"$aur_status\" -ne 0 ]; then printf '__CHECK_FAILED__\\n'; exit 0; fi\n" + "{ printf '%s\\n' \"$repo_updates\"; printf '%s\\n' \"$aur_updates\"; } | awk 'NF && !seen[$1]++'"]
 
@@ -49,11 +50,54 @@ QtObject {
 
         onTriggered: root.refresh(false)
     }
-    property Timer postUpgradeRefresh: Timer {
-        interval: 2 * 60 * 1000
+    property string activeUpgradeResultPath: ""
+    property int upgradePollMisses: 0
+    property bool upgradeResultReceived: false
+    property string upgradeResultText: ""
+    property Process upgradeResultQuery: Process {
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.upgradeResultText = text.trim();
+                root.upgradeResultReceived = root.upgradeResultText !== "";
+            }
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            if (!root.upgrading)
+                return;
+            if (exitCode === 0 && root.upgradeResultReceived) {
+                if (root.upgradeResultText === "started") {
+                    root.upgradePollMisses = 0;
+                    root.upgradePollTimer.restart();
+                } else {
+                    root.finishUpgradeTracking();
+                }
+                return;
+            }
+
+            root.upgradePollMisses += 1;
+            if (root.upgradeTerminalExited && root.upgradePollMisses >= 4) {
+                console.warn("[UpdateService] Upgrade terminal exited without a result marker");
+                root.finishUpgradeTracking();
+                return;
+            }
+            root.upgradePollTimer.restart();
+        }
+    }
+    property Timer upgradePollTimer: Timer {
+        interval: 1500
         repeat: false
 
-        onTriggered: root.refresh(true)
+        onTriggered: root.pollUpgradeResult()
+    }
+    property bool upgrading: false
+    property bool upgradeTerminalExited: false
+    property Process upgradeTerminal: Process {
+        onExited: (exitCode, exitStatus) => {
+            root.upgradeTerminalExited = true;
+            if (root.upgrading)
+                root.pollUpgradeResult();
+        }
     }
     property bool receivedResult: false
     property Timer startupRefresh: Timer {
@@ -66,6 +110,8 @@ QtObject {
     readonly property string statusText: {
         if (!available)
             return "yay missing";
+        if (upgrading)
+            return "Updating…";
         if (checking)
             return "Checking…";
         if (error !== "")
@@ -77,7 +123,7 @@ QtObject {
     readonly property int updateCount: packages.length
 
     function refresh(force) {
-        if (checking)
+        if (busy)
             return;
         if (!force && lastCheckedAt > 0 && Date.now() - lastCheckedAt < 15 * 60 * 1000)
             return;
@@ -88,14 +134,44 @@ QtObject {
         checkProcess.running = false;
         checkProcess.running = true;
     }
+    function finishUpgradeTracking() {
+        var completedResultPath = activeUpgradeResultPath;
+        upgradePollTimer.stop();
+        upgrading = false;
+        activeUpgradeResultPath = "";
+        if (completedResultPath)
+            Quickshell.execDetached(["rm", "-f", completedResultPath]);
+        refresh(true);
+    }
+    function pollUpgradeResult() {
+        if (!upgrading || !activeUpgradeResultPath)
+            return;
+        if (upgradeResultQuery.running) {
+            upgradePollTimer.restart();
+            return;
+        }
+
+        upgradeResultReceived = false;
+        upgradeResultText = "";
+        upgradeResultQuery.command = ["sh", "-c", "[ -s \"$1\" ] || exit 3; cat -- \"$1\"", "upgrade-result", activeUpgradeResultPath];
+        upgradeResultQuery.running = true;
+    }
     function upgrade() {
-        if (!available || checking)
+        if (!available || busy)
             return;
 
         // Authenticate once for the whole transaction. SUDO_USER tells yay to
         // drop back to the desktop user for AUR downloads and package builds.
-        var upgradeCommand = "update_user=$(/usr/bin/id -un); update_home=$HOME; " + "print -r -- 'Updating repository and AUR packages…'; print; " + "/usr/bin/pkexec /usr/bin/env SUDO_USER=\"$update_user\" USER=\"$update_user\" " + "HOME=\"$update_home\" /usr/bin/yay -Syu --noconfirm " + "--answerclean None --answerdiff None --answeredit None; result=$?; " + "print; " + "if [ $result -eq 0 ]; then print -r -- 'Upgrade complete.'; " + "else print -r -- \"Upgrade failed (exit $result).\"; fi; " + "print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
-        Quickshell.execDetached(["blackbox-terminal", "--", "/usr/bin/zsh", "-c", upgradeCommand]);
-        postUpgradeRefresh.restart();
+        activeUpgradeResultPath = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/quickshell-update-result-" + Date.now();
+        upgradePollMisses = 0;
+        upgradeResultReceived = false;
+        upgradeResultText = "";
+        upgradeTerminalExited = false;
+        upgrading = true;
+        error = "";
+        var upgradeCommand = "result_file=$1; printf 'started\\n' > \"$result_file\"; " + "update_user=$(/usr/bin/id -un); update_home=$HOME; " + "print -r -- 'Updating repository and AUR packages…'; print; " + "/usr/bin/pkexec /usr/bin/env SUDO_USER=\"$update_user\" USER=\"$update_user\" " + "HOME=\"$update_home\" /usr/bin/yay -Syu --noconfirm " + "--answerclean None --answerdiff None --answeredit None; result=$?; " + "printf '%s\\n' \"$result\" > \"$result_file\"; " + "print; " + "if [ $result -eq 0 ]; then print -r -- 'Upgrade complete.'; " + "else print -r -- \"Upgrade failed (exit $result).\"; fi; " + "print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
+        upgradeTerminal.command = ["blackbox-terminal", "--", "/usr/bin/zsh", "-c", upgradeCommand, "update-packages", activeUpgradeResultPath];
+        upgradeTerminal.running = true;
+        upgradePollTimer.restart();
     }
 }

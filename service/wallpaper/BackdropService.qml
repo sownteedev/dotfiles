@@ -11,10 +11,11 @@ QtObject {
     property string activeBackdrop: ""
     property string activeRequestKey: ""
     readonly property string cacheDir: Config.homeDir + "/.cache/quickshell/backdrops"
+    property bool _generateQueued: false
     property Connections configConnections: Connections {
         function onWallpaperChanged() {
             if (StateManager.wallpaperLoaded)
-                root.generate();
+                root.scheduleGenerate();
         }
 
         target: Config
@@ -63,7 +64,7 @@ QtObject {
     property Connections globalConnections: Connections {
         function onWallpaperLoadedChanged() {
             if (StateManager.wallpaperLoaded)
-                root.generate();
+                root.scheduleGenerate();
         }
 
         target: StateManager
@@ -75,19 +76,19 @@ QtObject {
     property bool ready: false
     property Connections wallpaperConnections: Connections {
         function onCurrentModeChanged() {
-            root.generate();
+            root.scheduleGenerate();
         }
         function onDisplayWallpaperChanged() {
-            root.generate();
+            root.scheduleGenerate();
         }
         function onFallbackVideoThumbnailChanged() {
-            root.generate();
+            root.scheduleGenerate();
         }
         function onLastVideoFrameChanged() {
-            root.generate();
+            root.scheduleGenerate();
         }
         function onSelectedModifiedChanged() {
-            root.generate();
+            root.scheduleGenerate();
         }
 
         target: WallpaperService
@@ -156,6 +157,17 @@ QtObject {
         generator.jobSerial = generationSerial;
         generator.command = ["python3", generatorScript, generationSource, cacheDir, generationIdentity, generationCanCreate ? "true" : "false"];
         generator.running = true;
+    }
+
+    function scheduleGenerate() {
+        if (!_generateQueued) {
+            _generateQueued = true;
+            Qt.callLater(_doGenerate);
+        }
+    }
+    function _doGenerate() {
+        _generateQueued = false;
+        generate();
     }
 
     Component.onCompleted: {

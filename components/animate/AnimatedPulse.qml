@@ -25,14 +25,14 @@ Item {
     Timer {
         interval: 850
         repeat: true
-        running: root.running
+        running: root.running && root.visible && root.width > 0 && root.height > 0
 
         onTriggered: root.addPulse()
     }
     Timer {
         interval: 33
         repeat: true
-        running: root.running || root.hasPulses
+        running: root.visible && root.width > 0 && root.height > 0 && (root.running || root.hasPulses)
 
         onTriggered: {
             var p = root.pulses;

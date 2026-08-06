@@ -295,15 +295,42 @@ Item {
                     maximumLineCount: 1
                     text: root.title
                 }
-                Text {
+                RowLayout {
                     Layout.fillWidth: true
-                    color: Config.md3.on_surface_variant
-                    elide: Text.ElideRight
-                    font.family: Config.fontName
-                    font.pixelSize: 14
-                    font.weight: Font.Medium
-                    maximumLineCount: 1
-                    text: root.description
+                    spacing: 6
+
+                    Text {
+                        Layout.fillWidth: true
+                        Layout.maximumWidth: implicitWidth
+                        color: Config.md3.on_surface_variant
+                        elide: Text.ElideRight
+                        font.family: Config.fontName
+                        font.pixelSize: 14
+                        font.weight: Font.Medium
+                        maximumLineCount: 1
+                        text: root.description
+                    }
+                    Rectangle {
+                        color: Config.md3.error
+                        height: 14
+                        radius: 4
+                        visible: root.activePlayer && (!root.activePlayer.lengthSupported || Number(root.activePlayer.length || 0) <= 0 || Number(root.activePlayer.length || 0) > 86400)
+                        width: liveBadgeText.implicitWidth + 8
+
+                        Text {
+                            id: liveBadgeText
+
+                            anchors.centerIn: parent
+                            color: Config.md3.on_error
+                            font.family: Config.fontName
+                            font.pixelSize: 8
+                            font.weight: Font.ExtraBold
+                            text: "LIVE"
+                        }
+                    }
+                    Item {
+                        Layout.fillWidth: true
+                    }
                 }
             }
             MouseArea {

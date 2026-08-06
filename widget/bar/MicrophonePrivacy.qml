@@ -19,10 +19,21 @@ MouseArea {
     implicitWidth: 26
     visible: AudioService.microphoneInUse
 
-    onClicked: popupLoader.active = !popupLoader.active
-    onVisibleChanged: {
-        if (!visible)
+    onClicked: {
+        if (popupLoader.active)
             popupLoader.active = false;
+        else if (popupLoader.loading)
+            popupLoader.loading = false;
+        else
+            popupLoader.loading = true;
+    }
+    onVisibleChanged: {
+        if (!visible) {
+            if (popupLoader.active)
+                popupLoader.active = false;
+            else if (popupLoader.loading)
+                popupLoader.loading = false;
+        }
     }
 
     Item {
@@ -76,10 +87,6 @@ MouseArea {
         PopupWindow {
             id: microphonePopup
 
-            readonly property bool inputAvailable: inputNode && inputNode.audio
-            readonly property real inputGain: inputAvailable ? inputNode.audio.volume : 0
-            readonly property var inputNode: Pipewire.defaultAudioSource
-
             anchor.edges: Edges.Bottom | Edges.Left
             anchor.item: root
             anchor.margins.left: -34
@@ -87,7 +94,7 @@ MouseArea {
             color: "transparent"
             grabFocus: true
             implicitHeight: popupColumn.implicitHeight + 50
-            implicitWidth: 320
+            implicitWidth: 280
             visible: true
 
             onVisibleChanged: {
@@ -95,9 +102,6 @@ MouseArea {
                     popupLoader.active = false;
             }
 
-            PwObjectTracker {
-                objects: microphonePopup.inputNode ? [microphonePopup.inputNode] : []
-            }
             Rectangle {
                 id: popupCard
 
@@ -153,26 +157,13 @@ MouseArea {
                                 source: headerMicIcon
                             }
                         }
-                        ColumnLayout {
+                        Text {
                             Layout.fillWidth: true
-                            spacing: 1
-
-                            Text {
-                                Layout.fillWidth: true
-                                color: Config.md3.on_surface
-                                font.family: Config.fontName
-                                font.pixelSize: 16
-                                font.weight: Font.Bold
-                                text: "Microphone in use"
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                color: Config.md3.on_surface_variant
-                                elide: Text.ElideRight
-                                font.family: Config.fontName
-                                font.pixelSize: 13
-                                text: AudioService.microphoneApps.length + (AudioService.microphoneApps.length === 1 ? " application" : " applications") + " · base input " + Math.round(microphonePopup.inputGain * 100) + "%"
-                            }
+                            color: Config.md3.on_surface
+                            font.family: Config.fontName
+                            font.pixelSize: 15
+                            font.weight: Font.Bold
+                            text: "Microphone in use"
                         }
                     }
                     Rectangle {
@@ -194,10 +185,10 @@ MouseArea {
                             readonly property real streamPeak: Math.max(0, Math.min(1, peakMonitor.peak))
 
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 76
+                            Layout.preferredHeight: 68
                             color: Config.md3.surface
-                            opacity: streamAvailable ? 1 : 0.5
-                            radius: 12
+                            opacity: streamAvailable ? 1 : 0.55
+                            radius: 10
 
                             PwNodePeakMonitor {
                                 id: peakMonitor
@@ -207,48 +198,44 @@ MouseArea {
                             }
                             ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 10
-                                spacing: 5
+                                anchors.margins: 8
+                                spacing: 4
 
                                 RowLayout {
                                     Layout.fillWidth: true
                                     spacing: 9
 
                                     Rectangle {
-                                        Layout.preferredHeight: 30
-                                        Layout.preferredWidth: 30
+                                        Layout.preferredHeight: 28
+                                        Layout.preferredWidth: 28
                                         color: Config.md3.surface_container_high
-                                        radius: 9
+                                        radius: 8
 
                                         IconImage {
                                             anchors.centerIn: parent
-                                            height: 19
+                                            height: 18
                                             source: Quickshell.iconPath(appCard.modelData.icon || "audio-input-microphone-symbolic")
-                                            width: 19
+                                            width: 18
                                         }
                                     }
-                                    ColumnLayout {
+                                    Text {
                                         Layout.fillWidth: true
-
-                                        Text {
-                                            Layout.fillWidth: true
-                                            color: Config.md3.on_surface
-                                            elide: Text.ElideRight
-                                            font.family: Config.fontName
-                                            font.pixelSize: 14
-                                            font.weight: Font.Bold
-                                            text: appCard.modelData.name
-                                        }
+                                        color: Config.md3.on_surface
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 14
+                                        font.weight: Font.DemiBold
+                                        text: appCard.modelData.name
                                     }
                                     Rectangle {
-                                        Layout.preferredHeight: 30
-                                        Layout.preferredWidth: 30
-                                        color: streamMuteMouse.containsMouse ? Config.alpha(appCard.streamMuted ? Config.md3.error : Config.md3.tertiary, 0.22) : Config.alpha(appCard.streamMuted ? Config.md3.error : Config.md3.on_surface, 0.1)
-                                        radius: 9
+                                        Layout.preferredHeight: 27
+                                        Layout.preferredWidth: 27
+                                        color: Config.alpha(appCard.streamMuted ? Config.md3.error : Config.md3.on_surface, streamMuteMouse.containsMouse ? 0.18 : 0.08)
+                                        radius: 8
 
                                         Behavior on color {
                                             ColorAnimation {
-                                                duration: 120
+                                                duration: 130
                                             }
                                         }
 
@@ -256,21 +243,21 @@ MouseArea {
                                             id: streamMuteIcon
 
                                             anchors.centerIn: parent
-                                            height: 17
+                                            height: 15
                                             source: Quickshell.iconPath(appCard.streamMuted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic")
                                             visible: false
-                                            width: 17
+                                            width: 15
                                         }
                                         ColorOverlay {
                                             anchors.fill: streamMuteIcon
-                                            color: appCard.streamMuted ? Config.md3.error : Config.md3.on_surface
+                                            color: appCard.streamMuted ? Config.md3.error : Config.md3.on_surface_variant
                                             source: streamMuteIcon
                                         }
                                         MouseArea {
                                             id: streamMuteMouse
 
                                             anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
+                                            cursorShape: appCard.streamAvailable ? Qt.PointingHandCursor : Qt.ArrowCursor
                                             enabled: appCard.streamAvailable
                                             hoverEnabled: true
 
@@ -280,7 +267,7 @@ MouseArea {
                                 }
                                 CustomVolumeSlider {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 20
+                                    Layout.preferredHeight: 16
                                     highlightColor: Config.md3.tertiary
                                     isMuted: appCard.streamMuted
                                     peakColor: appCard.streamPeak > 0.88 ? Config.md3.error : appCard.streamPeak > 0.68 ? Config.md3.tertiary : Config.md3.secondary

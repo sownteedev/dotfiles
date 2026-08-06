@@ -12,7 +12,16 @@ import "../../../../components"
 Item {
     id: batteryPageRoot
 
-    readonly property string activeProfile: BatteryService.activeProfile
+    readonly property string activeProfile: {
+        switch (PowerProfiles.profile) {
+        case PowerProfile.PowerSaver:
+            return "power-saver";
+        case PowerProfile.Performance:
+            return "performance";
+        default:
+            return "balanced";
+        }
+    }
     readonly property bool autoCpufreqAvailable: BatteryService.autoCpufreqAvailable
     readonly property real batPercent: UPower.displayDevice ? Math.round(UPower.displayDevice.percentage * 100) : 0
     readonly property string batStatusText: {
@@ -816,7 +825,13 @@ Item {
         }
         onItemSelected: item => {
             if (batteryPageRoot.popupType === "power") {
-                batteryPageRoot.runCommand("powerprofilesctl set " + item.profile);
+                if (item.profile === "power-saver") {
+                    PowerProfiles.profile = PowerProfile.PowerSaver;
+                } else if (item.profile === "performance") {
+                    PowerProfiles.profile = PowerProfile.Performance;
+                } else {
+                    PowerProfiles.profile = PowerProfile.Balanced;
+                }
                 batteryPageRoot.powerDropOpen = false;
             } else {
                 BatteryService.setChargeMode(item.value);

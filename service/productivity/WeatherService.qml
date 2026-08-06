@@ -7,7 +7,8 @@ import "../../"
 QtObject {
     id: root
 
-    property bool active: false
+    readonly property bool active: activeConsumers > 0
+    property int activeConsumers: 0
     property string city: ""
     property int cloudiness: 0
     property string condition: "Loading..."
@@ -21,6 +22,8 @@ QtObject {
     property Process forecastProcess: Process {
         id: forecastProcess
 
+        property bool cancelled: false
+
         stderr: StdioCollector {
             id: forecastError
         }
@@ -30,6 +33,15 @@ QtObject {
 
         Component.onDestruction: running = false
         onExited: {
+            if (cancelled) {
+                var shouldRetry = root.refreshPending && root.active;
+                cancelled = false;
+                root.loading = false;
+                root.refreshPending = false;
+                if (shouldRetry)
+                    Qt.callLater(root.fetchWeather);
+                return;
+            }
             try {
                 var output = forecastOutput.text.trim();
                 if (output === "")
@@ -41,6 +53,10 @@ QtObject {
                 console.log("[WeatherService] Fetch failed:", error);
             }
             root.loading = false;
+            if (root.refreshPending && root.active) {
+                root.refreshPending = false;
+                Qt.callLater(root.fetchWeather);
+            }
         }
     }
     readonly property string forecastUrl: "https://api.openweathermap.org/data/3.0/onecall" + "?lat=" + latitude + "&lon=" + longitude + "&appid=" + Config.apiWeather + "&units=metric&exclude=minutely,alerts"
@@ -79,6 +95,7 @@ QtObject {
     readonly property string longitude: coordinates.length > 1 ? coordinates[1] : ""
     property real precipitationLastHour: 0
     property int pressure: 0
+    property bool refreshPending: false
     property Timer refreshTimer: Timer {
         interval: 1200000
         repeat: true
@@ -211,23 +228,50 @@ QtObject {
         errorMessage = "";
         lastUpdated = new Date();
     }
+    function acquire() {
+        activeConsumers++;
+    }
     function dayName(timestamp) {
         var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         return days[new Date(timestamp * 1000).getDay()];
     }
     function fetchLocation() {
-        locationProcess.running = false;
+        if (!active || locationProcess.running)
+            return;
         locationProcess.command = ["curl", "-fsS", "--connect-timeout", "10", "--max-time", "15", locationUrl];
         locationProcess.running = true;
     }
     function fetchWeather() {
-        if (loading || latitude === "" || longitude === "")
+        if (!active)
             return;
+        if (latitude === "" || longitude === "") {
+            errorMessage = "Weather location is not configured";
+            return;
+        }
+        if (String(Config.apiWeather || "").trim() === "") {
+            errorMessage = "OpenWeather API key is not configured";
+            return;
+        }
+        if (loading || forecastProcess.running) {
+            refreshPending = true;
+            return;
+        }
         loading = true;
         errorMessage = "";
-        forecastProcess.running = false;
+        forecastProcess.cancelled = false;
         forecastProcess.command = ["curl", "-fsS", "--connect-timeout", "10", "--max-time", "25", forecastUrl];
         forecastProcess.running = true;
+    }
+    function stopRequests() {
+        refreshPending = false;
+        if (forecastProcess.running) {
+            forecastProcess.cancelled = true;
+            forecastProcess.running = false;
+        } else {
+            loading = false;
+        }
+        if (locationProcess.running)
+            locationProcess.running = false;
     }
     function flagForCountry(countryCode) {
         var code = String(countryCode || "").trim().toUpperCase();
@@ -251,6 +295,9 @@ QtObject {
     }
     function needsRefresh() {
         return !hasData || !lastUpdated || Date.now() - lastUpdated.getTime() >= refreshTimer.interval;
+    }
+    function release() {
+        activeConsumers = Math.max(0, activeConsumers - 1);
     }
     function timeText(timestamp) {
         var date = new Date(timestamp * 1000);
@@ -302,7 +349,10 @@ QtObject {
     }
 
     onActiveChanged: {
-        if (active && needsRefresh())
+        if (!active) {
+            stopRequests();
+        } else if (needsRefresh()) {
             fetchWeather();
+        }
     }
 }

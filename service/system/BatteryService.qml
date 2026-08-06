@@ -9,7 +9,6 @@ QtObject {
     id: root
 
     property bool active: false
-    property string activeProfile: "balanced"
     property bool autoCpufreqAvailable: false
     property Process availabilityQuery: Process {
         command: ["sh", "-c", "command -v powerprofilesctl >/dev/null 2>&1 && power=1 || power=0; " + "command -v auto-cpufreq >/dev/null 2>&1 && auto=1 || auto=0; " + "echo \"$power|$auto\""]
@@ -91,17 +90,6 @@ QtObject {
             return "";
         }
     }
-    property Process profileQuery: Process {
-        command: ["powerprofilesctl", "get"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var profile = text.trim();
-                if (profile !== "")
-                    root.activeProfile = profile;
-            }
-        }
-    }
     property Timer refreshDelay: Timer {
         interval: 1000
         repeat: false
@@ -118,10 +106,6 @@ QtObject {
     function refresh() {
         if (!active)
             return;
-        if (powerProfilesAvailable) {
-            profileQuery.running = false;
-            profileQuery.running = true;
-        }
         controlQuery.running = false;
         controlQuery.running = true;
     }
@@ -140,7 +124,6 @@ QtObject {
         if (active) {
             refresh();
         } else {
-            profileQuery.running = false;
             controlQuery.running = false;
         }
     }

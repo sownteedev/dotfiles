@@ -713,7 +713,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        color: Config.md3.on_surface
+                        color: Config.md3.on_primary
                         font.family: Config.fontName
                         font.pixelSize: 13
                         font.weight: Font.Bold

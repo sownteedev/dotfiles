@@ -1,6 +1,7 @@
 #include "cachingimageprovider.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
@@ -20,11 +21,13 @@
 
 namespace {
 
-constexpr qint64 kMaximumCacheBytes = 192LL * 1024 * 1024;
+constexpr qint64 kMaximumCacheBytes = 64LL * 1024 * 1024;
 constexpr qsizetype kMaximumCacheFiles = 256;
+constexpr int kPruneBatchInterval = 8;
 
 QMutex cacheMutex;
 bool initialCachePruneDone = false;
+std::atomic<int> cacheWritesSincePrune{0};
 
 QString cacheDirectory() {
     return QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
@@ -40,7 +43,7 @@ void markCacheEntryUsed(const QString& path) {
 void pruneCache() {
     QDir directory(cacheDirectory());
     QFileInfoList files = directory.entryInfoList(
-        { QStringLiteral("*.png") },
+        { QStringLiteral("*.jpg") },
         QDir::Files | QDir::NoSymLinks);
 
     qint64 totalBytes = 0;
@@ -94,7 +97,7 @@ QString cachePathFor(const QString& sourcePath, const QSize& size, CachingImageP
         + QLatin1Char('|') + fillName(fillMode);
     const QString hash = QString::fromLatin1(
         QCryptographicHash::hash(identity.toUtf8(), QCryptographicHash::Sha256).toHex());
-    return cacheDirectory() + QLatin1Char('/') + hash + QStringLiteral(".png");
+    return cacheDirectory() + QLatin1Char('/') + hash + QStringLiteral(".jpg");
 }
 
 QSize scaledSize(const QSize& source, const QSize& target, CachingImageProvider::FillMode fillMode) {
@@ -126,8 +129,16 @@ QImage decodeScaled(const QString& sourcePath, const QSize& target, CachingImage
     if (fillMode == CachingImageProvider::FillMode::Stretch)
         return image;
 
-    QImage canvas(target, QImage::Format_ARGB32_Premultiplied);
-    canvas.fill(Qt::transparent);
+    if (fillMode == CachingImageProvider::FillMode::Crop) {
+        // Directly crop from the centre — avoids a canvas allocation.
+        const int x = (image.width()  - target.width())  / 2;
+        const int y = (image.height() - target.height()) / 2;
+        return image.copy(x, y, target.width(), target.height());
+    }
+
+    // Fit: paint centred onto an opaque canvas.
+    QImage canvas(target, QImage::Format_RGB32);
+    canvas.fill(Qt::black);
     QPainter painter(&canvas);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.drawImage((target.width() - image.width()) / 2, (target.height() - image.height()) / 2, image);
@@ -203,8 +214,12 @@ private:
             QMutexLocker locker(&cacheMutex);
             QDir().mkpath(cacheDirectory());
             QSaveFile output(cachePath);
-            if (output.open(QIODevice::WriteOnly) && m_image.save(&output, "PNG") && output.commit())
-                pruneCache();
+            if (output.open(QIODevice::WriteOnly) && m_image.save(&output, "JPEG", 92) && output.commit()) {
+                if (++cacheWritesSincePrune >= kPruneBatchInterval) {
+                    cacheWritesSincePrune.store(0);
+                    pruneCache();
+                }
+            }
         }
     }
 

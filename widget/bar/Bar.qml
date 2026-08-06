@@ -16,7 +16,7 @@ PanelWindow {
     anchors.left: true
     anchors.right: true
     anchors.top: true
-    color: Config.alpha(Config.md3.background, 0.2)
+    color: Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.2)
     implicitHeight: 50
 
     SystemClock {

@@ -64,6 +64,9 @@ Item {
         // Cap the stagger so clearing a long history stays quick.
         var exactAnimationDuration = Math.min(Math.max(0, count - 1), 7) * 55 + 160;
 
+        // The singleton timer survives closing Control Right or switching tabs,
+        // so the requested clear cannot be cancelled with the page Loader.
+        NotificationHistory.clearAllAfter(exactAnimationDuration);
         clearAllTimer.interval = exactAnimationDuration;
         clearAllTimer.start();
     }
@@ -83,7 +86,6 @@ Item {
         repeat: false
 
         onTriggered: {
-            NotificationHistory.clearAll();
             notificationPageRoot.expandedGroups = {};
             notificationPageRoot.renderedCounts = {};
             notificationPageRoot.clearAllAnimationActive = false;
@@ -458,6 +460,7 @@ Item {
                                                 font.pixelSize: 15
                                                 font.weight: Font.DemiBold
                                                 text: notifItem.modelData.summary || ""
+                                                textFormat: Text.PlainText
                                             }
                                             Text {
                                                 Layout.fillWidth: true
@@ -467,6 +470,7 @@ Item {
                                                 font.pixelSize: 14
                                                 font.weight: Font.Medium
                                                 text: notifItem.modelData.body || ""
+                                                textFormat: Text.PlainText
                                                 visible: text !== ""
                                             }
                                         }
@@ -508,6 +512,7 @@ Item {
                                                             font.pixelSize: 16
                                                             font.weight: Font.DemiBold
                                                             text: notifItem.modelData.summary || ""
+                                                            textFormat: Text.PlainText
                                                         }
                                                         Text {
                                                             color: Config.md3.outline
@@ -525,6 +530,7 @@ Item {
                                                         font.weight: Font.Medium
                                                         lineHeight: 1.15
                                                         text: notifItem.modelData.body || ""
+                                                        textFormat: Text.PlainText
                                                         visible: text !== ""
                                                         wrapMode: Text.Wrap
                                                     }

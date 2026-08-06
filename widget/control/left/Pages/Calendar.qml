@@ -14,7 +14,10 @@ Item {
 
     property int currentMonth: new Date().getMonth()
     property int currentYear: new Date().getFullYear()
-
+    property var eventsForSelectedDate: {
+        var dummy = GoogleService.allEvents;
+        return GoogleService.getEventsForDate(selectedDay, selectedMonth, selectedYear);
+    }
     property bool isSwipingOut: false
     property var monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     property int pendingMonthDirection: 0
@@ -27,13 +30,6 @@ Item {
     property int todayMonth: new Date().getMonth()
     property int todayYear: new Date().getFullYear()
     property var weekDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-    property var eventsForSelectedDate: {
-        var dummy = GoogleService.allEvents;
-        return GoogleService.getEventsForDate(selectedDay, selectedMonth, selectedYear);
-    }
-
-    anchors.fill: parent
 
     function daysForMonth(month, year) {
         var firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
@@ -96,7 +92,6 @@ Item {
             currentMonth--;
         }
     }
-
     function settleMonth(direction) {
         if (monthSlide.running)
             return;
@@ -104,17 +99,30 @@ Item {
         pendingMonthDirection = direction;
         isSwipingOut = direction !== 0;
         monthSlide.from = swipeOffset;
-        monthSlide.to = direction * calendarViewport.width;
+        monthSlide.to = direction * (calendarViewport.width + 100);
         monthSlide.start();
+    }
+
+    anchors.fill: parent
+
+    Component.onCompleted: {
+        if (typeof GoogleService.acquire === "function")
+            GoogleService.acquire();
+        else if (GoogleService.authenticated)
+            GoogleService.fetchAll();
+    }
+    Component.onDestruction: {
+        if (typeof GoogleService.release === "function")
+            GoogleService.release();
     }
 
     NumberAnimation {
         id: monthSlide
 
-        target: calendarRoot
-        property: "swipeOffset"
         duration: pendingMonthDirection === 0 ? 190 : 260
         easing.type: Easing.OutCubic
+        property: "swipeOffset"
+        target: calendarRoot
 
         onFinished: {
             if (pendingMonthDirection < 0)
@@ -151,7 +159,7 @@ Item {
         }
         onTranslationChanged: {
             if (active && !monthSlide.running)
-                swipeOffset = Math.max(-calendarViewport.width, Math.min(calendarViewport.width, translation.x));
+                swipeOffset = Math.max(-(calendarViewport.width + 100), Math.min(calendarViewport.width + 100, translation.x));
         }
     }
     WheelHandler {
@@ -171,9 +179,9 @@ Item {
         clip: true
 
         Row {
-            x: -calendarViewport.width + swipeOffset
             height: parent.height
-            spacing: 0
+            spacing: 100
+            x: -(calendarViewport.width + 100) + swipeOffset
 
             Repeater {
                 model: 3
@@ -183,9 +191,9 @@ Item {
 
                     property int monthOffset: index - 1
                     property date viewDate: new Date(calendarRoot.currentYear, calendarRoot.currentMonth + monthOffset, 1)
+                    property var viewDays: calendarRoot.daysForMonth(viewMonth, viewYear)
                     property int viewMonth: viewDate.getMonth()
                     property int viewYear: viewDate.getFullYear()
-                    property var viewDays: calendarRoot.daysForMonth(viewMonth, viewYear)
 
                     height: calendarViewport.height
                     width: calendarViewport.width
@@ -204,7 +212,6 @@ Item {
                             horizontalAlignment: Text.AlignHCenter
                             text: calendarRoot.monthNames[monthPage.viewMonth] + " " + monthPage.viewYear
                         }
-
                         GridLayout {
                             Layout.fillHeight: true
                             Layout.fillWidth: true
@@ -226,7 +233,6 @@ Item {
                                     text: modelData
                                 }
                             }
-
                             Repeater {
                                 model: monthPage.viewDays
 

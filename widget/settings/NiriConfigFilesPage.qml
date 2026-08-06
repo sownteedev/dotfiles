@@ -14,9 +14,13 @@ Item {
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Validating…" : "Save & apply"
     readonly property bool headerActionVisible: true
+    readonly property bool headerResetVisible: editor.dirty
 
     function triggerHeaderAction() {
         editor.apply();
+    }
+    function resetPage() {
+        editor.reset();
     }
 
     ColumnLayout {
@@ -59,7 +63,8 @@ Item {
                     id: fileMouse
 
                     anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    enabled: root.activeFile === index || !editor.dirty
                     hoverEnabled: true
 
                     onClicked: root.activeFile = index

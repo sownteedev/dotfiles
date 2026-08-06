@@ -127,7 +127,7 @@ MouseArea {
             anchors.verticalCenter: parent.verticalCenter
             clip: true
             color: Config.md3.on_surface
-            font.family: Config.fontFamily
+            font.family: Config.fontName
             font.pixelSize: 16
             font.weight: Font.DemiBold
             opacity: rootButton.active ? 1 : 0

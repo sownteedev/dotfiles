@@ -16,7 +16,7 @@ Item {
     Timer {
         interval: 16 // roughly 60fps
         repeat: true
-        running: root.running && root.visible
+        running: root.running && root.visible && root.width > 0 && root.height > 0
 
         onTriggered: {
             root.currentAngle += 0.15;

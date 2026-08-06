@@ -11,6 +11,7 @@ Rectangle {
     id: root
 
     readonly property int batteryPercent: hasBattery ? Math.round(device.battery * 100) : -1
+    readonly property var detailedBattery: BluetoothService.airpodsBattery || ({})
     readonly property bool busy: connecting || disconnecting || commandPending || (device && device.pairing)
     readonly property bool commandPending: device && BluetoothService.pendingAddress === BluetoothService.normalizeAddress(device.address)
     readonly property bool connected: device && device.connected
@@ -19,8 +20,12 @@ Rectangle {
     readonly property string deviceName: device ? (device.name || device.deviceName || "Bluetooth device") : "Bluetooth device"
     readonly property bool disconnecting: device && device.state === BluetoothDeviceState.Disconnecting
     readonly property bool hasBattery: device && device.batteryAvailable
+    readonly property bool isAirpods: deviceName.toLowerCase().indexOf("airpods") !== -1
+    readonly property bool actuallyPaired: device && device.bonded
+    readonly property bool hasDetailedBattery: connected && isAirpods && BluetoothService.airpodsBatteryAvailable && detailedBattery.accurate === true && BluetoothService.normalizeAddress(detailedBattery.address) === BluetoothService.normalizeAddress(device.address)
     property bool pairPending: false
     property bool pairedDevice: false
+    property bool savedDevice: false
     readonly property color statusColor: BluetoothService.lastErrorAddress === BluetoothService.normalizeAddress(device.address) ? Config.md3.error : busy ? Config.md3.tertiary : connected ? Config.md3.primary : Config.md3.on_surface_variant
     readonly property string statusText: {
         if (!device)
@@ -35,9 +40,16 @@ Rectangle {
             return "Connecting…";
         if (disconnecting)
             return "Disconnecting…";
+        if (connected && isAirpods) {
+            if (hasDetailedBattery)
+                return "Connected";
+            return BluetoothService.airpodsBatteryScanning ? "Connected · Reading L/R/Case…" : "Connected · Waiting for L/R/Case";
+        }
         if (connected)
             return hasBattery ? "Connected · " + batteryPercent + "%" : "Connected";
-        return pairedDevice ? "Disconnected" : "Ready to pair";
+        if (savedDevice && !actuallyPaired)
+            return "Disconnected";
+        return actuallyPaired ? "Disconnected" : "Ready to pair";
     }
 
     signal pairingStarted
@@ -45,16 +57,24 @@ Rectangle {
     function activate() {
         if (!device || busy)
             return;
-        if (pairedDevice) {
-            if (connected)
-                BluetoothService.disconnect(device);
-            else
-                BluetoothService.connect(device);
+        if (connected) {
+            BluetoothService.disconnect(device);
+        } else if (actuallyPaired || savedDevice) {
+            BluetoothService.connect(device);
         } else {
             pairPending = true;
             pairingStarted();
             BluetoothService.pair(device);
         }
+    }
+    function batteryColor(value) {
+        if (value === null || value === undefined || value < 0)
+            return Config.md3.outline;
+        if (value <= 20)
+            return Config.md3.error;
+        if (value <= 50)
+            return Config.md3.tertiary;
+        return Config.md3.secondary;
     }
 
     Layout.fillWidth: true
@@ -71,19 +91,19 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        if (pairedDevice && device && (device.paired || device.bonded) && !device.trusted)
+        if (pairedDevice && device && device.bonded && !device.trusted)
             device.trusted = true;
     }
 
     Connections {
-        function onPairedChanged() {
-            if (!root.pairPending || !root.device.paired)
+        function onBondedChanged() {
+            if (!root.pairPending || !root.device.bonded)
                 return;
             root.device.trusted = true;
             root.pairPending = false;
         }
         function onPairingChanged() {
-            if (!root.device.pairing && !root.device.paired)
+            if (!root.device.pairing && !root.device.bonded && BluetoothService.pendingAddress !== BluetoothService.normalizeAddress(root.device.address))
                 root.pairPending = false;
         }
 
@@ -91,7 +111,7 @@ Rectangle {
     }
     Connections {
         function onPendingAddressChanged() {
-            if (root.pairPending && root.device && BluetoothService.pendingAddress !== BluetoothService.normalizeAddress(root.device.address) && !root.device.pairing && !root.device.paired)
+            if (root.pairPending && root.device && BluetoothService.pendingAddress !== BluetoothService.normalizeAddress(root.device.address) && !root.device.pairing && !root.device.bonded)
                 root.pairPending = false;
         }
 
@@ -99,13 +119,13 @@ Rectangle {
     }
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 14
-        anchors.rightMargin: 12
-        spacing: 13
+        anchors.leftMargin: 12
+        anchors.rightMargin: 10
+        spacing: 9
 
         Rectangle {
-            Layout.preferredHeight: 46
-            Layout.preferredWidth: 46
+            Layout.preferredHeight: 44
+            Layout.preferredWidth: 44
             border.color: Config.alpha(Config.md3.primary, 0.35)
             border.width: root.connected ? 1 : 0
             color: root.connected ? Config.alpha(Config.md3.primary, 0.18) : Config.md3.surface_container
@@ -133,7 +153,7 @@ Rectangle {
                 color: root.batteryPercent <= 20 ? Config.md3.error : root.batteryPercent <= 50 ? Config.md3.tertiary : Config.md3.secondary
                 height: 17
                 radius: 8
-                visible: root.hasBattery
+                visible: root.connected && root.hasBattery && !root.isAirpods
                 width: batteryText.implicitWidth + 8
 
                 Text {
@@ -161,28 +181,114 @@ Rectangle {
                 font.weight: root.connected ? Font.Bold : Font.DemiBold
                 text: root.deviceName
             }
-            Text {
+            RowLayout {
                 Layout.fillWidth: true
-                color: root.statusColor
-                elide: Text.ElideRight
-                font.family: Config.fontName
-                font.pixelSize: 14
-                font.weight: Font.Medium
-                text: root.statusText
+                spacing: 6
+
+                Rectangle {
+                    Layout.preferredHeight: 7
+                    Layout.preferredWidth: 7
+                    color: root.statusColor
+                    opacity: root.connected ? 1 : 0.58
+                    radius: 4
+                }
+
+                Text {
+                    color: root.statusColor
+                    elide: Text.ElideRight
+                    font.family: Config.fontName
+                    font.pixelSize: 13
+                    font.weight: Font.Medium
+                    text: root.statusText
+                }
+                Item {
+                    Layout.preferredWidth: 3
+                    visible: root.hasDetailedBattery
+                }
+
+                Repeater {
+                    model: root.hasDetailedBattery ? [
+                        { "label": "L", "value": root.detailedBattery.left, "charging": root.detailedBattery.leftCharging === true },
+                        { "label": "R", "value": root.detailedBattery.right, "charging": root.detailedBattery.rightCharging === true },
+                        { "label": "Case", "value": root.detailedBattery.case, "charging": root.detailedBattery.caseCharging === true }
+                    ] : []
+
+                    Rectangle {
+                        id: batteryChip
+
+                        required property var modelData
+
+                        readonly property bool valueAvailable: modelData.value !== null && modelData.value !== undefined && modelData.value >= 0 && modelData.value <= 100
+                        readonly property color levelColor: root.batteryColor(modelData.value)
+
+                        Layout.preferredHeight: 24
+                        Layout.preferredWidth: detailContent.implicitWidth + 14
+                        border.color: Config.alpha(levelColor, 0.32)
+                        border.width: 1
+                        clip: true
+                        color: Config.alpha(levelColor, 0.10)
+                        radius: 8
+
+                        RowLayout {
+                            id: detailContent
+
+                            anchors.centerIn: parent
+                            anchors.verticalCenterOffset: -1
+                            spacing: 5
+
+                            Text {
+                                color: Config.alpha(batteryChip.levelColor, 0.88)
+                                font.family: Config.fontName
+                                font.pixelSize: 10
+                                font.weight: Font.DemiBold
+                                text: modelData.label
+                            }
+                            Text {
+                                color: Config.md3.on_surface
+                                font.family: Config.fontName
+                                font.pixelSize: 11
+                                font.weight: Font.ExtraBold
+                                text: batteryChip.valueAvailable ? modelData.value + "%" : "—"
+                            }
+                            Text {
+                                color: Config.md3.tertiary
+                                font.family: Config.fontName
+                                font.pixelSize: 11
+                                font.weight: Font.Bold
+                                text: "⚡"
+                                visible: batteryChip.valueAvailable && modelData.charging === true
+                            }
+                        }
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 2
+                            anchors.left: parent.left
+                            anchors.leftMargin: 3
+                            color: batteryChip.levelColor
+                            height: 2
+                            opacity: batteryChip.valueAvailable ? 0.72 : 0
+                            radius: 1
+                            width: (batteryChip.width - 6) * Math.max(0, Math.min(100, modelData.value || 0)) / 100
+                        }
+                    }
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
             }
         }
         Rectangle {
             id: primaryAction
 
-            readonly property string label: root.commandPending ? BluetoothService.statusText : root.busy ? (root.device && root.device.pairing ? "Pairing…" : root.connecting ? "Connecting…" : "Disconnecting…") : root.pairedDevice ? (root.connected ? "Disconnect" : "Connect") : "Pair"
+            readonly property string label: root.commandPending ? BluetoothService.statusText : root.busy ? (root.device && root.device.pairing ? "Pairing…" : root.connecting ? "Connecting…" : "Disconnecting…") : root.connected ? "Disconnect" : (root.actuallyPaired || root.savedDevice) ? "Connect" : "Pair"
 
-            Layout.preferredHeight: 36
-            Layout.preferredWidth: Math.max(74, primaryLabel.implicitWidth + 24)
+            Layout.preferredHeight: 34
+            Layout.preferredWidth: Math.max(68, primaryLabel.implicitWidth + 18)
             border.color: Config.alpha(root.connected ? Config.md3.on_surface : Config.md3.primary, 0.24)
             border.width: 1
             color: primaryMouse.containsMouse && !root.busy ? Config.alpha(root.connected ? Config.md3.on_surface : Config.md3.primary, 0.24) : Config.alpha(root.connected ? Config.md3.on_surface : Config.md3.primary, 0.13)
             opacity: root.busy ? 0.72 : 1
-            radius: 11
+            radius: 10
 
             Text {
                 id: primaryLabel
@@ -190,7 +296,7 @@ Rectangle {
                 anchors.centerIn: parent
                 color: root.connected ? Config.md3.on_surface : Config.md3.primary
                 font.family: Config.fontName
-                font.pixelSize: 14
+                font.pixelSize: 13
                 font.weight: Font.Bold
                 text: primaryAction.label
             }
@@ -206,13 +312,13 @@ Rectangle {
             }
         }
         Rectangle {
-            Layout.preferredHeight: 36
-            Layout.preferredWidth: 36
+            Layout.preferredHeight: 34
+            Layout.preferredWidth: 34
             border.color: Config.alpha(Config.md3.error, 0.18)
             border.width: 1
             color: forgetMouse.containsMouse ? Config.alpha(Config.md3.error, 0.20) : Config.alpha(Config.md3.error, 0.08)
-            radius: 11
-            visible: root.pairedDevice && !root.busy
+            radius: 10
+            visible: (root.pairedDevice || root.savedDevice) && !root.busy
 
             IconImage {
                 id: forgetIcon

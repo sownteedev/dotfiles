@@ -71,7 +71,7 @@ Item {
     Timer {
         interval: 33
         repeat: true
-        running: root.running
+        running: root.running && root.visible && root.width > 0 && root.height > 0
 
         onTriggered: {
             root.phase += 0.02;

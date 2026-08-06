@@ -13,8 +13,8 @@ PanelWindow {
     property int activeNiriSection: 0
     property int activePage: 0
     property int activeQuickshellSection: 0
-    readonly property string activeSubtitle: activePage === 0 ? "Inspect and tune your Niri configuration" : activeQuickshellSection === 0 ? "Configure shell appearance" : activeQuickshellSection === 1 ? "Configure wallpaper playback and colors" : activeQuickshellSection === 2 ? "Configure screenshots and screen recording" : "Configure external services and dependencies"
-    readonly property string activeTitle: activePage === 0 ? niriSectionNames[activeNiriSection] : quickshellSectionNames[activeQuickshellSection]
+    readonly property string activeSubtitle: activePage === 0 ? "Inspect and tune your Niri configuration" : activePage === 1 ? (activeQuickshellSection === 0 ? "Configure shell appearance" : activeQuickshellSection === 1 ? "Configure wallpaper playback and colors" : activeQuickshellSection === 2 ? "Configure screenshots and screen recording" : "Configure external services and dependencies") : "Manage lock screen authentication and face models"
+    readonly property string activeTitle: activePage === 0 ? niriSectionNames[activeNiriSection] : activePage === 1 ? quickshellSectionNames[activeQuickshellSection] : "Security"
     property bool niriExpanded: true
     readonly property var niriSectionColors: [Config.md3.primary, Config.md3.secondary, Config.md3.primary, Config.md3.secondary, Config.md3.tertiary, Config.md3.error, Config.md3.primary]
     readonly property var niriSectionIcons: ["input-keyboard-symbolic", "view-grid-symbolic", "input-mouse-symbolic", "media-playback-start-symbolic", "emblem-system-symbolic", "view-list-symbolic", "text-x-generic-symbolic"]
@@ -45,7 +45,7 @@ PanelWindow {
         SettingsHubService.refresh();
     }
     function switchSection(page, section) {
-        if (activePage === page && (page === 0 ? activeNiriSection : activeQuickshellSection) === section)
+        if (activePage === page && (page === 2 || (page === 0 ? activeNiriSection : activeQuickshellSection) === section))
             return;
 
         pendingPage = page;
@@ -349,6 +349,16 @@ PanelWindow {
                             }
                         }
                     }
+                    SettingsNavButton {
+                        Layout.fillWidth: true
+                        active: root.activePage === 2
+                        compact: !root.sidebarExpanded
+                        iconColor: Config.md3.primary
+                        iconName: "system-lock-screen-symbolic"
+                        text: "Security"
+
+                        onClicked: root.switchSection(2, 0)
+                    }
                     Item {
                         Layout.fillHeight: true
                     }
@@ -439,6 +449,17 @@ PanelWindow {
                         spacing: 10
 
                         SettingsActionButton {
+                            enabled: !SettingsHubService.busy
+                            iconName: "edit-undo-symbolic"
+                            text: "Reset"
+                            visible: Boolean(pageLoader.item && pageLoader.item.headerResetVisible === true)
+
+                            onClicked: {
+                                if (pageLoader.item && pageLoader.item.resetPage)
+                                    pageLoader.item.resetPage();
+                            }
+                        }
+                        SettingsActionButton {
                             enabled: Boolean(pageLoader.item && pageLoader.item.headerActionEnabled !== false && !SettingsHubService.busy)
                             iconName: pageLoader.item ? pageLoader.item.headerActionIcon || "document-save-symbolic" : "document-save-symbolic"
                             primary: true
@@ -489,7 +510,7 @@ PanelWindow {
                         active: root.visible
                         anchors.fill: parent
                         asynchronous: false
-                        source: root.activePage === 0 ? "NiriSettingsPage.qml" : "QuickshellSettingsPage.qml"
+                        source: root.activePage === 0 ? "NiriSettingsPage.qml" : root.activePage === 1 ? "QuickshellSettingsPage.qml" : "SecuritySettingsPage.qml"
 
                         onLoaded: {
                             if (root.activePage === 0 && item)

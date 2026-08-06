@@ -12,16 +12,29 @@ PanelWindow {
 
     id: notifWindow
 
+    readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
     readonly property int maxVisiblePopups: 3
+    property var pendingUpdates: ({})
 
     // Track active timer objects by notification ID
     property var timersMap: ({})
 
     function closeAllPopups() {
+        var transientNotifications = [];
         for (var i = 0; i < notifModel.count; ++i) {
             var nid = notifModel.get(i).nid;
+            var nativeNotification = notifModel.get(i).rawNotification;
             stopNotifTimer(nid);
             notifModel.setProperty(i, "active", false);
+            if (nativeNotification && nativeNotification.transient)
+                transientNotifications.push(nativeNotification);
+        }
+        for (var nativeIndex = 0; nativeIndex < transientNotifications.length; nativeIndex++) {
+            try {
+                transientNotifications[nativeIndex].expire();
+            } catch (error) {
+                console.log("[Notification] Transient DND object already closed:", error);
+            }
         }
     }
 
@@ -29,6 +42,20 @@ PanelWindow {
     function closeNotif(nid) {
         stopNotifTimer(nid);
         triggerCloseAnimation(nid);
+    }
+    function connectNotificationUpdates(notification) {
+        var schedule = function () {
+            notifWindow.scheduleNotificationUpdate(notification);
+        };
+        notification.appNameChanged.connect(schedule);
+        notification.appIconChanged.connect(schedule);
+        notification.summaryChanged.connect(schedule);
+        notification.bodyChanged.connect(schedule);
+        notification.imageChanged.connect(schedule);
+        notification.urgencyChanged.connect(schedule);
+        notification.actionsChanged.connect(schedule);
+        notification.expireTimeoutChanged.connect(schedule);
+        notification.transientChanged.connect(schedule);
     }
 
     // Step 2: Remove from model immediately after animation finishes
@@ -60,6 +87,7 @@ PanelWindow {
             "body": notification.body || "",
             "image": notification.image || "",
             "isCritical": isCritical,
+            "revision": 0,
             "showActions": false,
             "active": false,
             "rawNotification": notification
@@ -79,10 +107,10 @@ PanelWindow {
                 stopNotifTimer(notification.id);
                 triggerCloseAnimation(notification.id);
             });
+            connectNotificationUpdates(notification);
             // Manage auto-dismiss timeout using pre-compiled Timer Component
-            // Only auto-dismiss if expireTimeout > 0, or if it's not persistent (expireTimeout != 0) and not critical
-            if (notification.expireTimeout > 0 || (notification.expireTimeout !== 0 && !isCritical)) {
-                var timeout = notification.expireTimeout > 0 ? notification.expireTimeout : 5000;
+            if (shouldAutoExpire(notification, isCritical)) {
+                var timeout = notificationTimeout(notification);
                 var timer = notifTimerComponent.createObject(notifWindow, {
                     "interval": timeout,
                     "nid": notification.id,
@@ -93,6 +121,14 @@ PanelWindow {
             }
             trimPopupStack();
         }
+    }
+    function isManagedScreenshotNotification(notification) {
+        var matchingSummary = String(notification.summary || "").toLowerCase().indexOf("screenshot captured") !== -1;
+        var recentCapture = CaptureService.screenshotCapturedAt > 0 && Date.now() - CaptureService.screenshotCapturedAt < 10000;
+        return matchingSummary && (CaptureService.screenshotBusy || recentCapture);
+    }
+    function notificationTimeout(notification) {
+        return notification && notification.expireTimeout > 0 ? notification.expireTimeout : 5000;
     }
     function removePopupAt(index) {
         if (index < 0 || index >= notifModel.count)
@@ -108,31 +144,32 @@ PanelWindow {
 
     // Reset notification timer
     function resetNotifTimer(nid) {
-        if (timersMap[nid]) {
-            timersMap[nid].stop();
-            timersMap[nid].start();
-        } else {
-            // Re-create timer if it was cleared
-            var isCrit = false;
-            var notifObj = null;
-            for (var i = 0; i < notifModel.count; i++) {
-                if (notifModel.get(i).nid === nid) {
-                    isCrit = notifModel.get(i).isCritical;
-                    notifObj = notifModel.get(i).rawNotification;
-                    break;
-                }
-            }
-            if (!isCrit) {
-                var timeout = (notifObj && notifObj.expireTimeout > 0) ? notifObj.expireTimeout : 5000;
-                var timer = notifTimerComponent.createObject(notifWindow, {
-                    "interval": timeout,
-                    "nid": nid,
-                    "notif": notifObj
-                });
-                timersMap[nid] = timer;
-                timer.start();
+        var isCrit = false;
+        var notifObj = null;
+        for (var i = 0; i < notifModel.count; i++) {
+            if (notifModel.get(i).nid === nid) {
+                isCrit = notifModel.get(i).isCritical;
+                notifObj = notifModel.get(i).rawNotification;
+                break;
             }
         }
+        if (!shouldAutoExpire(notifObj, isCrit)) {
+            if (timersMap[nid]) {
+                timersMap[nid].destroy();
+                delete timersMap[nid];
+            }
+            return;
+        }
+
+        if (!timersMap[nid]) {
+            timersMap[nid] = notifTimerComponent.createObject(notifWindow, {
+                "nid": nid,
+                "notif": notifObj
+            });
+        }
+        timersMap[nid].stop();
+        timersMap[nid].interval = notificationTimeout(notifObj);
+        timersMap[nid].start();
     }
 
     // Resume notification timer with remaining progress
@@ -144,11 +181,52 @@ PanelWindow {
             timersMap[nid].start();
         }
     }
+    function scheduleNotificationUpdate(notification) {
+        if (!notification)
+            return;
+        var updates = Object.assign({}, pendingUpdates);
+        updates[notification.id] = notification;
+        pendingUpdates = updates;
+        Qt.callLater(function () {
+            if (!notifWindow.pendingUpdates[notification.id])
+                return;
+            var queued = Object.assign({}, notifWindow.pendingUpdates);
+            delete queued[notification.id];
+            notifWindow.pendingUpdates = queued;
+            notifWindow.syncNotification(notification);
+        });
+    }
+    function shouldAutoExpire(notification, isCritical) {
+        if (!notification || notification.expireTimeout === 0)
+            return false;
+        return notification.expireTimeout > 0 || !isCritical;
+    }
 
     // Timer management
     function stopNotifTimer(nid) {
         if (timersMap[nid])
             timersMap[nid].stop();
+    }
+    function syncNotification(notification) {
+        var index = -1;
+        for (var i = 0; i < notifModel.count; i++) {
+            if (notifModel.get(i).nid === notification.id) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0)
+            return;
+
+        var oldRevision = notifModel.get(index).revision || 0;
+        notifModel.setProperty(index, "appName", notification.appName || "");
+        notifModel.setProperty(index, "appIcon", notification.appIcon || "");
+        notifModel.setProperty(index, "summary", notification.summary || "");
+        notifModel.setProperty(index, "body", notification.body || "");
+        notifModel.setProperty(index, "image", notification.image || "");
+        notifModel.setProperty(index, "isCritical", notification.urgency === 2);
+        notifModel.setProperty(index, "revision", oldRevision + 1);
+        resetNotifTimer(notification.id);
     }
 
     // Step 1: Trigger exit animation
@@ -171,7 +249,16 @@ PanelWindow {
                     break;
                 }
             }
-            removePopupAt(removeIndex >= 0 ? removeIndex : 0);
+            var finalIndex = removeIndex >= 0 ? removeIndex : 0;
+            var removedNotification = notifModel.get(finalIndex).rawNotification;
+            removePopupAt(finalIndex);
+            if (removedNotification && removedNotification.transient) {
+                try {
+                    removedNotification.expire();
+                } catch (error) {
+                    console.log("[Notification] Trimmed transient notification already closed:", error);
+                }
+            }
         }
     }
 
@@ -199,13 +286,14 @@ PanelWindow {
 
             // Screenshot notifications have their own Windows-style toast
             // anchored to the bottom-right corner.
-            if (String(notification.summary || "").toLowerCase().indexOf("screenshot captured") !== -1)
+            if (isManagedScreenshotNotification(notification))
                 return;
 
             // Do not show popups in DND mode
             handleNotify(notification);
         }
 
+        enabled: notifWindow.isNotificationScreen
         target: globalNotificationManager
     }
     Connections {
@@ -249,8 +337,8 @@ PanelWindow {
                 // History already owns a lightweight snapshot. Once a normal
                 // notification without actions expires, release its native
                 // object and any image-provider resources it retains.
-                if (notif && (!notif.actions || notif.actions.length === 0))
-                    notif.dismiss();
+                if (notif && (notif.transient || !notif.actions || notif.actions.length === 0))
+                    notif.expire();
             }
         }
     }
@@ -294,6 +382,7 @@ PanelWindow {
                     property var notifObj: model.rawNotification
                     // Countdown progress bar properties and animation
                     property real progress: 1
+                    property int revision: model.revision
                     property bool showActions: model.showActions
                     property string summary: model.summary
 
@@ -338,6 +427,13 @@ PanelWindow {
                     onNidChanged: {
                         isDismissing = false;
                         container.swipeOffset = 0;
+                    }
+                    onRevisionChanged: {
+                        progress = 1;
+                        if (active && shouldAutoExpire(notifObj, isCritical))
+                            progressAnim.restart();
+                        else
+                            progressAnim.stop();
                     }
 
                     Timer {
@@ -582,7 +678,9 @@ PanelWindow {
                                         font.family: Config.fontName
                                         font.pixelSize: 16
                                         font.weight: Font.DemiBold
+                                        maximumLineCount: 1
                                         text: delegateWrapper.summary
+                                        textFormat: Text.PlainText
                                     }
 
                                     // Body text
@@ -592,10 +690,13 @@ PanelWindow {
                                         Layout.fillWidth: true
                                         Layout.maximumWidth: container.width - 145
                                         color: Config.md3.on_surface_variant
+                                        elide: Text.ElideRight
                                         font.family: Config.fontName
                                         font.pixelSize: 15
                                         font.weight: Font.Medium
+                                        maximumLineCount: 3
                                         text: delegateWrapper.body
+                                        textFormat: Text.PlainText
                                         visible: delegateWrapper.body !== ""
                                         wrapMode: Text.Wrap
                                     }
@@ -704,11 +805,15 @@ PanelWindow {
 
                             interval: 180
 
-                            onTriggered: handleCloseImmediate(delegateWrapper.nid)
+                            onTriggered: {
+                                NotificationHistory.dismiss(delegateWrapper.nid);
+                                handleCloseImmediate(delegateWrapper.nid);
+                            }
                         }
 
-                        // Symmetrical border progress. Painting is throttled and
-                        // moved off the GUI thread; paused popups do no work.
+                        // Symmetrical border progress. Follow NumberAnimation
+                        // frame-for-frame; the old 80 ms sampler limited this
+                        // border to 12.5 FPS and made the countdown visibly step.
                         Canvas {
                             id: borderProgressCanvas
 
@@ -720,7 +825,7 @@ PanelWindow {
 
                             anchors.fill: parent
                             enabled: false
-                            renderStrategy: Canvas.Threaded
+                            renderStrategy: Canvas.Immediate
                             visible: progressAnim.running || progressAnim.paused
 
                             onHeightChanged: requestPaint()
@@ -752,29 +857,13 @@ PanelWindow {
                                 ctx.lineTo(startX, height - t / 2);
                                 ctx.stroke();
                             }
+                            onPaintedProgressChanged: requestPaint()
                             onPathRadiusChanged: requestPaint()
                             onVisibleChanged: {
-                                if (visible) {
-                                    paintedProgress = delegateWrapper.progress;
+                                if (visible)
                                     requestPaint();
-                                }
                             }
                             onWidthChanged: requestPaint()
-
-                            Timer {
-                                interval: 80
-                                repeat: true
-                                running: borderProgressCanvas.visible && progressAnim.running && !progressAnim.paused
-
-                                onTriggered: {
-                                    var nextProgress = delegateWrapper.progress;
-                                    if (Math.abs(nextProgress - borderProgressCanvas.paintedProgress) < 0.002)
-                                        return;
-
-                                    borderProgressCanvas.paintedProgress = nextProgress;
-                                    borderProgressCanvas.requestPaint();
-                                }
-                            }
                         }
                     }
                 }

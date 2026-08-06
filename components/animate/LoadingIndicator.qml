@@ -17,7 +17,7 @@ Item {
 
         interval: 33
         repeat: true
-        running: root.animated
+        running: root.animated && root.visible && root.width > 0 && root.height > 0
 
         onTriggered: {
             time += 0.12;

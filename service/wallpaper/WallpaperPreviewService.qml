@@ -89,7 +89,7 @@ QtObject {
         originalColors = cloneColors(ThemeService.activeColors);
     }
     function cacheKey(path, modified) {
-        return stableHash(String(path || "") + "|" + modifiedKey(modified));
+        return WallpaperService.stableHash(String(path || "") + "|" + LiveWallpaperService.modifiedKey(modified));
     }
     function cancel() {
         currentKey = "";
@@ -129,13 +129,7 @@ QtObject {
             "thumbnail": thumbnailPath(key)
         };
     }
-    function modifiedKey(modified) {
-        if (modified === undefined || modified === null)
-            return "0";
-        if (modified.valueOf !== undefined)
-            return String(modified.valueOf());
-        return String(modified);
-    }
+
     function paletteFromMatugen(output) {
         var result = {
             "md3": {},
@@ -245,15 +239,7 @@ QtObject {
     function resetPreloads() {
         preloadQueue = [];
     }
-    function stableHash(value) {
-        var text = String(value || "");
-        var hash = 2166136261;
-        for (var i = 0; i < text.length; ++i) {
-            hash ^= text.charCodeAt(i);
-            hash = (hash + (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)) >>> 0;
-        }
-        return ("00000000" + hash.toString(16)).slice(-8);
-    }
+
     function thumbnailPath(key) {
         return cacheDir + "/" + key + ".jpg";
     }

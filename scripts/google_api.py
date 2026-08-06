@@ -210,7 +210,7 @@ def refresh_token_if_needed(token_data):
             req = urllib.request.Request(url, data=data, method="POST")
             req.add_header("Content-Type", "application/x-www-form-urlencoded")
             
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req, timeout=20) as response:
                 result = json.loads(response.read().decode("utf-8"))
                 
                 if "access_token" in result:
@@ -229,21 +229,17 @@ def fetch_calendars(access_token):
     req = urllib.request.Request(url)
     req.add_header("Authorization", f"Bearer {access_token}")
     
-    try:
-        with urllib.request.urlopen(req) as response:
-            result = json.loads(response.read().decode("utf-8"))
-            calendars = []
-            for item in result.get("items", []):
-                if item.get("accessRole") != "none":
-                    calendars.append({
-                        "id": item.get("id"),
-                        "name": item.get("summary"),
-                        "color": item.get("backgroundColor")
-                    })
-            return calendars
-    except Exception as e:
-        print(f"Error fetching calendars: {e}", file=sys.stderr)
-        return []
+    with urllib.request.urlopen(req, timeout=20) as response:
+        result = json.loads(response.read().decode("utf-8"))
+        calendars = []
+        for item in result.get("items", []):
+            if item.get("accessRole") != "none":
+                calendars.append({
+                    "id": item.get("id"),
+                    "name": item.get("summary"),
+                    "color": item.get("backgroundColor")
+                })
+        return calendars
 
 def fetch_events_for_calendar(access_token, calendar_id, time_min, time_max):
     encoded_id = urllib.parse.quote(calendar_id)
@@ -254,12 +250,8 @@ def fetch_events_for_calendar(access_token, calendar_id, time_min, time_max):
     req = urllib.request.Request(url)
     req.add_header("Authorization", f"Bearer {access_token}")
     
-    try:
-        with urllib.request.urlopen(req) as response:
-            return json.loads(response.read().decode("utf-8")).get("items", [])
-    except Exception as e:
-        print(f"Error fetching events for {calendar_id}: {e}", file=sys.stderr)
-        return []
+    with urllib.request.urlopen(req, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8")).get("items", [])
 
 
 def run_setup():
@@ -307,7 +299,7 @@ def run_setup():
     req.add_header("Content-Type", "application/x-www-form-urlencoded")
     
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
             
             token_data["client_id"] = client_id
@@ -337,7 +329,11 @@ def fetch_all_events(month, year):
         print(json.dumps({"error": "No access token"}))
         return
         
-    calendars = fetch_calendars(access_token)
+    try:
+        calendars = fetch_calendars(access_token)
+    except Exception as error:
+        print(json.dumps({"error": str(error)}))
+        return
     
     # Fetch from Jan 1 of previous year to Dec 31 of next year
     start_date = datetime.datetime(year - 1, 1, 1, 0, 0, 0)
@@ -349,7 +345,11 @@ def fetch_all_events(month, year):
     all_events = []
     
     for cal in calendars:
-        events = fetch_events_for_calendar(access_token, cal["id"], time_min, time_max)
+        try:
+            events = fetch_events_for_calendar(access_token, cal["id"], time_min, time_max)
+        except Exception as error:
+            print(json.dumps({"error": str(error)}))
+            return
         for e in events:
             # Parse times
             start = e.get("start", {}).get("dateTime") or e.get("start", {}).get("date")
@@ -385,8 +385,11 @@ def print_calendars():
         print(json.dumps({"error": "No access token"}))
         return
         
-    calendars = fetch_calendars(access_token)
-    print(json.dumps(calendars))
+    try:
+        calendars = fetch_calendars(access_token)
+        print(json.dumps(calendars))
+    except Exception as error:
+        print(json.dumps({"error": str(error)}))
 
 
 def create_event(json_data):
@@ -438,7 +441,7 @@ def create_event(json_data):
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Content-Type", "application/json")
         
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
             print(json.dumps({"success": True, "id": result.get("id")}))
             
@@ -465,7 +468,7 @@ def delete_event(calendar_id, event_id):
         req = urllib.request.Request(url, method="DELETE")
         req.add_header("Authorization", f"Bearer {access_token}")
         
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             print(json.dumps({"success": True}))
             
     except urllib.error.HTTPError as e:
@@ -526,7 +529,7 @@ def update_event(calendar_id, event_id, json_data):
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Content-Type", "application/json")
         
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
             print(json.dumps({"success": True, "id": result.get("id")}))
             
@@ -552,7 +555,7 @@ def fetch_tasks(tasklist_id="@default"):
         req = urllib.request.Request(url)
         req.add_header("Authorization", f"Bearer {access_token}")
 
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
             tasks = result.get("items", [])
             print(json.dumps(tasks))
@@ -586,7 +589,7 @@ def create_task(tasklist_id, json_data):
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Content-Type", "application/json")
 
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
             print(json.dumps({"success": True, "id": result.get("id")}))
 
@@ -625,7 +628,7 @@ def update_task(tasklist_id, task_id, json_data):
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Content-Type", "application/json")
 
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
             print(json.dumps({"success": True, "id": result.get("id")}))
 
@@ -648,7 +651,7 @@ def delete_task(tasklist_id, task_id):
         req = urllib.request.Request(url, method="DELETE")
         req.add_header("Authorization", f"Bearer {access_token}")
 
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             print(json.dumps({"success": True}))
 
     except urllib.error.HTTPError as e:

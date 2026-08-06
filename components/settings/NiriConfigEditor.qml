@@ -9,6 +9,7 @@ Item {
     id: root
 
     readonly property bool canApply: !SettingsHubService.busy && editor.text.trim() !== ""
+    readonly property bool dirty: editor.text !== sourceText()
     property string description: "Advanced KDL editor. Changes are validated before Niri reloads."
     property int editorHeight: 520
     property string fileName: ""
@@ -20,13 +21,21 @@ Item {
         editor.focus = false;
         SettingsHubService.saveNiriFile(root.fileName, editor.text);
     }
+    function reset() {
+        editor.focus = false;
+        editor.text = sourceText();
+    }
+    function sourceText() {
+        var files = SettingsHubService.niriFiles || {};
+        var source = files[root.fileName];
+        return source === undefined ? "" : source;
+    }
     function syncSource() {
         if (editor.activeFocus)
             return;
 
-        var files = SettingsHubService.niriFiles || {};
-        var source = files[root.fileName];
-        if (source !== undefined && editor.text !== source)
+        var source = sourceText();
+        if (editor.text !== source)
             editor.text = source;
     }
 
@@ -120,7 +129,7 @@ Item {
             color: Config.alpha(Config.md3.on_surface, 0.4)
             font.family: Config.fontName
             font.pixelSize: 12
-            text: "If validation fails, the original file is restored automatically."
+            text: root.dirty ? "Unsaved changes · Apply or reset before switching files." : "Changes are validated before the live file is replaced."
         }
     }
 }

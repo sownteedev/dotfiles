@@ -11,6 +11,10 @@ Rectangle {
     property real peakValue: 0.0
     property bool showCenterTick: false
     property bool showPeak: false
+    property bool showThumbOnHover: false
+    property real thumbSize: 10
+    property real trackHeight: 8
+    property real hoverTrackHeight: trackHeight
     property real value: 0.0
 
     signal sliderMoved(real value)
@@ -20,12 +24,21 @@ Rectangle {
     height: 24
 
     Rectangle {
+        id: track
+
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         color: Config.alpha(Config.md3.on_surface, 0.1)
-        height: 8
-        radius: 4
+        height: sliderMouse.containsMouse ? root.hoverTrackHeight : root.trackHeight
+        radius: height / 2
+
+        Behavior on height {
+            NumberAnimation {
+                duration: 140
+                easing.type: Easing.OutCubic
+            }
+        }
 
         Rectangle {
             anchors.bottom: parent.bottom
@@ -70,8 +83,26 @@ Rectangle {
             visible: root.showCenterTick
             width: 3
         }
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            color: root.isMuted ? Config.md3.outline : root.highlightColor
+            height: width
+            radius: width / 2
+            visible: root.showThumbOnHover
+            width: sliderMouse.containsMouse ? root.thumbSize : 0
+            x: Math.max(0, Math.min(parent.width - width, parent.width * Math.max(0, Math.min(1, root.value)) - width / 2))
+
+            Behavior on width {
+                NumberAnimation {
+                    duration: 140
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
     }
     MouseArea {
+        id: sliderMouse
+
         function updateValue(mouse) {
             root.sliderMoved(Math.max(0, Math.min(mouse.x, width)) / width);
         }

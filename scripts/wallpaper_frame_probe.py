@@ -58,7 +58,7 @@ def wait_for_file(path, timeout):
                 stable_reads += 1
                 if stable_reads >= 2:
                     if signature == rejected_signature:
-                        time.sleep(0.05)
+                        time.sleep(0.10)
                         continue
                     if frame_is_usable(path):
                         return 0
@@ -73,7 +73,7 @@ def wait_for_file(path, timeout):
         except OSError:
             previous_signature = None
             stable_reads = 0
-        time.sleep(0.05)
+        time.sleep(0.10)
 
     return 1
 

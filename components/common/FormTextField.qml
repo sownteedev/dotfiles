@@ -49,6 +49,13 @@ ColumnLayout {
     }
 
     spacing: 6
+    opacity: enabled ? 1 : 0.5
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: 120
+        }
+    }
 
     onMultilineChanged: Qt.callLater(syncEditorText)
     onTextChanged: syncEditorText()

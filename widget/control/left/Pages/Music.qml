@@ -7,6 +7,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.Mpris
+import Quickshell.Services.Pipewire
 import "../../../../components/common"
 
 Item {
@@ -17,12 +18,107 @@ Item {
     // panels do not push it above the visible area.
     readonly property real artworkSize: Math.max(96, Math.min(280, playerArea.height - 370))
     property bool isSwipingOut: false
+    readonly property bool mediaMuted: !mediaStream || !mediaStream.audio || mediaStream.audio.muted
+    readonly property var mediaStream: findMediaStream()
+    readonly property real mediaVolume: {
+        if (!mediaStream || !mediaStream.audio)
+            return 0;
+        var volumes = mediaStream.audio.volumes;
+        if (!volumes || volumes.length === 0)
+            return Math.max(0, Math.min(1, mediaStream.audio.volume));
+
+        var maximum = 0;
+        for (var i = 0; i < volumes.length; ++i)
+            maximum = Math.max(maximum, Number(volumes[i]) || 0);
+        return Math.max(0, Math.min(1, maximum));
+    }
+    readonly property string mediaVolumeIcon: mediaMuted || mediaVolume <= 0 ? "audio-volume-muted-symbolic" : mediaVolume < 0.34 ? "audio-volume-low-symbolic" : mediaVolume < 0.67 ? "audio-volume-medium-symbolic" : "audio-volume-high-symbolic"
     readonly property var player: MediaService.activePlayer
     property int swipeDirection: 1
     property real swipeOffset: 0
     property bool swipeTimerRunning: swipeActionTimer.running
 
+    function findMediaStream() {
+        if (!player || !Pipewire.ready || !Pipewire.nodes || !Pipewire.nodes.values)
+            return null;
+
+        var playerIdentity = normalizeMediaName(player.identity);
+        var playerDesktop = normalizeMediaName(player.desktopEntry);
+        var playerBus = normalizeMediaName(player.dbusName);
+        var playerHints = playerIdentity + " " + playerDesktop + " " + playerBus;
+        var playerIsChromium = playerHints.indexOf("chromium") !== -1 || playerHints.indexOf("googlechrome") !== -1 || playerHints.indexOf("chrome") !== -1 || playerHints.indexOf("brave") !== -1 || playerHints.indexOf("vivaldi") !== -1 || playerHints.indexOf("edge") !== -1;
+        var bestMatch = null;
+        var bestScore = 0;
+        var fallbackMatch = null;
+
+        for (var i = 0; i < Pipewire.nodes.values.length; ++i) {
+            var node = Pipewire.nodes.values[i];
+            if (!node || !node.isStream || !AudioService.isPlaybackStream(node))
+                continue;
+
+            var properties = node.properties || {};
+            var appName = normalizeMediaName(properties["application.name"] || node.name);
+            var appBinary = normalizeMediaName(properties["application.process.binary"]);
+            var appIcon = normalizeMediaName(properties["application.icon-name"]);
+            var nodeHints = appName + " " + appBinary + " " + appIcon;
+            var score = 0;
+
+            if (!fallbackMatch && nodeHints.indexOf("wallpaper") === -1 && nodeHints.indexOf("cava") === -1 && nodeHints.indexOf("quickshell") === -1)
+                fallbackMatch = node;
+
+            if (playerDesktop && (appBinary === playerDesktop || appIcon === playerDesktop || appName === playerDesktop))
+                score = 300;
+            else if (playerIdentity && appName === playerIdentity)
+                score = 280;
+            else if (playerDesktop && nodeHints.indexOf(playerDesktop) !== -1)
+                score = 220;
+            else if (playerIdentity && nodeHints.indexOf(playerIdentity) !== -1)
+                score = 200;
+            else if (appBinary && playerHints.indexOf(appBinary) !== -1)
+                score = 180;
+
+            var nodeIsChromium = nodeHints.indexOf("chromium") !== -1 || nodeHints.indexOf("googlechrome") !== -1 || appBinary === "chrome" || nodeHints.indexOf("brave") !== -1 || nodeHints.indexOf("vivaldi") !== -1 || nodeHints.indexOf("edge") !== -1;
+            if (score === 0 && playerIsChromium && nodeIsChromium)
+                score = 120;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = node;
+            }
+        }
+        return bestMatch || fallbackMatch;
+    }
+    function normalizeMediaName(value) {
+        return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    }
+    function setMediaVolume(value) {
+        var stream = mediaStream;
+        if (!stream || !stream.audio)
+            return;
+
+        var target = Math.max(0, Math.min(1, value));
+        var volumes = stream.audio.volumes;
+        if (volumes && volumes.length > 0) {
+            var maximum = 0;
+            for (var i = 0; i < volumes.length; ++i)
+                maximum = Math.max(maximum, Number(volumes[i]) || 0);
+
+            var updatedVolumes = [];
+            for (var channel = 0; channel < volumes.length; ++channel)
+                updatedVolumes.push(maximum > 0 ? volumes[channel] * target / maximum : target);
+            stream.audio.volumes = updatedVolumes;
+        } else {
+            stream.audio.volume = target;
+        }
+        if (target > 0)
+            stream.audio.muted = false;
+    }
+
     anchors.fill: parent
+
+    PwObjectTracker {
+        objects: Pipewire.nodes && Pipewire.nodes.values ? Pipewire.nodes.values : []
+    }
 
     Behavior on swipeOffset {
         enabled: !musicDrag.active && !root.isSwipingOut
@@ -69,7 +165,6 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
             clip: true
-
             color: "transparent"
             radius: 18
 
@@ -348,10 +443,66 @@ Item {
                     }
                 }
 
+                // Active media stream volume
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: 340
+                    Layout.preferredHeight: 22
+                    enabled: !!root.mediaStream && !!root.mediaStream.audio
+                    spacing: 8
+                    visible: !!root.player
+
+                    IconImage {
+                        id: mediaVolumeIcon
+
+                        implicitHeight: 16
+                        implicitWidth: 16
+                        layer.enabled: true
+                        source: Quickshell.iconPath(root.mediaVolumeIcon, "audio-volume-high")
+
+                        layer.effect: ColorOverlay {
+                            color: root.mediaMuted ? Config.md3.on_surface_variant : Config.md3.primary
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+
+                            onClicked: {
+                                if (root.mediaStream && root.mediaStream.audio)
+                                    root.mediaStream.audio.muted = !root.mediaStream.audio.muted;
+                            }
+                        }
+                    }
+                    CustomVolumeSlider {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 18
+                        highlightColor: Config.md3.primary
+                        hoverTrackHeight: 5
+                        isMuted: root.mediaMuted
+                        showThumbOnHover: true
+                        thumbSize: 9
+                        trackHeight: 3
+                        value: root.mediaVolume
+
+                        onSliderMoved: volume => root.setMediaVolume(volume)
+                    }
+                    Text {
+                        Layout.preferredWidth: 34
+                        color: Config.alpha(Config.md3.on_surface, 0.68)
+                        font.family: Config.fontName
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        horizontalAlignment: Text.AlignRight
+                        text: Math.round(root.mediaVolume * 100) + "%"
+                    }
+                }
+
                 // Bottom: 3-line Lyrics
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 115
+                    Layout.topMargin: 12
                     border.color: Config.alpha(Config.md3.on_surface, 0.04)
                     border.width: 1
                     color: Config.alpha(Config.md3.on_surface, 0.02)
@@ -364,11 +515,7 @@ Item {
                         player: root.player
                     }
                 }
-                Item {
-                    Layout.fillHeight: true
-                } // Bottom spacer to push everything up
             }
-
             MusicEmptyState {
                 anchors.centerIn: parent
                 height: Math.min(480, parent.height - 36)
