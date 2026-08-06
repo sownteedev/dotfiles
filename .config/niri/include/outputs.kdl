@@ -1,6 +1,6 @@
 output "BOE 0x0A0B Unknown" {
     mode "2560x1600@165.004"
-    scale 1
+    scale 1.0
     transform "normal"
     position x=0 y=0
     focus-at-startup

@@ -1,14 +1,14 @@
-@define-color surface-strongest {{colors.surface_container_lowest.dark.hex}};
-@define-color surface-strong {{colors.background.dark.hex}};
-@define-color surface-moderate {{colors.surface_container_low.dark.hex}};
-@define-color surface-weak {{colors.surface_container.dark.hex}};
-@define-color surface-weakest {{colors.surface_container_high.dark.hex}};
+@define-color surface-strongest {{colors.surface_container_lowest.default.hex}};
+@define-color surface-strong {{colors.background.default.hex}};
+@define-color surface-moderate {{colors.surface_container_low.default.hex}};
+@define-color surface-weak {{colors.surface_container.default.hex}};
+@define-color surface-weakest {{colors.surface_container_high.default.hex}};
 
-@define-color white-strongest {{colors.on_background.dark.hex}};
-@define-color white-strong rgba({{colors.on_background.dark.red}}, {{colors.on_background.dark.green}}, {{colors.on_background.dark.blue}}, 0.87);
-@define-color white-moderate rgba({{colors.on_background.dark.red}}, {{colors.on_background.dark.green}}, {{colors.on_background.dark.blue}}, 0.34);
-@define-color white-weak rgba({{colors.on_background.dark.red}}, {{colors.on_background.dark.green}}, {{colors.on_background.dark.blue}}, 0.14);
-@define-color white-weakest rgba({{colors.on_background.dark.red}}, {{colors.on_background.dark.green}}, {{colors.on_background.dark.blue}}, 0.06);
+@define-color white-strongest {{colors.on_background.default.hex}};
+@define-color white-strong rgba({{colors.on_background.default.red}}, {{colors.on_background.default.green}}, {{colors.on_background.default.blue}}, 0.87);
+@define-color white-moderate rgba({{colors.on_background.default.red}}, {{colors.on_background.default.green}}, {{colors.on_background.default.blue}}, 0.34);
+@define-color white-weak rgba({{colors.on_background.default.red}}, {{colors.on_background.default.green}}, {{colors.on_background.default.blue}}, 0.14);
+@define-color white-weakest rgba({{colors.on_background.default.red}}, {{colors.on_background.default.green}}, {{colors.on_background.default.blue}}, 0.06);
 
 @define-color black-strongest rgb(0, 0, 0);
 @define-color black-strong rgba(0, 0, 0, 0.87);
@@ -16,9 +16,9 @@
 @define-color black-weak rgba(0, 0, 0, 0.15);
 @define-color black-weakest rgba(0, 0, 0, 0.06);
 
-@define-color red-tint rgba({{colors.error.dark.red}}, {{colors.error.dark.green}}, {{colors.error.dark.blue}}, 0.6);
-@define-color red-normal {{colors.error.dark.hex}};
-@define-color red-light {{colors.error.dark.hex}};
+@define-color red-tint rgba({{colors.error.default.red}}, {{colors.error.default.green}}, {{colors.error.default.blue}}, 0.6);
+@define-color red-normal {{colors.error.default.hex}};
+@define-color red-light {{colors.error.default.hex}};
 @define-color orange-tint rgba(237, 148, 84, 0.6);
 @define-color orange-normal rgb(237, 148, 84);
 @define-color orange-light rgb(252, 166, 105);
@@ -29,20 +29,20 @@
 @define-color green-light rgb(97, 214, 126);
 @define-color cyan-normal rgb(92, 216, 230);
 @define-color cyan-light rgb(126, 234, 246);
-@define-color blue-normal {{colors.secondary.dark.hex}};
-@define-color blue-light {{colors.secondary.dark.hex}};
-@define-color purple-normal {{colors.primary.dark.hex}};
-@define-color purple-light {{colors.primary.dark.hex}};
-@define-color pink-normal {{colors.tertiary.dark.hex}};
-@define-color pink-light {{colors.tertiary.dark.hex}};
+@define-color blue-normal {{colors.secondary.default.hex}};
+@define-color blue-light {{colors.secondary.default.hex}};
+@define-color purple-normal {{colors.primary.default.hex}};
+@define-color purple-light {{colors.primary.default.hex}};
+@define-color pink-normal {{colors.tertiary.default.hex}};
+@define-color pink-light {{colors.tertiary.default.hex}};
 
 @define-color accent_color @purple-light;
 @define-color accent_bg_color @purple-normal;
 @define-color accent_fg_color @white-strong;
-@define-color accent_hover_color rgba({{colors.primary.dark.red}}, {{colors.primary.dark.green}}, {{colors.primary.dark.blue}}, 0.08);
-@define-color accent_vibrant_hover_color rgba({{colors.primary.dark.red}}, {{colors.primary.dark.green}}, {{colors.primary.dark.blue}}, 0.18);
-@define-color accent_active_color rgba({{colors.primary.dark.red}}, {{colors.primary.dark.green}}, {{colors.primary.dark.blue}}, 0.10);
-@define-color accent_vibrant_active_color rgba({{colors.primary.dark.red}}, {{colors.primary.dark.green}}, {{colors.primary.dark.blue}}, 0.20);
+@define-color accent_hover_color rgba({{colors.primary.default.red}}, {{colors.primary.default.green}}, {{colors.primary.default.blue}}, 0.08);
+@define-color accent_vibrant_hover_color rgba({{colors.primary.default.red}}, {{colors.primary.default.green}}, {{colors.primary.default.blue}}, 0.18);
+@define-color accent_active_color rgba({{colors.primary.default.red}}, {{colors.primary.default.green}}, {{colors.primary.default.blue}}, 0.10);
+@define-color accent_vibrant_active_color rgba({{colors.primary.default.red}}, {{colors.primary.default.green}}, {{colors.primary.default.blue}}, 0.20);
 
 @define-color destructive_color @red-light;
 @define-color destructive_bg_color @red-tint;
@@ -81,26 +81,26 @@
 
 @define-color popover_bg_color @surface-weakest;
 @define-color popover_fg_color @white-strong;
-@define-color popover_fg_hover_color rgba({{colors.on_surface.dark.red}}, {{colors.on_surface.dark.green}}, {{colors.on_surface.dark.blue}}, 0.08);
-@define-color popover_fg_active_color rgba({{colors.on_surface.dark.red}}, {{colors.on_surface.dark.green}}, {{colors.on_surface.dark.blue}}, 0.18);
+@define-color popover_fg_hover_color rgba({{colors.on_surface.default.red}}, {{colors.on_surface.default.green}}, {{colors.on_surface.default.blue}}, 0.08);
+@define-color popover_fg_active_color rgba({{colors.on_surface.default.red}}, {{colors.on_surface.default.green}}, {{colors.on_surface.default.blue}}, 0.18);
 
-@define-color sidebar_row_active_bg_color {{colors.secondary_container.dark.hex}};
-@define-color sidebar_row_active_fg_color {{colors.on_secondary_container.dark.hex}};
-@define-color secondary_sidebar_bg_color {{colors.surface_container_low.dark.hex}};
-@define-color secondary_sidebar_fg_color {{colors.on_surface_variant.dark.hex}};
-@define-color thumbnail_bg_color {{colors.surface_container_high.dark.hex}};
+@define-color sidebar_row_active_bg_color {{colors.secondary_container.default.hex}};
+@define-color sidebar_row_active_fg_color {{colors.on_secondary_container.default.hex}};
+@define-color secondary_sidebar_bg_color {{colors.surface_container_low.default.hex}};
+@define-color secondary_sidebar_fg_color {{colors.on_surface_variant.default.hex}};
+@define-color thumbnail_bg_color {{colors.surface_container_high.default.hex}};
 
-@define-color inverse_on_surface {{colors.inverse_on_surface.dark.hex}};
-@define-color inverse_on_surface_hover rgba({{colors.inverse_on_surface.dark.red}}, {{colors.inverse_on_surface.dark.green}}, {{colors.inverse_on_surface.dark.blue}}, 0.08);
-@define-color inverse_on_surface_active rgba({{colors.inverse_on_surface.dark.red}}, {{colors.inverse_on_surface.dark.green}}, {{colors.inverse_on_surface.dark.blue}}, 0.18);
-@define-color inverse_primary {{colors.inverse_primary.dark.hex}};
-@define-color inverse_primary_hover rgba({{colors.inverse_primary.dark.red}}, {{colors.inverse_primary.dark.green}}, {{colors.inverse_primary.dark.blue}}, 0.08);
-@define-color inverse_primary_active rgba({{colors.inverse_primary.dark.red}}, {{colors.inverse_primary.dark.green}}, {{colors.inverse_primary.dark.blue}}, 0.18);
-@define-color inverse_surface {{colors.inverse_surface.dark.hex}};
-@define-color surface_container_highest {{colors.surface_container_highest.dark.hex}};
-@define-color on_surface_variant {{colors.on_surface_variant.dark.hex}};
-@define-color surface_variant {{colors.surface_variant.dark.hex}};
-@define-color outline {{colors.outline.dark.hex}};
+@define-color inverse_on_surface {{colors.inverse_on_surface.default.hex}};
+@define-color inverse_on_surface_hover rgba({{colors.inverse_on_surface.default.red}}, {{colors.inverse_on_surface.default.green}}, {{colors.inverse_on_surface.default.blue}}, 0.08);
+@define-color inverse_on_surface_active rgba({{colors.inverse_on_surface.default.red}}, {{colors.inverse_on_surface.default.green}}, {{colors.inverse_on_surface.default.blue}}, 0.18);
+@define-color inverse_primary {{colors.inverse_primary.default.hex}};
+@define-color inverse_primary_hover rgba({{colors.inverse_primary.default.red}}, {{colors.inverse_primary.default.green}}, {{colors.inverse_primary.default.blue}}, 0.08);
+@define-color inverse_primary_active rgba({{colors.inverse_primary.default.red}}, {{colors.inverse_primary.default.green}}, {{colors.inverse_primary.default.blue}}, 0.18);
+@define-color inverse_surface {{colors.inverse_surface.default.hex}};
+@define-color surface_container_highest {{colors.surface_container_highest.default.hex}};
+@define-color on_surface_variant {{colors.on_surface_variant.default.hex}};
+@define-color surface_variant {{colors.surface_variant.default.hex}};
+@define-color outline {{colors.outline.default.hex}};
 
 @define-color shade_color @black-strongest;
 @define-color scrollbar_outline_color @white-weakest;

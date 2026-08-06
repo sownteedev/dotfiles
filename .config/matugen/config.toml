@@ -42,3 +42,16 @@ output_path = '~/.local/share/blackbox/schemes/custom.json'
 input_path = '~/Dotfiles/dotf/.config/matugen/templates/nvim/custom.lua'
 output_path = '~/Dotfiles/dotf/.config/nvim/lua/custom/themes/schemes/matugen.lua'
 post_hook = 'pkill -SIGUSR1 nvim || true'
+
+[templates.vscode]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/vscode/vscode-colors.json'
+output_path = '~/.cache/matugen/vscode-colors-temp.json'
+post_hook = 'python3 ~/Dotfiles/dotf/.config/matugen/scripts/inject-vscode.py ~/.config/Code/User/settings.json ~/.cache/matugen/vscode-colors-temp.json'
+
+[templates.kvantum_kvconfig]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/kvantum/kvantum-colors.kvconfig'
+output_path = '~/.config/Kvantum/matugen/matugen.kvconfig'
+
+[templates.kvantum_svg]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/kvantum/kvantum-colors.svg'
+output_path = '~/.config/Kvantum/matugen/matugen.svg'

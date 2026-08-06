@@ -16,3 +16,8 @@ environment {
 	LIBVA_DRIVER_NAME "nvidia"
 	__GLX_VENDOR_LIBRARY_NAME "nvidia"
 }
+
+debug {
+    // render-drm-device "/dev/dri/by-path/pci-0000:00:02.0-render"
+	// render-drm-device "/dev/dri/by-path/pci-0000:01:00.0-render"
+}
