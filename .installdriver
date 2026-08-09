@@ -5,51 +5,123 @@
 # Fail fast and reduce word-splitting issues
 set -euo pipefail
 IFS=$'\n\t'
-# Color helpers
+
+# Output helpers
 GREEN='\033[0;32m'
-NC='\033[0m'
-green_echo() {
-    printf "%b\n" "${GREEN}$1${NC}"
-}
 RED='\033[0;31m'
-red_echo() {
-    printf "%b\n" "${RED}$1${NC}"
-}
 BLUE='\033[0;34m'
-blue_echo() {
-    printf "%b\n" "${BLUE}$1${NC}"
-}
-pkg_installed() {
-	local PKG=$1
-	if pacman -Qi "$PKG" &>/dev/null; then
-		return 0
-	else
-		return 1
-	fi
+NC='\033[0m'
+
+green_echo() { printf "%b\n" "${GREEN}$1${NC}"; }
+red_echo() { printf "%b\n" "${RED}$1${NC}"; }
+blue_echo() { printf "%b\n" "${BLUE}$1${NC}"; }
+
+# Installation helpers
+retry() {
+    local attempt=1
+    local max_attempts=3
+    local delay_seconds=5
+
+    until "$@"; do
+        if (( attempt >= max_attempts )); then
+            red_echo "[!] Command failed after $max_attempts attempts."
+            return 1
+        fi
+
+        blue_echo "[*] Command failed; retrying in ${delay_seconds}s ($((attempt + 1))/$max_attempts) ..."
+        sleep "$delay_seconds"
+        attempt=$((attempt + 1))
+    done
 }
 
+install_nautilus_taildrop() {
+    local taildrop_repo="https://github.com/Balazsmi/Nautilus-Taildrop.git"
+    local taildrop_commit="769899fd08e5f217f1a0bfef5d8c04af21956633"
+    local temp_dir source_dir installed_commit source_file
+
+    if ! command -v git >/dev/null 2>&1; then
+        red_echo "[!] Git is required to install Nautilus Taildrop."
+        return 1
+    fi
+
+    temp_dir=$(mktemp -d)
+    source_dir="$temp_dir/source"
+
+    if ! git init --quiet "$source_dir" \
+        || ! git -C "$source_dir" remote add origin "$taildrop_repo" \
+        || ! git -C "$source_dir" fetch --quiet --depth 1 origin "$taildrop_commit" \
+        || ! git -C "$source_dir" checkout --quiet --detach FETCH_HEAD; then
+        rm -rf -- "$temp_dir"
+        red_echo "[!] Failed to download Nautilus Taildrop."
+        return 1
+    fi
+
+    installed_commit=$(git -C "$source_dir" rev-parse HEAD)
+    if [ "$installed_commit" != "$taildrop_commit" ]; then
+        rm -rf -- "$temp_dir"
+        red_echo "[!] Nautilus Taildrop commit verification failed."
+        return 1
+    fi
+
+    for source_file in \
+        send-via-taildrop.py \
+        taildrop-auto-receive.sh \
+        nautilus-taildrop.py \
+        taildrop-auto-receive.service; do
+        if [ ! -f "$source_dir/$source_file" ]; then
+            rm -rf -- "$temp_dir"
+            red_echo "[!] Nautilus Taildrop is missing $source_file."
+            return 1
+        fi
+    done
+
+    if ! install -Dm755 "$source_dir/send-via-taildrop.py" "$HOME/.local/bin/send-via-taildrop" \
+        || ! install -Dm755 "$source_dir/taildrop-auto-receive.sh" "$HOME/.local/bin/taildrop-auto-receive.sh" \
+        || ! install -Dm644 "$source_dir/nautilus-taildrop.py" "$HOME/.local/share/nautilus-python/extensions/nautilus-taildrop.py" \
+        || ! install -Dm644 "$source_dir/taildrop-auto-receive.service" "$HOME/.config/systemd/user/taildrop-auto-receive.service"; then
+        rm -rf -- "$temp_dir"
+        red_echo "[!] Failed to install Nautilus Taildrop files."
+        return 1
+    fi
+
+    rm -rf -- "$temp_dir"
+    green_echo "[*] Nautilus Taildrop installed."
+}
+
+# Authenticate once, then keep the sudo timestamp alive while the installer runs.
+red_echo "[*] Authenticating sudo ..."
+sudo -v
+(
+    while true; do
+        sleep 60
+        sudo -n -v || exit
+    done
+) 2>/dev/null &
+SUDO_KEEPALIVE_PID=$!
+trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true; sudo -k' EXIT
+
 # Update
-sudo pacman -Syu --noconfirm
+retry sudo pacman -Syu --noconfirm
 sleep 3 && clear
 
 # Git
 red_echo "[*] Installing git ..."
-if pkg_installed git; then
-	green_echo "[*] Git already installed, skipping ..."
+if pacman -Qi git &>/dev/null; then
+    green_echo "[*] Git already installed, skipping ..."
 else
-	sudo pacman -S git --noconfirm
-	green_echo "[*] Git Installed."
+    retry sudo pacman -S git --noconfirm
+    green_echo "[*] Git Installed."
 fi
 
 # Yay
 red_echo "[*] Installing AUR helper(yay) ..."
-if pkg_installed yay; then
-	green_echo "[*] Yay already installed, skipping ..."
+if pacman -Qi yay &>/dev/null; then
+    green_echo "[*] Yay already installed, skipping ..."
 else
-	git clone https://aur.archlinux.org/yay.git && cd yay
-	makepkg -si --noconfirm
-	cd .. && rm -rf yay
-	green_echo "[*] Yay Installed."
+    git clone https://aur.archlinux.org/yay.git && cd yay
+    makepkg -si --noconfirm
+    cd .. && rm -rf yay
+    green_echo "[*] Yay Installed."
 fi
 cd ~
 sleep 3 && clear
@@ -72,34 +144,35 @@ sleep 3 && clear
 #################################################### INSTALL DRIVER AND APPS ####################################################
 # Install library
 red_echo "[*] Installing library ..."
-sudo pacman -S --needed nodejs npm pnpm yarn python python-pip clang jdk-openjdk rustup --noconfirm && yay -S nvm --noconfirm
+retry sudo pacman -S --needed --noconfirm nodejs npm pnpm yarn python python-pip python-cairo python-gobject clang jdk-openjdk rustup
+retry yay -S --needed --noconfirm nvm
 rustup default stable
 green_echo "[*] Done."
 sleep 3 && clear
 
 # Audio
 red_echo "[*] Installing audio & mic driver ..."
-sudo pacman -S --needed pipewire pipewire-audio pipewire-pulse wireplumber alsa-ucm-conf sof-firmware playerctl --noconfirm
+retry sudo pacman -S --needed --noconfirm pipewire pipewire-audio pipewire-pulse wireplumber alsa-ucm-conf sof-firmware playerctl
 systemctl --user enable pipewire pipewire-pulse wireplumber
 green_echo "[*] Done."
 sleep 3 && clear
 
 # Brightness
 red_echo "[*] Installing brightness ..."
-sudo pacman -S --needed brightnessctl --noconfirm
+retry sudo pacman -S --needed --noconfirm brightnessctl
 green_echo "[*] Done."
 sleep 3 && clear
 
 # Battery
 red_echo "[*] Installing battery ..."
-sudo pacman -S --needed acpi acpid upower power-profiles-daemon --noconfirm
+retry sudo pacman -S --needed --noconfirm acpi acpid upower power-profiles-daemon
 sudo systemctl enable --now acpid upower power-profiles-daemon
 green_echo "[*] Done."
 sleep 3 && clear
 
 # Network
 red_echo "[*] Installing network ..."
-sudo pacman -S --needed networkmanager wpa_supplicant wireless_tools --noconfirm
+retry sudo pacman -S --needed --noconfirm networkmanager wpa_supplicant wireless_tools
 sudo systemctl enable --now NetworkManager
 green_echo "[*] Done."
 sleep 2 && clear
@@ -112,7 +185,7 @@ sleep 3 && clear
 
 # Bluetooth
 red_echo "[*] Installing bluetooth driver ..."
-sudo pacman -S --needed bluez bluez-utils bluez-libs bluez-deprecated-tools qt6-connectivity --noconfirm
+retry sudo pacman -S --needed --noconfirm bluez bluez-utils bluez-libs bluez-deprecated-tools
 sudo systemctl enable --now bluetooth.service
 systemctl --user enable --now mpris-proxy.service
 green_echo "[*] Done."
@@ -120,19 +193,21 @@ sleep 3 && clear
 
 # File manager
 red_echo "[*] Installing file manager ..."
-sudo pacman -S --needed nautilus ffmpegthumbnailer tumbler eza zip gzip tar unzip unrar mpv dconf xdg-user-dirs gvfs --noconfirm
+retry sudo pacman -S --needed --noconfirm nautilus nautilus-python nautilus-my-computer sushi nautilus-image-converter nautilus-copy-path nautilus-open-in-ide nautilus-admin-gtk4 git-nautilus-icons ffmpegthumbnailer tumbler eza zip gzip tar unzip unrar mpv dconf xdg-user-dirs gvfs
+install_nautilus_taildrop
 green_echo "[*] Done."
 sleep 3 && clear
 
 # Monitor and Theme
 red_echo "[*] Installing monitor and theme ..."
-sudo pacman -S --needed nwg-look imagemagick fastfetch xdg-desktop-portal-gtk gnome-control-center --noconfirm
+retry sudo pacman -S --needed --noconfirm nwg-look fastfetch xdg-desktop-portal-gtk gnome-control-center
 echo "[*] Done."
 sleep 3 && clear
 
 # Other
 red_echo "[*] Installing other ..."
-sudo pacman -S --needed --noconfirm devtools polkit-gnome pacman-contrib github-cli wget curl zsh fzf jq usbutils cliphist cava pciutils inotify-tools libnotify libcanberra zenity tesseract tesseract-data-eng tesseract-data-vie && yay -S --needed --noconfirm mission-center gnome-keyring
+retry sudo pacman -S --needed --noconfirm devtools polkit-gnome pacman-contrib github-cli wget curl zsh fzf usbutils
+retry yay -S --needed --noconfirm mission-center gnome-keyring
 green_echo "[*] Done."
 sleep 3 && clear
 
@@ -154,7 +229,7 @@ sleep 3 && clear
 # Fix Driver audio (DELL G16 7620)
 cd ~
 red_echo "[*] Fixing audio driver ..."
-sudo pacman -S rsync --noconfirm
+retry sudo pacman -S --needed --noconfirm rsync
 mkdir -p "$HOME/old-sof-backup"
 sudo mv /lib/firmware/intel/sof* "$HOME/old-sof-backup" || true
 sudo mv /usr/local/bin/sof-* "$HOME/old-sof-backup" || true
@@ -168,7 +243,7 @@ sudo rsync tools-v2.1.1/* /usr/local/bin || true
 
 cd ~ && git clone https://github.com/thesofproject/alsa-ucm-conf.git && cd alsa-ucm-conf
 if [ -d /usr/share/alsa/ucm ]; then
-	sudo rm -r /usr/share/alsa/ucm
+    sudo rm -r /usr/share/alsa/ucm
 fi
 sudo mv ./ucm /usr/share/alsa
 
@@ -176,6 +251,25 @@ cd ~ && sudo rm -rf sof-bin alsa-ucm-conf || true
 green_echo "[*] Done."
 sleep 3 && clear
 
+# Nvidia
+red_echo ">>> Config driver NVIDIA..."
+sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
+retry sudo pacman -Syu --needed --noconfirm
+retry sudo pacman -S --needed --noconfirm nvidia-open-dkms nvidia-utils nvidia-settings lib32-nvidia-utils vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime mesa-utils
+
+# Add nvidia_drm.modeset=1 on GRUB
+sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1/' /etc/default/grub
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+
+# Add enviroment
+# sudo bash -c 'echo -e "GBM_BACKEND=nvidia-drm\n__NV_PRIME_RENDER_OFFLOAD=1\n__GLX_VENDOR_LIBRARY_NAME=nvidia" >> /etc/environment'
+
+# Edit Mkinitcpio
+sudo sed -i 's/^MODULES=.*/MODULES=(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
+sudo mkinitcpio -P
+sleep 3 && clear
+
+# Secure Boot
 red_echo ">>> Config Secure Boot..."
 sudo grub-install --target=x86_64-efi --efi-directory=/boot \
     --bootloader-id=GRUB --modules="tpm" --disable-shim-lock
@@ -196,50 +290,69 @@ for k in /boot/vmlinuz-*; do
         sudo sbctl sign -s "$k"
     fi
 done
-sudo sbctl enroll-keys -m
-sleep 3 && clear
 
-# Nvidia
-red_echo ">>> Config driver NVIDIA..."
-sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
-sudo pacman -Syu --needed --noconfirm
-sudo pacman -S --needed nvidia-open-dkms nvidia-utils nvidia-settings lib32-nvidia-utils vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime mesa-utils --noconfirm
+# Key enrollment is only accepted while the firmware is in Setup Mode.
+# Treat enrollment as optional here so firmware-specific failures do not stop
+# the rest of the installation under `set -e`.
+SECURE_BOOT_STATUS=""
+SECURE_BOOT_SETUP_MODE=""
+SECURE_BOOT_ENABLED=""
 
-# Add nvidia_drm.modeset=1 on GRUB
-sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1/' /etc/default/grub
-sudo grub-mkconfig -o /boot/grub/grub.cfg
-
-# Add enviroment
-# sudo bash -c 'echo -e "GBM_BACKEND=nvidia-drm\n__NV_PRIME_RENDER_OFFLOAD=1\n__GLX_VENDOR_LIBRARY_NAME=nvidia" >> /etc/environment'
-
-# Edit Mkinitcpio
-sudo sed -i 's/^MODULES=.*/MODULES=(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
-sudo mkinitcpio -P
-sleep 3 && clear
-
-red_echo "[*] Config access file Windows (NTFS) ..."
-sudo pacman -S --needed ntfs-3g ntfsprogs --noconfirm
-lsblk -f | grep -i ntfs || true
-read -p "Enter the Windows partition number (e.g., 3): " WIN_PART
-
-if [ -n "$WIN_PART" ] && [ -b "/dev/nvme0n1p${WIN_PART}" ]; then
-    PART_PATH="/dev/nvme0n1p${WIN_PART}"
-    UUID=$(lsblk -dno UUID "$PART_PATH")
-    
-    if [ -n "$UUID" ]; then
-        sudo mkdir -p /mnt/windows
-        sudo ntfsfix -d "$PART_PATH" &>/dev/null || true
-        
-        if ! grep -q "$UUID" /etc/fstab; then
-            echo "UUID=$UUID /mnt/windows ntfs-3g defaults,uid=1000,gid=1000,umask=022 0 0" | sudo tee -a /etc/fstab > /dev/null
-            sudo systemctl daemon-reload
-            sudo mount -a
-        fi
+if ! mountpoint -q /sys/firmware/efi/efivars; then
+    red_echo "[!] EFI variables are unavailable; skipping Secure Boot key enrollment."
+    blue_echo "[*] Boot in UEFI mode and make sure efivarfs is mounted before enrolling keys."
+elif [ ! -f /var/lib/sbctl/keys/PK/PK.key ] \
+    || [ ! -f /var/lib/sbctl/keys/PK/PK.pem ] \
+    || [ ! -f /var/lib/sbctl/keys/KEK/KEK.key ] \
+    || [ ! -f /var/lib/sbctl/keys/KEK/KEK.pem ] \
+    || [ ! -f /var/lib/sbctl/keys/db/db.key ] \
+    || [ ! -f /var/lib/sbctl/keys/db/db.pem ]; then
+    red_echo "[!] Secure Boot key set is incomplete; skipping enrollment."
+elif ! SECURE_BOOT_STATUS="$(sbctl status --json 2>/dev/null)"; then
+    red_echo "[!] Unable to read the Secure Boot firmware state; skipping enrollment."
+elif ! SECURE_BOOT_SETUP_MODE="$(jq -r '.setup_mode | tostring' <<< "$SECURE_BOOT_STATUS" 2>/dev/null)" \
+    || ! SECURE_BOOT_ENABLED="$(jq -r '.secure_boot | tostring' <<< "$SECURE_BOOT_STATUS" 2>/dev/null)" \
+    || [[ "$SECURE_BOOT_SETUP_MODE" != "true" && "$SECURE_BOOT_SETUP_MODE" != "false" ]] \
+    || [[ "$SECURE_BOOT_ENABLED" != "true" && "$SECURE_BOOT_ENABLED" != "false" ]]; then
+    red_echo "[!] Unable to parse the Secure Boot firmware state; skipping enrollment."
+elif [ "$SECURE_BOOT_SETUP_MODE" != "true" ]; then
+    if [ "$SECURE_BOOT_ENABLED" = "true" ]; then
+        green_echo "[*] Secure Boot is already enabled and Setup Mode is disabled; skipping key enrollment."
     else
-        red_echo "Can't get UUID for $PART_PATH."
+        red_echo "[!] Firmware is not in Setup Mode; skipping Secure Boot key enrollment."
+        blue_echo "[*] Clear the Secure Boot keys (at least PK) in UEFI firmware, then rerun this step."
     fi
+elif sudo sbctl enroll-keys -m --ignore-immutable; then
+    green_echo "[*] Secure Boot keys enrolled successfully."
+else
+    red_echo "[!] Secure Boot key enrollment failed; continuing installation."
+    blue_echo "[*] Check firmware key management, Option ROM warnings, and EFI variable permissions."
 fi
 sleep 3 && clear
+
+# red_echo "[*] Config access file Windows (NTFS) ..."
+# sudo pacman -S --needed ntfs-3g ntfsprogs --noconfirm
+# lsblk -f | grep -i ntfs || true
+# read -p "Enter the Windows partition number (e.g., 3): " WIN_PART
+
+# if [ -n "$WIN_PART" ] && [ -b "/dev/nvme0n1p${WIN_PART}" ]; then
+#     PART_PATH="/dev/nvme0n1p${WIN_PART}"
+#     UUID=$(lsblk -dno UUID "$PART_PATH")
+    
+#     if [ -n "$UUID" ]; then
+#         sudo mkdir -p /mnt/windows
+#         sudo ntfsfix -d "$PART_PATH" &>/dev/null || true
+        
+#         if ! grep -q "$UUID" /etc/fstab; then
+#             echo "UUID=$UUID /mnt/windows ntfs-3g defaults,uid=1000,gid=1000,umask=022 0 0" | sudo tee -a /etc/fstab > /dev/null
+#             sudo systemctl daemon-reload
+#             sudo mount -a
+#         fi
+#     else
+#         red_echo "Can't get UUID for $PART_PATH."
+#     fi
+# fi
+# sleep 3 && clear
 
 green_echo "[*] Done. Rebooting your system..."
 sleep 3 && reboot
