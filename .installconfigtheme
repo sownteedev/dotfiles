@@ -74,17 +74,58 @@ run_yay() {
     retry yay -S --needed --noconfirm "$@"
 }
 
+has_display_gpu_vendor() {
+    local expected_vendor="$1"
+    local pci_devices_root="${PCI_DEVICES_ROOT:-/sys/bus/pci/devices}"
+    local device device_class device_vendor
+
+    for device in "$pci_devices_root"/*; do
+        [ -r "$device/class" ] && [ -r "$device/vendor" ] || continue
+        read -r device_class < "$device/class"
+        read -r device_vendor < "$device/vendor"
+        if [[ "$device_class" == 0x03* && "$device_vendor" == "$expected_vendor" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Quickshell runtime and optional features
 install_shell_runtime() {
     local -a packages=(
         niri xwayland-satellite quickshell-git qt6-connectivity
         libnotify inotify-tools libcanberra zenity cava cliphist
         slurp wl-clipboard hyprpicker gpu-screen-recorder ffmpeg imagemagick
-        mesa intel-media-driver libva-intel-driver linux-firmware-intel libva-utils
-        jq pciutils matugen-bin
+        mesa libva-utils
+        jq pciutils ddcutil matugen-bin
     )
+    if has_display_gpu_vendor "0x8086"; then
+        packages+=(intel-media-driver libva-intel-driver)
+        blue_echo "[*] Intel GPU detected; including Intel VA-API drivers."
+    else
+        blue_echo "[*] No Intel GPU detected; skipping Intel-only media drivers."
+    fi
     red_echo "[*] Installing required Quickshell runtime packages ..."
     run_yay "${packages[@]}"
+    configure_ddc_brightness
+}
+
+configure_ddc_brightness() {
+    if [ "$INSTALLER_DRY_RUN" = "1" ]; then
+        printf '[dry-run] configure i2c-dev and DDC/CI access for %q\n' "$USER"
+        return 0
+    fi
+
+    if ! getent group i2c >/dev/null; then
+        sudo groupadd --system i2c
+    fi
+    printf 'i2c-dev\n' | sudo tee /etc/modules-load.d/ddcutil.conf >/dev/null
+    printf '%s\n' 'KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"' | sudo tee /etc/udev/rules.d/70-ddcutil-i2c.rules >/dev/null
+    sudo usermod -aG i2c "$USER"
+    sudo modprobe i2c-dev
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger --subsystem-match=i2c-dev
+    blue_echo "[*] DDC/CI access configured. Log out and back in once to activate the i2c group."
 }
 
 install_shell_features() {
@@ -267,7 +308,8 @@ install_shell_environment() {
     run_yay evince loupe
     gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
     gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'
-    gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3
+    gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+    gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3-dark
     gsettings set org.gnome.desktop.interface icon-theme WhiteSur
     gsettings set org.gnome.desktop.interface cursor-theme Dark_Cursor
 
@@ -405,6 +447,7 @@ configure_blackbox() {
         terminal-padding
         theme-bold-is-bright
         theme-dark
+        theme-light
     )
     local -ar values=(
         "1"
@@ -415,6 +458,7 @@ configure_blackbox() {
         "1.25"
         "(uint32 30, uint32 30, uint32 30, uint32 30)"
         "true"
+        "Custom"
         "Custom"
     )
     local index
@@ -462,8 +506,24 @@ install_workspace() {
 
     red_echo "[*] Installing Other Applications..."
     run_yay vesktop-bin telegram-desktop-bin onlyoffice-bin google-chrome sunshine-bin steam
-    if systemctl --user list-unit-files sunshine.service >/dev/null 2>&1; then
-        systemctl --user enable --now sunshine.service
+
+    local sunshine_unit=""
+    if [ -f /usr/lib/systemd/user/app-dev.lizardbyte.app.Sunshine.service ]; then
+        sunshine_unit="app-dev.lizardbyte.app.Sunshine.service"
+    elif [ -f /usr/lib/systemd/user/sunshine.service ]; then
+        sunshine_unit="sunshine.service"
+    fi
+
+    if [ -n "$sunshine_unit" ]; then
+        systemctl --user daemon-reload
+        systemctl --user enable --now "$sunshine_unit"
+        blue_echo "[*] Sunshine is available at https://localhost:47990"
+    else
+        red_echo "[!] Sunshine was installed, but its user service was not found."
+    fi
+
+    if systemctl list-unit-files avahi-daemon.service >/dev/null 2>&1; then
+        sudo systemctl enable --now avahi-daemon.service
     fi
 
     patch_wayland_flags

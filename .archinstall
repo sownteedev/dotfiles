@@ -4,6 +4,36 @@ set -e
 set -u
 set -o pipefail
 
+partition_device() {
+    local disk_device="$1"
+    local partition_number="$2"
+
+    if [[ "$disk_device" =~ [0-9]$ ]]; then
+        printf '%sp%s\n' "$disk_device" "$partition_number"
+    else
+        printf '%s%s\n' "$disk_device" "$partition_number"
+    fi
+}
+
+cpu_microcode_package() {
+    local cpu_vendor="${1:-}"
+
+    if [ -z "$cpu_vendor" ]; then
+        cpu_vendor=$(awk -F ': *' '/^vendor_id/ { print $2; exit }' /proc/cpuinfo)
+    fi
+    case "$cpu_vendor" in
+        GenuineIntel)
+            printf '%s\n' "intel-ucode"
+            ;;
+        AuthenticAMD)
+            printf '%s\n' "amd-ucode"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 echo ">>> Check Internet..."
 ping -c 3 archlinux.org || {
     echo "Not Found Internet!"
@@ -35,41 +65,78 @@ fi
 
 # DISK
 read -p "Enter the disk you want to partition (e.g., sda or nvme0n1): " disk
+disk_device="/dev/$disk"
 
-if [ ! -e "/dev/$disk" ]; then
-    echo "Disk /dev/$disk not found. Exiting..."
+if [ ! -b "$disk_device" ]; then
+    echo "Disk $disk_device not found. Exiting..."
+    exit 1
+fi
+if [ "$(lsblk -ndo TYPE "$disk_device")" != "disk" ]; then
+    echo "$disk_device is not a whole disk. Enter a device such as sda or nvme0n1."
     exit 1
 fi
 
-cfdisk /dev/$disk || {
+cfdisk "$disk_device" || {
     echo "Failed to partition disk."
     exit 1
 }
 
 echo ">>> Verify partition layout:"
-lsblk /dev/$disk
+lsblk "$disk_device"
 read -p "All right? Press Enter to continue..."
 
-read -p "Enter the partition number for swap (e.g., 6 for /dev/${disk}p6): " swap_part
-read -p "Enter the partition number for file system (e.g., 5 for /dev/${disk}p5): " fs_part
-read -p "Enter the partition number for boot (e.g., 3 for /dev/${disk}p3): " boot_part
+partition_example=$(partition_device "$disk_device" 1)
+read -p "Enter the partition number for swap (e.g., 1 for $partition_example): " swap_part
+read -p "Enter the partition number for file system: " fs_part
+read -p "Enter the partition number for boot: " boot_part
 
-mkswap /dev/${disk}p${swap_part}
-swapon /dev/${disk}p${swap_part}
+for partition_number in "$swap_part" "$fs_part" "$boot_part"; do
+    if [[ ! "$partition_number" =~ ^[0-9]+$ ]]; then
+        echo "Partition numbers must contain digits only."
+        exit 1
+    fi
+done
 
-mkfs.ext4 /dev/${disk}p${fs_part}
-mount /dev/${disk}p${fs_part} /mnt
+if [ "$swap_part" = "$fs_part" ] || [ "$swap_part" = "$boot_part" ] || [ "$fs_part" = "$boot_part" ]; then
+    echo "Swap, file system, and boot must use different partitions."
+    exit 1
+fi
+
+swap_device=$(partition_device "$disk_device" "$swap_part")
+fs_device=$(partition_device "$disk_device" "$fs_part")
+boot_device=$(partition_device "$disk_device" "$boot_part")
+
+udevadm settle
+for partition in "$swap_device" "$fs_device" "$boot_device"; do
+    if [ ! -b "$partition" ]; then
+        echo "Partition $partition not found. Check the selected disk and partition number."
+        exit 1
+    fi
+done
+
+mkswap "$swap_device"
+swapon "$swap_device"
+
+mkfs.ext4 "$fs_device"
+mount "$fs_device" /mnt
 
 mkdir -p /mnt/boot
-mount /dev/${disk}p${boot_part} /mnt/boot
+mount "$boot_device" /mnt/boot
 
-lsblk /dev/$disk
+lsblk "$disk_device"
 read -p "All right? Press Enter to continue..."
 clear
 
 # Chroot
 echo ">>> Basic install..."
-pacstrap /mnt base base-devel linux-zen linux-zen-headers linux-firmware sbctl intel-ucode
+base_packages=(base base-devel linux-zen linux-zen-headers linux-firmware sbctl)
+if microcode_package=$(cpu_microcode_package); then
+    base_packages+=("$microcode_package")
+    echo ">>> Detected CPU microcode package: $microcode_package"
+else
+    echo ">>> CPU vendor is unknown; continuing without a microcode package."
+fi
+pacstrap /mnt "${base_packages[@]}"
 
 echo ">>> Create fstab and go to chroot..."
 genfstab -U /mnt >> /mnt/etc/fstab

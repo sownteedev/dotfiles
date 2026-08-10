@@ -34,6 +34,51 @@ retry() {
     done
 }
 
+has_display_gpu_vendor() {
+    local expected_vendor="$1"
+    local pci_devices_root="${PCI_DEVICES_ROOT:-/sys/bus/pci/devices}"
+    local device device_class device_vendor
+
+    for device in "$pci_devices_root"/*; do
+        [ -r "$device/class" ] && [ -r "$device/vendor" ] || continue
+        read -r device_class < "$device/class"
+        read -r device_vendor < "$device/vendor"
+        if [[ "$device_class" == 0x03* && "$device_vendor" == "$expected_vendor" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+display_gpu_kernel_driver() {
+    local expected_vendor="$1"
+    local pci_devices_root="${PCI_DEVICES_ROOT:-/sys/bus/pci/devices}"
+    local device device_class device_vendor driver_path
+
+    for device in "$pci_devices_root"/*; do
+        [ -r "$device/class" ] && [ -r "$device/vendor" ] || continue
+        read -r device_class < "$device/class"
+        read -r device_vendor < "$device/vendor"
+        if [[ "$device_class" != 0x03* || "$device_vendor" != "$expected_vendor" || ! -L "$device/driver" ]]; then
+            continue
+        fi
+        driver_path=$(readlink -f -- "$device/driver") || continue
+        basename "$driver_path"
+        return 0
+    done
+    return 1
+}
+
+is_dell_g16_7620() {
+    local dmi_root="${DMI_ROOT:-/sys/class/dmi/id}"
+    local system_vendor product_name
+
+    [ -r "$dmi_root/sys_vendor" ] && [ -r "$dmi_root/product_name" ] || return 1
+    read -r system_vendor < "$dmi_root/sys_vendor"
+    read -r product_name < "$dmi_root/product_name"
+    [ "$system_vendor" = "Dell Inc." ] && [ "$product_name" = "Dell G16 7620" ]
+}
+
 install_nautilus_taildrop() {
     local taildrop_repo="https://github.com/Balazsmi/Nautilus-Taildrop.git"
     local taildrop_commit="769899fd08e5f217f1a0bfef5d8c04af21956633"
@@ -227,46 +272,93 @@ green_echo "[*] Done. Please reconnect your mouse and keyboard if you are using 
 sleep 3 && clear
 
 # Fix Driver audio (DELL G16 7620)
-cd ~
-red_echo "[*] Fixing audio driver ..."
-retry sudo pacman -S --needed --noconfirm rsync
-mkdir -p "$HOME/old-sof-backup"
-sudo mv /lib/firmware/intel/sof* "$HOME/old-sof-backup" || true
-sudo mv /usr/local/bin/sof-* "$HOME/old-sof-backup" || true
-sudo chown -R "$USER":"$USER" "$HOME/old-sof-backup" || true
+if is_dell_g16_7620; then
+    cd ~
+    red_echo "[*] Dell G16 7620 detected; fixing audio driver ..."
+    retry sudo pacman -S --needed --noconfirm rsync
+    mkdir -p "$HOME/old-sof-backup"
+    sudo mv /lib/firmware/intel/sof* "$HOME/old-sof-backup" || true
+    sudo mv /usr/local/bin/sof-* "$HOME/old-sof-backup" || true
+    sudo chown -R "$USER":"$USER" "$HOME/old-sof-backup" || true
 
-git clone https://github.com/thesofproject/sof-bin.git && cd sof-bin/v2.1.x
-sudo rsync -a sof*v2.1.1 /lib/firmware/intel/ || true
-sudo ln -sfn sof-v2.1.1 /lib/firmware/intel/sof || true
-sudo ln -sfn sof-tplg-v2.1.1 /lib/firmware/intel/sof-tplg || true
-sudo rsync tools-v2.1.1/* /usr/local/bin || true
+    git clone https://github.com/thesofproject/sof-bin.git && cd sof-bin/v2.1.x
+    sudo rsync -a sof*v2.1.1 /lib/firmware/intel/ || true
+    sudo ln -sfn sof-v2.1.1 /lib/firmware/intel/sof || true
+    sudo ln -sfn sof-tplg-v2.1.1 /lib/firmware/intel/sof-tplg || true
+    sudo rsync tools-v2.1.1/* /usr/local/bin || true
 
-cd ~ && git clone https://github.com/thesofproject/alsa-ucm-conf.git && cd alsa-ucm-conf
-if [ -d /usr/share/alsa/ucm ]; then
-    sudo rm -r /usr/share/alsa/ucm
+    cd ~ && git clone https://github.com/thesofproject/alsa-ucm-conf.git && cd alsa-ucm-conf
+    if [ -d /usr/share/alsa/ucm ]; then
+        sudo rm -r /usr/share/alsa/ucm
+    fi
+    sudo mv ./ucm /usr/share/alsa
+
+    cd ~ && sudo rm -rf sof-bin alsa-ucm-conf || true
+    green_echo "[*] Done."
+    sleep 3 && clear
+else
+    blue_echo "[*] This is not a Dell G16 7620; skipping the model-specific audio workaround."
 fi
-sudo mv ./ucm /usr/share/alsa
 
-cd ~ && sudo rm -rf sof-bin alsa-ucm-conf || true
-green_echo "[*] Done."
-sleep 3 && clear
-
-# Nvidia
-red_echo ">>> Config driver NVIDIA..."
+# Graphics drivers
+red_echo ">>> Config graphics drivers..."
 sudo sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
 retry sudo pacman -Syu --needed --noconfirm
-retry sudo pacman -S --needed --noconfirm nvidia-open-dkms nvidia-utils nvidia-settings lib32-nvidia-utils vulkan-icd-loader lib32-vulkan-icd-loader nvidia-prime mesa-utils
+graphics_packages=(mesa lib32-mesa mesa-utils vulkan-icd-loader lib32-vulkan-icd-loader)
+initramfs_gpu_modules=()
 
-# Add nvidia_drm.modeset=1 on GRUB
-sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1/' /etc/default/grub
-sudo grub-mkconfig -o /boot/grub/grub.cfg
+if has_display_gpu_vendor "0x8086"; then
+    green_echo "[*] Intel GPU detected."
+    graphics_packages+=(vulkan-intel lib32-vulkan-intel intel-media-driver)
+    if intel_kernel_driver=$(display_gpu_kernel_driver "0x8086"); then
+        case "$intel_kernel_driver" in
+            i915|xe)
+                initramfs_gpu_modules+=("$intel_kernel_driver")
+                blue_echo "[*] Intel kernel driver detected: $intel_kernel_driver"
+                ;;
+            *)
+                initramfs_gpu_modules+=(i915)
+                blue_echo "[*] Unknown Intel kernel driver '$intel_kernel_driver'; using i915."
+                ;;
+        esac
+    else
+        initramfs_gpu_modules+=(i915)
+        blue_echo "[*] Intel kernel driver is not bound; using i915."
+    fi
+fi
 
-# Add enviroment
-# sudo bash -c 'echo -e "GBM_BACKEND=nvidia-drm\n__NV_PRIME_RENDER_OFFLOAD=1\n__GLX_VENDOR_LIBRARY_NAME=nvidia" >> /etc/environment'
+if has_display_gpu_vendor "0x1002"; then
+    green_echo "[*] AMD GPU detected."
+    graphics_packages+=(vulkan-radeon lib32-vulkan-radeon)
+    initramfs_gpu_modules+=(amdgpu)
+fi
 
-# Edit Mkinitcpio
-sudo sed -i 's/^MODULES=.*/MODULES=(i915 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
+if has_display_gpu_vendor "0x10de"; then
+    green_echo "[*] NVIDIA GPU detected."
+    graphics_packages+=(nvidia-open-dkms nvidia-utils nvidia-settings lib32-nvidia-utils nvidia-prime)
+    initramfs_gpu_modules+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
+    sudo sed -i 's/loglevel=3 quiet/quiet nvidia-drm.modeset=1 nvidia-drm.fbdev=1/' /etc/default/grub
+else
+    blue_echo "[*] No NVIDIA GPU detected; skipping NVIDIA packages and boot parameters."
+    niri_environment_file="$HOME/Dotfiles/dotf/.config/niri/include/environment.kdl"
+    if [ -f "$niri_environment_file" ]; then
+        sed -i -E '/^[[:space:]]*(GBM_BACKEND|__NV_PRIME_RENDER_OFFLOAD|LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME)[[:space:]]/ s|^([[:space:]]*)|\1// |' "$niri_environment_file"
+        blue_echo "[*] Disabled NVIDIA-only Niri environment variables."
+    fi
+fi
+
+retry sudo pacman -S --needed --noconfirm "${graphics_packages[@]}"
+
+if (( ${#initramfs_gpu_modules[@]} > 0 )); then
+    printf -v initramfs_module_list '%s ' "${initramfs_gpu_modules[@]}"
+    initramfs_module_list=${initramfs_module_list% }
+    sudo sed -i "s/^MODULES=.*/MODULES=($initramfs_module_list)/" /etc/mkinitcpio.conf
+else
+    blue_echo "[*] No supported PCI display GPU detected; preserving the existing initramfs module list."
+fi
+
 sudo mkinitcpio -P
+sudo grub-mkconfig -o /boot/grub/grub.cfg
 sleep 3 && clear
 
 # Secure Boot
