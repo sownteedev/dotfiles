@@ -7,12 +7,9 @@ CONFIG="$HOME/.config/niri/include/outputs.kdl"
 
 FOCUSED_JSON=$(niri msg -j focused-output)
 OUTPUT=$(echo "$FOCUSED_JSON" | jq -r '.name')
-HW_ID=$(echo "$FOCUSED_JSON" | jq -r '"\(.make) \(.model) \(.serial // "Unknown")"')
-
-TARGET_OUTPUT="$OUTPUT"
-if [[ "$OUTPUT" == eDP-* ]]; then
-    TARGET_OUTPUT="$HW_ID"
-fi
+ALL_OUTPUTS=$(niri msg -j outputs)
+SYNC_RESULT=$(python3 "$HOME/Dotfiles/quickshell/scripts/display_output_config.py" "$CONFIG" "$(echo "$ALL_OUTPUTS" | jq -c '[.[]]')") || exit 1
+TARGET_OUTPUT=$(echo "$SYNC_RESULT" | jq -r --arg output "$OUTPUT" '.identities[$output] // $output')
 
 current=$(awk "/output \"$TARGET_OUTPUT\" {/,/}/{if (\$1==\"transform\") print \$2}" "$CONFIG" | tr -d '"')
 
@@ -41,16 +38,4 @@ fi
 next=$(( (idx - 1 + dir + 4) % 4 ))
 next_transform="${order[$next]}"
 
-if ! grep -q "output \"$TARGET_OUTPUT\" {" "$CONFIG"; then
-    echo -e "\noutput \"$TARGET_OUTPUT\" {\n    mode \"2560x1600@60.000\"\n    scale 1.0\n    transform \"normal\"\n    position x=0 y=0\n}" >> "$CONFIG"
-fi
-
 sed -i "/output \"$TARGET_OUTPUT\" {/,/}/{s/transform \".*\"/transform \"$next_transform\"/}" "$CONFIG"
-
-if [[ "$OUTPUT" == eDP-* ]]; then
-    for alt in "eDP-1" "eDP-2"; do
-        if grep -q "output \"$alt\" {" "$CONFIG"; then
-            sed -i "/output \"$alt\" {/,/}/{s/transform \".*\"/transform \"$next_transform\"/}" "$CONFIG"
-        fi
-    done
-fi

@@ -13,7 +13,7 @@ environment {
 	DISPLAY ":1"
 	GBM_BACKEND "nvidia-drm"
 	// __NV_PRIME_RENDER_OFFLOAD "1"
-	LIBVA_DRIVER_NAME "nvidia"
+	// LIBVA_DRIVER_NAME "nvidia"
 	__GLX_VENDOR_LIBRARY_NAME "nvidia"
 }
 

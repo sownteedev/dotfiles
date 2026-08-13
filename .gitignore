@@ -23,6 +23,7 @@ StaticCache.dat
 # Generated Matugen theme files
 /.config/qt5ct/colors/matugen.conf
 /.config/qt6ct/colors/matugen.conf
+/.config/Kvantum/matugen
 /.config/nvim/lua/custom/themes/schemes/matugen.lua
 
 # Local secrets
@@ -39,3 +40,4 @@ node_modules/
 *.jsc
 core
 core.*
+AGENTS.md

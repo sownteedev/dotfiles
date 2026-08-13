@@ -1,4 +1,6 @@
 {
+    "mode": "<* if {{ is_dark_mode }} *>dark<* else *>light<* endif *>",
+    "source": "{{ theme_source }}",
     "md3": {<* for name, color in colors *>
       "{{ name }}": "{{ color.default.hex }}"<* if {{ loop.last }} *><* else *>,<* endif *><* endfor *>
     },

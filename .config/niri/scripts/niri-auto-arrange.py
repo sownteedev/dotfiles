@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Arrange a floating Niri workspace as a centered cascade."""
 
+import argparse
 import json
 import math
 import os
+import re
 import subprocess
 
 
@@ -19,8 +21,13 @@ def run_json(*command, fallback):
         return fallback
 
 
-def get_focused_workspace():
+def get_workspace(workspace_id=None):
     workspaces = run_json("niri", "msg", "-j", "workspaces", fallback=[])
+    if workspace_id is not None:
+        return next(
+            (workspace for workspace in workspaces if workspace.get("id") == workspace_id),
+            None,
+        )
     return next((workspace for workspace in workspaces if workspace.get("is_focused")), None)
 
 
@@ -28,17 +35,26 @@ def get_outputs():
     return run_json("niri", "msg", "-j", "outputs", fallback={})
 
 
-def get_protected_app_ids():
+def get_protected_app_patterns():
     try:
         result = subprocess.run(
-            [TOGGLE_SCRIPT, "--get-protected"],
+            [TOGGLE_SCRIPT, "--get-protected-patterns"],
             capture_output=True,
             check=False,
             text=True,
         )
-        return {line.strip() for line in result.stdout.splitlines() if line.strip()}
+        patterns = []
+        for line in result.stdout.splitlines():
+            pattern = line.strip()
+            if not pattern:
+                continue
+            try:
+                patterns.append(re.compile(pattern))
+            except re.error as error:
+                print(f"Ignoring unsupported app-id pattern {pattern!r}: {error}")
+        return patterns
     except OSError:
-        return set()
+        return []
 
 
 def focus_key(window):
@@ -50,24 +66,27 @@ def focus_key(window):
     )
 
 
-def get_windows(workspace_id, protected_app_ids):
+def is_protected_app(app_id, protected_patterns):
+    return any(pattern.search(app_id) for pattern in protected_patterns)
+
+
+def get_windows(workspace_id, protected_patterns):
     windows = run_json("niri", "msg", "-j", "windows", fallback=[])
     arranged = [
         window
         for window in windows
         if window.get("workspace_id") == workspace_id
         and window.get("is_floating")
-        and (window.get("app_id") or "") not in protected_app_ids
+        and not is_protected_app(window.get("app_id") or "", protected_patterns)
     ]
-    # Oldest first, most recently focused last. Niri receives the foreground
-    # window's move last and we explicitly focus it after arranging.
+    # Keep the cascade order stable without changing the user's current focus.
     arranged.sort(key=focus_key)
     return arranged
 
 
 def centered_rect(area_x, area_y, area_w, area_h, width_ratio, height_ratio):
-    width = max(320, int(area_w * width_ratio))
-    height = max(240, int(area_h * height_ratio))
+    width = min(area_w, max(320, int(area_w * width_ratio)))
+    height = min(area_h, max(240, int(area_h * height_ratio)))
     x = area_x + (area_w - width) // 2
     y = area_y + (area_h - height) // 2
     return x, y, width, height
@@ -77,8 +96,8 @@ def cascade_layout(count, area_x, area_y, area_w, area_h):
     if count == 1:
         return [centered_rect(area_x, area_y, area_w, area_h, 0.72, 0.82)]
 
-    width = max(640, int(area_w * 0.68))
-    height = max(480, int(area_h * 0.76))
+    width = min(area_w, max(640, int(area_w * 0.68)))
+    height = min(area_h, max(480, int(area_h * 0.76)))
     offset_x = max(72, min(120, int(area_w * 0.05)))
     offset_y = max(44, min(60, int(area_h * 0.045)))
 
@@ -157,48 +176,61 @@ def run_action(*arguments):
     return True
 
 
-def apply_rect(window_id, rect, monitor_x, monitor_y):
+def apply_rect(window_id, rect):
     x, y, width, height = rect
-    run_action("set-window-width", width, "--id", window_id)
-    run_action("set-window-height", height, "--id", window_id)
-    run_action(
-        "move-floating-window",
-        "-x",
-        x + monitor_x,
-        "-y",
-        y + monitor_y,
-        "--id",
-        window_id,
+    return all(
+        (
+            run_action("set-window-width", width, "--id", window_id),
+            run_action("set-window-height", height, "--id", window_id),
+            run_action(
+                "move-floating-window",
+                "-x",
+                x,
+                "-y",
+                y,
+                "--id",
+                window_id,
+            ),
+        )
     )
 
 
 def main():
-    workspace = get_focused_workspace()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--workspace-id", type=int)
+    parser.add_argument("--window-id", type=int)
+    arguments = parser.parse_args()
+
+    workspace = get_workspace(arguments.workspace_id)
     if not workspace:
-        return
+        print("Target workspace is no longer available")
+        return 1
 
     output = get_outputs().get(workspace.get("output"))
     if not output:
-        return
+        print("Target workspace output is no longer available")
+        return 1
 
     logical = output.get("logical") or {}
     monitor_width = int(logical.get("width") or 1920)
     monitor_height = int(logical.get("height") or 1080)
-    monitor_x = int(logical.get("x") or 0)
-    monitor_y = int(logical.get("y") or 0)
-
-    windows = get_windows(workspace["id"], get_protected_app_ids())
+    windows = get_windows(workspace["id"], get_protected_app_patterns())
     if not windows:
-        return
+        return 0
 
     rects = build_layout(len(windows), monitor_width, monitor_height)
-    for window, rect in zip(windows, rects):
-        apply_rect(window["id"], rect, monitor_x, monitor_y)
+    if arguments.window_id is not None:
+        for index, window in enumerate(windows):
+            if window.get("id") == arguments.window_id:
+                return 0 if apply_rect(window["id"], rects[index]) else 1
+        print(f"Window {arguments.window_id} is no longer available for arranging")
+        return 1
 
-    # Preserve the user's context and guarantee that the most recently used
-    # window is the foreground card of the cascade.
-    run_action("focus-window", "--id", windows[-1]["id"])
+    succeeded = True
+    for window, rect in zip(windows, rects):
+        succeeded = apply_rect(window["id"], rect) and succeeded
+    return 0 if succeeded else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,8 +1,56 @@
-usenvm() {
-	sed -i 's/^# source \/usr\/share\/nvm\/init-nvm.sh/source \/usr\/share\/nvm\/init-nvm.sh/' ~/Dotfiles/dotf/.config/zsh/.zshrc
-	source ~/.config/zsh/.zshrc
-    nvm use "$1"
-	sed -i 's/^source \/usr\/share\/nvm\/init-nvm.sh/# source \/usr\/share\/nvm\/init-nvm.sh/' ~/Dotfiles/dotf/.config/zsh/.zshrc
+typeset -gi _NVM_LOADED=0
+
+_load_nvm() {
+	emulate -L zsh
+
+	local init_file="/usr/share/nvm/init-nvm.sh"
+
+	(( _NVM_LOADED )) && return 0
+	[[ -r "$init_file" ]] || {
+		print -u2 "nvm: cannot read $init_file"
+		return 1
+	}
+
+	unset NPM_CONFIG_PREFIX npm_config_prefix
+	unfunction nvm 2>/dev/null || true
+	source "$init_file" || return
+	typeset -gi _NVM_LOADED=1
+}
+
+nvm() {
+	_load_nvm || return
+	nvm "$@"
+}
+
+usenode() {
+	emulate -L zsh
+
+	local -a use_args
+	local target="${1:-}"
+
+	_load_nvm || return
+
+	case "$target" in
+		lts)
+			shift
+			use_args=(--lts "$@")
+			;;
+		latest)
+			shift
+			use_args=(node "$@")
+			;;
+		*)
+			use_args=("$@")
+			;;
+	esac
+
+	nvm use --delete-prefix "${use_args[@]}" || return
+	if [[ "$target" == system ]]; then
+		typeset -gx NPM_CONFIG_PREFIX="$HOME/.local"
+	else
+		unset NPM_CONFIG_PREFIX npm_config_prefix
+	fi
+	typeset -g _prompt_last_project_dir=''
 }
 
 # claude_execute: Generate exact shell command from natural language; reasoning off; auto-executes; globbing disabled

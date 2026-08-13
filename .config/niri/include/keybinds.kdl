@@ -117,7 +117,7 @@ binds {
 
 	Mod+V						{ toggle-window-floating; }
     Mod+Ctrl+V					{ switch-focus-between-floating-and-tiling; }
-	Mod+Shift+V					{ spawn "~/.config/niri/scripts/toogle-floating-workspace"; }
+	Mod+Shift+V					{ spawn-sh "$HOME/.config/niri/scripts/toogle-floating-workspace"; }
 
 	Mod+Minus					{ set-column-width "-10%"; }
     Mod+Equal					{ set-column-width "+10%"; }

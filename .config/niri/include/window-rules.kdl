@@ -5,7 +5,7 @@ window-rule {
 
 // Frequently-used utility apps that are usually better as floating.
 window-rule {
-    match app-id=r#"^(pavucontrol|neovide|vmware|Spotify|blueman-manager|mpv|org\.gnome\.Calculator|org\.gnome\.Settings|io\.missioncenter\.MissionCenter|org\.gnome\.Nautilus|org\.gnome\.Loupe|org\.gnome\.FileRoller)$"#
+    match app-id=r#"^(pavucontrol|neovide|vmware|spotify|blueman-manager|mpv|org\.gnome\.Calculator|org\.gnome\.Settings|io\.missioncenter\.MissionCenter|org\.gnome\.Nautilus|org\.gnome\.Loupe|org\.gnome\.FileRoller|org\.gnome\.NautilusPreviewer)$"#
     open-floating true
 }
 
@@ -43,8 +43,10 @@ window-rule {
     // block-out-from "screencast"
 }
 
-
-
+window-rule {
+    match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
+    default-floating-position x=10 y=10 relative-to="bottom-right"
+}
 
 /////////////// EXAMPLE /////////////////////
 // Window-rule reference. Replace the matcher and keep only the options needed.

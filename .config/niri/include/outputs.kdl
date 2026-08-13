@@ -1,50 +1,3 @@
-output "BOE 0x0A0B Unknown" {
-    mode "2560x1600@165.004"
-    scale 1.0
-    transform "normal"
-    position x=0 y=0
-    focus-at-startup
-    variable-refresh-rate
-}
-
-output "DP-1" {
-    mode "3840x2160@59.997"
-    scale 1.0
-	transform "normal"
-    position x=0 y=0
-	// focus-at-startup
-    // variable-refresh-rate
-}
-
-output "HDMI-A-1" {
-    mode "1920x1080@60.000"
-    scale 1.0
-    transform "normal"
-    position x=2560 y=0
-	// variable-refresh-rate
-    // focus-at-startup
-}
-
-output "DP-2" {
-    mode "3840x2160@59.997"
-    scale 1.0
-    transform "normal"
-    position x=0 y=0
-    // focus-at-startup
-    // variable-refresh-rate
-}
-
-output "HDMI-A-2" {
-    mode "1920x1080@60.000"
-    scale 1.0
-    transform "normal"
-    position x=2560 y=0
-    // variable-refresh-rate
-    // focus-at-startup
-}
-
-
-
 /////////////// EXAMPLE /////////////////////
 /-output "EXAMPLE MONITOR NAME" {
     // off
@@ -53,7 +6,7 @@ output "HDMI-A-2" {
     transform "normal"
     position x=0 y=0
     variable-refresh-rate on-demand=true
-    focus-at-startup
+    // focus-at-startup
     backdrop-color "#0a0a0a"
     // max-bpc 8
 
@@ -70,4 +23,13 @@ output "HDMI-A-2" {
         default-column-width { proportion 0.5; }
         always-center-single-column false
     }
+}
+
+output "California Institute of Technology 0x161D 0x00006001" {
+    mode "2560x1600@165.019"
+    scale 1.0
+    transform "normal"
+    position x=0 y=0
+    variable-refresh-rate on-demand=true
+    focus-at-startup
 }

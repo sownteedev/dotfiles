@@ -6,23 +6,38 @@ set -euo pipefail
 
 focus_app() {
     local num=${1:-}
-    
+
     # Validate input
     [[ "$num" =~ ^[1-9]$ ]] || exit 1
-    
-    # Get active workspace ID
-    local ws_id=$(niri msg --json workspaces | jq -r '.[] | select(.is_active) | .id')
+
+    # Get the single workspace that owns keyboard focus.
+    local ws_id
+    ws_id=$(niri msg --json workspaces | jq -r '.[] | select(.is_focused) | .id')
     [[ -n "$ws_id" ]] || exit 1
-    
-    # Get target window ID - sorted by pos_in_scrolling_layout (same as Workspace.tsx)
-    local win_id=$(niri msg --json windows | jq -r --arg ws "$ws_id" --argjson n "$num" '
-        [.[] | select(.workspace_id == ($ws | tonumber))] | 
-        sort_by(.layout.pos_in_scrolling_layout[0] // 999999) | 
+
+    local state_file="${XDG_RUNTIME_DIR:-/tmp}/niri-floating-workspaces.json"
+    local workspace_is_floating=false
+    if [[ -r "$state_file" ]]; then
+        workspace_is_floating=$(jq -r --arg workspace_id "$ws_id" '.[$workspace_id] // false' "$state_file")
+    fi
+
+    # Match the bar order: tiled windows use column/row, floating windows use
+    # their visible top-to-bottom then left-to-right position.
+    local win_id
+    win_id=$(niri msg --json windows | jq -r --arg ws "$ws_id" --argjson n "$num" --argjson floating "$workspace_is_floating" '
+        [.[] | select(.workspace_id == ($ws | tonumber))] |
+        sort_by(
+            if $floating then
+                [(.layout.tile_pos_in_workspace_view[1] // 999999), (.layout.tile_pos_in_workspace_view[0] // 999999), .id]
+            else
+                [(.layout.pos_in_scrolling_layout[0] // 999999), (.layout.pos_in_scrolling_layout[1] // 999999), .id]
+            end
+        ) |
         .[$n - 1].id // empty
     ')
-    
+
     [[ -n "$win_id" ]] || exit 1
-    
+
     niri msg action focus-window --id "$win_id"
 }
 

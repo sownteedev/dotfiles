@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# Niri Toggle Floating Workspace - Toggle floating status for windows in current workspace
-# Usage: toogle-floating-workspace
+set -o pipefail
+
+# Toggle the layout policy for one Niri workspace.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../include/window-rules.kdl"
-
 STATE_FILE="${XDG_RUNTIME_DIR:-/tmp}/niri-floating-workspaces.json"
+LOCK_FILE="${STATE_FILE}.lock"
 
 get_workspace_data() {
     local workspace_id=$1
@@ -14,8 +15,9 @@ get_workspace_data() {
         '[.[] | select(.workspace_id == $workspace_id)]'
 }
 
-# App-level rules with open-floating true (without title matcher) should remain untouched.
-get_protected_app_ids() {
+# Return app-id regular expressions from app-level open-floating rules. Rules
+# that also match a title are window-specific and must not protect the whole app.
+get_protected_app_patterns() {
     if [ ! -f "$CONFIG_FILE" ]; then
         return 0
     fi
@@ -26,45 +28,29 @@ get_protected_app_ids() {
         depth = 0
         has_open_floating = 0
         has_title_match = 0
-        delete app_tokens
+        delete app_patterns
         app_count = 0
     }
-    function add_app_token(token,    n, i, candidate) {
-        sub(/^\^/, "", token)
-        sub(/\$$/, "", token)
-        if (token ~ /^\(.*\)$/) {
-            sub(/^\(/, "", token)
-            sub(/\)$/, "", token)
-            n = split(token, parts, /\|/)
-            for (i = 1; i <= n; i++) {
-                candidate = parts[i]
-                gsub(/\\\./, ".", candidate)
-                if (candidate ~ /^[A-Za-z0-9._-]+$/) app_tokens[++app_count] = candidate
-            }
-        } else {
-            candidate = token
-            gsub(/\\\./, ".", candidate)
-            if (candidate ~ /^[A-Za-z0-9._-]+$/) app_tokens[++app_count] = candidate
+    function add_app_pattern(pattern) {
+        if (pattern ~ /^r#".*"#$/) {
+            sub(/^r#"/, "", pattern)
+            sub(/"#[[:space:]]*$/, "", pattern)
+        } else if (pattern ~ /^".*"$/) {
+            sub(/^"/, "", pattern)
+            sub(/"[[:space:]]*$/, "", pattern)
         }
+        if (pattern != "") app_patterns[++app_count] = pattern
     }
-    function process_app_tokens_from_line(line,    token) {
+    function process_app_patterns_from_line(line,    pattern) {
         while (match(line, /app-id=([^ ]+)/)) {
-            token = substr(line, RSTART + 7, RLENGTH - 7)
+            pattern = substr(line, RSTART + 7, RLENGTH - 7)
             line = substr(line, RSTART + RLENGTH)
-            if (token ~ /^r#".*"#$/) {
-                sub(/^r#"/, "", token)
-                sub(/"#[[:space:]]*$/, "", token)
-                add_app_token(token)
-            } else if (token ~ /^".*"$/) {
-                sub(/^"/, "", token)
-                sub(/"[[:space:]]*$/, "", token)
-                add_app_token(token)
-            }
+            add_app_pattern(pattern)
         }
     }
     function flush_rule_if_needed(    i) {
         if (in_window_rule && has_open_floating && !has_title_match) {
-            for (i = 1; i <= app_count; i++) print app_tokens[i]
+            for (i = 1; i <= app_count; i++) print app_patterns[i]
         }
     }
     BEGIN { reset_rule_state() }
@@ -76,13 +62,13 @@ get_protected_app_ids() {
             depth = 1
             if (line ~ /open-floating[[:space:]]+true/ && line !~ /managed-by-toggle-floating-workspace/) has_open_floating = 1
             if (line ~ /title=/) has_title_match = 1
-            process_app_tokens_from_line(line)
+            process_app_patterns_from_line(line)
             next
         }
         if (in_window_rule) {
             if (line ~ /open-floating[[:space:]]+true/ && line !~ /managed-by-toggle-floating-workspace/) has_open_floating = 1
             if (line ~ /title=/) has_title_match = 1
-            process_app_tokens_from_line(line)
+            process_app_patterns_from_line(line)
             depth += gsub(/\{/, "{", line) - gsub(/\}/, "}", line)
             if (depth <= 0) {
                 flush_rule_if_needed()
@@ -94,99 +80,190 @@ get_protected_app_ids() {
     ' "$CONFIG_FILE" | sort -u
 }
 
+matches_protected_app() {
+    local app_id=$1
+    shift
+
+    local pattern
+    for pattern in "$@"; do
+        if [[ "$app_id" =~ $pattern ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+resolve_workspace_id() {
+    local requested_output=$1
+    local requested_workspace_id=$2
+    local workspaces
+
+    workspaces=$(niri msg --json workspaces) || return 1
+
+    if [ -n "$requested_workspace_id" ]; then
+        jq -r --argjson workspace_id "$requested_workspace_id" '.[] | select(.id == $workspace_id) | .id' <<< "$workspaces" | head -n 1
+    elif [ -n "$requested_output" ]; then
+        jq -r --arg output "$requested_output" '.[] | select(.output == $output and .is_active) | .id' <<< "$workspaces" | head -n 1
+    else
+        jq -r '.[] | select(.is_focused) | .id' <<< "$workspaces" | head -n 1
+    fi
+}
+
+ensure_state_file() {
+    mkdir -p "$(dirname "$STATE_FILE")" || return 1
+    if [ ! -f "$STATE_FILE" ] || ! jq -e 'type == "object"' "$STATE_FILE" >/dev/null 2>&1; then
+        printf '{}\n' > "$STATE_FILE"
+    fi
+}
+
+write_workspace_state() {
+    local workspace_id=$1
+    local floating=$2
+    local temporary_file
+
+    temporary_file=$(mktemp "${STATE_FILE}.tmp.XXXXXX") || return 1
+    if [ "$floating" = "true" ]; then
+        jq --arg workspace_id "$workspace_id" '.[$workspace_id] = true' "$STATE_FILE" > "$temporary_file"
+    else
+        jq --arg workspace_id "$workspace_id" 'del(.[$workspace_id])' "$STATE_FILE" > "$temporary_file"
+    fi
+
+    if [ $? -ne 0 ]; then
+        rm -f "$temporary_file"
+        return 1
+    fi
+
+    mv "$temporary_file" "$STATE_FILE"
+}
+
+restore_changed_windows() {
+    local changed_id
+    for changed_id in "${changed_window_ids[@]}"; do
+        if [ "${original_floating[$changed_id]}" = "true" ]; then
+            niri msg action move-window-to-floating --id "$changed_id" >/dev/null 2>&1
+        else
+            niri msg action move-window-to-tiling --id "$changed_id" >/dev/null 2>&1
+        fi
+    done
+}
 
 toggle_floating_workspace() {
-    # Niri can have one active workspace per output, but only one focused
-    # workspace. The button must affect the workspace the user is operating.
+    local requested_output=$1
+    local requested_workspace_id=$2
     local current_workspace_id
-    current_workspace_id=$(niri msg --json workspaces | jq -r '.[] | select(.is_focused) | .id' | head -n 1)
 
+    current_workspace_id=$(resolve_workspace_id "$requested_output" "$requested_workspace_id") || {
+        echo "Unable to query Niri workspaces" >&2
+        return 1
+    }
     if [ -z "$current_workspace_id" ] || [ "$current_workspace_id" = "null" ]; then
-        exit 0
+        echo "No active workspace found for output: ${requested_output:-focused output}" >&2
+        return 1
     fi
+
+    ensure_state_file || return 1
+    exec 9>"$LOCK_FILE" || return 1
+    flock -x 9 || return 1
 
     local workspace_data
-    workspace_data=$(get_workspace_data "$current_workspace_id")
+    workspace_data=$(get_workspace_data "$current_workspace_id") || {
+        echo "Unable to query windows for workspace $current_workspace_id" >&2
+        return 1
+    }
 
-    # Read current state file or create it
-    if [ ! -f "$STATE_FILE" ]; then
-        echo "{}" > "$STATE_FILE"
-    fi
-
-    # Get current state of the workspace
     local is_ws_floating
-    is_ws_floating=$(jq -r ".[\"$current_workspace_id\"] // false" "$STATE_FILE")
+    is_ws_floating=$(jq -r --arg workspace_id "$current_workspace_id" '.[$workspace_id] // false' "$STATE_FILE")
 
     local target_windows_floating
     if [ "$is_ws_floating" = "true" ]; then
-        # It was floating, turn it to tiled
         target_windows_floating="false"
-        jq "del(.[\"$current_workspace_id\"])" "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
     else
-        # It was tiled, turn it to floating
         target_windows_floating="true"
-        jq ".[\"$current_workspace_id\"] = true" "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
     fi
 
-    # Now enforce this state on all existing windows in this workspace
-    declare -A protected_app_ids=()
-    while IFS= read -r app_id; do
-        [ -n "$app_id" ] && protected_app_ids["$app_id"]=1
-    done < <(get_protected_app_ids)
-
+    local protected_patterns=()
+    mapfile -t protected_patterns < <(get_protected_app_patterns)
     local window_ids=()
+    local changed_window_ids=()
+    declare -A original_floating=()
+    local action=""
+    local action_failed=false
 
-    while IFS= read -r window_data; do
-        [ -z "$window_data" ] && continue
-        local window_id
-        local is_floating
-        local app_id
-        window_id=$(echo "$window_data" | cut -d'|' -f1)
-        is_floating=$(echo "$window_data" | cut -d'|' -f2)
-        app_id=$(echo "$window_data" | cut -d'|' -f3)
-
-        if [ -n "${protected_app_ids[$app_id]}" ]; then
+    while IFS=$'\t' read -r window_id is_floating app_id; do
+        [ -z "$window_id" ] && continue
+        if matches_protected_app "$app_id" "${protected_patterns[@]}"; then
             continue
         fi
 
         window_ids+=("$window_id")
-
         if [ "$is_floating" != "$target_windows_floating" ]; then
+            original_floating["$window_id"]=$is_floating
             if [ "$target_windows_floating" = "true" ]; then
-                niri msg action move-window-to-floating --id "$window_id" >/dev/null 2>&1
+                action="move-window-to-floating"
             else
-                niri msg action move-window-to-tiling --id "$window_id" >/dev/null 2>&1
+                action="move-window-to-tiling"
+            fi
+
+            if niri msg action "$action" --id "$window_id" >/dev/null; then
+                changed_window_ids+=("$window_id")
+            else
+                action_failed=true
+                break
             fi
         fi
-    done <<< "$(echo "$workspace_data" | jq -r '.[] | "\(.id)|\(.is_floating)|\(.app_id // "")"')"
+    done <<< "$(jq -r '.[] | [.id, .is_floating, (.app_id // "")] | @tsv' <<< "$workspace_data")"
+
+    if [ "$action_failed" = "true" ]; then
+        restore_changed_windows
+        echo "Unable to change every window; restored the previous workspace layout" >&2
+        return 1
+    fi
+
+    if ! write_workspace_state "$current_workspace_id" "$target_windows_floating"; then
+        restore_changed_windows
+        echo "Unable to save workspace layout state" >&2
+        return 1
+    fi
 
     if [ "$target_windows_floating" = "false" ]; then
         local window_id
         for window_id in "${window_ids[@]}"; do
-            niri msg action focus-window --id "$window_id" >/dev/null 2>&1
-            niri msg action set-column-width 100% >/dev/null 2>&1
+            niri msg action set-window-width 100% --id "$window_id" >/dev/null 2>&1 || true
         done
     else
-        # Automatically arrange floating windows in a cascading layout
-        sleep 0.1 # give niri time to apply floating state
-        python3 "$SCRIPT_DIR/niri-auto-arrange.py" >/dev/null 2>&1 &
+        sleep 0.1
+        python3 "$SCRIPT_DIR/niri-auto-arrange.py" --workspace-id "$current_workspace_id" || return 1
     fi
-
 }
 
 main() {
-    local action=$1
-    case "$action" in
-        "--get-protected")
-            get_protected_app_ids
-            ;;
-        "")
-            toggle_floating_workspace
-            ;;
-        *)
-            exit 0
-            ;;
-    esac
+    local requested_output=""
+    local requested_workspace_id=""
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            "--get-protected"|"--get-protected-patterns")
+                get_protected_app_patterns
+                return
+                ;;
+            "--output")
+                [ $# -ge 2 ] || { echo "--output requires a value" >&2; return 2; }
+                requested_output=$2
+                shift 2
+                ;;
+            "--workspace-id")
+                [ $# -ge 2 ] || { echo "--workspace-id requires a value" >&2; return 2; }
+                requested_workspace_id=$2
+                shift 2
+                ;;
+            *)
+                echo "Unknown argument: $1" >&2
+                return 2
+                ;;
+        esac
+    done
+
+    toggle_floating_workspace "$requested_output" "$requested_workspace_id"
 }
 
 main "$@"
