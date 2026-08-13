@@ -57,6 +57,9 @@ ScrollView {
             "tabletModeOffAction": tabletOffAction.text
         });
     }
+    function resetPage() {
+        syncFields();
+    }
     function syncFields() {
         const value = SettingsHubService.behaviorSettings || {};
         showHotkeyOverlay.checked = value.showHotkeyOverlayAtStartup === true;
@@ -101,14 +104,14 @@ ScrollView {
     function triggerHeaderAction() {
         apply();
     }
-    function resetPage() {
-        syncFields();
-    }
 
     clip: true
     contentHeight: behaviorContent.implicitHeight + 28
-    contentWidth: availableWidth
+    contentWidth: Math.max(availableWidth, 760)
 
+    ScrollBar.horizontal: SlimScrollBar {
+        accentColor: Config.md3.tertiary
+    }
     ScrollBar.vertical: SlimScrollBar {
         accentColor: Config.md3.tertiary
     }
@@ -126,7 +129,7 @@ ScrollView {
         id: behaviorContent
 
         spacing: 16
-        width: Math.max(0, root.availableWidth - 24)
+        width: Math.max(0, root.contentWidth - 24)
         x: 12
         y: 8
 

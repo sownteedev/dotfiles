@@ -13,12 +13,14 @@ Item {
 
     property int currentTab: 0 // 0: To do, 1: Done
     property string editingTaskId: ""
+    property string editingTaskSource: "local"
     property var filteredTasks: {
         var list = [];
-        if (typeof GoogleService === 'undefined' || !GoogleService.allTasks)
+        var sourceTasks = taskSource === "google" ? GoogleService.allTasks : LocalTaskService.tasks;
+        if (!sourceTasks)
             return list;
-        for (var i = 0; i < GoogleService.allTasks.length; i++) {
-            var task = GoogleService.allTasks[i];
+        for (var i = 0; i < sourceTasks.length; i++) {
+            var task = sourceTasks[i];
             if (currentTab === 0 && task.status === "needsAction") {
                 list.push(task);
             } else if (currentTab === 1 && task.status === "completed") {
@@ -39,16 +41,46 @@ Item {
     property string newTaskDue: ""
     property string newTaskNotes: ""
     property string newTaskTitle: ""
+    property bool googleDropHovered: false
     property bool showAddEvent: false
+    property string taskSource: "local"
 
     function openNewTask() {
         editingTaskId = "";
+        editingTaskSource = taskSource;
         newTaskTitle = "";
         newTaskDue = "";
         newTaskNotes = "";
         titleField.text = "";
         notesField.text = "";
         showAddEvent = true;
+    }
+    function openTask(task) {
+        editingTaskId = String(task.id || "");
+        editingTaskSource = taskSource;
+        newTaskTitle = task.title || "";
+        newTaskNotes = task.notes || "";
+        titleField.text = newTaskTitle;
+        notesField.text = newTaskNotes;
+        if (task.due) {
+            var d = new Date(task.due);
+            newTaskDue = String(d.getDate()).padStart(2, '0') + "/" + String(d.getMonth() + 1).padStart(2, '0') + "/" + d.getFullYear();
+        } else {
+            newTaskDue = "";
+        }
+        showAddEvent = true;
+    }
+    function syncLocalTask(taskId) {
+        var stableTaskId = String(taskId || "");
+        if (stableTaskId === "")
+            return;
+        // Enqueue before changing the model. Switching source destroys the
+        // Local delegate that owns the click/drag callback.
+        if (LocalTaskService.syncToGoogle(stableTaskId)) {
+            taskSource = "google";
+            return;
+        }
+        Quickshell.execDetached(["notify-send", "-a", "Todo", "-u", "normal", "-h", "boolean:transient:true", "Could not start Google sync", LocalTaskService.syncError || "The local task could not be queued"]);
     }
 
     anchors.fill: parent
@@ -158,6 +190,97 @@ Item {
                 }
             }
             Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                color: Config.alpha(Config.md3.on_surface, 0.08)
+                height: 36
+                radius: 18
+                width: 190
+
+                Rectangle {
+                    color: Config.md3.secondary
+                    height: 30
+                    radius: 15
+                    width: (parent.width - 6) / 2
+                    x: 3 + (taskSource === "google" ? width : 0)
+                    y: 3
+
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: 220
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+                Row {
+                    anchors.fill: parent
+                    anchors.margins: 3
+
+                    Repeater {
+                        model: [
+                            {
+                                label: "Local",
+                                value: "local"
+                            },
+                            {
+                                label: "Google",
+                                value: "google"
+                            }
+                        ]
+
+                        delegate: Item {
+                            required property var modelData
+
+                            height: parent.height
+                            width: parent.width / 2
+
+                            Rectangle {
+                                anchors.fill: parent
+                                color: modelData.value === "google" && root.googleDropHovered ? Config.alpha(Config.md3.primary, 0.22) : "transparent"
+                                radius: 15
+                            }
+                            Text {
+                                anchors.centerIn: parent
+                                color: taskSource === modelData.value ? Config.md3.on_secondary : Config.md3.on_surface_variant
+                                font.family: Config.fontName
+                                font.pixelSize: 13
+                                font.weight: Font.Bold
+                                text: modelData.label
+                            }
+                            DropArea {
+                                anchors.fill: parent
+                                enabled: modelData.value === "google" && GoogleService.authenticated
+                                keys: ["local-task"]
+                                z: 1
+
+                                onDropped: drop => {
+                                    root.googleDropHovered = false;
+                                    if (drop.source && drop.source.localTaskId) {
+                                        root.syncLocalTask(drop.source.localTaskId);
+                                        drop.acceptProposedAction();
+                                    }
+                                }
+                                onEntered: root.googleDropHovered = true
+                                onExited: root.googleDropHovered = false
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                z: 2
+
+                                onClicked: {
+                                    if (modelData.value === "google" && !GoogleService.authenticated) {
+                                        GoogleService.requireAuthentication("todo-google-tab");
+                                        return;
+                                    }
+                                    root.taskSource = modelData.value;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Rectangle {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 color: addButtonArea.pressed ? Config.md3.surface_container_high : Config.md3.surface_container
@@ -181,10 +304,7 @@ Item {
 
                     anchors.fill: parent
 
-                    onClicked: {
-                        if (GoogleService.requireAuthentication("todo-add"))
-                            root.openNewTask();
-                    }
+                    onClicked: root.openNewTask()
                 }
             }
         }
@@ -195,7 +315,7 @@ Item {
             ColumnLayout {
                 anchors.centerIn: parent
                 spacing: 10
-                visible: filteredTasks.length === 0 && (typeof GoogleService === 'undefined' || !GoogleService.isLoadingTasks)
+                visible: filteredTasks.length === 0 && !(taskSource === "google" && GoogleService.isLoadingTasks)
 
                 IconImage {
                     Layout.alignment: Qt.AlignHCenter
@@ -214,7 +334,7 @@ Item {
                     font.family: Config.fontName
                     font.pixelSize: 18
                     font.weight: Font.Bold
-                    text: "No tasks"
+                    text: taskSource === "google" ? (GoogleService.taskActionBusy || GoogleService.isLoadingTasks ? "Syncing…" : "No Google tasks") : "No local tasks"
                 }
             }
             ListView {
@@ -264,13 +384,26 @@ Item {
                     Rectangle {
                         id: cardContent
 
+                        property string localTaskId: taskSource === "local" ? String(modelData.id || "") : ""
                         property real swipeX: 0
+                        property real syncDragY: 0
+                        property bool syncDragging: false
+                        readonly property bool taskSyncing: taskSource === "local" && LocalTaskService.isSyncing(modelData.id)
 
                         color: Qt.tint(Config.md3.surface_container, Config.alpha(Config.md3.error, Math.min(1.0, Math.abs(swipeX) / 80)))
+                        Drag.active: syncDragging
+                        Drag.hotSpot.x: width / 2
+                        Drag.hotSpot.y: 20
+                        Drag.keys: ["local-task"]
+                        Drag.supportedActions: Qt.CopyAction
                         height: parent.height
+                        opacity: syncDragging ? 0.78 : taskSyncing ? 0.6 : 1
                         radius: 20
+                        scale: syncDragging ? 0.97 : 1
                         width: parent.width
                         x: swipeX
+                        y: syncDragY
+                        z: syncDragging ? 20 : 0
 
                         Behavior on swipeX {
                             NumberAnimation {
@@ -281,6 +414,7 @@ Item {
 
                         MouseArea {
                             anchors.fill: parent
+                            enabled: !cardContent.taskSyncing && !googleSyncHandle.syncPressed
 
                             onClicked: {
                                 if (cardContent.swipeX < 0) {
@@ -288,21 +422,11 @@ Item {
                                     return;
                                 }
 
-                                editingTaskId = modelData.id;
-                                newTaskTitle = modelData.title || "";
-                                newTaskNotes = modelData.notes || "";
-                                titleField.text = newTaskTitle;
-                                notesField.text = newTaskNotes;
-                                if (modelData.due) {
-                                    var d = new Date(modelData.due);
-                                    newTaskDue = String(d.getDate()).padStart(2, '0') + "/" + String(d.getMonth() + 1).padStart(2, '0') + "/" + d.getFullYear();
-                                } else {
-                                    newTaskDue = "";
-                                }
-                                showAddEvent = true;
+                                root.openTask(modelData);
                             }
                         }
                         DragHandler {
+                            enabled: !cardContent.taskSyncing && !googleSyncHandle.syncPressed
                             target: null
                             xAxis.enabled: true
                             yAxis.enabled: false
@@ -310,7 +434,10 @@ Item {
                             onActiveChanged: {
                                 if (!active) {
                                     if (cardContent.swipeX < -80) {
-                                        GoogleService.deleteTask("@default", modelData.id);
+                                        if (taskSource === "local")
+                                            LocalTaskService.deleteTask(modelData.id);
+                                        else
+                                            GoogleService.deleteTask("@default", modelData.id);
                                         cardContent.swipeX = 0;
                                     } else {
                                         cardContent.swipeX = 0;
@@ -352,10 +479,14 @@ Item {
                                 }
                                 MouseArea {
                                     anchors.fill: parent
+                                    enabled: !cardContent.taskSyncing
 
                                     onClicked: {
                                         var newStatus = modelData.status === "completed" ? "needsAction" : "completed";
-                                        GoogleService.updateTask("@default", modelData.id, undefined, undefined, undefined, newStatus);
+                                        if (taskSource === "local")
+                                            LocalTaskService.updateTask(modelData.id, undefined, undefined, undefined, newStatus);
+                                        else
+                                            GoogleService.updateTask("@default", modelData.id, undefined, undefined, undefined, newStatus);
                                     }
                                 }
                             }
@@ -388,7 +519,7 @@ Item {
                             Rectangle {
                                 Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
                                 Layout.preferredHeight: 30
-                                Layout.preferredWidth: dueText.implicitWidth + 18
+                                Layout.preferredWidth: 92
                                 border.color: Config.alpha(Config.md3.primary, 0.32)
                                 border.width: 1
                                 color: Config.alpha(Config.md3.primary, 0.14)
@@ -408,6 +539,81 @@ Item {
                                             return "";
                                         var d = new Date(modelData.due);
                                         return String(d.getDate()).padStart(2, '0') + "/" + String(d.getMonth() + 1).padStart(2, '0') + "/" + d.getFullYear();
+                                    }
+                                }
+                            }
+                            Item {
+                                id: googleSyncHandle
+
+                                property bool completedDrag: false
+                                property real pressSceneY: 0
+                                property bool syncPressed: false
+
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.preferredHeight: 32
+                                Layout.preferredWidth: 36
+                                visible: taskSource === "local" && GoogleService.authenticated
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    border.color: Config.alpha(Config.md3.primary, 0.35)
+                                    border.width: 1
+                                    color: Config.alpha(Config.md3.primary, 0.12)
+                                    radius: 10
+
+                                    IconImage {
+                                        anchors.centerIn: parent
+                                        height: 19
+                                        layer.enabled: true
+                                        opacity: cardContent.taskSyncing ? 0.5 : 1
+                                        source: "file://" + Config.quickshellDir + "/assets/icons/cloud-upload.svg"
+                                        width: 19
+
+                                        layer.effect: ColorOverlay {
+                                            color: Config.md3.primary
+                                        }
+                                    }
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    enabled: !cardContent.taskSyncing
+                                    preventStealing: true
+
+                                    onCanceled: {
+                                        googleSyncHandle.completedDrag = false;
+                                        googleSyncHandle.syncPressed = false;
+                                        cardContent.syncDragging = false;
+                                        cardContent.syncDragY = 0;
+                                    }
+                                    onClicked: {
+                                        var shouldSync = !googleSyncHandle.completedDrag;
+                                        googleSyncHandle.completedDrag = false;
+                                        if (shouldSync)
+                                            root.syncLocalTask(modelData.id);
+                                    }
+                                    onPositionChanged: mouse => {
+                                        var scenePoint = googleSyncHandle.mapToItem(null, mouse.x, mouse.y);
+                                        var offset = scenePoint.y - googleSyncHandle.pressSceneY;
+                                        if (pressed && offset < -8) {
+                                            cardContent.syncDragging = true;
+                                            cardContent.syncDragY = offset;
+                                        }
+                                    }
+                                    onPressed: mouse => {
+                                        googleSyncHandle.completedDrag = false;
+                                        googleSyncHandle.syncPressed = true;
+                                        googleSyncHandle.pressSceneY = googleSyncHandle.mapToItem(null, mouse.x, mouse.y).y;
+                                        cardContent.swipeX = 0;
+                                    }
+                                    onReleased: {
+                                        googleSyncHandle.syncPressed = false;
+                                        if (cardContent.syncDragging) {
+                                            googleSyncHandle.completedDrag = true;
+                                            cardContent.Drag.drop();
+                                            cardContent.syncDragging = false;
+                                            cardContent.syncDragY = 0;
+                                        }
                                     }
                                 }
                             }
@@ -542,9 +748,15 @@ Item {
                         }
 
                         if (editingTaskId) {
-                            GoogleService.updateTask("@default", editingTaskId, newTaskTitle, isoDue, newTaskNotes, undefined);
+                            if (editingTaskSource === "local")
+                                LocalTaskService.updateTask(editingTaskId, newTaskTitle, isoDue, newTaskNotes, undefined);
+                            else
+                                GoogleService.updateTask("@default", editingTaskId, newTaskTitle, isoDue, newTaskNotes, undefined);
                         } else {
-                            GoogleService.createTask("@default", newTaskTitle, isoDue, newTaskNotes);
+                            if (editingTaskSource === "google" && GoogleService.authenticated)
+                                GoogleService.createTask("@default", newTaskTitle, isoDue, newTaskNotes);
+                            else
+                                LocalTaskService.createTask(newTaskTitle, isoDue, newTaskNotes);
                         }
                         editingTaskId = "";
                         newTaskTitle = "";
@@ -569,11 +781,27 @@ Item {
     }
     Connections {
         function onAuthenticationSucceeded(context) {
-            if (context === "todo-add")
-                root.openNewTask();
+            if (context === "todo-google-tab")
+                root.taskSource = "google";
+        }
+        function onAuthenticatedChanged() {
+            if (!GoogleService.authenticated && root.taskSource === "google")
+                root.taskSource = "local";
         }
 
         target: GoogleService
+    }
+    Connections {
+        function onSyncFinished(taskId, succeeded) {
+            if (succeeded) {
+                root.taskSource = "google";
+                return;
+            }
+            root.taskSource = "local";
+            Quickshell.execDetached(["notify-send", "-a", "Todo", "-u", "normal", "-h", "boolean:transient:true", "Google Tasks sync failed", LocalTaskService.syncError || "The local task was kept on this device"]);
+        }
+
+        target: LocalTaskService
     }
     GoogleAuthPanel {
         anchors.fill: parent

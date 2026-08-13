@@ -73,11 +73,33 @@ PanelWindow {
     function openMenu() {
         if (pendingActionIndex >= 0)
             return;
+        var targetScreen = StateManager.resolvePanelScreen();
+        if (targetScreen)
+            screen = targetScreen;
         closeTimer.stop();
         contentRoot.activeIndex = 0;
+        actionsViewport.contentX = 0;
         visible = true;
         menuOpen = true;
         contentRoot.forceActiveFocus();
+    }
+    function revealActiveAction() {
+        Qt.callLater(function () {
+            const activeButton = actionsRepeater.itemAt(contentRoot.activeIndex);
+            if (!activeButton || actionsViewport.width <= 0 || actionsViewport.contentWidth <= actionsViewport.width)
+                return;
+
+            const margin = 6;
+            const left = actionsRow.x + activeButton.x;
+            const right = left + activeButton.width;
+            let targetX = actionsViewport.contentX;
+            if (left < targetX + margin)
+                targetX = left - margin;
+            else if (right > targetX + actionsViewport.width - margin)
+                targetX = right - actionsViewport.width + margin;
+
+            actionsViewport.contentX = Responsive.clamp(targetX, 0, Math.max(0, actionsViewport.contentWidth - actionsViewport.width));
+        });
     }
 
     aboveWindows: true
@@ -105,6 +127,14 @@ PanelWindow {
                 Quickshell.execDetached(powerWindow.commands[actionIndex]);
         }
     }
+    Timer {
+        id: revealActiveActionTimer
+
+        interval: 280
+        repeat: false
+
+        onTriggered: powerWindow.revealActiveAction()
+    }
     Item {
         id: contentRoot
 
@@ -127,6 +157,11 @@ PanelWindow {
         Keys.onRightPressed: activeIndex = (activeIndex + 1) % powerWindow.actions.length
         Keys.onSpacePressed: powerWindow.executeAction(activeIndex)
         Keys.onTabPressed: activeIndex = (activeIndex + 1) % powerWindow.actions.length
+
+        onActiveIndexChanged: {
+            powerWindow.revealActiveAction();
+            revealActiveActionTimer.restart();
+        }
 
         Rectangle {
             anchors.fill: parent
@@ -179,7 +214,7 @@ PanelWindow {
                 height: 104
                 layer.enabled: powerWindow.visible
                 radius: height / 2
-                width: 572
+                width: Responsive.fitWithMargins(572, powerWindow.width, 16, 340)
 
                 layer.effect: DropShadow {
                     color: Config.alpha(Config.md3.shadow, 0.55)
@@ -198,30 +233,46 @@ PanelWindow {
                     color: Config.alpha(Config.md3.background, 0.38)
                     radius: height / 2
                 }
-                Row {
-                    id: actionsRow
+                Flickable {
+                    id: actionsViewport
 
-                    anchors.centerIn: parent
-                    spacing: 10
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: contentWidth > width
+                    contentHeight: height
+                    contentWidth: Math.max(width, actionsRow.implicitWidth)
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: contentWidth > width
 
-                    Repeater {
-                        model: powerWindow.actions
+                    Row {
+                        id: actionsRow
 
-                        delegate: PowerButton {
-                            required property var modelData
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 10
+                        x: actionsRow.implicitWidth <= actionsViewport.width ? (actionsViewport.width - actionsRow.implicitWidth) / 2 : 0
 
-                            accent: modelData.accent
-                            actionIndex: modelData.actionIndex
-                            active: contentRoot.activeIndex === modelData.actionIndex
-                            iconName: modelData.icon
-                            label: modelData.label
-                            menuOpen: powerWindow.menuOpen
+                        Repeater {
+                            id: actionsRepeater
 
-                            onContainsMouseChanged: {
-                                if (containsMouse)
-                                    contentRoot.activeIndex = modelData.actionIndex;
+                            model: powerWindow.actions
+
+                            delegate: PowerButton {
+                                required property var modelData
+
+                                accent: modelData.accent
+                                actionIndex: modelData.actionIndex
+                                active: contentRoot.activeIndex === modelData.actionIndex
+                                iconName: modelData.icon
+                                label: modelData.label
+                                menuOpen: powerWindow.menuOpen
+
+                                onContainsMouseChanged: {
+                                    if (containsMouse)
+                                        contentRoot.activeIndex = modelData.actionIndex;
+                                }
+                                onTriggered: powerWindow.executeAction(modelData.actionIndex)
                             }
-                            onTriggered: powerWindow.executeAction(modelData.actionIndex)
                         }
                     }
                 }

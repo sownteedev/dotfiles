@@ -65,8 +65,10 @@ PanelWindow {
             if (image.scheduleRetry && image.scheduleRetry())
                 return;
             console.warn("[Wallpaper] Could not load", image.sourceKey);
+            var failedSource = image.sourceKey;
             candidateImage = null;
             image.destroy();
+            Qt.callLater(() => WallpaperService.handleWallpaperLoadError(failedSource));
         }
     }
     function isAnimated(source) {

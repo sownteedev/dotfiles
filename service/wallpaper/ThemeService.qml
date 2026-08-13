@@ -396,23 +396,136 @@ QtObject {
     }
     property Process generator: Process {
         onExited: (exitCode, exitStatus) => {
+            var completedPath = themeServiceRoot.runningGenerationPath;
+            var completedMode = themeServiceRoot.runningGenerationMode;
+            var completedSource = themeServiceRoot.runningGenerationSource;
+            var completedForced = themeServiceRoot.runningGenerationForced;
+            themeServiceRoot.runningGenerationPath = "";
+            themeServiceRoot.runningGenerationMode = "";
+            themeServiceRoot.runningGenerationSource = "";
+            themeServiceRoot.runningGenerationForced = false;
             if (themeServiceRoot.pendingGenerationPath) {
                 themeServiceRoot.startPendingGeneration();
                 return;
             }
             if (exitCode !== 0) {
                 console.warn("[ThemeService] Matugen exited with code", exitCode);
+            } else {
+                themeServiceRoot.reloadTheme();
+            }
+            themeServiceRoot.validateGeneration(completedPath, completedMode, completedSource, completedForced);
+        }
+    }
+    property int generationRetryCount: 0
+    property Timer generationValidation: Timer {
+        interval: 1200
+        repeat: false
+
+        onTriggered: {
+            if (themeServiceRoot.expectedSource !== themeServiceRoot.validationSource || themeServiceRoot.colorMode !== themeServiceRoot.validationMode)
+                return;
+            if (themeServiceRoot.themeFileValid && themeServiceRoot.activeMode === themeServiceRoot.validationMode && themeServiceRoot.activeSource === themeServiceRoot.validationSource) {
+                themeServiceRoot.generationRetryCount = 0;
                 return;
             }
-            themeServiceRoot.reloadTheme();
+            if (themeServiceRoot.generationRetryCount < 1 && (Config.matugenEnabled || themeServiceRoot.validationForced)) {
+                themeServiceRoot.generationRetryCount += 1;
+                themeServiceRoot.pendingGenerationPath = themeServiceRoot.validationPath;
+                themeServiceRoot.pendingGenerationMode = themeServiceRoot.validationMode;
+                themeServiceRoot.pendingGenerationSource = themeServiceRoot.validationSource;
+                themeServiceRoot.pendingGenerationForced = themeServiceRoot.validationForced;
+                themeServiceRoot.startPendingGeneration();
+                return;
+            }
+            console.warn("[ThemeService] Matugen did not produce the expected Quickshell theme snapshot");
         }
     }
     property bool hasAppliedTheme: false
+    property Process gtkThemeSetter: Process {
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0)
+                console.warn("[ThemeService] Could not synchronize the GTK theme:", exitCode);
+            if (themeServiceRoot.pendingGtkThemeMode !== "")
+                themeServiceRoot.startGtkThemeSync();
+        }
+    }
+    property string activeMode: ""
+    property string activeSource: ""
+    property string expectedSource: ""
     property string lastFileText: ""
-    property string colorMode: "auto"
-    property string pendingGenerationMode: "auto"
+    property string colorMode: "dark"
+    property Timer modeMonitorDebounce: Timer {
+        interval: 180
+        repeat: false
+
+        onTriggered: {
+            if (themeServiceRoot.modeQuery.running)
+                themeServiceRoot.modeQueryPending = true;
+            else
+                themeServiceRoot.modeQuery.running = true;
+        }
+    }
+    property Process modeMonitor: Process {
+        command: ["gsettings", "monitor", "org.gnome.desktop.interface", "color-scheme"]
+
+        stdout: SplitParser {
+            onRead: themeServiceRoot.modeMonitorDebounce.restart()
+        }
+
+        onExited: {
+            if (!themeServiceRoot.modeMonitorStopping)
+                themeServiceRoot.modeMonitorRestart.restart();
+        }
+
+        Component.onDestruction: {
+            themeServiceRoot.modeMonitorStopping = true;
+            running = false;
+        }
+    }
+    property Timer modeMonitorRestart: Timer {
+        interval: 5000
+        repeat: false
+
+        onTriggered: themeServiceRoot.modeMonitor.running = true
+    }
+    property bool modeMonitorStopping: false
+    property Process modeQuery: Process {
+        command: ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"]
+
+        stdout: StdioCollector {
+            onStreamFinished: themeServiceRoot.syncSystemMode(text, themeServiceRoot.modeResolved)
+        }
+
+        onExited: {
+            if (themeServiceRoot.modeQueryPending) {
+                themeServiceRoot.modeQueryPending = false;
+                themeServiceRoot.modeQuery.running = true;
+            }
+        }
+    }
+    property bool modeQueryPending: false
+    property Timer modeQueryRetry: Timer {
+        interval: 5000
+        repeat: false
+
+        onTriggered: {
+            if (themeServiceRoot.modeQuery.running)
+                themeServiceRoot.modeQueryPending = true;
+            else
+                themeServiceRoot.modeQuery.running = true;
+        }
+    }
+    property bool modeResolved: false
+    property bool pendingGenerationForced: false
+    property string pendingGtkThemeMode: ""
+    property string pendingGenerationMode: "dark"
     property string pendingGenerationPath: ""
-    readonly property bool themeAvailable: themeFileValid
+    property string pendingGenerationSource: ""
+    property bool runningGenerationForced: false
+    property string runningGenerationMode: ""
+    property string runningGenerationPath: ""
+    property string runningGenerationSource: ""
+    readonly property bool themeAvailable: themeFileValid && expectedSource !== "" && activeMode === colorMode && activeSource === expectedSource
     property FileView themeFile: FileView {
         blockLoading: true
         path: Config.quickshellDir + "/colors.json"
@@ -436,6 +549,12 @@ QtObject {
     }
     property bool themeFileResolved: false
     property bool themeFileValid: false
+    property bool validationForced: false
+    property string validationMode: ""
+    property string validationPath: ""
+    property string validationSource: ""
+
+    signal systemModeChanged(string mode)
 
     function applyColors(colors, animated) {
         if (!colors)
@@ -562,11 +681,35 @@ QtObject {
     function applyTheme() {
         if (!themeFile.loaded)
             return;
-        var output = themeFile.text().trim();
-        if (output === "" || output === lastFileText)
+        // When a newer request is already queued, the file watcher may be
+        // observing output from the superseded Matugen process. Wait for the
+        // latest job instead of briefly applying stale colours.
+        if (generator.running && pendingGenerationPath)
             return;
+        var output = themeFile.text().trim();
+        if (output === "")
+            return;
+        if (output === lastFileText) {
+            // A temporary partial write may have marked the file invalid. If
+            // the last known-good snapshot is restored byte-for-byte, restore
+            // its validity without replaying the same color animation.
+            themeFileValid = activeColors !== null;
+            return;
+        }
         try {
-            applyColors(JSON.parse(output), hasAppliedTheme);
+            var colors = JSON.parse(output);
+            if (modeResolved && (colors.mode === "light" || colors.mode === "dark") && colors.mode !== colorMode) {
+                themeFileValid = false;
+                return;
+            }
+            var snapshotSource = String(colors.source || "");
+            if (expectedSource !== "" && snapshotSource !== expectedSource) {
+                themeFileValid = false;
+                return;
+            }
+            applyColors(colors, hasAppliedTheme);
+            activeMode = colors.mode === "light" || colors.mode === "dark" ? colors.mode : "";
+            activeSource = snapshotSource;
             lastFileText = output;
             hasAppliedTheme = true;
             themeFileValid = true;
@@ -575,18 +718,26 @@ QtObject {
             console.warn("[ThemeService] Invalid colors.json:", error);
         }
     }
-    function generate(path, mode, forceModeVariant) {
+    function generate(path, mode, forceModeVariant, sourceKey) {
+        if (sourceKey !== undefined && sourceKey !== null)
+            setExpectedSource(sourceKey);
         if (!path || (!Config.matugenEnabled && forceModeVariant !== true))
             return;
 
         colorMode = normalizeMode(mode === undefined ? colorMode : mode);
         pendingGenerationMode = colorMode;
         pendingGenerationPath = path;
+        pendingGenerationSource = expectedSource;
+        pendingGenerationForced = forceModeVariant === true;
+        generationValidation.stop();
+        generationRetryCount = 0;
         if (!generator.running)
             startPendingGeneration();
     }
     function normalizeMode(mode) {
-        return mode === "light" || mode === "dark" ? mode : "auto";
+        if (mode === "light" || mode === "dark")
+            return mode;
+        return colorMode === "light" || colorMode === "dark" ? colorMode : "dark";
     }
     function reloadTheme() {
         themeFile.reload();
@@ -597,13 +748,77 @@ QtObject {
 
         var path = pendingGenerationPath;
         var mode = pendingGenerationMode;
+        var source = pendingGenerationSource;
+        var forced = pendingGenerationForced;
         pendingGenerationPath = "";
+        pendingGenerationForced = false;
         var matugenConfig = Config.dotfilesDir + "/.config/matugen/config.toml";
         var prepareGtk = Config.dotfilesDir + "/.config/matugen/scripts/prepare-gtk-runtime.sh";
         var matugenRunner = Config.quickshellDir + "/scripts/matugen-auto-scheme.sh";
-        generator.command = ["sh", "-c", "\"$1\" && exec \"$2\" --config \"$3\" --mode \"$5\" \"$4\"", "wallpaper-theme", prepareGtk, matugenRunner, matugenConfig, path, mode];
+        var metadata = JSON.stringify({
+            "theme_source": source
+        });
+        generator.command = ["sh", "-c", "\"$1\" && exec \"$2\" --config \"$3\" --mode \"$5\" --metadata-json \"$6\" \"$4\"", "wallpaper-theme", prepareGtk, matugenRunner, matugenConfig, path, mode, metadata];
+        runningGenerationPath = path;
+        runningGenerationMode = mode;
+        runningGenerationSource = source;
+        runningGenerationForced = forced;
         generator.running = true;
     }
+    function setExpectedSource(sourceKey) {
+        expectedSource = String(sourceKey || "");
+    }
+    function validateGeneration(path, mode, source, forced) {
+        if (!path || !source)
+            return;
+        validationPath = path;
+        validationMode = mode;
+        validationSource = source;
+        validationForced = forced;
+        generationValidation.restart();
+    }
+    function requestGtkThemeSync(mode) {
+        pendingGtkThemeMode = normalizeMode(mode);
+        if (!gtkThemeSetter.running)
+            startGtkThemeSync();
+    }
+    function startGtkThemeSync() {
+        if (gtkThemeSetter.running || pendingGtkThemeMode === "")
+            return;
+        var mode = pendingGtkThemeMode;
+        pendingGtkThemeMode = "";
+        gtkThemeSetter.command = ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", mode === "dark" ? "adw-gtk3-dark" : "adw-gtk3"];
+        gtkThemeSetter.running = true;
+    }
+    function syncSystemMode(value, notifyChange) {
+        var text = String(value || "");
+        if (text.trim() === "") {
+            console.warn("[ThemeService] Could not read the system color mode; retrying");
+            modeQueryRetry.restart();
+            return;
+        }
+        var mode = text.indexOf("prefer-dark") >= 0 ? "dark" : text.indexOf("prefer-light") >= 0 || text.indexOf("default") >= 0 ? "light" : normalizeMode(colorMode);
+        var changed = colorMode !== mode;
+        modeQueryRetry.stop();
+        colorMode = mode;
+        modeResolved = true;
+        requestGtkThemeSync(mode);
+        if (changed && notifyChange)
+            systemModeChanged(mode);
+    }
+    function updateMode(mode, notifyChange) {
+        var normalized = normalizeMode(mode);
+        var changed = colorMode !== normalized;
+        colorMode = normalized;
+        modeResolved = true;
+        requestGtkThemeSync(normalized);
+        if (notifyChange && (changed || activeMode !== normalized))
+            systemModeChanged(normalized);
+    }
 
-    Component.onCompleted: applyTheme()
+    Component.onCompleted: {
+        applyTheme();
+        modeMonitor.running = true;
+        modeQuery.running = true;
+    }
 }

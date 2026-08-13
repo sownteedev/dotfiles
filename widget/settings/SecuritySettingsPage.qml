@@ -31,14 +31,22 @@ Item {
 
         anchors.fill: parent
         clip: true
+        contentHeight: content.implicitHeight
+        contentWidth: Math.max(availableWidth, 520)
+
+        ScrollBar.horizontal: SlimScrollBar {
+            accentColor: Config.md3.primary
+        }
 
         ScrollBar.vertical: SlimScrollBar {
             accentColor: Config.md3.primary
         }
 
         ColumnLayout {
+            id: content
+
             spacing: 14
-            width: scroll.availableWidth
+            width: scroll.contentWidth
 
             SettingsSectionCard {
                 Layout.fillWidth: true

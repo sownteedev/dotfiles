@@ -11,7 +11,7 @@ try:
         content = config_file.read()
 except OSError:
     content = ''
-outputs = re.findall(r'output\s+\"([^\"]+)\"\s*\{(.*?)\}', content, re.DOTALL)
+outputs = re.findall(r'^\s*output\s+\"([^\"]+)\"\s*\{(.*?)^\}', content, re.DOTALL | re.MULTILINE)
 res = {}
 for name, block in outputs:
     res[name] = {

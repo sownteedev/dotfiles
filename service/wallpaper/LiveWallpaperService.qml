@@ -25,7 +25,7 @@ QtObject {
             if (root.available)
                 root.requestStart();
             else if (root.desiredPath)
-                root.errorMessage = "Install mpvpaper to play live wallpapers";
+                root.reportFailure(root.desiredPath, "Install mpvpaper to play live wallpapers");
         }
     }
     property Timer availabilityRestart: Timer {
@@ -43,7 +43,7 @@ QtObject {
     }
     property bool availabilityRestartPending: false
     property bool available: false
-    readonly property string cacheDir: Config.homeDir + "/.cache/quickshell/live-wallpapers"
+    readonly property string cacheDir: Config.cacheRoot + "/live-wallpapers"
     property Timer cleanupRestart: Timer {
         interval: 60
         repeat: false
@@ -83,24 +83,34 @@ QtObject {
             var exitedPath = root.startedPath;
             root.activePath = "";
             root.playbackReadyState = false;
-            root.readyFallback.stop();
+            root.readyTimeout.stop();
             if (root.readyProbe.running)
                 root.readyProbe.running = false;
             if (root.desiredPath && root.desiredPath !== exitedPath && !root.startAfterCleanup)
                 Qt.callLater(root.requestStart);
-            else if (root.desiredPath && root.desiredPath === exitedPath && exitCode !== 0 && !root.startAfterCleanup)
-                root.errorMessage = "Live wallpaper stopped unexpectedly";
+            else if (root.desiredPath && root.desiredPath === exitedPath && !root.startAfterCleanup)
+                root.reportFailure(exitedPath, "Live wallpaper stopped unexpectedly");
         }
         onStarted: {
             root.activePath = root.startedPath;
             root.errorMessage = "";
-            root.startReadyProbe();
             root.syncPolicy();
+            if (!WallpaperPlaybackPolicy.shouldPause)
+                root.startReadyProbe();
         }
     }
     property Connections policyConnections: Connections {
         function onShouldPauseChanged() {
             root.syncPolicy();
+            if (WallpaperPlaybackPolicy.shouldPause) {
+                if (!root.playbackReadyState) {
+                    root.readyTimeout.stop();
+                    if (root.readyProbe.running)
+                        root.readyProbe.running = false;
+                }
+            } else if (root.player.running && !root.playbackReadyState) {
+                root.startReadyProbe();
+            }
         }
         function onTargetFpsChanged() {
             root.syncPolicy();
@@ -109,21 +119,32 @@ QtObject {
         target: WallpaperPlaybackPolicy
     }
     property Process policyController: Process {
-        onExited: {
+        onExited: (exitCode, exitStatus) => {
             if (root.policySyncPending) {
                 root.policySyncPending = false;
                 root.syncPolicy();
+            } else if (exitCode !== 0 && root.player.running) {
+                root.policyRetry.restart();
             }
         }
     }
+    property Timer policyRetry: Timer {
+        interval: 120
+        repeat: false
+
+        onTriggered: root.syncPolicy()
+    }
     property bool policySyncPending: false
-    property Timer readyFallback: Timer {
-        interval: 2800
+    property Timer readyTimeout: Timer {
+        interval: 5000
         repeat: false
 
         onTriggered: {
-            if (root.player.running && root.startedPath === root.desiredPath)
-                root.markReady(root.startedPath, "");
+            if (!root.player.running || root.startedPath !== root.desiredPath)
+                return;
+            if (WallpaperPlaybackPolicy.shouldPause)
+                return;
+            root.reportFailure(root.startedPath, "Live wallpaper did not become ready");
         }
     }
     property string readyFramePath: ""
@@ -166,6 +187,7 @@ QtObject {
     }
 
     signal playbackReady(string sourcePath, string framePath)
+    signal playbackFailed(string sourcePath, string message)
     signal thumbnailReady(string sourcePath, string thumbnailPath)
 
     function checkAvailability() {
@@ -205,7 +227,7 @@ QtObject {
         var nextSlot = currentFrame === cacheDir + "/render-frame-1.jpg" ? 0 : 1;
         readyFramePath = cacheDir + "/render-frame-" + String(nextSlot) + ".jpg";
         var options = "no-config no-audio loop-file=inf hwdec=auto-safe panscan=1.0 terminal=no screenshot-jpeg-quality=95 input-ipc-server=" + ipcPath + " vf=fps=" + WallpaperPlaybackPolicy.targetFps;
-        player.command = ["sh", "-c", "mkdir -p \"$1\"; rm -f \"$2\" \"$4\"; printf '%s' \"$$\" > \"$3\"; exec mpvpaper -p -a full -o \"$5\" ALL \"$6\"", "live-wallpaper-player", cacheDir, ipcPath, pidPath, readyFramePath, options, startedPath];
+        player.command = ["sh", "-c", "mkdir -p \"$1\"; rm -f \"$2\" \"$4\"; printf '%s' \"$$\" > \"$3\"; exec mpvpaper -o \"$5\" ALL \"$6\"", "live-wallpaper-player", cacheDir, ipcPath, pidPath, readyFramePath, options, startedPath];
         player.running = true;
     }
     function markReady(path, framePath) {
@@ -213,7 +235,7 @@ QtObject {
             return;
 
         playbackReadyState = true;
-        readyFallback.stop();
+        readyTimeout.stop();
         playbackReady(path, framePath || "");
         syncPolicy();
     }
@@ -270,6 +292,12 @@ QtObject {
         startAfterCleanup = true;
         stopOwnedProcess();
     }
+    function reportFailure(path, message) {
+        if (!path || path !== desiredPath)
+            return;
+        errorMessage = message;
+        playbackFailed(path, message);
+    }
     function requestThumbnail(path, modified, priority) {
         if (!isLivePath(path))
             return "";
@@ -310,7 +338,7 @@ QtObject {
             readyProbe.running = false;
         readyProbe.command = ["python3", ipcScript, "wait-ready", ipcPath, "2.5", readyFramePath];
         readyProbe.running = true;
-        readyFallback.restart();
+        readyTimeout.restart();
     }
     function stop() {
         desiredPath = "";
@@ -319,7 +347,8 @@ QtObject {
         startAfterCleanup = false;
         playbackReadyState = false;
         readyFramePath = "";
-        readyFallback.stop();
+        policyRetry.stop();
+        readyTimeout.stop();
         if (readyProbe.running)
             readyProbe.running = false;
         if (player.running)
@@ -328,7 +357,7 @@ QtObject {
         stopOwnedProcess();
     }
     function stopOwnedProcess() {
-        ownedProcessStopper.command = ["sh", "-c", "pid=$(cat \"$1\" 2>/dev/null || true); if [ -n \"$pid\" ] && [ -r \"/proc/$pid/comm\" ] && [ \"$(cat \"/proc/$pid/comm\")\" = mpvpaper ]; then cmd=$(tr '\\0' ' ' < \"/proc/$pid/cmdline\"); case \"$cmd\" in *\"$2/\"*) kill -CONT \"$pid\" 2>/dev/null || true; kill \"$pid\" 2>/dev/null || true ;; esac; fi; rm -f \"$1\" \"$3\"", "live-wallpaper-stop", pidPath, Config.liveWallFolder, ipcPath];
+        ownedProcessStopper.command = ["sh", "-c", "pid=$(cat \"$1\" 2>/dev/null || true); if [ -n \"$pid\" ] && [ -r \"/proc/$pid/comm\" ] && [ \"$(cat \"/proc/$pid/comm\")\" = mpvpaper ]; then cmd=$(tr '\\0' ' ' < \"/proc/$pid/cmdline\"); case \"$cmd\" in *\"input-ipc-server=$2\"*) kill -CONT \"$pid\" 2>/dev/null || true; kill \"$pid\" 2>/dev/null || true ;; esac; fi; rm -f \"$1\" \"$2\"", "live-wallpaper-stop", pidPath, ipcPath];
         cleanupRestartPending = true;
         if (ownedProcessStopper.running)
             ownedProcessStopper.running = false;

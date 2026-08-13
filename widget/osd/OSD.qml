@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
+import Quickshell.Wayland
 import Quickshell.Services.Pipewire
 import "../../"
 import "../../service"
@@ -52,8 +53,8 @@ PanelWindow {
             return brightnessVal;
         return 0.0;
     }
-    readonly property real brightnessVal: BrightnessService.value
     readonly property bool brightnessReady: BrightnessService.initialized && BrightnessService.available
+    readonly property real brightnessVal: BrightnessService.value
     readonly property color highlightColor: {
         if (activeIndicator === "volume" || activeIndicator === "volume-mute")
             return Config.md3.primary;
@@ -66,8 +67,9 @@ PanelWindow {
 
     // Helper to get active properties
     readonly property bool isMute: activeIndicator === "volume-mute" || activeIndicator === "mic-mute"
-    readonly property bool micReady: Pipewire.ready && !!(Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio)
+    readonly property bool isOsdScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
     readonly property bool micMuted: (Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio) ? Pipewire.defaultAudioSource.audio.muted : false
+    readonly property bool micReady: Pipewire.ready && !!(Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio)
     readonly property real micVal: maximumAudioVolume(Pipewire.defaultAudioSource ? Pipewire.defaultAudioSource.audio : null)
     readonly property string muteIconName: activeIndicator.indexOf("mic") === 0 ? "microphone-sensitivity-muted-symbolic" : "audio-volume-muted-symbolic"
     readonly property bool speakerReady: Pipewire.ready && !!(Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.audio)
@@ -110,7 +112,7 @@ PanelWindow {
         hideTimer.start();
     }
 
-    aboveWindows: true
+    WlrLayershell.layer: WlrLayer.Overlay
 
     // Position: bottom center of screen
     anchors.bottom: true
@@ -121,53 +123,14 @@ PanelWindow {
     exclusiveZone: 0 // Floating window - do not reserve screen space or push windows
 
     focusable: false
-    implicitHeight: 110
+    implicitHeight: screen ? Math.min(110, screen.height) : 110
 
     // Keep the Wayland surface stable while the popup morphs between modes.
-    implicitWidth: 320
+    implicitWidth: screen ? Math.min(320, screen.width) : 320
     margins.bottom: 10 // Distance from bottom of screen to window edge
 
     // Keep the window alive only while the popup is visible so it does not block clicks when hidden
-    visible: active || popup.opacity > 0.0
-
-    onBrightnessValChanged: {
-        if (activeBrightnessInit)
-            showOSD("brightness");
-    }
-    onBrightnessReadyChanged: {
-        brightnessInitTimer.stop();
-        activeBrightnessInit = false;
-        if (brightnessReady)
-            brightnessInitTimer.start();
-    }
-    onMicMutedChanged: {
-        if (activeMicInit)
-            showOSD(micMuted ? "mic-mute" : "mic");
-    }
-    onMicValChanged: {
-        if (activeMicInit)
-            showOSD("mic");
-    }
-    onMicReadyChanged: {
-        micInitTimer.stop();
-        activeMicInit = false;
-        if (micReady)
-            micInitTimer.start();
-    }
-    onVolumeMutedChanged: {
-        if (activeSpeakerInit)
-            showOSD(volumeMuted ? "volume-mute" : "volume");
-    }
-    onVolumeValChanged: {
-        if (activeSpeakerInit)
-            showOSD("volume");
-    }
-    onSpeakerReadyChanged: {
-        speakerInitTimer.stop();
-        activeSpeakerInit = false;
-        if (speakerReady)
-            speakerInitTimer.start();
-    }
+    visible: isOsdScreen && (active || popup.opacity > 0.0)
 
     Component.onCompleted: {
         if (brightnessReady)
@@ -176,6 +139,44 @@ PanelWindow {
             micInitTimer.start();
         if (speakerReady)
             speakerInitTimer.start();
+    }
+    onBrightnessReadyChanged: {
+        brightnessInitTimer.stop();
+        activeBrightnessInit = false;
+        if (brightnessReady)
+            brightnessInitTimer.start();
+    }
+    onBrightnessValChanged: {
+        if (activeBrightnessInit)
+            showOSD("brightness");
+    }
+    onMicMutedChanged: {
+        if (activeMicInit)
+            showOSD(micMuted ? "mic-mute" : "mic");
+    }
+    onMicReadyChanged: {
+        micInitTimer.stop();
+        activeMicInit = false;
+        if (micReady)
+            micInitTimer.start();
+    }
+    onMicValChanged: {
+        if (activeMicInit)
+            showOSD("mic");
+    }
+    onSpeakerReadyChanged: {
+        speakerInitTimer.stop();
+        activeSpeakerInit = false;
+        if (speakerReady)
+            speakerInitTimer.start();
+    }
+    onVolumeMutedChanged: {
+        if (activeSpeakerInit)
+            showOSD(volumeMuted ? "volume-mute" : "volume");
+    }
+    onVolumeValChanged: {
+        if (activeSpeakerInit)
+            showOSD("volume");
     }
 
     Timer {
@@ -253,13 +254,13 @@ PanelWindow {
             // Premium glassmorphic background styling
             clip: true
             color: Config.alpha(Config.md3.background, 0.85)
-            height: 60 + 10 * modeProgress
+            height: Math.min(parent.height, 60 + 10 * modeProgress)
             opacity: 0.0
-            radius: height / 2
+            radius: Math.min(width, height) / 2
             scale: popScale
 
             // Morphing properties
-            width: 60 + 220 * modeProgress
+            width: Math.min(parent.width, 60 + Math.max(0, Math.min(240, osdWindow.width - 80)) * modeProgress)
             y: parent.height / 2 - height / 2 + yOffset
 
             Behavior on modeProgress {
@@ -338,9 +339,9 @@ PanelWindow {
                     anchors.centerIn: parent
                     height: parent.height
                     opacity: Math.max(0.0, Math.min(1.0, (popup.modeProgress - 0.32) / 0.68))
-                    spacing: 15
+                    spacing: popup.width < 180 ? 10 : 15
                     visible: opacity > 0.01
-                    width: 230
+                    width: Math.max(0, popup.width - 44)
 
                     Item {
                         Layout.alignment: Qt.AlignVCenter
@@ -367,7 +368,9 @@ PanelWindow {
                             Layout.fillWidth: true
 
                             Text {
+                                Layout.fillWidth: true
                                 color: Config.md3.on_surface
+                                elide: Text.ElideRight
                                 font.family: Config.fontName
                                 font.pixelSize: 15
                                 font.weight: Font.DemiBold

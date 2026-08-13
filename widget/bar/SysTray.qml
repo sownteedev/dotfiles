@@ -9,9 +9,10 @@ import Quickshell.Widgets
 RowLayout {
     id: root
 
+    property real itemSpacing: 32
     required property var parentWindow
 
-    spacing: 32
+    spacing: itemSpacing
 
     Repeater {
         model: SystemTray.items
@@ -19,13 +20,11 @@ RowLayout {
         delegate: MouseArea {
             id: itemArea
 
+            readonly property bool hasCompactArtwork: itemIdentity.indexOf("chrome_status_icon") !== -1
+            readonly property real iconExtent: hasCompactArtwork ? 30 : 24
+            readonly property bool isSpotify: itemIdentity.indexOf("spotify") !== -1
+            readonly property string itemIdentity: [trayItem ? trayItem.id : "", trayItem ? trayItem.title : "", trayItem ? trayItem.tooltipTitle : ""].join(" ").toLowerCase()
             readonly property var trayItem: modelData
-
-            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-            cursorShape: Qt.PointingHandCursor
-            height: 24
-            hoverEnabled: true
-            width: 24
 
             function closeMenuPopup() {
                 if (menuPopupLoader.active)
@@ -41,6 +40,13 @@ RowLayout {
                 else
                     menuPopupLoader.loading = true;
             }
+
+            Layout.alignment: Qt.AlignVCenter
+            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+            cursorShape: Qt.PointingHandCursor
+            hoverEnabled: true
+            implicitHeight: 30
+            implicitWidth: 24
 
             onClicked: mouse => {
                 if (!itemArea.trayItem)
@@ -78,21 +84,32 @@ RowLayout {
 
                     readonly property var activeMenu: menuStack.length > 0 ? menuStack[menuStack.length - 1] : rootMenu
                     readonly property string activeMenuTitle: menuStack.length > 0 ? String(menuStack[menuStack.length - 1].text || "Menu") : ""
+                    readonly property real desiredHeight: layout.implicitHeight + 42
                     property var menuStack: []
                     readonly property var rootMenu: itemArea.trayItem && itemArea.trayItem.hasMenu ? itemArea.trayItem.menu : null
+                    readonly property real screenHeight: root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.height : 720
 
                     function closeMenu() {
+                        for (var i = 0; i < menuStack.length; i++) {
+                            if (menuStack[i] && typeof menuStack[i].sendClosed === "function")
+                                menuStack[i].sendClosed();
+                        }
                         menuStack = [];
                         itemArea.closeMenuPopup();
                     }
                     function openSubmenu(entry) {
                         if (!entry || !entry.enabled || !entry.hasChildren)
                             return;
+                        if (typeof entry.sendOpened === "function")
+                            entry.sendOpened();
                         menuStack = menuStack.concat([entry]);
                     }
                     function returnToParentMenu() {
                         if (menuStack.length === 0)
                             return;
+                        var leaving = menuStack[menuStack.length - 1];
+                        if (leaving && typeof leaving.sendClosed === "function")
+                            leaving.sendClosed();
                         menuStack = menuStack.slice(0, menuStack.length - 1);
                     }
 
@@ -103,9 +120,13 @@ RowLayout {
                     anchor.margins.top: 30
                     color: "transparent"
                     grabFocus: true
-                    implicitHeight: layout.implicitHeight + 20 + 12 + 10 // Content height + margins + padding + top arrow space
-                    implicitWidth: 240
+                    implicitHeight: Responsive.fit(desiredHeight, screenHeight - 70, 120)
+                    implicitWidth: Math.min(240, Math.max(0, root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.width - 16 : 240))
                     visible: true
+
+                    onActiveMenuChanged: Qt.callLater(function () {
+                        menuFlickable.contentY = 0;
+                    })
 
                     // Auto-destroy the window when focus is lost (dismissOnOutsideClick via grabFocus)
                     onVisibleChanged: {
@@ -143,156 +164,168 @@ RowLayout {
                             verticalOffset: 4
                         }
 
-                        ColumnLayout {
-                            id: layout
+                        Flickable {
+                            id: menuFlickable
 
                             anchors.fill: parent
                             anchors.margins: 10
-                            spacing: 4
+                            boundsBehavior: Flickable.StopAtBounds
+                            clip: contentHeight > height
+                            contentHeight: layout.implicitHeight
+                            contentWidth: width
+                            flickableDirection: Flickable.VerticalFlick
+                            interactive: contentHeight > height
 
-                            Rectangle {
-                                Layout.fillWidth: true
-                                color: backMouse.containsMouse ? Config.md3.surface_container_high : "transparent"
-                                implicitHeight: 34
-                                radius: 8
-                                visible: menuPopup.menuStack.length > 0
+                            ColumnLayout {
+                                id: layout
 
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 10
-                                    anchors.rightMargin: 10
-                                    spacing: 9
+                                spacing: 4
+                                width: parent.width
 
-                                    Text {
-                                        color: Config.md3.on_surface
-                                        font.family: Config.fontName
-                                        font.pixelSize: 18
-                                        font.weight: Font.Bold
-                                        text: "‹"
-                                    }
-                                    Text {
-                                        Layout.fillWidth: true
-                                        color: Config.md3.on_surface
-                                        elide: Text.ElideRight
-                                        font.family: Config.fontName
-                                        font.pixelSize: 14
-                                        font.weight: Font.DemiBold
-                                        text: menuPopup.activeMenuTitle
-                                    }
-                                }
-                                MouseArea {
-                                    id: backMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    onClicked: menuPopup.returnToParentMenu()
-                                }
-                            }
-                            Rectangle {
-                                Layout.fillWidth: true
-                                color: Config.alpha(Config.md3.on_surface, 0.08)
-                                height: 1
-                                visible: menuPopup.menuStack.length > 0
-                            }
-                            Repeater {
-                                model: menuOpener.children
-
-                                delegate: Rectangle {
-                                    id: entryItem
-
+                                Rectangle {
                                     Layout.fillWidth: true
-                                    color: modelData.isSeparator ? "transparent" : (entryMouse.containsMouse ? Config.md3.surface_container_high : "transparent")
-                                    implicitHeight: modelData.isSeparator ? 8 : 34
-                                    opacity: modelData.isSeparator || modelData.enabled ? 1 : 0.42
+                                    color: backMouse.containsMouse ? Config.md3.surface_container_high : "transparent"
+                                    implicitHeight: 34
                                     radius: 8
+                                    visible: menuPopup.menuStack.length > 0
 
-                                    // Separator line
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        color: Config.alpha(Config.md3.on_surface, 0.08)
-                                        height: 1
-                                        visible: modelData.isSeparator
-                                        width: parent.width
-                                    }
-
-                                    // Non-separator content
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.leftMargin: 10
                                         anchors.rightMargin: 10
-                                        spacing: 10
-                                        visible: !modelData.isSeparator
+                                        spacing: 9
 
-                                        // Checkbox/Radio indicator
-                                        Rectangle {
-                                            border.color: Config.alpha(Config.md3.on_surface, 0.3)
-                                            border.width: 1
-                                            color: "transparent"
-                                            height: 14
-                                            radius: modelData.buttonType === 2 ? 7 : 3 // 2 is Radio (circle), otherwise checkbox
-                                            visible: modelData.buttonType === 1 || modelData.buttonType === 2
-                                            width: 14
-
-                                            Rectangle {
-                                                anchors.centerIn: parent
-                                                color: Config.md3.primary
-                                                height: 8
-                                                radius: modelData.buttonType === 2 ? 4 : 2
-                                                visible: modelData.checkState === 2 // Checked state in Qt
-                                                width: 8
-                                            }
+                                        Text {
+                                            color: Config.md3.on_surface
+                                            font.family: Config.fontName
+                                            font.pixelSize: 18
+                                            font.weight: Font.Bold
+                                            text: "‹"
                                         }
-
-                                        // Icon if exists
-                                        IconImage {
-                                            height: 16
-                                            layer.enabled: true
-                                            source: modelData.icon && modelData.icon.toString() !== "" ? modelData.icon : Quickshell.iconPath("application-x-executable")
-                                            visible: modelData.icon !== ""
-                                            width: 16
-
-                                            layer.effect: ColorOverlay {
-                                                color: Config.md3.on_surface
-                                            }
-                                        }
-
-                                        // Label text
                                         Text {
                                             Layout.fillWidth: true
-                                            color: entryMouse.containsMouse ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.9)
+                                            color: Config.md3.on_surface
                                             elide: Text.ElideRight
                                             font.family: Config.fontName
                                             font.pixelSize: 14
-                                            font.weight: Font.Medium
-                                            text: modelData.text || ""
-                                        }
-                                        Text {
-                                            color: Config.md3.on_surface_variant
-                                            font.family: Config.fontName
-                                            font.pixelSize: 17
-                                            font.weight: Font.Bold
-                                            text: "›"
-                                            visible: modelData.hasChildren
+                                            font.weight: Font.DemiBold
+                                            text: menuPopup.activeMenuTitle
                                         }
                                     }
                                     MouseArea {
-                                        id: entryMouse
+                                        id: backMouse
 
                                         anchors.fill: parent
-                                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                        enabled: !modelData.isSeparator && modelData.enabled
+                                        cursorShape: Qt.PointingHandCursor
                                         hoverEnabled: true
 
-                                        onClicked: {
-                                            if (modelData.hasChildren) {
-                                                menuPopup.openSubmenu(modelData);
-                                                return;
+                                        onClicked: menuPopup.returnToParentMenu()
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    color: Config.alpha(Config.md3.on_surface, 0.08)
+                                    height: 1
+                                    visible: menuPopup.menuStack.length > 0
+                                }
+                                Repeater {
+                                    model: menuOpener.children
+
+                                    delegate: Rectangle {
+                                        id: entryItem
+
+                                        Layout.fillWidth: true
+                                        color: modelData.isSeparator ? "transparent" : (entryMouse.containsMouse ? Config.md3.surface_container_high : "transparent")
+                                        implicitHeight: modelData.isSeparator ? 8 : 34
+                                        opacity: modelData.isSeparator || modelData.enabled ? 1 : 0.42
+                                        radius: 8
+
+                                        // Separator line
+                                        Rectangle {
+                                            anchors.centerIn: parent
+                                            color: Config.alpha(Config.md3.on_surface, 0.08)
+                                            height: 1
+                                            visible: modelData.isSeparator
+                                            width: parent.width
+                                        }
+
+                                        // Non-separator content
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 10
+                                            spacing: 10
+                                            visible: !modelData.isSeparator
+
+                                            // Checkbox/Radio indicator
+                                            Rectangle {
+                                                border.color: Config.alpha(Config.md3.on_surface, 0.3)
+                                                border.width: 1
+                                                color: "transparent"
+                                                height: 14
+                                                radius: modelData.buttonType === 2 ? 7 : 3 // 2 is Radio (circle), otherwise checkbox
+                                                visible: modelData.buttonType === 1 || modelData.buttonType === 2
+                                                width: 14
+
+                                                Rectangle {
+                                                    anchors.centerIn: parent
+                                                    color: Config.md3.primary
+                                                    height: 8
+                                                    radius: modelData.buttonType === 2 ? 4 : 2
+                                                    visible: modelData.checkState === 2 // Checked state in Qt
+                                                    width: 8
+                                                }
                                             }
 
-                                            modelData.triggered();
-                                            menuPopup.closeMenu();
+                                            // Icon if exists
+                                            IconImage {
+                                                height: 16
+                                                layer.enabled: true
+                                                source: modelData.icon && modelData.icon.toString() !== "" ? modelData.icon : Quickshell.iconPath("application-x-executable")
+                                                visible: modelData.icon !== ""
+                                                width: 16
+
+                                                layer.effect: ColorOverlay {
+                                                    color: Config.md3.on_surface
+                                                }
+                                            }
+
+                                            // Label text
+                                            Text {
+                                                Layout.fillWidth: true
+                                                color: entryMouse.containsMouse ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.9)
+                                                elide: Text.ElideRight
+                                                font.family: Config.fontName
+                                                font.pixelSize: 14
+                                                font.weight: Font.Medium
+                                                text: modelData.text || ""
+                                            }
+                                            Text {
+                                                color: Config.md3.on_surface_variant
+                                                font.family: Config.fontName
+                                                font.pixelSize: 17
+                                                font.weight: Font.Bold
+                                                text: "›"
+                                                visible: modelData.hasChildren
+                                            }
+                                        }
+                                        MouseArea {
+                                            id: entryMouse
+
+                                            anchors.fill: parent
+                                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                            enabled: !modelData.isSeparator && modelData.enabled
+                                            hoverEnabled: true
+
+                                            onClicked: {
+                                                if (modelData.hasChildren) {
+                                                    menuPopup.openSubmenu(modelData);
+                                                    return;
+                                                }
+
+                                                modelData.triggered();
+                                                menuPopup.closeMenu();
+                                            }
                                         }
                                     }
                                 }
@@ -325,10 +358,16 @@ RowLayout {
                 }
             }
             IconImage {
-                anchors.fill: parent
-                opacity: itemArea.containsMouse ? 1 : 0.75
+                anchors.centerIn: parent
+                height: itemArea.iconExtent
+                layer.enabled: itemArea.isSpotify
+                opacity: itemArea.containsMouse ? 1 : (itemArea.isSpotify ? 0.95 : 0.75)
                 source: itemArea.trayItem.icon && itemArea.trayItem.icon.toString() !== "" ? itemArea.trayItem.icon : Quickshell.iconPath("application-x-executable")
+                width: itemArea.iconExtent
 
+                layer.effect: ColorOverlay {
+                    color: "#1db954"
+                }
                 Behavior on opacity {
                     NumberAnimation {
                         duration: 150

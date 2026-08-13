@@ -28,6 +28,12 @@ ScrollView {
     }
 
     clip: true
+    contentHeight: content.implicitHeight
+    contentWidth: Math.max(availableWidth, 620)
+
+    ScrollBar.horizontal: SlimScrollBar {
+        accentColor: Config.md3.secondary
+    }
 
     ScrollBar.vertical: SlimScrollBar {
         accentColor: Config.md3.secondary
@@ -43,8 +49,10 @@ ScrollView {
         target: SettingsHubService
     }
     ColumnLayout {
+        id: content
+
         spacing: 14
-        width: root.availableWidth
+        width: root.contentWidth
 
         Rectangle {
             Layout.fillWidth: true

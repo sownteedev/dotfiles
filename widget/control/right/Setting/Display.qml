@@ -16,7 +16,7 @@ Item {
 
     // Array of all connected outputs from Niri
     readonly property var allOutputs: DisplayService.outputs
-    readonly property real brightnessValue: BrightnessService.percent
+    readonly property real brightnessValue: Math.round(DisplayBrightnessService.value * 100)
 
     // Draft coordinate management for screen rearranging
     property var draftPositions: ({})
@@ -230,6 +230,7 @@ Item {
     }
     function refreshAll() {
         DisplayService.refresh();
+        DisplayBrightnessService.refresh();
     }
     function resetDrafts() {
         var drafts = {};
@@ -253,8 +254,13 @@ Item {
         } else if (activeDropdown === "resolution") {
             var dimensions = value.split("x");
             var rate = 60;
-            if (output && output.current_mode >= 0 && output.current_mode < output.modes.length)
-                rate = output.modes[output.current_mode].refresh_rate / 1000;
+            if (output) {
+                for (var modeIndex = 0; modeIndex < output.modes.length; ++modeIndex) {
+                    var candidateMode = output.modes[modeIndex];
+                    if (candidateMode.width === parseInt(dimensions[0], 10) && candidateMode.height === parseInt(dimensions[1], 10))
+                        rate = Math.max(rate, candidateMode.refresh_rate / 1000);
+                }
+            }
             updateConfig(targetOutput, "mode", dimensions[0] + "x" + dimensions[1] + "@" + rate.toFixed(3));
         } else if (activeDropdown === "refreshRate") {
             var width = 1920;
@@ -277,8 +283,12 @@ Item {
     anchors.fill: parent
 
     onAllOutputsChanged: {
-        if (allOutputs.length === 0)
+        if (allOutputs.length === 0) {
+            selectedOutputName = "";
+            draftPositions = ({});
+            hasChanges = false;
             return;
+        }
         var found = false;
         for (var i = 0; i < allOutputs.length; ++i) {
             if (allOutputs[i].name === selectedOutputName) {
@@ -288,8 +298,10 @@ Item {
         }
         if (!found)
             selectedOutputName = allOutputs[0].name;
+        DisplayBrightnessService.selectOutput(selectedOutputName);
         resetDrafts();
     }
+    onSelectedOutputNameChanged: DisplayBrightnessService.selectOutput(selectedOutputName)
     onVisibleChanged: {
         if (visible) {
             refreshAll();
@@ -319,7 +331,7 @@ Item {
                 border.color: Config.alpha(Config.md3.on_surface, 0.06)
                 border.width: 1
                 color: Config.md3.surface_container
-                height: 60
+                height: 64
                 radius: 12
 
                 RowLayout {
@@ -328,7 +340,6 @@ Item {
                     anchors.rightMargin: 16
                     spacing: 12
 
-                    // Icon
                     Image {
                         fillMode: Image.PreserveAspectFit
                         height: 25
@@ -342,11 +353,39 @@ Item {
                             color: Config.md3.primary
                         }
                     }
-                    CustomVolumeSlider {
-                        highlightColor: Config.md3.primary
-                        value: BrightnessService.value
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
 
-                        onSliderMoved: value => BrightnessService.setValue(value)
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Text {
+                                color: Config.md3.on_surface
+                                font.family: Config.fontName
+                                font.pixelSize: 14
+                                font.weight: Font.DemiBold
+                                text: "Brightness" + (displayPageRoot.selectedOutputName !== "" ? " • " + displayPageRoot.selectedOutputName : "")
+                            }
+                            Item {
+                                Layout.fillWidth: true
+                            }
+                            Text {
+                                color: DisplayBrightnessService.available ? Config.md3.primary : Config.md3.outline
+                                font.family: Config.fontName
+                                font.pixelSize: 13
+                                font.weight: Font.Bold
+                                text: DisplayBrightnessService.available ? displayPageRoot.brightnessValue + "%" : "Unavailable"
+                            }
+                        }
+                        CustomVolumeSlider {
+                            enabled: DisplayBrightnessService.available
+                            highlightColor: Config.md3.primary
+                            opacity: enabled ? 1 : 0.4
+                            value: DisplayBrightnessService.value
+
+                            onSliderMoved: value => DisplayBrightnessService.setValue(value)
+                        }
                     }
                 }
             }
@@ -444,7 +483,69 @@ Item {
                 }
             }
 
-            // 3. Visual Monitor Layout Diagram
+            // 4. Windows-style display modes
+            Rectangle {
+                Layout.fillWidth: true
+                border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                border.width: 1
+                color: Config.md3.surface_container
+                height: 118
+                radius: 14
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 8
+
+                    Text {
+                        color: Config.md3.on_surface
+                        font.family: Config.fontName
+                        font.pixelSize: 15
+                        font.weight: Font.Bold
+                        text: "Display Mode"
+                    }
+                    SettingsSegmentedControl {
+                        Layout.fillWidth: true
+                        accessibleName: "Display mode"
+                        enabled: !DisplayService.displayModeApplying
+                        options: [
+                            {
+                                label: "Internal only",
+                                value: "internal",
+                                enabled: DisplayService.hasInternalOutput
+                            },
+                            {
+                                label: "Duplicate",
+                                value: "duplicate",
+                                enabled: false
+                            },
+                            {
+                                label: "Extend",
+                                value: "extend",
+                                enabled: DisplayService.hasInternalOutput && DisplayService.hasExternalOutput
+                            },
+                            {
+                                label: "External only",
+                                value: "external",
+                                enabled: DisplayService.hasExternalOutput
+                            }
+                        ]
+                        selectedValue: DisplayService.displayMode
+
+                        onSelected: value => DisplayService.applyDisplayMode(value, displayPageRoot.selectedOutputName)
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        color: DisplayService.displayModeError !== "" ? Config.md3.error : Config.md3.on_surface_variant
+                        elide: Text.ElideRight
+                        font.family: Config.fontName
+                        font.pixelSize: 12
+                        text: DisplayService.displayModeApplying ? "Applying display mode…" : DisplayService.displayModeError !== "" ? DisplayService.displayModeError : DisplayService.hasExternalOutput ? "Duplicate requires compositor mirroring support" : "Connect an external display to enable more modes"
+                    }
+                }
+            }
+
+            // 5. Visual Monitor Layout Diagram
             Rectangle {
                 id: monitorLayoutContainer
 
@@ -452,19 +553,35 @@ Item {
                 border.color: Config.alpha(Config.md3.on_surface, 0.06)
                 border.width: 1
                 color: Config.md3.surface_container
-                height: 200
+                height: displayPageRoot.allOutputs.length > 1 ? 300 : 200
                 radius: 12
                 visible: displayPageRoot.allOutputs.length > 0
 
-                // Label in the top left
-                Text {
-                    color: Config.md3.on_surface_variant
-                    font.family: Config.fontName
-                    font.pixelSize: 13
-                    font.weight: Font.DemiBold
-                    text: "Identify Displays (Drag and drop to rearrange)"
+                Behavior on height {
+                    NumberAnimation {
+                        duration: 220
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Column {
+                    spacing: 1
                     x: 12
                     y: 8
+
+                    Text {
+                        color: Config.md3.on_surface_variant
+                        font.family: Config.fontName
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        text: "Display arrangement"
+                    }
+                    Text {
+                        color: Config.alpha(Config.md3.on_surface_variant, 0.72)
+                        font.family: Config.fontName
+                        font.pixelSize: 11
+                        text: displayPageRoot.allOutputs.length > 1 ? "Drag a display left, right, above, or below" : "Drag displays to rearrange them"
+                    }
                 }
 
                 // Inner area containing layouted rectangles
@@ -541,7 +658,7 @@ Item {
                     anchors.fill: parent
                     anchors.leftMargin: 24
                     anchors.rightMargin: 24
-                    anchors.topMargin: 28
+                    anchors.topMargin: 48
 
                     onHeightChanged: updateLayoutGeometry()
                     onWidthChanged: updateLayoutGeometry()
@@ -1166,6 +1283,73 @@ Item {
                                         displayPageRoot.toggleKdlOption(displayPageRoot.selectedOutputName, "vrr", checked);
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                    border.width: 1
+                    color: Config.md3.surface_container
+                    height: 76
+                    radius: 12
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 12
+                        spacing: 12
+
+                        IconImage {
+                            height: 24
+                            source: Quickshell.iconPath("video-display-symbolic")
+                            width: 24
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            Text {
+                                color: Config.md3.on_surface
+                                font.family: Config.fontName
+                                font.pixelSize: 14
+                                font.weight: Font.DemiBold
+                                text: "Sunshine streaming display"
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                color: Config.md3.outline
+                                elide: Text.ElideRight
+                                font.family: Config.fontName
+                                font.pixelSize: 11
+                                text: DisplayService.sunshineStatusOutput === displayPageRoot.selectedOutputName ? DisplayService.sunshineStatus : "Switch Sunshine encoder and capture to " + displayPageRoot.selectedOutputName
+                            }
+                        }
+                        Rectangle {
+                            color: sunshineButtonMouse.pressed ? Config.md3.primary_container : Config.md3.primary
+                            enabled: !DisplayService.sunshineBusy
+                            height: 38
+                            opacity: enabled ? 1 : 0.55
+                            radius: 19
+                            width: 94
+
+                            Text {
+                                anchors.centerIn: parent
+                                color: parent.enabled ? Config.md3.on_primary : Config.md3.on_surface_variant
+                                font.family: Config.fontName
+                                font.pixelSize: 12
+                                font.weight: Font.Bold
+                                text: DisplayService.sunshineBusy ? "Applying…" : "Use display"
+                            }
+                            MouseArea {
+                                id: sunshineButtonMouse
+
+                                anchors.fill: parent
+                                cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                enabled: parent.enabled
+
+                                onClicked: DisplayService.configureSunshine(displayPageRoot.selectedOutputName)
                             }
                         }
                     }

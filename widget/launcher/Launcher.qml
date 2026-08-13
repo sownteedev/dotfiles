@@ -5,31 +5,91 @@ import QtQuick.Controls
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
+import Quickshell.Wayland
 import "../../"
 
 PanelWindow {
     id: launcherWindow
 
     property bool active: false
+    readonly property color activeModeColor: searchMode === "clipboard" ? Config.md3.secondary : searchMode === "files" ? Config.md3.primary : searchMode === "calculator" ? Config.md3.tertiary : Config.md3.error
+    readonly property string activeModeIcon: searchMode === "clipboard" ? "edit-paste-symbolic" : searchMode === "files" ? "system-file-manager-symbolic" : searchMode === "calculator" ? "accessories-calculator-symbolic" : "face-smile-symbolic"
+    readonly property string activeModeLabel: searchMode === "clipboard" ? "Clipboard" : searchMode === "files" ? "Files" : searchMode === "calculator" ? "Calculator" : searchMode === "emoji" ? "Emoji" : ""
+    readonly property string activeModePlaceholder: searchMode === "clipboard" ? "Search clipboard" : searchMode === "files" ? "Find files" : searchMode === "calculator" ? "Enter expression" : searchMode === "emoji" ? "Search emoji" : "Search"
+    property bool allAppsLoaderActive: false
     property bool allAppsReady: false
+    readonly property bool compact: Responsive.constrained(width, height, 720, 600)
+    property string searchMode: ""
     property string searchQuery: ""
     property bool showAllApps: false
 
     signal dismissed
 
+    function clearSearchMode() {
+        searchMode = "";
+        syncSearchQuery();
+        searchEntry.forceActiveFocus();
+    }
     function closeLauncher() {
         active = false;
         closeTimer.start();
     }
+    function modePrefix(mode) {
+        if (mode === "clipboard")
+            return "c ";
+        if (mode === "files")
+            return "f ";
+        if (mode === "calculator")
+            return "= ";
+        if (mode === "emoji")
+            return "e ";
+        return "";
+    }
     function openLauncher() {
+        var targetScreen = StateManager.resolvePanelScreen();
+        if (targetScreen)
+            screen = targetScreen;
         closeTimer.stop();
-        searchQuery = "";
+        resetSearch();
         showAllApps = false;
         visible = true;
         active = true;
         searchEntry.forceActiveFocus();
     }
+    function resetSearch() {
+        searchMode = "";
+        searchEntry.text = "";
+        searchQuery = "";
+    }
+    function syncSearchQuery() {
+        searchQuery = modePrefix(searchMode) + searchEntry.text;
+    }
+    function tryActivateSearchMode() {
+        if (searchMode !== "")
+            return false;
 
+        var input = searchEntry.text;
+        var lower = input.toLowerCase();
+        var mode = "";
+        if (lower.startsWith("c "))
+            mode = "clipboard";
+        else if (lower.startsWith("f "))
+            mode = "files";
+        else if (lower.startsWith("e "))
+            mode = "emoji";
+        else if (input.startsWith("= "))
+            mode = "calculator";
+        if (mode === "")
+            return false;
+
+        searchMode = mode;
+        searchEntry.text = input.substring(2);
+        searchEntry.cursorPosition = searchEntry.text.length;
+        syncSearchQuery();
+        return true;
+    }
+
+    WlrLayershell.namespace: "launcher"
     aboveWindows: true
     anchors.bottom: true
     anchors.left: true
@@ -46,9 +106,14 @@ PanelWindow {
 
     onShowAllAppsChanged: {
         allAppsRevealTimer.stop();
+        allAppsLoaderTimer.stop();
         allAppsReady = false;
-        if (showAllApps)
+        if (showAllApps) {
+            allAppsLoaderTimer.start();
             allAppsRevealTimer.start();
+        } else {
+            allAppsLoaderActive = false;
+        }
     }
     onVisibleChanged: {
         if (visible) {
@@ -69,6 +134,17 @@ PanelWindow {
                 allAppsReady = true;
         }
     }
+    Timer {
+        id: allAppsLoaderTimer
+
+        interval: 360
+        repeat: false
+
+        onTriggered: {
+            if (showAllApps)
+                allAppsLoaderActive = true;
+        }
+    }
 
     // Timer to delay visible=false until the fade-out/scale-down animation completes
     Timer {
@@ -80,7 +156,7 @@ PanelWindow {
 
         onTriggered: {
             visible = false;
-            searchQuery = "";
+            resetSearch();
             launcherWindow.dismissed();
         }
     }
@@ -96,13 +172,11 @@ PanelWindow {
     Rectangle {
         id: mainLayout
 
+        readonly property real desiredHeight: showAllApps ? 680 : (searchQuery.trim() !== "" && hasContent ? (97 + (calcView.hasResult ? 92 : 0) + searchView.implicitHeight) : 82)
+        readonly property real desiredWidth: showAllApps ? 900 : (searchQuery.trim() !== "" ? 500 : 380)
         readonly property bool hasContent: calcView.hasResult || searchView.combinedResults.length > 0
-
-        // Dynamic height calculation: 97px (margins/spacings/header) + calc (if any) + search results list
-        readonly property real targetHeight: showAllApps ? 680 : (searchQuery.trim() !== "" && hasContent ? (97 + (calcView.hasResult ? 92 : 0) + searchView.implicitHeight) : 82)
-
-        // Accurate width calculation: 380px when empty, expanding to 500px when active/searching, and 900px for All Apps
-        readonly property real targetWidth: showAllApps ? 900 : (searchQuery.trim() !== "" ? 500 : 380)
+        readonly property real targetHeight: Responsive.fitWithMargins(desiredHeight, launcherWindow.height, launcherWindow.compact ? 10 : 20, 82)
+        readonly property real targetWidth: Responsive.fitWithMargins(desiredWidth, launcherWindow.width, launcherWindow.compact ? 10 : 20, 300)
 
         anchors.centerIn: parent
         border.color: Config.alpha(Config.md3.outline_variant, 0.38)
@@ -113,14 +187,14 @@ PanelWindow {
         height: targetHeight
         layer.enabled: launcherWindow.visible
         opacity: launcherWindow.active ? 1.0 : 0.0
-        radius: 40
+        radius: Math.min(40, height / 2, width / 2)
         scale: launcherWindow.active ? 1.0 : 0.92
         width: targetWidth
 
         Behavior on height {
             NumberAnimation {
                 duration: 350
-                easing.type: Easing.OutBack
+                easing.type: Easing.OutCubic
             }
         }
         layer.effect: DropShadow {
@@ -148,7 +222,7 @@ PanelWindow {
         Behavior on width {
             NumberAnimation {
                 duration: 350
-                easing.type: Easing.OutBack
+                easing.type: Easing.OutCubic
             }
         }
 
@@ -181,14 +255,14 @@ PanelWindow {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 15
-            spacing: 15
+            anchors.margins: launcherWindow.compact ? 12 : 15
+            spacing: launcherWindow.compact ? 10 : 15
 
             // Search & Navigation Row
             RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 52
-                spacing: 15
+                spacing: launcherWindow.compact ? 10 : 15
 
                 IconImage {
                     Layout.alignment: Qt.AlignVCenter
@@ -199,6 +273,59 @@ PanelWindow {
 
                     layer.effect: ColorOverlay {
                         color: searchEntry.activeFocus ? Config.md3.primary : Config.md3.on_surface_variant
+                    }
+                }
+                Rectangle {
+                    id: modeChip
+
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredHeight: 34
+                    Layout.preferredWidth: modeChipContent.implicitWidth + 24
+                    border.color: Config.alpha(launcherWindow.activeModeColor, 0.42)
+                    border.width: 1
+                    color: modeChipMouse.containsMouse ? Config.alpha(launcherWindow.activeModeColor, 0.22) : Config.alpha(launcherWindow.activeModeColor, 0.14)
+                    opacity: visible ? 1 : 0
+                    radius: 17
+                    visible: launcherWindow.searchMode !== ""
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 140
+                        }
+                    }
+
+                    RowLayout {
+                        id: modeChipContent
+
+                        anchors.centerIn: parent
+                        spacing: 7
+
+                        IconImage {
+                            Layout.preferredHeight: 17
+                            Layout.preferredWidth: 17
+                            layer.enabled: true
+                            source: Quickshell.iconPath(launcherWindow.activeModeIcon)
+
+                            layer.effect: ColorOverlay {
+                                color: launcherWindow.activeModeColor
+                            }
+                        }
+                        Text {
+                            color: launcherWindow.activeModeColor
+                            font.family: Config.fontName
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            text: launcherWindow.activeModeLabel
+                        }
+                    }
+                    MouseArea {
+                        id: modeChipMouse
+
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+
+                        onClicked: launcherWindow.clearSearchMode()
                     }
                 }
                 TextInput {
@@ -214,7 +341,10 @@ PanelWindow {
                     selectByMouse: true
 
                     Keys.onPressed: event => {
-                        if (event.key === Qt.Key_Escape) {
+                        if (event.key === Qt.Key_Backspace && launcherWindow.searchMode !== "" && text === "") {
+                            launcherWindow.clearSearchMode();
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_Escape) {
                             closeLauncher();
                             event.accepted = true;
                         } else if (searchQuery.trim() !== "" && !showAllApps) {
@@ -234,30 +364,26 @@ PanelWindow {
                             }
                         }
                     }
-                    onTextChanged: searchQuery = text
+                    onTextChanged: {
+                        if (!launcherWindow.tryActivateSearchMode())
+                            launcherWindow.syncSearchQuery();
+                    }
 
                     Text {
                         color: Config.alpha(Config.md3.on_surface_variant, 0.62)
                         font: parent.font
-                        text: "Search"
+                        text: launcherWindow.activeModePlaceholder
                         visible: parent.text === ""
                     }
                 }
-                Rectangle {
+                Item {
                     id: toggleRect
 
                     Layout.alignment: Qt.AlignVCenter
-                    color: toggleMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"
-                    height: 40
-                    radius: 20
-                    scale: toggleMouse.containsMouse ? 1.06 : 1
-                    width: 40
+                    Layout.preferredHeight: 40
+                    Layout.preferredWidth: 40
+                    scale: toggleMouse.containsMouse ? 1.05 : 1
 
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 120
-                        }
-                    }
                     Behavior on scale {
                         NumberAnimation {
                             duration: 220
@@ -265,21 +391,25 @@ PanelWindow {
                         }
                     }
 
-                    IconImage {
+                    Grid {
                         anchors.centerIn: parent
-                        height: 23
-                        layer.enabled: true
-                        rotation: showAllApps ? 90 : 0
-                        source: Quickshell.iconPath(showAllApps ? "view-list-symbolic" : "view-grid-symbolic")
-                        width: 23
+                        columns: 2
+                        spacing: 4
 
-                        layer.effect: ColorOverlay {
-                            color: showAllApps ? Config.md3.primary : Config.md3.on_surface_variant
-                        }
-                        Behavior on rotation {
-                            NumberAnimation {
-                                duration: 350
-                                easing.type: Easing.OutBack
+                        Repeater {
+                            model: 4
+
+                            Rectangle {
+                                color: launcherWindow.showAllApps || toggleMouse.containsMouse ? Config.md3.primary : Config.md3.on_surface_variant
+                                height: 6
+                                radius: 2
+                                width: 6
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: 120
+                                    }
+                                }
                             }
                         }
                     }
@@ -293,7 +423,7 @@ PanelWindow {
                         onClicked: {
                             showAllApps = !showAllApps;
                             if (showAllApps)
-                                searchEntry.text = "";
+                                launcherWindow.resetSearch();
                         }
                     }
                 }
@@ -310,9 +440,7 @@ PanelWindow {
 
                 // Search mode: calculator card + search results (stacked)
                 ColumnLayout {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
+                    anchors.fill: parent
                     spacing: 12
                     visible: searchQuery !== "" && !showAllApps
 
@@ -331,7 +459,9 @@ PanelWindow {
                     LauncherSearch {
                         id: searchView
 
+                        Layout.fillHeight: true
                         Layout.fillWidth: true
+                        Layout.minimumHeight: 0
                         query: searchQuery
 
                         onResultLaunched: closeLauncher()
@@ -343,7 +473,7 @@ PanelWindow {
                 Loader {
                     id: allAppsLoader
 
-                    active: showAllApps
+                    active: launcherWindow.allAppsLoaderActive
                     anchors.fill: parent
 
                     sourceComponent: LauncherApps {

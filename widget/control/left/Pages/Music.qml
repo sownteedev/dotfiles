@@ -13,9 +13,8 @@ import "../../../../components/common"
 Item {
     id: root
 
-    // Everything below the artwork needs roughly 370 px including margins and
-    // spacing. Scale the record from the actual remaining height so compact
-    // panels do not push it above the visible area.
+    // Scale the artwork from the viewport; compact panels can scroll once the
+    // controls reach their minimum usable size.
     readonly property real artworkSize: Math.max(96, Math.min(280, playerArea.height - 370))
     property bool isSwipingOut: false
     readonly property bool mediaMuted: !mediaStream || !mediaStream.audio || mediaStream.audio.muted
@@ -159,16 +158,22 @@ Item {
         anchors.fill: parent
         spacing: 10
 
-        Rectangle {
+        Flickable {
             id: playerArea
 
             Layout.fillHeight: true
             Layout.fillWidth: true
+            boundsBehavior: Flickable.StopAtBounds
             clip: true
-            color: "transparent"
-            radius: 18
+            contentHeight: root.player ? Math.max(height, playerContent.implicitHeight + 40) : Math.max(height, emptyState.implicitHeight + 36)
+            contentWidth: width
+            flickableDirection: Flickable.VerticalFlick
+            interactive: contentHeight > height
+            maximumFlickVelocity: 1800
 
             ColumnLayout {
+                id: playerContent
+
                 anchors.fill: parent
                 anchors.margins: 20
                 spacing: 15
@@ -517,8 +522,10 @@ Item {
                 }
             }
             MusicEmptyState {
+                id: emptyState
+
                 anchors.centerIn: parent
-                height: Math.min(480, parent.height - 36)
+                height: implicitHeight
                 opacity: root.player ? 0 : 1
                 visible: !root.player
                 width: Math.min(440, parent.width - 32)

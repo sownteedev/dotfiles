@@ -786,21 +786,21 @@ Item {
                 }
             }
         }
-        SelectPopup {
-            accentColor: volumePageRoot.popupIsSink ? Config.md3.primary : Config.md3.secondary
-            anchors.fill: parent
-            itemActive: device => volumePageRoot.popupDeviceActive(device)
-            itemLabel: device => device ? AudioService.cleanDeviceName(device.description || device.name || "Device") : ""
-            itemVisible: device => volumePageRoot.popupDeviceVisible(device)
-            model: volumePageRoot.popupModel
-            openAbove: volumePageRoot.popupOpenAbove
-            opened: volumePageRoot.popupOpen
-            popupY: volumePageRoot.popupY
+    }
+    SelectPopup {
+        accentColor: volumePageRoot.popupIsSink ? Config.md3.primary : Config.md3.secondary
+        anchors.fill: parent
+        itemActive: device => volumePageRoot.popupDeviceActive(device)
+        itemLabel: device => device ? AudioService.cleanDeviceName(device.description || device.name || "Device") : ""
+        itemVisible: device => volumePageRoot.popupDeviceVisible(device)
+        model: volumePageRoot.popupModel
+        openAbove: volumePageRoot.popupOpenAbove
+        opened: volumePageRoot.popupOpen
+        popupY: volumePageRoot.popupY
 
-            onDismissed: {
-                volumePageRoot.closeDevicePopup();
-            }
-            onItemSelected: device => volumePageRoot.selectPopupDevice(device)
+        onDismissed: {
+            volumePageRoot.closeDevicePopup();
         }
+        onItemSelected: device => volumePageRoot.selectPopupDevice(device)
     }
 }

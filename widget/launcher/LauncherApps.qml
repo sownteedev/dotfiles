@@ -7,7 +7,7 @@ import "../../"
 GridView {
     id: appsGrid
 
-    readonly property int columns: 5
+    readonly property int columns: Responsive.columnsFor(width, 150, 5, width < 300 ? 1 : 2, 0)
     property bool entranceReady: false
     readonly property var gridItems: {
         var apps = DesktopEntries.applications.values;
@@ -15,7 +15,7 @@ GridView {
             return [];
 
         apps = apps.filter(function (entry) {
-            return !entry.runInTerminal && entry.name && entry.name !== "";
+            return !entry.noDisplay && !entry.runInTerminal && entry.name && entry.name !== "";
         });
 
         if (query.trim() !== "") {
@@ -52,7 +52,7 @@ GridView {
     Layout.fillHeight: true
     Layout.fillWidth: true
     boundsBehavior: Flickable.StopAtBounds
-    cellHeight: 158
+    cellHeight: width < 620 ? 142 : 158
     cellWidth: normalizedCellWidth
     clip: true
     leftMargin: Math.floor((width - (normalizedCellWidth * columns)) / 2)
@@ -186,8 +186,8 @@ GridView {
 
                 Item {
                     Layout.alignment: Qt.AlignHCenter
-                    height: 70
-                    width: 70
+                    height: appsGrid.width < 620 ? 60 : 70
+                    width: height
 
                     IconImage {
                         anchors.fill: parent

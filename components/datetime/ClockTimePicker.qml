@@ -27,23 +27,39 @@ Popup {
 
     closePolicy: Popup.CloseOnEscape
     focus: true
-    height: 400
+    height: parent ? Responsive.fitWithMargins(400, parent.height, 8, 260) : 400
     modal: true
+    parent: Overlay.overlay
 
     // ─── Geometry & style ──────────────────────────────────────────────────────
-    width: 300
+    width: parent ? Responsive.fitWithMargins(300, parent.width, 8, 220) : 300
 
     background: Rectangle {
         border.color: Config.alpha(Config.md3.on_surface, 0.12)
         border.width: 1
         color: Config.md3.surface
-        radius: 16
+        radius: Math.min(16, root.width / 2, root.height / 2)
     }
 
     // ─── Root item ─────────────────────────────────────────────────────────────
-    Item {
+    Flickable {
+        id: contentViewport
+
         anchors.fill: parent
-        anchors.margins: 16
+        boundsBehavior: Flickable.StopAtBounds
+        clip: contentWidth > width || contentHeight > height
+        contentHeight: Math.max(height, 400)
+        contentWidth: Math.max(width, 300)
+        flickableDirection: Flickable.AutoFlickDirection
+        interactive: contentWidth > width || contentHeight > height
+
+        Item {
+            id: contentCanvas
+
+            height: 368
+            width: 268
+            x: (contentViewport.contentWidth - width) / 2
+            y: (contentViewport.contentHeight - height) / 2
 
         // ── Time display (top) ─────────────────────────────────────────────
         Row {
@@ -290,7 +306,6 @@ Popup {
                 }
 
                 anchors.fill: parent
-                preventStealing: true
 
                 onPositionChanged: e => {
                     pick(e.x, e.y);
@@ -377,6 +392,7 @@ Popup {
                     }
                 }
             }
+        }
         }
     }
 }

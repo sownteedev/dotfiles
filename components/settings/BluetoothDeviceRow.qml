@@ -81,7 +81,7 @@ Rectangle {
     border.color: root.connected ? Config.alpha(Config.md3.primary, 0.35) : Config.alpha(Config.md3.on_surface, 0.055)
     border.width: 1
     color: Config.md3.surface_container
-    implicitHeight: 76
+    implicitHeight: hasDetailedBattery ? 108 : 76
     radius: 14
 
     Behavior on color {
@@ -170,7 +170,8 @@ Rectangle {
         }
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 6
+            Layout.minimumWidth: 0
+            spacing: root.hasDetailedBattery ? 4 : 6
 
             Text {
                 Layout.fillWidth: true
@@ -194,6 +195,8 @@ Rectangle {
                 }
 
                 Text {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     color: root.statusColor
                     elide: Text.ElideRight
                     font.family: Config.fontName
@@ -201,79 +204,93 @@ Rectangle {
                     font.weight: Font.Medium
                     text: root.statusText
                 }
-                Item {
-                    Layout.preferredWidth: 3
-                    visible: root.hasDetailedBattery
-                }
+            }
+            Flickable {
+                id: batteryDetailViewport
 
-                Repeater {
-                    model: root.hasDetailedBattery ? [
-                        { "label": "L", "value": root.detailedBattery.left, "charging": root.detailedBattery.leftCharging === true },
-                        { "label": "R", "value": root.detailedBattery.right, "charging": root.detailedBattery.rightCharging === true },
-                        { "label": "Case", "value": root.detailedBattery.case, "charging": root.detailedBattery.caseCharging === true }
-                    ] : []
+                Layout.fillWidth: true
+                Layout.preferredHeight: visible ? 24 : 0
+                boundsBehavior: Flickable.StopAtBounds
+                clip: contentWidth > width
+                contentHeight: height
+                contentWidth: Math.max(width, batteryDetailRow.implicitWidth)
+                flickableDirection: Flickable.HorizontalFlick
+                interactive: contentWidth > width
+                visible: root.hasDetailedBattery
 
-                    Rectangle {
-                        id: batteryChip
+                Row {
+                    id: batteryDetailRow
 
-                        required property var modelData
+                    height: parent.height
+                    spacing: 6
+                    x: implicitWidth <= batteryDetailViewport.width ? (batteryDetailViewport.width - implicitWidth) / 2 : 0
 
-                        readonly property bool valueAvailable: modelData.value !== null && modelData.value !== undefined && modelData.value >= 0 && modelData.value <= 100
-                        readonly property color levelColor: root.batteryColor(modelData.value)
+                    Repeater {
+                        model: root.hasDetailedBattery ? [
+                            { "label": "L", "value": root.detailedBattery.left, "charging": root.detailedBattery.leftCharging === true },
+                            { "label": "R", "value": root.detailedBattery.right, "charging": root.detailedBattery.rightCharging === true },
+                            { "label": "Case", "value": root.detailedBattery.case, "charging": root.detailedBattery.caseCharging === true }
+                        ] : []
 
-                        Layout.preferredHeight: 24
-                        Layout.preferredWidth: detailContent.implicitWidth + 14
-                        border.color: Config.alpha(levelColor, 0.32)
-                        border.width: 1
-                        clip: true
-                        color: Config.alpha(levelColor, 0.10)
-                        radius: 8
-
-                        RowLayout {
-                            id: detailContent
-
-                            anchors.centerIn: parent
-                            anchors.verticalCenterOffset: -1
-                            spacing: 5
-
-                            Text {
-                                color: Config.alpha(batteryChip.levelColor, 0.88)
-                                font.family: Config.fontName
-                                font.pixelSize: 10
-                                font.weight: Font.DemiBold
-                                text: modelData.label
-                            }
-                            Text {
-                                color: Config.md3.on_surface
-                                font.family: Config.fontName
-                                font.pixelSize: 11
-                                font.weight: Font.ExtraBold
-                                text: batteryChip.valueAvailable ? modelData.value + "%" : "—"
-                            }
-                            Text {
-                                color: Config.md3.tertiary
-                                font.family: Config.fontName
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                text: "⚡"
-                                visible: batteryChip.valueAvailable && modelData.charging === true
-                            }
-                        }
                         Rectangle {
-                            anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 2
-                            anchors.left: parent.left
-                            anchors.leftMargin: 3
-                            color: batteryChip.levelColor
-                            height: 2
-                            opacity: batteryChip.valueAvailable ? 0.72 : 0
-                            radius: 1
-                            width: (batteryChip.width - 6) * Math.max(0, Math.min(100, modelData.value || 0)) / 100
+                            id: batteryChip
+
+                            required property var modelData
+
+                            readonly property bool valueAvailable: modelData.value !== null && modelData.value !== undefined && modelData.value >= 0 && modelData.value <= 100
+                            readonly property color levelColor: root.batteryColor(modelData.value)
+
+                            border.color: Config.alpha(levelColor, 0.32)
+                            border.width: 1
+                            clip: true
+                            color: Config.alpha(levelColor, 0.10)
+                            height: 24
+                            radius: 8
+                            width: detailContent.implicitWidth + 14
+
+                            RowLayout {
+                                id: detailContent
+
+                                anchors.centerIn: parent
+                                anchors.verticalCenterOffset: -1
+                                spacing: 5
+
+                                Text {
+                                    color: Config.alpha(batteryChip.levelColor, 0.88)
+                                    font.family: Config.fontName
+                                    font.pixelSize: 10
+                                    font.weight: Font.DemiBold
+                                    text: modelData.label
+                                }
+                                Text {
+                                    color: Config.md3.on_surface
+                                    font.family: Config.fontName
+                                    font.pixelSize: 11
+                                    font.weight: Font.ExtraBold
+                                    text: batteryChip.valueAvailable ? modelData.value + "%" : "—"
+                                }
+                                Text {
+                                    color: Config.md3.tertiary
+                                    font.family: Config.fontName
+                                    font.pixelSize: 11
+                                    font.weight: Font.Bold
+                                    text: "⚡"
+                                    visible: batteryChip.valueAvailable && modelData.charging === true
+                                }
+                            }
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.bottomMargin: 2
+                                anchors.left: parent.left
+                                anchors.leftMargin: 3
+                                color: batteryChip.levelColor
+                                height: 2
+                                opacity: batteryChip.valueAvailable ? 0.72 : 0
+                                radius: 1
+                                width: (batteryChip.width - 6) * Math.max(0, Math.min(100, modelData.value || 0)) / 100
+                            }
                         }
                     }
-                }
-                Item {
-                    Layout.fillWidth: true
                 }
             }
         }
@@ -282,8 +299,9 @@ Rectangle {
 
             readonly property string label: root.commandPending ? BluetoothService.statusText : root.busy ? (root.device && root.device.pairing ? "Pairing…" : root.connecting ? "Connecting…" : "Disconnecting…") : root.connected ? "Disconnect" : (root.actuallyPaired || root.savedDevice) ? "Connect" : "Pair"
 
+            Layout.maximumWidth: 104
             Layout.preferredHeight: 34
-            Layout.preferredWidth: Math.max(68, primaryLabel.implicitWidth + 18)
+            Layout.preferredWidth: Math.min(Layout.maximumWidth, Math.max(68, primaryLabel.implicitWidth + 18))
             border.color: Config.alpha(root.connected ? Config.md3.on_surface : Config.md3.primary, 0.24)
             border.width: 1
             color: primaryMouse.containsMouse && !root.busy ? Config.alpha(root.connected ? Config.md3.on_surface : Config.md3.primary, 0.24) : Config.alpha(root.connected ? Config.md3.on_surface : Config.md3.primary, 0.13)
@@ -298,7 +316,10 @@ Rectangle {
                 font.family: Config.fontName
                 font.pixelSize: 13
                 font.weight: Font.Bold
+                horizontalAlignment: Text.AlignHCenter
                 text: primaryAction.label
+                width: parent.width - 12
+                elide: Text.ElideRight
             }
             MouseArea {
                 id: primaryMouse

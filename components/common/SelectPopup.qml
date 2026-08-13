@@ -15,7 +15,7 @@ Item {
     property var itemVisible: function (item) {
         return true;
     }
-    property real maxPopupHeight: Math.max(rowHeight + 16, height - 24)
+    property real maxPopupHeight: Math.max(0, height - 24)
     property var model: []
     property bool openAbove: false
     property bool opened: false
@@ -36,8 +36,38 @@ Item {
     signal dismissed
     signal itemSelected(var item)
 
+    function positionCurrentItem() {
+        Qt.callLater(function () {
+            if (!root.opened || popupItems.count === 0)
+                return;
+
+            const values = root.model || [];
+            let activeIndex = -1;
+            for (let i = 0; i < values.length; ++i) {
+                if (root.itemVisible(values[i]) && root.itemActive(values[i])) {
+                    activeIndex = i;
+                    break;
+                }
+            }
+
+            if (activeIndex >= 0)
+                popupItems.positionViewAtIndex(activeIndex, ListView.Center);
+            else
+                popupItems.positionViewAtBeginning();
+        });
+    }
+
     opacity: opened ? 1 : 0
     visible: opened || opacity > 0
+
+    onModelChanged: {
+        if (opened)
+            positionCurrentItem();
+    }
+    onOpenedChanged: {
+        if (opened)
+            positionCurrentItem();
+    }
 
     Behavior on opacity {
         NumberAnimation {
@@ -82,11 +112,11 @@ Item {
             border.color: Config.alpha(Config.md3.on_surface, 0.08)
             border.width: 1
             color: Config.md3.surface_container
-            height: Math.min(desiredHeight, root.maxPopupHeight)
+            height: Responsive.fit(desiredHeight, root.maxPopupHeight, root.rowHeight + 16)
             layer.enabled: root.opened
             radius: 12
-            width: Math.min(root.popupWidth, root.width - root.rightMargin - 12)
-            x: root.width - width - root.rightMargin
+            width: Responsive.fit(root.popupWidth, root.width - root.rightMargin - 12, 180)
+            x: Math.max(0, root.width - width - root.rightMargin)
             y: Math.max(12, Math.min(root.popupY, root.height - height - 12))
 
             layer.effect: DropShadow {

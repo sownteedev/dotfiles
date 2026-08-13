@@ -10,11 +10,12 @@ Item {
 
     readonly property var activePlayer: MediaService.activePlayer
     readonly property string description: MediaService.artist
+    property real maximumWidth: 350
     readonly property bool playing: MediaService.playing
     readonly property string title: MediaService.title
 
     implicitHeight: 46
-    implicitWidth: activePlayer !== null && activePlayer.trackTitle && activePlayer.trackTitle !== "" ? 350 : 0
+    implicitWidth: activePlayer !== null && activePlayer.trackTitle && activePlayer.trackTitle !== "" ? Math.max(90, Math.min(350, maximumWidth)) : 0
     visible: implicitWidth > 0
 
     Behavior on implicitWidth {
@@ -295,13 +296,13 @@ Item {
                     maximumLineCount: 1
                     text: root.title
                 }
-                RowLayout {
+                Row {
+                    id: artistLine
+
                     Layout.fillWidth: true
                     spacing: 6
 
                     Text {
-                        Layout.fillWidth: true
-                        Layout.maximumWidth: implicitWidth
                         color: Config.md3.on_surface_variant
                         elide: Text.ElideRight
                         font.family: Config.fontName
@@ -309,8 +310,11 @@ Item {
                         font.weight: Font.Medium
                         maximumLineCount: 1
                         text: root.description
+                        width: Math.min(implicitWidth, Math.max(0, artistLine.width - (liveBadge.visible ? liveBadge.width + artistLine.spacing : 0)))
                     }
                     Rectangle {
+                        id: liveBadge
+
                         color: Config.md3.error
                         height: 14
                         radius: 4
@@ -327,9 +331,6 @@ Item {
                             font.weight: Font.ExtraBold
                             text: "LIVE"
                         }
-                    }
-                    Item {
-                        Layout.fillWidth: true
                     }
                 }
             }

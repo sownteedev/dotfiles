@@ -11,6 +11,7 @@ QtObject {
     // Keep public source defaults empty so this repository is safe to share.
     property alias apiWeather: runtimeSettings.apiWeather
     property var base16: ({})
+    readonly property string cacheRoot: (Quickshell.env("XDG_CACHE_HOME") || homeDir + "/.cache") + "/quickshell"
     // Pre-defined alpha variants (0.8 opacity)
     property alias captureAutoCopyRecording: runtimeSettings.captureAutoCopyRecording
     property alias captureAutoCopyScreenshot: runtimeSettings.captureAutoCopyScreenshot
@@ -26,6 +27,9 @@ QtObject {
     readonly property string captureScreenshotDir: expandHomePath(captureScreenshotDirPath)
     property alias captureScreenshotDirPath: runtimeSettings.captureScreenshotDirPath
     property alias clock24h: runtimeSettings.clock24h
+    // Keep the recovery wallpaper independent from a user-selected wallpaper
+    // directory, which may not contain mori.jpg.
+    readonly property string defaultWallpaper: dotfilesDir + "/.walls/flower-plant-petal.jpg"
     readonly property string dotfilesDir: dotfilesRoot + "/dotf"
     readonly property string dotfilesRoot: homeDir + "/Dotfiles"
     // Font
@@ -134,12 +138,12 @@ QtObject {
 
         onAdapterUpdated: writeAdapter()
     }
-    readonly property string runtimeSettingsPath: (Quickshell.env("XDG_CACHE_HOME") || homeDir + "/.cache") + "/quickshell/settings.json"
+    readonly property string runtimeSettingsPath: cacheRoot + "/settings.json"
     readonly property string steamDir: homeDir + "/.local/share/Steam"
     readonly property real themeLuminance: md3.background.r * 0.299 + md3.background.g * 0.587 + md3.background.b * 0.114
     readonly property string wallFolder: expandHomePath(wallFolderPath)
     property alias wallFolderPath: runtimeSettings.wallFolderPath
-    property string wallpaper: wallFolder + "/mori.jpg"
+    property string wallpaper: defaultWallpaper
     property alias wallpaperBatteryFps: runtimeSettings.wallpaperBatteryFps
     readonly property string wallpaperEngineAssetsDir: expandHomePath(wallpaperEngineAssetsDirPath)
     property alias wallpaperEngineAssetsDirPath: runtimeSettings.wallpaperEngineAssetsDirPath
@@ -185,4 +189,6 @@ QtObject {
             base16Changed();
         }
     }
+
+    Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", cacheRoot])
 }

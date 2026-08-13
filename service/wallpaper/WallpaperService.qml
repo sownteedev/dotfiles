@@ -13,7 +13,24 @@ QtObject {
     readonly property string currentMode: selectedMode
     readonly property string currentWallpaper: selectedPath
     readonly property string displayWallpaper: previewActive && previewPath ? previewPath : Config.wallpaper
+    readonly property string selectedBackend: selectedMode === "video" ? (isEngineVideo ? "engine" : "live") : "static"
+    property Connections configConnections: Connections {
+        function onMatugenEnabledChanged() {
+            root.cancelPreview();
+            WallpaperPreviewService.cancel();
+            var sourceKey = root.themeIdentity();
+            ThemeService.setExpectedSource(sourceKey);
+            var source = root.currentThemeSource();
+            if (Config.matugenEnabled && StateManager.wallpaperLoaded && ThemeService.modeResolved && source)
+                ThemeService.generate(source, ThemeService.colorMode, true, sourceKey);
+        }
+
+        target: Config
+    }
     property Connections engineConnections: Connections {
+        function onPlaybackFailed(sourcePath, message) {
+            root.handleVideoFailure(sourcePath, message);
+        }
         function onPlaybackReady(sourcePath, framePath) {
             if (root.isTransitionPending && root.selectedMode === "video" && root.isEngineVideo && sourcePath === root.selectedPath) {
                 root.backendReadyPath = sourcePath;
@@ -37,8 +54,20 @@ QtObject {
     property bool initialThemeChecked: false
     property bool isEngineVideo: false
     property bool isTransitionPending: false
+    property var lastStableState: ({
+        "version": 2,
+        "path": Config.defaultWallpaper,
+        "mode": "static",
+        "backend": "static",
+        "modified": "0",
+        "thumbnail": "",
+        "frame": ""
+    })
     property string lastVideoFrame: ""
     property Connections liveConnections: Connections {
+        function onPlaybackFailed(sourcePath, message) {
+            root.handleVideoFailure(sourcePath, message);
+        }
         function onPlaybackReady(sourcePath, framePath) {
             if (root.isTransitionPending && root.selectedMode === "video" && !root.isEngineVideo && sourcePath === root.selectedPath) {
                 root.backendReadyPath = sourcePath;
@@ -62,7 +91,6 @@ QtObject {
                 return;
 
             root.fallbackVideoThumbnail = thumbnailPath;
-            root.saveState(thumbnailPath);
             if (root.isTransitionPending && !root.pendingVideoThumbnail)
                 root.stageVideoThumbnail(thumbnailPath, false);
             if (root.isTransitionPending && !root.videoQuickThemeReady && !root.pendingVideoThemeSource)
@@ -70,6 +98,18 @@ QtObject {
         }
 
         target: LiveWallpaperService
+    }
+    property Connections playbackPolicyConnections: Connections {
+        function onShouldPauseChanged() {
+            if (!root.isTransitionPending || root.selectedMode !== "video")
+                return;
+            if (WallpaperPlaybackPolicy.shouldPause)
+                root.videoTransitionDeadline.stop();
+            else
+                root.videoTransitionDeadline.restart();
+        }
+
+        target: WallpaperPlaybackPolicy
     }
     property bool liveRevealActive: false
     property Timer liveRevealFinish: Timer {
@@ -103,22 +143,46 @@ QtObject {
     }
     property string previewPath: ""
     readonly property bool ready: StateManager.wallpaperLoaded
-    property string selectedMode: LiveWallpaperService.isLivePath(Config.wallpaper) ? "live" : "static"
+    property string selectedMode: LiveWallpaperService.isLivePath(Config.wallpaper) ? "video" : "static"
     property string selectedModified: "0"
     property string selectedPath: Config.wallpaper
-    readonly property string statePath: Config.homeDir + "/.cache/quickshell/quickshell_wallpaper.txt"
+    readonly property string legacyStatePath: Config.homeDir + "/.cache/quickshell/quickshell_wallpaper.txt"
+    property bool legacyStateAttempted: false
+    property Process legacyStateLoader: Process {
+        command: ["cat", root.legacyStatePath]
+
+        stdout: StdioCollector {
+            id: legacyStateOutput
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0 && legacyStateOutput.text.trim() !== "") {
+                root.loadSavedWallpaper(legacyStateOutput.text);
+                root.stateReader.setText(JSON.stringify(root.lastStableState) + "\n");
+            } else {
+                root.loadDefaultWallpaper();
+            }
+            root.ensureInitialTheme();
+        }
+    }
+    readonly property string statePath: Config.cacheRoot + "/quickshell_wallpaper.txt"
     property FileView stateReader: FileView {
+        atomicWrites: true
         blockLoading: true
+        blockWrites: true
         path: root.statePath
-        // This file is owned by WallpaperService. Watching our own asynchronous
-        // writes used to reload a half-transitioned state and could leave the
+        // This file is owned by WallpaperService. Watching our own writes can
+        // re-enter a half-transitioned state and could leave the
         // service in "static" mode while mpvpaper was already playing.
         watchChanges: false
 
         onLoadFailed: {
-            root.selectedPath = Config.wallpaper;
-            root.selectedMode = "static";
-            StateManager.wallpaperLoaded = true;
+            if (root.statePath !== root.legacyStatePath && !root.legacyStateAttempted) {
+                root.legacyStateAttempted = true;
+                root.legacyStateLoader.running = true;
+                return;
+            }
+            root.loadDefaultWallpaper();
             root.ensureInitialTheme();
         }
         onLoadedChanged: {
@@ -127,6 +191,7 @@ QtObject {
                 root.ensureInitialTheme();
             }
         }
+        onSaveFailed: error => console.warn("[WallpaperService] Could not save wallpaper state:", error)
     }
     property Timer staticRevealDelay: Timer {
         interval: 220
@@ -141,6 +206,18 @@ QtObject {
         }
     }
     property Connections themeConnections: Connections {
+        function onModeResolvedChanged() {
+            root.ensureInitialTheme();
+        }
+        function onSystemModeChanged(mode) {
+            root.cancelPreview();
+            WallpaperPreviewService.cancel();
+            var sourceKey = root.themeIdentity();
+            ThemeService.setExpectedSource(sourceKey);
+            var source = root.currentThemeSource();
+            if (StateManager.wallpaperLoaded && source)
+                ThemeService.generate(source, mode, true, sourceKey);
+        }
         function onThemeFileResolvedChanged() {
             root.ensureInitialTheme();
         }
@@ -154,9 +231,13 @@ QtObject {
 
         onTriggered: {
             if (root.isTransitionPending && root.pendingVideoThumbnail) {
-                console.warn("[WallpaperService] Video cover readiness timed out, continuing with loaded fallback");
-                root.videoCoverReady = true;
-                root.tryFinishVideoTransition();
+                if (Object.keys(root.coverReadyScreens).length > 0) {
+                    console.warn("[WallpaperService] Some screens did not report the video cover ready, continuing with the loaded cover");
+                    root.videoCoverReady = true;
+                    root.tryFinishVideoTransition();
+                } else {
+                    console.warn("[WallpaperService] Video cover has not loaded yet, waiting for the transition deadline");
+                }
             }
         }
     }
@@ -197,6 +278,18 @@ QtObject {
         }
     }
     property int videoTransitionGeneration: 0
+    property var transitionRollbackState: null
+    property Timer videoTransitionDeadline: Timer {
+        interval: 12000
+        repeat: false
+
+        onTriggered: {
+            if (WallpaperPlaybackPolicy.shouldPause)
+                return;
+            if (root.isTransitionPending && root.selectedMode === "video")
+                root.handleVideoFailure(root.selectedPath, "The wallpaper renderer did not become ready in time");
+        }
+    }
 
     function stableHash(value) {
         var text = String(value || "");
@@ -207,15 +300,43 @@ QtObject {
         }
         return ("00000000" + hash.toString(16)).slice(-8);
     }
+    function currentThemeSource() {
+        if (selectedMode === "video")
+            return lastVideoFrame || fallbackVideoThumbnail || pendingVideoThumbnail || "";
+        return selectedPath || Config.wallpaper || Config.defaultWallpaper;
+    }
+    function themeIdentity() {
+        var identity = selectedMode + "|" + selectedBackend + "|" + String(selectedPath || "") + "|" + String(selectedModified || "0");
+        return "v1-" + stableHash("theme-source|" + identity) + "-" + stableHash(identity + "|theme-source");
+    }
 
-    function apply(path, mode, modified) {
+    function apply(path, mode, modified, backendOverride, preserveRollback) {
         if (!path)
             return;
 
         var nextMode = mode === "video" ? "video" : "static";
+        var nextModified = LiveWallpaperService.modifiedKey(modified);
+        if (nextMode === selectedMode && String(path) === String(selectedPath) && nextModified === selectedModified) {
+            // Selecting the current wallpaper is a commit of the selector
+            // preview, not a renderer restart. stop() followed immediately by
+            // play() is asynchronous and can otherwise make the old process
+            // exit look like a crash when both paths are identical.
+            cancelPreview();
+            WallpaperPreviewService.cancel();
+            return;
+        }
+        if (nextMode === "video") {
+            if (preserveRollback !== true)
+                transitionRollbackState = cloneState(lastStableState);
+        } else {
+            transitionRollbackState = null;
+        }
         selectedPath = path;
         selectedMode = nextMode;
-        selectedModified = LiveWallpaperService.modifiedKey(modified);
+        selectedModified = nextModified;
+        var nextIsEngine = nextMode === "video" && (backendOverride === "engine" ? true : backendOverride === "live" ? false : EngineWallpaperService.isEnginePath(path));
+        isEngineVideo = nextIsEngine;
+        ThemeService.setExpectedSource(themeIdentity());
         if (nextMode === "video") {
             videoTransitionGeneration += 1;
             cancelPreview();
@@ -233,20 +354,21 @@ QtObject {
             root.videoQuickThemeReady = false;
             root.videoQuickThemeSettle.stop();
             root.videoQuickThemeFallback.restart();
+            if (WallpaperPlaybackPolicy.shouldPause)
+                root.videoTransitionDeadline.stop();
+            else
+                root.videoTransitionDeadline.restart();
             root.resetVideoCoverReadiness();
 
-            var isEngine = EngineWallpaperService.isEnginePath(path);
-            root.isEngineVideo = isEngine;
             // Both renderers are stopped before the new one is launched. The
             // opaque desktop cover remains visible while the new frame loads.
             LiveWallpaperService.stop();
             EngineWallpaperService.stop();
 
-            if (isEngine) {
+            if (nextIsEngine) {
                 var project = EngineWallpaperService.projectForPath(path) || {};
                 var preview = project.preview || "";
                 root.fallbackVideoThumbnail = preview || Config.wallpaper;
-                root.saveState(root.fallbackVideoThumbnail);
                 if (preview) {
                     // The Workshop preview is already available locally. Use
                     // it as the temporary desktop cover while the renderer
@@ -270,7 +392,6 @@ QtObject {
             } else {
                 var liveThumbnail = LiveWallpaperService.requestThumbnail(path, selectedModified, true);
                 root.fallbackVideoThumbnail = liveThumbnail;
-                root.saveState(liveThumbnail);
                 if (LiveWallpaperService.thumbnailKnown(path, selectedModified))
                     root.stageVideoThumbnail(liveThumbnail, false);
                 LiveWallpaperService.play(path);
@@ -289,6 +410,7 @@ QtObject {
         videoQuickThemeReady = false;
         videoQuickThemeFallback.stop();
         videoQuickThemeSettle.stop();
+        videoTransitionDeadline.stop();
         resetVideoCoverReadiness();
         liveRevealFinish.stop();
         if (LiveWallpaperService.active || LiveWallpaperService.desiredPath !== "" || EngineWallpaperService.active || EngineWallpaperService.desiredPath !== "") {
@@ -304,7 +426,7 @@ QtObject {
         commitStatic(path);
     }
     function applyTheme(path) {
-        ThemeService.generate(path);
+        ThemeService.generate(path, ThemeService.colorMode, false, themeIdentity());
     }
     function beginPreview() {
         previewPath = "";
@@ -323,28 +445,71 @@ QtObject {
         EngineWallpaperService.stop();
     }
     function ensureInitialTheme() {
-        if (initialThemeChecked || !StateManager.wallpaperLoaded || !ThemeService.themeFileResolved)
+        if (initialThemeChecked || !StateManager.wallpaperLoaded || !ThemeService.themeFileResolved || !ThemeService.modeResolved)
             return;
 
-        initialThemeChecked = true;
-        if (!ThemeService.themeAvailable)
-            applyTheme(Config.wallpaper);
-    }
-    function loadSavedWallpaper() {
-        if (!stateReader.loaded)
-            return;
-
-        var state = parseState(stateReader.text());
-        if (!state || !state.path) {
-            selectedPath = Config.wallpaper;
-            selectedMode = "static";
-            StateManager.wallpaperLoaded = true;
+        var sourceKey = themeIdentity();
+        ThemeService.setExpectedSource(sourceKey);
+        if (ThemeService.themeAvailable) {
+            initialThemeChecked = true;
             return;
         }
-        var mode = (state.mode === "engine" || state.mode === "live" || state.mode === "video" || LiveWallpaperService.isLivePath(state.path)) ? "video" : "static";
-        selectedPath = state.path;
+        var source = currentThemeSource();
+        if (!source)
+            return;
+        initialThemeChecked = true;
+        ThemeService.generate(source, ThemeService.colorMode, true, sourceKey);
+    }
+    function loadDefaultWallpaper() {
+        isTransitionPending = false;
+        transitionRollbackState = null;
+        backendReadyPath = "";
+        videoTransitionDeadline.stop();
+        videoCoverReadyFallback.stop();
+        videoQuickThemeFallback.stop();
+        videoQuickThemeSettle.stop();
+        selectedPath = Config.defaultWallpaper;
+        selectedMode = "static";
+        selectedModified = "0";
+        isEngineVideo = false;
+        ThemeService.setExpectedSource(themeIdentity());
+        Config.wallpaper = Config.defaultWallpaper;
+        lastStableState = currentState("");
+        stateReader.setText(JSON.stringify(lastStableState) + "\n");
+        LiveWallpaperService.stop();
+        EngineWallpaperService.stop();
+        StateManager.wallpaperLoaded = true;
+    }
+    function loadSavedWallpaper(rawText) {
+        if (rawText === undefined && !stateReader.loaded)
+            return;
+
+        var state = parseState(rawText === undefined ? stateReader.text() : rawText);
+        var savedPath = state ? String(state.path || "") : "";
+        if (!state || !savedPath) {
+            loadDefaultWallpaper();
+            return;
+        }
+        var backend = state.backend === "engine" || state.mode === "engine" ? "engine" : state.backend === "live" || state.mode === "live" ? "live" : "";
+        var mode = (backend !== "" || state.mode === "video" || LiveWallpaperService.isLivePath(savedPath)) ? "video" : "static";
+        if (mode === "video" && backend === "")
+            backend = EngineWallpaperService.isEnginePath(savedPath) ? "engine" : "live";
+        if (mode === "static")
+            backend = "static";
+        isEngineVideo = mode === "video" && backend === "engine";
+        selectedPath = savedPath;
         selectedMode = mode;
         selectedModified = String(state.modified || "0");
+        lastStableState = {
+            "version": 2,
+            "path": selectedPath,
+            "mode": selectedMode,
+            "backend": backend,
+            "modified": selectedModified,
+            "thumbnail": String(state.thumbnail || ""),
+            "frame": String(state.frame || "")
+        };
+        ThemeService.setExpectedSource(themeIdentity());
         liveRevealActive = false;
         backendReadyPath = "";
         fallbackVideoThumbnail = "";
@@ -362,11 +527,15 @@ QtObject {
             videoTransitionGeneration += 1;
             liveRevealActive = true;
             isTransitionPending = true;
+            transitionRollbackState = staticRollbackState(lastStableState);
+            if (WallpaperPlaybackPolicy.shouldPause)
+                videoTransitionDeadline.stop();
+            else
+                videoTransitionDeadline.restart();
             // colors.json already belongs to the persisted wallpaper. Do not
             // hold startup playback behind a palette that is already loaded.
             videoQuickThemeReady = true;
-            var isEngine = EngineWallpaperService.isEnginePath(selectedPath);
-            root.isEngineVideo = isEngine;
+            var isEngine = backend === "engine";
 
             if (state.thumbnail) {
                 fallbackVideoThumbnail = String(state.thumbnail);
@@ -395,6 +564,7 @@ QtObject {
             }
         } else {
             isTransitionPending = false;
+            transitionRollbackState = null;
             Config.wallpaper = selectedPath;
             LiveWallpaperService.stop();
             EngineWallpaperService.stop();
@@ -433,7 +603,8 @@ QtObject {
             try {
                 return JSON.parse(text);
             } catch (error) {
-                console.warn("[WallpaperService] Invalid wallpaper state, using legacy path:", error);
+                console.warn("[WallpaperService] Invalid wallpaper state:", error);
+                return null;
             }
         }
         return {
@@ -459,15 +630,114 @@ QtObject {
         videoCoverReady = false;
         videoCoverReadyFallback.stop();
     }
-    function saveState(thumbnailPath) {
-        var state = JSON.stringify({
+    function cloneState(state) {
+        if (!state)
+            return null;
+        try {
+            return JSON.parse(JSON.stringify(state));
+        } catch (error) {
+            return state;
+        }
+    }
+    function currentState(thumbnailPath) {
+        return {
+            "version": 2,
             "path": selectedPath,
             "mode": selectedMode,
+            "backend": selectedBackend,
             "modified": selectedModified,
             "thumbnail": thumbnailPath || "",
             "frame": lastVideoFrame || ""
-        });
-        Quickshell.execDetached(["sh", "-c", "mkdir -p \"$2\" && printf '%s' \"$1\" > \"$3\"", "wallpaper-save", state, Config.homeDir + "/.cache/quickshell", statePath]);
+        };
+    }
+    function handleVideoFailure(sourcePath, message) {
+        if (selectedMode !== "video" || sourcePath !== selectedPath)
+            return;
+
+        var previous = isTransitionPending ? cloneState(transitionRollbackState) : null;
+        var restorePreviousVideo = previous && previous.mode === "video" && previous.path && previous.path !== sourcePath;
+        var rollback = staticRollbackState(previous || lastStableState);
+        console.warn("[WallpaperService] Wallpaper playback failed:", message);
+        videoTransitionDeadline.stop();
+        videoCoverReadyFallback.stop();
+        videoQuickThemeFallback.stop();
+        videoQuickThemeSettle.stop();
+        liveRevealFinish.stop();
+        backendReadyPath = "";
+        isTransitionPending = false;
+        WallpaperPreviewService.cancel();
+        Quickshell.execDetached(["notify-send", "-a", "Wallpaper", "-u", "normal", "-h", "boolean:transient:true", "Wallpaper failed", String(message || "The renderer stopped unexpectedly")]);
+        if (restorePreviousVideo) {
+            transitionRollbackState = staticRollbackState(previous);
+            apply(previous.path, "video", previous.modified, previous.backend, true);
+            if (previous.thumbnail)
+                fallbackVideoThumbnail = String(previous.thumbnail);
+            if (previous.frame)
+                stageVideoFrame(String(previous.frame), false);
+            else if (previous.thumbnail)
+                stageVideoThumbnail(String(previous.thumbnail), false);
+            return;
+        }
+        apply(rollback.path, "static", rollback.modified);
+    }
+    function handleWallpaperLoadError(sourcePath) {
+        var path = String(sourcePath || "").replace(/^file:\/\//, "");
+        if (selectedMode === "video" && path === String(pendingVideoThumbnail || "").replace(/^file:\/\//, "")) {
+            if (path === String(Config.defaultWallpaper).replace(/^file:\/\//, "")) {
+                handleVideoFailure(selectedPath, "Could not load the fallback wallpaper cover");
+                return;
+            }
+            console.warn("[WallpaperService] Could not load video cover, using the default wallpaper while the renderer starts:", path);
+            if (String(lastVideoFrame).replace(/^file:\/\//, "") === path)
+                lastVideoFrame = "";
+            if (String(fallbackVideoThumbnail).replace(/^file:\/\//, "") === path)
+                fallbackVideoThumbnail = Config.defaultWallpaper;
+            if (transitionRollbackState && transitionRollbackState.mode === "static" && String(transitionRollbackState.path || "").replace(/^file:\/\//, "") === path)
+                transitionRollbackState = staticRollbackState(null);
+            pendingEnginePreviewSource = "";
+            pendingVideoThemeSource = "";
+            resetVideoCoverReadiness();
+            stageVideoThumbnail(Config.defaultWallpaper, false);
+            if (!videoQuickThemeReady)
+                prepareVideoTheme(Config.defaultWallpaper, "0");
+            return;
+        }
+        if (selectedMode !== "static" || path !== String(selectedPath || "").replace(/^file:\/\//, ""))
+            return;
+        if (selectedPath === Config.defaultWallpaper) {
+            console.warn("[WallpaperService] Default wallpaper could not be loaded:", selectedPath);
+            return;
+        }
+        Quickshell.execDetached(["notify-send", "-a", "Wallpaper", "-u", "normal", "-h", "boolean:transient:true", "Wallpaper missing", "Using the default wallpaper instead"]);
+        apply(Config.defaultWallpaper, "static", "0");
+    }
+    function saveState(thumbnailPath) {
+        var state = currentState(thumbnailPath);
+        lastStableState = cloneState(state);
+        stateReader.setText(JSON.stringify(state) + "\n");
+    }
+    function staticRollbackState(state) {
+        if (state && state.mode === "static" && state.path) {
+            return {
+                "version": 2,
+                "path": String(state.path),
+                "mode": "static",
+                "backend": "static",
+                "modified": String(state.modified || "0"),
+                "thumbnail": "",
+                "frame": ""
+            };
+        }
+        var cover = state && (state.frame || state.thumbnail) ? String(state.frame || state.thumbnail) : lastVideoFrame || fallbackVideoThumbnail || Config.defaultWallpaper;
+        return {
+            "version": 2,
+            "path": cover || Config.defaultWallpaper,
+            "mode": "static",
+            "backend": "static",
+            "modified": "0",
+            "thumbnail": "",
+            "frame": ""
+        };
     }
     function stageStatic(path) {
         if (!path)
@@ -494,9 +764,9 @@ QtObject {
         var wallpaperChanged = Config.wallpaper !== thumbnailPath;
         if (wallpaperChanged)
             Config.wallpaper = thumbnailPath;
-        saveState(fallbackVideoThumbnail || thumbnailPath);
         if (wallpaperChanged && updateTheme && !videoQuickThemeReady && !pendingVideoThemeSource)
             prepareVideoTheme(thumbnailPath, selectedModified);
+        ensureInitialTheme();
         videoCoverReadyFallback.restart();
         tryFinishVideoTransition();
     }
@@ -505,10 +775,13 @@ QtObject {
             return;
 
         backendReadyPath = "";
+        videoTransitionDeadline.stop();
         videoCoverReadyFallback.stop();
         videoQuickThemeFallback.stop();
         videoQuickThemeSettle.stop();
         isTransitionPending = false;
+        saveState(fallbackVideoThumbnail || pendingVideoThumbnail);
+        transitionRollbackState = null;
         liveRevealActive = true;
         liveRevealFinish.interval = 420;
         liveRevealFinish.restart();

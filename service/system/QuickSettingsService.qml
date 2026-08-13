@@ -15,6 +15,17 @@ QtObject {
     readonly property bool airplaneEnabled: !Networking.wifiEnabled && (Bluetooth.defaultAdapter ? !Bluetooth.defaultAdapter.enabled : true)
     readonly property bool bluetoothEnabled: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false
     property alias caffeineEnabled: persistedToggles.caffeineEnabled
+    // Surface inhibitors may be ignored when the bar is occluded. A logind
+    // inhibitor keeps swayidle blocked for the whole session instead.
+    property Process caffeineInhibitorProcess: Process {
+        command: ["systemd-inhibit", "--what=idle", "--mode=block", "--who=Quickshell", "--why=Caffeine mode is active", "sleep", "infinity"]
+        running: root.caffeineEnabled
+
+        onExited: (exitCode, exitStatus) => {
+            if (root.caffeineEnabled)
+                console.warn("[QuickSettingsService] Caffeine inhibitor exited unexpectedly:", exitCode);
+        }
+    }
     property alias dndActive: persistedToggles.dndActive
     property FileView persistedStateFile: FileView {
         atomicWrites: true

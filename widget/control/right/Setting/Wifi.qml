@@ -96,11 +96,22 @@ Item {
     // ══════════════════════════════════════════════════════════════════════
     //  ROOT – toggles between list view and settings panel
     // ══════════════════════════════════════════════════════════════════════
-    Item {
+    Flickable {
+        id: wifiPageFlick
+
         anchors.fill: parent
+        boundsBehavior: Flickable.StopAtBounds
+        clip: true
+        contentHeight: settingsPanel.opened ? height : Math.max(height, wifiListContent.implicitHeight)
+        contentWidth: width
+        flickableDirection: Flickable.VerticalFlick
+        interactive: !settingsPanel.opened && contentHeight > height
+        maximumFlickVelocity: 1800
 
         // ── LIST VIEW ──────────────────────────────────────────────────────
         ColumnLayout {
+            id: wifiListContent
+
             anchors.fill: parent
             spacing: 15
             visible: !settingsPanel.opened
@@ -127,14 +138,24 @@ Item {
                         Layout.fillWidth: true
                         spacing: 10
 
+                        WifiSignalIcon {
+                            color: !WifiService.connected ? Config.md3.on_surface_variant : Config.md3.primary
+                            connected: WifiService.connected
+                            connectivityIssue: WifiService.connectivityIssue
+                            height: 26
+                            signalStrength: WifiService.activeSignal
+                            visible: WifiService.connectionType !== "ethernet"
+                            width: 26
+                        }
                         IconImage {
                             height: 26
                             layer.enabled: true
                             source: Quickshell.iconPath(WifiService.iconName)
+                            visible: WifiService.connectionType === "ethernet"
                             width: 26
 
                             layer.effect: ColorOverlay {
-                                color: !WifiService.connected ? Config.md3.on_surface_variant : Config.md3.primary
+                                color: Config.md3.primary
                             }
                         }
                         Text {
@@ -272,15 +293,13 @@ Item {
                             anchors.rightMargin: 8
                             spacing: 10
 
-                            IconImage {
+                            WifiSignalIcon {
+                                color: WifiService.connectivityColor
+                                connected: true
+                                connectivityIssue: true
                                 height: 21
-                                layer.enabled: true
-                                source: Quickshell.iconPath(WifiService.captivePortal ? "network-wireless-hotspot-symbolic" : "network-error-symbolic")
+                                signalStrength: WifiService.activeSignal
                                 width: 21
-
-                                layer.effect: ColorOverlay {
-                                    color: WifiService.connectivityColor
-                                }
                             }
                             ColumnLayout {
                                 Layout.fillWidth: true
@@ -358,12 +377,14 @@ Item {
             Item {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                Layout.preferredHeight: availableListView.contentHeight
 
                 ListView {
                     id: availableListView
 
                     anchors.fill: parent
                     clip: true
+                    interactive: false
                     spacing: 8
 
                     delegate: WifiNetworkRow {
@@ -428,5 +449,5 @@ Item {
             onApplyRequested: (ssid, settings) => WifiService.saveSettings(ssid, settings)
             onForgetRequested: ssid => WifiService.forgetNetwork(ssid)
         }
-    } // root Item
+    } // root Flickable
 } // wifiPageRoot

@@ -11,15 +11,21 @@ RowLayout {
 
     readonly property string activeWindowId: WorkspaceService.activeWindowId
     readonly property int activeWorkspaceId: WorkspaceService.activeWorkspaceId
+    property bool compact: false
     property int desktopEntriesRevision: 0
     property bool isDragging: false
     readonly property int maxWorkspaceIdx: {
         var max = 0;
-        for (var i = 0; i < workspaces.length; i++)
-            if (workspaces[i].idx > max)
+        var targetOutput = outputName || WorkspaceService.focusedOutputName;
+        for (var i = 0; i < workspaces.length; i++) {
+            if (workspaces[i].output === targetOutput && workspaces[i].windows.length > 0 && workspaces[i].idx > max)
                 max = workspaces[i].idx;
+        }
         return max;
     }
+    readonly property bool multipleOutputs: WorkspaceService.outputNames.length > 1
+    property string outputName: ""
+    readonly property real workspaceGap: compact ? 10 : 18
     readonly property var workspaces: WorkspaceService.workspaces
 
     // Helper to resolve application icon path
@@ -39,7 +45,6 @@ RowLayout {
         return path ? path : Quickshell.iconPath("application-x-executable");
     }
 
-    // Helper to resolve friendly application name
     function getAppName(appId) {
         if (!appId)
             return "";
@@ -47,7 +52,69 @@ RowLayout {
         return entry ? entry.name : appId;
     }
 
-    spacing: 18
+    function removeWorkspaceModelEntry(workspaceId) {
+        for (var index = 0; index < workspaceModel.count; index++) {
+            var entry = workspaceModel.get(index);
+            if (entry.workspaceId === workspaceId && entry.pendingRemoval) {
+                workspaceModel.remove(index);
+                return;
+            }
+        }
+    }
+    function syncWorkspaceModel() {
+        var source = root.workspaces || [];
+        var sourceIds = {};
+        for (var sourceIndex = 0; sourceIndex < source.length; sourceIndex++)
+            sourceIds[String(source[sourceIndex].id)] = true;
+
+        for (var removeIndex = workspaceModel.count - 1; removeIndex >= 0; removeIndex--) {
+            var removedEntry = workspaceModel.get(removeIndex);
+            if (!sourceIds[String(removedEntry.workspaceId)]) {
+                if (removedEntry.workspaceData.windows.length > 0 && !removedEntry.pendingRemoval) {
+                    var closingWorkspace = Object.assign({}, removedEntry.workspaceData);
+                    closingWorkspace.windows = [];
+                    workspaceModel.setProperty(removeIndex, "workspaceData", closingWorkspace);
+                    workspaceModel.setProperty(removeIndex, "pendingRemoval", true);
+                } else if (!removedEntry.pendingRemoval) {
+                    workspaceModel.remove(removeIndex);
+                }
+            }
+        }
+
+        for (var targetIndex = 0; targetIndex < source.length; targetIndex++) {
+            var targetWorkspace = source[targetIndex];
+            var currentIndex = -1;
+            for (var modelIndex = 0; modelIndex < workspaceModel.count; modelIndex++) {
+                if (workspaceModel.get(modelIndex).workspaceId === targetWorkspace.id) {
+                    currentIndex = modelIndex;
+                    break;
+                }
+            }
+
+            if (currentIndex === -1) {
+                workspaceModel.insert(targetIndex, {
+                    "pendingRemoval": false,
+                    "workspaceId": targetWorkspace.id,
+                    "workspaceData": targetWorkspace
+                });
+            } else {
+                if (currentIndex !== targetIndex)
+                    workspaceModel.move(currentIndex, targetIndex, 1);
+                workspaceModel.setProperty(targetIndex, "workspaceData", targetWorkspace);
+                workspaceModel.setProperty(targetIndex, "pendingRemoval", false);
+            }
+        }
+    }
+
+    spacing: 0
+
+    Component.onCompleted: syncWorkspaceModel()
+
+    ListModel {
+        id: workspaceModel
+
+        dynamicRoles: true
+    }
 
     Connections {
         function onApplicationsChanged() {
@@ -56,81 +123,161 @@ RowLayout {
 
         target: DesktopEntries
     }
+    Connections {
+        function onWorkspacesChanged() {
+            root.syncWorkspaceModel();
+        }
+
+        target: WorkspaceService
+    }
     Repeater {
-        model: root.workspaces
+        model: workspaceModel
 
         delegate: Rectangle {
             id: wsButton
 
-            readonly property int workspaceIdx: modelData.idx
+            required property var workspaceData
+            required property bool pendingRemoval
 
-            border.color: dropArea.containsDrag ? Config.md3.surface_container_highest : "transparent"
-            border.width: 1
-            color: dropArea.containsDrag ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.8 : 0.6) : (modelData.id === root.activeWorkspaceId ? Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.7 : 0.5) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.7 : 0.5))
+            readonly property bool hasWindows: workspaceData.windows.length > 0
+            readonly property int workspaceId: workspaceData.id
+            readonly property int workspaceIdx: workspaceData.idx
+            readonly property string workspaceOutput: workspaceData.output
+            property bool expanded: false
+            property real expansionProgress: expanded ? 1 : 0
+            property bool inLayout: false
+
+            border.width: 0
+            color: "transparent"
             implicitHeight: 38
-            implicitWidth: wsLayout.implicitWidth + 30
-            radius: 7
-            scale: dropArea.containsDrag ? 1.05 : 1.0
+            implicitWidth: (wsLayout.implicitWidth + 30 + root.workspaceGap) * expansionProgress
+            opacity: expanded ? 1 : 0
+            scale: expanded ? 1 : 0.82
+            visible: inLayout
 
-            Behavior on border.color {
-                ColorAnimation {
-                    duration: 150
+            Component.onCompleted: {
+                if (hasWindows) {
+                    inLayout = true;
+                    Qt.callLater(function () {
+                        if (wsButton.hasWindows)
+                            wsButton.expanded = true;
+                    });
                 }
             }
-            Behavior on color {
-                ColorAnimation {
-                    duration: 150
+            onHasWindowsChanged: {
+                if (hasWindows) {
+                    collapseTimer.stop();
+                    inLayout = true;
+                    Qt.callLater(function () {
+                        if (wsButton.hasWindows)
+                            wsButton.expanded = true;
+                    });
+                } else {
+                    expanded = false;
+                    collapseTimer.restart();
+                }
+            }
+            Behavior on expansionProgress {
+                NumberAnimation {
+                    duration: 260
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 180
                 }
             }
             Behavior on scale {
                 NumberAnimation {
-                    duration: 150
-                    easing.type: Easing.OutQuad
+                    duration: 220
+                    easing.type: Easing.OutBack
+                }
+            }
+            Timer {
+                id: collapseTimer
+
+                interval: 270
+
+                onTriggered: {
+                    if (!wsButton.hasWindows) {
+                        wsButton.inLayout = false;
+                        if (wsButton.pendingRemoval)
+                            root.removeWorkspaceModelEntry(wsButton.workspaceId);
+                    }
+                }
+            }
+            Rectangle {
+                id: workspaceSurface
+
+                border.color: dropArea.containsDrag ? Config.md3.surface_container_highest : "transparent"
+                border.width: 1
+                color: dropArea.containsDrag ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.8 : 0.6) : (wsButton.workspaceId === root.activeWorkspaceId ? Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.7 : 0.5) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.7 : 0.5))
+                height: 38
+                radius: 7
+                scale: dropArea.containsDrag ? 1.05 : 1.0
+                width: Math.max(0, wsButton.width - root.workspaceGap)
+                x: root.workspaceGap / 2
+
+                Behavior on border.color {
+                    ColorAnimation {
+                        duration: 150
+                    }
+                }
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 150
+                    }
+                }
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 150
+                        easing.type: Easing.OutQuad
+                    }
                 }
             }
 
             DropArea {
                 id: dropArea
 
-                anchors.fill: parent
+                anchors.fill: workspaceSurface
                 keys: ["niri-window"]
 
                 onDropped: drop => {
                     var windowId = drop.source.windowId;
-                    var destWorkspace = modelData.idx;
-                    console.log("Dropped window:", windowId, "to workspace:", destWorkspace);
-                    Quickshell.execDetached(["niri", "msg", "action", "move-window-to-workspace", "--window-id", String(windowId), String(destWorkspace)]);
+                    console.log("Dropped window:", windowId, "to workspace:", wsButton.workspaceIdx, "on", wsButton.workspaceOutput);
+                    WorkspaceService.moveWindowToWorkspace(windowId, drop.source.workspaceOutput, wsButton.workspaceData);
                 }
             }
             MouseArea {
-                anchors.fill: parent
+                anchors.fill: workspaceSurface
 
                 onClicked: {
-                    Quickshell.execDetached(["niri", "msg", "action", "focus-workspace", String(modelData.idx)]);
+                    WorkspaceService.focusWorkspace(wsButton.workspaceData);
                 }
             }
             RowLayout {
                 id: wsLayout
 
-                anchors.centerIn: parent
-                spacing: 12
+                anchors.centerIn: workspaceSurface
+                spacing: root.compact ? 8 : 12
 
                 // Workspace ID/Index
                 Text {
                     color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: root.compact ? 11 : root.multipleOutputs ? 12 : 14
                     font.weight: Font.Black
-                    text: String(modelData.idx)
+                    text: root.multipleOutputs ? wsButton.workspaceOutput + " · " + wsButton.workspaceIdx : String(wsButton.workspaceIdx)
                 }
 
                 // Window list inside workspace (flat, no inner pills)
                 RowLayout {
-                    spacing: 10
-                    visible: modelData.windows.length > 0
+                    spacing: root.compact ? 6 : 10
+                    visible: wsButton.hasWindows
 
                     Repeater {
-                        model: modelData.windows
+                        model: wsButton.workspaceData.windows
 
                         delegate: Item {
                             id: winIconItem
@@ -147,20 +294,19 @@ RowLayout {
 
                                 onDropped: drop => {
                                     var draggedWinId = drop.source.windowId;
-                                    var draggedFromWS = drop.source.workspaceIdx;
+                                    var draggedFromWorkspaceId = drop.source.workspaceId;
+                                    var draggedFromOutput = drop.source.workspaceOutput;
                                     var targetWinId = modelData.id;
-                                    var targetWS = wsButton.workspaceIdx;
                                     var targetPos = index + 1;
 
                                     if (draggedWinId === targetWinId)
                                         return;
 
-                                    if (draggedFromWS === targetWS) {
+                                    if (draggedFromWorkspaceId === wsButton.workspaceId) {
                                         var cmd = "niri msg action focus-window --id " + draggedWinId + " && niri msg action move-column-to-index " + targetPos;
                                         Quickshell.execDetached(["sh", "-c", cmd]);
                                     } else {
-                                        var cmd = "niri msg action move-window-to-workspace --window-id " + draggedWinId + " " + targetWS + " && sleep 0.05 && niri msg action focus-window --id " + draggedWinId + " && niri msg action move-column-to-index " + targetPos;
-                                        Quickshell.execDetached(["sh", "-c", cmd]);
+                                        WorkspaceService.moveWindowToWorkspace(draggedWinId, draggedFromOutput, wsButton.workspaceData, targetPos);
                                     }
                                 }
                             }
@@ -168,7 +314,9 @@ RowLayout {
                                 id: dragProxy
 
                                 property string windowId: String(modelData.id)
+                                property int workspaceId: wsButton.workspaceId
                                 property int workspaceIdx: wsButton.workspaceIdx
+                                property string workspaceOutput: wsButton.workspaceOutput
 
                                 Drag.active: winIconMouseArea.drag.active
                                 Drag.hotSpot.x: 12
@@ -248,13 +396,13 @@ RowLayout {
                                 }
 
                                 IconImage {
-                                    height: 25
+                                    height: root.compact ? 22 : 25
                                     scale: (winIconMouseArea.containsMouse && !winIconMouseArea.drag.active) ? 1.15 : 1.0
                                     source: {
                                         root.desktopEntriesRevision;
                                         return root.getAppIcon(modelData.app_id);
                                     }
-                                    width: 25
+                                    width: root.compact ? 22 : 25
 
                                     Behavior on scale {
                                         NumberAnimation {
@@ -265,7 +413,7 @@ RowLayout {
                                 }
                                 Item {
                                     Layout.fillHeight: true
-                                    Layout.preferredWidth: (String(modelData.id) === root.activeWindowId) ? (titleText.implicitWidth + 7) : 0
+                                    Layout.preferredWidth: String(modelData.id) === root.activeWindowId ? Math.min(titleText.implicitWidth, root.compact ? 86 : 150) + 7 : 0
                                     clip: true
 
                                     Behavior on Layout.preferredWidth {
@@ -282,9 +430,11 @@ RowLayout {
                                         anchors.leftMargin: 7
                                         anchors.verticalCenter: parent.verticalCenter
                                         color: Config.md3.on_surface
+                                        elide: Text.ElideRight
                                         font.family: Config.fontName
-                                        font.pixelSize: 15
+                                        font.pixelSize: root.compact ? 13 : 15
                                         font.weight: Font.Medium
+                                        width: Math.min(implicitWidth, root.compact ? 86 : 150)
                                         text: {
                                             root.desktopEntriesRevision;
                                             return modelData.app_id ? root.getAppName(modelData.app_id) : "";
@@ -350,8 +500,13 @@ RowLayout {
                 onDropped: drop => {
                     var windowId = drop.source.windowId;
                     var newIdx = root.maxWorkspaceIdx + 1;
-                    console.log("[Workspaces] Moving window", windowId, "to new workspace", newIdx);
-                    Quickshell.execDetached(["niri", "msg", "action", "move-window-to-workspace", "--window-id", String(windowId), String(newIdx)]);
+                    var targetOutput = root.outputName || WorkspaceService.focusedOutputName;
+                    console.log("[Workspaces] Moving window", windowId, "to new workspace", newIdx, "on", targetOutput);
+                    WorkspaceService.moveWindowToWorkspace(windowId, drop.source.workspaceOutput, {
+                        "idx": newIdx,
+                        "name": "",
+                        "output": targetOutput
+                    });
                 }
             }
 

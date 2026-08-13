@@ -166,9 +166,14 @@ Item {
         onWheel: event => {
             if (monthSlide.running)
                 return;
-            if (event.angleDelta.y > 0 || event.angleDelta.x > 0)
+
+            if (Math.abs(event.angleDelta.x) <= Math.abs(event.angleDelta.y)) {
+                event.accepted = false;
+                return;
+            }
+            if (event.angleDelta.x > 0)
                 settleMonth(1);
-            else if (event.angleDelta.y < 0 || event.angleDelta.x < 0)
+            else if (event.angleDelta.x < 0)
                 settleMonth(-1);
         }
     }
@@ -198,114 +203,139 @@ Item {
                     height: calendarViewport.height
                     width: calendarViewport.width
 
-                    ColumnLayout {
+                    onViewDateChanged: Qt.callLater(function () {
+                        monthFlickable.contentX = 0;
+                        monthFlickable.contentY = 0;
+                    })
+
+                    Flickable {
+                        id: monthFlickable
+
                         anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 40
+                        boundsBehavior: Flickable.StopAtBounds
+                        clip: contentHeight > height
+                        contentHeight: Math.max(height, monthCanvas.height)
+                        contentWidth: width
+                        flickableDirection: Flickable.VerticalFlick
+                        interactive: contentHeight > height
 
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 26
-                            font.weight: Font.ExtraBold
-                            horizontalAlignment: Text.AlignHCenter
-                            text: calendarRoot.monthNames[monthPage.viewMonth] + " " + monthPage.viewYear
-                        }
-                        GridLayout {
-                            Layout.fillHeight: true
-                            Layout.fillWidth: true
-                            columnSpacing: 5
-                            columns: 7
-                            rowSpacing: 5
+                        Item {
+                            id: monthCanvas
 
-                            Repeater {
-                                model: calendarRoot.weekDays
+                            height: 580
+                            width: monthFlickable.width
+                            y: Math.max(0, (monthFlickable.contentHeight - height) / 2)
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 12
+                                spacing: 40
 
                                 Text {
                                     Layout.fillWidth: true
-                                    Layout.preferredWidth: 1
-                                    color: (index >= 5) ? Config.md3.tertiary : Config.md3.on_surface
+                                    color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 17
-                                    font.weight: Font.DemiBold
+                                    font.pixelSize: 26
+                                    font.weight: Font.ExtraBold
                                     horizontalAlignment: Text.AlignHCenter
-                                    text: modelData
+                                    text: calendarRoot.monthNames[monthPage.viewMonth] + " " + monthPage.viewYear
                                 }
-                            }
-                            Repeater {
-                                model: monthPage.viewDays
-
-                                Item {
-                                    property var dayInfo: monthPage.viewDays[index]
-                                    property bool isSelected: dayInfo.day === calendarRoot.selectedDay && dayInfo.month === calendarRoot.selectedMonth && dayInfo.year === calendarRoot.selectedYear
-                                    property bool isToday: dayInfo.day === calendarRoot.todayDate && dayInfo.month === calendarRoot.todayMonth && dayInfo.year === calendarRoot.todayYear
-                                    property bool isWeekend: index % 7 >= 5
-                                    property string lunarDisplay: Lunar.getLunarDisplay(dayInfo.day, dayInfo.month, dayInfo.year)
-                                    property bool lunarSpecial: Lunar.isLunarSpecial(dayInfo.day, dayInfo.month, dayInfo.year)
-
+                                GridLayout {
+                                    Layout.fillHeight: true
                                     Layout.fillWidth: true
-                                    Layout.preferredWidth: 1
-                                    implicitHeight: 75
+                                    columnSpacing: 5
+                                    columns: 7
+                                    rowSpacing: 5
 
-                                    Rectangle {
-                                        id: dayCircle
+                                    Repeater {
+                                        model: calendarRoot.weekDays
 
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        anchors.top: parent.top
-                                        anchors.topMargin: 20
-                                        color: isToday ? Config.md3.surface_container_highest : (dayArea.containsMouse ? Config.md3.surface_container : "transparent")
-                                        height: 50
-                                        radius: 25
-                                        width: 50
-
-                                        Column {
-                                            anchors.centerIn: parent
-                                            spacing: 1
-
-                                            Text {
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                color: dayInfo.isCurrent ? (isWeekend ? Config.md3.tertiary : Config.md3.on_surface) : Config.alpha(Config.md3.on_surface_variant, 0.5)
-                                                font.family: Config.fontName
-                                                font.pixelSize: 18
-                                                font.weight: dayInfo.isCurrent ? Font.Bold : Font.Normal
-                                                text: dayInfo.day
-                                            }
-                                            Text {
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                color: dayInfo.isCurrent ? ((isToday || lunarSpecial) ? Config.md3.tertiary : Config.md3.on_surface_variant) : Config.alpha(Config.md3.outline, 0.5)
-                                                font.family: Config.fontName
-                                                font.pixelSize: 12
-                                                text: lunarDisplay
-                                            }
+                                        Text {
+                                            Layout.fillWidth: true
+                                            Layout.preferredWidth: 1
+                                            color: (index >= 5) ? Config.md3.tertiary : Config.md3.on_surface
+                                            font.family: Config.fontName
+                                            font.pixelSize: 17
+                                            font.weight: Font.DemiBold
+                                            horizontalAlignment: Text.AlignHCenter
+                                            text: modelData
                                         }
                                     }
-                                    Rectangle {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        anchors.top: dayCircle.bottom
-                                        anchors.topMargin: 5
-                                        color: Config.md3.primary
-                                        height: 5
-                                        radius: 3
-                                        visible: {
-                                            var dummy = GoogleService.allEvents;
-                                            return GoogleService.hasEvents(dayInfo.day, dayInfo.month, dayInfo.year);
-                                        }
-                                        width: 5
-                                    }
-                                    MouseArea {
-                                        id: dayArea
+                                    Repeater {
+                                        model: monthPage.viewDays
 
-                                        anchors.fill: parent
-                                        hoverEnabled: true
+                                        Item {
+                                            property var dayInfo: monthPage.viewDays[index]
+                                            property bool isSelected: dayInfo.day === calendarRoot.selectedDay && dayInfo.month === calendarRoot.selectedMonth && dayInfo.year === calendarRoot.selectedYear
+                                            property bool isToday: dayInfo.day === calendarRoot.todayDate && dayInfo.month === calendarRoot.todayMonth && dayInfo.year === calendarRoot.todayYear
+                                            property bool isWeekend: index % 7 >= 5
+                                            property string lunarDisplay: Lunar.getLunarDisplay(dayInfo.day, dayInfo.month, dayInfo.year)
+                                            property bool lunarSpecial: Lunar.isLunarSpecial(dayInfo.day, dayInfo.month, dayInfo.year)
 
-                                        onClicked: {
-                                            if (calendarRoot.isSwipingOut || Math.abs(calendarRoot.swipeOffset) > 4)
-                                                return;
-                                            calendarRoot.selectedDay = dayInfo.day;
-                                            calendarRoot.selectedMonth = dayInfo.month;
-                                            calendarRoot.selectedYear = dayInfo.year;
-                                            calendarRoot.showEvents = true;
+                                            Layout.fillWidth: true
+                                            Layout.preferredWidth: 1
+                                            implicitHeight: 75
+
+                                            Rectangle {
+                                                id: dayCircle
+
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                anchors.top: parent.top
+                                                anchors.topMargin: 16
+                                                color: isToday ? Config.md3.surface_container_highest : (dayArea.containsMouse ? Config.md3.surface_container : "transparent")
+                                                height: Math.min(50, Math.max(34, parent.width - 4))
+                                                radius: height / 2
+                                                width: height
+
+                                                Column {
+                                                    anchors.centerIn: parent
+                                                    spacing: 1
+
+                                                    Text {
+                                                        anchors.horizontalCenter: parent.horizontalCenter
+                                                        color: dayInfo.isCurrent ? (isWeekend ? Config.md3.tertiary : Config.md3.on_surface) : Config.alpha(Config.md3.on_surface_variant, 0.5)
+                                                        font.family: Config.fontName
+                                                        font.pixelSize: Math.min(18, Math.max(14, dayCircle.width * 0.36))
+                                                        font.weight: dayInfo.isCurrent ? Font.Bold : Font.Normal
+                                                        text: dayInfo.day
+                                                    }
+                                                    Text {
+                                                        anchors.horizontalCenter: parent.horizontalCenter
+                                                        color: dayInfo.isCurrent ? ((isToday || lunarSpecial) ? Config.md3.tertiary : Config.md3.on_surface_variant) : Config.alpha(Config.md3.outline, 0.5)
+                                                        font.family: Config.fontName
+                                                        font.pixelSize: Math.min(12, Math.max(10, dayCircle.width * 0.24))
+                                                        text: lunarDisplay
+                                                    }
+                                                }
+                                            }
+                                            Rectangle {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                anchors.top: dayCircle.bottom
+                                                anchors.topMargin: 5
+                                                color: Config.md3.primary
+                                                height: 5
+                                                radius: 3
+                                                visible: {
+                                                    var dummy = GoogleService.allEvents;
+                                                    return GoogleService.hasEvents(dayInfo.day, dayInfo.month, dayInfo.year);
+                                                }
+                                                width: 5
+                                            }
+                                            MouseArea {
+                                                id: dayArea
+
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+
+                                                onClicked: {
+                                                    if (calendarRoot.isSwipingOut || Math.abs(calendarRoot.swipeOffset) > 4)
+                                                        return;
+                                                    calendarRoot.selectedDay = dayInfo.day;
+                                                    calendarRoot.selectedMonth = dayInfo.month;
+                                                    calendarRoot.selectedYear = dayInfo.year;
+                                                    calendarRoot.showEvents = true;
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -412,11 +442,6 @@ Item {
                 model: eventsForSelectedDate
                 spacing: 8
 
-                ScrollBar.vertical: ScrollBar {
-                    active: true
-                    policy: ScrollBar.AsNeeded
-                    visible: false
-                }
                 delegate: Item {
                     height: Math.max(76, eventContent.implicitHeight + 40)
                     width: ListView.view.width

@@ -6,6 +6,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Notifications
+import Quickshell.Wayland
 import Quickshell.Widgets
 
 PanelWindow {
@@ -92,14 +93,14 @@ PanelWindow {
         });
     }
 
-    aboveWindows: true
+    WlrLayershell.layer: WlrLayer.Overlay
     anchors.bottom: true
     anchors.right: true
     color: "transparent"
     exclusiveZone: 0
     focusable: false
-    implicitHeight: 480
-    implicitWidth: 480
+    implicitHeight: screen ? Math.min(480, screen.height) : 480
+    implicitWidth: screen ? Math.min(480, screen.width) : 480
     visible: false
 
     Connections {
@@ -132,7 +133,7 @@ PanelWindow {
     Timer {
         id: autoCloseTimer
 
-        interval: 7000
+        interval: 3000
         repeat: false
 
         onTriggered: root.closeToast()
@@ -171,35 +172,44 @@ PanelWindow {
     ClippingRectangle {
         id: toast
 
-        property real slideOffset: root.active ? 0 : 42
+        readonly property real infoHeight: Math.max(62, infoContent.implicitHeight + 20)
+        readonly property real outerMargin: root.width < 400 ? 10 : 20
+        readonly property real previewMaximumHeight: Math.max(32, root.height - outerMargin * 2 - 32 - mainColumn.spacing - infoHeight)
+        property real slideOffset: 0
         property real swipeOffset: 0
 
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 20
+        anchors.bottomMargin: outerMargin
         anchors.right: parent.right
-        anchors.rightMargin: 20
+        anchors.rightMargin: outerMargin
         border.color: Config.alpha(Config.md3.outline_variant, 0.28)
         border.width: 1
         color: Config.md3.surface
         height: mainColumn.implicitHeight + 32
-        opacity: (root.active ? 1 : 0) * Math.max(0, 1 - swipeOffset / (width * 0.78))
-        radius: 24
-        width: 440
+        opacity: Math.max(0, 1 - toast.swipeOffset / (toast.width * 0.78))
+        radius: Math.min(24, width / 2, height / 2)
+        width: Responsive.fit(440, root.width - outerMargin * 2, 220)
 
-        Behavior on opacity {
-            enabled: !swipeDrag.active
+        states: [
+            State {
+                name: "visible"
+                when: root.active
 
-            NumberAnimation {
-                duration: 180
-                easing.type: Easing.OutCubic
+                PropertyChanges {
+                    slideOffset: 0
+                    target: toast
+                }
+            },
+            State {
+                name: "hidden"
+                when: !root.active
+
+                PropertyChanges {
+                    slideOffset: root.implicitWidth
+                    target: toast
+                }
             }
-        }
-        Behavior on slideOffset {
-            NumberAnimation {
-                duration: 260
-                easing.type: Easing.OutCubic
-            }
-        }
+        ]
         Behavior on swipeOffset {
             enabled: !swipeDrag.active
 
@@ -211,6 +221,34 @@ PanelWindow {
         transform: Translate {
             x: toast.slideOffset + toast.swipeOffset
         }
+        transitions: [
+            Transition {
+                from: "hidden"
+                to: "visible"
+
+                ParallelAnimation {
+                    NumberAnimation {
+                        duration: 320
+                        easing.type: Easing.OutCubic
+                        property: "slideOffset"
+                        target: toast
+                    }
+                }
+            },
+            Transition {
+                from: "visible"
+                to: "hidden"
+
+                ParallelAnimation {
+                    NumberAnimation {
+                        duration: 260
+                        easing.type: Easing.OutCubic
+                        property: "slideOffset"
+                        target: toast
+                    }
+                }
+            }
+        ]
 
         HoverHandler {
             id: toastHover
@@ -266,7 +304,7 @@ PanelWindow {
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: width * 9 / 16
+                Layout.preferredHeight: Math.min(width * 9 / 16, toast.previewMaximumHeight)
 
                 ClippingRectangle {
                     id: imageFrame
@@ -324,7 +362,7 @@ PanelWindow {
             }
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: Math.max(62, infoContent.implicitHeight + 20)
+                Layout.preferredHeight: toast.infoHeight
                 border.color: Config.alpha(Config.md3.outline_variant, 0.16)
                 border.width: 1
                 color: Config.md3.surface_container

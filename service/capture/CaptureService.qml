@@ -9,7 +9,6 @@ QtObject {
 
     property double lastRecordingToggleAt: 0
     property string latestRecordingPath: ""
-    property bool recordingStopRequested: false
     property Process recorder: Process {
         stderr: StdioCollector {
             id: recorderError
@@ -71,6 +70,7 @@ QtObject {
     property bool recordingSavedVisible: false
     property string recordingScreenName: ""
     property double recordingStartedAt: 0
+    property bool recordingStopRequested: false
     property Timer recordingTicker: Timer {
         interval: 1000
         repeat: true
@@ -105,7 +105,10 @@ QtObject {
                 var stamp = Qt.formatDateTime(new Date(), "dd-MM-yyyy_HH-mm-ss");
                 root.recordingPath = root.recordingDir + "/recording_" + stamp + ".mp4";
                 var audioSource = Config.captureRecordingMicrophone ? "default_output|default_input" : "default_output";
-                recorder.command = ["gpu-screen-recorder", "-w", "region", "-region", region, "-f", String(Config.captureRecordingFps), "-a", audioSource, "-ac", "opus", "-ab", "160", "-k", Config.captureRecordingCodec, "-q", Config.captureRecordingQuality, "-bm", "qp", "-encoder", "gpu", "-tune", "performance", "-cr", "limited", "-fm", "vfr", "-keyint", "2", "-cursor", "yes", "-o", root.recordingPath];
+                // GPU Screen Recorder automatically uses the GPU driving the
+                // selected region. Fall back to H.264 CPU encoding only when
+                // that GPU has no usable hardware encoder/VA-API backend.
+                recorder.command = ["gpu-screen-recorder", "-w", region, "-f", String(Config.captureRecordingFps), "-a", audioSource, "-ac", "opus", "-ab", "160", "-k", Config.captureRecordingCodec, "-q", Config.captureRecordingQuality, "-bm", "qp", "-encoder", "gpu", "-fallback-cpu-encoding", "yes", "-tune", "performance", "-cr", "limited", "-fm", "vfr", "-keyint", "2", "-cursor", "yes", "-o", root.recordingPath];
                 recorder.running = true;
             }
         }
@@ -130,8 +133,8 @@ QtObject {
 
         onTriggered: Quickshell.execDetached(["niri", "msg", "action", "screenshot"])
     }
-    property double screenshotStartedAt: 0
     property string screenshotPath: ""
+    property double screenshotStartedAt: 0
     property Timer screenshotWatchdog: Timer {
         interval: 61500
         repeat: false

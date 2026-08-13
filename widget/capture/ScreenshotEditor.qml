@@ -662,8 +662,8 @@ PanelWindow {
     }
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 24
-        spacing: 16
+        anchors.margins: Responsive.clamp(root.width * 0.012, 12, 24)
+        spacing: root.height < 720 ? 10 : 16
 
         RowLayout {
             Layout.fillWidth: true
@@ -688,10 +688,13 @@ PanelWindow {
                 visible: text !== ""
             }
             Text {
+                Layout.maximumWidth: root.width * 0.62
                 color: OcrService.statusIsError ? Config.md3.error : OcrService.statusText !== "" ? Config.md3.primary : Config.md3.on_surface_variant
+                elide: Text.ElideRight
                 font.family: Config.fontName
                 font.pixelSize: 14
                 font.weight: Font.DemiBold
+                maximumLineCount: 1
                 text: OcrService.statusText !== "" ? OcrService.statusText : root.selectedTool === "ocr" ? "Drag over text to copy it" : "Enter to save · Backspace to clear · Ctrl+Z to undo · Esc to cancel"
             }
         }
@@ -1271,24 +1274,43 @@ PanelWindow {
                 width: 48
             }
         }
-        ScreenshotEditorToolbar {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: Math.min(implicitWidth, root.width - 48)
-            selectedColor: root.selectedColor
-            selectedTool: root.selectedTool
-            selectedWidth: root.selectedWidth
+        Item {
+            id: toolbarViewport
 
-            onColorSelected: colorValue => {
-                return root.selectedColor = colorValue;
-            }
-            onToolSelected: tool => {
-                if (inlineTextEditor.visible)
-                    root.commitText();
+            Layout.fillWidth: true
+            Layout.preferredHeight: toolbar.implicitHeight
 
-                root.selectedTool = tool;
-            }
-            onWidthSelected: widthValue => {
-                return root.selectedWidth = widthValue;
+            Flickable {
+                anchors.fill: parent
+                boundsBehavior: Flickable.StopAtBounds
+                clip: contentWidth > width
+                contentHeight: height
+                contentWidth: Math.max(width, toolbar.implicitWidth)
+                flickableDirection: Flickable.HorizontalFlick
+                interactive: contentWidth > width
+
+                ScreenshotEditorToolbar {
+                    id: toolbar
+
+                    anchors.verticalCenter: parent.verticalCenter
+                    selectedColor: root.selectedColor
+                    selectedTool: root.selectedTool
+                    selectedWidth: root.selectedWidth
+                    x: toolbar.implicitWidth <= toolbarViewport.width ? (toolbarViewport.width - toolbar.implicitWidth) / 2 : 0
+
+                    onColorSelected: colorValue => {
+                        return root.selectedColor = colorValue;
+                    }
+                    onToolSelected: tool => {
+                        if (inlineTextEditor.visible)
+                            root.commitText();
+
+                        root.selectedTool = tool;
+                    }
+                    onWidthSelected: widthValue => {
+                        return root.selectedWidth = widthValue;
+                    }
+                }
             }
         }
     }

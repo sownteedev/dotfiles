@@ -273,29 +273,6 @@ Item {
         preferredHighlightEnd: Math.max(0, searchList.height - 80)
         spacing: 12
 
-        ScrollBar.vertical: ScrollBar {
-            id: searchScrollBar
-
-            implicitWidth: 6
-            opacity: active ? 1 : 0
-            padding: 0
-            policy: ScrollBar.AsNeeded
-            visible: opacity > 0.01
-
-            background: Item {
-            }
-            contentItem: Rectangle {
-                color: searchScrollBar.pressed ? Config.alpha(Config.md3.on_surface, 0.75) : (searchScrollBar.hovered ? Config.alpha(Config.md3.on_surface_variant, 0.45) : Config.alpha(Config.md3.on_surface_variant, 0.28))
-                implicitHeight: 36
-                implicitWidth: 3
-                radius: 999
-            }
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 500
-                }
-            }
-        }
         delegate: Rectangle {
             id: delegateRoot
 

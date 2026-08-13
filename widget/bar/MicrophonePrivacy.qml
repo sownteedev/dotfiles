@@ -39,19 +39,13 @@ MouseArea {
     Item {
         anchors.centerIn: parent
         height: 24
+        scale: root.containsMouse ? 1.08 : 1
         width: 24
 
-        Rectangle {
-            anchors.centerIn: parent
-            color: Config.alpha(Config.md3.tertiary, root.containsMouse ? 0.24 : 0.14)
-            height: 26
-            radius: 13
-            width: 26
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: 150
-                }
+        Behavior on scale {
+            NumberAnimation {
+                duration: 140
+                easing.type: Easing.OutCubic
             }
         }
         IconImage {
@@ -87,14 +81,17 @@ MouseArea {
         PopupWindow {
             id: microphonePopup
 
+            readonly property real desiredHeight: popupColumn.implicitHeight + 50
+            readonly property real screenHeight: root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.height : 720
+
             anchor.edges: Edges.Bottom | Edges.Left
             anchor.item: root
             anchor.margins.left: -34
             anchor.margins.top: 30
             color: "transparent"
             grabFocus: true
-            implicitHeight: popupColumn.implicitHeight + 50
-            implicitWidth: 280
+            implicitHeight: Responsive.fit(desiredHeight, screenHeight - 70, 180)
+            implicitWidth: Math.min(280, Math.max(0, root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.width - 16 : 280))
             visible: true
 
             onVisibleChanged: {
@@ -125,12 +122,21 @@ MouseArea {
                     verticalOffset: 4
                 }
 
-                ColumnLayout {
-                    id: popupColumn
-
+                Flickable {
                     anchors.fill: parent
                     anchors.margins: 14
-                    spacing: 10
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: contentHeight > height
+                    contentHeight: popupColumn.implicitHeight
+                    contentWidth: width
+                    flickableDirection: Flickable.VerticalFlick
+                    interactive: contentHeight > height
+
+                    ColumnLayout {
+                        id: popupColumn
+
+                        spacing: 10
+                        width: parent.width
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -171,8 +177,8 @@ MouseArea {
                         color: Config.alpha(Config.md3.on_surface, 0.08)
                         height: 1
                     }
-                    Repeater {
-                        model: AudioService.microphoneApps.slice(0, 4)
+                        Repeater {
+                            model: AudioService.microphoneApps
 
                         delegate: Rectangle {
                             id: appCard
@@ -283,17 +289,9 @@ MouseArea {
                             }
                         }
                     }
-                    Text {
-                        Layout.fillWidth: true
-                        color: Config.md3.on_surface_variant
-                        font.family: Config.fontName
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignHCenter
-                        text: "+" + (AudioService.microphoneApps.length - 4) + " more"
-                        visible: AudioService.microphoneApps.length > 4
+                        }
                     }
                 }
-            }
             Rectangle {
                 border.color: Config.alpha(Config.md3.tertiary, 0.32)
                 border.width: 1

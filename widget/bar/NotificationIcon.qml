@@ -9,12 +9,14 @@ import "../../service"
 MouseArea {
     id: root
 
+    property var targetScreen: null
+
     cursorShape: Qt.PointingHandCursor
     hoverEnabled: true
     implicitHeight: 30
     implicitWidth: 25
 
-    onClicked: StateManager.toggleControlPanel(0)
+    onClicked: StateManager.toggleControlPanel(0, targetScreen)
 
     Item {
         anchors.centerIn: parent
@@ -86,7 +88,7 @@ MouseArea {
                 font.family: Config.fontName
                 font.pixelSize: 9
                 font.weight: Font.Bold
-                text: NotificationHistory.notifications.count.toString()
+                text: NotificationHistory.notifications.count > 9 ? "9+" : NotificationHistory.notifications.count.toString()
                 visible: !badge.dndActive
             }
         }

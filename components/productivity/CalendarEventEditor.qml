@@ -242,6 +242,8 @@ Rectangle {
                         required property var modelData
 
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        Layout.preferredWidth: 1
                         spacing: 4
 
                         Text {

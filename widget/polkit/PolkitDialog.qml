@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
 import "../../"
+import "../../components"
 
 PanelWindow {
     id: root
@@ -29,6 +30,11 @@ PanelWindow {
         focusRetry.attempts = 0;
         focusRetry.restart();
     }
+    function moveToFocusedScreen() {
+        var targetScreen = StateManager.resolvePanelScreen();
+        if (targetScreen)
+            screen = targetScreen;
+    }
     function selectNextIdentity() {
         if (!flow || cancelPending || submitPending || !flow.identities || flow.identities.length < 2)
             return;
@@ -45,10 +51,9 @@ PanelWindow {
         passwordInput.text = "";
     }
 
-    WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+    WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-polkit"
-    aboveWindows: true
     anchors.bottom: true
     anchors.left: true
     anchors.right: true
@@ -58,6 +63,7 @@ PanelWindow {
     focusable: true
     visible: flow !== null
 
+    Component.onCompleted: moveToFocusedScreen()
     onFlowChanged: {
         cancelPending = false;
         submitPending = false;
@@ -65,7 +71,12 @@ PanelWindow {
         shakeTransform.x = 0;
         passwordInput.text = "";
         if (flow)
-            Qt.callLater(root.focusPasswordInput);
+            moveToFocusedScreen();
+        Qt.callLater(function () {
+            cardFlickable.contentY = 0;
+            if (root.flow)
+                root.focusPasswordInput();
+        });
     }
     onVisibleChanged: {
         if (visible)
@@ -98,7 +109,6 @@ PanelWindow {
                 stop();
         }
     }
-
     Rectangle {
         anchors.fill: parent
         color: Config.alpha(Config.md3.background, 0.64)
@@ -118,11 +128,11 @@ PanelWindow {
         border.color: Config.alpha(Config.md3.on_surface, 0.13)
         border.width: 1
         color: Config.alpha(Config.md3.background, 0.98)
-        height: content.implicitHeight + 56
+        height: Responsive.fit(content.implicitHeight + (root.height < 620 ? 36 : 56), root.height - 48, 240)
         opacity: 0
-        radius: 28
+        radius: Math.min(root.width < 600 ? 22 : 28, width / 2, height / 2)
         scale: 0.92
-        width: Math.min(520, root.width - 48)
+        width: Responsive.fit(520, root.width - (root.width < 600 ? 24 : 48), 280)
 
         transform: Translate {
             id: shakeTransform
@@ -187,291 +197,329 @@ PanelWindow {
                 to: 0
             }
         }
-        ColumnLayout {
-            id: content
+        Flickable {
+            id: cardFlickable
 
-            anchors.left: parent.left
-            anchors.margins: 28
-            anchors.right: parent.right
-            anchors.top: parent.top
-            spacing: 18
+            readonly property real contentInset: root.height < 620 || root.width < 600 ? 18 : 28
 
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 16
+            anchors.fill: parent
+            anchors.margins: contentInset
+            boundsBehavior: Flickable.StopAtBounds
+            clip: contentHeight > height
+            contentHeight: content.implicitHeight
+            contentWidth: width
+            flickableDirection: Flickable.VerticalFlick
+            interactive: contentHeight > height
 
-                Rectangle {
-                    Layout.preferredHeight: 56
-                    Layout.preferredWidth: 56
-                    color: Config.alpha(Config.md3.primary, 0.17)
-                    radius: 18
+            ColumnLayout {
+                id: content
 
-                    IconImage {
-                        anchors.centerIn: parent
-                        implicitHeight: 29
-                        implicitWidth: 29
-                        layer.enabled: true
-                        source: Quickshell.iconPath(root.flow && root.flow.iconName ? root.flow.iconName : "dialog-password-symbolic")
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.primary
-                        }
-                    }
-                }
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 3
-
-                    Text {
-                        Layout.fillWidth: true
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 21
-                        font.weight: Font.Bold
-                        text: "Authentication required"
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        color: Config.md3.on_surface_variant
-                        elide: Text.ElideRight
-                        font.family: Config.fontName
-                        font.pixelSize: 14
-                        font.weight: Font.Medium
-                        text: root.flow && root.flow.selectedIdentity ? "Authenticate as " + root.flow.selectedIdentity.displayName : "Administrator privileges are required"
-                    }
-                }
-            }
-            Text {
-                Layout.fillWidth: true
-                color: Config.md3.on_surface
-                font.family: Config.fontName
-                font.pixelSize: 15
-                font.weight: Font.Medium
-                text: root.flow ? root.flow.message : ""
-                wrapMode: Text.Wrap
-            }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 48
-                border.color: Config.alpha(Config.md3.primary, 0.55)
-                border.width: identityMouse.containsMouse ? 1 : 0
-                color: Config.md3.surface_container
-                radius: 15
+                spacing: root.height < 620 ? 14 : 18
+                width: cardFlickable.width
 
                 RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 15
-                    anchors.rightMargin: 15
-                    spacing: 10
+                    Layout.fillWidth: true
+                    spacing: 16
 
-                    IconImage {
-                        implicitHeight: 19
-                        implicitWidth: 19
-                        layer.enabled: true
-                        source: Quickshell.iconPath("avatar-default-symbolic")
+                    Rectangle {
+                        Layout.preferredHeight: 56
+                        Layout.preferredWidth: 56
+                        color: Config.alpha(Config.md3.primary, 0.17)
+                        radius: 18
 
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_surface_variant
+                        IconImage {
+                            anchors.centerIn: parent
+                            implicitHeight: 29
+                            implicitWidth: 29
+                            layer.enabled: true
+                            source: Quickshell.iconPath(root.flow && root.flow.iconName ? root.flow.iconName : "dialog-password-symbolic")
+
+                            layer.effect: ColorOverlay {
+                                color: Config.md3.primary
+                            }
                         }
                     }
-                    Text {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        color: Config.md3.on_surface
-                        elide: Text.ElideRight
-                        font.family: Config.fontName
-                        font.pixelSize: 15
-                        font.weight: Font.DemiBold
-                        text: root.flow && root.flow.selectedIdentity ? root.flow.selectedIdentity.displayName : "Current user"
-                    }
-                    Text {
-                        color: Config.md3.on_surface_variant
-                        font.family: Config.fontName
-                        font.pixelSize: 22
-                        font.weight: Font.Bold
-                        text: "›"
-                        visible: root.flow && root.flow.identities && root.flow.identities.length > 1
+                        spacing: 3
+
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.md3.on_surface
+                            font.family: Config.fontName
+                            font.pixelSize: 21
+                            font.weight: Font.Bold
+                            text: "Authentication required"
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.md3.on_surface_variant
+                            elide: Text.ElideRight
+                            font.family: Config.fontName
+                            font.pixelSize: 14
+                            font.weight: Font.Medium
+                            text: root.flow && root.flow.selectedIdentity ? "Authenticate as " + root.flow.selectedIdentity.displayName : "Administrator privileges are required"
+                        }
                     }
                 }
-                MouseArea {
-                    id: identityMouse
-
-                    anchors.fill: parent
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    enabled: root.flow && !root.cancelPending && !root.submitPending && root.flow.identities && root.flow.identities.length > 1
-                    hoverEnabled: enabled
-
-                    onClicked: root.selectNextIdentity()
-                }
-            }
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 7
-
                 Text {
                     Layout.fillWidth: true
-                    color: Config.md3.on_surface_variant
+                    color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 15
                     font.weight: Font.Medium
-                    text: root.flow && root.flow.inputPrompt ? root.flow.inputPrompt.replace(/:$/, "") : "Password"
+                    text: root.flow ? root.flow.message : ""
+                    wrapMode: Text.Wrap
                 }
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 52
-                    border.color: passwordInput.activeFocus ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.13)
-                    border.width: passwordInput.activeFocus ? 1.5 : 1
-                    color: Config.md3.background
-                    radius: 16
+                    Layout.preferredHeight: 48
+                    border.color: Config.alpha(Config.md3.primary, 0.55)
+                    border.width: identityMouse.containsMouse ? 1 : 0
+                    color: Config.md3.surface_container
+                    radius: 15
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 16
-                        anchors.rightMargin: 12
+                        anchors.leftMargin: 15
+                        anchors.rightMargin: 15
                         spacing: 10
 
                         IconImage {
                             implicitHeight: 19
                             implicitWidth: 19
                             layer.enabled: true
-                            source: Quickshell.iconPath("changes-prevent-symbolic")
+                            source: Quickshell.iconPath("avatar-default-symbolic")
 
                             layer.effect: ColorOverlay {
                                 color: Config.md3.on_surface_variant
                             }
                         }
-                        Item {
-                            Layout.fillHeight: true
+                        Text {
                             Layout.fillWidth: true
-
-                            TextInput {
-                                id: passwordInput
-
-                                anchors.fill: parent
-                                clip: true
-                                color: Config.md3.on_surface
-                                echoMode: root.flow && root.flow.responseVisible ? TextInput.Normal : TextInput.Password
-                                enabled: root.flow && root.flow.isResponseRequired
-                                font.family: Config.fontName
-                                font.pixelSize: 16
-                                passwordCharacter: "●"
-                                selectByMouse: true
-                                selectedTextColor: Config.md3.background
-                                selectionColor: Config.md3.primary
-                                verticalAlignment: TextInput.AlignVCenter
-
-                                Keys.onEnterPressed: event => {
-                                    root.submitAuthentication();
-                                    event.accepted = true;
-                                }
-                                Keys.onEscapePressed: event => {
-                                    root.cancelAuthentication();
-                                    event.accepted = true;
-                                }
-                                Keys.onReturnPressed: event => {
-                                    root.submitAuthentication();
-                                    event.accepted = true;
-                                }
-                            }
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                color: Config.alpha(Config.md3.on_surface, 0.34)
-                                font: passwordInput.font
-                                text: root.flow && root.flow.isResponseRequired ? "Enter your password" : "Waiting for authentication…"
-                                visible: passwordInput.text === "" && !passwordInput.activeFocus
-                            }
-                        }
-                    }
-                }
-            }
-            Text {
-                Layout.fillWidth: true
-                color: root.flow && root.flow.supplementaryIsError || root.flow && root.flow.failed ? Config.md3.error : Config.md3.on_surface_variant
-                font.family: Config.fontName
-                font.pixelSize: 13
-                font.weight: Font.Medium
-                text: {
-                    if (!root.flow)
-                        return "";
-                    if (root.flow.supplementaryMessage)
-                        return root.flow.supplementaryMessage;
-                    if (root.flow.failed)
-                        return "Authentication failed. Please try again.";
-                    return "";
-                }
-                visible: text !== ""
-                wrapMode: Text.Wrap
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: 2
-                spacing: 12
-
-                Item {
-                    Layout.fillWidth: true
-                }
-                Rectangle {
-                    Layout.preferredHeight: 46
-                    Layout.preferredWidth: 112
-                    color: cancelMouse.pressed ? Config.md3.surface_container_high : cancelMouse.containsMouse ? Config.md3.surface_container : Config.md3.background
-                    radius: 15
-
-                    Text {
-                        anchors.centerIn: parent
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 14
-                        font.weight: Font.DemiBold
-                        text: root.cancelPending ? "Canceling…" : "Cancel"
-                    }
-                    MouseArea {
-                        id: cancelMouse
-
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        enabled: !root.cancelPending
-                        hoverEnabled: true
-
-                        onClicked: root.cancelAuthentication()
-                    }
-                }
-                Rectangle {
-                    Layout.preferredHeight: 46
-                    Layout.preferredWidth: 138
-                    color: authenticateMouse.pressed ? Config.alpha(Config.md3.primary, 0.78) : Config.md3.primary
-                    opacity: root.flow && root.flow.isResponseRequired ? 1 : 0.48
-                    radius: 15
-
-                    RowLayout {
-                        anchors.centerIn: parent
-                        spacing: 8
-
-                        IconImage {
-                            implicitHeight: 17
-                            implicitWidth: 17
-                            layer.enabled: true
-                            source: Quickshell.iconPath("object-locked-symbolic")
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.background
-                            }
+                            color: Config.md3.on_surface
+                            elide: Text.ElideRight
+                            font.family: Config.fontName
+                            font.pixelSize: 15
+                            font.weight: Font.DemiBold
+                            text: root.flow && root.flow.selectedIdentity ? root.flow.selectedIdentity.displayName : "Current user"
                         }
                         Text {
-                            color: Config.md3.background
+                            color: Config.md3.on_surface_variant
                             font.family: Config.fontName
-                            font.pixelSize: 14
+                            font.pixelSize: 22
                             font.weight: Font.Bold
-                            text: root.flow && root.flow.isResponseRequired ? "Authenticate" : "Waiting…"
+                            text: "›"
+                            visible: root.flow && root.flow.identities && root.flow.identities.length > 1
                         }
                     }
                     MouseArea {
-                        id: authenticateMouse
+                        id: identityMouse
 
                         anchors.fill: parent
                         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: root.flow && root.flow.isResponseRequired && !root.submitPending && !root.cancelPending
+                        enabled: root.flow && !root.cancelPending && !root.submitPending && root.flow.identities && root.flow.identities.length > 1
                         hoverEnabled: enabled
 
-                        onClicked: root.submitAuthentication()
+                        onClicked: root.selectNextIdentity()
+                    }
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 7
+
+                    Text {
+                        Layout.fillWidth: true
+                        color: Config.md3.on_surface_variant
+                        font.family: Config.fontName
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                        text: root.flow && root.flow.inputPrompt ? root.flow.inputPrompt.replace(/:$/, "") : "Password"
+                    }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 52
+                        border.color: root.submitPending ? Config.alpha(Config.md3.primary, 0.72) : passwordInput.activeFocus ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.13)
+                        border.width: passwordInput.activeFocus ? 1.5 : 1
+                        color: Config.md3.background
+                        radius: 16
+
+                        Behavior on border.color {
+                            ColorAnimation {
+                                duration: 160
+                            }
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 16
+                            anchors.rightMargin: 12
+                            spacing: 10
+
+                            IconImage {
+                                implicitHeight: 19
+                                implicitWidth: 19
+                                layer.enabled: true
+                                source: Quickshell.iconPath("changes-prevent-symbolic")
+
+                                layer.effect: ColorOverlay {
+                                    color: Config.md3.on_surface_variant
+                                }
+                            }
+                            Item {
+                                Layout.fillHeight: true
+                                Layout.fillWidth: true
+
+                                TextInput {
+                                    id: passwordInput
+
+                                    anchors.fill: parent
+                                    clip: true
+                                    color: Config.md3.on_surface
+                                    echoMode: root.flow && root.flow.responseVisible ? TextInput.Normal : TextInput.Password
+                                    enabled: root.flow && root.flow.isResponseRequired && !root.submitPending && !root.cancelPending
+                                    font.family: Config.fontName
+                                    font.pixelSize: 16
+                                    passwordCharacter: "●"
+                                    selectByMouse: true
+                                    selectedTextColor: Config.md3.background
+                                    selectionColor: Config.md3.primary
+                                    verticalAlignment: TextInput.AlignVCenter
+
+                                    Keys.onEnterPressed: event => {
+                                        root.submitAuthentication();
+                                        event.accepted = true;
+                                    }
+                                    Keys.onEscapePressed: event => {
+                                        root.cancelAuthentication();
+                                        event.accepted = true;
+                                    }
+                                    Keys.onReturnPressed: event => {
+                                        root.submitAuthentication();
+                                        event.accepted = true;
+                                    }
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Config.alpha(Config.md3.on_surface, 0.34)
+                                    font: passwordInput.font
+                                    text: root.flow && root.flow.isResponseRequired ? "Enter your password" : "Waiting for authentication…"
+                                    visible: passwordInput.text === "" && !passwordInput.activeFocus
+                                }
+                            }
+                        }
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    color: root.flow && root.flow.supplementaryIsError || root.flow && root.flow.failed ? Config.md3.error : Config.md3.on_surface_variant
+                    font.family: Config.fontName
+                    font.pixelSize: 13
+                    font.weight: Font.Medium
+                    text: {
+                        if (!root.flow)
+                            return "";
+                        if (root.flow.supplementaryMessage)
+                            return root.flow.supplementaryMessage;
+                        if (root.flow.failed)
+                            return "Authentication failed. Please try again.";
+                        return "";
+                    }
+                    visible: text !== ""
+                    wrapMode: Text.Wrap
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 2
+                    spacing: 12
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: 46
+                        Layout.preferredWidth: card.width < 400 ? 96 : 112
+                        color: cancelMouse.pressed ? Config.md3.surface_container_high : cancelMouse.containsMouse ? Config.md3.surface_container : Config.md3.background
+                        radius: 15
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: Config.md3.on_surface
+                            font.family: Config.fontName
+                            font.pixelSize: 14
+                            font.weight: Font.DemiBold
+                            text: root.cancelPending ? "Canceling…" : "Cancel"
+                        }
+                        MouseArea {
+                            id: cancelMouse
+
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: !root.cancelPending
+                            hoverEnabled: true
+
+                            onClicked: root.cancelAuthentication()
+                        }
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: 46
+                        Layout.preferredWidth: card.width < 400 ? 132 : 154
+                        color: authenticateMouse.pressed && !root.submitPending ? Config.alpha(Config.md3.primary, 0.78) : Config.md3.primary
+                        opacity: root.submitPending ? 0.9 : root.flow && root.flow.isResponseRequired ? 1 : 0.48
+                        radius: 15
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 140
+                            }
+                        }
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 140
+                            }
+                        }
+
+                        RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 8
+
+                            AnimatedSpinner {
+                                color: Config.md3.background
+                                height: 18
+                                lineWidth: 2.2
+                                running: root.submitPending
+                                visible: root.submitPending
+                                width: 18
+                            }
+                            IconImage {
+                                implicitHeight: 17
+                                implicitWidth: 17
+                                layer.enabled: true
+                                source: Quickshell.iconPath("object-locked-symbolic")
+                                visible: !root.submitPending
+
+                                layer.effect: ColorOverlay {
+                                    color: Config.md3.background
+                                }
+                            }
+                            Text {
+                                color: Config.md3.background
+                                font.family: Config.fontName
+                                font.pixelSize: 14
+                                font.weight: Font.Bold
+                                text: root.submitPending ? "Verifying…" : root.flow && root.flow.isResponseRequired ? "Authenticate" : "Waiting…"
+                            }
+                        }
+                        MouseArea {
+                            id: authenticateMouse
+
+                            anchors.fill: parent
+                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            enabled: root.flow && root.flow.isResponseRequired && !root.submitPending && !root.cancelPending
+                            hoverEnabled: enabled
+
+                            onClicked: root.submitAuthentication()
+                        }
                     }
                 }
             }

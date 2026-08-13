@@ -13,8 +13,9 @@ PanelWindow {
     property int activeNiriSection: 0
     property int activePage: 0
     property int activeQuickshellSection: 0
-    readonly property string activeSubtitle: activePage === 0 ? "Inspect and tune your Niri configuration" : activePage === 1 ? (activeQuickshellSection === 0 ? "Configure shell appearance" : activeQuickshellSection === 1 ? "Configure wallpaper playback and colors" : activeQuickshellSection === 2 ? "Configure screenshots and screen recording" : "Configure external services and dependencies") : "Manage lock screen authentication and face models"
+    readonly property string activeSubtitle: activePage === 0 ? "Inspect and tune your Niri configuration" : activePage === 1 ? (activeQuickshellSection === 0 ? "Configure shell appearance" : activeQuickshellSection === 1 ? "Configure wallpaper playback and colors" : activeQuickshellSection === 2 ? "Configure screenshots and screen recording" : "Configure external services and integrations") : "Manage lock screen authentication and face models"
     readonly property string activeTitle: activePage === 0 ? niriSectionNames[activeNiriSection] : activePage === 1 ? quickshellSectionNames[activeQuickshellSection] : "Security"
+    readonly property bool compactViewport: Responsive.constrained(width, height, 1916, 1148)
     property bool niriExpanded: true
     readonly property var niriSectionColors: [Config.md3.primary, Config.md3.secondary, Config.md3.primary, Config.md3.secondary, Config.md3.tertiary, Config.md3.error, Config.md3.primary]
     readonly property var niriSectionIcons: ["input-keyboard-symbolic", "view-grid-symbolic", "input-mouse-symbolic", "media-playback-start-symbolic", "emblem-system-symbolic", "view-list-symbolic", "text-x-generic-symbolic"]
@@ -24,7 +25,7 @@ PanelWindow {
     readonly property var quickshellSectionIcons: ["preferences-desktop-theme-symbolic", "preferences-desktop-wallpaper-symbolic", "camera-photo-symbolic", "network-workgroup-symbolic"]
     readonly property var quickshellSectionNames: ["General", "Wallpaper", "Capture", "Integrations"]
     property bool sidebarExpanded: true
-    property real sidebarWidth: sidebarExpanded ? 264 : 84
+    property real sidebarWidth: sidebarExpanded ? (compactViewport ? 240 : 264) : (compactViewport ? 78 : 84)
     property int pendingPage: 0
     property int pendingSection: 0
 
@@ -35,6 +36,9 @@ PanelWindow {
         closeTimer.restart();
     }
     function openSettings() {
+        var targetScreen = StateManager.resolvePanelScreen();
+        if (targetScreen)
+            screen = targetScreen;
         closeTimer.stop();
         sectionTransition.stop();
         pageFrame.opacity = 1;
@@ -144,11 +148,11 @@ PanelWindow {
         clip: true
         color: Config.alpha(Config.md3.background, 0.985)
         focus: true
-        height: Math.min(root.height - 28, 1120)
+        height: Responsive.fitWithMargins(1120, root.height, root.compactViewport ? 8 : 14, 480)
         opacity: root.active ? 1 : 0
-        radius: 30
+        radius: root.compactViewport ? 22 : 30
         scale: root.active ? 1 : 0.96
-        width: Math.min(root.width - 36, 1880)
+        width: Responsive.fitWithMargins(1880, root.width, root.compactViewport ? 10 : 18, 640)
 
         Behavior on opacity {
             NumberAnimation {
@@ -171,9 +175,13 @@ PanelWindow {
         }
 
         AnimatedStars {
-            anchors.fill: parent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
             color: Config.md3.primary
+            height: Math.min(panel.height, root.compactViewport ? 180 : 260)
             running: root.active
+            starCount: root.compactViewport ? 40 : 64
         }
         MouseArea {
             anchors.fill: parent
@@ -189,10 +197,27 @@ PanelWindow {
                 Layout.preferredWidth: root.sidebarWidth
                 color: Config.alpha(Config.md3.on_surface, 0.025)
 
-                ColumnLayout {
+                Flickable {
+                    id: sidebarFlickable
+
+                    readonly property real contentInset: root.sidebarExpanded ? (root.compactViewport ? 16 : 22) : 12
+
                     anchors.fill: parent
-                    anchors.margins: root.sidebarExpanded ? 22 : 16
-                    spacing: 10
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: contentHeight > height
+                    contentHeight: Math.max(height, sidebarContent.implicitHeight + contentInset * 2)
+                    contentWidth: width
+                    flickableDirection: Flickable.VerticalFlick
+                    interactive: contentHeight > height
+
+                    ColumnLayout {
+                        id: sidebarContent
+
+                        height: Math.max(implicitHeight, sidebarFlickable.height - sidebarFlickable.contentInset * 2)
+                        spacing: root.compactViewport ? 7 : 10
+                        width: Math.max(0, sidebarFlickable.width - sidebarFlickable.contentInset * 2)
+                        x: sidebarFlickable.contentInset
+                        y: sidebarFlickable.contentInset
 
                     Item {
                         Layout.bottomMargin: 16
@@ -394,13 +419,14 @@ PanelWindow {
                             }
                         }
                     }
-                    Text {
-                        Layout.fillWidth: true
-                        color: Config.alpha(Config.md3.on_surface, 0.35)
-                        font.family: Config.fontName
-                        font.pixelSize: 12
-                        text: "Reads config only while opened"
-                        visible: root.sidebarExpanded
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.alpha(Config.md3.on_surface, 0.35)
+                            font.family: Config.fontName
+                            font.pixelSize: 12
+                            text: "Reads config only while opened"
+                            visible: root.sidebarExpanded
+                        }
                     }
                 }
             }
@@ -412,32 +438,35 @@ PanelWindow {
             ColumnLayout {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.margins: 32
+                Layout.margins: root.compactViewport ? 18 : 32
                 Layout.minimumWidth: 0
-                spacing: 20
+                spacing: root.compactViewport ? 12 : 20
 
                 Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 62
+                    Layout.preferredHeight: root.compactViewport ? 112 : 62
 
                     ColumnLayout {
                         anchors.left: parent.left
-                        anchors.right: headerActions.left
-                        anchors.rightMargin: 18
+                        anchors.right: root.compactViewport ? parent.right : headerActions.left
+                        anchors.rightMargin: root.compactViewport ? 0 : 18
                         anchors.verticalCenter: parent.verticalCenter
+                        anchors.verticalCenterOffset: root.compactViewport ? -25 : 0
                         spacing: 3
 
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 30
+                            font.pixelSize: root.compactViewport ? 26 : 30
                             font.weight: Font.Bold
                             text: root.activeTitle
                         }
                         Text {
                             color: Config.alpha(Config.md3.on_surface, 0.5)
+                            elide: Text.ElideRight
                             font.family: Config.fontName
                             font.pixelSize: 15
+                            maximumLineCount: 1
                             text: root.activeSubtitle
                         }
                     }
@@ -446,6 +475,7 @@ PanelWindow {
 
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
+                        anchors.verticalCenterOffset: root.compactViewport ? 32 : 0
                         spacing: 10
 
                         SettingsActionButton {

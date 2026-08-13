@@ -10,9 +10,12 @@ PanelWindow {
 
     readonly property int activeCount: activeModel.count
     readonly property var activeModel: selectedMode === "video" ? videoModel : staticModel
+    readonly property real cardWidth: Responsive.fit(380, (width - 24) / 1.15, 240)
+    readonly property real cardHeight: cardWidth * 240 / 380
     property bool changingMode: false
     property string selectedMode: "static"
     property bool selectionCommitted: false
+    readonly property real pathSpan: Math.min(450, Math.max(cardWidth * 0.85, width * 0.34))
     property int staticIndex: 0
     property int videoIndex: 0
 
@@ -31,6 +34,9 @@ PanelWindow {
         hideTimer.start();
     }
     function openSelector() {
+        var targetScreen = StateManager.resolvePanelScreen();
+        if (targetScreen)
+            screen = targetScreen;
         hideTimer.stop();
         changingMode = true;
         selectionCommitted = false;
@@ -151,6 +157,7 @@ PanelWindow {
             syncVideoModel();
         } else {
             EngineWallpaperService.endBrowsing();
+            WallpaperPreviewService.cancel();
             WallpaperService.beginPreview();
             WallpaperPreviewService.begin();
         }
@@ -309,6 +316,8 @@ PanelWindow {
             nameFilters: ["*.gif", "*.mp4", "*.webm", "*.mkv", "*.mov", "*.m4v", "*.GIF", "*.MP4", "*.WEBM", "*.MKV", "*.MOV", "*.M4V"]
             showDirs: false
 
+            onCountChanged: Qt.callLater(wallpaperWindow.syncVideoModel)
+
             onStatusChanged: {
                 if (status === FolderListModel.Ready)
                     wallpaperWindow.syncVideoModel();
@@ -339,9 +348,11 @@ PanelWindow {
             anchors.top: modeSwitch.bottom
             anchors.topMargin: 10
             color: Config.md3.tertiary
+            elide: Text.ElideRight
             font.family: Config.fontName
             font.pixelSize: 13
             font.weight: Font.Medium
+            horizontalAlignment: Text.AlignHCenter
             text: {
                 if (wallpaperWindow.selectedMode !== "video")
                     return "";
@@ -356,6 +367,7 @@ PanelWindow {
                 return msgs.length > 0 ? "Missing: " + msgs.join(" / ") : "";
             }
             visible: wallpaperWindow.selectedMode === "video" && ((!LiveWallpaperService.available && LiveWallpaperService.availabilityKnown) || (!EngineWallpaperService.available && EngineWallpaperService.availabilityKnown))
+            width: Math.max(0, parent.width - 24)
             z: 300
         }
         PathView {
@@ -365,15 +377,15 @@ PanelWindow {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             delegate: wallpaperDelegate
-            height: 400
+            height: Math.min(400, parent.height * 0.56)
             highlightRangeMode: PathView.StrictlyEnforceRange
             model: wallpaperWindow.activeModel
-            pathItemCount: 7
+            pathItemCount: wallpaperWindow.width < 1000 ? 5 : 7
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
 
             path: Path {
-                startX: pathView.width / 2 - 450
+                startX: pathView.width / 2 - wallpaperWindow.pathSpan
                 startY: pathView.height / 2
 
                 PathAttribute {
@@ -405,7 +417,7 @@ PanelWindow {
                     value: 1
                 }
                 PathLine {
-                    x: pathView.width / 2 + 450
+                    x: pathView.width / 2 + wallpaperWindow.pathSpan
                     y: pathView.height / 2
                 }
                 PathAttribute {
@@ -445,21 +457,28 @@ PanelWindow {
             anchors.centerIn: parent
             spacing: 8
             visible: wallpaperWindow.activeCount === 0
+            width: Math.max(0, parent.width - 24)
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: Config.md3.on_surface
+                elide: Text.ElideRight
                 font.family: Config.fontName
                 font.pixelSize: 18
                 font.weight: Font.DemiBold
+                horizontalAlignment: Text.AlignHCenter
                 text: wallpaperWindow.selectedMode === "video" ? (EngineWallpaperService.scanning ? "Scanning Steam Workshop…" : "No videos") : "No static wallpapers"
+                width: parent.width
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: Config.md3.on_surface_variant
+                elide: Text.ElideMiddle
                 font.family: Config.fontName
                 font.pixelSize: 13
+                horizontalAlignment: Text.AlignHCenter
                 text: wallpaperWindow.selectedMode === "video" ? (Config.wallpaperEngineWorkshopDir + " / " + Config.liveWallFolder) : Config.wallFolder
+                width: parent.width
             }
         }
     }
@@ -510,10 +529,10 @@ PanelWindow {
                 thumbnailLoadTimer.restart();
             }
 
-            height: 240
+            height: wallpaperWindow.cardHeight
             opacity: PathView.itemOpacity !== undefined ? PathView.itemOpacity : 0
             scale: PathView.itemScale !== undefined ? PathView.itemScale : 0.55
-            width: 380
+            width: wallpaperWindow.cardWidth
             z: PathView.itemZ !== undefined ? PathView.itemZ : 1
 
             transform: Shear {

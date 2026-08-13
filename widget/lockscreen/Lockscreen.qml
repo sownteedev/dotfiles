@@ -9,6 +9,7 @@ import Quickshell.Services.UPower
 import Quickshell.Wayland
 import Quickshell.Widgets
 import "../.."
+import "../../components"
 import "../../service"
 
 Scope {
@@ -17,7 +18,7 @@ Scope {
     // State
     property bool authenticationGranted: false
     readonly property string backdropPath: BackdropService.ready ? BackdropService.activeBackdrop : ""
-    readonly property string cacheRoot: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") || "") + "/.cache") + "/quickshell"
+    readonly property string cacheRoot: Config.cacheRoot
     readonly property bool clock24h: settingValue("clock24h", true)
     // Time
     property int curH: new Date().getHours()
@@ -224,7 +225,7 @@ Scope {
                 property real jitterX: 0
                 property real jitterY: 0
                 readonly property real marginR: 80 * s
-                readonly property real s: height / 768
+                readonly property real s: Responsive.clamp(Math.min(width / 1366, height / 768), 0.35, 2)
                 property real slideX: 0
                 readonly property real smoothMinAngle: -((root.localTimeMS % 3.6e+06) / 3.6e+06) * 360 - windupOffset * 5
                 readonly property real smoothSecAngle: -((root.localTimeMS % 60000) / 60000) * 360 - windupOffset * 10
@@ -704,12 +705,22 @@ Scope {
                                     }
                                 }
                             }
+                            WifiSignalIcon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: root.lockscreenColors.secondaryText
+                                connected: WifiService.connected
+                                connectivityIssue: WifiService.connectivityIssue
+                                height: 16 * container.s
+                                signalStrength: WifiService.activeSignal
+                                visible: WifiService.connectionType !== "ethernet"
+                                width: 16 * container.s
+                            }
                             IconImage {
                                 anchors.verticalCenter: parent.verticalCenter
-                                anchors.verticalCenterOffset: -1.5 * container.s
                                 height: 16 * container.s
                                 layer.enabled: true
                                 source: Quickshell.iconPath(WifiService.iconName)
+                                visible: WifiService.connectionType === "ethernet"
                                 width: 16 * container.s
 
                                 layer.effect: ColorOverlay {
@@ -733,6 +744,8 @@ Scope {
                     Column {
                         id: loginPanel
 
+                        property real shakeOffset: 0
+
                         anchors.bottom: parent.bottom
                         anchors.bottomMargin: 80 * container.s
                         anchors.right: parent.right
@@ -741,7 +754,7 @@ Scope {
                         width: 350 * container.s
 
                         transform: Translate {
-                            x: container.slideX
+                            x: container.slideX + loginPanel.shakeOffset
                         }
 
                         Item {
@@ -1288,24 +1301,24 @@ Scope {
                     NumberAnimation {
                         duration: 50
                         easing.type: Easing.InOutSine
-                        from: container.marginR
-                        property: "anchors.rightMargin"
+                        from: 0
+                        property: "shakeOffset"
                         target: loginPanel
-                        to: container.marginR + 10 * container.s
+                        to: 10 * container.s
                     }
                     NumberAnimation {
                         duration: 50
                         easing.type: Easing.InOutSine
-                        property: "anchors.rightMargin"
+                        property: "shakeOffset"
                         target: loginPanel
-                        to: container.marginR - 10 * container.s
+                        to: -10 * container.s
                     }
                     NumberAnimation {
                         duration: 50
                         easing.type: Easing.InOutSine
-                        property: "anchors.rightMargin"
+                        property: "shakeOffset"
                         target: loginPanel
-                        to: container.marginR
+                        to: 0
                     }
                 }
             }

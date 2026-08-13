@@ -267,16 +267,13 @@ Item {
                         implicitWidth: 42
                         radius: 13
 
-                        IconImage {
+                        WifiSignalIcon {
                             anchors.centerIn: parent
+                            color: Config.md3.on_primary_container
+                            connected: true
                             height: 23
-                            layer.enabled: true
-                            source: Quickshell.iconPath("network-wireless-signal-excellent-symbolic")
+                            signalStrength: 100
                             width: 23
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_primary_container
-                            }
                         }
                     }
                     ColumnLayout {

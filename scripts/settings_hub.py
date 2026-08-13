@@ -943,20 +943,6 @@ def snapshot() -> dict[str, object]:
                 )
         except (OSError, json.JSONDecodeError):
             pass
-    quickshell_settings["dependencies"] = {
-        name: shutil.which(name) is not None
-        for name in (
-            "ffmpeg",
-            "gpu-screen-recorder",
-            "inotifywait",
-            "linux-wallpaperengine",
-            "matugen",
-            "mpvpaper",
-            "slurp",
-            "tesseract",
-            "wl-copy",
-        )
-    }
     return {
         "niri": {
             "keybindGroups": parse_binds(read(INCLUDE_DIR / "keybinds.kdl")),

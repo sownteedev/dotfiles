@@ -15,9 +15,9 @@ Item {
 
     ColumnLayout {
         anchors.centerIn: parent
-        height: Math.min(410, root.height - 20)
+        height: 410
         spacing: 22
-        width: Math.min(380, root.width - 32)
+        width: Math.min(380, Math.max(0, root.width - 32))
 
         Item {
             Layout.alignment: Qt.AlignHCenter

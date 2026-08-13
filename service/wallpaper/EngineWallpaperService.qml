@@ -21,12 +21,12 @@ QtObject {
             if (root.available && root.desiredPath)
                 root.requestStart();
             else if (!root.available && root.desiredPath)
-                root.errorMessage = "Install linux-wallpaperengine and Wallpaper Engine assets";
+                root.reportFailure(root.desiredPath, "Install linux-wallpaperengine and Wallpaper Engine assets");
         }
     }
     property bool available: false
     property bool browsing: false
-    readonly property string cacheDir: Config.homeDir + "/.cache/quickshell/wallpaper-engine"
+    readonly property string cacheDir: Config.cacheRoot + "/wallpaper-engine"
     property Timer cleanupRestart: Timer {
         interval: 60
         repeat: false
@@ -43,6 +43,7 @@ QtObject {
     property bool cleanupRestartPending: false
     property string desiredPath: ""
     property string errorMessage: ""
+    property string launchedScreenSignature: ""
     property var knownPreviewThumbnails: ({})
     property FolderListModel legacyWorkshopWatcher: FolderListModel {
         folder: "file://" + Config.legacyWallpaperEngineWorkshopDir
@@ -77,55 +78,84 @@ QtObject {
             if (root.readyProbe.running)
                 root.readyProbe.running = false;
             if (root.policyRestarting && root.desiredPath) {
-                Qt.callLater(root.requestStart);
+                if (!root.rendererRestartLaunching) {
+                    root.rendererRestartLaunching = true;
+                    Qt.callLater(root.requestStart);
+                } else {
+                    root.policyRestarting = false;
+                    root.rendererRestartLaunching = false;
+                    root.reportFailure(exitedPath, "Wallpaper Engine restart failed");
+                }
                 return;
             }
             if (root.desiredPath && root.desiredPath !== exitedPath && !root.startAfterCleanup)
                 Qt.callLater(root.requestStart);
-            else if (root.desiredPath && root.desiredPath === exitedPath && exitCode !== 0 && !root.startAfterCleanup)
-                root.errorMessage = "Wallpaper Engine stopped unexpectedly";
+            else if (root.desiredPath && root.desiredPath === exitedPath && !root.startAfterCleanup)
+                root.reportFailure(exitedPath, "Wallpaper Engine stopped unexpectedly");
         }
         onStarted: {
             root.activePath = root.startedPath;
             root.errorMessage = "";
-            root.readyTimer.restart();
-            root.startReadyProbe();
-            root.syncLockPause();
+            root.syncPolicyPause();
+            if (!WallpaperPlaybackPolicy.shouldPause) {
+                root.readyTimer.restart();
+                root.startReadyProbe();
+            }
         }
     }
     property Connections policyConnections: Connections {
-        function onLockedChanged() {
-            root.syncLockPause();
-            if (!WallpaperPlaybackPolicy.locked && root.powerRestartPending) {
-                root.powerRestartPending = false;
-                root.restartForPowerPolicy();
+        function onShouldPauseChanged() {
+            root.syncPolicyPause();
+            if (WallpaperPlaybackPolicy.shouldPause) {
+                if (!root.playbackReadyState) {
+                    root.readyTimer.stop();
+                    if (root.readyProbe.running)
+                        root.readyProbe.running = false;
+                }
+                return;
             }
+            if (root.player.running && !root.playbackReadyState) {
+                root.readyTimer.restart();
+                root.startReadyProbe();
+            }
+            if (root.powerRestartPending || root.screenRestartPending)
+                root.rendererRestartDebounce.restart();
         }
         function onTargetFpsChanged() {
             if (!root.player.running)
                 return;
-            if (WallpaperPlaybackPolicy.locked)
-                root.powerRestartPending = true;
-            else
-                root.restartForPowerPolicy();
+            root.powerRestartPending = true;
+            if (!WallpaperPlaybackPolicy.shouldPause)
+                root.rendererRestartDebounce.restart();
         }
 
         target: WallpaperPlaybackPolicy
     }
     property Process policyPauseController: Process {
-        onExited: {
+        onExited: (exitCode, exitStatus) => {
             if (root.policyPausePending) {
                 root.policyPausePending = false;
-                root.syncLockPause();
+                root.syncPolicyPause();
+            } else if (exitCode !== 0 && root.player.running) {
+                root.policyPauseRetry.restart();
             }
         }
     }
     property bool policyPausePending: false
+    property Timer policyPauseRetry: Timer {
+        interval: 120
+        repeat: false
+
+        onTriggered: root.syncPolicyPause()
+    }
     property Timer policyRestartFinish: Timer {
         interval: 850
         repeat: false
 
-        onTriggered: root.policyRestarting = false
+        onTriggered: {
+            root.policyRestarting = false;
+            root.rendererRestartLaunching = false;
+        }
     }
     property bool policyRestarting: false
     property bool powerRestartPending: false
@@ -168,15 +198,35 @@ QtObject {
     }
     readonly property string readyProbeScript: Config.quickshellDir + "/scripts/wallpaper_frame_probe.py"
     property Timer readyTimer: Timer {
-        interval: 5200
+        interval: 8000
         repeat: false
 
         onTriggered: {
-            if (root.player.running && root.startedPath === root.desiredPath)
-                root.markReady(root.startedPath, "");
+            if (!root.player.running || root.startedPath !== root.desiredPath)
+                return;
+            if (WallpaperPlaybackPolicy.shouldPause)
+                return;
+            root.reportFailure(root.startedPath, "Wallpaper Engine did not become ready");
         }
     }
+    property Timer rendererRestartDebounce: Timer {
+        interval: 250
+        repeat: false
+
+        onTriggered: root.processPendingRendererRestart()
+    }
+    property bool rendererRestartLaunching: false
     property bool rescanPending: false
+    property Connections screenConnections: Connections {
+        function onScreensChanged() {
+            root.screenRestartPending = true;
+            if (!WallpaperPlaybackPolicy.shouldPause)
+                root.rendererRestartDebounce.restart();
+        }
+
+        target: Quickshell
+    }
+    property bool screenRestartPending: false
     property Timer scanDebounce: Timer {
         interval: 80
         repeat: false
@@ -220,6 +270,7 @@ QtObject {
     }
 
     signal playbackReady(string sourcePath, string framePath)
+    signal playbackFailed(string sourcePath, string message)
     signal previewThumbnailReady(string sourcePath, string thumbnailPath)
 
     function beginBrowsing() {
@@ -257,13 +308,23 @@ QtObject {
     function isEnginePath(path) {
         if (!path)
             return false;
-        return path.indexOf(Config.wallpaperEngineWorkshopDir) === 0 || path.indexOf(Config.legacyWallpaperEngineWorkshopDir) === 0;
+        var sourcePath = String(path);
+        return sourcePath.indexOf(Config.wallpaperEngineWorkshopDir) === 0 || sourcePath.indexOf(Config.legacyWallpaperEngineWorkshopDir) === 0;
+    }
+    function currentScreenSignature() {
+        var names = [];
+        for (var i = 0; i < Quickshell.screens.length; ++i)
+            names.push(String(Quickshell.screens[i].name || ""));
+        names.sort();
+        return names.join("\n");
     }
     function launchDesired() {
         if (!available || !desiredPath || player.running)
             return;
 
         startedPath = desiredPath;
+        launchedScreenSignature = currentScreenSignature();
+        screenRestartPending = false;
         playbackReadyState = false;
         var currentFrame = String(Config.wallpaper || "");
         var nextSlot = currentFrame === cacheDir + "/render-frame-1.jpg" ? 0 : 1;
@@ -272,7 +333,7 @@ QtObject {
         // seconds. Two frames captured several projects before their shaders
         // had initialized, producing black/noisy lock-screen backdrops.
         var screenshotDelayFrames = Math.max(45, Math.round(WallpaperPlaybackPolicy.targetFps * 2));
-        var args = ["linux-wallpaperengine", "--silent", "--fps", String(WallpaperPlaybackPolicy.targetFps), "--layer", "background", "--fullscreen-pause-only-active", "--screenshot", readyFramePath, "--screenshot-delay", String(screenshotDelayFrames), "--assets-dir", Config.wallpaperEngineAssetsDir];
+        var args = ["linux-wallpaperengine", "--silent", "--fps", String(WallpaperPlaybackPolicy.targetFps), "--layer", "background", "--no-fullscreen-pause", "--screenshot", readyFramePath, "--screenshot-delay", String(screenshotDelayFrames), "--assets-dir", Config.wallpaperEngineAssetsDir];
         for (var i = 0; i < Quickshell.screens.length; ++i) {
             args.push("--screen-root", Quickshell.screens[i].name, "--bg", startedPath, "--scaling", "fill", "--clamp", "border");
         }
@@ -285,6 +346,11 @@ QtObject {
     function markReady(path, framePath) {
         if (playbackReadyState || !path || path !== startedPath)
             return;
+        if (currentScreenSignature() !== launchedScreenSignature) {
+            screenRestartPending = true;
+            rendererRestartDebounce.restart();
+            return;
+        }
 
         playbackReadyState = true;
         readyTimer.stop();
@@ -337,6 +403,30 @@ QtObject {
         previewThumbnailWorker.command = ["sh", "-c", "mkdir -p \"$3\"; if [ ! -s \"$2\" ]; then ffmpeg -hide_banner -loglevel error -y -ss 0.5 -i \"$1\" -frames:v 1 -vf 'scale=960:-2:force_original_aspect_ratio=decrease' \"$2.tmp.jpg\" && mv \"$2.tmp.jpg\" \"$2\"; fi", "engine-preview-thumbnail", previewThumbnailJob.path, previewThumbnailJob.target, previewCacheDir];
         previewThumbnailWorker.running = true;
     }
+    function processPendingRendererRestart() {
+        if (WallpaperPlaybackPolicy.shouldPause)
+            return;
+
+        var screensChanged = currentScreenSignature() !== launchedScreenSignature;
+        if (!screensChanged)
+            screenRestartPending = false;
+        if (!screensChanged && !powerRestartPending)
+            return;
+        if (!player.running) {
+            powerRestartPending = false;
+            if (!startAfterCleanup)
+                requestStart();
+            return;
+        }
+        if (policyRestarting && !screensChanged) {
+            rendererRestartDebounce.restart();
+            return;
+        }
+
+        screenRestartPending = false;
+        powerRestartPending = false;
+        restartRenderer();
+    }
     function projectForPath(path) {
         for (var i = 0; i < wallpapers.length; ++i) {
             if (wallpapers[i].path === path)
@@ -382,11 +472,19 @@ QtObject {
         startAfterCleanup = true;
         stopOwnedProcess();
     }
-    function restartForPowerPolicy() {
-        if (!player.running || policyRestarting)
+    function reportFailure(path, message) {
+        if (!path || path !== desiredPath)
+            return;
+        errorMessage = message;
+        playbackFailed(path, message);
+    }
+    function restartRenderer() {
+        if (!player.running)
             return;
 
+        policyRestartFinish.stop();
         policyRestarting = true;
+        rendererRestartLaunching = false;
         playbackReadyState = false;
         player.running = false;
     }
@@ -427,6 +525,11 @@ QtObject {
         startAfterCleanup = false;
         playbackReadyState = false;
         policyRestarting = false;
+        rendererRestartLaunching = false;
+        powerRestartPending = false;
+        screenRestartPending = false;
+        policyPauseRetry.stop();
+        rendererRestartDebounce.stop();
         policyRestartFinish.stop();
         readyTimer.stop();
         readyFramePath = "";
@@ -437,13 +540,13 @@ QtObject {
         stopOwnedProcess();
     }
     function stopOwnedProcess() {
-        ownedProcessStopper.command = ["sh", "-c", "pid=$(cat \"$1\" 2>/dev/null || true); if [ -n \"$pid\" ] && [ -e \"/proc/$pid/exe\" ]; then exe=$(readlink \"/proc/$pid/exe\" 2>/dev/null || true); case \"$exe\" in */linux-wallpaperengine) kill -CONT \"$pid\" 2>/dev/null || true; kill \"$pid\" 2>/dev/null || true ;; esac; fi; rm -f \"$1\"", "engine-wallpaper-stop", pidPath];
+        ownedProcessStopper.command = ["sh", "-c", "pid=$(cat \"$1\" 2>/dev/null || true); if [ -n \"$pid\" ] && [ -e \"/proc/$pid/exe\" ]; then exe=$(readlink \"/proc/$pid/exe\" 2>/dev/null || true); cmd=$(tr '\\0' ' ' < \"/proc/$pid/cmdline\" 2>/dev/null || true); case \"$exe:$cmd\" in */linux-wallpaperengine:*\"$2/render-frame-\"*) kill -CONT \"$pid\" 2>/dev/null || true; kill \"$pid\" 2>/dev/null || true ;; esac; fi; rm -f \"$1\"", "engine-wallpaper-stop", pidPath, cacheDir];
         cleanupRestartPending = true;
         if (ownedProcessStopper.running)
             ownedProcessStopper.running = false;
         cleanupRestart.restart();
     }
-    function syncLockPause() {
+    function syncPolicyPause() {
         if (!player.running)
             return;
         if (policyPauseController.running) {
@@ -451,7 +554,7 @@ QtObject {
             return;
         }
 
-        policyPauseController.command = ["sh", "-c", "pid=$(cat \"$1\" 2>/dev/null || true); [ -n \"$pid\" ] || exit 1; exe=$(readlink \"/proc/$pid/exe\" 2>/dev/null || true); case \"$exe\" in */linux-wallpaperengine) kill -\"$2\" \"$pid\" ;; *) exit 1 ;; esac", "engine-wallpaper-policy", pidPath, WallpaperPlaybackPolicy.locked ? "STOP" : "CONT"];
+        policyPauseController.command = ["sh", "-c", "pid=$(cat \"$1\" 2>/dev/null || true); [ -n \"$pid\" ] || exit 1; exe=$(readlink \"/proc/$pid/exe\" 2>/dev/null || true); case \"$exe\" in */linux-wallpaperengine) kill -\"$2\" \"$pid\" ;; *) exit 1 ;; esac", "engine-wallpaper-policy", pidPath, WallpaperPlaybackPolicy.shouldPause ? "STOP" : "CONT"];
         policyPauseController.running = true;
     }
 }

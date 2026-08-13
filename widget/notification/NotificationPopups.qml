@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import Quickshell.Services.Notifications
 
 PanelWindow {
@@ -13,8 +14,11 @@ PanelWindow {
     id: notifWindow
 
     readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
-    readonly property int maxVisiblePopups: 3
+    readonly property int maxVisiblePopups: screen && screen.height < 800 ? 2 : 3
     property var pendingUpdates: ({})
+    readonly property real popupMaximumWidth: screen ? Responsive.fit(600, screen.width - 40, 260) : 600
+    readonly property real popupMinimumWidth: Math.min(380, popupMaximumWidth)
+    property real retainedStackHeight: 0
 
     // Track active timer objects by notification ID
     property var timersMap: ({})
@@ -133,6 +137,16 @@ PanelWindow {
     function removePopupAt(index) {
         if (index < 0 || index >= notifModel.count)
             return;
+
+        if (notifModel.count > 1) {
+            // Keep the layer surface stable while the remaining cards slide into place.
+            // Resizing the PanelWindow during reflow makes multi-popup stacks stutter.
+            retainedStackHeight = Math.max(retainedStackHeight, layout.implicitHeight);
+            stackHeightReleaseTimer.restart();
+        } else {
+            stackHeightReleaseTimer.stop();
+            retainedStackHeight = 0;
+        }
 
         var nid = notifModel.get(index).nid;
         if (timersMap[nid]) {
@@ -262,7 +276,7 @@ PanelWindow {
         }
     }
 
-    aboveWindows: true
+    WlrLayershell.layer: WlrLayer.Overlay
     anchors.bottom: false
     anchors.left: false
     anchors.right: false
@@ -273,10 +287,14 @@ PanelWindow {
     exclusiveZone: 0 // Float, do not reserve space or push windows
 
     focusable: false
-    implicitHeight: visible ? layout.implicitHeight + 30 : 0
+    implicitHeight: visible ? Math.max(layout.implicitHeight, retainedStackHeight) + 30 : 0
     // Dynamically sized window wrapper to adapt to layout content
     implicitWidth: layout.implicitWidth + 30
     visible: notifModel.count > 0
+
+    onMaxVisiblePopupsChanged: Qt.callLater(function () {
+        notifWindow.trimPopupStack();
+    })
 
     // Connect to global NotificationManager
     Connections {
@@ -347,6 +365,13 @@ PanelWindow {
     ListModel {
         id: notifModel
     }
+    Timer {
+        id: stackHeightReleaseTimer
+
+        interval: 230
+
+        onTriggered: notifWindow.retainedStackHeight = 0
+    }
 
     // UI Layout (Stacked list)
     Column {
@@ -356,6 +381,14 @@ PanelWindow {
         anchors.top: parent.top
         anchors.topMargin: 15
         spacing: 10
+
+        move: Transition {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+                properties: "y"
+            }
+        }
 
         Repeater {
             model: notifModel
@@ -374,7 +407,6 @@ PanelWindow {
                     property bool completed: false
                     property string image: model.image
                     property bool isCritical: model.isCritical
-                    property bool isDismissing: false
                     readonly property real naturalTextWidth: Math.max(summaryText.implicitWidth, bodyText.implicitWidth, 100 + delegateWrapper.actionsList.length * 115)
 
                     // Cache model properties on wrapper to avoid name conflicts in nested repeaters
@@ -386,22 +418,12 @@ PanelWindow {
                     property bool showActions: model.showActions
                     property string summary: model.summary
 
-                    clip: true
-                    height: isDismissing ? 0 : container.height
+                    height: container.height
                     width: container.width
-
-                    Behavior on height {
-                        enabled: delegateWrapper.isDismissing
-
-                        NumberAnimation {
-                            duration: 120
-                            easing.type: Easing.OutCubic
-                        }
-                    }
 
                     Component.onCompleted: {
                         var isFirst = notifModel.count <= 1;
-                        var delay = isFirst ? 150 : 80;
+                        var delay = isFirst ? 0 : 35;
                         var t = entryDelayTimerComponent.createObject(delegateWrapper, {
                             "interval": delay,
                             "targetModel": model
@@ -417,15 +439,12 @@ PanelWindow {
                     }
                     onActiveChanged: {
                         if (!active) {
-                            popupCollapseTimer.start();
+                            popupDismissTimer.restart();
                         } else {
-                            popupCollapseTimer.stop();
                             popupDismissTimer.stop();
-                            isDismissing = false;
                         }
                     }
                     onNidChanged: {
-                        isDismissing = false;
                         container.swipeOffset = 0;
                     }
                     onRevisionChanged: {
@@ -437,19 +456,9 @@ PanelWindow {
                     }
 
                     Timer {
-                        id: popupCollapseTimer
-
-                        interval: 120
-
-                        onTriggered: {
-                            isDismissing = true;
-                            popupDismissTimer.start();
-                        }
-                    }
-                    Timer {
                         id: popupDismissTimer
 
-                        interval: 120
+                        interval: 155
 
                         onTriggered: {
                             handleCloseImmediate(delegateWrapper.nid);
@@ -484,13 +493,14 @@ PanelWindow {
                         id: container
 
                         readonly property real collapsedHeight: mainLayout.implicitHeight - actionsBlock.implicitHeight - 12 + 30
+                        property real contentReveal: 0
 
                         // Loop-free stable height values (calculated from static mainLayout height)
                         readonly property real expandedHeight: mainLayout.implicitHeight + 30
                         // Swipe-right-to-dismiss
                         property real swipeOffset: 0
-                        // Smooth slide transition offsets
-                        property real yOffset: -50
+                        // Keep the travel short so the popup feels attached to the bar.
+                        property real yOffset: -18
 
                         anchors.horizontalCenter: parent.horizontalCenter
                         border.color: delegateWrapper.isCritical ? Config.alpha(Config.md3.error, 0.72) : Config.alpha(Config.md3.outline_variant, 0.26)
@@ -500,8 +510,7 @@ PanelWindow {
                         height: delegateWrapper.showActions ? expandedHeight : collapsedHeight
                         opacity: 0
                         radius: delegateWrapper.showActions ? 45 : height / 2
-                        // Width automatically adjusts to content, bounded between 380px and 600px
-                        width: Math.min(600, Math.max(380, delegateWrapper.naturalTextWidth + 145))
+                        width: Math.min(notifWindow.popupMaximumWidth, Math.max(notifWindow.popupMinimumWidth, delegateWrapper.naturalTextWidth + 145))
                         y: yOffset
 
                         // Smooth container height changes (bypasses visual stutter by animating background at layout level)
@@ -530,6 +539,7 @@ PanelWindow {
                                 when: delegateWrapper.active
 
                                 PropertyChanges {
+                                    contentReveal: 1
                                     opacity: 1
                                     target: container
                                     yOffset: 0
@@ -540,9 +550,10 @@ PanelWindow {
                                 when: !delegateWrapper.active
 
                                 PropertyChanges {
+                                    contentReveal: 0
                                     opacity: 0
                                     target: container
-                                    yOffset: -50
+                                    yOffset: -14
                                 }
                             }
                         ]
@@ -557,7 +568,8 @@ PanelWindow {
                         transform: Translate {
                             x: container.swipeOffset
                         }
-                        // Smooth transitions: Springy slide down entry and fast slide up exit
+                        // Animate compositor-friendly properties only. Scaling the clipped
+                        // card forced the text, rounded mask, and progress canvas to redraw.
                         transitions: [
                             Transition {
                                 from: "hidden"
@@ -565,14 +577,27 @@ PanelWindow {
 
                                 ParallelAnimation {
                                     NumberAnimation {
-                                        duration: 250
-                                        easing.type: Easing.OutQuad
-                                        properties: "opacity"
+                                        duration: 160
+                                        easing.type: Easing.OutCubic
+                                        property: "opacity"
+                                        target: container
                                     }
                                     NumberAnimation {
-                                        duration: 400
-                                        easing.type: Easing.OutBack
-                                        properties: "yOffset"
+                                        duration: 220
+                                        easing.type: Easing.OutCubic
+                                        property: "yOffset"
+                                        target: container
+                                    }
+                                    SequentialAnimation {
+                                        PauseAnimation {
+                                            duration: 30
+                                        }
+                                        NumberAnimation {
+                                            duration: 180
+                                            easing.type: Easing.OutCubic
+                                            property: "contentReveal"
+                                            target: container
+                                        }
                                     }
                                 }
                             },
@@ -583,13 +608,21 @@ PanelWindow {
                                 ParallelAnimation {
                                     NumberAnimation {
                                         duration: 120
-                                        easing.type: Easing.OutQuad
-                                        properties: "opacity"
+                                        easing.type: Easing.InCubic
+                                        property: "opacity"
+                                        target: container
                                     }
                                     NumberAnimation {
-                                        duration: 120
+                                        duration: 150
+                                        easing.type: Easing.InCubic
+                                        property: "yOffset"
+                                        target: container
+                                    }
+                                    NumberAnimation {
+                                        duration: 90
                                         easing.type: Easing.InQuad
-                                        properties: "yOffset"
+                                        property: "contentReveal"
+                                        target: container
                                     }
                                 }
                             }
@@ -636,6 +669,7 @@ PanelWindow {
                                 id: innerLayout
 
                                 Layout.fillWidth: true
+                                opacity: 0.55 + 0.45 * container.contentReveal
                                 spacing: 20
 
                                 NotificationIcon {
@@ -779,7 +813,7 @@ PanelWindow {
                                     if (container.swipeOffset > container.width * 0.38) {
                                         // Swipe far enough → slide off then dismiss
                                         container.swipeOffset = container.width + 80;
-                                        swipeCollapseTimer.start();
+                                        swipeDismissTimer.start();
                                     } else {
                                         // Not far enough → snap back
                                         container.swipeOffset = 0;
@@ -791,19 +825,9 @@ PanelWindow {
                             }
                         }
                         Timer {
-                            id: swipeCollapseTimer
-
-                            interval: 80
-
-                            onTriggered: {
-                                delegateWrapper.isDismissing = true;
-                                swipeDismissTimer.start();
-                            }
-                        }
-                        Timer {
                             id: swipeDismissTimer
 
-                            interval: 180
+                            interval: 160
 
                             onTriggered: {
                                 NotificationHistory.dismiss(delegateWrapper.nid);

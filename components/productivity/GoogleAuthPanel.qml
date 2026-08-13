@@ -162,17 +162,25 @@ Item {
                     spacing: 10
 
                     Rectangle {
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 96
                         Layout.preferredHeight: 42
                         Layout.preferredWidth: 180
                         color: cloudMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container
                         radius: 12
 
                         Text {
-                            anchors.centerIn: parent
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            anchors.right: parent.right
+                            anchors.rightMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
                             color: Config.md3.on_surface_variant
+                            elide: Text.ElideRight
                             font.family: Config.fontName
                             font.pixelSize: 14
                             font.weight: Font.DemiBold
+                            horizontalAlignment: Text.AlignHCenter
                             text: "Google Cloud Console"
                         }
                         MouseArea {
@@ -185,10 +193,8 @@ Item {
                             onClicked: Quickshell.execDetached(["xdg-open", "https://console.cloud.google.com/apis/credentials"])
                         }
                     }
-                    Item {
-                        Layout.fillWidth: true
-                    }
                     Rectangle {
+                        Layout.minimumWidth: 68
                         Layout.preferredHeight: 42
                         Layout.preferredWidth: 82
                         color: cancelMouse.containsMouse ? Config.md3.surface_container_high : "transparent"
@@ -225,6 +231,7 @@ Item {
                             clientSecret.text = "";
                         }
 
+                        Layout.minimumWidth: 96
                         Layout.preferredHeight: 42
                         Layout.preferredWidth: 112
                         color: ready ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.10)

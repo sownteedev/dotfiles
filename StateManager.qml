@@ -1,5 +1,7 @@
 pragma Singleton
 import QtQuick
+import Quickshell
+import "service"
 
 QtObject {
     id: root
@@ -16,6 +18,7 @@ QtObject {
                 root.leftPanelOpenPending = false;
                 root.leftEdgeCompletionPending = false;
                 root.leftEdgeGestureActive = false;
+                root.leftPanelScreenPending = null;
             }
         }
 
@@ -37,6 +40,7 @@ QtObject {
                 root.rightPanelTabPending = -2;
                 root.rightEdgeCompletionPending = false;
                 root.rightEdgeGestureActive = false;
+                root.rightPanelScreenPending = null;
             }
         }
 
@@ -48,11 +52,13 @@ QtObject {
     property bool leftEdgeGestureActive: false
     property real leftEdgeGestureProgress: 0
     property bool leftPanelOpenPending: false
+    property var leftPanelScreenPending: null
     property var lockscreenLoader: null
     property bool rightEdgeCompletionOpen: false
     property bool rightEdgeCompletionPending: false
     property bool rightEdgeGestureActive: false
     property real rightEdgeGestureProgress: 0
+    property var rightPanelScreenPending: null
     property int rightPanelTabPending: -2
     property bool sessionLocked: false
     property var settingsHubLoader: null
@@ -73,20 +79,42 @@ QtObject {
     property bool settingsHubOpenPending: false
     property bool wallpaperLoaded: false
 
-    function beginControlLeftEdgeDrag() {
-        if (!controlLeftPanelLoader || (controlLeftPanel && controlLeftPanel.active))
+    function assignPanelScreen(panel, requestedScreen) {
+        if (panel && requestedScreen && panel.screen !== requestedScreen)
+            panel.screen = requestedScreen;
+    }
+    function beginControlLeftEdgeDrag(screen) {
+        if (!controlLeftPanelLoader)
             return;
 
+        var targetScreen = resolvePanelScreen(screen);
+        leftPanelScreenPending = targetScreen;
+        if (controlLeftPanel && controlLeftPanel.active) {
+            if (!panelIsOnScreen(controlLeftPanel, targetScreen)) {
+                assignPanelScreen(controlLeftPanel, targetScreen);
+                controlLeftPanel.showControl();
+            }
+            return;
+        }
         leftEdgeCompletionPending = false;
         leftEdgeGestureActive = true;
         leftEdgeGestureProgress = 0;
         controlLeftPanelLoader.active = true;
         syncControlLeftLoader();
     }
-    function beginControlRightEdgeDrag() {
-        if (!controlPanelLoader || (controlPanel && controlPanel.active))
+    function beginControlRightEdgeDrag(screen) {
+        if (!controlPanelLoader)
             return;
 
+        var targetScreen = resolvePanelScreen(screen);
+        rightPanelScreenPending = targetScreen;
+        if (controlPanel && controlPanel.active) {
+            if (!panelIsOnScreen(controlPanel, targetScreen)) {
+                assignPanelScreen(controlPanel, targetScreen);
+                controlPanel.showControl();
+            }
+            return;
+        }
         rightEdgeCompletionPending = false;
         rightEdgeGestureActive = true;
         rightEdgeGestureProgress = 0;
@@ -129,22 +157,40 @@ QtObject {
         // instead of waiting for an asynchronous panel-style open animation.
         lockscreenLoader.active = true;
     }
-    function openControlPanel(panel, tab) {
+    function openControlPanel(panel, tab, screen) {
         if (!panel)
             return;
 
+        assignPanelScreen(panel, screen);
         if (tab >= 0)
             panel.switchTab(tab);
 
         panel.showControl();
     }
-    function showControlPanel(tab) {
+    function panelIsOnScreen(panel, screen) {
+        if (!panel || !panel.screen || !screen)
+            return false;
+        return panel.screen === screen || String(panel.screen.name || "") === String(screen.name || "");
+    }
+    function resolvePanelScreen(requestedScreen) {
+        if (requestedScreen)
+            return requestedScreen;
+
+        var focusedName = WorkspaceService.focusedOutputName;
+        for (var i = 0; i < Quickshell.screens.length; ++i) {
+            if (focusedName !== "" && String(Quickshell.screens[i].name || "") === focusedName)
+                return Quickshell.screens[i];
+        }
+        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
+    }
+    function showControlPanel(tab, screen) {
         if (!controlPanelLoader)
             return;
 
         var requestedTab = tab === undefined ? -1 : tab;
+        rightPanelScreenPending = resolvePanelScreen(screen);
         if (controlPanelLoader.active && controlPanelLoader.item) {
-            openControlPanel(controlPanelLoader.item, requestedTab);
+            openControlPanel(controlPanelLoader.item, requestedTab, rightPanelScreenPending);
             return;
         }
         rightPanelTabPending = requestedTab;
@@ -165,6 +211,7 @@ QtObject {
             return;
 
         var panel = controlLeftPanelLoader.item;
+        assignPanelScreen(panel, leftPanelScreenPending);
         if (leftEdgeGestureActive) {
             panel.beginEdgeDrag();
             panel.updateEdgeDrag(leftEdgeGestureProgress);
@@ -188,6 +235,7 @@ QtObject {
             return;
 
         var panel = controlPanelLoader.item;
+        assignPanelScreen(panel, rightPanelScreenPending);
         if (rightEdgeGestureActive) {
             panel.beginEdgeDrag();
             panel.updateEdgeDrag(rightEdgeGestureProgress);
@@ -204,7 +252,7 @@ QtObject {
         if (rightPanelTabPending !== -2) {
             var requestedTab = rightPanelTabPending;
             rightPanelTabPending = -2;
-            openControlPanel(panel, requestedTab);
+            openControlPanel(panel, requestedTab, rightPanelScreenPending);
         }
     }
     function syncSettingsHubLoader() {
@@ -214,30 +262,39 @@ QtObject {
         settingsHubOpenPending = false;
         settingsHubLoader.item.openSettings();
     }
-    function toggleControlLeftPanel() {
+    function toggleControlLeftPanel(screen) {
         if (!controlLeftPanelLoader)
             return;
 
+        var targetScreen = resolvePanelScreen(screen);
+        leftPanelScreenPending = targetScreen;
         if (controlLeftPanelLoader.active && controlLeftPanel && controlLeftPanel.active) {
-            controlLeftPanel.hideControl();
+            if (panelIsOnScreen(controlLeftPanel, targetScreen))
+                controlLeftPanel.hideControl();
+            else {
+                assignPanelScreen(controlLeftPanel, targetScreen);
+                controlLeftPanel.showControl();
+            }
             return;
         }
         if (controlLeftPanelLoader.active && controlLeftPanelLoader.item) {
+            assignPanelScreen(controlLeftPanelLoader.item, targetScreen);
             controlLeftPanelLoader.item.showControl();
             return;
         }
         leftPanelOpenPending = true;
         controlLeftPanelLoader.loading = true;
     }
-    function toggleControlPanel(tab) {
+    function toggleControlPanel(tab, screen) {
         var requestedTab = tab === undefined ? -1 : tab;
+        var targetScreen = resolvePanelScreen(screen);
         if (controlPanelLoader && controlPanelLoader.active && controlPanel) {
-            if (controlPanel.active && (requestedTab < 0 || controlPanel.activeTab === requestedTab)) {
+            if (controlPanel.active && panelIsOnScreen(controlPanel, targetScreen) && (requestedTab < 0 || controlPanel.activeTab === requestedTab)) {
                 controlPanel.hideControl();
                 return;
             }
         }
-        showControlPanel(requestedTab);
+        showControlPanel(requestedTab, targetScreen);
     }
     function toggleSettingsHub() {
         if (settingsHubLoader && settingsHubLoader.active && settingsHubLoader.item && settingsHubLoader.item.active) {

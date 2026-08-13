@@ -110,6 +110,7 @@ ShellRoot {
 
     Component.onCompleted: {
         BackdropService.generate();
+        DisplayHotplugService.start();
         StateManager.controlPanelLoader = controlRightLoader;
         StateManager.controlLeftPanelLoader = controlLeftLoader;
         StateManager.lockscreenLoader = lockscreenLoader;
@@ -142,7 +143,7 @@ ShellRoot {
 
                 onDragFinished: shouldOpen => StateManager.finishControlLeftEdgeDrag(shouldOpen)
                 onDragMoved: progress => StateManager.updateControlLeftEdgeDrag(progress)
-                onDragStarted: StateManager.beginControlLeftEdgeDrag()
+                onDragStarted: StateManager.beginControlLeftEdgeDrag(modelData)
             }
         }
     }
@@ -158,7 +159,7 @@ ShellRoot {
 
                 onDragFinished: shouldOpen => StateManager.finishControlRightEdgeDrag(shouldOpen)
                 onDragMoved: progress => StateManager.updateControlRightEdgeDrag(progress)
-                onDragStarted: StateManager.beginControlRightEdgeDrag()
+                onDragStarted: StateManager.beginControlRightEdgeDrag(modelData)
             }
         }
     }
@@ -361,25 +362,52 @@ ShellRoot {
             root.hideLazyWindow(wallpaperSelectorLoader, "closeSelector");
         }
         function refreshTheme() {
-            WallpaperService.applyTheme(WallpaperService.displayWallpaper);
+            WallpaperService.applyTheme(WallpaperService.currentThemeSource());
         }
         function show() {
             root.showLazyWindow(wallpaperSelectorLoader, "openSelector");
         }
         function status(): string {
+            var selectedBackend = WallpaperService.selectedBackend;
+            var runningBackend = EngineWallpaperService.active ? "engine" : LiveWallpaperService.active ? "live" : "";
             return JSON.stringify({
                 "mode": WallpaperService.currentMode,
+                "themeMode": ThemeService.colorMode,
+                "activeThemeMode": ThemeService.activeMode,
+                "themeSource": ThemeService.activeSource,
+                "expectedThemeSource": ThemeService.expectedSource,
+                "themeSynchronized": ThemeService.themeAvailable,
+                "selectedBackend": selectedBackend,
+                "runningBackend": runningBackend,
+                "transitionPending": WallpaperService.isTransitionPending,
                 "selectedPath": WallpaperService.currentWallpaper,
                 "displayPath": WallpaperService.displayWallpaper,
                 "engineProjects": EngineWallpaperService.wallpapers.length,
                 "engineScanning": EngineWallpaperService.scanning,
-                "available": LiveWallpaperService.available,
-                "availabilityKnown": LiveWallpaperService.availabilityKnown,
-                "availabilityQueryRunning": LiveWallpaperService.availabilityQuery.running,
-                "desiredPath": LiveWallpaperService.desiredPath,
-                "activePath": LiveWallpaperService.activePath,
-                "running": LiveWallpaperService.active,
-                "error": LiveWallpaperService.errorMessage
+                "available": selectedBackend === "engine" ? EngineWallpaperService.available : selectedBackend === "live" ? LiveWallpaperService.available : true,
+                "availabilityKnown": selectedBackend === "engine" ? EngineWallpaperService.availabilityKnown : selectedBackend === "live" ? LiveWallpaperService.availabilityKnown : true,
+                "availabilityQueryRunning": selectedBackend === "engine" ? EngineWallpaperService.availabilityQuery.running : selectedBackend === "live" ? LiveWallpaperService.availabilityQuery.running : false,
+                "desiredPath": selectedBackend === "engine" ? EngineWallpaperService.desiredPath : selectedBackend === "live" ? LiveWallpaperService.desiredPath : "",
+                "activePath": runningBackend === "engine" ? EngineWallpaperService.activePath : runningBackend === "live" ? LiveWallpaperService.activePath : "",
+                "running": runningBackend !== "",
+                "error": selectedBackend === "engine" ? EngineWallpaperService.errorMessage : selectedBackend === "live" ? LiveWallpaperService.errorMessage : "",
+                "live": {
+                    "available": LiveWallpaperService.available,
+                    "active": LiveWallpaperService.active,
+                    "playbackReady": LiveWallpaperService.playbackReadyState,
+                    "desiredPath": LiveWallpaperService.desiredPath,
+                    "activePath": LiveWallpaperService.activePath,
+                    "error": LiveWallpaperService.errorMessage
+                },
+                "engine": {
+                    "available": EngineWallpaperService.available,
+                    "active": EngineWallpaperService.active,
+                    "playbackReady": EngineWallpaperService.playbackReadyState,
+                    "restarting": EngineWallpaperService.policyRestarting,
+                    "desiredPath": EngineWallpaperService.desiredPath,
+                    "activePath": EngineWallpaperService.activePath,
+                    "error": EngineWallpaperService.errorMessage
+                }
             });
         }
         function toggle() {

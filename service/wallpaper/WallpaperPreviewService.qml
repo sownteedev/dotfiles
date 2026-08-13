@@ -10,7 +10,7 @@ QtObject {
 
     property bool active: false
     property var activeJob: null
-    readonly property string cacheDir: Config.homeDir + "/.cache/quickshell/wallpaper-preview"
+    readonly property string cacheDir: Config.cacheRoot + "/wallpaper-preview"
     property bool commitApplyColors: false
     property string commitKey: ""
     property string currentKey: ""
@@ -30,7 +30,7 @@ QtObject {
             if (job && exitCode === 0) {
                 try {
                     var palette = null;
-                    if (Config.matugenEnabled) {
+                    if (Config.matugenEnabled && job.mode === ThemeService.colorMode) {
                         palette = root.paletteFromMatugen(JSON.parse(workerOutput.text.trim()));
                         root.paletteCache[job.key] = palette;
                     }
@@ -89,7 +89,7 @@ QtObject {
         originalColors = cloneColors(ThemeService.activeColors);
     }
     function cacheKey(path, modified) {
-        return WallpaperService.stableHash(String(path || "") + "|" + LiveWallpaperService.modifiedKey(modified));
+        return WallpaperService.stableHash(thumbnailKey(path, modified) + "|" + ThemeService.colorMode);
     }
     function cancel() {
         currentKey = "";
@@ -124,9 +124,10 @@ QtObject {
         var key = cacheKey(path, modified);
         return {
             "key": key,
+            "mode": ThemeService.colorMode,
             "palette": palettePath(key),
             "path": path,
-            "thumbnail": thumbnailPath(key)
+            "thumbnail": thumbnailPath(thumbnailKey(path, modified))
         };
     }
 
@@ -214,7 +215,7 @@ QtObject {
 
         var job = activeJob;
         var matugenRunner = Config.quickshellDir + "/scripts/matugen-auto-scheme.sh";
-        worker.command = ["sh", "-c", "mkdir -p \"$4\"; " + "if [ ! -s \"$2\" ]; then " + "rm -f \"$2.tmp.jpg\"; " + "if command -v magick >/dev/null 2>&1 && magick \"$1\" -auto-orient -thumbnail '256x256>' -strip \"$2.tmp.jpg\"; then :; " + "else rm -f \"$2.tmp.jpg\" && ffmpeg -hide_banner -loglevel error -y -i \"$1\" -frames:v 1 -vf 'scale=256:256:force_original_aspect_ratio=decrease' \"$2.tmp.jpg\"; fi && " + "mv \"$2.tmp.jpg\" \"$2\"; fi; " + "if [ \"$5\" = true ]; then " + "if [ ! -s \"$3\" ]; then \"$6\" --dry-run --json hex --quiet \"$2\" > \"$3.tmp\" && mv \"$3.tmp\" \"$3\"; fi; " + "cat \"$3\"; else printf '{}'; fi", "wallpaper-preview", job.path, job.thumbnail, job.palette, cacheDir, Config.matugenEnabled ? "true" : "false", matugenRunner];
+        worker.command = ["sh", "-c", "mkdir -p \"$4\"; " + "if [ ! -s \"$2\" ]; then " + "rm -f \"$2.tmp.jpg\"; " + "if command -v magick >/dev/null 2>&1 && magick \"$1\" -auto-orient -thumbnail '256x256>' -strip \"$2.tmp.jpg\"; then :; " + "else rm -f \"$2.tmp.jpg\" && ffmpeg -hide_banner -loglevel error -y -i \"$1\" -frames:v 1 -vf 'scale=256:256:force_original_aspect_ratio=decrease' \"$2.tmp.jpg\"; fi && " + "mv \"$2.tmp.jpg\" \"$2\"; fi; " + "if [ \"$5\" = true ]; then " + "if [ ! -s \"$3\" ]; then \"$6\" --mode \"$7\" --dry-run --json hex --quiet \"$2\" > \"$3.tmp\" && mv \"$3.tmp\" \"$3\"; fi; " + "cat \"$3\"; else printf '{}'; fi", "wallpaper-preview", job.path, job.thumbnail, job.palette, cacheDir, Config.matugenEnabled ? "true" : "false", matugenRunner, job.mode];
         worker.running = true;
     }
     function queue(path, modified) {
@@ -242,5 +243,8 @@ QtObject {
 
     function thumbnailPath(key) {
         return cacheDir + "/" + key + ".jpg";
+    }
+    function thumbnailKey(path, modified) {
+        return WallpaperService.stableHash(String(path || "") + "|" + LiveWallpaperService.modifiedKey(modified));
     }
 }

@@ -250,15 +250,15 @@ Item {
                                 onTranslationChanged: groupItem.swipeOffset = Math.max(0, translation.x)
                             }
                             NotificationIcon {
+                                Layout.preferredHeight: 28
+                                Layout.preferredWidth: 28
                                 appName: groupItem.appName
                                 asynchronous: true
                                 cacheImage: false
-                                height: 28
                                 iconSize: 18
                                 notificationData: groupItem.notifications[0] || null
                                 radius: 8
                                 tintColor: Config.md3.on_surface_variant
-                                width: 28
                             }
 
                             // App name
@@ -274,13 +274,13 @@ Item {
 
                             // Expand/collapse badge (groups only)
                             Rectangle {
+                                Layout.preferredHeight: 20
+                                Layout.preferredWidth: badgeRow.implicitWidth + 20
                                 border.color: Config.alpha(Config.md3.on_surface, 0.08)
                                 border.width: 1
                                 color: groupItem.expanded ? Config.md3.surface_container_highest : Config.md3.surface
-                                height: 20
                                 radius: 50
                                 visible: groupItem.isGroup
-                                width: badgeRow.implicitWidth + 20
 
                                 RowLayout {
                                     id: badgeRow
@@ -296,10 +296,10 @@ Item {
                                         text: groupItem.notifCount
                                     }
                                     IconImage {
-                                        height: 10
+                                        Layout.preferredHeight: 10
+                                        Layout.preferredWidth: 10
                                         layer.enabled: true
                                         source: groupItem.expanded ? Quickshell.iconPath("go-up-symbolic") : Quickshell.iconPath("go-down-symbolic")
-                                        width: 10
 
                                         layer.effect: ColorOverlay {
                                             color: Config.md3.on_surface_variant
@@ -321,8 +321,8 @@ Item {
                         // ── Divider ─────────────────────────────────────
                         Rectangle {
                             Layout.fillWidth: true
+                            Layout.preferredHeight: 1
                             color: Config.alpha(Config.md3.on_surface, 0.03)
-                            height: 1
                         }
 
                         // ── Notification rows ────────────────────────────
@@ -444,13 +444,13 @@ Item {
 
                                             NotificationIcon {
                                                 Layout.alignment: Qt.AlignVCenter
+                                                Layout.preferredHeight: 26
+                                                Layout.preferredWidth: 26
                                                 asynchronous: true
                                                 cacheImage: false
-                                                height: 26
                                                 iconSize: 14
                                                 notificationData: notifItem.modelData
                                                 radius: 6
-                                                width: 26
                                             }
                                             Text {
                                                 Layout.maximumWidth: 180
@@ -488,13 +488,13 @@ Item {
 
                                                 NotificationIcon {
                                                     Layout.alignment: Qt.AlignTop
+                                                    Layout.preferredHeight: 38
+                                                    Layout.preferredWidth: 38
                                                     asynchronous: true
                                                     cacheImage: false
-                                                    height: 38
                                                     iconSize: 20
                                                     notificationData: notifItem.modelData
                                                     radius: 8
-                                                    width: 38
                                                 }
                                                 ColumnLayout {
                                                     Layout.fillWidth: true
@@ -536,35 +536,52 @@ Item {
                                                     }
                                                 }
                                             }
-                                            RowLayout {
-                                                Layout.fillWidth: true
-                                                Layout.leftMargin: 50
-                                                Layout.preferredHeight: visible ? 36 : 0
-                                                spacing: 8
-                                                visible: {
+                                            Flickable {
+                                                id: actionViewport
+
+                                                readonly property var actions: {
                                                     var raw = NotificationHistory.rawMap[notifItem.modelData.nid];
-                                                    return !!(raw && raw.actions && raw.actions.length > 0);
+                                                    return raw ? raw.actions : [];
                                                 }
 
-                                                Repeater {
-                                                    model: {
-                                                        var raw = NotificationHistory.rawMap[notifItem.modelData.nid];
-                                                        return raw ? raw.actions : [];
-                                                    }
+                                                Layout.fillWidth: true
+                                                Layout.leftMargin: notificationPageRoot.width < 420 ? 0 : 50
+                                                Layout.preferredHeight: visible ? 36 : 0
+                                                boundsBehavior: Flickable.StopAtBounds
+                                                clip: contentWidth > width
+                                                contentHeight: height
+                                                contentWidth: Math.max(width, actionRow.implicitWidth)
+                                                flickableDirection: Flickable.HorizontalFlick
+                                                interactive: contentWidth > width
+                                                visible: actions.length > 0
 
-                                                    delegate: NotificationActionButton {
-                                                        Layout.fillWidth: true
-                                                        Layout.preferredHeight: 36
-                                                        action: modelData
-                                                        labelPixelSize: 13
+                                                Row {
+                                                    id: actionRow
 
-                                                        onClicked: {
-                                                            modelData.invoke();
-                                                            notifItem.isDismissing = true;
-                                                            groupItem.heightBehaviorEnabled = true;
-                                                            if (groupItem.notifCount === 1)
-                                                                groupItem.isDismissing = true;
-                                                            dismissTimer.start();
+                                                    height: parent.height
+                                                    spacing: 8
+
+                                                    Repeater {
+                                                        model: actionViewport.actions
+
+                                                        delegate: NotificationActionButton {
+                                                            required property var modelData
+
+                                                            readonly property real equalWidth: (actionViewport.width - Math.max(0, actionViewport.actions.length - 1) * actionRow.spacing) / Math.max(1, actionViewport.actions.length)
+
+                                                            action: modelData
+                                                            height: 36
+                                                            labelPixelSize: 13
+                                                            width: Math.max(minimumWidth, equalWidth)
+
+                                                            onClicked: {
+                                                                modelData.invoke();
+                                                                notifItem.isDismissing = true;
+                                                                groupItem.heightBehaviorEnabled = true;
+                                                                if (groupItem.notifCount === 1)
+                                                                    groupItem.isDismissing = true;
+                                                                dismissTimer.start();
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -637,10 +654,10 @@ Item {
 
                 IconImage {
                     Layout.alignment: Qt.AlignCenter
-                    height: 60
+                    Layout.preferredHeight: 60
+                    Layout.preferredWidth: 60
                     layer.enabled: true
                     source: Quickshell.iconPath("preferences-system-notifications-symbolic")
-                    width: 60
 
                     layer.effect: ColorOverlay {
                         color: Config.alpha(Config.md3.on_surface, 0.12)
@@ -675,11 +692,11 @@ Item {
                 Layout.fillWidth: true
             }
             Rectangle {
+                Layout.preferredHeight: 32
+                Layout.preferredWidth: 32
                 color: clearHover.pressed ? Config.md3.surface_container_highest : (clearHover.containsMouse ? Config.md3.surface_container_high : "transparent")
-                height: 32
                 radius: 16
                 scale: clearHover.pressed ? 0.95 : 1.0
-                width: 32
 
                 Behavior on color {
                     ColorAnimation {

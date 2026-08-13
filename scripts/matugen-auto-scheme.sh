@@ -9,7 +9,7 @@ COLORED_PIXEL_THRESHOLD="0.15"
 CLASSIFICATION_EPSILON="0.005"
 
 usage() {
-    printf 'Usage: %s [--config PATH] [--mode dark|light|auto] [--dry-run] [--json FORMAT] [--quiet] IMAGE\n' "$0" >&2
+    printf 'Usage: %s [--config PATH] [--mode dark|light|auto] [--metadata-json JSON] [--dry-run] [--json FORMAT] [--quiet] IMAGE\n' "$0" >&2
     exit 2
 }
 
@@ -17,6 +17,7 @@ config_path=""
 dry_run=false
 json_format=""
 mode="auto"
+metadata_json='{"theme_source":""}'
 quiet=false
 image_path=""
 
@@ -34,6 +35,11 @@ while [ "$#" -gt 0 ]; do
         --mode)
             [ "$#" -ge 2 ] || usage
             mode=$2
+            shift 2
+            ;;
+        --metadata-json)
+            [ "$#" -ge 2 ] || usage
+            metadata_json=$2
             shift 2
             ;;
         --json)
@@ -126,7 +132,8 @@ fi
 
 set -- matugen
 [ -z "$config_path" ] || set -- "$@" --config "$config_path"
-set -- "$@" image "$image_path" --type "$scheme" --mode "$mode" --source-color-index 0
+set -- "$@" image "$image_path" --type "$scheme" --mode "$mode" --source-color-index 0 --continue-on-error
+set -- "$@" --import-json-string "$metadata_json"
 [ "$dry_run" = false ] || set -- "$@" --dry-run
 [ -z "$json_format" ] || set -- "$@" --json "$json_format"
 [ "$quiet" = false ] || set -- "$@" --quiet

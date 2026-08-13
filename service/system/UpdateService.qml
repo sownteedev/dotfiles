@@ -122,6 +122,9 @@ QtObject {
     }
     readonly property int updateCount: packages.length
 
+    function shellQuote(value) {
+        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
+    }
     function refresh(force) {
         if (busy)
             return;
@@ -160,8 +163,8 @@ QtObject {
         if (!available || busy)
             return;
 
-        // Authenticate once for the whole transaction. SUDO_USER tells yay to
-        // drop back to the desktop user for AUR downloads and package builds.
+        // Keep yay and AUR builds unprivileged; pkexec is used only when yay
+        // invokes pacman for the repository transaction.
         activeUpgradeResultPath = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/quickshell-update-result-" + Date.now();
         upgradePollMisses = 0;
         upgradeResultReceived = false;
@@ -169,8 +172,9 @@ QtObject {
         upgradeTerminalExited = false;
         upgrading = true;
         error = "";
-        var upgradeCommand = "result_file=$1; printf 'started\\n' > \"$result_file\"; " + "update_user=$(/usr/bin/id -un); update_home=$HOME; " + "print -r -- 'Updating repository and AUR packages…'; print; " + "/usr/bin/pkexec /usr/bin/env SUDO_USER=\"$update_user\" USER=\"$update_user\" " + "HOME=\"$update_home\" /usr/bin/yay -Syu --noconfirm " + "--answerclean None --answerdiff None --answeredit None; result=$?; " + "printf '%s\\n' \"$result\" > \"$result_file\"; " + "print; " + "if [ $result -eq 0 ]; then print -r -- 'Upgrade complete.'; " + "else print -r -- \"Upgrade failed (exit $result).\"; fi; " + "print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
-        upgradeTerminal.command = ["blackbox-terminal", "--", "/usr/bin/zsh", "-c", upgradeCommand, "update-packages", activeUpgradeResultPath];
+        var upgradeCommand = "result_file=" + shellQuote(activeUpgradeResultPath) + "; printf 'started\\n' > \"$result_file\"; " + "print -r -- 'Updating repository and AUR packages…'; print; " + "/usr/bin/yay --sudo /usr/bin/pkexec -Syu --noconfirm " + "--answerclean None --answerdiff None --answeredit None; result=$?; " + "printf '%s\\n' \"$result\" > \"$result_file\"; " + "print; " + "if [ $result -eq 0 ]; then print -r -- 'Upgrade complete.'; " + "else print -r -- \"Upgrade failed (exit $result).\"; fi; " + "print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
+        var terminalCommand = "exec /usr/bin/zsh -c " + shellQuote(upgradeCommand);
+        upgradeTerminal.command = ["blackbox-terminal", "--command", terminalCommand];
         upgradeTerminal.running = true;
         upgradePollTimer.restart();
     }

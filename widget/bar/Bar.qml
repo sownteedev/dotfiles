@@ -10,13 +10,17 @@ import "../../service"
 PanelWindow {
     id: bar
 
-    readonly property real s: 1.0
+    readonly property bool compact: width < 1600
+    readonly property real horizontalInset: Responsive.clamp(width * 0.01, 10, 25)
+    readonly property bool narrow: width < 1280
+    readonly property real statusIconSpacing: Responsive.clamp(width * 0.014, 18, 26)
+    readonly property bool themeReady: ThemeService.hasAppliedTheme || (ThemeService.themeFileResolved && !Config.matugenEnabled)
 
     WlrLayershell.namespace: "blur-bar"
     anchors.left: true
     anchors.right: true
     anchors.top: true
-    color: Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.2)
+    color: themeReady ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.2) : "transparent"
     implicitHeight: 50
 
     SystemClock {
@@ -28,106 +32,214 @@ PanelWindow {
     }
     Item {
         anchors.fill: parent
+        opacity: bar.themeReady ? 1 : 0
 
-        // Left side: Active Window + currently playing media
-        RowLayout {
-            anchors.left: parent.left
-            anchors.leftMargin: 25
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 50
-
-            ActiveClient {
-            }
-            Media {
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 120
+                easing.type: Easing.OutCubic
             }
         }
 
-        // Center: Workspaces list
         RowLayout {
-            anchors.centerIn: parent
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.fill: parent
+            anchors.leftMargin: bar.horizontalInset
+            anchors.rightMargin: bar.horizontalInset
+            spacing: bar.narrow ? Responsive.spacingS : Responsive.spacingM
 
-            Workspaces {
-            }
-        }
+            Item {
+                id: leftZone
 
-        // Right side: SysTray + connectivity + Battery + DateTime
-        RowLayout {
-            anchors.right: parent.right
-            anchors.rightMargin: 30
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 25
+                readonly property real preferredActiveTextWidth: Responsive.clamp(width * 0.38, 118, 280)
 
-            RecordingIndicator {
-                parentWindow: bar
-            }
-            SysTray {
-                parentWindow: bar
-            }
-            MicrophonePrivacy {
-                parentWindow: bar
-            }
-            Wifi {
-            }
-            BluetoothStatus {
-            }
-            Battery {
-            }
-            MouseArea {
-                cursorShape: Qt.PointingHandCursor
-                implicitHeight: 22
-                implicitWidth: 22
-                visible: QuickSettingsService.caffeineEnabled
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                clip: true
 
-                onClicked: QuickSettingsService.setCaffeineEnabled(false)
+                Flickable {
+                    id: leftFlickable
 
-                IconImage {
                     anchors.fill: parent
-                    layer.enabled: true
-                    source: Quickshell.iconPath("caffeine-cup-full-symbolic")
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: contentWidth > width
+                    contentHeight: height
+                    contentWidth: Math.max(width, leftContent.implicitWidth)
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: contentWidth > width
 
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.primary
+                    RowLayout {
+                        id: leftContent
+
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: bar.compact ? Responsive.spacingL : Responsive.spacingXL
+
+                        ActiveClient {
+                            id: activeClient
+
+                            maximumTextWidth: Math.min(leftZone.preferredActiveTextWidth, Math.max(64, mediaItem.visible ? leftZone.width * 0.38 : leftZone.width - 60))
+                            outputName: bar.screen ? bar.screen.name : ""
+                        }
+                        Media {
+                            id: mediaItem
+
+                            maximumWidth: Math.min(350, Math.max(90, leftZone.width - activeClient.implicitWidth - leftContent.spacing))
+                        }
                     }
                 }
             }
-            NotificationIcon {
-            }
-            Text {
-                color: Config.md3.on_surface
-                font.family: Config.fontName
-                font.pixelSize: 18
-                font.weight: Font.DemiBold
-                text: "│"
-            }
-            MouseArea {
-                id: clockArea
+            Item {
+                id: workspaceViewport
 
-                hoverEnabled: true
-                implicitHeight: 30
-                implicitWidth: clockLayout.implicitWidth
+                Layout.fillHeight: true
+                Layout.preferredWidth: Math.min(workspaceStrip.implicitWidth, bar.width * (bar.narrow ? 0.34 : bar.compact ? 0.38 : 0.42))
 
-                ColumnLayout {
-                    id: clockLayout
+                Flickable {
+                    id: workspaceFlickable
 
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 0
+                    anchors.fill: parent
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: contentWidth > width
+                    contentHeight: height
+                    contentWidth: workspaceStrip.implicitWidth
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: contentWidth > width
 
-                    Text {
-                        Layout.alignment: Qt.AlignRight
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 16
-                        font.weight: Font.ExtraBold
-                        text: systemClock.date ? Qt.formatDateTime(systemClock.date, Config.clock24h ? "HH : mm" : "hh : mm A") : ""
+                    Workspaces {
+                        id: workspaceStrip
+
+                        compact: bar.compact
+                        height: workspaceFlickable.height
+                        outputName: bar.screen ? bar.screen.name : ""
+                        x: workspaceFlickable.contentWidth <= workspaceFlickable.width ? (workspaceFlickable.width - implicitWidth) / 2 : 0
                     }
-                    Text {
-                        Layout.alignment: Qt.AlignRight
-                        color: Config.md3.on_surface_variant
-                        font.family: Config.fontName
-                        font.pixelSize: 15
-                        font.weight: Font.Medium
-                        text: systemClock.date ? Qt.formatDateTime(systemClock.date, "ddd, dd MMM yyyy") : ""
+                }
+            }
+            Item {
+                id: rightZone
+
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                clip: true
+
+                Flickable {
+                    id: rightFlickable
+
+                    function alignRight() {
+                        contentX = Math.max(0, contentWidth - width);
+                    }
+
+                    anchors.fill: parent
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: contentWidth > width
+                    contentHeight: height
+                    contentWidth: Math.max(width, rightContent.implicitWidth)
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: contentWidth > width
+
+                    Component.onCompleted: alignRight()
+                    onContentWidthChanged: {
+                        if (!moving)
+                            Qt.callLater(alignRight);
+                    }
+                    onWidthChanged: {
+                        if (!moving)
+                            Qt.callLater(alignRight);
+                    }
+
+                    RowLayout {
+                        id: rightContent
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: bar.statusIconSpacing
+                        x: rightFlickable.contentWidth - implicitWidth
+
+                        RecordingIndicator {
+                            parentWindow: bar
+                        }
+                        SysTray {
+                            itemSpacing: bar.statusIconSpacing
+                            parentWindow: bar
+                        }
+                        MicrophonePrivacy {
+                            parentWindow: bar
+                        }
+                        MouseArea {
+                            cursorShape: Qt.PointingHandCursor
+                            implicitHeight: 22
+                            implicitWidth: 22
+                            visible: QuickSettingsService.caffeineEnabled
+
+                            onClicked: QuickSettingsService.setCaffeineEnabled(false)
+
+                            IconImage {
+                                anchors.fill: parent
+                                layer.enabled: true
+                                source: Quickshell.iconPath("caffeine-cup-full-symbolic")
+
+                                layer.effect: ColorOverlay {
+                                    color: Config.md3.primary
+                                }
+                            }
+                        }
+                        Wifi {
+                            hoverExpansionEnabled: !bar.compact
+                            targetScreen: bar.screen
+                        }
+                        BluetoothStatus {
+                            hoverExpansionEnabled: !bar.compact
+                            targetScreen: bar.screen
+                        }
+                        Battery {
+                        }
+                        NotificationIcon {
+                            targetScreen: bar.screen
+                        }
+                        RowLayout {
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: bar.compact ? 10 : 12
+
+                            Text {
+                                color: Config.md3.on_surface
+                                font.family: Config.fontName
+                                font.pixelSize: bar.compact ? 15 : 18
+                                font.weight: Font.DemiBold
+                                text: "│"
+                            }
+                            MouseArea {
+                                id: clockArea
+
+                                hoverEnabled: true
+                                implicitHeight: 30
+                                implicitWidth: clockLayout.implicitWidth
+
+                                ColumnLayout {
+                                    id: clockLayout
+
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 0
+
+                                    Text {
+                                        Layout.alignment: Qt.AlignRight
+                                        color: Config.md3.on_surface
+                                        font.family: Config.fontName
+                                        font.pixelSize: bar.compact ? 14 : 16
+                                        font.weight: Font.ExtraBold
+                                        text: systemClock.date ? Qt.formatDateTime(systemClock.date, Config.clock24h ? "HH : mm" : "hh : mm A") : ""
+                                    }
+                                    Text {
+                                        Layout.alignment: Qt.AlignRight
+                                        color: Config.md3.on_surface_variant
+                                        font.family: Config.fontName
+                                        font.pixelSize: bar.compact ? 12 : 15
+                                        font.weight: Font.Medium
+                                        text: systemClock.date ? Qt.formatDateTime(systemClock.date, "ddd, dd MMM yyyy") : ""
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -272,7 +272,8 @@ Item {
     onActiveSectionChanged: {
         if (activeSection === 1)
             Qt.callLater(() => {
-                return layoutScroll.contentItem.contentY = 0;
+                layoutScroll.contentItem.contentX = 0;
+                layoutScroll.contentItem.contentY = 0;
             });
     }
 
@@ -376,13 +377,17 @@ Item {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     clip: true
+                    contentWidth: Math.max(availableWidth, 900)
+
+                    ScrollBar.horizontal: SlimScrollBar {
+                    }
 
                     ScrollBar.vertical: SlimScrollBar {
                     }
 
                     RowLayout {
                         spacing: 14
-                        width: keybindScroll.availableWidth
+                        width: keybindScroll.contentWidth
 
                         Repeater {
                             model: 3
@@ -393,7 +398,7 @@ Item {
 
                                 Layout.alignment: Qt.AlignTop
                                 Layout.fillWidth: true
-                                Layout.preferredWidth: (keybindScroll.availableWidth - 28) / 3
+                                Layout.preferredWidth: (keybindScroll.contentWidth - 28) / 3
                                 spacing: 14
 
                                 Repeater {
@@ -423,7 +428,11 @@ Item {
                 Layout.fillWidth: true
                 clip: true
                 contentHeight: layoutContent.implicitHeight + 26
-                contentWidth: availableWidth
+                contentWidth: Math.max(availableWidth, 920)
+
+                ScrollBar.horizontal: SlimScrollBar {
+                    accentColor: Config.md3.secondary
+                }
 
                 ScrollBar.vertical: SlimScrollBar {
                     accentColor: Config.md3.secondary
@@ -433,7 +442,7 @@ Item {
                     id: layoutContent
 
                     spacing: 18
-                    width: Math.max(0, layoutScroll.availableWidth - 36)
+                    width: Math.max(0, layoutScroll.contentWidth - 36)
                     x: 18
                     y: 12
 
@@ -1525,7 +1534,10 @@ Item {
                 Layout.fillWidth: true
                 clip: true
                 contentHeight: inputContent.implicitHeight + 32
-                contentWidth: availableWidth
+                contentWidth: Math.max(availableWidth, 800)
+
+                ScrollBar.horizontal: SlimScrollBar {
+                }
 
                 ScrollBar.vertical: SlimScrollBar {
                 }
@@ -1534,7 +1546,7 @@ Item {
                     id: inputContent
 
                     spacing: 16
-                    width: Math.max(0, inputScroll.availableWidth - 32)
+                    width: Math.max(0, inputScroll.contentWidth - 32)
                     x: 16
                     y: 8
 
@@ -1547,7 +1559,7 @@ Item {
 
                             Layout.alignment: Qt.AlignTop
                             Layout.fillWidth: true
-                            Layout.preferredWidth: (inputScroll.availableWidth - 16) / 2
+                            Layout.preferredWidth: (inputScroll.contentWidth - 16) / 2
                             spacing: 16
 
                             Repeater {

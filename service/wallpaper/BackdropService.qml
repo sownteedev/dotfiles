@@ -10,7 +10,7 @@ QtObject {
 
     property string activeBackdrop: ""
     property string activeRequestKey: ""
-    readonly property string cacheDir: Config.homeDir + "/.cache/quickshell/backdrops"
+    readonly property string cacheDir: Config.cacheRoot + "/backdrops"
     property bool _generateQueued: false
     property Connections configConnections: Connections {
         function onWallpaperChanged() {

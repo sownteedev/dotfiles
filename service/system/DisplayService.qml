@@ -9,15 +9,29 @@ QtObject {
     id: root
 
     property Process actionExecutor: Process {
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0)
+                console.warn("[DisplayService] Failed to reload Niri output configuration:", exitCode);
+            if (root.outputReloadPending) {
+                root.outputReloadPending = false;
+                Qt.callLater(root.reloadOutputConfig);
+                return;
+            }
+            root.optionsQuery.running = false;
+            root.optionsQuery.running = true;
+            root.delayedRefresh.restart();
+        }
     }
-    readonly property string configPath: Config.niriOutputConfig
-    property var pendingConfigCommands: []
+
+    // Dark mode
+    property string applyingDarkmodeMode: ""
     property Timer configApplyDebounce: Timer {
         interval: 70
         repeat: false
 
         onTriggered: root.startPendingConfigUpdate()
     }
+    readonly property string configPath: Config.niriOutputConfig
     property Process configUpdater: Process {
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0)
@@ -44,30 +58,61 @@ QtObject {
             }
 
             if (completedMode !== "")
-                ThemeService.generate(WallpaperService.displayWallpaper, completedMode, true);
+                ThemeService.updateMode(completedMode, true);
         }
     }
-
-    // Dark mode
-    property string applyingDarkmodeMode: ""
     property bool darkmodeEnabled: false
     property Process darkmodeQuery: Process {
         command: ["sh", "-c", "gsettings get org.gnome.desktop.interface color-scheme"]
 
         stdout: StdioCollector {
             onStreamFinished: {
-                root.darkmodeEnabled = text.trim().indexOf("prefer-dark") >= 0;
-                ThemeService.colorMode = root.darkmodeEnabled ? "dark" : "light";
+                ThemeService.syncSystemMode(text, ThemeService.modeResolved);
+                root.darkmodeEnabled = ThemeService.colorMode === "dark";
             }
         }
     }
-    property string pendingDarkmodeMode: ""
     property Timer delayedRefresh: Timer {
         interval: 400
         repeat: false
 
         onTriggered: root.refresh()
     }
+    readonly property string displayMode: detectDisplayMode()
+    property bool displayModeApplying: false
+    property string displayModeError: ""
+    property Process displayModeExecutor: Process {
+        stdout: StdioCollector {
+            id: displayModeOutput
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            root.displayModeApplying = false;
+            var message = "";
+            try {
+                var result = JSON.parse(displayModeOutput.text.trim() || "{}");
+                message = String(result.error || "");
+            } catch (error) {
+                message = "Invalid response from the display mode helper";
+            }
+            if (exitCode !== 0) {
+                root.displayModeError = message || "Could not change the display mode";
+                console.warn("[DisplayService] Display mode update failed:", root.displayModeError);
+            }
+            root.delayedRefresh.restart();
+        }
+    }
+    property Timer externalOnlySafety: Timer {
+        interval: 450
+        repeat: false
+
+        onTriggered: {
+            if (Quickshell.screens.length === 0 && !root.displayModeApplying)
+                root.applyDisplayMode("internal", "");
+        }
+    }
+    readonly property bool hasExternalOutput: externalOutputNames().length > 0
+    readonly property bool hasInternalOutput: internalOutputNames().length > 0
     property string internalHardwareId: ""
     property var kdlOptions: ({})
     property int nightlightAppliedTemperature: 4000
@@ -153,6 +198,23 @@ QtObject {
             }
         }
     }
+    property Connections outputHotplugConnections: Connections {
+        function onScreensChanged() {
+            root.outputHotplugRefresh.restart();
+            if (root.displayMode === "external" && Quickshell.screens.length === 0)
+                root.externalOnlySafety.restart();
+            else if (Quickshell.screens.length > 0)
+                root.externalOnlySafety.stop();
+        }
+
+        target: Quickshell
+    }
+    property Timer outputHotplugRefresh: Timer {
+        interval: 250
+        repeat: false
+
+        onTriggered: root.refreshOutputs()
+    }
     property var outputs: []
     property Process outputsQuery: Process {
         command: ["niri", "msg", "-j", "outputs"]
@@ -165,15 +227,21 @@ QtObject {
                 try {
                     var data = JSON.parse(cleaned);
                     var nextOutputs = [];
-                    var internalId = "";
                     for (var key in data) {
                         if (!data.hasOwnProperty(key))
                             continue;
                         var output = data[key];
                         nextOutputs.push(output);
-                        if (output.name && output.name.startsWith("eDP-"))
-                            internalId = ((output.make || "") + " " + (output.model || "") + " " + (output.serial || "Unknown")).trim();
                     }
+                    var identities = root.buildOutputIdentities(nextOutputs);
+                    var internalId = "";
+                    for (var outputIndex = 0; outputIndex < nextOutputs.length; ++outputIndex) {
+                        var outputName = String(nextOutputs[outputIndex].name || "");
+                        nextOutputs[outputIndex].hardwareId = identities[outputName] || outputName;
+                        if (root.isInternalOutput(outputName))
+                            internalId = nextOutputs[outputIndex].hardwareId;
+                    }
+                    root.outputHardwareIds = identities;
                     root.internalHardwareId = internalId;
                     root.outputs = nextOutputs;
                 } catch (error) {
@@ -181,8 +249,145 @@ QtObject {
                 }
             }
         }
+
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0)
+                console.warn("[DisplayService] Failed to query outputs:", exitCode);
+            if (root.outputsRefreshPending) {
+                root.outputsRefreshPending = false;
+                Qt.callLater(root.refreshOutputs);
+            }
+        }
+    }
+    property bool outputsRefreshPending: false
+    property var outputHardwareIds: ({})
+    property bool outputReloadPending: false
+    property var pendingConfigCommands: []
+    property string pendingDarkmodeMode: ""
+    property bool sunshineBusy: sunshineProfileProcess.running
+    readonly property string sunshineConfigPath: Config.homeDir + "/.config/sunshine/sunshine.conf"
+    property string sunshineStatus: "Select a display to configure Sunshine"
+    property string sunshineStatusOutput: ""
+    property bool sunshineStatusRefreshPending: false
+    property Process sunshineProfileProcess: Process {
+        stdout: StdioCollector {
+            id: sunshineProfileOutput
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            try {
+                var result = JSON.parse(sunshineProfileOutput.text.trim() || "{}");
+                if (exitCode === 0 && !result.error)
+                    root.sunshineStatus = result.label + " • Display " + result.display_id + " • " + result.output;
+                else
+                    root.sunshineStatus = String(result.error || "Could not configure Sunshine");
+            } catch (error) {
+                root.sunshineStatus = "Invalid response from Sunshine profile helper";
+            }
+            if (root.sunshineStatusRefreshPending) {
+                root.sunshineStatusRefreshPending = false;
+                Qt.callLater(root.refreshSunshineStatus);
+            }
+        }
+    }
+    property Process sunshineStatusQuery: Process {
+        stdout: StdioCollector {
+            id: sunshineStatusQueryOutput
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            try {
+                var result = JSON.parse(sunshineStatusQueryOutput.text.trim() || "{}");
+                if (exitCode === 0 && result.configured === true) {
+                    var output = String(result.output || "");
+                    root.sunshineStatusOutput = output;
+                    root.sunshineStatus = String(result.label || "Sunshine") + " • Display " + result.display_id + (output !== "" ? " • " + output : "");
+                } else if (exitCode === 0) {
+                    root.sunshineStatusOutput = "";
+                    root.sunshineStatus = "Select a display to configure Sunshine";
+                } else {
+                    root.sunshineStatusOutput = "";
+                    root.sunshineStatus = String(result.error || "Could not read Sunshine configuration");
+                }
+            } catch (error) {
+                root.sunshineStatusOutput = "";
+                root.sunshineStatus = "Invalid Sunshine status response";
+            }
+            if (root.sunshineStatusRefreshPending) {
+                root.sunshineStatusRefreshPending = false;
+                Qt.callLater(root.refreshSunshineStatus);
+            }
+        }
+    }
+    property Connections themeConnections: Connections {
+        function onColorModeChanged() {
+            root.darkmodeEnabled = ThemeService.colorMode === "dark";
+        }
+
+        target: ThemeService
     }
 
+    function applyDisplayMode(mode, preferredExternal) {
+        if (displayModeApplying)
+            return;
+        if (mode === "duplicate") {
+            displayModeError = "Duplicate is unavailable because Niri has no native output mirroring";
+            return;
+        }
+        if ((mode === "extend" || mode === "external") && !hasExternalOutput) {
+            displayModeError = "Connect an external display first";
+            return;
+        }
+        if (mode === "internal" && !hasInternalOutput) {
+            displayModeError = "No internal display is available";
+            return;
+        }
+        displayModeError = "";
+        displayModeApplying = true;
+        displayModeExecutor.command = ["python3", Config.quickshellDir + "/scripts/niri_display_mode.py", mode, String(preferredExternal || "")];
+        displayModeExecutor.running = true;
+    }
+    function buildOutputIdentities(outputList) {
+        var candidates = [];
+        var counts = {};
+        var result = {};
+        for (var i = 0; i < outputList.length; ++i) {
+            var candidate = hardwareIdentity(outputList[i]);
+            candidates.push(candidate);
+            counts[candidate] = (counts[candidate] || 0) + 1;
+        }
+        for (var j = 0; j < outputList.length; ++j) {
+            var connector = String(outputList[j] && outputList[j].name || "");
+            var identity = candidates[j];
+            result[connector] = identity !== "" && counts[identity] === 1 ? identity : connector;
+        }
+        return result;
+    }
+    function configIdentity(output) {
+        var connector = String(output || "");
+        return String(outputHardwareIds[connector] || connector);
+    }
+    function configureSunshine(output) {
+        var connector = String(output || "");
+        if (connector === "" || sunshineProfileProcess.running)
+            return;
+        var displayId = -1;
+        for (var i = 0; i < outputs.length; ++i) {
+            if (String(outputs[i] && outputs[i].name || "") === connector) {
+                displayId = i;
+                break;
+            }
+        }
+        if (displayId < 0) {
+            sunshineStatusOutput = connector;
+            sunshineStatus = "Selected output is no longer connected";
+            return;
+        }
+        sunshineStatusOutput = connector;
+        sunshineStatus = "Restarting Sunshine for " + connector + "…";
+        sunshineProfileProcess.command = ["python3", Config.quickshellDir + "/scripts/sunshine_output_profile.py", sunshineConfigPath, connector, String(displayId)];
+        sunshineProfileProcess.running = true;
+    }
     function applyNightlightTemperature() {
         if (!nightlightEnabled || !nightlightAvailable || nightlightSetter.running)
             return;
@@ -218,9 +423,29 @@ QtObject {
         if (nightlightEnabled && nightlightRequestedTemperature !== nightlightAppliedTemperature && !nightlightApplyDelay.running)
             nightlightApplyDelay.start();
     }
+    function detectDisplayMode() {
+        var internalEnabled = false;
+        var externalEnabled = false;
+        for (var i = 0; i < outputs.length; ++i) {
+            var output = outputs[i];
+            if (!output || !output.logical)
+                continue;
+            if (isInternalOutput(String(output.name || "")))
+                internalEnabled = true;
+            else
+                externalEnabled = true;
+        }
+        if (internalEnabled && externalEnabled)
+            return "extend";
+        if (internalEnabled)
+            return "internal";
+        if (externalEnabled)
+            return "external";
+        return "";
+    }
     function ensureOutputCommand(output, sourceOutput) {
         var defaults = outputDefaults(sourceOutput || output);
-        return "if ! grep -q 'output \"" + output + "\" {' " + configPath + "; then echo -e '\\noutput \"" + output + "\" {\\n    mode \"" + defaults.mode + "\"\\n    scale " + defaults.scale + "\\n    transform \"" + defaults.transform + "\"\\n    position x=" + defaults.x + " y=" + defaults.y + "\\n}' >> " + configPath + "; fi";
+        return "if ! grep -q 'output \"" + output + "\" {' " + configPath + "; then echo -e '\\noutput \"" + output + "\" {\\n    mode \"" + defaults.mode + "\"\\n    scale " + defaults.scale + "\\n    transform \"" + defaults.transform + "\"\\n    position x=" + defaults.x + " y=" + defaults.y + "\\n    // variable-refresh-rate on-demand=true\\n    // focus-at-startup\\n}' >> " + configPath + "; fi";
     }
     function executeConfigCommand(command) {
         if (!command)
@@ -232,28 +457,45 @@ QtObject {
         if (!configUpdater.running)
             configApplyDebounce.restart();
     }
-    function startPendingConfigUpdate() {
-        if (configUpdater.running || pendingConfigCommands.length === 0)
-            return;
-
-        var commands = pendingConfigCommands.slice();
-        pendingConfigCommands = [];
-        configUpdater.command = ["sh", "-c", commands.join("; ") + "; niri msg action load-config-file"];
-        configUpdater.running = true;
+    function externalOutputNames() {
+        var result = [];
+        for (var i = 0; i < outputs.length; ++i) {
+            var name = String(outputs[i] && outputs[i].name || "");
+            if (name !== "" && !isInternalOutput(name))
+                result.push(name);
+        }
+        return result;
+    }
+    function hardwareIdentity(output) {
+        if (!output)
+            return "";
+        var make = String(output.make || "").trim().replace(/\s+/g, " ");
+        var model = String(output.model || "").trim().replace(/\s+/g, " ");
+        if (make === "" || model === "")
+            return String(output.name || "");
+        var serial = String(output.serial || "Unknown").trim().replace(/\s+/g, " ") || "Unknown";
+        var identity = (make + " " + model + " " + serial).trim().replace(/\s+/g, " ");
+        return identity || String(output.name || "");
+    }
+    function internalOutputNames() {
+        var result = [];
+        for (var i = 0; i < outputs.length; ++i) {
+            var name = String(outputs[i] && outputs[i].name || "");
+            if (isInternalOutput(name))
+                result.push(name);
+        }
+        return result;
+    }
+    function isInternalOutput(name) {
+        var connector = String(name || "");
+        return connector.startsWith("eDP-") || connector.startsWith("LVDS-") || connector.startsWith("DSI-");
     }
     function nightlightConfigText(temperature) {
         return String(temperature) + "\n";
     }
     function optionEnabled(output, option) {
-        var values = kdlOptions[output];
-        if (values && values[option] !== undefined)
-            return values[option];
-        if (output.startsWith("eDP-") && internalHardwareId !== "") {
-            values = kdlOptions[internalHardwareId];
-            if (values && values[option] !== undefined)
-                return values[option];
-        }
-        return false;
+        var values = kdlOptions[configIdentity(output)];
+        return values && values[option] !== undefined ? values[option] : false;
     }
     function outputDefaults(sourceOutput) {
         var result = {
@@ -267,8 +509,15 @@ QtObject {
             var candidate = outputs[i];
             if (!candidate || candidate.name !== sourceOutput)
                 continue;
-            var modeIndex = Number(candidate.current_mode);
-            var mode = candidate.modes && modeIndex >= 0 ? candidate.modes[modeIndex] : null;
+            var mode = null;
+            var modes = candidate.modes || [];
+            for (var modeIndex = 0; modeIndex < modes.length; ++modeIndex) {
+                var nextMode = modes[modeIndex];
+                var nextArea = Number(nextMode.width) * Number(nextMode.height);
+                var currentArea = mode ? Number(mode.width) * Number(mode.height) : -1;
+                if (!mode || nextArea > currentArea || (nextArea === currentArea && Number(nextMode.refresh_rate) > Number(mode.refresh_rate)))
+                    mode = nextMode;
+            }
             if (mode) {
                 result.mode = mode.width + "x" + mode.height + "@" + (Number(mode.refresh_rate) / 1000).toFixed(3);
             }
@@ -283,16 +532,12 @@ QtObject {
         return result;
     }
     function outputsToUpdate(output) {
-        if (output.startsWith("eDP-") || (internalHardwareId !== "" && output === internalHardwareId)) {
-            if (internalHardwareId !== "")
-                return [internalHardwareId];
-            return [output, output === "eDP-1" ? "eDP-2" : "eDP-1"];
-        }
-        return [output];
+        var identity = configIdentity(output);
+        return identity === "" ? [] : [identity];
     }
     function refresh() {
-        outputsQuery.running = false;
-        outputsQuery.running = true;
+        refreshOutputs();
+        refreshSunshineStatus();
         optionsQuery.running = false;
         optionsQuery.running = true;
         darkmodeQuery.running = false;
@@ -300,21 +545,36 @@ QtObject {
         nightlightQuery.running = false;
         nightlightQuery.running = true;
     }
+    function refreshSunshineStatus() {
+        if (sunshineProfileProcess.running || sunshineStatusQuery.running) {
+            sunshineStatusRefreshPending = true;
+            return;
+        }
+        sunshineStatusRefreshPending = false;
+        sunshineStatusQuery.command = ["python3", Config.quickshellDir + "/scripts/sunshine_output_profile.py", "--status", sunshineConfigPath];
+        sunshineStatusQuery.running = true;
+    }
+    function refreshOutputs() {
+        if (outputsQuery.running) {
+            outputsRefreshPending = true;
+            return;
+        }
+        outputsRefreshPending = false;
+        outputsQuery.running = true;
+    }
+    function reloadOutputConfig() {
+        if (actionExecutor.running) {
+            outputReloadPending = true;
+            return;
+        }
+        actionExecutor.command = ["niri", "msg", "action", "load-config-file"];
+        actionExecutor.running = true;
+    }
     function setDarkmodeEnabled(enabled) {
         darkmodeEnabled = enabled;
         pendingDarkmodeMode = enabled ? "dark" : "light";
         if (!darkmodeApply.running)
             startPendingDarkmodeApply();
-    }
-    function startPendingDarkmodeApply() {
-        if (darkmodeApply.running || pendingDarkmodeMode === "")
-            return;
-
-        var mode = pendingDarkmodeMode;
-        pendingDarkmodeMode = "";
-        applyingDarkmodeMode = mode;
-        darkmodeApply.command = ["sh", "-c", "gsettings set org.gnome.desktop.interface color-scheme '" + (mode === "dark" ? "prefer-dark" : "prefer-light") + "'" + " && gsettings set org.gnome.desktop.interface gtk-theme '" + (mode === "dark" ? "adw-gtk3-dark" : "adw-gtk3") + "'"];
-        darkmodeApply.running = true;
     }
     function setNightlightEnabled(enabled) {
         if (enabled && !nightlightAvailable) {
@@ -343,17 +603,39 @@ QtObject {
         if (nightlightEnabled && !nightlightApplyDelay.running)
             nightlightApplyDelay.start();
     }
+    function startPendingConfigUpdate() {
+        if (configUpdater.running || pendingConfigCommands.length === 0)
+            return;
+
+        var commands = pendingConfigCommands.slice();
+        pendingConfigCommands = [];
+        configUpdater.command = ["sh", "-c", commands.join("; ") + "; niri msg action load-config-file"];
+        configUpdater.running = true;
+    }
+    function startPendingDarkmodeApply() {
+        if (darkmodeApply.running || pendingDarkmodeMode === "")
+            return;
+
+        var mode = pendingDarkmodeMode;
+        pendingDarkmodeMode = "";
+        applyingDarkmodeMode = mode;
+        darkmodeApply.command = ["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", mode === "dark" ? "prefer-dark" : "prefer-light"];
+        darkmodeApply.running = true;
+    }
     function toggleOption(output, option, enabled) {
         if (output === "")
             return;
         var names = outputsToUpdate(output);
         var optionName = option === "vrr" ? "variable-refresh-rate" : "focus-at-startup";
+        var optionLine = option === "vrr" ? "variable-refresh-rate on-demand=true" : optionName;
         var commands = [];
+        if (option === "focus" && enabled)
+            commands.push("sed -i 's|^[[:space:]]*focus-at-startup[[:space:]]*$|    // focus-at-startup|' " + configPath);
         for (var i = 0; i < names.length; ++i) {
             commands.push(ensureOutputCommand(names[i], output));
             if (enabled) {
                 commands.push("sed -i '/output \"" + names[i] + "\" {/,/}/{s|//[[:space:]]*" + optionName + "|" + optionName + "|}' " + configPath);
-                commands.push("sed -n '/output \"" + names[i] + "\" {/,/}/p' " + configPath + " | grep -q '^[[:space:]]*" + optionName + "' || sed -i '/output \"" + names[i] + "\" {/,/}/{/}/i\\    " + optionName + "' " + configPath);
+                commands.push("sed -n '/output \"" + names[i] + "\" {/,/}/p' " + configPath + " | grep -q '^[[:space:]]*" + optionName + "' || sed -i '/output \"" + names[i] + "\" {/,/}/{/}/i\\    " + optionLine + "' " + configPath);
             } else {
                 commands.push("sed -i '/output \"" + names[i] + "\" {/,/}/{s|^[[:space:]]*" + optionName + "|    // " + optionName + "|}' " + configPath);
             }
@@ -361,6 +643,14 @@ QtObject {
         executeConfigCommand(commands.join("; "));
 
         var updated = Object.assign({}, kdlOptions);
+        if (option === "focus" && enabled) {
+            for (var configuredOutput in updated) {
+                if (!updated.hasOwnProperty(configuredOutput))
+                    continue;
+                updated[configuredOutput] = Object.assign({}, updated[configuredOutput] || {});
+                updated[configuredOutput].focus = false;
+            }
+        }
         for (var j = 0; j < names.length; ++j) {
             updated[names[j]] = Object.assign({}, updated[names[j]] || {});
             updated[names[j]][option] = enabled;

@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import "../../"
+import ".."
 
 Rectangle {
     id: root
@@ -98,15 +99,12 @@ Rectangle {
         height: 50
         spacing: 10
 
-        IconImage {
+        WifiSignalIcon {
+            color: root.connected ? Config.md3.primary : Config.md3.on_surface_variant
+            connected: true
             height: 22
-            layer.enabled: true
-            source: Quickshell.iconPath(root.signalStrength > 75 ? "network-wireless-signal-excellent-symbolic" : root.signalStrength > 50 ? "network-wireless-signal-good-symbolic" : root.signalStrength > 25 ? "network-wireless-signal-ok-symbolic" : "network-wireless-signal-weak-symbolic")
+            signalStrength: root.signalStrength
             width: 22
-
-            layer.effect: ColorOverlay {
-                color: root.connected ? Config.md3.primary : Config.md3.on_surface_variant
-            }
         }
         Text {
             Layout.fillWidth: true

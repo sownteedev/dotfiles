@@ -18,7 +18,7 @@ Item {
     property int requestGeneration: 0
 
     function copySelected(id) {
-        Quickshell.execDetached(["sh", "-c", "cliphist decode \"$1\" | wl-copy", "clip_decode", id]);
+        Quickshell.execDetached(["sh", "-c", "if cliphist decode \"$1\" | wl-copy; then if command -v wtype >/dev/null 2>&1; then sleep 0.4; wtype -M ctrl -k v -m ctrl; fi; fi", "clip_decode_paste", id]);
     }
     function ensurePreview(id) {
         if (activePreviewGeneration === requestGeneration && activePreviewId === id)

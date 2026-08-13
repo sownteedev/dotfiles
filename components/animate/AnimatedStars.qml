@@ -5,11 +5,12 @@ Item {
     id: root
 
     property color color: "#ffffff"
+    property bool componentReady: false
     property bool running: true
     property int starCount: 100
     property var stars: []
 
-    Component.onCompleted: {
+    function rebuildStars() {
         var newStars = [];
         for (var i = 0; i < root.starCount; i++) {
             newStars.push({
@@ -25,6 +26,16 @@ Item {
             });
         }
         root.stars = newStars;
+        starCanvas.requestPaint();
+    }
+
+    Component.onCompleted: {
+        componentReady = true;
+        rebuildStars();
+    }
+    onStarCountChanged: {
+        if (componentReady)
+            rebuildStars();
     }
 
     Timer {

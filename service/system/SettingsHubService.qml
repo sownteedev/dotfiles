@@ -234,8 +234,7 @@ QtObject {
             "captureEditorWidth": Config.captureEditorWidth,
             "wallpaperEngineAssetsDirPath": Config.wallpaperEngineAssetsDirPath,
             "wallpaperEngineWorkshopDirPath": Config.wallpaperEngineWorkshopDirPath,
-            "clock24h": Config.clock24h,
-            "dependencies": ({})
+            "clock24h": Config.clock24h
         })
     property bool ready: false
     property Process saveProcess: Process {
@@ -337,7 +336,7 @@ QtObject {
 
     function applyQuickshellRuntime(settings) {
         for (var key in settings) {
-            if (key !== "dependencies" && Config[key] !== undefined)
+            if (Config[key] !== undefined)
                 Config[key] = settings[key];
         }
     }

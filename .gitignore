@@ -36,3 +36,5 @@ plugin/imagecache/qml/Native/ImageCache/libnativeimagecacheplugin.so
 core
 core.*
 .qmlls.ini
+DOCS-3.0-types.md
+AGENTS.md

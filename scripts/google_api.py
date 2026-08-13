@@ -18,6 +18,24 @@ STATE_HOME = os.environ.get(
 TOKEN_DIR = os.path.join(STATE_HOME, "quickshell")
 TOKEN_FILE = os.path.join(TOKEN_DIR, "google-calendar-token.json")
 LEGACY_TOKEN_FILE = os.path.join(QUICKSHELL_DIR, "google-calendar-token.json")
+TLS_RETRY_DELAYS = (1.0, 2.0)
+
+
+def open_google_request(request, timeout=25):
+    """Retry only TLS handshake timeouts, which happen before HTTP is sent.
+
+    Retrying arbitrary POST timeouts could create duplicate tasks. Restricting
+    this to the SSL handshake failure keeps writes safe while tolerating brief
+    connectivity changes after resume, Wi-Fi roaming, or VPN transitions.
+    """
+    for attempt in range(len(TLS_RETRY_DELAYS) + 1):
+        try:
+            return urllib.request.urlopen(request, timeout=timeout)
+        except (TimeoutError, urllib.error.URLError) as error:
+            is_handshake_timeout = "handshake operation timed out" in str(error).lower()
+            if not is_handshake_timeout or attempt >= len(TLS_RETRY_DELAYS):
+                raise
+            time.sleep(TLS_RETRY_DELAYS[attempt])
 
 
 def ensure_token_storage():
@@ -76,6 +94,20 @@ def auth_status():
         and (access_valid or token_data.get("refresh_token"))
     )
     print(json.dumps({"authenticated": authenticated}))
+
+
+def remove_authentication():
+    token_paths = (TOKEN_FILE, TOKEN_FILE + ".tmp", LEGACY_TOKEN_FILE)
+    try:
+        for token_path in token_paths:
+            if os.path.lexists(token_path):
+                os.unlink(token_path)
+    except OSError as error:
+        print(json.dumps({"success": False, "error": str(error)}))
+        return 1
+
+    print(json.dumps({"success": True}))
+    return 0
 
 
 class OAuthCallbackHandler(http.server.BaseHTTPRequestHandler):
@@ -163,7 +195,7 @@ def run_local_auth():
     )
     request.add_header("Content-Type", "application/x-www-form-urlencoded")
     try:
-        with urllib.request.urlopen(request, timeout=20) as response:
+        with open_google_request(request) as response:
             result = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")
@@ -210,7 +242,7 @@ def refresh_token_if_needed(token_data):
             req = urllib.request.Request(url, data=data, method="POST")
             req.add_header("Content-Type", "application/x-www-form-urlencoded")
             
-            with urllib.request.urlopen(req, timeout=20) as response:
+            with open_google_request(req) as response:
                 result = json.loads(response.read().decode("utf-8"))
                 
                 if "access_token" in result:
@@ -229,7 +261,7 @@ def fetch_calendars(access_token):
     req = urllib.request.Request(url)
     req.add_header("Authorization", f"Bearer {access_token}")
     
-    with urllib.request.urlopen(req, timeout=20) as response:
+    with open_google_request(req) as response:
         result = json.loads(response.read().decode("utf-8"))
         calendars = []
         for item in result.get("items", []):
@@ -250,7 +282,7 @@ def fetch_events_for_calendar(access_token, calendar_id, time_min, time_max):
     req = urllib.request.Request(url)
     req.add_header("Authorization", f"Bearer {access_token}")
     
-    with urllib.request.urlopen(req, timeout=20) as response:
+    with open_google_request(req) as response:
         return json.loads(response.read().decode("utf-8")).get("items", [])
 
 
@@ -299,7 +331,7 @@ def run_setup():
     req.add_header("Content-Type", "application/x-www-form-urlencoded")
     
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with open_google_request(req) as response:
             result = json.loads(response.read().decode("utf-8"))
             
             token_data["client_id"] = client_id
@@ -441,7 +473,7 @@ def create_event(json_data):
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Content-Type", "application/json")
         
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with open_google_request(req) as response:
             result = json.loads(response.read().decode("utf-8"))
             print(json.dumps({"success": True, "id": result.get("id")}))
             
@@ -468,7 +500,7 @@ def delete_event(calendar_id, event_id):
         req = urllib.request.Request(url, method="DELETE")
         req.add_header("Authorization", f"Bearer {access_token}")
         
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with open_google_request(req) as response:
             print(json.dumps({"success": True}))
             
     except urllib.error.HTTPError as e:
@@ -529,7 +561,7 @@ def update_event(calendar_id, event_id, json_data):
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Content-Type", "application/json")
         
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with open_google_request(req) as response:
             result = json.loads(response.read().decode("utf-8"))
             print(json.dumps({"success": True, "id": result.get("id")}))
             
@@ -555,7 +587,7 @@ def fetch_tasks(tasklist_id="@default"):
         req = urllib.request.Request(url)
         req.add_header("Authorization", f"Bearer {access_token}")
 
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with open_google_request(req) as response:
             result = json.loads(response.read().decode("utf-8"))
             tasks = result.get("items", [])
             print(json.dumps(tasks))
@@ -589,7 +621,7 @@ def create_task(tasklist_id, json_data):
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Content-Type", "application/json")
 
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with open_google_request(req) as response:
             result = json.loads(response.read().decode("utf-8"))
             print(json.dumps({"success": True, "id": result.get("id")}))
 
@@ -628,7 +660,7 @@ def update_task(tasklist_id, task_id, json_data):
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Content-Type", "application/json")
 
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with open_google_request(req) as response:
             result = json.loads(response.read().decode("utf-8"))
             print(json.dumps({"success": True, "id": result.get("id")}))
 
@@ -651,7 +683,7 @@ def delete_task(tasklist_id, task_id):
         req = urllib.request.Request(url, method="DELETE")
         req.add_header("Authorization", f"Bearer {access_token}")
 
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with open_google_request(req) as response:
             print(json.dumps({"success": True}))
 
     except urllib.error.HTTPError as e:
@@ -666,6 +698,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--auth-status":
         auth_status()
         sys.exit(0)
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--logout":
+        sys.exit(remove_authentication())
 
     if len(sys.argv) > 1 and sys.argv[1] == "--auth-local":
         sys.exit(run_local_auth())

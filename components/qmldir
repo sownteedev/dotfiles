@@ -15,6 +15,7 @@ CustomVolumeSlider 1.0 common/CustomVolumeSlider.qml
 FormTextField 1.0 common/FormTextField.qml
 SelectPopup 1.0 common/SelectPopup.qml
 SlimScrollBar 1.0 common/SlimScrollBar.qml
+WifiSignalIcon 1.0 common/WifiSignalIcon.qml
 SettingsPageTransition 1.0 common/SettingsPageTransition.qml
 SettingsTextField 1.0 common/SettingsTextField.qml
 StatChart 1.0 common/StatChart.qml

@@ -10,6 +10,8 @@ Item {
 
     property bool active: false
     property color activeColor: Config.md3.primary
+    property string iconFontFamily: "Material Design Icons Desktop"
+    property string iconGlyph: ""
     property string iconName: ""
 
     signal clicked
@@ -126,6 +128,7 @@ Item {
                 return p !== "" ? p : "";
             }
             width: 24
+            visible: buttonRoot.iconGlyph === ""
 
             layer.effect: ColorOverlay {
                 color: buttonRoot.active ? Config.md3.on_primary : Config.md3.on_surface
@@ -134,6 +137,28 @@ Item {
                     ColorAnimation {
                         duration: 150
                     }
+                }
+            }
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 250
+                    easing.type: Easing.OutBack
+                }
+            }
+        }
+        Text {
+            anchors.centerIn: parent
+            color: buttonRoot.active ? Config.md3.on_primary : Config.md3.on_surface
+            font.family: buttonRoot.iconFontFamily
+            font.pixelSize: 25
+            renderType: Text.NativeRendering
+            scale: buttonRoot.active ? 1.05 : 0.9
+            text: buttonRoot.iconGlyph
+            visible: buttonRoot.iconGlyph !== ""
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 150
                 }
             }
             Behavior on scale {

@@ -15,6 +15,8 @@ PanelWindow {
     id: controlRightWindow
 
     property bool active: false
+    readonly property bool compact: Responsive.constrained(panelWidth, height - outerMargin * 2, 560, 760)
+    readonly property real contentMargin: compact ? 14 : 20
     property real edgeDragProgress: 0
     property bool edgeDragging: false
     property int edgeSnapDuration: 300
@@ -30,9 +32,12 @@ PanelWindow {
     readonly property var bottomTabIcons: ["utilities-system-monitor-symbolic", "battery-symbolic", "video-display-symbolic"]
     readonly property var bottomTabLabels: ["Stats", "Battery", "Display"]
     readonly property bool caffeineEnabled: QuickSettingsService.caffeineEnabled
+    readonly property real panelWidth: Responsive.sidePanelWidth(width)
+    readonly property real outerMargin: 10
     readonly property var pages: ["Notification", "Wifi", "Bluetooth", "Volume"]
     property int previousBottomTab: 0
     property int previousTab: 0
+    readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
     readonly property var tabIcons: ["preferences-system-notifications-symbolic", "network-wireless-symbolic", "bluetooth-symbolic", "audio-volume-high-symbolic"]
     readonly property var tabLabels: ["Notifications", "Wi-Fi", "Bluetooth", "Volume"]
     readonly property bool tailscaleEnabled: QuickSettingsService.tailscaleEnabled
@@ -42,11 +47,11 @@ PanelWindow {
     signal dismissed
     signal statsUpdated
 
-    function animatePopup(targetOffset, duration, easingType) {
+    function animatePopup(targetProgress, duration, easingType) {
         slideAnim.stop();
         slideAnim.duration = duration;
         slideAnim.easing.type = easingType;
-        slideAnim.to = targetOffset;
+        slideAnim.to = targetProgress;
         slideAnim.start();
     }
     function beginEdgeDrag() {
@@ -57,7 +62,7 @@ PanelWindow {
         edgeDragProgress = 0;
         edgeDragging = true;
         active = true;
-        popup.xOffset = 640;
+        popup.closedProgress = 1;
     }
     function finishEdgeDrag(shouldOpen) {
         if (!edgeDragging)
@@ -71,21 +76,21 @@ PanelWindow {
         edgeDragProgress = 0;
 
         if (!shouldOpen && releasedProgress <= 0.001) {
-            popup.xOffset = 640;
+            popup.closedProgress = 1;
             Qt.callLater(function () {
                 if (!active && !edgeDragging && !slideAnim.running)
                     dismissed();
             });
             return;
         }
-        animatePopup(shouldOpen ? 0 : 640, edgeSnapDuration, Easing.InOutSine);
+        animatePopup(shouldOpen ? 0 : 1, edgeSnapDuration, Easing.InOutSine);
     }
     function hideControl() {
         edgeSnapAnimating = false;
         edgeDragging = false;
         edgeDragProgress = 0;
         active = false;
-        animatePopup(640, 300, Easing.OutCubic);
+        animatePopup(1, 300, Easing.OutCubic);
     }
     function runAction(cmd) {
         QuickSettingsService.runAction(cmd);
@@ -117,7 +122,7 @@ PanelWindow {
         if (!edgeDragging)
             return;
         edgeDragProgress = Math.max(0, Math.min(1, progress));
-        popup.xOffset = 640 * (1 - edgeDragProgress);
+        popup.closedProgress = 1 - edgeDragProgress;
     }
     function updateStatsPolling() {
         SysStats.pollingEnabled = active && (activeBottomTab === 0 || activeTab === 1);
@@ -131,7 +136,7 @@ PanelWindow {
     anchors.top: true
     color: "transparent"
     focusable: true
-    visible: active || edgeDragging || slideAnim.running || popup.xOffset < 639.5
+    visible: active || edgeDragging || slideAnim.running || popup.closedProgress < 0.999
 
     Component.onCompleted: {
         if (activeBottomTab >= bottomPages.length)
@@ -180,27 +185,27 @@ PanelWindow {
     Rectangle {
         id: popup
 
-        property real xOffset: 640
+        property real closedProgress: 1
 
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 10
+        anchors.bottomMargin: controlRightWindow.outerMargin
         anchors.right: parent.right
-        anchors.rightMargin: 10 - xOffset
+        anchors.rightMargin: controlRightWindow.outerMargin - controlRightWindow.panelWidth * closedProgress
         anchors.top: parent.top
-        anchors.topMargin: 10
+        anchors.topMargin: controlRightWindow.outerMargin
         border.color: Config.alpha(Config.md3.on_surface, 0.06)
         border.width: 1
         clip: true // Prevent bubbles from flying completely outside the panel bounds
 
         color: Config.alpha(Config.md3.background, 0.98)
         radius: 20
-        width: 650
+        width: controlRightWindow.panelWidth
 
         NumberAnimation {
             id: slideAnim
 
             target: popup
-            property: "xOffset"
+            property: "closedProgress"
 
             onFinished: {
                 controlRightWindow.edgeSnapAnimating = false;
@@ -219,26 +224,34 @@ PanelWindow {
             anchors.fill: parent
             propagateComposedEvents: false
         }
-        ColumnLayout {
+        GridLayout {
+            id: controlGrid
+
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 12
+            anchors.margins: controlRightWindow.contentMargin
+            columnSpacing: controlRightWindow.compact ? 9 : 12
+            columns: controlRightWindow.sideBySideSections ? 2 : 1
+            rowSpacing: controlRightWindow.compact ? 9 : 12
 
             // ── 1. Top Control ────────────────────────────────────────────────
             TopControl {
+                Layout.columnSpan: controlGrid.columns
                 Layout.fillWidth: true
                 Layout.preferredHeight: 42
             }
 
             // ── 2. Quick Toggle Buttons ───────────────────────────────────────
             Rectangle {
+                id: quickToggleSurface
+
+                Layout.columnSpan: controlGrid.columns
                 Layout.fillWidth: true
-                Layout.leftMargin: 50
-                Layout.rightMargin: 50
+                Layout.leftMargin: controlRightWindow.compact ? 8 : 50
+                Layout.preferredHeight: controlRightWindow.compact ? 72 : 80
+                Layout.rightMargin: controlRightWindow.compact ? 8 : 50
                 color: Config.md3.surface
-                height: 80
                 layer.enabled: controlRightWindow.visible
-                radius: 40
+                radius: height / 2
 
                 layer.effect: DropShadow {
                     color: "#80000000"
@@ -248,52 +261,68 @@ PanelWindow {
                     verticalOffset: 0
                 }
 
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 15
+                Flickable {
+                    id: quickToggleViewport
 
-                    Button {
-                        active: wifiEnabled
-                        iconName: wifiEnabled ? "network-wireless-symbolic" : "network-wireless-offline-symbolic"
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: contentWidth > width
+                    contentHeight: height
+                    contentWidth: Math.max(width, quickToggleRow.implicitWidth)
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: contentWidth > width
 
-                        onClicked: QuickSettingsService.setWifiEnabled(!wifiEnabled)
-                    }
-                    Button {
-                        active: bluetoothEnabled
-                        iconName: "bluetooth-symbolic"
+                    Row {
+                        id: quickToggleRow
 
-                        onClicked: QuickSettingsService.setBluetoothEnabled(!bluetoothEnabled)
-                    }
-                    Button {
-                        active: airplaneEnabled
-                        iconName: "airplane-mode-symbolic"
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: controlRightWindow.compact ? 8 : 15
+                        x: quickToggleRow.implicitWidth <= quickToggleViewport.width ? (quickToggleViewport.width - quickToggleRow.implicitWidth) / 2 : 0
 
-                        onClicked: QuickSettingsService.setAirplaneEnabled(!airplaneEnabled)
-                    }
-                    Button {
-                        active: QuickSettingsService.dndActive
-                        iconName: "notifications-disabled-symbolic"
+                        Button {
+                            active: wifiEnabled
+                            iconGlyph: wifiEnabled ? "󰤨" : "󰤭"
 
-                        onClicked: QuickSettingsService.dndActive = !QuickSettingsService.dndActive
-                    }
-                    Button {
-                        active: caffeineEnabled
-                        iconName: caffeineEnabled ? "caffeine-cup-full-symbolic" : "caffeine-cup-empty-symbolic"
+                            onClicked: QuickSettingsService.setWifiEnabled(!wifiEnabled)
+                        }
+                        Button {
+                            active: bluetoothEnabled
+                            iconName: "bluetooth-symbolic"
 
-                        onClicked: QuickSettingsService.setCaffeineEnabled(!caffeineEnabled)
-                    }
-                    Button {
-                        active: tailscaleEnabled
-                        activeColor: Config.md3.primary
-                        iconName: tailscaleEnabled ? "network-vpn-symbolic" : "network-vpn-disconnected-symbolic"
+                            onClicked: QuickSettingsService.setBluetoothEnabled(!bluetoothEnabled)
+                        }
+                        Button {
+                            active: airplaneEnabled
+                            iconName: "airplane-mode-symbolic"
 
-                        onClicked: QuickSettingsService.setTailscaleEnabled(!tailscaleEnabled)
-                    }
-                    Button {
-                        active: warpEnabled
-                        iconName: warpEnabled ? "file://" + Config.quickshellDir + "/assets/icons/cloudflare-active.svg" : "file://" + Config.quickshellDir + "/assets/icons/cloudflare.svg"
+                            onClicked: QuickSettingsService.setAirplaneEnabled(!airplaneEnabled)
+                        }
+                        Button {
+                            active: QuickSettingsService.dndActive
+                            iconName: "notifications-disabled-symbolic"
 
-                        onClicked: QuickSettingsService.setWarpEnabled(!warpEnabled)
+                            onClicked: QuickSettingsService.dndActive = !QuickSettingsService.dndActive
+                        }
+                        Button {
+                            active: caffeineEnabled
+                            iconName: caffeineEnabled ? "caffeine-cup-full-symbolic" : "caffeine-cup-empty-symbolic"
+
+                            onClicked: QuickSettingsService.setCaffeineEnabled(!caffeineEnabled)
+                        }
+                        Button {
+                            active: tailscaleEnabled
+                            activeColor: Config.md3.primary
+                            iconName: tailscaleEnabled ? "network-vpn-symbolic" : "network-vpn-disconnected-symbolic"
+
+                            onClicked: QuickSettingsService.setTailscaleEnabled(!tailscaleEnabled)
+                        }
+                        Button {
+                            active: warpEnabled
+                            iconName: warpEnabled ? "file://" + Config.quickshellDir + "/assets/icons/cloudflare-active.svg" : "file://" + Config.quickshellDir + "/assets/icons/cloudflare.svg"
+
+                            onClicked: QuickSettingsService.setWarpEnabled(!warpEnabled)
+                        }
                     }
                 }
             }
@@ -302,6 +331,7 @@ PanelWindow {
             Rectangle {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 Layout.preferredHeight: 600
                 border.color: Config.alpha(Config.md3.on_surface, 0.065)
                 border.width: 1
@@ -311,13 +341,13 @@ PanelWindow {
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 20
+                    anchors.margins: controlRightWindow.compact ? 12 : 20
+                    spacing: controlRightWindow.compact ? 10 : 20
 
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
-                        spacing: 20
+                        spacing: controlRightWindow.compact ? 10 : 20
 
                         Item {
                             Layout.fillWidth: true
@@ -335,7 +365,7 @@ PanelWindow {
                                 height: 40
                                 layer.enabled: isActive
                                 radius: 22
-                                width: isActive ? (tabInnerRow.implicitWidth + 36) : 44
+                                width: isActive && !controlRightWindow.compact ? (tabInnerRow.implicitWidth + 36) : 44
 
                                 Behavior on color {
                                     ColorAnimation {
@@ -362,11 +392,22 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     spacing: 10
 
+                                    WifiSignalIcon {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: tabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface
+                                        connected: WifiService.connected
+                                        connectivityIssue: WifiService.connectivityIssue
+                                        height: 26
+                                        signalStrength: WifiService.activeSignal
+                                        visible: index === 1
+                                        width: 26
+                                    }
                                     IconImage {
                                         anchors.verticalCenter: parent.verticalCenter
                                         height: 26
                                         layer.enabled: true
                                         source: Quickshell.iconPath(tabIcons[index])
+                                        visible: index !== 1
                                         width: 26
 
                                         layer.effect: ColorOverlay {
@@ -386,7 +427,7 @@ PanelWindow {
                                         font.pixelSize: 15
                                         font.weight: Font.DemiBold
                                         text: tabLabels[index]
-                                        visible: tabBtn.isActive
+                                        visible: tabBtn.isActive && !controlRightWindow.compact
                                     }
                                 }
                                 MouseArea {
@@ -449,6 +490,7 @@ PanelWindow {
             Rectangle {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 Layout.preferredHeight: 600
                 border.color: Config.alpha(Config.md3.on_surface, 0.065)
                 border.width: 1
@@ -458,13 +500,13 @@ PanelWindow {
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 20
+                    anchors.margins: controlRightWindow.compact ? 12 : 20
+                    spacing: controlRightWindow.compact ? 10 : 20
 
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
-                        spacing: 20
+                        spacing: controlRightWindow.compact ? 10 : 20
 
                         Item {
                             Layout.fillWidth: true
@@ -482,7 +524,7 @@ PanelWindow {
                                 height: 40
                                 layer.enabled: isActive
                                 radius: 22
-                                width: isActive ? (bottomTabInnerRow.implicitWidth + 36) : 44
+                                width: isActive && !controlRightWindow.compact ? (bottomTabInnerRow.implicitWidth + 36) : 44
 
                                 Behavior on color {
                                     ColorAnimation {
@@ -533,7 +575,7 @@ PanelWindow {
                                         font.pixelSize: 15
                                         font.weight: Font.DemiBold
                                         text: bottomTabLabels[index]
-                                        visible: bottomTabBtn.isActive
+                                        visible: bottomTabBtn.isActive && !controlRightWindow.compact
                                     }
                                 }
                                 MouseArea {

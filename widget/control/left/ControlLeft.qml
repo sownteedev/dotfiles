@@ -12,6 +12,8 @@ PanelWindow {
     id: controlLeftWindow
 
     property bool active: false
+    readonly property bool compact: Responsive.constrained(panelWidth, height - outerMargin * 2, 560, 760)
+    readonly property real contentMargin: compact ? 14 : 20
     property real edgeDragProgress: 0
     property bool edgeDragging: false
     property int edgeSnapDuration: 300
@@ -30,17 +32,20 @@ PanelWindow {
     property int previousTopTab: 0
     readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, 0.065)
     readonly property color sectionColor: Config.md3.surface
+    readonly property real panelWidth: Responsive.sidePanelWidth(width)
+    readonly property real outerMargin: 10
+    readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
     readonly property var topPages: ["Calendar", "Todo", "Timers"]
     readonly property var topTabIcons: ["x-office-calendar-symbolic", "checkbox-checked-symbolic", "preferences-system-time-symbolic"]
     readonly property var topTabLabels: ["Calendar", "Todo", "Timer"]
 
     signal dismissed
 
-    function animatePopup(targetOffset, duration, easingType) {
+    function animatePopup(targetProgress, duration, easingType) {
         slideAnim.stop();
         slideAnim.duration = duration;
         slideAnim.easing.type = easingType;
-        slideAnim.to = targetOffset;
+        slideAnim.to = targetProgress;
         slideAnim.start();
     }
     function beginEdgeDrag() {
@@ -51,7 +56,7 @@ PanelWindow {
         edgeDragProgress = 0;
         edgeDragging = true;
         active = true;
-        popup.xOffset = -640;
+        popup.closedProgress = 1;
     }
     function finishEdgeDrag(shouldOpen) {
         if (!edgeDragging)
@@ -65,21 +70,21 @@ PanelWindow {
         edgeDragProgress = 0;
 
         if (!shouldOpen && releasedProgress <= 0.001) {
-            popup.xOffset = -640;
+            popup.closedProgress = 1;
             Qt.callLater(function () {
                 if (!active && !edgeDragging && !slideAnim.running)
                     dismissed();
             });
             return;
         }
-        animatePopup(shouldOpen ? 0 : -640, edgeSnapDuration, Easing.InOutSine);
+        animatePopup(shouldOpen ? 0 : 1, edgeSnapDuration, Easing.InOutSine);
     }
     function hideControl() {
         edgeSnapAnimating = false;
         edgeDragging = false;
         edgeDragProgress = 0;
         active = false;
-        animatePopup(-640, 300, Easing.OutCubic);
+        animatePopup(1, 300, Easing.OutCubic);
     }
     function showControl() {
         edgeSnapAnimating = false;
@@ -106,7 +111,7 @@ PanelWindow {
         if (!edgeDragging)
             return;
         edgeDragProgress = Math.max(0, Math.min(1, progress));
-        popup.xOffset = -640 * (1 - edgeDragProgress);
+        popup.closedProgress = 1 - edgeDragProgress;
     }
 
     anchors.bottom: true
@@ -117,7 +122,7 @@ PanelWindow {
     anchors.top: true
     color: "transparent"
     focusable: true
-    visible: active || edgeDragging || slideAnim.running || popup.xOffset > -639.5
+    visible: active || edgeDragging || slideAnim.running || popup.closedProgress < 0.999
 
     Component.onCompleted: {
         StateManager.controlLeftPanel = controlLeftWindow;
@@ -135,35 +140,41 @@ PanelWindow {
         onClicked: hideControl()
     }
 
+    Rectangle {
+        anchors.fill: popup
+        anchors.margins: -10
+        color: Config.alpha("#000000", 0.05)
+        radius: popup.radius + 10
+    }
+    Rectangle {
+        anchors.fill: popup
+        anchors.margins: -5
+        color: Config.alpha("#000000", 0.12)
+        radius: popup.radius + 5
+    }
+
     // ─── Sliding Sidebar Container ───────────────────────────────────────────────
     Rectangle {
         id: popup
 
-        property real xOffset: -640
+        property real closedProgress: 1
 
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 10
+        anchors.bottomMargin: controlLeftWindow.outerMargin
         anchors.left: parent.left
-        anchors.leftMargin: 10 + xOffset
+        anchors.leftMargin: controlLeftWindow.outerMargin - controlLeftWindow.panelWidth * closedProgress
         anchors.top: parent.top
-        anchors.topMargin: 10
+        anchors.topMargin: controlLeftWindow.outerMargin
+        clip: true
         color: Config.alpha(Config.md3.background, 0.98)
-        layer.enabled: controlLeftWindow.visible
         radius: 20
-        width: 650
+        width: controlLeftWindow.panelWidth
 
-        layer.effect: DropShadow {
-            color: "#80000000"
-            horizontalOffset: 0
-            radius: 12
-            samples: 17
-            verticalOffset: 0
-        }
         NumberAnimation {
             id: slideAnim
 
             target: popup
-            property: "xOffset"
+            property: "closedProgress"
 
             onFinished: {
                 controlLeftWindow.edgeSnapAnimating = false;
@@ -176,10 +187,14 @@ PanelWindow {
             anchors.fill: parent
             propagateComposedEvents: false
         }
-        ColumnLayout {
+        GridLayout {
+            id: sectionGrid
+
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 12
+            anchors.margins: controlLeftWindow.contentMargin
+            columnSpacing: controlLeftWindow.compact ? 9 : 12
+            columns: controlLeftWindow.sideBySideSections ? 2 : 1
+            rowSpacing: controlLeftWindow.compact ? 9 : 12
 
             // ── 1. Top Tab Content Box ────────────────────────────────────────────
             ClippingRectangle {
@@ -187,11 +202,11 @@ PanelWindow {
 
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 border.color: controlLeftWindow.sectionBorderColor
                 border.width: 1
                 clip: true
                 color: controlLeftWindow.sectionColor
-                layer.enabled: controlLeftWindow.visible && !slideAnim.running
                 radius: 18
 
                 AnimatedFireflies {
@@ -208,7 +223,13 @@ PanelWindow {
                 }
                 AnimatedPulse {
                     readonly property bool hasTimerGeometry: activeTopTab === 2 && topCurrentPage.status === Loader.Ready && topCurrentPage.item && typeof topCurrentPage.item.dialCenter !== "undefined" && typeof topCurrentPage.item.dialSize !== "undefined"
-                    readonly property point timerCenter: hasTimerGeometry ? topCurrentPage.item.mapToItem(topSection, topCurrentPage.item.dialCenter.x, topCurrentPage.item.dialCenter.y) : Qt.point(width / 2, height / 2)
+                    readonly property point timerCenter: {
+                        topCurrentPage.x;
+                        topCurrentPage.y;
+                        if (!hasTimerGeometry)
+                            return Qt.point(width / 2, height / 2);
+                        return topCurrentPage.item.mapToItem(topSection, topCurrentPage.item.dialCenter.x, topCurrentPage.item.dialCenter.y);
+                    }
 
                     anchors.fill: parent
                     centerX: timerCenter.x
@@ -221,14 +242,14 @@ PanelWindow {
                 }
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 20
+                    anchors.margins: controlLeftWindow.compact ? 14 : 20
+                    spacing: controlLeftWindow.compact ? 12 : 20
                     z: 1
 
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
-                        spacing: 20
+                        spacing: controlLeftWindow.compact ? 10 : 20
 
                         Item {
                             Layout.fillWidth: true
@@ -413,11 +434,11 @@ PanelWindow {
             ClippingRectangle {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 border.color: controlLeftWindow.sectionBorderColor
                 border.width: 1
                 clip: true
                 color: controlLeftWindow.sectionColor
-                layer.enabled: controlLeftWindow.visible && !slideAnim.running
                 radius: 18
 
                 AnimatedWeather {
@@ -429,25 +450,25 @@ PanelWindow {
                 AnimatedWaves {
                     anchors.fill: parent
                     color: Config.md3.primary
-                    running: controlLeftWindow.active && activeBottomTab === 1 && !!MediaService.activePlayer && MediaService.playing
+                    running: controlLeftWindow.active && activeBottomTab === 1
                     visible: activeBottomTab === 1
                 }
                 AnimatedBubbles {
                     anchors.fill: parent
                     color: Config.md3.primary
-                    running: controlLeftWindow.active && activeBottomTab === 1 && !!MediaService.activePlayer && MediaService.playing
+                    running: controlLeftWindow.active && activeBottomTab === 1
                     visible: activeBottomTab === 1
                 }
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 20
+                    anchors.margins: controlLeftWindow.compact ? 14 : 20
+                    spacing: controlLeftWindow.compact ? 12 : 20
                     z: 1
 
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
-                        spacing: 20
+                        spacing: controlLeftWindow.compact ? 10 : 20
 
                         Item {
                             Layout.fillWidth: true

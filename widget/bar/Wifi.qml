@@ -4,25 +4,27 @@ import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
 import "../../"
+import "../../components"
 import "../../service"
 
 MouseArea {
     id: root
 
     readonly property bool connected: WifiService.connected
+    property bool hoverExpansionEnabled: true
     readonly property color iconColor: WifiService.connectivityIssue ? WifiService.connectivityColor : Config.md3.on_surface
     readonly property string iconName: WifiService.iconName
-    property bool showName: false
+    readonly property bool showingWifi: WifiService.connectionType !== "ethernet"
+    readonly property bool showName: hoverExpansionEnabled && containsMouse
     readonly property string ssid: WifiService.connectivityIssue ? WifiService.connectivityText : WifiService.connectionName
+    property var targetScreen: null
 
     cursorShape: Qt.PointingHandCursor
     hoverEnabled: true
     implicitHeight: 30
     implicitWidth: layout.implicitWidth
 
-    onClicked: StateManager.showControlPanel(1)
-    onEntered: showName = true
-    onExited: showName = false
+    onClicked: StateManager.showControlPanel(1, targetScreen)
 
     RowLayout {
         id: layout
@@ -43,21 +45,29 @@ MouseArea {
             implicitWidth: 25
             opacity: root.connected ? 1 : 0.4
 
+            WifiSignalIcon {
+                anchors.fill: parent
+                color: root.iconColor
+                connected: WifiService.connected
+                connectivityIssue: WifiService.connectivityIssue
+                signalStrength: WifiService.activeSignal
+                visible: root.showingWifi
+            }
             IconImage {
                 id: icon
 
                 anchors.fill: parent
                 source: Quickshell.iconPath(root.iconName)
-                visible: false
-            }
-            ColorOverlay {
-                anchors.fill: icon
-                color: root.iconColor
-                source: icon
+                visible: !root.showingWifi
+                layer.enabled: visible
 
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 180
+                layer.effect: ColorOverlay {
+                    color: root.iconColor
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 180
+                        }
                     }
                 }
             }

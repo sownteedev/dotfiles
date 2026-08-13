@@ -10,54 +10,6 @@ Item {
     id: root
 
     property int activeSection: 0
-    readonly property var dependencies: SettingsHubService.quickshellSettings.dependencies || ({})
-    readonly property var dependencyRows: [
-        {
-            "key": "matugen",
-            "label": "Matugen",
-            "note": "Dynamic color generation"
-        },
-        {
-            "key": "mpvpaper",
-            "label": "mpvpaper",
-            "note": "Video wallpaper playback"
-        },
-        {
-            "key": "linux-wallpaperengine",
-            "label": "linux-wallpaperengine",
-            "note": "Wallpaper Engine projects"
-        },
-        {
-            "key": "gpu-screen-recorder",
-            "label": "gpu-screen-recorder",
-            "note": "Wayland screen recording"
-        },
-        {
-            "key": "slurp",
-            "label": "slurp",
-            "note": "Region selection"
-        },
-        {
-            "key": "ffmpeg",
-            "label": "FFmpeg",
-            "note": "Frames and media conversion"
-        },
-        {
-            "key": "wl-copy",
-            "label": "wl-clipboard",
-            "note": "Clipboard copy"
-        },
-        {
-            "key": "inotifywait",
-            "label": "inotify-tools",
-            "note": "Screenshot watcher"
-        },
-        {
-            "key": "tesseract",
-            "label": "Tesseract",
-            "note": "Screenshot OCR"
-        }
-    ]
     readonly property bool headerActionEnabled: !SettingsHubService.busy
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Saving…" : "Apply & save"
@@ -134,6 +86,7 @@ Item {
 
     Component.onCompleted: syncFields()
     onActiveSectionChanged: {
+        scroll.contentItem.contentX = 0;
         scroll.contentItem.contentY = 0;
         if (activeSection === 3)
             refreshIntegrations();
@@ -151,14 +104,22 @@ Item {
 
         anchors.fill: parent
         clip: true
+        contentHeight: content.implicitHeight
+        contentWidth: Math.max(availableWidth, 560)
+
+        ScrollBar.horizontal: SlimScrollBar {
+            accentColor: root.activeSection === 0 ? Config.md3.secondary : root.activeSection === 1 ? Config.md3.tertiary : root.activeSection === 2 ? Config.md3.primary : Config.md3.error
+        }
 
         ScrollBar.vertical: SlimScrollBar {
             accentColor: root.activeSection === 0 ? Config.md3.secondary : root.activeSection === 1 ? Config.md3.tertiary : root.activeSection === 2 ? Config.md3.primary : Config.md3.error
         }
 
         ColumnLayout {
+            id: content
+
             spacing: 14
-            width: scroll.availableWidth
+            width: scroll.contentWidth
 
             SettingsSectionCard {
                 Layout.fillWidth: true
@@ -535,10 +496,33 @@ Item {
                         wrapMode: Text.Wrap
                     }
                     SettingsActionButton {
-                        iconName: "view-refresh-symbolic"
-                        text: "Check again"
+                        id: removeGoogleButton
 
-                        onClicked: GoogleService.checkAuthentication()
+                        property bool confirmingRemoval: false
+
+                        enabled: !GoogleService.disconnecting
+                        iconName: confirmingRemoval ? "dialog-warning-symbolic" : "user-trash-symbolic"
+                        text: GoogleService.disconnecting ? "Removing…" : confirmingRemoval ? "Confirm removal" : "Remove account"
+                        visible: GoogleService.authenticated || GoogleService.disconnecting
+
+                        Timer {
+                            id: googleRemovalTimer
+
+                            interval: 3000
+
+                            onTriggered: removeGoogleButton.confirmingRemoval = false
+                        }
+
+                        onClicked: {
+                            if (!confirmingRemoval) {
+                                confirmingRemoval = true;
+                                googleRemovalTimer.restart();
+                            } else {
+                                confirmingRemoval = false;
+                                googleRemovalTimer.stop();
+                                GoogleService.disconnectAccount();
+                            }
+                        }
                     }
                 }
             }
@@ -608,71 +592,6 @@ Item {
 
                     onActionClicked: {
                         SettingsHubService.filePickerDialog.open(engineWorkshopField, "file://" + Config.expandHomePath("~"), true);
-                    }
-                }
-            }
-            SettingsSectionCard {
-                Layout.fillWidth: true
-                accentColor: Config.md3.error
-                note: "Detected on PATH when this panel was opened"
-                title: "Dependencies"
-                visible: root.activeSection === 3
-
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 12
-                    columns: 3
-                    rowSpacing: 10
-
-                    Repeater {
-                        model: root.dependencyRows
-
-                        delegate: Rectangle {
-                            id: dependencyItem
-
-                            readonly property bool installed: root.dependencies[modelData.key] === true
-                            required property var modelData
-
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.035)
-                            implicitHeight: 58
-                            radius: 12
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: 12
-                                spacing: 10
-
-                                Rectangle {
-                                    color: dependencyItem.installed ? Config.md3.secondary : Config.md3.error
-                                    implicitHeight: 9
-                                    implicitWidth: 9
-                                    radius: 5
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        color: Config.md3.on_surface
-                                        elide: Text.ElideRight
-                                        font.family: Config.fontName
-                                        font.pixelSize: 14
-                                        font.weight: Font.DemiBold
-                                        text: dependencyItem.modelData.label
-                                    }
-                                    Text {
-                                        Layout.fillWidth: true
-                                        color: Config.alpha(Config.md3.on_surface, 0.43)
-                                        elide: Text.ElideRight
-                                        font.family: Config.fontName
-                                        font.pixelSize: 11
-                                        text: dependencyItem.installed ? "Installed" : "Missing · " + dependencyItem.modelData.note
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }

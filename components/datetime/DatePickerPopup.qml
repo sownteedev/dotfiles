@@ -21,15 +21,16 @@ Popup {
     }
 
     focus: true
-    height: 380
+    height: parent ? Responsive.fitWithMargins(380, parent.height, 8, 280) : 380
     modal: true
-    width: 320
+    parent: Overlay.overlay
+    width: parent ? Responsive.fitWithMargins(320, parent.width, 8, 240) : 320
 
     background: Rectangle {
         border.color: Config.md3.surface_container_high
         border.width: 1
         color: Config.md3.surface
-        radius: 15
+        radius: Math.min(15, root.width / 2, root.height / 2)
     }
     contentItem: ColumnLayout {
         spacing: 10
@@ -38,10 +39,16 @@ Popup {
             Layout.fillWidth: true
 
             Rectangle {
-                color: previousArea.pressed ? Config.md3.surface_container_high : "transparent"
+                color: previousArea.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : previousArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
                 height: 30
                 radius: 15
                 width: 30
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 100
+                    }
+                }
 
                 IconImage {
                     anchors.centerIn: parent
@@ -58,6 +65,8 @@ Popup {
                     id: previousArea
 
                     anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
 
                     onClicked: {
                         if (root.currentMonth === 0) {
@@ -79,10 +88,16 @@ Popup {
                 text: new Date(root.currentYear, root.currentMonth, 1).toLocaleString(Qt.locale(), "MMMM yyyy")
             }
             Rectangle {
-                color: nextArea.pressed ? Config.md3.surface_container_high : "transparent"
+                color: nextArea.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : nextArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
                 height: 30
                 radius: 15
                 width: 30
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 100
+                    }
+                }
 
                 IconImage {
                     anchors.centerIn: parent
@@ -99,6 +114,8 @@ Popup {
                     id: nextArea
 
                     anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
 
                     onClicked: {
                         if (root.currentMonth === 11) {
@@ -134,8 +151,14 @@ Popup {
             year: root.currentYear
 
             delegate: Rectangle {
-                color: dayArea.pressed ? Config.md3.surface_container_high : "transparent"
+                color: dayArea.pressed ? Config.alpha(Config.md3.on_surface, 0.18) : dayArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.11) : "transparent"
                 radius: width / 2
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 90
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -148,6 +171,8 @@ Popup {
                     id: dayArea
 
                     anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
 
                     onClicked: {
                         root.dateSelected(root.formatDate(model.date));
@@ -159,8 +184,22 @@ Popup {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 36
-            color: clearArea.pressed ? Config.md3.surface_container_high : Config.md3.surface_container
+            color: Config.md3.surface_container
             radius: 10
+
+            Rectangle {
+                anchors.fill: parent
+                color: Config.md3.error
+                opacity: clearArea.pressed ? 0.18 : clearArea.containsMouse ? 0.11 : 0
+                radius: parent.radius
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 100
+                        easing.type: Easing.OutCubic
+                    }
+                }
+            }
 
             Text {
                 anchors.centerIn: parent
@@ -174,6 +213,8 @@ Popup {
                 id: clearArea
 
                 anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
 
                 onClicked: {
                     root.dateCleared();

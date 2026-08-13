@@ -19,6 +19,7 @@ MouseArea {
         return null;
     }
     readonly property var devices: adapter ? adapter.devices.values : []
+    property bool hoverExpansionEnabled: true
     readonly property color iconColor: !adapter || !adapter.enabled ? Config.alpha(Config.md3.on_surface, 0.42) : transitioning ? Config.md3.tertiary : connected ? Config.md3.primary : Config.md3.on_surface
     readonly property string iconName: {
         if (!adapter || adapter.state === BluetoothAdapterState.Blocked)
@@ -29,7 +30,8 @@ MouseArea {
             return "bluetooth-disabled-symbolic";
         return connected ? "bluetooth-active-symbolic" : "bluetooth-disconnected-symbolic";
     }
-    property bool showStatus: false
+    readonly property bool showStatus: hoverExpansionEnabled && containsMouse
+    property var targetScreen: null
     readonly property string statusText: {
         if (!adapter)
             return "Unavailable";
@@ -68,11 +70,8 @@ MouseArea {
             adapter.enabled = true;
             return;
         }
-        StateManager.showControlPanel(2);
+        StateManager.showControlPanel(2, targetScreen);
     }
-    onEntered: showStatus = true
-    onExited: showStatus = false
-
     RowLayout {
         id: layout
 

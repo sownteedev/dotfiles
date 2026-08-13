@@ -12,7 +12,8 @@ CACHE_FILENAME = "scan_cache.json"
 
 
 def _cache_path() -> Path:
-    return Path.home() / ".cache" / "quickshell" / "wallpaper-engine" / CACHE_FILENAME
+    cache_home = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+    return cache_home / "quickshell" / "wallpaper-engine" / CACHE_FILENAME
 
 
 def _load_cache() -> dict:
@@ -37,12 +38,14 @@ def _save_cache(cache: dict) -> None:
         pass
 
 
-def _dir_mtime(path: Path) -> int:
-    """Return directory mtime in milliseconds, 0 on error."""
+def _project_signature(path: Path) -> str:
+    """Return a cache signature that also changes when project.json is edited."""
     try:
-        return path.stat().st_mtime_ns // 1_000_000
+        directory_stat = path.stat()
+        project_stat = (path / "project.json").stat()
+        return f"{directory_stat.st_mtime_ns}:{project_stat.st_mtime_ns}:{project_stat.st_size}"
     except OSError:
-        return 0
+        return ""
 
 
 def _scan_project(project_dir: Path) -> dict | None:
@@ -94,7 +97,7 @@ def scan(roots):
     projects = []
     visited = set()
     next_projects: dict[str, dict] = {}
-    next_mtimes: dict[str, int] = {}
+    next_mtimes: dict[str, str] = {}
 
     for root_text in roots:
         root = Path(root_text).expanduser()
@@ -108,14 +111,15 @@ def scan(roots):
 
         for project_dir in sorted(root.iterdir(), key=lambda path: path.name):
             dir_key = str(project_dir)
-            mtime = _dir_mtime(project_dir)
-            next_mtimes[dir_key] = mtime
+            signature = _project_signature(project_dir)
+            next_mtimes[dir_key] = signature
 
-            # Reuse cached entry if the directory mtime has not changed.
+            # Directory mtime alone does not change when project.json is
+            # edited in place, so cache against both directory and file data.
             if (
                 dir_key in cached_projects
-                and cached_mtimes.get(dir_key) == mtime
-                and mtime > 0
+                and cached_mtimes.get(dir_key) == signature
+                and signature != ""
             ):
                 entry = cached_projects[dir_key]
                 next_projects[dir_key] = entry
