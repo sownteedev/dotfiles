@@ -189,8 +189,18 @@ sleep 3 && clear
 #################################################### INSTALL DRIVER AND APPS ####################################################
 # Install library
 red_echo "[*] Installing library ..."
-retry sudo pacman -S --needed --noconfirm nodejs npm pnpm yarn python python-pip python-cairo python-gobject clang jdk-openjdk rustup
-retry yay -S --needed --noconfirm nvm
+retry sudo pacman -S --needed --noconfirm nodejs-lts-krypton npm pnpm yarn nvm python python-pip python-cairo python-gobject clang jdk-openjdk rustup
+npm config delete prefix
+mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/pnpm/bin"
+(
+    set +u
+    unset NPM_CONFIG_PREFIX npm_config_prefix
+    source /usr/share/nvm/init-nvm.sh
+    retry nvm install --lts
+    nvm alias default 'lts/*'
+    retry nvm install node
+    nvm use default
+)
 rustup default stable
 green_echo "[*] Done."
 sleep 3 && clear

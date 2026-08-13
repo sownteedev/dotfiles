@@ -95,7 +95,7 @@ install_shell_runtime() {
     local -a packages=(
         niri xwayland-satellite quickshell-git qt6-connectivity
         libnotify inotify-tools libcanberra zenity cava cliphist
-        slurp wl-clipboard hyprpicker gpu-screen-recorder ffmpeg imagemagick
+        slurp wl-clipboard wtype hyprpicker gpu-screen-recorder ffmpeg imagemagick
         mesa libva-utils
         jq pciutils ddcutil matugen-bin
     )
@@ -275,21 +275,12 @@ install_shell_environment() {
     red_echo "[*] Installing Niri Wayland environment ..."
     install_shell_runtime
     run_yay wl-gammarelay-rs swayidle
-    run_yay fcitx5 fcitx5-bamboo fcitx5-configtool fcitx5-gtk
+    run_yay fcitx5 fcitx5-lotus-bin fcitx5-configtool fcitx5-gtk fcitx5-qt
+    sudo systemctl enable --now fcitx5-lotus-server@$(whoami).service
+    mkdir -p ~/.config/fcitx5/conf
+    printf 'Mode=SuperSmooth\n' > ~/.config/fcitx5/conf/lotus.conf
     safe_link "$DOTFILES_DIR/.config/niri" "$HOME/.config/niri"
     clear
-
-    # red_echo "[*] Installing Ags/Astal ..."
-    # yay -S --needed --noconfirm libastal-meta aylurs-gtk-shell-git libastal-gjs
-    # rm -rf "$DOTFILES_DIR/ags"
-    # git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=ags/astal "$DOTFILES_DIR/ags" || { red_echo "Failed to clone ags branch"; exit 1; }
-    # cd "$HOME"
-    # mkdir -p installagsv2
-    # cp "$DOTFILES_DIR/ags/PKGBUILD" "$HOME/installagsv2/PKGBUILD"
-    # cd "$HOME/installagsv2"
-    # makepkg -si --noconfirm
-    # cd "$HOME"
-    # rm -rf installagsv2
 
     red_echo "[*] Installing Quickshell ..."
     if [ -d "$QUICKSHELL_DIR/.git" ]; then

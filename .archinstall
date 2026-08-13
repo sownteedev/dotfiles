@@ -179,6 +179,7 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 echo ">>> Installing NetworkManager..."
 pacman -S --noconfirm networkmanager wpa_supplicant wireless_tools
 systemctl enable NetworkManager
+systemctl enable systemd-timesyncd.service
 
 echo ">>> Installing GRUB..."
 pacman -S --noconfirm grub os-prober efibootmgr ntfs-3g mtools dosfstools
