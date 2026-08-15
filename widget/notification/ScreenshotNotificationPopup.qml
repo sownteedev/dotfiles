@@ -14,11 +14,15 @@ PanelWindow {
 
     property bool active: false
     property string body: ""
+    readonly property int exitAnimationDuration: 260
     readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
     property int notificationId: -1
     property var notificationObject: null
     property var pendingNotification: null
-    readonly property bool screenshotReady: CaptureService.screenshotPath !== ""
+    readonly property bool screenshotPathReady: CaptureService.screenshotPath !== ""
+    readonly property bool screenshotPreviewFailed: screenshotPathReady && screenshotPreview.status === Image.Error
+    readonly property bool screenshotReady: screenshotPathReady && screenshotPreview.status === Image.Ready
+    readonly property bool screenshotSettled: screenshotReady || screenshotPreviewFailed
     property string summary: ""
 
     function closeToast() {
@@ -72,7 +76,7 @@ PanelWindow {
         summary = notification.summary || "Screenshot captured";
         body = notification.body || "The screenshot is ready.";
 
-        if (screenshotReady)
+        if (screenshotSettled)
             revealToast();
         else {
             pendingNotification = notification;
@@ -124,7 +128,7 @@ PanelWindow {
     }
     Connections {
         function onScreenshotCapturedAtChanged() {
-            if (root.pendingNotification && root.screenshotReady)
+            if (root.pendingNotification && root.screenshotSettled)
                 root.revealToast();
         }
 
@@ -151,7 +155,7 @@ PanelWindow {
     Timer {
         id: removeTimer
 
-        interval: 220
+        interval: root.exitAnimationDuration + 20
         repeat: false
 
         onTriggered: {
@@ -241,7 +245,7 @@ PanelWindow {
 
                 ParallelAnimation {
                     NumberAnimation {
-                        duration: 260
+                        duration: root.exitAnimationDuration
                         easing.type: Easing.OutCubic
                         property: "slideOffset"
                         target: toast
@@ -329,6 +333,8 @@ PanelWindow {
                     }
 
                     Image {
+                        id: screenshotPreview
+
                         anchors.fill: parent
                         asynchronous: true
                         cache: false
@@ -336,6 +342,29 @@ PanelWindow {
                         horizontalAlignment: Image.AlignHCenter
                         source: CaptureService.screenshotPath ? ("file://" + CaptureService.screenshotPath) : ""
                         verticalAlignment: Image.AlignVCenter
+
+                        onStatusChanged: {
+                            if (root.pendingNotification && (screenshotPreview.status === Image.Ready || screenshotPreview.status === Image.Error))
+                                root.revealToast();
+                        }
+                    }
+                    LoadingIndicator {
+                        anchors.centerIn: parent
+                        animated: screenshotPreview.status === Image.Loading
+                        color: Config.md3.primary
+                        visible: animated
+                    }
+                    IconImage {
+                        anchors.centerIn: parent
+                        height: 34
+                        layer.enabled: true
+                        source: Quickshell.iconPath("image-missing-symbolic")
+                        visible: root.screenshotPreviewFailed
+                        width: 34
+
+                        layer.effect: ColorOverlay {
+                            color: Config.md3.on_surface_variant
+                        }
                     }
                     Rectangle {
                         anchors.fill: parent
@@ -352,7 +381,8 @@ PanelWindow {
 
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
+                        enabled: root.screenshotReady
+                        hoverEnabled: enabled
 
                         onClicked: root.finishAction(function () {
                             CaptureService.openScreenshot();

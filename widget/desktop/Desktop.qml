@@ -26,14 +26,14 @@ Variants {
                 }
             }
 
+            Component.onCompleted: syncRequestedState()
+            onRequestedChanged: syncRequestedState()
+
             Wallpaper {
                 screen: wallpaperLoader.modelData
                 wallpaperPath: WallpaperService.displayWallpaper
                 windowNamespace: "wallpaper-" + wallpaperLoader.modelData.name
             }
-
-            Component.onCompleted: syncRequestedState()
-            onRequestedChanged: syncRequestedState()
         }
     }
 }

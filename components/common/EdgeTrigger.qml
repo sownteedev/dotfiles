@@ -24,8 +24,8 @@ PanelWindow {
     implicitWidth: 2
 
     MouseArea {
-        property int startX: 0
         property real distance: 0
+        property int startX: 0
         property bool tracking: false
 
         anchors.fill: parent

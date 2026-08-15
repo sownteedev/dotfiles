@@ -7,15 +7,13 @@ Image {
 
     property string cacheKey: ""
     property int loadTimeout: 4500
-    property int maxRetries: 2
-    property int retryCount: 0
-    property int retryRevision: 0
     readonly property string localPath: {
         var value = String(path || "");
         if (value.startsWith("file://"))
             return decodeURIComponent(value.substring(7));
         return value;
     }
+    property int maxRetries: 2
     property string path: ""
     readonly property string provider: {
         if (fillMode === Image.PreserveAspectFit)
@@ -24,6 +22,8 @@ Image {
             return "dotfstretchcache";
         return "dotfcache";
     }
+    property int retryCount: 0
+    property int retryRevision: 0
 
     function requestQuery() {
         var values = [];
@@ -78,7 +78,6 @@ Image {
             ++root.retryRevision;
         }
     }
-
     Timer {
         id: loadWatchdog
 

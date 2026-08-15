@@ -7,37 +7,7 @@ import ".."
 QtObject {
     id: root
 
-    readonly property string statePath: Config.cacheRoot + "/local_tasks.json"
-    property bool storageReady: false
     property string activeSyncId: ""
-    property string syncError: ""
-    property var syncQueue: []
-    property var syncingTasks: ({})
-    property var tasks: []
-    property FileView taskFile: FileView {
-        atomicWrites: true
-        blockLoading: true
-        blockWrites: true
-        path: root.storageReady ? root.statePath : ""
-        printErrors: false
-        watchChanges: false
-
-        onLoadFailed: {
-            if (root.storageReady)
-                root.persist();
-        }
-        onLoadedChanged: {
-            if (loaded)
-                root.loadTasks(text());
-        }
-        onSaveFailed: error => console.warn("[LocalTaskService] Could not save local tasks:", error)
-    }
-    property Timer writeDelay: Timer {
-        interval: 60
-        repeat: false
-
-        onTriggered: root.persist()
-    }
     property Process cacheInitializer: Process {
         command: ["mkdir", "-p", Config.cacheRoot]
         running: false
@@ -103,6 +73,36 @@ QtObject {
             root.syncFinished(taskId, succeeded);
             Qt.callLater(root.startNextGoogleSync);
         }
+    }
+    readonly property string statePath: Config.cacheRoot + "/local_tasks.json"
+    property bool storageReady: false
+    property string syncError: ""
+    property var syncQueue: []
+    property var syncingTasks: ({})
+    property FileView taskFile: FileView {
+        atomicWrites: true
+        blockLoading: true
+        blockWrites: true
+        path: root.storageReady ? root.statePath : ""
+        printErrors: false
+        watchChanges: false
+
+        onLoadFailed: {
+            if (root.storageReady)
+                root.persist();
+        }
+        onLoadedChanged: {
+            if (loaded)
+                root.loadTasks(text());
+        }
+        onSaveFailed: error => console.warn("[LocalTaskService] Could not save local tasks:", error)
+    }
+    property var tasks: []
+    property Timer writeDelay: Timer {
+        interval: 60
+        repeat: false
+
+        onTriggered: root.persist()
     }
 
     signal syncFinished(string taskId, bool succeeded)
@@ -206,10 +206,10 @@ QtObject {
         googleSyncProcess.outputBuffer = "";
         googleSyncProcess.errorBuffer = "";
         googleSyncProcess.command = ["python3", "-u", GoogleService.getScriptPath(), "--create-task", "@default", JSON.stringify({
-            "title": task.title,
-            "due": task.due || "",
-            "notes": task.notes || ""
-        })];
+                "title": task.title,
+                "due": task.due || "",
+                "notes": task.notes || ""
+            })];
         googleSyncProcess.running = true;
     }
     function syncToGoogle(taskId) {

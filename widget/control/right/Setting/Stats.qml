@@ -66,12 +66,17 @@ Item {
                 lineColor: Config.md3.primary
                 modelText: SysStats.cpuModelName
                 processList: SysStats.topCpu
-                processTitle: "Top CPU Processes"
+                processManagerEnabled: true
+                processRevision: SysStats.processRevision
+                processTitle: "CPU Processes"
                 processValueSuffix: "%"
+                terminatingPid: SysStats.terminatingPid
+                terminationError: SysStats.terminationError
                 title: "CPU"
                 valueText: SysStats.currentCpu + "%" + (SysStats.cpuTemp > 0 ? " (" + SysStats.cpuTemp + "°C)" : "")
 
                 onClicked: root.toggleProcessChart("cpu")
+                onTerminateRequested: (pid, name) => SysStats.terminateProcess(pid, name)
             }
             StatChart {
                 id: memoryChart
@@ -84,12 +89,17 @@ Item {
                 lineColor: Config.md3.secondary
                 modelText: SysStats.ramModelName
                 processList: SysStats.topRam
-                processTitle: "Top Memory Processes"
+                processManagerEnabled: true
+                processRevision: SysStats.processRevision
+                processTitle: "Memory Processes"
                 processValueSuffix: " MiB"
+                terminatingPid: SysStats.terminatingPid
+                terminationError: SysStats.terminationError
                 title: "Memory"
                 valueText: SysStats.currentRam + "%" + (SysStats.ramUsedText !== "" ? " (" + SysStats.ramUsedText + ")" : "")
 
                 onClicked: root.toggleProcessChart("ram")
+                onTerminateRequested: (pid, name) => SysStats.terminateProcess(pid, name)
             }
             StatChart {
                 id: gpuChart
@@ -104,12 +114,17 @@ Item {
                 lineColor2: Config.md3.secondary
                 modelText: SysStats.gpuModelName
                 processList: SysStats.topGpu
-                processTitle: "Top GPU Processes"
+                processManagerEnabled: true
+                processRevision: SysStats.processRevision
+                processTitle: "GPU Processes"
                 processValueSuffix: " MiB"
+                terminatingPid: SysStats.terminatingPid
+                terminationError: SysStats.terminationError
                 title: "GPU (dGPU)"
                 valueText: "<font color='" + Config.md3.tertiary + "'>GPU: " + SysStats.currentGpu + "% (" + SysStats.gpuTemp + "°C)</font>" + "<font color='" + Config.md3.on_surface_variant + "'> | </font>" + "<font color='" + Config.md3.secondary + "'>VRAM: " + SysStats.currentGpuMemPct + "% (" + SysStats.gpuMemText + ")</font>"
 
                 onClicked: root.toggleProcessChart("gpu")
+                onTerminateRequested: (pid, name) => SysStats.terminateProcess(pid, name)
             }
         }
     }

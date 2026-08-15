@@ -8,6 +8,9 @@ QtObject {
     id: themeServiceRoot
 
     property var activeColors: null
+    property string activeMode: ""
+    property string activeSource: ""
+    property string colorMode: "dark"
     property ParallelAnimation colorTransition: ParallelAnimation {
         ColorAnimation {
             id: anim_background
@@ -394,28 +397,14 @@ QtObject {
             target: Config.md3
         }
     }
-    property Process generator: Process {
-        onExited: (exitCode, exitStatus) => {
-            var completedPath = themeServiceRoot.runningGenerationPath;
-            var completedMode = themeServiceRoot.runningGenerationMode;
-            var completedSource = themeServiceRoot.runningGenerationSource;
-            var completedForced = themeServiceRoot.runningGenerationForced;
-            themeServiceRoot.runningGenerationPath = "";
-            themeServiceRoot.runningGenerationMode = "";
-            themeServiceRoot.runningGenerationSource = "";
-            themeServiceRoot.runningGenerationForced = false;
-            if (themeServiceRoot.pendingGenerationPath) {
-                themeServiceRoot.startPendingGeneration();
-                return;
-            }
-            if (exitCode !== 0) {
-                console.warn("[ThemeService] Matugen exited with code", exitCode);
-            } else {
-                themeServiceRoot.reloadTheme();
-            }
-            themeServiceRoot.validateGeneration(completedPath, completedMode, completedSource, completedForced);
-        }
+    property FileView dconfUserFile: FileView {
+        path: (Quickshell.env("XDG_CONFIG_HOME") || Config.homeDir + "/.config") + "/dconf/user"
+        printErrors: false
+        watchChanges: true
+
+        onFileChanged: themeServiceRoot.modeQueryDebounce.restart()
     }
+    property string expectedSource: ""
     property int generationRetryCount: 0
     property Timer generationValidation: Timer {
         interval: 1200
@@ -440,7 +429,28 @@ QtObject {
             console.warn("[ThemeService] Matugen did not produce the expected Quickshell theme snapshot");
         }
     }
-    property bool hasAppliedTheme: false
+    property Process generator: Process {
+        onExited: (exitCode, exitStatus) => {
+            var completedPath = themeServiceRoot.runningGenerationPath;
+            var completedMode = themeServiceRoot.runningGenerationMode;
+            var completedSource = themeServiceRoot.runningGenerationSource;
+            var completedForced = themeServiceRoot.runningGenerationForced;
+            themeServiceRoot.runningGenerationPath = "";
+            themeServiceRoot.runningGenerationMode = "";
+            themeServiceRoot.runningGenerationSource = "";
+            themeServiceRoot.runningGenerationForced = false;
+            if (themeServiceRoot.pendingGenerationPath) {
+                themeServiceRoot.startPendingGeneration();
+                return;
+            }
+            if (exitCode !== 0) {
+                console.warn("[ThemeService] Matugen exited with code", exitCode);
+            } else {
+                themeServiceRoot.reloadTheme();
+            }
+            themeServiceRoot.validateGeneration(completedPath, completedMode, completedSource, completedForced);
+        }
+    }
     property Process gtkThemeSetter: Process {
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0)
@@ -449,46 +459,8 @@ QtObject {
                 themeServiceRoot.startGtkThemeSync();
         }
     }
-    property string activeMode: ""
-    property string activeSource: ""
-    property string expectedSource: ""
+    property bool hasAppliedTheme: false
     property string lastFileText: ""
-    property string colorMode: "dark"
-    property Timer modeMonitorDebounce: Timer {
-        interval: 180
-        repeat: false
-
-        onTriggered: {
-            if (themeServiceRoot.modeQuery.running)
-                themeServiceRoot.modeQueryPending = true;
-            else
-                themeServiceRoot.modeQuery.running = true;
-        }
-    }
-    property Process modeMonitor: Process {
-        command: ["gsettings", "monitor", "org.gnome.desktop.interface", "color-scheme"]
-
-        stdout: SplitParser {
-            onRead: themeServiceRoot.modeMonitorDebounce.restart()
-        }
-
-        onExited: {
-            if (!themeServiceRoot.modeMonitorStopping)
-                themeServiceRoot.modeMonitorRestart.restart();
-        }
-
-        Component.onDestruction: {
-            themeServiceRoot.modeMonitorStopping = true;
-            running = false;
-        }
-    }
-    property Timer modeMonitorRestart: Timer {
-        interval: 5000
-        repeat: false
-
-        onTriggered: themeServiceRoot.modeMonitor.running = true
-    }
-    property bool modeMonitorStopping: false
     property Process modeQuery: Process {
         command: ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"]
 
@@ -499,28 +471,29 @@ QtObject {
         onExited: {
             if (themeServiceRoot.modeQueryPending) {
                 themeServiceRoot.modeQueryPending = false;
-                themeServiceRoot.modeQuery.running = true;
+                Qt.callLater(themeServiceRoot.requestModeQuery);
             }
         }
+    }
+    property Timer modeQueryDebounce: Timer {
+        interval: 120
+        repeat: false
+
+        onTriggered: themeServiceRoot.requestModeQuery()
     }
     property bool modeQueryPending: false
     property Timer modeQueryRetry: Timer {
         interval: 5000
         repeat: false
 
-        onTriggered: {
-            if (themeServiceRoot.modeQuery.running)
-                themeServiceRoot.modeQueryPending = true;
-            else
-                themeServiceRoot.modeQuery.running = true;
-        }
+        onTriggered: themeServiceRoot.requestModeQuery()
     }
     property bool modeResolved: false
     property bool pendingGenerationForced: false
-    property string pendingGtkThemeMode: ""
     property string pendingGenerationMode: "dark"
     property string pendingGenerationPath: ""
     property string pendingGenerationSource: ""
+    property string pendingGtkThemeMode: ""
     property bool runningGenerationForced: false
     property string runningGenerationMode: ""
     property string runningGenerationPath: ""
@@ -742,6 +715,29 @@ QtObject {
     function reloadTheme() {
         themeFile.reload();
     }
+    function requestGtkThemeSync(mode) {
+        pendingGtkThemeMode = normalizeMode(mode);
+        if (!gtkThemeSetter.running)
+            startGtkThemeSync();
+    }
+    function requestModeQuery() {
+        if (modeQuery.running) {
+            modeQueryPending = true;
+            return;
+        }
+        modeQuery.running = true;
+    }
+    function setExpectedSource(sourceKey) {
+        expectedSource = String(sourceKey || "");
+    }
+    function startGtkThemeSync() {
+        if (gtkThemeSetter.running || pendingGtkThemeMode === "")
+            return;
+        var mode = pendingGtkThemeMode;
+        pendingGtkThemeMode = "";
+        gtkThemeSetter.command = ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", mode === "dark" ? "adw-gtk3-dark" : "adw-gtk3"];
+        gtkThemeSetter.running = true;
+    }
     function startPendingGeneration() {
         if (!pendingGenerationPath || generator.running)
             return;
@@ -765,31 +761,6 @@ QtObject {
         runningGenerationForced = forced;
         generator.running = true;
     }
-    function setExpectedSource(sourceKey) {
-        expectedSource = String(sourceKey || "");
-    }
-    function validateGeneration(path, mode, source, forced) {
-        if (!path || !source)
-            return;
-        validationPath = path;
-        validationMode = mode;
-        validationSource = source;
-        validationForced = forced;
-        generationValidation.restart();
-    }
-    function requestGtkThemeSync(mode) {
-        pendingGtkThemeMode = normalizeMode(mode);
-        if (!gtkThemeSetter.running)
-            startGtkThemeSync();
-    }
-    function startGtkThemeSync() {
-        if (gtkThemeSetter.running || pendingGtkThemeMode === "")
-            return;
-        var mode = pendingGtkThemeMode;
-        pendingGtkThemeMode = "";
-        gtkThemeSetter.command = ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", mode === "dark" ? "adw-gtk3-dark" : "adw-gtk3"];
-        gtkThemeSetter.running = true;
-    }
     function syncSystemMode(value, notifyChange) {
         var text = String(value || "");
         if (text.trim() === "") {
@@ -798,11 +769,13 @@ QtObject {
             return;
         }
         var mode = text.indexOf("prefer-dark") >= 0 ? "dark" : text.indexOf("prefer-light") >= 0 || text.indexOf("default") >= 0 ? "light" : normalizeMode(colorMode);
+        var wasResolved = modeResolved;
         var changed = colorMode !== mode;
         modeQueryRetry.stop();
         colorMode = mode;
         modeResolved = true;
-        requestGtkThemeSync(mode);
+        if (!wasResolved || changed)
+            requestGtkThemeSync(mode);
         if (changed && notifyChange)
             systemModeChanged(mode);
     }
@@ -815,10 +788,18 @@ QtObject {
         if (notifyChange && (changed || activeMode !== normalized))
             systemModeChanged(normalized);
     }
+    function validateGeneration(path, mode, source, forced) {
+        if (!path || !source)
+            return;
+        validationPath = path;
+        validationMode = mode;
+        validationSource = source;
+        validationForced = forced;
+        generationValidation.restart();
+    }
 
     Component.onCompleted: {
         applyTheme();
-        modeMonitor.running = true;
-        modeQuery.running = true;
+        requestModeQuery();
     }
 }

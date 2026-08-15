@@ -106,6 +106,12 @@ QtObject {
         onTriggered: root.scanning = false
     }
     property bool scanning: false
+    property string settingsConnectionPhase: ""
+    property bool settingsConnectionStarted: false
+    // NMSettings expects dns-data as a D-Bus string array (`as`). Keeping these
+    // values in typed QML lists prevents JavaScript arrays becoming `av`.
+    property list<string> settingsIpv4Dns: []
+    property list<string> settingsIpv6Dns: []
     property int settingsLoadAttempts: 0
     property Timer settingsLoadRetry: Timer {
         interval: 120
@@ -113,22 +119,44 @@ QtObject {
 
         onTriggered: root.readSettingsProfile()
     }
-    property bool settingsConnectionStarted: false
-    property string settingsConnectionPhase: ""
-    // NMSettings expects dns-data as a D-Bus string array (`as`). Keeping these
-    // values in typed QML lists prevents JavaScript arrays becoming `av`.
-    property list<string> settingsIpv4Dns: []
-    property list<string> settingsIpv6Dns: []
+    property Connections settingsNetworkConnections: Connections {
+        function onConnectedChanged() {
+            root.checkSettingsConnectionResult();
+        }
+        function onConnectionFailed(reason) {
+            if (!root.settingsSaving || root.settingsConnectionPhase !== "connecting")
+                return;
+            var reasonText = ConnectionFailReason.toString(reason);
+            root.failSettingsSave(reasonText === "" ? "NetworkManager rejected the connection." : "Connection failed: " + reasonText);
+        }
+        function onStateChanged() {
+            root.checkSettingsConnectionResult();
+        }
+        function onStateChangingChanged() {
+            root.checkSettingsConnectionResult();
+        }
+
+        enabled: root.settingsSaving && target !== null
+        target: root.settingsRequestedNetwork
+    }
+    property Connections settingsProfileConnections: Connections {
+        function onSettingsChanged(settings) {
+            root.beginSettingsReconnect();
+        }
+
+        enabled: root.settingsSaving && target !== null
+        target: root.settingsRequestedProfile
+    }
     property var settingsRequestedNetwork: null
-    property bool settingsSaving: false
+    property var settingsRequestedProfile: null
+    property string settingsRequestedSsid: ""
     property Timer settingsSaveTimeout: Timer {
         interval: 15000
         repeat: false
 
         onTriggered: root.failSettingsSave("NetworkManager did not finish applying the connection in time.")
     }
-    property var settingsRequestedProfile: null
-    property string settingsRequestedSsid: ""
+    property bool settingsSaving: false
     readonly property var wifiDevice: {
         for (var i = 0; i < devices.length; ++i) {
             if (devices[i].type === DeviceType.Wifi)
@@ -148,35 +176,54 @@ QtObject {
     signal settingsSaveFailed(string ssid, string message)
     signal settingsSaveSucceeded(string ssid)
 
-    property Connections settingsNetworkConnections: Connections {
-        enabled: root.settingsSaving && target !== null
-        target: root.settingsRequestedNetwork
+    function addressData(value) {
+        var parts = String(value || "").trim().split("/");
+        return [
+            {
+                "address": parts[0],
+                "prefix": parseInt(parts[1])
+            }
+        ];
+    }
+    function beginSettingsReconnect() {
+        if (!settingsSaving || settingsConnectionStarted)
+            return;
 
-        function onConnectedChanged() {
-            root.checkSettingsConnectionResult();
+        var network = findNetwork(settingsRequestedSsid);
+        if (!network || !settingsRequestedProfile) {
+            failSettingsSave("The saved network is no longer available.");
+            return;
         }
-        function onConnectionFailed(reason) {
-            if (!root.settingsSaving || root.settingsConnectionPhase !== "connecting")
+
+        settingsRequestedNetwork = network;
+        settingsConnectionStarted = true;
+        if (network.connected) {
+            settingsConnectionPhase = "disconnecting";
+            network.disconnect();
+        } else {
+            startSettingsConnection();
+        }
+        checkSettingsConnectionResult();
+    }
+    function checkSettingsConnectionResult() {
+        if (!settingsSaving || !settingsConnectionStarted || !settingsRequestedNetwork)
+            return;
+
+        if (settingsConnectionPhase === "disconnecting") {
+            if (settingsRequestedNetwork.stateChanging || settingsRequestedNetwork.connected)
                 return;
-            var reasonText = ConnectionFailReason.toString(reason);
-            root.failSettingsSave(reasonText === "" ? "NetworkManager rejected the connection." : "Connection failed: " + reasonText);
+            startSettingsConnection();
+            return;
         }
-        function onStateChanged() {
-            root.checkSettingsConnectionResult();
-        }
-        function onStateChangingChanged() {
-            root.checkSettingsConnectionResult();
-        }
-    }
-    property Connections settingsProfileConnections: Connections {
-        enabled: root.settingsSaving && target !== null
-        target: root.settingsRequestedProfile
 
-        function onSettingsChanged(settings) {
-            root.beginSettingsReconnect();
-        }
-    }
+        if (settingsConnectionPhase !== "connecting" || settingsRequestedNetwork.stateChanging || !settingsRequestedNetwork.connected)
+            return;
 
+        var ssid = settingsRequestedSsid;
+        resetSettingsSaveState();
+        refreshDetails();
+        settingsSaveSucceeded(ssid);
+    }
     function connectNetwork(network) {
         if (network)
             network.connect();
@@ -191,6 +238,13 @@ QtObject {
         if (!Networking.connectivityCheckEnabled)
             Networking.connectivityCheckEnabled = true;
         Networking.checkConnectivity();
+    }
+    function failSettingsSave(message) {
+        if (!settingsSaving)
+            return;
+        var ssid = settingsRequestedSsid;
+        resetSettingsSaveState();
+        settingsSaveFailed(ssid, message);
     }
     function findNetwork(ssid) {
         for (var i = 0; i < networkValues.length; ++i) {
@@ -287,58 +341,6 @@ QtObject {
         detailQuery.running = false;
         detailQuery.running = true;
     }
-    function beginSettingsReconnect() {
-        if (!settingsSaving || settingsConnectionStarted)
-            return;
-
-        var network = findNetwork(settingsRequestedSsid);
-        if (!network || !settingsRequestedProfile) {
-            failSettingsSave("The saved network is no longer available.");
-            return;
-        }
-
-        settingsRequestedNetwork = network;
-        settingsConnectionStarted = true;
-        if (network.connected) {
-            settingsConnectionPhase = "disconnecting";
-            network.disconnect();
-        } else {
-            startSettingsConnection();
-        }
-        checkSettingsConnectionResult();
-    }
-    function startSettingsConnection() {
-        if (!settingsSaving || !settingsRequestedNetwork || !settingsRequestedProfile)
-            return;
-        settingsConnectionPhase = "connecting";
-        settingsRequestedNetwork.connectWithSettings(settingsRequestedProfile);
-    }
-    function checkSettingsConnectionResult() {
-        if (!settingsSaving || !settingsConnectionStarted || !settingsRequestedNetwork)
-            return;
-
-        if (settingsConnectionPhase === "disconnecting") {
-            if (settingsRequestedNetwork.stateChanging || settingsRequestedNetwork.connected)
-                return;
-            startSettingsConnection();
-            return;
-        }
-
-        if (settingsConnectionPhase !== "connecting" || settingsRequestedNetwork.stateChanging || !settingsRequestedNetwork.connected)
-            return;
-
-        var ssid = settingsRequestedSsid;
-        resetSettingsSaveState();
-        refreshDetails();
-        settingsSaveSucceeded(ssid);
-    }
-    function failSettingsSave(message) {
-        if (!settingsSaving)
-            return;
-        var ssid = settingsRequestedSsid;
-        resetSettingsSaveState();
-        settingsSaveFailed(ssid, message);
-    }
     function resetSettingsSaveState() {
         settingsSaveTimeout.stop();
         settingsSaving = false;
@@ -347,18 +349,6 @@ QtObject {
         settingsRequestedNetwork = null;
         settingsRequestedProfile = null;
         settingsRequestedSsid = "";
-    }
-    function splitDns(value) {
-        return String(value || "").trim().split(/[,\s]+/).filter(function (entry) {
-            return entry !== "";
-        });
-    }
-    function addressData(value) {
-        var parts = String(value || "").trim().split("/");
-        return [{
-            "address": parts[0],
-            "prefix": parseInt(parts[1])
-        }];
     }
     function saveSettings(ssid, options) {
         if (settingsSaving)
@@ -421,6 +411,17 @@ QtObject {
         wifiDevice.scannerEnabled = true;
         scanning = true;
         scanIndicatorTimer.restart();
+    }
+    function splitDns(value) {
+        return String(value || "").trim().split(/[,\s]+/).filter(function (entry) {
+            return entry !== "";
+        });
+    }
+    function startSettingsConnection() {
+        if (!settingsSaving || !settingsRequestedNetwork || !settingsRequestedProfile)
+            return;
+        settingsConnectionPhase = "connecting";
+        settingsRequestedNetwork.connectWithSettings(settingsRequestedProfile);
     }
 
     Component.onCompleted: enableConnectivityCheck()

@@ -14,8 +14,8 @@ MouseArea {
     property bool hoverExpansionEnabled: true
     readonly property color iconColor: WifiService.connectivityIssue ? WifiService.connectivityColor : Config.md3.on_surface
     readonly property string iconName: WifiService.iconName
-    readonly property bool showingWifi: WifiService.connectionType !== "ethernet"
     readonly property bool showName: hoverExpansionEnabled && containsMouse
+    readonly property bool showingWifi: WifiService.connectionType !== "ethernet"
     readonly property string ssid: WifiService.connectivityIssue ? WifiService.connectivityText : WifiService.connectionName
     property var targetScreen: null
 
@@ -57,9 +57,9 @@ MouseArea {
                 id: icon
 
                 anchors.fill: parent
+                layer.enabled: visible
                 source: Quickshell.iconPath(root.iconName)
                 visible: !root.showingWifi
-                layer.enabled: visible
 
                 layer.effect: ColorOverlay {
                     color: root.iconColor

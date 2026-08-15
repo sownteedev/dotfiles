@@ -1,5 +1,6 @@
 use crate::model::{ProcessSample, ProcessSnapshot, RankedProcess};
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -149,34 +150,34 @@ impl SystemReader {
             let Ok(pid) = entry.file_name().to_string_lossy().parse::<u32>() else {
                 continue;
             };
-            if pid == self.self_pid {
+            if pid <= 1 || pid == self.self_pid {
                 continue;
             }
 
-            let (name, cpu_ticks) = if include_cpu {
-                let stat = read_text(entry.path().join("stat"));
-                let Some(open_paren) = stat.find('(') else {
-                    continue;
-                };
-                let Some(close_paren) = stat.rfind(')') else {
-                    continue;
-                };
-                let fields: Vec<&str> = stat[close_paren + 1..].split_whitespace().collect();
-                if fields.len() <= 12 {
-                    continue;
-                }
+            let stat = read_text(entry.path().join("stat"));
+            let Some(open_paren) = stat.find('(') else {
+                continue;
+            };
+            let Some(close_paren) = stat.rfind(')') else {
+                continue;
+            };
+            let fields: Vec<&str> = stat[close_paren + 1..].split_whitespace().collect();
+            if fields.len() <= 12 {
+                continue;
+            }
+            let reported_name = stat[open_paren + 1..close_paren].to_string();
+            let parent_pid = fields[1].parse::<u32>().unwrap_or(0);
+            let cpu_ticks = if include_cpu {
                 let user_ticks = fields[11].parse::<u64>().unwrap_or(0);
                 let system_ticks = fields[12].parse::<u64>().unwrap_or(0);
-                (
-                    stat[open_paren + 1..close_paren].to_string(),
-                    user_ticks.saturating_add(system_ticks),
-                )
+                user_ticks.saturating_add(system_ticks)
             } else {
-                let name = read_text(entry.path().join("comm"));
-                if name.is_empty() {
-                    continue;
-                }
-                (name, 0)
+                0
+            };
+            let name = if reported_name.to_ascii_lowercase().starts_with("electron") {
+                process_name(pid, &reported_name)
+            } else {
+                reported_name
             };
 
             let rss_mib = if include_ram {
@@ -194,6 +195,7 @@ impl SystemReader {
                 pid,
                 ProcessSample {
                     name,
+                    parent_pid,
                     cpu_ticks,
                     rss_mib,
                 },
@@ -208,20 +210,22 @@ impl SystemReader {
         current: &ProcessSnapshot,
         elapsed_seconds: f64,
     ) -> (Vec<RankedProcess>, Vec<RankedProcess>) {
-        let mut cpu_by_name: HashMap<&str, f64> = HashMap::new();
-        let mut ram_by_name: HashMap<&str, f64> = HashMap::new();
+        let mut cpu_processes: HashMap<(u32, String), f64> = HashMap::new();
+        let mut ram_processes: HashMap<(u32, String), f64> = HashMap::new();
         let denominator = (elapsed_seconds * self.clock_ticks * self.cpu_count).max(1.0);
 
         for (pid, sample) in current {
-            *ram_by_name.entry(&sample.name).or_default() += sample.rss_mib;
+            let group_pid = process_group_pid(current, *pid);
+            let group = (group_pid, sample.name.clone());
+            *ram_processes.entry(group.clone()).or_default() += sample.rss_mib;
             let Some(old) = previous.get(pid) else {
                 continue;
             };
             let delta = sample.cpu_ticks.saturating_sub(old.cpu_ticks);
-            *cpu_by_name.entry(&sample.name).or_default() += delta as f64 * 100.0 / denominator;
+            *cpu_processes.entry(group).or_default() += delta as f64 * 100.0 / denominator;
         }
 
-        (ranked(cpu_by_name), ranked(ram_by_name))
+        (ranked_groups(cpu_processes), ranked_groups(ram_processes))
     }
 }
 
@@ -266,17 +270,38 @@ fn find_thermal_path() -> Option<PathBuf> {
     fallback
 }
 
-fn ranked(values: HashMap<&str, f64>) -> Vec<RankedProcess> {
-    let mut result: Vec<_> = values
+fn process_group_pid(snapshot: &ProcessSnapshot, pid: u32) -> u32 {
+    let Some(sample) = snapshot.get(&pid) else {
+        return pid;
+    };
+    let name = &sample.name;
+    let mut leader = pid;
+
+    for _ in 0..64 {
+        let Some(current) = snapshot.get(&leader) else {
+            break;
+        };
+        if current.parent_pid <= 1 || current.parent_pid == leader {
+            break;
+        }
+        let Some(parent) = snapshot.get(&current.parent_pid) else {
+            break;
+        };
+        if parent.name != *name {
+            break;
+        }
+        leader = current.parent_pid;
+    }
+
+    leader
+}
+
+fn ranked_groups(values: HashMap<(u32, String), f64>) -> Vec<RankedProcess> {
+    let mut result = values
         .into_iter()
-        .filter(|(_, value)| *value > 0.0)
-        .map(|(name, value)| RankedProcess {
-            name: name.to_string(),
-            value,
-        })
-        .collect();
+        .map(|((pid, name), value)| RankedProcess { pid, name, value })
+        .collect::<Vec<_>>();
     result.sort_by(|left, right| right.value.total_cmp(&left.value));
-    result.truncate(5);
     result
 }
 
@@ -286,6 +311,74 @@ pub fn read_text(path: impl AsRef<Path>) -> String {
         .unwrap_or_default()
 }
 
+pub fn process_name(pid: u32, reported_name: &str) -> String {
+    if let Ok(environment) = fs::read(format!("/proc/{pid}/environ")) {
+        for entry in environment.split(|byte| *byte == 0) {
+            let Some(desktop) = entry.strip_prefix(b"CHROME_DESKTOP=") else {
+                continue;
+            };
+            let mut desktop = String::from_utf8_lossy(desktop).into_owned();
+            if let Some(value) = desktop.strip_suffix(".desktop") {
+                desktop = value.to_string();
+            }
+            if let Some(value) = desktop.strip_suffix("-url-handler") {
+                desktop = value.to_string();
+            }
+            if !desktop.is_empty() {
+                return desktop;
+            }
+        }
+    }
+
+    if let Ok(command_line) = fs::read(format!("/proc/{pid}/cmdline")) {
+        if let Some(app_name) = electron_app_name(&command_line) {
+            return app_name;
+        }
+
+        let executable = command_line
+            .split(|byte| *byte == 0)
+            .next()
+            .unwrap_or_default();
+        let base = Path::new(OsStr::from_bytes(executable))
+            .file_name()
+            .and_then(OsStr::to_str)
+            .unwrap_or_default();
+        if !base.is_empty() && base != "exe" {
+            return base.to_string();
+        }
+    }
+
+    let reported_executable = reported_name.split_whitespace().next().unwrap_or_default();
+    let reported_base = Path::new(reported_executable)
+        .file_name()
+        .and_then(OsStr::to_str)
+        .unwrap_or_default();
+    if !reported_base.is_empty() && reported_base != "exe" {
+        return reported_base.to_string();
+    }
+
+    let comm = read_text(format!("/proc/{pid}/comm"));
+    if comm.is_empty() {
+        pid.to_string()
+    } else {
+        comm
+    }
+}
+
+fn electron_app_name(command_line: &[u8]) -> Option<String> {
+    for argument in command_line.split(|byte| *byte == 0).skip(1) {
+        let path = Path::new(OsStr::from_bytes(argument));
+        if path.file_name().and_then(OsStr::to_str) != Some("app.asar") {
+            continue;
+        }
+        let app_name = path.parent()?.file_name()?.to_str()?;
+        if !app_name.is_empty() {
+            return Some(app_name.to_string());
+        }
+    }
+    None
+}
+
 fn getconf(name: &str) -> Option<u64> {
     let output = Command::new("getconf").arg(name).output().ok()?;
     if !output.status.success() {
@@ -293,3 +386,57 @@ fn getconf(name: &str) -> Option<u64> {
     }
     String::from_utf8_lossy(&output.stdout).trim().parse().ok()
 }
+
+#[cfg(test)]
+mod process_name_tests {
+    use super::{SystemReader, electron_app_name, process_group_pid};
+    use crate::model::{ProcessSample, ProcessSnapshot};
+
+    #[test]
+    fn resolves_electron_app_asar_parent() {
+        let command_line = b"/usr/lib/electron40/electron\0/usr/lib/vesktop/app.asar\0";
+        assert_eq!(electron_app_name(command_line).as_deref(), Some("vesktop"));
+    }
+
+    #[test]
+    fn groups_same_application_children_under_parent() {
+        let mut snapshot = ProcessSnapshot::new();
+        snapshot.insert(
+            100,
+            ProcessSample {
+                name: "vesktop".to_string(),
+                parent_pid: 10,
+                cpu_ticks: 0,
+                rss_mib: 200.0,
+            },
+        );
+        snapshot.insert(
+            110,
+            ProcessSample {
+                name: "vesktop".to_string(),
+                parent_pid: 100,
+                cpu_ticks: 0,
+                rss_mib: 100.0,
+            },
+        );
+        snapshot.insert(
+            120,
+            ProcessSample {
+                name: "vesktop".to_string(),
+                parent_pid: 110,
+                cpu_ticks: 0,
+                rss_mib: 50.0,
+            },
+        );
+
+        assert_eq!(process_group_pid(&snapshot, 120), 100);
+
+        let (_, ram) = SystemReader::new().top_processes(&ProcessSnapshot::new(), &snapshot, 1.0);
+        assert_eq!(ram.len(), 1);
+        assert_eq!(ram[0].pid, 100);
+        assert_eq!(ram[0].value, 350.0);
+    }
+}
+
+#[cfg(unix)]
+use std::os::unix::ffi::OsStrExt;

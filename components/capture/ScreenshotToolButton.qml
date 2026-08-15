@@ -16,14 +16,13 @@ Rectangle {
     implicitHeight: 42
     implicitWidth: 48
     radius: 11
+    scale: pointer.pressed ? 0.85 : 1.0
 
     Behavior on color {
         ColorAnimation {
             duration: 120
         }
     }
-
-    scale: pointer.pressed ? 0.85 : 1.0
     Behavior on scale {
         NumberAnimation {
             duration: 200
@@ -57,6 +56,7 @@ Rectangle {
 
         layer.effect: ColorOverlay {
             color: root.selectedTool === root.toolData.tool ? Config.md3.background : Config.md3.on_surface
+
             Behavior on color {
                 ColorAnimation {
                     duration: 120

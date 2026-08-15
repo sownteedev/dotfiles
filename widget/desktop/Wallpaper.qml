@@ -81,14 +81,6 @@ PanelWindow {
     function normalizedPath(path) {
         return String(path || "").replace(/^file:\/\//, "");
     }
-    function shouldBlurEngineCover(path) {
-        if (!allowVideoFade || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo || WallpaperService.lastVideoFrame !== "")
-            return false;
-
-        var cover = normalizedPath(path);
-        var preview = normalizedPath(WallpaperService.fallbackVideoThumbnail);
-        return cover !== "" && preview !== "" && cover === preview;
-    }
     function promoteCandidate(image, generation) {
         if (!image || image !== candidateImage || generation !== sourceGeneration)
             return;
@@ -181,6 +173,14 @@ PanelWindow {
                 wallpaperWindow.imageStatusChanged(createdImage, createdImage.status);
         });
     }
+    function shouldBlurEngineCover(path) {
+        if (!allowVideoFade || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo || WallpaperService.lastVideoFrame !== "")
+            return false;
+
+        var cover = normalizedPath(path);
+        var preview = normalizedPath(WallpaperService.fallbackVideoThumbnail);
+        return cover !== "" && preview !== "" && cover === preview;
+    }
 
     WlrLayershell.layer: WlrLayer.Background
     WlrLayershell.namespace: windowNamespace
@@ -222,20 +222,21 @@ PanelWindow {
         CachingImage {
             id: staticImage
 
+            readonly property bool blurEngineCover: wallpaperWindow.shouldBlurEngineCover(sourceKey)
             property int requestId: 0
             property string sourceKey: ""
-            readonly property bool blurEngineCover: wallpaperWindow.shouldBlurEngineCover(sourceKey)
 
             anchors.fill: parent
             cacheKey: wallpaperWindow.allowVideoFade && WallpaperService.currentMode === "video" ? String(WallpaperService.videoTransitionGeneration) : ""
             fillMode: blurEngineCover || WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
             layer.enabled: blurEngineCover
+            opacity: 0
+            path: sourceKey
+
             layer.effect: FastBlur {
                 radius: 56
                 transparentBorder: false
             }
-            opacity: 0
-            path: sourceKey
 
             onStatusChanged: wallpaperWindow.imageStatusChanged(staticImage, status)
         }
@@ -246,21 +247,23 @@ PanelWindow {
         Image {
             id: directImage
 
+            readonly property bool blurEngineCover: wallpaperWindow.shouldBlurEngineCover(sourceKey)
             property int requestId: 0
             property string sourceKey: ""
-            readonly property bool blurEngineCover: wallpaperWindow.shouldBlurEngineCover(sourceKey)
 
             anchors.fill: parent
             asynchronous: true
             cache: true
             fillMode: blurEngineCover || WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
             layer.enabled: blurEngineCover
+            opacity: 0
+            source: sourceKey
+            sourceSize: Qt.size(Math.ceil(wallpaperWindow.width * Screen.devicePixelRatio), Math.ceil(wallpaperWindow.height * Screen.devicePixelRatio))
+
             layer.effect: FastBlur {
                 radius: 56
                 transparentBorder: false
             }
-            opacity: 0
-            source: sourceKey
 
             onStatusChanged: wallpaperWindow.imageStatusChanged(directImage, status)
         }

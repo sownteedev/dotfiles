@@ -9,7 +9,8 @@ import "../../service"
 RowLayout {
     id: root
 
-    readonly property string activeWindowId: WorkspaceService.activeWindowId
+    readonly property var activeWindow: WorkspaceService.activeWindowByOutput[root.outputName] || null
+    readonly property string activeWindowId: activeWindow ? String(activeWindow.id || "") : WorkspaceService.activeWindowId
     readonly property int activeWorkspaceId: WorkspaceService.activeWorkspaceId
     property bool compact: false
     property int desktopEntriesRevision: 0
@@ -44,14 +45,12 @@ RowLayout {
         }
         return path ? path : Quickshell.iconPath("application-x-executable");
     }
-
     function getAppName(appId) {
         if (!appId)
             return "";
         var entry = DesktopEntries.byId(appId) || DesktopEntries.heuristicLookup(appId);
         return entry ? entry.name : appId;
     }
-
     function removeWorkspaceModelEntry(workspaceId) {
         for (var index = 0; index < workspaceModel.count; index++) {
             var entry = workspaceModel.get(index);
@@ -115,7 +114,6 @@ RowLayout {
 
         dynamicRoles: true
     }
-
     Connections {
         function onApplicationsChanged() {
             root.desktopEntriesRevision++;
@@ -136,16 +134,15 @@ RowLayout {
         delegate: Rectangle {
             id: wsButton
 
-            required property var workspaceData
-            required property bool pendingRemoval
-
+            property bool expanded: false
+            property real expansionProgress: expanded ? 1 : 0
             readonly property bool hasWindows: workspaceData.windows.length > 0
+            property bool inLayout: false
+            required property bool pendingRemoval
+            required property var workspaceData
             readonly property int workspaceId: workspaceData.id
             readonly property int workspaceIdx: workspaceData.idx
             readonly property string workspaceOutput: workspaceData.output
-            property bool expanded: false
-            property real expansionProgress: expanded ? 1 : 0
-            property bool inLayout: false
 
             border.width: 0
             color: "transparent"
@@ -154,6 +151,24 @@ RowLayout {
             opacity: expanded ? 1 : 0
             scale: expanded ? 1 : 0.82
             visible: inLayout
+
+            Behavior on expansionProgress {
+                NumberAnimation {
+                    duration: 260
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 180
+                }
+            }
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 220
+                    easing.type: Easing.OutBack
+                }
+            }
 
             Component.onCompleted: {
                 if (hasWindows) {
@@ -177,23 +192,7 @@ RowLayout {
                     collapseTimer.restart();
                 }
             }
-            Behavior on expansionProgress {
-                NumberAnimation {
-                    duration: 260
-                    easing.type: Easing.OutCubic
-                }
-            }
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 180
-                }
-            }
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 220
-                    easing.type: Easing.OutBack
-                }
-            }
+
             Timer {
                 id: collapseTimer
 
@@ -236,7 +235,6 @@ RowLayout {
                     }
                 }
             }
-
             DropArea {
                 id: dropArea
 
@@ -434,11 +432,11 @@ RowLayout {
                                         font.family: Config.fontName
                                         font.pixelSize: root.compact ? 13 : 15
                                         font.weight: Font.Medium
-                                        width: Math.min(implicitWidth, root.compact ? 86 : 150)
                                         text: {
                                             root.desktopEntriesRevision;
                                             return modelData.app_id ? root.getAppName(modelData.app_id) : "";
                                         }
+                                        width: Math.min(implicitWidth, root.compact ? 86 : 150)
                                     }
                                 }
                             }

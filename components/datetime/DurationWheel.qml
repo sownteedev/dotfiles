@@ -71,10 +71,9 @@ Item {
             readonly property bool selected: index === wheel.currentIndex
 
             height: root.rowHeight
-            width: wheel.width
-
             opacity: selected ? 1 : distance === 1 ? 0.26 : 0.06
             scale: selected ? 1 : 0.88
+            width: wheel.width
 
             Behavior on opacity {
                 NumberAnimation {

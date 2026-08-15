@@ -4,15 +4,16 @@ import Quickshell
 import "../../"
 
 // Standalone calculator card.
-// Evaluates math expressions prefixed with "=" including common functions.
+// Evaluates math expressions using the configured calculator prefix.
 // Pressing Enter (from Launcher) copies the result to clipboard via wl-copy.
 Item {
     id: calcRoot
 
-    readonly property bool calculatorMode: query.startsWith("= ")
+    readonly property bool calculatorMode: Config.launcherCalculatorEnabled && query.toLowerCase().startsWith(calculatorPrefix.toLowerCase())
+    readonly property string calculatorPrefix: Config.launcherCalculatorPrefix + " "
     property bool copied: false // brief "copied" feedback state
 
-    readonly property string expression: calculatorMode ? query.substring(2).trim() : ""
+    readonly property string expression: calculatorMode ? query.substring(calculatorPrefix.length).trim() : ""
     readonly property bool hasResult: result !== ""
     property string query: ""
 
@@ -88,7 +89,7 @@ Item {
 
     Behavior on implicitHeight {
         NumberAnimation {
-            duration: 150
+            duration: Config.animationDuration(150)
             easing.type: Easing.OutCubic
         }
     }

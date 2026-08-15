@@ -36,13 +36,13 @@ PanelWindow {
     }
     function modePrefix(mode) {
         if (mode === "clipboard")
-            return "c ";
+            return Config.launcherClipboardPrefix + " ";
         if (mode === "files")
-            return "f ";
+            return Config.launcherFilesPrefix + " ";
         if (mode === "calculator")
-            return "= ";
+            return Config.launcherCalculatorPrefix + " ";
         if (mode === "emoji")
-            return "e ";
+            return Config.launcherEmojiPrefix + " ";
         return "";
     }
     function openLauncher() {
@@ -71,19 +71,19 @@ PanelWindow {
         var input = searchEntry.text;
         var lower = input.toLowerCase();
         var mode = "";
-        if (lower.startsWith("c "))
+        if (Config.launcherClipboardEnabled && lower.startsWith(Config.launcherClipboardPrefix.toLowerCase() + " "))
             mode = "clipboard";
-        else if (lower.startsWith("f "))
+        else if (Config.launcherFilesEnabled && lower.startsWith(Config.launcherFilesPrefix.toLowerCase() + " "))
             mode = "files";
-        else if (lower.startsWith("e "))
+        else if (Config.launcherEmojiEnabled && lower.startsWith(Config.launcherEmojiPrefix.toLowerCase() + " "))
             mode = "emoji";
-        else if (input.startsWith("= "))
+        else if (Config.launcherCalculatorEnabled && lower.startsWith(Config.launcherCalculatorPrefix.toLowerCase() + " "))
             mode = "calculator";
         if (mode === "")
             return false;
 
         searchMode = mode;
-        searchEntry.text = input.substring(2);
+        searchEntry.text = input.substring(modePrefix(mode).length);
         searchEntry.cursorPosition = searchEntry.text.length;
         syncSearchQuery();
         return true;
@@ -193,7 +193,7 @@ PanelWindow {
 
         Behavior on height {
             NumberAnimation {
-                duration: 350
+                duration: Config.animationDuration(350)
                 easing.type: Easing.OutCubic
             }
         }
@@ -209,7 +209,7 @@ PanelWindow {
         // Unified transition behaviors
         Behavior on opacity {
             NumberAnimation {
-                duration: 250
+                duration: Config.animationDuration(250)
                 easing.type: Easing.OutQuad
             }
         }
@@ -221,7 +221,7 @@ PanelWindow {
         }
         Behavior on width {
             NumberAnimation {
-                duration: 350
+                duration: Config.animationDuration(350)
                 easing.type: Easing.OutCubic
             }
         }
@@ -290,7 +290,7 @@ PanelWindow {
 
                     Behavior on color {
                         ColorAnimation {
-                            duration: 140
+                            duration: Config.animationDuration(140)
                         }
                     }
 
@@ -386,7 +386,7 @@ PanelWindow {
 
                     Behavior on scale {
                         NumberAnimation {
-                            duration: 220
+                            duration: Config.animationDuration(220)
                             easing.type: Easing.OutBack
                         }
                     }
@@ -407,7 +407,7 @@ PanelWindow {
 
                                 Behavior on color {
                                     ColorAnimation {
-                                        duration: 120
+                                        duration: Config.animationDuration(120)
                                     }
                                 }
                             }
@@ -436,7 +436,7 @@ PanelWindow {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 clip: true
-                visible: mainLayout.height > 82
+                visible: launcherWindow.showAllApps || launcherWindow.searchQuery.trim() !== ""
 
                 // Search mode: calculator card + search results (stacked)
                 ColumnLayout {
@@ -450,7 +450,7 @@ PanelWindow {
 
                         Layout.fillWidth: true
                         query: searchQuery
-                        visible: hasResult
+                        visible: Config.launcherCalculatorEnabled && hasResult
 
                         onResultCopied: closeLauncher()
                     }

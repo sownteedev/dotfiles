@@ -105,6 +105,14 @@ PanelWindow {
 
     // Core OSD display logic
     function showOSD(type) {
+        if (!Config.osdEnabled)
+            return;
+        if ((type === "volume" || type === "volume-mute") && !Config.osdShowVolume)
+            return;
+        if ((type === "mic" || type === "mic-mute") && !Config.osdShowMicrophone)
+            return;
+        if (type === "brightness" && !Config.osdShowBrightness)
+            return;
         activeIndicator = type;
         active = true;
 
@@ -115,10 +123,10 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
 
     // Position: bottom center of screen
-    anchors.bottom: true
+    anchors.bottom: Config.osdPosition === "bottom"
     anchors.left: false
     anchors.right: false
-    anchors.top: false
+    anchors.top: Config.osdPosition === "top"
     color: "transparent"
     exclusiveZone: 0 // Floating window - do not reserve screen space or push windows
 
@@ -127,7 +135,8 @@ PanelWindow {
 
     // Keep the Wayland surface stable while the popup morphs between modes.
     implicitWidth: screen ? Math.min(320, screen.width) : 320
-    margins.bottom: 10 // Distance from bottom of screen to window edge
+    margins.bottom: anchors.bottom ? 10 : 0
+    margins.top: anchors.top ? 10 : 0
 
     // Keep the window alive only while the popup is visible so it does not block clicks when hidden
     visible: isOsdScreen && (active || popup.opacity > 0.0)
@@ -182,7 +191,7 @@ PanelWindow {
     Timer {
         id: hideTimer
 
-        interval: 2000
+        interval: Config.osdDuration
         repeat: false
 
         onTriggered: {
@@ -245,7 +254,7 @@ PanelWindow {
             property real popScale: 0.85
 
             // Animation variables
-            property real yOffset: 40 // Slide down when hidden (away from screen)
+            property real yOffset: Config.osdPosition === "top" ? -40 : 40
 
             anchors.horizontalCenter: parent.horizontalCenter
             border.color: Config.md3.surface_container_high
@@ -265,7 +274,7 @@ PanelWindow {
 
             Behavior on modeProgress {
                 NumberAnimation {
-                    duration: 260
+                    duration: Config.animationDuration(260)
                     easing.type: Easing.OutCubic
                 }
             }
@@ -301,12 +310,12 @@ PanelWindow {
                     to: "visible"
 
                     NumberAnimation {
-                        duration: 250
+                        duration: Config.animationDuration(250)
                         easing.type: Easing.OutQuad
                         properties: "opacity"
                     }
                     NumberAnimation {
-                        duration: 400
+                        duration: Config.animationDuration(400)
                         easing.type: Easing.OutBack
                         properties: "yOffset, popScale"
                     }
@@ -316,12 +325,12 @@ PanelWindow {
                     to: "hidden"
 
                     NumberAnimation {
-                        duration: 150
+                        duration: Config.animationDuration(150)
                         easing.type: Easing.OutQuad
                         properties: "opacity"
                     }
                     NumberAnimation {
-                        duration: 200
+                        duration: Config.animationDuration(200)
                         easing.type: Easing.InQuad
                         properties: "yOffset, popScale"
                     }
@@ -396,7 +405,7 @@ PanelWindow {
                             readonly property real totalWidth: width
 
                             Layout.fillWidth: true
-                            height: 4
+                            Layout.preferredHeight: 4
 
                             Rectangle {
                                 id: activeProgress
@@ -415,7 +424,7 @@ PanelWindow {
 
                                 Behavior on width {
                                     NumberAnimation {
-                                        duration: 120
+                                        duration: Config.animationDuration(120)
                                         easing.type: Easing.OutQuad
                                     }
                                 }
@@ -439,7 +448,7 @@ PanelWindow {
 
                                 Behavior on width {
                                     NumberAnimation {
-                                        duration: 120
+                                        duration: Config.animationDuration(120)
                                         easing.type: Easing.OutQuad
                                     }
                                 }

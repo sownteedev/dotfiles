@@ -198,6 +198,7 @@ QtObject {
             }
         }
     }
+    property var outputHardwareIds: ({})
     property Connections outputHotplugConnections: Connections {
         function onScreensChanged() {
             root.outputHotplugRefresh.restart();
@@ -215,6 +216,7 @@ QtObject {
 
         onTriggered: root.refreshOutputs()
     }
+    property bool outputReloadPending: false
     property var outputs: []
     property Process outputsQuery: Process {
         command: ["niri", "msg", "-j", "outputs"]
@@ -260,15 +262,10 @@ QtObject {
         }
     }
     property bool outputsRefreshPending: false
-    property var outputHardwareIds: ({})
-    property bool outputReloadPending: false
     property var pendingConfigCommands: []
     property string pendingDarkmodeMode: ""
     property bool sunshineBusy: sunshineProfileProcess.running
     readonly property string sunshineConfigPath: Config.homeDir + "/.config/sunshine/sunshine.conf"
-    property string sunshineStatus: "Select a display to configure Sunshine"
-    property string sunshineStatusOutput: ""
-    property bool sunshineStatusRefreshPending: false
     property Process sunshineProfileProcess: Process {
         stdout: StdioCollector {
             id: sunshineProfileOutput
@@ -290,6 +287,8 @@ QtObject {
             }
         }
     }
+    property string sunshineStatus: "Select a display to configure Sunshine"
+    property string sunshineStatusOutput: ""
     property Process sunshineStatusQuery: Process {
         stdout: StdioCollector {
             id: sunshineStatusQueryOutput
@@ -319,6 +318,7 @@ QtObject {
             }
         }
     }
+    property bool sunshineStatusRefreshPending: false
     property Connections themeConnections: Connections {
         function onColorModeChanged() {
             root.darkmodeEnabled = ThemeService.colorMode === "dark";
@@ -346,47 +346,6 @@ QtObject {
         displayModeApplying = true;
         displayModeExecutor.command = ["python3", Config.quickshellDir + "/scripts/niri_display_mode.py", mode, String(preferredExternal || "")];
         displayModeExecutor.running = true;
-    }
-    function buildOutputIdentities(outputList) {
-        var candidates = [];
-        var counts = {};
-        var result = {};
-        for (var i = 0; i < outputList.length; ++i) {
-            var candidate = hardwareIdentity(outputList[i]);
-            candidates.push(candidate);
-            counts[candidate] = (counts[candidate] || 0) + 1;
-        }
-        for (var j = 0; j < outputList.length; ++j) {
-            var connector = String(outputList[j] && outputList[j].name || "");
-            var identity = candidates[j];
-            result[connector] = identity !== "" && counts[identity] === 1 ? identity : connector;
-        }
-        return result;
-    }
-    function configIdentity(output) {
-        var connector = String(output || "");
-        return String(outputHardwareIds[connector] || connector);
-    }
-    function configureSunshine(output) {
-        var connector = String(output || "");
-        if (connector === "" || sunshineProfileProcess.running)
-            return;
-        var displayId = -1;
-        for (var i = 0; i < outputs.length; ++i) {
-            if (String(outputs[i] && outputs[i].name || "") === connector) {
-                displayId = i;
-                break;
-            }
-        }
-        if (displayId < 0) {
-            sunshineStatusOutput = connector;
-            sunshineStatus = "Selected output is no longer connected";
-            return;
-        }
-        sunshineStatusOutput = connector;
-        sunshineStatus = "Restarting Sunshine for " + connector + "…";
-        sunshineProfileProcess.command = ["python3", Config.quickshellDir + "/scripts/sunshine_output_profile.py", sunshineConfigPath, connector, String(displayId)];
-        sunshineProfileProcess.running = true;
     }
     function applyNightlightTemperature() {
         if (!nightlightEnabled || !nightlightAvailable || nightlightSetter.running)
@@ -417,11 +376,52 @@ QtObject {
         if (commands.length > 0)
             executeConfigCommand(commands.join("; "));
     }
+    function buildOutputIdentities(outputList) {
+        var candidates = [];
+        var counts = {};
+        var result = {};
+        for (var i = 0; i < outputList.length; ++i) {
+            var candidate = hardwareIdentity(outputList[i]);
+            candidates.push(candidate);
+            counts[candidate] = (counts[candidate] || 0) + 1;
+        }
+        for (var j = 0; j < outputList.length; ++j) {
+            var connector = String(outputList[j] && outputList[j].name || "");
+            var identity = candidates[j];
+            result[connector] = identity !== "" && counts[identity] === 1 ? identity : connector;
+        }
+        return result;
+    }
     function commitNightlightTemperature(temperature) {
         setNightlightTemperature(temperature);
         writeNightlightConfig(nightlightTemperature);
         if (nightlightEnabled && nightlightRequestedTemperature !== nightlightAppliedTemperature && !nightlightApplyDelay.running)
             nightlightApplyDelay.start();
+    }
+    function configIdentity(output) {
+        var connector = String(output || "");
+        return String(outputHardwareIds[connector] || connector);
+    }
+    function configureSunshine(output) {
+        var connector = String(output || "");
+        if (connector === "" || sunshineProfileProcess.running)
+            return;
+        var displayId = -1;
+        for (var i = 0; i < outputs.length; ++i) {
+            if (String(outputs[i] && outputs[i].name || "") === connector) {
+                displayId = i;
+                break;
+            }
+        }
+        if (displayId < 0) {
+            sunshineStatusOutput = connector;
+            sunshineStatus = "Selected output is no longer connected";
+            return;
+        }
+        sunshineStatusOutput = connector;
+        sunshineStatus = "Restarting Sunshine for " + connector + "…";
+        sunshineProfileProcess.command = ["python3", Config.quickshellDir + "/scripts/sunshine_output_profile.py", sunshineConfigPath, connector, String(displayId)];
+        sunshineProfileProcess.running = true;
     }
     function detectDisplayMode() {
         var internalEnabled = false;
@@ -545,6 +545,14 @@ QtObject {
         nightlightQuery.running = false;
         nightlightQuery.running = true;
     }
+    function refreshOutputs() {
+        if (outputsQuery.running) {
+            outputsRefreshPending = true;
+            return;
+        }
+        outputsRefreshPending = false;
+        outputsQuery.running = true;
+    }
     function refreshSunshineStatus() {
         if (sunshineProfileProcess.running || sunshineStatusQuery.running) {
             sunshineStatusRefreshPending = true;
@@ -553,14 +561,6 @@ QtObject {
         sunshineStatusRefreshPending = false;
         sunshineStatusQuery.command = ["python3", Config.quickshellDir + "/scripts/sunshine_output_profile.py", "--status", sunshineConfigPath];
         sunshineStatusQuery.running = true;
-    }
-    function refreshOutputs() {
-        if (outputsQuery.running) {
-            outputsRefreshPending = true;
-            return;
-        }
-        outputsRefreshPending = false;
-        outputsQuery.running = true;
     }
     function reloadOutputConfig() {
         if (actionExecutor.running) {

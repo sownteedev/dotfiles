@@ -6,14 +6,15 @@ Rectangle {
     id: root
 
     property color accentColor: Config.md3.secondary
+    property bool compact: false
     default property alias contentData: body.data
     property string note: ""
     property string title: ""
 
     clip: true
     color: Config.alpha(Config.md3.on_surface, 0.035)
-    implicitHeight: body.implicitHeight + 32
-    radius: 16
+    implicitHeight: body.implicitHeight + (compact ? 24 : 32)
+    radius: compact ? 15 : 16
 
     Rectangle {
         anchors.bottom: parent.bottom
@@ -26,22 +27,22 @@ Rectangle {
     ColumnLayout {
         id: body
 
-        anchors.bottomMargin: 16
+        anchors.bottomMargin: root.compact ? 12 : 16
         anchors.fill: parent
-        anchors.leftMargin: 20
-        anchors.rightMargin: 16
-        anchors.topMargin: 16
-        spacing: 16
+        anchors.leftMargin: root.compact ? 18 : 20
+        anchors.rightMargin: root.compact ? 14 : 16
+        anchors.topMargin: root.compact ? 12 : 16
+        spacing: root.compact ? 12 : 16
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 5
+            spacing: root.compact ? 3 : 5
 
             Text {
                 Layout.fillWidth: true
                 color: Config.md3.on_surface
                 font.family: Config.fontName
-                font.pixelSize: 18
+                font.pixelSize: root.compact ? 17 : 18
                 font.weight: Font.Bold
                 text: root.title
             }

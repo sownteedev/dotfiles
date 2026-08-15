@@ -138,6 +138,7 @@ Item {
     DragHandler {
         id: calendarDrag
 
+        enabled: !eventEditor.opened
         target: null
         xAxis.enabled: true
         yAxis.enabled: false
@@ -163,6 +164,8 @@ Item {
         }
     }
     WheelHandler {
+        enabled: !eventEditor.opened
+
         onWheel: event => {
             if (monthSlide.running)
                 return;
@@ -374,6 +377,7 @@ Item {
         }
 
         DragHandler {
+            enabled: !eventEditor.opened
             target: null
             xAxis.enabled: true
             yAxis.enabled: false

@@ -159,9 +159,9 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 108
-                clip: true
                 border.color: Config.alpha(Config.md3.on_surface, 0.07)
                 border.width: 1
+                clip: true
                 color: Config.alpha(Config.md3.surface_container_high, 0.36)
                 radius: 14
 
@@ -262,9 +262,8 @@ Item {
                         delegate: Item {
                             id: dayItem
 
-                            required property var modelData
-
                             readonly property real equalWidth: (dailyForecastViewport.width - Math.max(0, dailyForecastRepeater.count - 1) * dailyForecastRow.spacing) / Math.max(1, dailyForecastRepeater.count)
+                            required property var modelData
 
                             height: dailyForecastViewport.height
                             width: Math.max(78, equalWidth)
@@ -567,7 +566,6 @@ Item {
                     layer.effect: ColorOverlay {
                         color: Config.md3.tertiary
                     }
-
                     RotationAnimation on rotation {
                         duration: 12000
                         from: 0
@@ -645,26 +643,6 @@ Item {
                             rotation: 16
                             width: 4
 
-                            SequentialAnimation on y {
-                                loops: Animation.Infinite
-                                running: root.animationActive && root.missingApiKey
-
-                                PauseAnimation {
-                                    duration: index * 240
-                                }
-                                NumberAnimation {
-                                    duration: 1
-                                    to: -10
-                                }
-                                NumberAnimation {
-                                    duration: 850
-                                    easing.type: Easing.InQuad
-                                    to: 9
-                                }
-                                PauseAnimation {
-                                    duration: 380 + (2 - index) * 240
-                                }
-                            }
                             SequentialAnimation on opacity {
                                 loops: Animation.Infinite
                                 running: root.animationActive && root.missingApiKey
@@ -682,6 +660,26 @@ Item {
                                 NumberAnimation {
                                     duration: 240
                                     to: 0
+                                }
+                                PauseAnimation {
+                                    duration: 380 + (2 - index) * 240
+                                }
+                            }
+                            SequentialAnimation on y {
+                                loops: Animation.Infinite
+                                running: root.animationActive && root.missingApiKey
+
+                                PauseAnimation {
+                                    duration: index * 240
+                                }
+                                NumberAnimation {
+                                    duration: 1
+                                    to: -10
+                                }
+                                NumberAnimation {
+                                    duration: 850
+                                    easing.type: Easing.InQuad
+                                    to: 9
                                 }
                                 PauseAnimation {
                                     duration: 380 + (2 - index) * 240
@@ -810,7 +808,6 @@ Item {
             }
         }
     }
-
     LoadingIndicator {
         anchors.centerIn: parent
         animated: visible

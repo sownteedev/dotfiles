@@ -37,7 +37,6 @@ Item {
         ScrollBar.horizontal: SlimScrollBar {
             accentColor: Config.md3.primary
         }
-
         ScrollBar.vertical: SlimScrollBar {
             accentColor: Config.md3.primary
         }
@@ -79,10 +78,10 @@ Item {
 
                         Layout.fillWidth: true
                         editable: FaceAuthService.installed && !FaceAuthService.busy
+                        inputItem.maximumLength: 24
                         label: "New model label"
                         placeholder: "Desk, daylight, glasses…"
 
-                        inputItem.maximumLength: 24
                         inputItem.onAccepted: {
                             if (modelLabelField.text.trim() !== "" && FaceAuthService.installed && !FaceAuthService.busy)
                                 FaceAuthService.addModel(modelLabelField.text.trim());

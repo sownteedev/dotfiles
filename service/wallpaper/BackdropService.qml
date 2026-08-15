@@ -8,10 +8,10 @@ import Quickshell.Io
 QtObject {
     id: root
 
+    property bool _generateQueued: false
     property string activeBackdrop: ""
     property string activeRequestKey: ""
     readonly property string cacheDir: Config.cacheRoot + "/backdrops"
-    property bool _generateQueued: false
     property Connections configConnections: Connections {
         function onWallpaperChanged() {
             if (StateManager.wallpaperLoaded)
@@ -94,6 +94,10 @@ QtObject {
         target: WallpaperService
     }
 
+    function _doGenerate() {
+        _generateQueued = false;
+        generate();
+    }
     function canCreateCurrentBackdrop() {
         if (WallpaperService.currentMode !== "video")
             return true;
@@ -139,6 +143,12 @@ QtObject {
         generationPending = true;
         generationStart.restart();
     }
+    function scheduleGenerate() {
+        if (!_generateQueued) {
+            _generateQueued = true;
+            Qt.callLater(_doGenerate);
+        }
+    }
     function startPendingGeneration() {
         if (!generationPending)
             return;
@@ -157,17 +167,6 @@ QtObject {
         generator.jobSerial = generationSerial;
         generator.command = ["python3", generatorScript, generationSource, cacheDir, generationIdentity, generationCanCreate ? "true" : "false"];
         generator.running = true;
-    }
-
-    function scheduleGenerate() {
-        if (!_generateQueued) {
-            _generateQueued = true;
-            Qt.callLater(_doGenerate);
-        }
-    }
-    function _doGenerate() {
-        _generateQueued = false;
-        generate();
     }
 
     Component.onCompleted: {

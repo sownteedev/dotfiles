@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import "../../"
+import "../../components" as Components
 
 Item {
     id: root
@@ -18,26 +19,22 @@ Item {
     property real maxValue: 100
     property int modelFontSize: 15
     property string modelText: ""
-    readonly property int processCount: processList ? processList.count : 0
     property var processList: null
-    readonly property real processMaximum: {
-        var maximum = 1;
-        if (!processList)
-            return maximum;
-        for (var i = 0; i < processList.count; i++)
-            maximum = Math.max(maximum, Number(processList.get(i).val) || 0);
-        return maximum;
-    }
-    property int processPanelHeight: 178
+    property bool processManagerEnabled: false
+    property int processPanelHeight: processManagerEnabled ? Math.ceil(processContent.implicitHeight + 10) : 178
+    property int processRevision: 0
     property string processTitle: "Top Processes"
     property string processValueSuffix: "%"
     property var slideHistory: []
     property var slideHistory2: []
+    property int terminatingPid: -1
+    property string terminationError: ""
     property string title: ""
     property int titleFontSize: 15
     property string valueText: ""
 
     signal clicked
+    signal terminateRequested(int pid, string name)
 
     function requestPaint() {
         if (!root.visible || root.width <= 0 || root.height <= 0)
@@ -288,6 +285,8 @@ Item {
             opacity: root.expansionProgress
 
             ColumnLayout {
+                id: processContent
+
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
@@ -319,77 +318,18 @@ Item {
                         text: "updates every " + (root.title.startsWith("GPU") ? "3s" : "2s")
                     }
                 }
-                Rectangle {
+                Components.ProcessManager {
                     Layout.fillWidth: true
-                    color: Config.alpha(root.lineColor, 0.18)
-                    height: 1
-                }
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 3
+                    Layout.preferredHeight: implicitHeight
+                    lineColor: root.lineColor
+                    processList: root.processList
+                    processRevision: root.processRevision
+                    terminatingPid: root.terminatingPid
+                    terminationError: root.terminationError
+                    valueSuffix: root.processValueSuffix
+                    visible: root.processManagerEnabled
 
-                    Repeater {
-                        model: root.processList
-
-                        delegate: Item {
-                            required property string name
-                            required property real val
-
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 24
-
-                            Rectangle {
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                color: Config.alpha(root.lineColor, 0.10)
-                                height: 20
-                                radius: 6
-                                width: parent.width * Math.min(1, (Number(val) || 0) / root.processMaximum)
-
-                                Behavior on width {
-                                    NumberAnimation {
-                                        duration: 260
-                                        easing.type: Easing.OutCubic
-                                    }
-                                }
-                            }
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 8
-                                spacing: 10
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.md3.on_surface
-                                    elide: Text.ElideMiddle
-                                    font.family: Config.fontName
-                                    font.pixelSize: 13
-                                    font.weight: Font.Medium
-                                    text: name || "Unknown"
-                                }
-                                Text {
-                                    color: root.lineColor
-                                    font.family: Config.fontName
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    text: Number(val).toFixed(1) + root.processValueSuffix
-                                }
-                            }
-                        }
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 28
-                        color: Config.md3.outline
-                        font.family: Config.fontName
-                        font.pixelSize: 12
-                        font.weight: Font.Medium
-                        horizontalAlignment: Text.AlignHCenter
-                        text: "Collecting process data…"
-                        verticalAlignment: Text.AlignVCenter
-                        visible: root.processCount === 0
-                    }
+                    onTerminateRequested: (pid, name) => root.terminateRequested(pid, name)
                 }
             }
         }

@@ -12,6 +12,8 @@ Item {
 
     property bool applying: false
     property bool autoConnect: true
+    property real closeSwipeOffset: 0
+    readonly property real closeSwipeThreshold: Math.min(120, width * 0.24)
     property string ipMethod: "auto"
     property bool ipv4AutomaticDns: true
     property bool ipv6AutomaticDns: true
@@ -26,6 +28,7 @@ Item {
 
     function close() {
         applying = false;
+        closeSwipeOffset = 0;
         saveError = "";
         opened = false;
     }
@@ -115,6 +118,7 @@ Item {
     }
     function openFor(ssid) {
         settingsFlick.contentY = 0;
+        closeSwipeOffset = 0;
         networkSsid = ssid;
         ipMethod = "auto";
         ipv4AutomaticDns = true;
@@ -217,13 +221,24 @@ Item {
     }
 
     DragHandler {
+        id: closeSwipe
+
+        enabled: root.opened && !root.applying
         target: null
         xAxis.enabled: true
         yAxis.enabled: false
 
         onActiveChanged: {
-            if (!active && translation.x > 120 && !root.applying)
-                root.close();
+            if (!active) {
+                if (root.closeSwipeOffset >= root.closeSwipeThreshold)
+                    root.close();
+                else
+                    root.closeSwipeOffset = 0;
+            }
+        }
+        onTranslationChanged: {
+            if (active)
+                root.closeSwipeOffset = Math.max(0, translation.x);
         }
     }
     Flickable {
@@ -243,37 +258,37 @@ Item {
         ColumnLayout {
             id: panelContent
 
-            spacing: 10
+            spacing: 14
             width: settingsFlick.width
             x: 0
 
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.outline, 0.24)
+                border.color: Config.alpha(Config.md3.outline, 0.12)
                 border.width: 1
-                color: Config.md3.surface_container_low
-                implicitHeight: 72
+                color: Config.alpha(Config.md3.on_surface, 0.025)
+                implicitHeight: 68
                 radius: 16
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 12
-                    spacing: 12
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 10
 
                     Rectangle {
-                        color: Config.md3.primary_container
-                        implicitHeight: 42
-                        implicitWidth: 42
-                        radius: 13
+                        color: Config.alpha(Config.md3.primary, 0.10)
+                        implicitHeight: 40
+                        implicitWidth: 40
+                        radius: 20
 
                         WifiSignalIcon {
                             anchors.centerIn: parent
-                            color: Config.md3.on_primary_container
+                            color: Config.md3.primary
                             connected: true
-                            height: 23
+                            height: 21
                             signalStrength: 100
-                            width: 23
+                            width: 21
                         }
                     }
                     ColumnLayout {
@@ -285,33 +300,33 @@ Item {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 18
+                            font.pixelSize: 17
                             font.weight: Font.DemiBold
                             text: root.networkSsid
                         }
                         Text {
                             color: Config.alpha(Config.md3.on_surface, 0.48)
                             font.family: Config.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 12
                             text: root.applying ? "Saving profile and reconnecting…" : "Saved Wi-Fi network"
                         }
                     }
                     Rectangle {
-                        Layout.preferredHeight: 38
-                        Layout.preferredWidth: 42
-                        border.color: Config.alpha(Config.md3.error, 0.18)
+                        Layout.preferredHeight: 36
+                        Layout.preferredWidth: 36
+                        border.color: Config.alpha(Config.md3.error, 0.14)
                         border.width: 1
-                        color: forgetPointer.containsMouse ? Config.alpha(Config.md3.error, 0.15) : Config.md3.surface_container_high
+                        color: forgetPointer.containsMouse ? Config.alpha(Config.md3.error, 0.16) : Config.alpha(Config.md3.error, 0.06)
                         enabled: !root.applying
                         opacity: enabled ? 1 : 0.45
                         radius: 12
 
                         IconImage {
                             anchors.centerIn: parent
-                            height: 16
+                            height: 15
                             layer.enabled: true
                             source: Quickshell.iconPath("user-trash-symbolic")
-                            width: 16
+                            width: 15
 
                             layer.effect: ColorOverlay {
                                 color: Config.md3.error
@@ -332,9 +347,11 @@ Item {
                         }
                     }
                     Rectangle {
-                        Layout.preferredHeight: 38
-                        Layout.preferredWidth: 88
-                        color: root.applying ? Config.alpha(Config.md3.primary, 0.62) : (savePointer.containsMouse ? Config.alpha(Config.md3.primary, 0.88) : Config.md3.primary)
+                        Layout.preferredHeight: 36
+                        Layout.preferredWidth: 84
+                        border.color: Config.alpha(Config.md3.primary, 0.18)
+                        border.width: 1
+                        color: Config.alpha(Config.md3.primary, root.applying ? 0.08 : savePointer.containsMouse ? 0.18 : 0.12)
                         radius: 12
 
                         RowLayout {
@@ -342,28 +359,28 @@ Item {
                             spacing: 6
 
                             AnimatedSpinner {
-                                color: Config.md3.on_primary
-                                height: 16
+                                color: Config.md3.primary
+                                height: 15
                                 lineWidth: 2
                                 running: root.applying
                                 visible: root.applying
-                                width: 16
+                                width: 15
                             }
                             IconImage {
-                                height: 15
+                                height: 14
                                 layer.enabled: true
                                 source: Quickshell.iconPath("document-save-symbolic")
                                 visible: !root.applying
-                                width: 15
+                                width: 14
 
                                 layer.effect: ColorOverlay {
-                                    color: Config.md3.on_primary
+                                    color: Config.md3.primary
                                 }
                             }
                             Text {
-                                color: Config.md3.on_primary
+                                color: Config.md3.primary
                                 font.family: Config.fontName
-                                font.pixelSize: 14
+                                font.pixelSize: 13
                                 font.weight: Font.DemiBold
                                 text: root.applying ? "Saving…" : "Save"
                             }
@@ -429,17 +446,17 @@ Item {
             }
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.outline, 0.16)
+                border.color: Config.alpha(Config.md3.on_surface, 0.09)
                 border.width: 1
                 color: Config.md3.surface_container_low
-                implicitHeight: ipv4Content.implicitHeight + 28
+                implicitHeight: ipv4Content.implicitHeight + 32
                 radius: 16
 
                 ColumnLayout {
                     id: ipv4Content
 
                     anchors.fill: parent
-                    anchors.margins: 14
+                    anchors.margins: 16
                     spacing: 0
 
                     ColumnLayout {
@@ -449,7 +466,7 @@ Item {
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 17
+                            font.pixelSize: 16
                             font.weight: Font.DemiBold
                             text: "IPv4"
                         }
@@ -493,9 +510,11 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.topMargin: 14
-                        color: Config.md3.surface_container_high
-                        implicitHeight: 58
-                        radius: 12
+                        border.color: Config.alpha(Config.md3.primary, 0.10)
+                        border.width: 1
+                        color: Config.alpha(Config.md3.primary, 0.055)
+                        implicitHeight: 60
+                        radius: 14
 
                         RowLayout {
                             anchors.fill: parent
@@ -528,7 +547,9 @@ Item {
                                 Layout.preferredWidth: 40
                                 accessibleName: "Use automatic IPv4 DNS"
                                 checked: root.ipv4AutomaticDns
+                                checkedColor: Config.alpha(Config.md3.primary, 0.26)
                                 enabled: !root.applying
+                                thumbCheckedColor: Config.md3.primary
 
                                 onToggled: checked => root.ipv4AutomaticDns = checked
                             }
@@ -599,10 +620,10 @@ Item {
             }
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.outline, 0.16)
+                border.color: Config.alpha(Config.md3.on_surface, 0.09)
                 border.width: 1
                 color: Config.md3.surface_container_low
-                implicitHeight: ipv6Header.implicitHeight + (root.ipv6Expanded ? ipv6Body.implicitHeight + 14 : 0) + 28
+                implicitHeight: ipv6Header.implicitHeight + (root.ipv6Expanded ? ipv6Body.implicitHeight + 14 : 0) + 32
                 radius: 16
 
                 Behavior on implicitHeight {
@@ -614,7 +635,7 @@ Item {
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 14
+                    anchors.margins: 16
                     spacing: 14
 
                     Item {
@@ -634,7 +655,7 @@ Item {
                                 Layout.fillWidth: true
                                 color: Config.md3.on_surface
                                 font.family: Config.fontName
-                                font.pixelSize: 17
+                                font.pixelSize: 16
                                 font.weight: Font.DemiBold
                                 text: "IPv6"
                             }
@@ -720,10 +741,12 @@ Item {
                             }
                             Rectangle {
                                 Layout.fillWidth: true
-                                color: Config.md3.surface_container_high
-                                implicitHeight: root.ipv6Method === "disabled" ? 0 : 58
+                                border.color: Config.alpha(Config.md3.primary, 0.10)
+                                border.width: 1
+                                color: Config.alpha(Config.md3.primary, 0.055)
+                                implicitHeight: root.ipv6Method === "disabled" ? 0 : 60
                                 opacity: root.ipv6Method === "disabled" ? 0 : 1
-                                radius: 12
+                                radius: 14
                                 visible: root.ipv6Method !== "disabled"
 
                                 RowLayout {
@@ -757,7 +780,9 @@ Item {
                                         Layout.preferredWidth: 40
                                         accessibleName: "Use automatic IPv6 DNS"
                                         checked: root.ipv6AutomaticDns
+                                        checkedColor: Config.alpha(Config.md3.primary, 0.26)
                                         enabled: !root.applying
+                                        thumbCheckedColor: Config.md3.primary
 
                                         onToggled: checked => root.ipv6AutomaticDns = checked
                                     }
@@ -796,10 +821,10 @@ Item {
             }
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.outline, 0.16)
+                border.color: Config.alpha(Config.md3.on_surface, 0.09)
                 border.width: 1
                 color: Config.md3.surface_container_low
-                implicitHeight: 66
+                implicitHeight: 64
                 radius: 16
 
                 RowLayout {
@@ -833,7 +858,9 @@ Item {
                         Layout.preferredWidth: 40
                         accessibleName: "Connect automatically"
                         checked: root.autoConnect
+                        checkedColor: Config.alpha(Config.md3.primary, 0.26)
                         enabled: !root.applying
+                        thumbCheckedColor: Config.md3.primary
 
                         onToggled: checked => root.autoConnect = checked
                     }

@@ -78,10 +78,10 @@ Item {
         "7z": "package-x-generic-symbolic",
         "rar": "package-x-generic-symbolic"
     }
-    readonly property bool isCalculatorMode: query.startsWith("= ")
-    readonly property bool isClipboardMode: query.toLowerCase().startsWith("c ")
-    readonly property bool isEmojiMode: query.toLowerCase().startsWith("e ")
-    readonly property bool isFileMode: query.toLowerCase().startsWith("f ")
+    readonly property bool isCalculatorMode: Config.launcherCalculatorEnabled && query.toLowerCase().startsWith(Config.launcherCalculatorPrefix.toLowerCase() + " ")
+    readonly property bool isClipboardMode: Config.launcherClipboardEnabled && query.toLowerCase().startsWith(Config.launcherClipboardPrefix.toLowerCase() + " ")
+    readonly property bool isEmojiMode: Config.launcherEmojiEnabled && query.toLowerCase().startsWith(Config.launcherEmojiPrefix.toLowerCase() + " ")
+    readonly property bool isFileMode: Config.launcherFilesEnabled && query.toLowerCase().startsWith(Config.launcherFilesPrefix.toLowerCase() + " ")
     property string query: ""
     // List of apps matching query
     readonly property var searchResults: {
@@ -102,8 +102,10 @@ Item {
             var name = entry.name.toLowerCase();
             var comment = (entry.comment || "").toLowerCase();
             var genericName = (entry.genericName || "").toLowerCase();
-            if (name.indexOf(q) !== -1 || comment.indexOf(q) !== -1 || genericName.indexOf(q) !== -1) {
-                var score = name.startsWith(q) ? 0 : (name.indexOf(" " + q) !== -1 ? 1 : 2);
+            var substringMatch = name.indexOf(q) !== -1 || comment.indexOf(q) !== -1 || genericName.indexOf(q) !== -1;
+            var fuzzyScore = Config.launcherFuzzySearch ? searchRoot.fuzzyScore(name + " " + genericName, q) : -1;
+            if (substringMatch || fuzzyScore >= 0) {
+                var score = substringMatch ? (name.startsWith(q) ? 0 : (name.indexOf(" " + q) !== -1 ? 1 : 2)) : 10 + fuzzyScore;
                 matches.push({
                     "entry": entry,
                     "score": score,
@@ -117,7 +119,7 @@ Item {
 
             return a.name.localeCompare(b.name);
         });
-        return matches.map(m => {
+        return matches.slice(0, Config.launcherMaxResults).map(m => {
             return m.entry;
         });
     }
@@ -125,6 +127,22 @@ Item {
 
     signal resultLaunched
 
+    function fuzzyScore(text, pattern) {
+        var source = String(text || "").toLowerCase();
+        var needle = String(pattern || "").toLowerCase();
+        var cursor = 0;
+        var score = 0;
+        var previous = -2;
+        for (var i = 0; i < needle.length; ++i) {
+            var found = source.indexOf(needle.charAt(i), cursor);
+            if (found < 0)
+                return -1;
+            score += found === previous + 1 ? 0 : found - cursor + 1;
+            previous = found;
+            cursor = found + 1;
+        }
+        return score;
+    }
     function getFileIcon(filename) {
         var ext = filename.split('.').pop().toLowerCase();
         var icon = extensionMap[ext];

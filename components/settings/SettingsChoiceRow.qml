@@ -71,16 +71,15 @@ ColumnLayout {
                 readonly property bool active: root.value === String(modelData.value)
                 required property var modelData
 
+                Accessible.checked: active
+                Accessible.name: String(optionButton.modelData.label)
+                Accessible.role: Accessible.RadioButton
                 Layout.fillWidth: true
                 border.color: Config.alpha(optionButton.active ? Config.md3.primary : Config.md3.on_surface, optionButton.active ? 0.36 : 0.07)
                 border.width: 1
                 color: optionButton.active ? Config.alpha(Config.md3.primary, 0.17) : (optionMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.07) : Config.alpha(Config.md3.on_surface, 0.035))
                 implicitHeight: 42
                 radius: 11
-
-                Accessible.checked: active
-                Accessible.name: String(optionButton.modelData.label)
-                Accessible.role: Accessible.RadioButton
 
                 Behavior on border.color {
                     ColorAnimation {
@@ -93,13 +92,23 @@ ColumnLayout {
                     }
                 }
 
+                Accessible.onPressAction: {
+                    root.value = String(optionButton.modelData.value);
+                    root.selected(root.value);
+                }
+
                 Text {
-                    anchors.centerIn: parent
+                    anchors.fill: parent
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
                     color: optionButton.active ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.72)
+                    elide: Text.ElideRight
                     font.family: Config.fontName
                     font.pixelSize: 14
                     font.weight: optionButton.active ? Font.DemiBold : Font.Medium
+                    horizontalAlignment: Text.AlignHCenter
                     text: optionButton.modelData.label
+                    verticalAlignment: Text.AlignVCenter
                 }
                 MouseArea {
                     id: optionMouse
@@ -113,10 +122,6 @@ ColumnLayout {
                         root.value = String(optionButton.modelData.value);
                         root.selected(root.value);
                     }
-                }
-                Accessible.onPressAction: {
-                    root.value = String(optionButton.modelData.value);
-                    root.selected(root.value);
                 }
             }
         }

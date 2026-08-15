@@ -22,6 +22,7 @@ Rectangle {
     property int selectedMonth: 0
     property int selectedYear: 1970
     property string startTime: "10:00"
+    readonly property bool timePickerOpen: timePicker.opened
 
     signal closed
 
@@ -109,6 +110,7 @@ Rectangle {
     }
 
     DragHandler {
+        enabled: !root.timePickerOpen
         target: null
         xAxis.enabled: true
         yAxis.enabled: false
@@ -128,6 +130,7 @@ Rectangle {
         clip: true
         contentHeight: form.implicitHeight
         contentWidth: width
+        interactive: !root.timePickerOpen && contentHeight > height
 
         ColumnLayout {
             id: form
@@ -352,7 +355,7 @@ Rectangle {
 
         property string targetField: ""
 
-        anchors.centerIn: parent
+        placementParent: root
 
         onConfirmed: (hours, minutes) => {
             var value = hours + ":" + minutes;

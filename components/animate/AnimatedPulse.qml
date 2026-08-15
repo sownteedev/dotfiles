@@ -22,6 +22,15 @@ Item {
         pulseCanvas.requestPaint();
     }
 
+    onCenterXChanged: pulseCanvas.requestPaint()
+    onCenterYChanged: pulseCanvas.requestPaint()
+    onEndRadiusChanged: pulseCanvas.requestPaint()
+    onRunningChanged: {
+        if (running)
+            addPulse();
+    }
+    onStartRadiusChanged: pulseCanvas.requestPaint()
+
     Timer {
         interval: 850
         repeat: true
@@ -78,13 +87,4 @@ Item {
             }
         }
     }
-
-    onCenterXChanged: pulseCanvas.requestPaint()
-    onCenterYChanged: pulseCanvas.requestPaint()
-    onEndRadiusChanged: pulseCanvas.requestPaint()
-    onRunningChanged: {
-        if (running)
-            addPulse();
-    }
-    onStartRadiusChanged: pulseCanvas.requestPaint()
 }

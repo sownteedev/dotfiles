@@ -25,11 +25,8 @@ QtObject {
 
         Component.onDestruction: running = false
     }
-    readonly property string floatingStatePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/niri-floating-workspaces.json"
-    property string focusedOutputName: ""
     property var floatingByOutput: ({})
-    property bool isWorkspaceFloating: false
-    property var outputNames: []
+    readonly property string floatingStatePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/niri-floating-workspaces.json"
     property FileView floatingStateWatcher: FileView {
         path: root.floatingStatePath
         printErrors: false
@@ -41,6 +38,9 @@ QtObject {
                 root.debounceTimer.restart();
         }
     }
+    property string focusedOutputName: ""
+    property bool isWorkspaceFloating: false
+    property var outputNames: []
     property Process queryData: Process {
         command: ["sh", "-c", "workspaces=$(niri msg --json workspaces) || exit 1; windows=$(niri msg --json windows) || exit 1; floating=$(cat \"$1\" 2>/dev/null || printf '{}'); printf '{\"workspaces\":%s,\"windows\":%s,\"floating\":%s}\\n' \"$workspaces\" \"$windows\" \"$floating\"", "workspace-query", root.floatingStatePath]
         running: false
@@ -52,7 +52,15 @@ QtObject {
                     root.parseNiriData(rawText);
             }
         }
+
+        onExited: {
+            if (root.refreshPending) {
+                root.refreshPending = false;
+                Qt.callLater(root.refresh);
+            }
+        }
     }
+    property bool refreshPending: false
 
     // Process objects survive hot reload. Force a fresh authoritative snapshot
     // after the new engine has restored the singleton and its event stream.
@@ -64,6 +72,18 @@ QtObject {
     }
     property var workspaces: []
 
+    function compareWindowsByLayout(a, b, floating) {
+        var field = floating ? "tile_pos_in_workspace_view" : "pos_in_scrolling_layout";
+        var primaryIndex = floating ? 1 : 0;
+        var secondaryIndex = floating ? 0 : 1;
+        var primaryDifference = windowLayoutCoordinate(a, field, primaryIndex) - windowLayoutCoordinate(b, field, primaryIndex);
+        if (primaryDifference !== 0)
+            return primaryDifference;
+        var secondaryDifference = windowLayoutCoordinate(a, field, secondaryIndex) - windowLayoutCoordinate(b, field, secondaryIndex);
+        if (secondaryDifference !== 0)
+            return secondaryDifference;
+        return Number(a.id || 0) - Number(b.id || 0);
+    }
     function focusWorkspace(workspace) {
         var reference = workspaceReference(workspace);
         var output = String(workspace && workspace.output || "");
@@ -98,35 +118,6 @@ QtObject {
         } else {
             Quickshell.execDetached(["niri", "msg", "action", "move-window-to-workspace", "--window-id", id, reference]);
         }
-    }
-    function windowLayoutCoordinate(window, field, index) {
-        var layout = window && window.layout;
-        var position = layout && layout[field];
-        if (!position || position.length <= index || position[index] === null || position[index] === undefined)
-            return 999999;
-        var value = Number(position[index]);
-        return isNaN(value) ? 999999 : value;
-    }
-    function compareWindowsByLayout(a, b, floating) {
-        var field = floating ? "tile_pos_in_workspace_view" : "pos_in_scrolling_layout";
-        var primaryIndex = floating ? 1 : 0;
-        var secondaryIndex = floating ? 0 : 1;
-        var primaryDifference = windowLayoutCoordinate(a, field, primaryIndex) - windowLayoutCoordinate(b, field, primaryIndex);
-        if (primaryDifference !== 0)
-            return primaryDifference;
-        var secondaryDifference = windowLayoutCoordinate(a, field, secondaryIndex) - windowLayoutCoordinate(b, field, secondaryIndex);
-        if (secondaryDifference !== 0)
-            return secondaryDifference;
-        return Number(a.id || 0) - Number(b.id || 0);
-    }
-    function windowSummary(window) {
-        if (!window)
-            return null;
-        return {
-            "id": String(window.id || ""),
-            "app_id": String(window.app_id || ""),
-            "title": String(window.title || "")
-        };
     }
     function parseNiriData(text) {
         try {
@@ -264,11 +255,31 @@ QtObject {
         }
     }
     function refresh() {
-        queryData.running = false;
+        if (queryData.running) {
+            refreshPending = true;
+            return;
+        }
         queryData.running = true;
+    }
+    function windowLayoutCoordinate(window, field, index) {
+        var layout = window && window.layout;
+        var position = layout && layout[field];
+        if (!position || position.length <= index || position[index] === null || position[index] === undefined)
+            return 999999;
+        var value = Number(position[index]);
+        return isNaN(value) ? 999999 : value;
     }
     function windowMetadataChanged(previous, current) {
         return String(previous.app_id || "") !== String(current.app_id || "") || String(previous.title || "") !== String(current.title || "") || previous.workspace_id !== current.workspace_id;
+    }
+    function windowSummary(window) {
+        if (!window)
+            return null;
+        return {
+            "id": String(window.id || ""),
+            "app_id": String(window.app_id || ""),
+            "title": String(window.title || "")
+        };
     }
     function workspaceReference(workspace) {
         var name = String(workspace && workspace.name || "");

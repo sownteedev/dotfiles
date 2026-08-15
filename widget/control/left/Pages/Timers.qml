@@ -7,7 +7,6 @@ import "../../../../components"
 Item {
     id: root
 
-    readonly property real layoutProgress: Responsive.clamp((height - 430) / 120, 0, 1)
     readonly property real contentSpacing: 11 + 4 * layoutProgress
     readonly property real controlsHeight: 52
     readonly property point dialCenter: {
@@ -19,10 +18,11 @@ Item {
         return countdownDial.mapToItem(root, countdownDial.width / 2, countdownDial.height / 2);
     }
     readonly property real dialMinimumSize: 176 + 36 * layoutProgress
+    readonly property real dialSize: Responsive.clamp(Math.min(width - 64, height - reservedHeight), dialMinimumSize, 300)
+    readonly property real layoutProgress: Responsive.clamp((height - 430) / 120, 0, 1)
     readonly property real pagePadding: 8
     readonly property real pickerHeight: 122 + 6 * layoutProgress
     readonly property real reservedHeight: pagePadding * 2 + contentSpacing * 2 + controlsHeight + pickerHeight
-    readonly property real dialSize: Responsive.clamp(Math.min(width - 64, height - reservedHeight), dialMinimumSize, 300)
 
     anchors.fill: parent
 

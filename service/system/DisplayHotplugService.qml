@@ -8,8 +8,6 @@ QtObject {
     id: root
 
     readonly property string configPath: Config.niriOutputConfig
-    property string pendingPersistPayload: ""
-    property bool refreshPending: false
     property Process outputPersistor: Process {
         stdout: StdioCollector {
             id: outputPersistResult
@@ -65,18 +63,20 @@ QtObject {
             }
         }
     }
-    property Timer syncDelay: Timer {
-        interval: 450
-        repeat: false
-
-        onTriggered: root.refreshOutputs()
-    }
+    property string pendingPersistPayload: ""
+    property bool refreshPending: false
     property Connections screenConnections: Connections {
         function onScreensChanged() {
             root.syncDelay.restart();
         }
 
         target: Quickshell
+    }
+    property Timer syncDelay: Timer {
+        interval: 450
+        repeat: false
+
+        onTriggered: root.refreshOutputs()
     }
 
     function persistOutputs(payload) {

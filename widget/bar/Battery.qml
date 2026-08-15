@@ -13,11 +13,12 @@ Item {
         if (!UPower.displayDevice)
             return false;
 
-        var state = UPower.displayDevice.state;
+        const state = UPower.displayDevice.state;
         // UPower reports a full battery as FullyCharged while AC remains connected.
         return state === UPowerDeviceState.Charging || state === UPowerDeviceState.PendingCharge || (state === UPowerDeviceState.FullyCharged && !UPower.onBattery);
     }
     readonly property bool animationActive: visible && externalPower
+    property int animationElapsed: 0
     readonly property color batteryColor: externalPower ? Config.md3.secondary : boundedPercentage <= 33 ? "#e05c5c" : boundedPercentage <= 66 ? "#e0a040" : '#91f08b'
     readonly property int batteryPercentage: UPower.displayDevice ? Math.round(UPower.displayDevice.percentage * 100) : 0
     readonly property int boundedPercentage: Math.max(0, Math.min(100, batteryPercentage))
@@ -33,6 +34,15 @@ Item {
     implicitWidth: visible ? 45 : 0
     visible: UPower.displayDevice ? UPower.displayDevice.isLaptopBattery : false
 
+    Timer {
+        readonly property int frameInterval: root.externalPower ? 40 : 80
+
+        interval: frameInterval
+        repeat: true
+        running: root.waveAnimationActive || root.animationActive
+
+        onTriggered: root.animationElapsed = (root.animationElapsed + frameInterval) % 86400000
+    }
     ClippingRectangle {
         id: liquidClip
 
@@ -56,7 +66,10 @@ Item {
             height: parent.height + 24
             visible: width > 0
             width: liquidClip.fillWidth
-            y: -12
+            y: {
+                const duration = root.externalPower ? 480 : 960;
+                return -12 + (root.animationElapsed % duration) / duration * 12;
+            }
 
             ShapePath {
                 fillColor: Config.alpha(root.batteryColor, root.externalPower ? 0.8 : 0.66)
@@ -174,15 +187,6 @@ Item {
                     y: 0
                 }
             }
-            YAnimator {
-                duration: root.externalPower ? 480 : 960
-                easing.type: Easing.Linear
-                from: -12
-                loops: Animation.Infinite
-                running: root.waveAnimationActive
-                target: liquidFill
-                to: 0
-            }
         }
     }
     Repeater {
@@ -220,11 +224,13 @@ Item {
         delegate: Rectangle {
             id: bubble
 
+            readonly property real cycleDuration: modelData.delay + travelDuration
             readonly property real endX: modelData.endX
             readonly property real endY: modelData.endY
             readonly property real fixedStartX: 47
+            readonly property real localTime: root.animationActive ? root.animationElapsed % cycleDuration : 0
             required property var modelData
-            readonly property real startX: root.width + 2
+            readonly property real progress: Math.max(0, Math.min(1, (localTime - modelData.delay) / travelDuration))
             readonly property real startY: 15 - height / 2
             readonly property int travelDuration: modelData.duration
 
@@ -233,20 +239,21 @@ Item {
             border.width: 1
             color: Config.alpha(root.bubbleColor, 0.34)
             height: modelData.size
-            opacity: 0
+            opacity: {
+                if (!root.animationActive || localTime < modelData.delay)
+                    return 0;
+                if (progress < 100 / travelDuration)
+                    return progress * travelDuration / 100 * 0.94;
+                if (progress > (travelDuration - 130) / travelDuration)
+                    return Math.max(0, (1 - progress) * travelDuration / 130 * 0.94);
+                return 0.94;
+            }
             radius: width / 2
-            scale: 0.72
+            scale: 0.72 + (1.08 - 0.72) * (1 - Math.pow(1 - progress, 3))
             visible: root.animationActive
             width: modelData.size
-            x: startX
-            y: startY
-
-            Component.onCompleted: {
-                x = fixedStartX;
-                y = startY;
-                opacity = 0;
-                scale = 0.72;
-            }
+            x: fixedStartX + (endX - fixedStartX) * (0.5 - Math.cos(progress * Math.PI) / 2)
+            y: startY + (endY - startY) * (0.5 - Math.cos(progress * Math.PI) / 2)
 
             Rectangle {
                 anchors.left: parent.left
@@ -257,64 +264,6 @@ Item {
                 height: Math.max(1, parent.height * 0.24)
                 radius: width / 2
                 width: height
-            }
-            SequentialAnimation {
-                alwaysRunToEnd: false
-                loops: Animation.Infinite
-                running: root.animationActive
-
-                onRunningChanged: {
-                    if (!running) {
-                        bubble.x = bubble.fixedStartX;
-                        bubble.y = bubble.startY;
-                        bubble.opacity = 0;
-                        bubble.scale = 0.72;
-                    }
-                }
-
-                PauseAnimation {
-                    duration: bubble.modelData.delay
-                }
-                ParallelAnimation {
-                    XAnimator {
-                        duration: bubble.travelDuration
-                        easing.type: Easing.InOutSine
-                        from: bubble.fixedStartX
-                        target: bubble
-                        to: bubble.endX
-                    }
-                    YAnimator {
-                        duration: bubble.travelDuration
-                        easing.type: Easing.InOutSine
-                        from: bubble.startY
-                        target: bubble
-                        to: bubble.endY
-                    }
-                    ScaleAnimator {
-                        duration: bubble.travelDuration
-                        easing.type: Easing.OutCubic
-                        from: 0.72
-                        target: bubble
-                        to: 1.08
-                    }
-                    SequentialAnimation {
-                        OpacityAnimator {
-                            duration: 100
-                            from: 0
-                            target: bubble
-                            to: 0.94
-                        }
-                        PauseAnimation {
-                            duration: Math.max(100, bubble.travelDuration - 230)
-                        }
-                        OpacityAnimator {
-                            duration: 130
-                            from: 0.94
-                            target: bubble
-                            to: 0
-                        }
-                    }
-                }
             }
         }
     }

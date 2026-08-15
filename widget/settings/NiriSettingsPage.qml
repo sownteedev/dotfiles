@@ -154,6 +154,14 @@ Item {
     function inputSectionsForColumn(column) {
         return column === 0 ? ["Keyboard", "Mouse", "Trackball", "Touch"] : ["Touchpad", "Trackpoint", "Tablet"];
     }
+    function resetPage() {
+        if (activeSection === 1) {
+            syncLayoutFields();
+            return;
+        }
+        if (activeActionPage && activeActionPage.resetPage)
+            activeActionPage.resetPage();
+    }
     function syncLayoutFields() {
         var settings = SettingsHubService.layoutSettings || {};
         gapsField.text = String(settings.gaps === undefined ? 10 : settings.gaps);
@@ -252,14 +260,6 @@ Item {
         }
         if (activeActionPage && activeActionPage.triggerHeaderAction)
             activeActionPage.triggerHeaderAction();
-    }
-    function resetPage() {
-        if (activeSection === 1) {
-            syncLayoutFields();
-            return;
-        }
-        if (activeActionPage && activeActionPage.resetPage)
-            activeActionPage.resetPage();
     }
     function updateRecentBind(index, propertyName, value) {
         var updated = recentBindValues.slice();
@@ -381,7 +381,6 @@ Item {
 
                     ScrollBar.horizontal: SlimScrollBar {
                     }
-
                     ScrollBar.vertical: SlimScrollBar {
                     }
 
@@ -433,7 +432,6 @@ Item {
                 ScrollBar.horizontal: SlimScrollBar {
                     accentColor: Config.md3.secondary
                 }
-
                 ScrollBar.vertical: SlimScrollBar {
                     accentColor: Config.md3.secondary
                 }
@@ -1538,7 +1536,6 @@ Item {
 
                 ScrollBar.horizontal: SlimScrollBar {
                 }
-
                 ScrollBar.vertical: SlimScrollBar {
                 }
 

@@ -7,7 +7,6 @@ Item {
     property color color: Config.md3.on_surface
     property bool connected: true
     property bool connectivityIssue: false
-    property int signalStrength: 100
     readonly property string glyph: {
         if (!connected)
             return "󰤭"; // wifi-strength-off
@@ -21,6 +20,7 @@ Item {
             return "󰤢"; // wifi-strength-2
         return "󰤟"; // wifi-strength-1
     }
+    property int signalStrength: 100
 
     implicitHeight: 24
     implicitWidth: 24

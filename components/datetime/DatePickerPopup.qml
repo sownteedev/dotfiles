@@ -11,6 +11,7 @@ Popup {
 
     property int currentMonth: new Date().getMonth()
     property int currentYear: new Date().getFullYear()
+    property Item placementParent: null
     property string selectedDate: ""
 
     signal dateCleared
@@ -19,12 +20,19 @@ Popup {
     function formatDate(date) {
         return String(date.getDate()).padStart(2, "0") + "/" + String(date.getMonth() + 1).padStart(2, "0") + "/" + date.getFullYear();
     }
+    function updatePlacement() {
+        if (!placementParent || !parent)
+            return;
+        var origin = placementParent.mapToItem(parent, 0, 0);
+        x = Math.max(8, Math.min(origin.x + (placementParent.width - width) / 2, parent.width - width - 8));
+        y = Math.max(8, Math.min(origin.y + (placementParent.height - height) / 2, parent.height - height - 8));
+    }
 
     focus: true
-    height: parent ? Responsive.fitWithMargins(380, parent.height, 8, 280) : 380
+    height: placementParent ? Responsive.fitWithMargins(380, placementParent.height, 8, 280) : parent ? Responsive.fitWithMargins(380, parent.height, 8, 280) : 380
     modal: true
     parent: Overlay.overlay
-    width: parent ? Responsive.fitWithMargins(320, parent.width, 8, 240) : 320
+    width: placementParent ? Responsive.fitWithMargins(320, placementParent.width, 8, 240) : parent ? Responsive.fitWithMargins(320, parent.width, 8, 240) : 320
 
     background: Rectangle {
         border.color: Config.md3.surface_container_high
@@ -200,7 +208,6 @@ Popup {
                     }
                 }
             }
-
             Text {
                 anchors.centerIn: parent
                 color: Config.md3.error
@@ -224,6 +231,7 @@ Popup {
         }
     }
 
+    onAboutToShow: updatePlacement()
     onOpened: {
         var parts = selectedDate.split("/");
         if (parts.length === 3) {

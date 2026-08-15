@@ -60,6 +60,13 @@ Item {
     opacity: opened ? 1 : 0
     visible: opened || opacity > 0
 
+    Behavior on opacity {
+        NumberAnimation {
+            duration: 150
+            easing.type: Easing.OutQuad
+        }
+    }
+
     onModelChanged: {
         if (opened)
             positionCurrentItem();
@@ -67,13 +74,6 @@ Item {
     onOpenedChanged: {
         if (opened)
             positionCurrentItem();
-    }
-
-    Behavior on opacity {
-        NumberAnimation {
-            duration: 150
-            easing.type: Easing.OutQuad
-        }
     }
 
     MouseArea {

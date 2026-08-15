@@ -31,7 +31,6 @@ MouseArea {
         return connected ? "bluetooth-active-symbolic" : "bluetooth-disconnected-symbolic";
     }
     readonly property bool showStatus: hoverExpansionEnabled && containsMouse
-    property var targetScreen: null
     readonly property string statusText: {
         if (!adapter)
             return "Unavailable";
@@ -49,6 +48,7 @@ MouseArea {
             return "Connected";
         return "Disconnected";
     }
+    property var targetScreen: null
     readonly property bool transitioning: adapter && (adapter.state === BluetoothAdapterState.Enabling || adapter.state === BluetoothAdapterState.Disabling || transitioningDevice !== null)
     readonly property var transitioningDevice: {
         for (var i = 0; i < devices.length; ++i) {
@@ -72,6 +72,7 @@ MouseArea {
         }
         StateManager.showControlPanel(2, targetScreen);
     }
+
     RowLayout {
         id: layout
 

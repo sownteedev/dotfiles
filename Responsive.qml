@@ -20,6 +20,9 @@ QtObject {
         const availableColumns = Math.floor((Math.max(0, width) + safeSpacing) / (Math.max(1, minimumCellWidth) + safeSpacing));
         return clamp(availableColumns, Math.max(1, minimumColumns), Math.max(1, maximumColumns));
     }
+    function constrained(availableWidth, availableHeight, preferredWidth, preferredHeight) {
+        return availableWidth < preferredWidth || (preferredHeight > 0 && availableHeight < preferredHeight);
+    }
     function fit(preferred, available, minimum) {
         const safeAvailable = Math.max(0, available);
         if (safeAvailable < minimum)
@@ -31,8 +34,5 @@ QtObject {
     }
     function sidePanelWidth(viewWidth) {
         return fitWithMargins(preferredSidePanelWidth, viewWidth, 10, minimumSidePanelWidth);
-    }
-    function constrained(availableWidth, availableHeight, preferredWidth, preferredHeight) {
-        return availableWidth < preferredWidth || (preferredHeight > 0 && availableHeight < preferredHeight);
     }
 }

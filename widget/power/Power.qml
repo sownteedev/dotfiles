@@ -157,7 +157,6 @@ PanelWindow {
         Keys.onRightPressed: activeIndex = (activeIndex + 1) % powerWindow.actions.length
         Keys.onSpacePressed: powerWindow.executeAction(activeIndex)
         Keys.onTabPressed: activeIndex = (activeIndex + 1) % powerWindow.actions.length
-
         onActiveIndexChanged: {
             powerWindow.revealActiveAction();
             revealActiveActionTimer.restart();

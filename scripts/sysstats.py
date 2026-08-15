@@ -118,6 +118,42 @@ def get_net(interface):
         return 0, 0
 
 
+def get_process_name(pid, reported_name):
+    if not reported_name.lower().startswith("electron"):
+        return reported_name
+
+    try:
+        with open(f"/proc/{pid}/environ", "rb") as env_file:
+            for entry in env_file.read().split(b"\0"):
+                if not entry.startswith(b"CHROME_DESKTOP="):
+                    continue
+                desktop = entry.split(b"=", 1)[1].decode(
+                    "utf-8", errors="replace"
+                )
+                if desktop.endswith(".desktop"):
+                    desktop = desktop[:-8]
+                if desktop.endswith("-url-handler"):
+                    desktop = desktop[:-12]
+                if desktop:
+                    return desktop
+    except OSError:
+        pass
+
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as cmdline_file:
+            arguments = cmdline_file.read().split(b"\0")
+        for argument in arguments[1:]:
+            path = argument.decode("utf-8", errors="replace")
+            if os.path.basename(path) == "app.asar":
+                app_name = os.path.basename(os.path.dirname(path))
+                if app_name:
+                    return app_name
+    except OSError:
+        pass
+
+    return reported_name
+
+
 def get_process_snapshot(include_cpu=True, include_ram=True):
     snapshot = {}
     try:
@@ -129,23 +165,23 @@ def get_process_snapshot(include_cpu=True, include_ram=True):
         if not entry.isdigit():
             continue
         pid = int(entry)
-        if pid == SELF_PID:
+        if pid <= 1 or pid == SELF_PID:
             continue
         try:
+            stat = read_text(f"/proc/{pid}/stat")
+            close_paren = stat.rfind(")")
+            open_paren = stat.find("(")
+            if open_paren < 0 or close_paren < 0:
+                continue
+            name = stat[open_paren + 1:close_paren]
+            fields = stat[close_paren + 2:].split()
+            if len(fields) <= 12:
+                continue
+            parent_pid = int(fields[1])
             if include_cpu:
-                stat = read_text(f"/proc/{pid}/stat")
-                close_paren = stat.rfind(")")
-                open_paren = stat.find("(")
-                if open_paren < 0 or close_paren < 0:
-                    continue
-                name = stat[open_paren + 1:close_paren]
-                fields = stat[close_paren + 2:].split()
                 cpu_ticks = int(fields[11]) + int(fields[12])
             else:
-                name = read_text(f"/proc/{pid}/comm")
                 cpu_ticks = 0
-                if not name:
-                    continue
 
             if include_ram:
                 statm = read_text(f"/proc/{pid}/statm").split()
@@ -153,36 +189,67 @@ def get_process_snapshot(include_cpu=True, include_ram=True):
                            if len(statm) > 1 else 0)
             else:
                 rss_mib = 0
-            snapshot[pid] = (name, cpu_ticks, rss_mib)
+            snapshot[pid] = (
+                get_process_name(pid, name), parent_pid, cpu_ticks, rss_mib
+            )
         except (IndexError, OSError, ValueError):
             continue
     return snapshot
 
 
 def get_top_processes(previous, current, elapsed):
-    cpu_by_name = {}
-    ram_by_name = {}
     denominator = max(elapsed * CLOCK_TICKS * CPU_COUNT, 1)
+    cpu_processes = {}
+    ram_processes = {}
 
-    for pid, (name, ticks, rss_mib) in current.items():
-        ram_by_name[name] = ram_by_name.get(name, 0) + rss_mib
+    for pid, (name, _parent_pid, ticks, rss_mib) in current.items():
+        group_pid = get_process_group_pid(current, pid)
+        group = (group_pid, name)
+        ram_processes[group] = ram_processes.get(group, 0) + rss_mib
         old = previous.get(pid)
         if old is None:
             continue
-        delta = max(0, ticks - old[1])
-        cpu_by_name[name] = cpu_by_name.get(name, 0) + delta * 100 / denominator
+        delta = max(0, ticks - old[2])
+        value = delta * 100 / denominator
+        cpu_processes[group] = cpu_processes.get(group, 0) + value
 
-    top_cpu = [
-        {"name": name, "val": value}
-        for name, value in sorted(cpu_by_name.items(), key=lambda item: item[1], reverse=True)
-        if value > 0
-    ][:5]
-    top_ram = [
-        {"name": name, "val": value}
-        for name, value in sorted(ram_by_name.items(), key=lambda item: item[1], reverse=True)
-        if value > 0
-    ][:5]
+    top_cpu = sorted(
+        [
+            {"pid": pid, "name": name, "val": value}
+            for (pid, name), value in cpu_processes.items()
+        ],
+        key=lambda item: item["val"], reverse=True
+    )
+    top_ram = sorted(
+        [
+            {"pid": pid, "name": name, "val": value}
+            for (pid, name), value in ram_processes.items()
+        ],
+        key=lambda item: item["val"], reverse=True
+    )
     return top_cpu, top_ram
+
+
+def get_process_group_pid(snapshot, pid):
+    process = snapshot.get(pid)
+    if process is None:
+        return pid
+    name = process[0]
+    leader = pid
+
+    for _ in range(64):
+        current = snapshot.get(leader)
+        if current is None:
+            break
+        parent_pid = current[1]
+        if parent_pid <= 1 or parent_pid == leader:
+            break
+        parent = snapshot.get(parent_pid)
+        if parent is None or parent[0] != name:
+            break
+        leader = parent_pid
+
+    return leader
 
 
 def find_nvidia_device():
@@ -303,13 +370,17 @@ def get_top_gpu():
             framebuffer_mib = float(fields[3])
             reported_name = fields[5] if len(fields) > 5 else ""
             name = get_gpu_process_name(pid, reported_name)
-            totals[name] = totals.get(name, 0) + framebuffer_mib
+            previous = totals.get(pid, {"name": name, "val": 0})
+            previous["val"] += framebuffer_mib
+            totals[pid] = previous
         except (IndexError, OSError, ValueError):
             continue
     return [
-        {"name": name, "val": value}
-        for name, value in sorted(totals.items(), key=lambda item: item[1], reverse=True)
-    ][:5]
+        {"pid": pid, "name": item["name"], "val": item["val"]}
+        for pid, item in sorted(
+            totals.items(), key=lambda entry: entry[1]["val"], reverse=True
+        )
+    ]
 
 
 def read_process_mode(current_mode):

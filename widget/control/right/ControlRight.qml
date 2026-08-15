@@ -15,12 +15,6 @@ PanelWindow {
     id: controlRightWindow
 
     property bool active: false
-    readonly property bool compact: Responsive.constrained(panelWidth, height - outerMargin * 2, 560, 760)
-    readonly property real contentMargin: compact ? 14 : 20
-    property real edgeDragProgress: 0
-    property bool edgeDragging: false
-    property int edgeSnapDuration: 300
-    property bool edgeSnapAnimating: false
 
     // Bottom Tab navigation
     property int activeBottomTab: 0
@@ -32,9 +26,15 @@ PanelWindow {
     readonly property var bottomTabIcons: ["utilities-system-monitor-symbolic", "battery-symbolic", "video-display-symbolic"]
     readonly property var bottomTabLabels: ["Stats", "Battery", "Display"]
     readonly property bool caffeineEnabled: QuickSettingsService.caffeineEnabled
-    readonly property real panelWidth: Responsive.sidePanelWidth(width)
+    readonly property bool compact: Responsive.constrained(panelWidth, height - outerMargin * 2, 560, 760)
+    readonly property real contentMargin: compact ? 14 : 20
+    property real edgeDragProgress: 0
+    property bool edgeDragging: false
+    property bool edgeSnapAnimating: false
+    property int edgeSnapDuration: 300
     readonly property real outerMargin: 10
     readonly property var pages: ["Notification", "Wifi", "Bluetooth", "Volume"]
+    readonly property real panelWidth: Responsive.sidePanelWidth(width)
     property int previousBottomTab: 0
     property int previousTab: 0
     readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
@@ -204,8 +204,8 @@ PanelWindow {
         NumberAnimation {
             id: slideAnim
 
-            target: popup
             property: "closedProgress"
+            target: popup
 
             onFinished: {
                 controlRightWindow.edgeSnapAnimating = false;
@@ -213,7 +213,6 @@ PanelWindow {
                     controlRightWindow.dismissed();
             }
         }
-
         AnimatedBubbles {
             anchors.fill: parent
             bubbleCount: 35
@@ -299,10 +298,10 @@ PanelWindow {
                             onClicked: QuickSettingsService.setAirplaneEnabled(!airplaneEnabled)
                         }
                         Button {
-                            active: QuickSettingsService.dndActive
+                            active: QuickSettingsService.effectiveDndActive
                             iconName: "notifications-disabled-symbolic"
 
-                            onClicked: QuickSettingsService.dndActive = !QuickSettingsService.dndActive
+                            onClicked: QuickSettingsService.toggleDnd()
                         }
                         Button {
                             active: caffeineEnabled

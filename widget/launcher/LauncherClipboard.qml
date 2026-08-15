@@ -1,3 +1,4 @@
+import "../../"
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -18,7 +19,8 @@ Item {
     property int requestGeneration: 0
 
     function copySelected(id) {
-        Quickshell.execDetached(["sh", "-c", "if cliphist decode \"$1\" | wl-copy; then if command -v wtype >/dev/null 2>&1; then sleep 0.4; wtype -M ctrl -k v -m ctrl; fi; fi", "clip_decode_paste", id]);
+        var command = Config.launcherClipboardAutoPaste ? "if cliphist decode \"$1\" | wl-copy; then if command -v wtype >/dev/null 2>&1; then sleep 0.4; wtype -M ctrl -k v -m ctrl; fi; fi" : "cliphist decode \"$1\" | wl-copy";
+        Quickshell.execDetached(["sh", "-c", command, "clip_decode_paste", id]);
     }
     function ensurePreview(id) {
         if (activePreviewGeneration === requestGeneration && activePreviewId === id)
@@ -67,9 +69,10 @@ Item {
         var q = query.trim();
         // Determine search term after "c "
         var searchTerm = "";
-        if (q.toLowerCase().startsWith("c ")) {
-            searchTerm = q.substring(2).trim();
-        } else if (q.toLowerCase() === "c") {
+        var prefix = Config.launcherClipboardPrefix.toLowerCase();
+        if (q.toLowerCase().startsWith(prefix + " ")) {
+            searchTerm = q.substring(prefix.length + 1).trim();
+        } else if (q.toLowerCase() === prefix) {
             searchTerm = "";
         } else {
             clipboardResults = [];
@@ -77,7 +80,7 @@ Item {
         }
 
         var generation = requestGeneration;
-        cliphistProcess.command = ["sh", "-c", "printf '__QS_REQUEST__%s\\n' \"$1\"; cliphist list 2>/dev/null | grep -aFi -- \"$2\" 2>/dev/null | head -n 20", "cliphist_script", String(generation), searchTerm];
+        cliphistProcess.command = ["sh", "-c", "printf '__QS_REQUEST__%s\\n' \"$1\"; cliphist list 2>/dev/null | grep -aFi -- \"$2\" 2>/dev/null | head -n \"$3\"", "cliphist_script", String(generation), searchTerm, String(Config.launcherMaxResults)];
         cliphistProcess.running = true;
     }
     function startNextPreview() {
@@ -171,7 +174,7 @@ Item {
                             });
                         }
                     }
-                    clipboardResults = results;
+                    clipboardResults = results.slice(0, Config.launcherMaxResults);
                 }
             }
         }

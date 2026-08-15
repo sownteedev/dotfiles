@@ -12,12 +12,6 @@ PanelWindow {
     id: controlLeftWindow
 
     property bool active: false
-    readonly property bool compact: Responsive.constrained(panelWidth, height - outerMargin * 2, 560, 760)
-    readonly property real contentMargin: compact ? 14 : 20
-    property real edgeDragProgress: 0
-    property bool edgeDragging: false
-    property int edgeSnapDuration: 300
-    property bool edgeSnapAnimating: false
 
     // Tab navigation - Bottom
     property int activeBottomTab: 0
@@ -27,13 +21,19 @@ PanelWindow {
     readonly property var bottomPages: ["Weather", "Music"]
     readonly property var bottomTabIcons: ["weather-few-clouds-symbolic", "multimedia-audio-player-symbolic"]
     readonly property var bottomTabLabels: ["Weather", "Music"]
+    readonly property bool compact: Responsive.constrained(panelWidth, height - outerMargin * 2, 560, 760)
+    readonly property real contentMargin: compact ? 14 : 20
     property bool destroyed: false
+    property real edgeDragProgress: 0
+    property bool edgeDragging: false
+    property bool edgeSnapAnimating: false
+    property int edgeSnapDuration: 300
+    readonly property real outerMargin: 10
+    readonly property real panelWidth: Responsive.sidePanelWidth(width)
     property int previousBottomTab: 0
     property int previousTopTab: 0
     readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, 0.065)
     readonly property color sectionColor: Config.md3.surface
-    readonly property real panelWidth: Responsive.sidePanelWidth(width)
-    readonly property real outerMargin: 10
     readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
     readonly property var topPages: ["Calendar", "Todo", "Timers"]
     readonly property var topTabIcons: ["x-office-calendar-symbolic", "checkbox-checked-symbolic", "preferences-system-time-symbolic"]
@@ -139,7 +139,6 @@ PanelWindow {
 
         onClicked: hideControl()
     }
-
     Rectangle {
         anchors.fill: popup
         anchors.margins: -10
@@ -173,8 +172,8 @@ PanelWindow {
         NumberAnimation {
             id: slideAnim
 
-            target: popup
             property: "closedProgress"
+            target: popup
 
             onFinished: {
                 controlLeftWindow.edgeSnapAnimating = false;
@@ -182,7 +181,6 @@ PanelWindow {
                     controlLeftWindow.dismissed();
             }
         }
-
         MouseArea {
             anchors.fill: parent
             propagateComposedEvents: false

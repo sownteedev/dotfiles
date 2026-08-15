@@ -42,6 +42,7 @@ mod process_mode_tests {
 #[derive(Clone, Debug)]
 pub struct ProcessSample {
     pub name: String,
+    pub parent_pid: u32,
     pub cpu_ticks: u64,
     pub rss_mib: f64,
 }
@@ -50,6 +51,7 @@ pub type ProcessSnapshot = HashMap<u32, ProcessSample>;
 
 #[derive(Clone, Debug)]
 pub struct RankedProcess {
+    pub pid: u32,
     pub name: String,
     pub value: f64,
 }

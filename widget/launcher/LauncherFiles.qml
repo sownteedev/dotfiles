@@ -1,3 +1,4 @@
+import "../../"
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -21,25 +22,26 @@ Item {
         fileSearchProcess.running = false;
         var q = query.trim();
         var searchTerm = "";
-        if (q.toLowerCase().startsWith("f ")) {
-            searchTerm = q.substring(2).trim();
-        } else if (q.toLowerCase() !== "f") {
+        var prefix = Config.launcherFilesPrefix.toLowerCase();
+        if (q.toLowerCase().startsWith(prefix + " ")) {
+            searchTerm = q.substring(prefix.length + 1).trim();
+        } else if (q.toLowerCase() !== prefix) {
             fileResults = [];
             return;
         }
 
         var generation = requestGeneration;
         if (searchTerm === "") {
-            var recentScript = "printf '__QS_REQUEST__%s\\n' \"$1\"; " + "find \"$HOME\" -maxdepth 3 -not -path '*/.*' -type f -printf '%T@ %p\\n' 2>/dev/null " + "| sort -nr 2>/dev/null | head -n 5 | cut -d' ' -f2-";
-            fileSearchProcess.command = ["sh", "-c", recentScript, "recent_files", String(generation)];
+            var recentScript = "printf '__QS_REQUEST__%s\\n' \"$1\"; limit=$2; " + "find \"$HOME\" -maxdepth 3 -not -path '*/.*' -type f -printf '%T@ %p\\n' 2>/dev/null " + "| sort -nr 2>/dev/null | head -n \"$limit\" | cut -d' ' -f2-";
+            fileSearchProcess.command = ["sh", "-c", recentScript, "recent_files", String(generation), String(Config.launcherMaxResults)];
         } else {
             if (searchTerm.length < 2) {
                 fileResults = [];
                 return;
             }
 
-            var searchScript = "printf '__QS_REQUEST__%s\\n' \"$1\"; term=$2; set -- \"$HOME\"; " + "for candidate in /mnt/windows/Users/*/Downloads; do [ -d \"$candidate\" ] && set -- \"$@\" \"$candidate\"; done; " + "LC_ALL=C find \"$@\" -maxdepth 6 " + "\\( -name '.cache' -o -name '.git' -o -name '.local' -o -name '.mozilla' -o -name '.npm' -o -name '.cargo' -o -name '.rustup' " + "-o -name 'node_modules' -o -name 'venv' -o -name 'target' -o -name 'build' -o -name 'dist' -o -name 'Code' -o -name 'google-chrome' " + "-o -name '.gemini' -o -name '.antigravity-ide' -o -name 'Cache' -o -name 'CachedData' -o -name 'Code Cache' -o -name 'GPUCache' " + "-o -name 'logs' -o -name 'blob_storage' -o -name 'Service Worker' -o -name 'Session Storage' -o -name 'session' " + "-o -name 'Local Storage' -o -name 'WebStorage' -o -name 'storage' -o -name '__pycache__' \\) -prune -o " + "\\( -type f -o -type d -o -xtype d \\) -iname \"*$term*\" -printf '%y\\t%f\\t%p\\n' 2>/dev/null " + "| awk -F '\\t' -v term=\"$term\" 'BEGIN { term=tolower(term) } { kind=($1 == \"d\" || $1 == \"l\") ? \"d\" : \"f\"; name=tolower($2); rank=(name == term ? 0 : (index(name, term) == 1 ? 2 : 4)) + (kind == \"f\" ? 1 : 0); path=substr($0, length($1) + length($2) + 3); print rank \"\\t\" kind \"\\t\" path }' " + "| sort -n | head -n 5 | cut -f2-";
-            fileSearchProcess.command = ["sh", "-c", searchScript, "find_script", String(generation), searchTerm];
+            var searchScript = "printf '__QS_REQUEST__%s\\n' \"$1\"; term=$2; limit=$3; set -- \"$HOME\"; " + "for candidate in /mnt/windows/Users/*/Downloads; do [ -d \"$candidate\" ] && set -- \"$@\" \"$candidate\"; done; " + "LC_ALL=C find \"$@\" -maxdepth 6 " + "\\( -name '.cache' -o -name '.git' -o -name '.local' -o -name '.mozilla' -o -name '.npm' -o -name '.cargo' -o -name '.rustup' " + "-o -name 'node_modules' -o -name 'venv' -o -name 'target' -o -name 'build' -o -name 'dist' -o -name 'Code' -o -name 'google-chrome' " + "-o -name '.gemini' -o -name '.antigravity-ide' -o -name 'Cache' -o -name 'CachedData' -o -name 'Code Cache' -o -name 'GPUCache' " + "-o -name 'logs' -o -name 'blob_storage' -o -name 'Service Worker' -o -name 'Session Storage' -o -name 'session' " + "-o -name 'Local Storage' -o -name 'WebStorage' -o -name 'storage' -o -name '__pycache__' \\) -prune -o " + "\\( -type f -o -type d -o -xtype d \\) -iname \"*$term*\" -printf '%y\\t%f\\t%p\\n' 2>/dev/null " + "| awk -F '\\t' -v term=\"$term\" 'BEGIN { term=tolower(term) } { kind=($1 == \"d\" || $1 == \"l\") ? \"d\" : \"f\"; name=tolower($2); rank=(name == term ? 0 : (index(name, term) == 1 ? 2 : 4)) + (kind == \"f\" ? 1 : 0); path=substr($0, length($1) + length($2) + 3); print rank \"\\t\" kind \"\\t\" path }' " + "| sort -n | head -n \"$limit\" | cut -f2-";
+            fileSearchProcess.command = ["sh", "-c", searchScript, "find_script", String(generation), searchTerm, String(Config.launcherMaxResults)];
         }
         fileSearchProcess.running = true;
     }
@@ -110,7 +112,7 @@ Item {
                         });
                     }
                 }
-                fileResults = results;
+                fileResults = results.slice(0, Config.launcherMaxResults);
             }
         }
     }

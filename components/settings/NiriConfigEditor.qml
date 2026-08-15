@@ -9,8 +9,8 @@ Item {
     id: root
 
     readonly property bool canApply: !SettingsHubService.busy && editor.text.trim() !== ""
-    readonly property bool dirty: editor.text !== sourceText()
     property string description: "Advanced KDL editor. Changes are validated before Niri reloads."
+    readonly property bool dirty: editor.text !== sourceText()
     property int editorHeight: 520
     property string fileName: ""
     property string title: fileName

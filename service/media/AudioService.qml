@@ -34,6 +34,19 @@ QtObject {
     property PwNodeLinkTracker microphoneLinkTracker: PwNodeLinkTracker {
         node: Pipewire.defaultAudioSource
     }
+    readonly property var microphoneNodes: {
+        var nodes = [];
+        for (var nodeIndex = 0; nodeIndex < rawMicrophoneNodes.length; ++nodeIndex) {
+            var node = rawMicrophoneNodes[nodeIndex];
+            if (root.isApplicationCapture(node))
+                nodes.push(node);
+        }
+        return nodes;
+    }
+    property PwObjectTracker microphoneObjectTracker: PwObjectTracker {
+        objects: root.rawMicrophoneNodes
+    }
+    property var pendingRoutes: []
     readonly property var rawMicrophoneNodes: {
         var groups = microphoneLinkTracker.linkGroups;
         var nodes = [];
@@ -68,19 +81,6 @@ QtObject {
         }
         return nodes;
     }
-    readonly property var microphoneNodes: {
-        var nodes = [];
-        for (var nodeIndex = 0; nodeIndex < rawMicrophoneNodes.length; ++nodeIndex) {
-            var node = rawMicrophoneNodes[nodeIndex];
-            if (root.isApplicationCapture(node))
-                nodes.push(node);
-        }
-        return nodes;
-    }
-    property PwObjectTracker microphoneObjectTracker: PwObjectTracker {
-        objects: root.rawMicrophoneNodes
-    }
-    property var pendingRoutes: []
     property Process routeProcess: Process {
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0)
@@ -113,21 +113,6 @@ QtObject {
             clean = clean.substring(0, clean.length - 1).trim();
         return clean === "" ? name : clean;
     }
-    function isDevice(node, isSink) {
-        if (!node || node.isStream || !node.audio || !node.properties)
-            return false;
-
-        var mediaClass = String(node.properties["media.class"] || "");
-        if (isSink)
-            return node.isSink && mediaClass.indexOf("Audio/Sink") === 0;
-
-        // A plain `!isSink` also includes filters, adapters and other virtual
-        // PipeWire nodes. Only real source-class nodes belong in the input list.
-        var name = String(node.name || "");
-        var deviceClass = String(node.properties["device.class"] || "");
-        var virtualNode = String(node.properties["node.virtual"] || "") === "true";
-        return !node.isSink && mediaClass.indexOf("Audio/Source") === 0 && deviceClass !== "monitor" && !virtualNode && !name.endsWith(".monitor");
-    }
     function isApplicationCapture(node) {
         if (!node || !node.isStream)
             return false;
@@ -145,6 +130,21 @@ QtObject {
         // Cava monitor helper so playback visualization never trips mic privacy.
         var nodeName = String(node.name || "").trim().toLowerCase();
         return nodeName !== "" && nodeName !== "cava" && nodeName !== "quickshell-cava";
+    }
+    function isDevice(node, isSink) {
+        if (!node || node.isStream || !node.audio || !node.properties)
+            return false;
+
+        var mediaClass = String(node.properties["media.class"] || "");
+        if (isSink)
+            return node.isSink && mediaClass.indexOf("Audio/Sink") === 0;
+
+        // A plain `!isSink` also includes filters, adapters and other virtual
+        // PipeWire nodes. Only real source-class nodes belong in the input list.
+        var name = String(node.name || "");
+        var deviceClass = String(node.properties["device.class"] || "");
+        var virtualNode = String(node.properties["node.virtual"] || "") === "true";
+        return !node.isSink && mediaClass.indexOf("Audio/Source") === 0 && deviceClass !== "monitor" && !virtualNode && !name.endsWith(".monitor");
     }
     function isPlaybackStream(node) {
         if (!node || !node.properties)
@@ -168,16 +168,6 @@ QtObject {
         });
         pendingRoutes = queued;
         startNextRoute();
-    }
-    function startNextRoute() {
-        if (routeProcess.running || pendingRoutes.length === 0)
-            return;
-
-        var queued = pendingRoutes.slice();
-        var nextRoute = queued.shift();
-        pendingRoutes = queued;
-        routeProcess.command = nextRoute.command;
-        routeProcess.running = true;
     }
     function resolveAppIcon(node, fallbackIcon) {
         var fallback = fallbackIcon || "audio-volume-high-symbolic";
@@ -204,6 +194,16 @@ QtObject {
             Pipewire.preferredDefaultAudioSink = device;
         else
             Pipewire.preferredDefaultAudioSource = device;
+    }
+    function startNextRoute() {
+        if (routeProcess.running || pendingRoutes.length === 0)
+            return;
+
+        var queued = pendingRoutes.slice();
+        var nextRoute = queued.shift();
+        pendingRoutes = queued;
+        routeProcess.command = nextRoute.command;
+        routeProcess.running = true;
     }
     function streamTargetDevice(node, isSink) {
         if (!node)

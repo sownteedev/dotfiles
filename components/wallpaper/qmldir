@@ -1,0 +1,12 @@
+module QuickshellWallpaperComponents
+WallhavenBrowseControls 1.0 WallhavenBrowseControls.qml
+WallhavenChoiceButton 1.0 WallhavenChoiceButton.qml
+WallhavenColorPopup 1.0 WallhavenColorPopup.qml
+WallhavenFilterButton 1.0 WallhavenFilterButton.qml
+WallhavenFilterPopup 1.0 WallhavenFilterPopup.qml
+WallhavenFilterToolbar 1.0 WallhavenFilterToolbar.qml
+WallhavenRatioPopup 1.0 WallhavenRatioPopup.qml
+WallhavenResolutionPopup 1.0 WallhavenResolutionPopup.qml
+WallhavenSearchBar 1.0 WallhavenSearchBar.qml
+WallhavenSortPopup 1.0 WallhavenSortPopup.qml
+WallpaperSourceButton 1.0 WallpaperSourceButton.qml

@@ -20,9 +20,10 @@ PanelWindow {
     property var currentShape: null
     readonly property rect displayedCropRect: cropDragging ? cropDraftRect : cropRect
     readonly property rect displayedOcrRect: ocrDragging ? ocrDraftRect : ocrRect
+    property bool imageLoadEnabled: true
+    property var lastMoveUndo: null
     property rect liveDirtyRect: Qt.rect(0, 0, 0, 0)
     property int livePaintFrameId: -1
-    property var lastMoveUndo: null
     property int movingShapeIndex: -1
     property var movingShapeOriginal: null
     property int nextMarkerNumber: 1
@@ -76,6 +77,33 @@ PanelWindow {
         inlineTextEditor.visible = true;
         inlineTextEditor.forceActiveFocus();
     }
+    function cancelEditor() {
+        cancelOcrSession();
+        CaptureService.closeScreenshotEditor();
+    }
+    function cancelOcrSession() {
+        ocrSessionToken += 1;
+        ocrPreparing = false;
+        OcrService.reset();
+    }
+    function cancelShapeMove() {
+        if (movingShapeIndex >= 0 && movingShapeOriginal) {
+            var nextShapes = shapes.slice();
+            var restoreIndex = Math.max(0, Math.min(movingShapeIndex, nextShapes.length));
+            nextShapes.splice(restoreIndex, 0, copyShape(movingShapeOriginal));
+            shapes = nextShapes;
+            recomputeMarkerNumber();
+        }
+
+        movingShapeIndex = -1;
+        movingShapeOriginal = null;
+        liveCanvasTranslate.x = 0;
+        liveCanvasTranslate.y = 0;
+        currentShape = null;
+        prepareLiveCanvas();
+        committedCanvas.requestPaint();
+        scheduleLivePaint();
+    }
     function cancelText() {
         inlineTextEditor.text = "";
         inlineTextEditor.visible = false;
@@ -127,15 +155,6 @@ PanelWindow {
         inlineTextEditor.visible = false;
         keyScope.forceActiveFocus();
     }
-    function cancelEditor() {
-        cancelOcrSession();
-        CaptureService.closeScreenshotEditor();
-    }
-    function cancelOcrSession() {
-        ocrSessionToken += 1;
-        ocrPreparing = false;
-        OcrService.reset();
-    }
     function contrastingTextColor(colorValue) {
         var luminance = colorValue.r * 0.299 + colorValue.g * 0.587 + colorValue.b * 0.114;
         return luminance > 0.58 ? "#151515" : "#ffffff";
@@ -165,24 +184,6 @@ PanelWindow {
             "textColor": shape.textColor || "",
             "points": copiedPoints
         };
-    }
-    function cancelShapeMove() {
-        if (movingShapeIndex >= 0 && movingShapeOriginal) {
-            var nextShapes = shapes.slice();
-            var restoreIndex = Math.max(0, Math.min(movingShapeIndex, nextShapes.length));
-            nextShapes.splice(restoreIndex, 0, copyShape(movingShapeOriginal));
-            shapes = nextShapes;
-            recomputeMarkerNumber();
-        }
-
-        movingShapeIndex = -1;
-        movingShapeOriginal = null;
-        liveCanvasTranslate.x = 0;
-        liveCanvasTranslate.y = 0;
-        currentShape = null;
-        prepareLiveCanvas();
-        committedCanvas.requestPaint();
-        scheduleLivePaint();
     }
     function distanceSquaredToSegment(px, py, x1, y1, x2, y2) {
         var segmentX = x2 - x1;
@@ -488,6 +489,16 @@ PanelWindow {
         selectedWidth = Math.max(1, Number(Config.captureEditorWidth) || 6);
         clearAll();
     }
+    function retrySourceImage() {
+        if (!CaptureService.screenshotPath)
+            return;
+
+        imageLoadEnabled = false;
+        Qt.callLater(function () {
+            if (CaptureService.screenshotEditorVisible)
+                root.imageLoadEnabled = true;
+        });
+    }
     function saveEditedImage() {
         if (inlineTextEditor.visible)
             commitText();
@@ -636,6 +647,7 @@ PanelWindow {
     Connections {
         function onScreenshotEditorSessionChanged() {
             root.resetEditorDefaults();
+            root.retrySourceImage();
         }
 
         target: CaptureService
@@ -738,7 +750,7 @@ PanelWindow {
                         asynchronous: true
                         cache: false
                         fillMode: Image.Stretch
-                        source: CaptureService.screenshotPath ? "file://" + CaptureService.screenshotPath : ""
+                        source: root.imageLoadEnabled && CaptureService.screenshotPath ? "file://" + CaptureService.screenshotPath : ""
                     }
                     Repeater {
                         model: root.blurShapes
@@ -1272,6 +1284,98 @@ PanelWindow {
                 height: 48
                 visible: sourceImage.status === Image.Loading
                 width: 48
+            }
+            Rectangle {
+                anchors.centerIn: parent
+                color: Config.alpha(Config.md3.surface_container_high, 0.96)
+                implicitHeight: sourceErrorContent.implicitHeight + 32
+                radius: 18
+                visible: sourceImage.status === Image.Error
+                width: Math.min(360, editorArea.width - 32)
+
+                ColumnLayout {
+                    id: sourceErrorContent
+
+                    anchors.centerIn: parent
+                    spacing: 12
+                    width: parent.width - 32
+
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        color: Config.md3.error
+                        font.family: Config.fontName
+                        font.pixelSize: 16
+                        font.weight: Font.Bold
+                        text: qsTr("Could not load the screenshot")
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        color: Config.md3.on_surface_variant
+                        font.family: Config.fontName
+                        font.pixelSize: 13
+                        horizontalAlignment: Text.AlignHCenter
+                        text: qsTr("The image may still be writing or is no longer available.")
+                        textFormat: Text.PlainText
+                        wrapMode: Text.Wrap
+                    }
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 10
+
+                        Rectangle {
+                            Layout.preferredHeight: 38
+                            Layout.preferredWidth: retryLabel.implicitWidth + 28
+                            color: retryArea.pressed ? Config.md3.primary_container : Config.alpha(Config.md3.primary, retryArea.containsMouse ? 0.22 : 0.14)
+                            radius: 12
+
+                            Text {
+                                id: retryLabel
+
+                                anchors.centerIn: parent
+                                color: Config.md3.primary
+                                font.family: Config.fontName
+                                font.pixelSize: 13
+                                font.weight: Font.DemiBold
+                                text: qsTr("Retry")
+                            }
+                            MouseArea {
+                                id: retryArea
+
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
+
+                                onClicked: root.retrySourceImage()
+                            }
+                        }
+                        Rectangle {
+                            Layout.preferredHeight: 38
+                            Layout.preferredWidth: closeLabel.implicitWidth + 28
+                            color: closeArea.pressed ? Config.md3.surface_container_highest : Config.alpha(Config.md3.on_surface, closeArea.containsMouse ? 0.12 : 0.07)
+                            radius: 12
+
+                            Text {
+                                id: closeLabel
+
+                                anchors.centerIn: parent
+                                color: Config.md3.on_surface
+                                font.family: Config.fontName
+                                font.pixelSize: 13
+                                font.weight: Font.DemiBold
+                                text: qsTr("Close")
+                            }
+                            MouseArea {
+                                id: closeArea
+
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
+
+                                onClicked: root.cancelEditor()
+                            }
+                        }
+                    }
+                }
             }
         }
         Item {

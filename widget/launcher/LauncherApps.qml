@@ -9,6 +9,7 @@ GridView {
 
     readonly property int columns: Responsive.columnsFor(width, 150, 5, width < 300 ? 1 : 2, 0)
     property bool entranceReady: false
+    property bool entranceWaveActive: false
     readonly property var gridItems: {
         var apps = DesktopEntries.applications.values;
         if (!apps)
@@ -84,8 +85,15 @@ GridView {
             var col = index % appsGrid.columns;
             var row = Math.floor(index / appsGrid.columns);
             // Staggered delay: 25ms per column/row step
-            entryTimer.interval = (col + row) * 25 + 10;
+            entryTimer.interval = Math.min(col + row, appsGrid.columns + 3) * 25 + 10;
             entryTimer.start();
+        }
+        function showEntranceFinal() {
+            entryTimer.stop();
+            entryAnim.stop();
+            opacity = 1;
+            scale = 1;
+            entryTranslate.y = 0;
         }
 
         height: appsGrid.cellHeight
@@ -100,15 +108,20 @@ GridView {
         }
 
         Component.onCompleted: {
-            resetEntrance();
-            if (appsGrid.entranceReady)
-                scheduleEntrance();
+            if (appsGrid.entranceReady && appsGrid.entranceWaveActive)
+                delegateRoot.scheduleEntrance();
+            else if (appsGrid.entranceReady)
+                delegateRoot.showEntranceFinal();
+            else
+                delegateRoot.resetEntrance();
         }
         onEntranceReadyChanged: {
-            if (entranceReady)
-                scheduleEntrance();
+            if (entranceReady && appsGrid.entranceWaveActive)
+                delegateRoot.scheduleEntrance();
+            else if (entranceReady)
+                delegateRoot.showEntranceFinal();
             else
-                resetEntrance();
+                delegateRoot.resetEntrance();
         }
 
         Timer {
@@ -246,6 +259,22 @@ GridView {
             properties: "opacity,scale"
             to: 0.0
         }
+    }
+
+    onEntranceReadyChanged: {
+        entranceWaveTimer.stop();
+        entranceWaveActive = entranceReady;
+        if (entranceReady)
+            entranceWaveTimer.restart();
+    }
+
+    Timer {
+        id: entranceWaveTimer
+
+        interval: Math.max(450, (appsGrid.columns + Math.ceil(appsGrid.height / appsGrid.cellHeight)) * 25 + 350)
+        repeat: false
+
+        onTriggered: appsGrid.entranceWaveActive = false
     }
 
     // Empty state message when search returns no matching apps

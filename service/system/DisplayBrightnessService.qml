@@ -9,17 +9,15 @@ QtObject {
 
     readonly property bool available: internalOutput ? BrightnessService.available : externalAvailable
     readonly property string backendLabel: internalOutput ? "Laptop backlight" : externalAvailable ? "DDC/CI • " + outputName : externalError
-    property string externalError: "Select a display"
     property bool externalAvailable: false
     property int externalBus: -1
+    property string externalError: "Select a display"
     property int externalMaximum: 100
     property real externalRequestedValue: -1
     property real externalValue: 0
     readonly property bool internalOutput: DisplayService.isInternalOutput(outputName)
     property string outputName: ""
-    readonly property bool probing: probe.running
-    readonly property real value: internalOutput ? BrightnessService.value : externalValue
-
+    property string pendingProbeOutput: ""
     property Process probe: Process {
         stdout: StdioCollector {
             id: probeOutput
@@ -36,7 +34,7 @@ QtObject {
             }
         }
     }
-    property string pendingProbeOutput: ""
+    readonly property bool probing: probe.running
     property Timer setDelay: Timer {
         interval: 140
         repeat: false
@@ -54,6 +52,7 @@ QtObject {
                 root.setDelay.restart();
         }
     }
+    readonly property real value: internalOutput ? BrightnessService.value : externalValue
 
     function applyExternalValue() {
         if (internalOutput || outputName === "" || setter.running || externalRequestedValue < 0)

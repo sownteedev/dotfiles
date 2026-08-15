@@ -65,7 +65,6 @@ Item {
             id: tick
 
             required property int index
-
             readonly property bool major: index % 3 === 0
 
             Accessible.ignored: true
@@ -218,9 +217,9 @@ Item {
                     }
                     Rectangle {
                         anchors.centerIn: parent
-                        color: "transparent"
                         border.color: root.accentColor
                         border.width: 1
+                        color: "transparent"
                         height: parent.height
                         radius: width / 2
                         visible: root.running

@@ -11,9 +11,10 @@ PanelWindow {
     id: bar
 
     readonly property bool compact: width < 1600
-    readonly property real horizontalInset: Responsive.clamp(width * 0.01, 10, 25)
+    readonly property real densityScale: Config.barDensity === "compact" ? 0.82 : Config.barDensity === "spacious" ? 1.18 : 1
+    readonly property real horizontalInset: Responsive.clamp(width * 0.01, 10, 25) * densityScale
     readonly property bool narrow: width < 1280
-    readonly property real statusIconSpacing: Responsive.clamp(width * 0.014, 18, 26)
+    readonly property real statusIconSpacing: Responsive.clamp(width * 0.014, 18, 26) * densityScale
     readonly property bool themeReady: ThemeService.hasAppliedTheme || (ThemeService.themeFileResolved && !Config.matugenEnabled)
 
     WlrLayershell.namespace: "blur-bar"
@@ -21,7 +22,7 @@ PanelWindow {
     anchors.right: true
     anchors.top: true
     color: themeReady ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.2) : "transparent"
-    implicitHeight: 50
+    implicitHeight: Config.barHeight
 
     SystemClock {
         id: systemClock
@@ -56,6 +57,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 clip: true
+                visible: Config.barShowActiveClient || Config.barShowMedia
 
                 Flickable {
                     id: leftFlickable
@@ -80,11 +82,13 @@ PanelWindow {
 
                             maximumTextWidth: Math.min(leftZone.preferredActiveTextWidth, Math.max(64, mediaItem.visible ? leftZone.width * 0.38 : leftZone.width - 60))
                             outputName: bar.screen ? bar.screen.name : ""
+                            visible: Config.barShowActiveClient
                         }
                         Media {
                             id: mediaItem
 
                             maximumWidth: Math.min(350, Math.max(90, leftZone.width - activeClient.implicitWidth - leftContent.spacing))
+                            visible: Config.barShowMedia && implicitWidth > 0
                         }
                     }
                 }
@@ -94,6 +98,7 @@ PanelWindow {
 
                 Layout.fillHeight: true
                 Layout.preferredWidth: Math.min(workspaceStrip.implicitWidth, bar.width * (bar.narrow ? 0.34 : bar.compact ? 0.38 : 0.42))
+                visible: Config.barShowWorkspaces
 
                 Flickable {
                     id: workspaceFlickable
@@ -158,13 +163,16 @@ PanelWindow {
 
                         RecordingIndicator {
                             parentWindow: bar
+                            visible: Config.barShowRecording
                         }
                         SysTray {
                             itemSpacing: bar.statusIconSpacing
                             parentWindow: bar
+                            visible: Config.barShowSysTray
                         }
                         MicrophonePrivacy {
                             parentWindow: bar
+                            visible: Config.barShowMicrophone
                         }
                         MouseArea {
                             cursorShape: Qt.PointingHandCursor
@@ -187,19 +195,24 @@ PanelWindow {
                         Wifi {
                             hoverExpansionEnabled: !bar.compact
                             targetScreen: bar.screen
+                            visible: Config.barShowNetwork
                         }
                         BluetoothStatus {
                             hoverExpansionEnabled: !bar.compact
                             targetScreen: bar.screen
+                            visible: Config.barShowBluetooth
                         }
                         Battery {
+                            visible: Config.barShowBattery
                         }
                         NotificationIcon {
                             targetScreen: bar.screen
+                            visible: Config.barShowNotifications
                         }
                         RowLayout {
                             Layout.alignment: Qt.AlignVCenter
                             spacing: bar.compact ? 10 : 12
+                            visible: Config.barShowClock
 
                             Text {
                                 color: Config.md3.on_surface

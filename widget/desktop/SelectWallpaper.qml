@@ -2,47 +2,65 @@ import "../../"
 import "../../components"
 import "../../service"
 import Qt.labs.folderlistmodel
+import Qt5Compat.GraphicalEffects
 import QtQuick
 import Quickshell
+import Quickshell.Widgets
 
 PanelWindow {
     id: wallpaperWindow
 
     readonly property int activeCount: activeModel.count
     readonly property var activeModel: selectedMode === "video" ? videoModel : staticModel
-    readonly property real cardWidth: Responsive.fit(380, (width - 24) / 1.15, 240)
+    readonly property bool browserOpen: workshopOpen || wallhavenOpen
     readonly property real cardHeight: cardWidth * 240 / 380
+    readonly property real cardWidth: Responsive.fit(380, (width - 24) / 1.15, 240)
     property bool changingMode: false
+    property string initialSelectionPath: ""
+    property int openGeneration: 0
+    readonly property real pathSpan: Math.min(450, Math.max(cardWidth * 0.85, width * 0.34))
     property string selectedMode: "static"
     property bool selectionCommitted: false
-    readonly property real pathSpan: Math.min(450, Math.max(cardWidth * 0.85, width * 0.34))
     property int staticIndex: 0
     property int videoIndex: 0
+    property bool wallhavenOpen: false
+    property bool workshopOpen: false
 
     signal dismissed
 
     function closeSelector() {
+        openGeneration += 1;
         previewTimer.stop();
         preloadTimer.stop();
         rememberCurrentIndex();
         EngineWallpaperService.endBrowsing();
+        LiveWallpaperService.endBrowsing();
         if (!selectionCommitted) {
             WallpaperService.cancelPreview();
             WallpaperPreviewService.cancel();
         }
         contentRoot.opacity = 0;
         hideTimer.start();
+        wallhavenOpen = false;
+        workshopOpen = false;
     }
     function openSelector() {
+        var generation = ++openGeneration;
         var targetScreen = StateManager.resolvePanelScreen();
         if (targetScreen)
             screen = targetScreen;
+
         hideTimer.stop();
         changingMode = true;
+        initialSelectionPath = String(WallpaperService.currentWallpaper || "");
         selectionCommitted = false;
+        wallhavenOpen = false;
+        workshopOpen = false;
         selectedMode = WallpaperService.currentMode;
+        wallpaperWindow.visible = true;
         if (selectedMode === "video") {
             EngineWallpaperService.beginBrowsing();
+            LiveWallpaperService.beginBrowsing();
             LiveWallpaperService.checkAvailability();
             syncVideoModel();
             WallpaperPreviewService.begin();
@@ -50,9 +68,11 @@ PanelWindow {
             WallpaperService.beginPreview();
             WallpaperPreviewService.begin();
         }
-        wallpaperWindow.visible = true;
         contentRoot.forceActiveFocus();
         Qt.callLater(() => {
+            if (generation !== openGeneration || !wallpaperWindow.visible || hideTimer.running)
+                return;
+
             syncCurrentWallpaper();
             changingMode = false;
             contentRoot.opacity = 1;
@@ -63,7 +83,7 @@ PanelWindow {
         return roleAt(index, "filePath", "");
     }
     function preloadNeighbours() {
-        if (!wallpaperWindow.visible || changingMode || activeCount < 2)
+        if (!wallpaperWindow.visible || changingMode || browserOpen || activeCount < 2)
             return;
 
         WallpaperPreviewService.resetPreloads();
@@ -73,19 +93,21 @@ PanelWindow {
             var index = (current + offsets[i] + activeCount) % activeCount;
             if (index === current)
                 continue;
+
             var preloadPath = selectedMode === "video" ? videoPreviewImageAt(index) : pathAt(index);
             if (preloadPath)
                 WallpaperPreviewService.preload(preloadPath, roleAt(index, "fileModified", 0));
         }
     }
     function previewCurrent() {
-        if (!wallpaperWindow.visible || changingMode || pathView.currentIndex < 0)
+        if (!wallpaperWindow.visible || changingMode || initialSelectionPath !== "" || browserOpen || pathView.currentIndex < 0)
             return;
 
         if (selectedMode === "static") {
             var path = pathAt(pathView.currentIndex);
             if (!path)
                 return;
+
             var modified = roleAt(pathView.currentIndex, "fileModified", 0);
             WallpaperService.previewStatic(path);
             WallpaperPreviewService.preview(path, modified);
@@ -94,6 +116,7 @@ PanelWindow {
             var previewImage = videoPreviewImageAt(pathView.currentIndex);
             if (!previewImage)
                 return;
+
             var videoModified = roleAt(pathView.currentIndex, "fileModified", 0);
             WallpaperPreviewService.preview(previewImage, videoModified);
             preloadTimer.restart();
@@ -108,6 +131,38 @@ PanelWindow {
         else
             staticIndex = pathView.currentIndex;
     }
+    function replaceStaticModel(items) {
+        for (var targetIndex = 0; targetIndex < items.length; ++targetIndex) {
+            var item = items[targetIndex];
+            var currentIndex = staticModelIndexForPath(item.filePath);
+            if (currentIndex < 0) {
+                staticModel.insert(targetIndex, item);
+            } else {
+                if (currentIndex !== targetIndex)
+                    staticModel.move(currentIndex, targetIndex, 1);
+
+                staticModel.set(targetIndex, item);
+            }
+        }
+        if (staticModel.count > items.length)
+            staticModel.remove(items.length, staticModel.count - items.length);
+    }
+    function replaceVideoModel(items) {
+        for (var targetIndex = 0; targetIndex < items.length; ++targetIndex) {
+            var item = items[targetIndex];
+            var currentIndex = videoModelIndexForPath(item.filePath);
+            if (currentIndex < 0) {
+                videoModel.insert(targetIndex, item);
+            } else {
+                if (currentIndex !== targetIndex)
+                    videoModel.move(currentIndex, targetIndex, 1);
+
+                videoModel.set(targetIndex, item);
+            }
+        }
+        if (videoModel.count > items.length)
+            videoModel.remove(items.length, videoModel.count - items.length);
+    }
     function restoreModeIndex() {
         if (activeCount === 0) {
             pathView.currentIndex = -1;
@@ -119,25 +174,38 @@ PanelWindow {
     function roleAt(index, role, fallbackValue) {
         if (index < 0 || index >= activeCount)
             return fallbackValue;
+
         if (selectedMode === "video") {
             var item = videoModel.get(index);
             return item && item[role] !== undefined ? item[role] : fallbackValue;
         }
-        var value = staticModel.get(index, role);
-        return value !== undefined ? value : fallbackValue;
+        var item = staticModel.get(index);
+        return item && item[role] !== undefined ? item[role] : fallbackValue;
     }
     function schedulePreview() {
-        if (!changingMode) {
-            previewTimer.restart();
-        }
+        if (changingMode || initialSelectionPath !== "" || browserOpen)
+            return;
+
+        previewTimer.restart();
     }
     function selectCurrentWallpaper() {
-        if (!pathView.currentItem)
+        if (browserOpen || !pathView.currentItem)
             return;
 
         selectionCommitted = true;
         WallpaperService.apply(pathView.currentItem.filePath, selectedMode, pathView.currentItem.fileModified);
         closeSelector();
+    }
+    function startUserNavigation() {
+        initialSelectionPath = "";
+    }
+    function staticModelIndexForPath(path) {
+        var expectedPath = String(path || "");
+        for (var i = 0; i < staticModel.count; ++i) {
+            if (String(staticModel.get(i).filePath || "") === expectedPath)
+                return i;
+        }
+        return -1;
     }
     function switchMode(mode) {
         if (mode !== "static" && mode !== "video" || mode === selectedMode)
@@ -145,6 +213,7 @@ PanelWindow {
 
         rememberCurrentIndex();
         changingMode = true;
+        initialSelectionPath = "";
         selectedMode = mode;
         if (mode === "video") {
             previewTimer.stop();
@@ -153,47 +222,29 @@ PanelWindow {
             WallpaperPreviewService.cancel();
             WallpaperPreviewService.begin();
             EngineWallpaperService.beginBrowsing();
+            LiveWallpaperService.beginBrowsing();
             LiveWallpaperService.checkAvailability();
             syncVideoModel();
         } else {
             EngineWallpaperService.endBrowsing();
+            LiveWallpaperService.endBrowsing();
             WallpaperPreviewService.cancel();
             WallpaperService.beginPreview();
             WallpaperPreviewService.begin();
         }
-
+        var generation = openGeneration;
         Qt.callLater(() => {
+            if (generation !== openGeneration || !wallpaperWindow.visible || hideTimer.running)
+                return;
+
             restoreModeIndex();
             changingMode = false;
             contentRoot.forceActiveFocus();
             schedulePreview();
         });
     }
-    function videoPreviewImageAt(index) {
-        if (index < 0 || index >= activeCount || selectedMode !== "video")
-            return "";
-
-        var isEngine = roleAt(index, "isEngine", false);
-        var filePath = pathAt(index);
-        var modified = roleAt(index, "fileModified", 0);
-
-        if (isEngine) {
-            var preview = roleAt(index, "preview", "");
-            if (!preview)
-                return "";
-            if (EngineWallpaperService.previewNeedsConversion(preview)) {
-                var thumbPath = EngineWallpaperService.previewThumbnailPath(preview, modified);
-                return EngineWallpaperService.previewThumbnailKnown(preview, modified) ? thumbPath : "";
-            }
-            return preview;
-        }
-
-        // Live wallpaper — use the ffmpeg-generated thumbnail.
-        var livePath = LiveWallpaperService.thumbnailPath(filePath, modified);
-        return LiveWallpaperService.thumbnailKnown(filePath, modified) ? livePath : "";
-    }
-    function syncCurrentWallpaper() {
-        var currentWall = WallpaperService.currentWallpaper;
+    function syncCurrentWallpaper(preferredPath) {
+        var currentWall = String(initialSelectionPath || preferredPath || WallpaperService.currentWallpaper || "");
         for (var i = 0; i < activeCount; ++i) {
             if (pathAt(i) === currentWall) {
                 pathView.currentIndex = i;
@@ -201,17 +252,58 @@ PanelWindow {
                     videoIndex = i;
                 else
                     staticIndex = i;
+                if (currentWall === initialSelectionPath) {
+                    initialSelectionPath = "";
+                    schedulePreview();
+                }
                 return;
             }
         }
+        if (initialSelectionPath !== "")
+            return;
+
         restoreModeIndex();
     }
+    function syncStaticModel() {
+        if (!wallpaperWindow.visible)
+            return;
+
+        var preferredPath = initialSelectionPath || (selectedMode === "static" ? pathAt(pathView.currentIndex) : "");
+        var items = [];
+        var knownPaths = {};
+        var sources = [personalStaticModel, wallhavenStaticFolderModel];
+        for (var sourceIndex = 0; sourceIndex < sources.length; ++sourceIndex) {
+            var source = sources[sourceIndex];
+            for (var itemIndex = 0; itemIndex < source.count; ++itemIndex) {
+                var filePath = String(source.get(itemIndex, "filePath") || "");
+                if (filePath === "" || knownPaths[filePath])
+                    continue;
+
+                knownPaths[filePath] = true;
+                items.push({
+                    "fileModified": String(source.get(itemIndex, "fileModified") || 0),
+                    "fileName": String(source.get(itemIndex, "fileName") || ""),
+                    "filePath": filePath,
+                    "fileUrl": String(source.get(itemIndex, "fileUrl") || "")
+                });
+            }
+        }
+        replaceStaticModel(items);
+        if (selectedMode === "static")
+            Qt.callLater(() => {
+                return wallpaperWindow.syncCurrentWallpaper(preferredPath);
+            });
+    }
     function syncVideoModel() {
-        videoModel.clear();
+        if (!wallpaperWindow.visible)
+            return;
+
+        var preferredPath = initialSelectionPath || (selectedMode === "video" ? pathAt(pathView.currentIndex) : "");
+        var items = [];
         // Add Wallpaper Engine projects.
         for (var i = 0; i < EngineWallpaperService.wallpapers.length; ++i) {
             var wp = EngineWallpaperService.wallpapers[i];
-            videoModel.append({
+            items.push({
                 "filePath": wp.path,
                 "fileName": wp.title || wp.id,
                 "fileModified": String(wp.modified || 0),
@@ -223,7 +315,7 @@ PanelWindow {
         }
         // Add Live wallpapers
         for (var j = 0; j < liveModel.count; ++j) {
-            videoModel.append({
+            items.push({
                 "filePath": liveModel.get(j, "filePath"),
                 "fileName": liveModel.get(j, "fileName"),
                 "fileModified": String(liveModel.get(j, "fileModified")),
@@ -232,8 +324,41 @@ PanelWindow {
                 "type": "video"
             });
         }
+        replaceVideoModel(items);
         if (wallpaperWindow.visible && wallpaperWindow.selectedMode === "video")
-            Qt.callLater(wallpaperWindow.syncCurrentWallpaper);
+            Qt.callLater(() => {
+                return wallpaperWindow.syncCurrentWallpaper(preferredPath);
+            });
+    }
+    function videoModelIndexForPath(path) {
+        var expectedPath = String(path || "");
+        for (var i = 0; i < videoModel.count; ++i) {
+            if (String(videoModel.get(i).filePath || "") === expectedPath)
+                return i;
+        }
+        return -1;
+    }
+    function videoPreviewImageAt(index) {
+        if (index < 0 || index >= activeCount || selectedMode !== "video")
+            return "";
+
+        var isEngine = roleAt(index, "isEngine", false);
+        var filePath = pathAt(index);
+        var modified = roleAt(index, "fileModified", 0);
+        if (isEngine) {
+            var preview = roleAt(index, "preview", "");
+            if (!preview)
+                return "";
+
+            if (EngineWallpaperService.previewNeedsConversion(preview)) {
+                var thumbPath = EngineWallpaperService.previewThumbnailPath(preview, modified);
+                return EngineWallpaperService.previewThumbnailKnown(preview, modified) ? thumbPath : "";
+            }
+            return preview;
+        }
+        // Live wallpaper — use the ffmpeg-generated thumbnail.
+        var livePath = LiveWallpaperService.thumbnailPath(filePath, modified);
+        return LiveWallpaperService.thumbnailKnown(filePath, modified) ? livePath : "";
     }
 
     aboveWindows: true
@@ -245,7 +370,21 @@ PanelWindow {
     focusable: true
     visible: false
 
-    Component.onDestruction: EngineWallpaperService.endBrowsing()
+    Component.onDestruction: {
+        EngineWallpaperService.endBrowsing();
+        LiveWallpaperService.endBrowsing();
+    }
+    onBrowserOpenChanged: {
+        if (browserOpen) {
+            previewTimer.stop();
+            preloadTimer.stop();
+            return;
+        }
+        if (visible && !changingMode && !hideTimer.running) {
+            contentRoot.forceActiveFocus();
+            schedulePreview();
+        }
+    }
 
     Timer {
         id: hideTimer
@@ -287,66 +426,161 @@ PanelWindow {
             }
         }
 
-        Keys.onEscapePressed: closeSelector()
-        Keys.onLeftPressed: pathView.decrementCurrentIndex()
-        Keys.onReturnPressed: selectCurrentWallpaper()
-        Keys.onRightPressed: pathView.incrementCurrentIndex()
-        Keys.onSpacePressed: selectCurrentWallpaper()
-        Keys.onTabPressed: pathView.incrementCurrentIndex()
+        Keys.onEscapePressed: {
+            if (wallpaperWindow.wallhavenOpen)
+                wallpaperWindow.wallhavenOpen = false;
+            else if (wallpaperWindow.workshopOpen)
+                wallpaperWindow.workshopOpen = false;
+            else
+                closeSelector();
+        }
+        Keys.onLeftPressed: {
+            if (!wallpaperWindow.browserOpen) {
+                wallpaperWindow.startUserNavigation();
+                pathView.decrementCurrentIndex();
+            }
+        }
+        Keys.onReturnPressed: {
+            if (!wallpaperWindow.browserOpen) {
+                wallpaperWindow.startUserNavigation();
+                selectCurrentWallpaper();
+            }
+        }
+        Keys.onRightPressed: {
+            if (!wallpaperWindow.browserOpen) {
+                wallpaperWindow.startUserNavigation();
+                pathView.incrementCurrentIndex();
+            }
+        }
+        Keys.onSpacePressed: {
+            if (!wallpaperWindow.browserOpen) {
+                wallpaperWindow.startUserNavigation();
+                selectCurrentWallpaper();
+            }
+        }
+        Keys.onTabPressed: {
+            if (!wallpaperWindow.browserOpen) {
+                wallpaperWindow.startUserNavigation();
+                pathView.incrementCurrentIndex();
+            }
+        }
 
         ListModel {
             id: videoModel
         }
-        FolderListModel {
+        ListModel {
             id: staticModel
+        }
+        FolderListModel {
+            id: personalStaticModel
 
-            folder: "file://" + Config.wallFolder
+            folder: wallpaperWindow.visible ? "file://" + Config.wallFolder : ""
             nameFilters: ["*.jpg", "*.png", "*.jpeg", "*.webp", "*.bmp", "*.JPG", "*.PNG", "*.JPEG", "*.WEBP", "*.BMP"]
             showDirs: false
 
             onCountChanged: {
-                if (wallpaperWindow.visible && wallpaperWindow.selectedMode === "static")
-                    Qt.callLater(wallpaperWindow.syncCurrentWallpaper);
+                if (wallpaperWindow.visible)
+                    Qt.callLater(wallpaperWindow.syncStaticModel);
+            }
+            onStatusChanged: {
+                if (wallpaperWindow.visible && status === FolderListModel.Ready)
+                    wallpaperWindow.syncStaticModel();
+            }
+        }
+        FolderListModel {
+            id: wallhavenStaticFolderModel
+
+            folder: wallpaperWindow.visible ? "file://" + Config.wallhavenCacheFolder : ""
+            nameFilters: ["*.jpg", "*.png", "*.jpeg", "*.webp", "*.JPG", "*.PNG", "*.JPEG", "*.WEBP"]
+            showDirs: false
+
+            onCountChanged: {
+                if (wallpaperWindow.visible)
+                    Qt.callLater(wallpaperWindow.syncStaticModel);
+            }
+            onStatusChanged: {
+                if (wallpaperWindow.visible && status === FolderListModel.Ready)
+                    wallpaperWindow.syncStaticModel();
             }
         }
         FolderListModel {
             id: liveModel
 
-            folder: "file://" + Config.liveWallFolder
+            folder: wallpaperWindow.visible ? "file://" + Config.liveWallFolder : ""
             nameFilters: ["*.gif", "*.mp4", "*.webm", "*.mkv", "*.mov", "*.m4v", "*.GIF", "*.MP4", "*.WEBM", "*.MKV", "*.MOV", "*.M4V"]
             showDirs: false
 
-            onCountChanged: Qt.callLater(wallpaperWindow.syncVideoModel)
-
+            onCountChanged: {
+                if (wallpaperWindow.visible)
+                    Qt.callLater(wallpaperWindow.syncVideoModel);
+            }
             onStatusChanged: {
-                if (status === FolderListModel.Ready)
+                if (wallpaperWindow.visible && status === FolderListModel.Ready)
                     wallpaperWindow.syncVideoModel();
             }
         }
         Connections {
-            function onWallpapersChanged() {
+            function onDataChanged() {
                 wallpaperWindow.syncVideoModel();
+            }
+            function onModelReset() {
+                wallpaperWindow.syncVideoModel();
+            }
+            function onRowsInserted() {
+                wallpaperWindow.syncVideoModel();
+            }
+            function onRowsRemoved() {
+                wallpaperWindow.syncVideoModel();
+            }
+
+            enabled: wallpaperWindow.visible
+            target: liveModel
+        }
+        Connections {
+            function onWallpapersChanged() {
+                if (wallpaperWindow.visible)
+                    wallpaperWindow.syncVideoModel();
             }
 
             target: EngineWallpaperService
         }
-        WallpaperModeSwitch {
-            id: modeSwitch
+        Row {
+            id: wallpaperToolbar
 
             anchors.bottom: pathView.top
             anchors.bottomMargin: -48
             anchors.horizontalCenter: parent.horizontalCenter
-            mode: wallpaperWindow.selectedMode
+            spacing: 8
             z: 300
 
-            onModeRequested: mode => {
-                return wallpaperWindow.switchMode(mode);
+            WallpaperSourceButton {
+                fallbackIconName: "preferences-desktop-wallpaper-symbolic"
+                iconName: "image-x-generic-symbolic"
+                label: qsTr("Add image")
+
+                onClicked: wallpaperWindow.wallhavenOpen = true
+            }
+            WallpaperModeSwitch {
+                id: modeSwitch
+
+                mode: wallpaperWindow.selectedMode
+
+                onModeRequested: mode => {
+                    return wallpaperWindow.switchMode(mode);
+                }
+            }
+            WallpaperSourceButton {
+                fallbackIconName: "media-playback-start-symbolic"
+                iconName: "video-x-generic-symbolic"
+                label: qsTr("Add video")
+
+                onClicked: wallpaperWindow.workshopOpen = true
             }
         }
         Text {
+            anchors.bottom: wallpaperToolbar.top
+            anchors.bottomMargin: 8
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: modeSwitch.bottom
-            anchors.topMargin: 10
             color: Config.md3.tertiary
             elide: Text.ElideRight
             font.family: Config.fontName
@@ -359,12 +593,12 @@ PanelWindow {
 
                 var msgs = [];
                 if (!EngineWallpaperService.available && EngineWallpaperService.availabilityKnown)
-                    msgs.push("Install linux-wallpaperengine");
+                    msgs.push(qsTr("Install linux-wallpaperengine"));
 
                 if (!LiveWallpaperService.available && LiveWallpaperService.availabilityKnown)
-                    msgs.push("Install mpvpaper");
+                    msgs.push(qsTr("Install mpvpaper"));
 
-                return msgs.length > 0 ? "Missing: " + msgs.join(" / ") : "";
+                return msgs.length > 0 ? qsTr("Missing: %1").arg(msgs.join(" / ")) : "";
             }
             visible: wallpaperWindow.selectedMode === "video" && ((!LiveWallpaperService.available && LiveWallpaperService.availabilityKnown) || (!EngineWallpaperService.available && EngineWallpaperService.availabilityKnown))
             width: Math.max(0, parent.width - 24)
@@ -379,6 +613,7 @@ PanelWindow {
             delegate: wallpaperDelegate
             height: Math.min(400, parent.height * 0.56)
             highlightRangeMode: PathView.StrictlyEnforceRange
+            interactive: !wallpaperWindow.browserOpen
             model: wallpaperWindow.activeModel
             pathItemCount: wallpaperWindow.width < 1000 ? 5 : 7
             preferredHighlightBegin: 0.5
@@ -437,15 +672,18 @@ PanelWindow {
             onCurrentIndexChanged: {
                 if (!wallpaperWindow.changingMode) {
                     wallpaperWindow.rememberCurrentIndex();
-                    wallpaperWindow.schedulePreview();
+                    if (!wallpaperWindow.browserOpen)
+                        wallpaperWindow.schedulePreview();
                 }
             }
 
             MouseArea {
                 acceptedButtons: Qt.NoButton
                 anchors.fill: parent
+                enabled: !wallpaperWindow.browserOpen
 
                 onWheel: wheel => {
+                    wallpaperWindow.startUserNavigation();
                     if (wheel.angleDelta.y > 0)
                         pathView.decrementCurrentIndex();
                     else if (wheel.angleDelta.y < 0)
@@ -477,8 +715,46 @@ PanelWindow {
                 font.family: Config.fontName
                 font.pixelSize: 13
                 horizontalAlignment: Text.AlignHCenter
-                text: wallpaperWindow.selectedMode === "video" ? (Config.wallpaperEngineWorkshopDir + " / " + Config.liveWallFolder) : Config.wallFolder
+                text: wallpaperWindow.selectedMode === "video" ? (Config.wallpaperEngineWorkshopDir + " / " + Config.liveWallFolder) : (Config.wallFolder + " / " + Config.wallhavenCacheFolder)
                 width: parent.width
+            }
+        }
+        Loader {
+            id: workshopLoader
+
+            active: wallpaperWindow.workshopOpen
+            anchors.fill: parent
+            asynchronous: true
+            z: 700
+
+            sourceComponent: Component {
+                WallpaperWorkshopPanel {
+                    onApplyRequested: (path, modified) => {
+                        wallpaperWindow.selectionCommitted = true;
+                        WallpaperService.apply(path, "video", modified);
+                        wallpaperWindow.closeSelector();
+                    }
+                    onCloseRequested: wallpaperWindow.workshopOpen = false
+                }
+            }
+        }
+        Loader {
+            id: wallhavenLoader
+
+            active: wallpaperWindow.wallhavenOpen
+            anchors.fill: parent
+            asynchronous: true
+            z: 700
+
+            sourceComponent: Component {
+                WallhavenPanel {
+                    onApplyRequested: (path, modified) => {
+                        wallpaperWindow.selectionCommitted = true;
+                        WallpaperService.apply(path, "static", modified);
+                        wallpaperWindow.closeSelector();
+                    }
+                    onCloseRequested: wallpaperWindow.wallhavenOpen = false
+                }
             }
         }
     }
@@ -511,21 +787,23 @@ PanelWindow {
             function requestCurrentThumbnail() {
                 if (live) {
                     thumbnailAvailable = LiveWallpaperService.thumbnailKnown(filePath, fileModified);
-                    LiveWallpaperService.requestThumbnail(filePath, fileModified, PathView.isCurrentItem);
+                    if (!thumbnailAvailable)
+                        LiveWallpaperService.requestThumbnail(filePath, fileModified, PathView.isCurrentItem);
                 } else if (convertedEnginePreview) {
                     engineThumbnailAvailable = EngineWallpaperService.previewThumbnailKnown(previewPath, fileModified);
-                    EngineWallpaperService.requestPreviewThumbnail(previewPath, fileModified, PathView.isCurrentItem);
+                    if (!engineThumbnailAvailable)
+                        EngineWallpaperService.requestPreviewThumbnail(previewPath, fileModified, PathView.isCurrentItem);
                 }
             }
             function scheduleThumbnailLoad() {
-                if (PathView.isCurrentItem || (!live && !convertedEnginePreview)) {
+                if (delegateRoot.PathView.isCurrentItem || (!delegateRoot.live && !delegateRoot.convertedEnginePreview)) {
                     // Static images and current item: load immediately.
-                    permitThumbnailLoad = true;
-                    requestCurrentThumbnail();
+                    delegateRoot.permitThumbnailLoad = true;
+                    delegateRoot.requestCurrentThumbnail();
                     return;
                 }
                 // Video thumbnails that need generation: short staggered delay.
-                thumbnailLoadTimer.interval = 40 * Math.max(1, circularDistanceFromCurrent());
+                thumbnailLoadTimer.interval = 40 * Math.max(1, delegateRoot.circularDistanceFromCurrent());
                 thumbnailLoadTimer.restart();
             }
 
@@ -542,30 +820,36 @@ PanelWindow {
             }
 
             Component.onCompleted: {
-                scheduleThumbnailLoad();
+                delegateRoot.scheduleThumbnailLoad();
             }
             onFileModifiedChanged: {
                 permitThumbnailLoad = false;
-                Qt.callLater(delegateRoot.scheduleThumbnailLoad);
+                scheduleThumbnailTimer.restart();
             }
             onFilePathChanged: {
                 permitThumbnailLoad = false;
-                Qt.callLater(delegateRoot.scheduleThumbnailLoad);
+                scheduleThumbnailTimer.restart();
             }
             onPreviewPathChanged: {
                 permitThumbnailLoad = false;
-                Qt.callLater(delegateRoot.scheduleThumbnailLoad);
+                scheduleThumbnailTimer.restart();
             }
 
             Connections {
                 function onCurrentIndexChanged() {
-                    if (!delegateRoot.permitThumbnailLoad)
+                    if (delegateRoot.PathView.isCurrentItem || !delegateRoot.permitThumbnailLoad)
                         delegateRoot.scheduleThumbnailLoad();
-                    else
-                        delegateRoot.requestCurrentThumbnail();
                 }
 
                 target: pathView
+            }
+            Timer {
+                id: scheduleThumbnailTimer
+
+                interval: 0
+                repeat: false
+
+                onTriggered: delegateRoot.scheduleThumbnailLoad()
             }
             Timer {
                 id: thumbnailLoadTimer
@@ -577,7 +861,6 @@ PanelWindow {
                     delegateRoot.requestCurrentThumbnail();
                 }
             }
-
             Connections {
                 function onThumbnailReady(sourcePath, thumbnailPath) {
                     if (delegateRoot.live && sourcePath === delegateRoot.filePath && thumbnailPath === delegateRoot.liveThumbnail) {
@@ -604,11 +887,7 @@ PanelWindow {
             }
             Rectangle {
                 anchors.fill: parent
-                border.color: Config.md3.outline
-                border.width: 10
-                clip: true
-                color: Config.alpha(Config.md3.surface, 0.8)
-                radius: 12
+                color: Config.md3.surface_container_low
 
                 CachingImage {
                     anchors.fill: parent
@@ -621,30 +900,43 @@ PanelWindow {
                         if (delegateRoot.isEngine) {
                             if (delegateRoot.convertedEnginePreview)
                                 return (delegateRoot.permitThumbnailLoad && delegateRoot.engineThumbnailAvailable) ? delegateRoot.engineThumbnail : "";
+
                             return delegateRoot.engineThumbnail;
                         }
-
                         return delegateRoot.filePath;
                     }
                 }
                 Rectangle {
                     anchors.fill: parent
-                    color: "#000000"
+                    color: Config.md3.scrim
                     opacity: delegateRoot.PathView.isCurrentItem ? 0 : 0.6
-                    radius: 12
 
                     Behavior on opacity {
-                        NumberAnimation {
+                        OpacityAnimator {
                             duration: 150
                         }
                     }
                 }
+                Rectangle {
+                    anchors.fill: parent
+                    color: Config.alpha(Config.md3.primary, 0.07)
+                    opacity: cardMouse.containsMouse ? 1 : 0
+
+                    Behavior on opacity {
+                        OpacityAnimator {
+                            duration: 140
+                        }
+                    }
+                }
                 MouseArea {
+                    id: cardMouse
+
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
 
                     onClicked: {
+                        wallpaperWindow.startUserNavigation();
                         if (pathView.currentIndex === index)
                             wallpaperWindow.selectCurrentWallpaper();
                         else
@@ -654,22 +946,39 @@ PanelWindow {
                 }
                 Rectangle {
                     anchors.centerIn: parent
-                    border.color: Config.alpha(Config.md3.on_surface, 0.22)
-                    border.width: 1
-                    color: Config.alpha(Config.md3.background, 0.72)
+                    color: cardMouse.containsMouse ? Config.alpha(Config.md3.primary_container, 0.94) : Config.alpha(Config.md3.background, 0.78)
                     enabled: false
-                    height: 48
+                    height: 50
                     radius: width / 2
+                    scale: cardMouse.containsMouse ? 1.08 : 1
                     visible: wallpaperWindow.selectedMode === "video"
-                    width: 48
+                    width: 50
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 140
+                        }
+                    }
+                    Behavior on scale {
+                        ScaleAnimator {
+                            duration: 170
+                            easing.type: Easing.OutCubic
+                        }
+                    }
 
                     Text {
                         anchors.centerIn: parent
                         anchors.horizontalCenterOffset: 2
-                        color: Config.md3.on_surface
+                        color: cardMouse.containsMouse ? Config.md3.on_primary_container : Config.md3.on_surface
                         font.family: Config.fontName
                         font.pixelSize: 20
                         text: "▶"
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 140
+                            }
+                        }
                     }
                 }
             }

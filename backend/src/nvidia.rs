@@ -1,10 +1,10 @@
 use crate::model::{GpuStats, RankedProcess};
-use crate::system::read_text;
+use crate::system::{process_name, read_text};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -83,7 +83,7 @@ impl NvidiaReader {
 
     pub fn top_processes(&self) -> Vec<RankedProcess> {
         let output = run_nvidia_smi(["pmon", "-c", "1", "-s", "m"]);
-        let mut totals: HashMap<String, f64> = HashMap::new();
+        let mut totals: HashMap<u32, (String, f64)> = HashMap::new();
 
         for line in output.lines() {
             if line.trim_start().starts_with('#') || line.trim().is_empty() {
@@ -104,15 +104,15 @@ impl NvidiaReader {
                 .map(|parts| parts.join(" "))
                 .unwrap_or_default();
             let name = process_name(pid, &reported_name);
-            *totals.entry(name).or_default() += framebuffer_mib;
+            let entry = totals.entry(pid).or_insert((name, 0.0));
+            entry.1 += framebuffer_mib;
         }
 
         let mut result: Vec<_> = totals
             .into_iter()
-            .map(|(name, value)| RankedProcess { name, value })
+            .map(|(pid, (name, value))| RankedProcess { pid, name, value })
             .collect();
         result.sort_by(|left, right| right.value.total_cmp(&left.value));
-        result.truncate(5);
         result
     }
 }
@@ -124,56 +124,6 @@ fn find_device() -> Option<PathBuf> {
         }
     }
     None
-}
-
-fn process_name(pid: u32, reported_name: &str) -> String {
-    if let Ok(environment) = fs::read(format!("/proc/{pid}/environ")) {
-        for entry in environment.split(|byte| *byte == 0) {
-            let Some(desktop) = entry.strip_prefix(b"CHROME_DESKTOP=") else {
-                continue;
-            };
-            let mut desktop = String::from_utf8_lossy(desktop).into_owned();
-            if let Some(value) = desktop.strip_suffix(".desktop") {
-                desktop = value.to_string();
-            }
-            if let Some(value) = desktop.strip_suffix("-url-handler") {
-                desktop = value.to_string();
-            }
-            if !desktop.is_empty() {
-                return desktop;
-            }
-        }
-    }
-
-    if let Ok(command_line) = fs::read(format!("/proc/{pid}/cmdline")) {
-        let executable = command_line
-            .split(|byte| *byte == 0)
-            .next()
-            .unwrap_or_default();
-        let base = Path::new(OsStr::from_bytes(executable))
-            .file_name()
-            .and_then(OsStr::to_str)
-            .unwrap_or_default();
-        if !base.is_empty() && base != "exe" {
-            return base.to_string();
-        }
-    }
-
-    let reported_executable = reported_name.split_whitespace().next().unwrap_or_default();
-    let reported_base = Path::new(reported_executable)
-        .file_name()
-        .and_then(OsStr::to_str)
-        .unwrap_or_default();
-    if !reported_base.is_empty() && reported_base != "exe" {
-        return reported_base.to_string();
-    }
-
-    let comm = read_text(format!("/proc/{pid}/comm"));
-    if comm.is_empty() {
-        pid.to_string()
-    } else {
-        comm
-    }
 }
 
 fn run_nvidia_smi<const N: usize>(arguments: [&str; N]) -> String {
@@ -210,6 +160,3 @@ fn run_nvidia_smi<const N: usize>(arguments: [&str; N]) -> String {
         }
     }
 }
-
-#[cfg(unix)]
-use std::os::unix::ffi::OsStrExt;

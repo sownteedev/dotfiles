@@ -59,6 +59,8 @@ Item {
     readonly property string governorOverride: BatteryService.governorOverride
     readonly property string gpuPower: BatteryService.gpuPower
     readonly property string healthVal: BatteryService.health
+    readonly property string performanceDegradationText: BatteryService.performanceDegradationText
+    readonly property bool performanceDegraded: BatteryService.performanceDegraded
 
     // Popup properties
     property var popupModel: []
@@ -70,8 +72,6 @@ Item {
     property real popupY: 0
     readonly property string powerDrawVal: BatteryService.powerDraw
     property bool powerDropOpen: false
-    readonly property bool performanceDegraded: BatteryService.performanceDegraded
-    readonly property string performanceDegradationText: BatteryService.performanceDegradationText
     readonly property bool powerProfilesAvailable: BatteryService.powerProfilesAvailable
     readonly property string tempVal: BatteryService.temperature
     readonly property string turboOverride: BatteryService.turboOverride
@@ -357,7 +357,6 @@ Item {
                     }
                 }
             }
-
             Rectangle {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.error, 0.3)
@@ -378,9 +377,9 @@ Item {
                         Layout.alignment: Qt.AlignTop
                         Layout.preferredHeight: 20
                         Layout.preferredWidth: 20
+                        layer.enabled: true
                         source: Quickshell.iconPath("dialog-warning-symbolic")
 
-                        layer.enabled: true
                         layer.effect: ColorOverlay {
                             color: Config.md3.on_error_container
                         }

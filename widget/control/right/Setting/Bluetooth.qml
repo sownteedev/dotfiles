@@ -11,8 +11,6 @@ import "../../../../service"
 Item {
     id: root
 
-    property bool manualScanActive: false
-    property bool ownsDiscovery: false
     readonly property var adapter: Bluetooth.defaultAdapter
     readonly property var availableDevices: {
         var nearbyRevision = BluetoothService.nearbyRevision;
@@ -23,7 +21,6 @@ Item {
         }
         return result;
     }
-    readonly property var devices: adapter ? adapter.devices.values : []
     readonly property string connectedAirpodsAddress: {
         for (var i = 0; i < pairedDevices.length; ++i) {
             var name = String(pairedDevices[i].name || pairedDevices[i].deviceName || "").toLowerCase();
@@ -32,7 +29,9 @@ Item {
         }
         return "";
     }
-    onConnectedAirpodsAddressChanged: syncAirpodsReader()
+    readonly property var devices: adapter ? adapter.devices.values : []
+    property bool manualScanActive: false
+    property bool ownsDiscovery: false
     readonly property var pairedDevices: {
         var result = [];
         for (var i = 0; i < devices.length; ++i) {
@@ -82,9 +81,9 @@ Item {
         var enabled = visible && controlRightWindow.active && connectedAirpodsAddress !== "";
         BluetoothService.setAirpodsDevice(connectedAirpodsAddress, enabled);
     }
+
     anchors.fill: parent
 
-    onVisibleChanged: syncAirpodsReader()
     Component.onCompleted: {
         startScan();
         syncAirpodsReader();
@@ -93,6 +92,8 @@ Item {
         stopScan();
         BluetoothService.setAirpodsDevice("", false);
     }
+    onConnectedAirpodsAddressChanged: syncAirpodsReader()
+    onVisibleChanged: syncAirpodsReader()
 
     Connections {
         function onActiveChanged() {
@@ -101,7 +102,6 @@ Item {
 
         target: controlRightWindow
     }
-
     Timer {
         id: scanStopTimer
 
@@ -169,17 +169,22 @@ Item {
                 ColumnLayout {
                     id: deviceSections
 
-                    spacing: 14
+                    spacing: 10
                     width: parent.width
 
-                    Text {
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 16
-                        font.weight: Font.DemiBold
-                        opacity: 0.82
-                        text: "Paired devices"
+                    RowLayout {
+                        Layout.bottomMargin: 2
+                        Layout.fillWidth: true
                         visible: root.pairedDevices.length > 0
+
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.md3.on_surface
+                            font.family: Config.fontName
+                            font.pixelSize: 16
+                            font.weight: Font.DemiBold
+                            text: qsTr("Paired devices")
+                        }
                     }
                     Repeater {
                         model: root.pairedDevices
@@ -202,14 +207,20 @@ Item {
                         text: "No paired devices"
                         visible: root.pairedDevices.length === 0
                     }
-                    Text {
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 16
-                        font.weight: Font.DemiBold
-                        opacity: 0.82
-                        text: "Saved devices"
+                    RowLayout {
+                        Layout.bottomMargin: 2
+                        Layout.fillWidth: true
+                        Layout.topMargin: 6
                         visible: root.savedDevices.length > 0
+
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.md3.on_surface
+                            font.family: Config.fontName
+                            font.pixelSize: 16
+                            font.weight: Font.DemiBold
+                            text: qsTr("Saved devices")
+                        }
                     }
                     Repeater {
                         model: root.savedDevices
@@ -222,8 +233,10 @@ Item {
                         }
                     }
                     RowLayout {
+                        Layout.bottomMargin: 2
                         Layout.fillWidth: true
-                        Layout.topMargin: 8
+                        Layout.topMargin: root.pairedDevices.length > 0 || root.savedDevices.length > 0 ? 12 : 0
+                        spacing: 8
 
                         Text {
                             Layout.fillWidth: true
@@ -231,23 +244,24 @@ Item {
                             font.family: Config.fontName
                             font.pixelSize: 16
                             font.weight: Font.DemiBold
-                            opacity: 0.82
-                            text: "Available devices"
+                            text: qsTr("Available devices")
                         }
                         Rectangle {
-                            Layout.preferredHeight: 35
-                            Layout.preferredWidth: 35
-                            color: scanMouse.containsMouse ? Config.md3.surface_container_high : "transparent"
+                            Layout.preferredHeight: 36
+                            Layout.preferredWidth: 36
+                            border.color: Config.alpha(Config.md3.on_surface, 0.10)
+                            border.width: 1
+                            color: scanMouse.containsMouse ? Config.md3.surface_container_highest : Config.md3.surface_container
                             opacity: root.adapter && root.adapter.enabled ? 1 : 0.4
-                            radius: 15
+                            radius: 12
 
                             AnimatedSpinner {
                                 anchors.centerIn: parent
-                                color: Config.md3.on_surface
-                                height: 25
-                                lineWidth: 2.5
+                                color: root.manualScanActive ? Config.md3.primary : Config.md3.on_surface_variant
+                                height: 22
+                                lineWidth: 2.2
                                 running: root.manualScanActive
-                                width: 25
+                                width: 22
                             }
                             MouseArea {
                                 id: scanMouse
@@ -278,11 +292,11 @@ Item {
                     }
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 88
-                        border.color: Config.alpha(Config.md3.on_surface, 0.055)
+                        Layout.preferredHeight: 76
+                        border.color: Config.alpha(Config.md3.on_surface, 0.08)
                         border.width: 1
-                        color: Config.alpha(Config.md3.on_surface, 0.025)
-                        radius: 14
+                        color: Config.alpha(Config.md3.on_surface, 0.03)
+                        radius: 16
                         visible: root.availableDevices.length === 0
 
                         RowLayout {
@@ -292,17 +306,17 @@ Item {
                             spacing: 14
 
                             Rectangle {
-                                Layout.preferredHeight: 44
-                                Layout.preferredWidth: 44
-                                color: Config.alpha(Config.md3.primary, 0.10)
-                                radius: 13
+                                Layout.preferredHeight: 40
+                                Layout.preferredWidth: 40
+                                color: Config.alpha(Config.md3.primary, 0.09)
+                                radius: 20
 
                                 IconImage {
                                     id: emptyBluetoothIcon
 
                                     anchors.centerIn: parent
-                                    implicitHeight: 23
-                                    implicitWidth: 23
+                                    implicitHeight: 21
+                                    implicitWidth: 21
                                     source: Quickshell.iconPath("bluetooth-symbolic")
                                     visible: false
                                 }
@@ -322,7 +336,7 @@ Item {
                                     font.family: Config.fontName
                                     font.pixelSize: 16
                                     font.weight: Font.DemiBold
-                                    text: "No nearby devices found"
+                                    text: qsTr("No nearby devices found")
                                 }
                                 Text {
                                     Layout.fillWidth: true
@@ -330,7 +344,7 @@ Item {
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
                                     font.pixelSize: 14
-                                    text: "Make the device visible, then press refresh"
+                                    text: qsTr("Make the device visible, then press refresh")
                                 }
                             }
                         }

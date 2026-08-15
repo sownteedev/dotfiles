@@ -127,8 +127,8 @@ Item {
                 var p = Quickshell.iconPath(n);
                 return p !== "" ? p : "";
             }
-            width: 24
             visible: buttonRoot.iconGlyph === ""
+            width: 24
 
             layer.effect: ColorOverlay {
                 color: buttonRoot.active ? Config.md3.on_primary : Config.md3.on_surface

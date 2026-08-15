@@ -13,9 +13,12 @@ QtObject {
     readonly property string cacheDir: Config.cacheRoot + "/wallpaper-preview"
     property bool commitApplyColors: false
     property string commitKey: ""
+    property int commitToken: 0
     property string currentKey: ""
+    readonly property int maxPaletteCacheEntries: 16
     property var originalColors: null
     property var paletteCache: ({})
+    property var paletteCacheOrder: []
     property var pendingJob: null
     property var preloadQueue: []
     property Process worker: Process {
@@ -32,7 +35,7 @@ QtObject {
                     var palette = null;
                     if (Config.matugenEnabled && job.mode === ThemeService.colorMode) {
                         palette = root.paletteFromMatugen(JSON.parse(workerOutput.text.trim()));
-                        root.paletteCache[job.key] = palette;
+                        root.storePalette(job.key, palette);
                     }
 
                     // A slow, stale job must never recolor the wallpaper which
@@ -61,9 +64,9 @@ QtObject {
         }
     }
 
-    signal themeSourceReady(string sourcePath, string thumbnailPath)
+    signal themeSourceReady(string sourcePath, string thumbnailPath, int requestToken)
 
-    function accept(path, modified, applyColorsNow) {
+    function accept(path, modified, applyColorsNow, requestToken) {
         if (!path)
             return;
 
@@ -72,10 +75,12 @@ QtObject {
         originalColors = null;
         currentKey = "";
         commitKey = key;
+        commitToken = Number(requestToken || 0);
         commitApplyColors = applyColorsNow === true;
 
         if (Config.matugenEnabled && paletteCache[key] !== undefined) {
-            finishCommit(makeJob(path, modified), paletteCache[key]);
+            touchPalette(key);
+            finishCommit(makeJob(path, modified, commitToken), paletteCache[key]);
             return;
         }
 
@@ -85,6 +90,7 @@ QtObject {
         active = true;
         currentKey = "";
         commitKey = "";
+        commitToken = 0;
         commitApplyColors = false;
         originalColors = cloneColors(ThemeService.activeColors);
     }
@@ -94,6 +100,7 @@ QtObject {
     function cancel() {
         currentKey = "";
         commitKey = "";
+        commitToken = 0;
         commitApplyColors = false;
 
         if (active && originalColors)
@@ -118,19 +125,20 @@ QtObject {
             ThemeService.applyColors(palette, true);
         commitApplyColors = false;
         commitKey = "";
-        themeSourceReady(job.path, fallbackPath || job.thumbnail);
+        themeSourceReady(job.path, fallbackPath || job.thumbnail, Number(job.requestToken || 0));
+        commitToken = 0;
     }
-    function makeJob(path, modified) {
+    function makeJob(path, modified, requestToken) {
         var key = cacheKey(path, modified);
         return {
             "key": key,
             "mode": ThemeService.colorMode,
             "palette": palettePath(key),
             "path": path,
+            "requestToken": Number(requestToken || 0),
             "thumbnail": thumbnailPath(thumbnailKey(path, modified))
         };
     }
-
     function paletteFromMatugen(output) {
         var result = {
             "md3": {},
@@ -191,6 +199,7 @@ QtObject {
         currentKey = key;
         var cached = paletteCache[key];
         if (cached !== undefined) {
+            touchPalette(key);
             ThemeService.applyColors(cached, true);
             return;
         }
@@ -223,10 +232,16 @@ QtObject {
             return;
 
         var key = cacheKey(path, modified);
-        if (activeJob && activeJob.key === key)
+        if (activeJob && activeJob.key === key) {
+            if (commitKey === key)
+                activeJob.requestToken = commitToken;
             return;
-        if (pendingJob && pendingJob.key === key)
+        }
+        if (pendingJob && pendingJob.key === key) {
+            if (commitKey === key)
+                pendingJob.requestToken = commitToken;
             return;
+        }
 
         var filteredPreloads = [];
         for (var i = 0; i < preloadQueue.length; ++i) {
@@ -234,17 +249,38 @@ QtObject {
                 filteredPreloads.push(preloadQueue[i]);
         }
         preloadQueue = filteredPreloads;
-        pendingJob = makeJob(path, modified);
+        pendingJob = makeJob(path, modified, commitToken);
         processNext();
     }
     function resetPreloads() {
         preloadQueue = [];
     }
-
-    function thumbnailPath(key) {
-        return cacheDir + "/" + key + ".jpg";
+    function storePalette(key, palette) {
+        var nextCache = Object.assign({}, paletteCache);
+        nextCache[key] = palette;
+        paletteCache = nextCache;
+        touchPalette(key);
     }
     function thumbnailKey(path, modified) {
         return WallpaperService.stableHash(String(path || "") + "|" + LiveWallpaperService.modifiedKey(modified));
+    }
+    function thumbnailPath(key) {
+        return cacheDir + "/" + key + ".jpg";
+    }
+    function touchPalette(key) {
+        var nextOrder = [];
+        for (var i = 0; i < paletteCacheOrder.length; ++i) {
+            if (paletteCacheOrder[i] !== key)
+                nextOrder.push(paletteCacheOrder[i]);
+        }
+        nextOrder.push(key);
+
+        var nextCache = Object.assign({}, paletteCache);
+        while (nextOrder.length > maxPaletteCacheEntries) {
+            var expiredKey = nextOrder.shift();
+            delete nextCache[expiredKey];
+        }
+        paletteCache = nextCache;
+        paletteCacheOrder = nextOrder;
     }
 }

@@ -13,6 +13,7 @@ LoadingIndicator 1.0 animate/LoadingIndicator.qml
 CachingImage 1.0 common/CachingImage.qml
 CustomVolumeSlider 1.0 common/CustomVolumeSlider.qml
 FormTextField 1.0 common/FormTextField.qml
+ProcessManager 1.0 common/ProcessManager.qml
 SelectPopup 1.0 common/SelectPopup.qml
 SlimScrollBar 1.0 common/SlimScrollBar.qml
 WifiSignalIcon 1.0 common/WifiSignalIcon.qml
@@ -39,11 +40,26 @@ SettingsChoiceRow 1.0 settings/SettingsChoiceRow.qml
 SettingsExpandableCard 1.0 settings/SettingsExpandableCard.qml
 SettingsSectionCard 1.0 settings/SettingsSectionCard.qml
 SettingsNavButton 1.0 settings/SettingsNavButton.qml
+SettingsPageContent 1.0 settings/SettingsPageContent.qml
+SettingsSearch 1.0 settings/SettingsSearch.qml
 SettingsSegmentedControl 1.0 settings/SettingsSegmentedControl.qml
+SettingsToggleTile 1.0 settings/SettingsToggleTile.qml
 SettingsToggleRow 1.0 settings/SettingsToggleRow.qml
 WallpaperModeSwitch 1.0 settings/WallpaperModeSwitch.qml
 WifiNetworkRow 1.0 settings/WifiNetworkRow.qml
 WifiSettingsPanel 1.0 settings/WifiSettingsPanel.qml
+
+WallhavenBrowseControls 1.0 wallpaper/WallhavenBrowseControls.qml
+WallhavenChoiceButton 1.0 wallpaper/WallhavenChoiceButton.qml
+WallhavenColorPopup 1.0 wallpaper/WallhavenColorPopup.qml
+WallhavenFilterButton 1.0 wallpaper/WallhavenFilterButton.qml
+WallhavenFilterPopup 1.0 wallpaper/WallhavenFilterPopup.qml
+WallhavenFilterToolbar 1.0 wallpaper/WallhavenFilterToolbar.qml
+WallhavenRatioPopup 1.0 wallpaper/WallhavenRatioPopup.qml
+WallhavenResolutionPopup 1.0 wallpaper/WallhavenResolutionPopup.qml
+WallhavenSearchBar 1.0 wallpaper/WallhavenSearchBar.qml
+WallhavenSortPopup 1.0 wallpaper/WallhavenSortPopup.qml
+WallpaperSourceButton 1.0 wallpaper/WallpaperSourceButton.qml
 
 CalendarEventEditor 1.0 productivity/CalendarEventEditor.qml
 GoogleAuthPanel 1.0 productivity/GoogleAuthPanel.qml

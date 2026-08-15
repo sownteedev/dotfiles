@@ -80,8 +80,8 @@ ColumnLayout {
         }
         SettingsActionButton {
             Layout.alignment: Qt.AlignVCenter
-            iconName: root.actionIcon
             enabled: root.enabled && root.editable
+            iconName: root.actionIcon
             visible: root.actionIcon !== ""
 
             onClicked: root.actionClicked()

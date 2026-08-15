@@ -93,6 +93,7 @@ Item {
     }
     ColumnLayout {
         anchors.fill: parent
+        spacing: 10
 
         Item {
             Layout.fillHeight: true
@@ -102,12 +103,14 @@ Item {
                 id: notifListView
 
                 anchors.fill: parent
+                bottomMargin: 6
                 cacheBuffer: 80
                 clip: true
                 model: NotificationHistory.notificationGroups
                 opacity: NotificationHistory.notifications.count > 0 ? 1 : 0
                 reuseItems: true
-                spacing: 15
+                spacing: 10
+                topMargin: 2
 
                 delegate: Rectangle {
                     id: groupItem
@@ -119,15 +122,17 @@ Item {
                     property bool isGroup: notifCount > 1
                     property int notifCount: notifications.length
                     property var notifications: modelData ? modelData.notifications : []
+                    property bool pooled: false
                     property int renderedCount: notificationPageRoot.renderedCountFor(appName)
                     property real swipeOffset: 0
 
-                    border.color: Config.alpha(Config.md3.on_surface, 0.05)
+                    border.color: Config.alpha(Config.md3.on_surface, 0.075)
                     border.width: 1
                     clip: true
-                    color: Config.md3.surface_container
-                    height: isDismissing ? 0 : cardColumn.implicitHeight + 24
-                    radius: 14
+                    color: Config.md3.surface_container_low
+                    height: isDismissing ? 0 : cardColumn.implicitHeight + 20
+                    radius: 16
+                    visible: !groupItem.pooled
                     width: ListView.view.width
 
                     Behavior on height {
@@ -157,11 +162,13 @@ Item {
                     }
 
                     ListView.onPooled: {
+                        pooled = true;
                         clearStaggerTimer.stop();
                         groupSwipeCollapseTimer.stop();
                         groupDismissTimer.stop();
                     }
                     ListView.onReused: {
+                        pooled = false;
                         clearStaggerTimer.stop();
                         groupSwipeCollapseTimer.stop();
                         groupDismissTimer.stop();
@@ -172,12 +179,13 @@ Item {
 
                     Connections {
                         function onClearAllAnimationActiveChanged() {
-                            if (notificationPageRoot.clearAllAnimationActive) {
+                            if (!groupItem.pooled && notificationPageRoot.clearAllAnimationActive) {
                                 clearStaggerTimer.interval = Math.min(index, 7) * 55;
                                 clearStaggerTimer.start();
                             }
                         }
 
+                        enabled: !groupItem.pooled
                         target: notificationPageRoot
                     }
                     Timer {
@@ -186,7 +194,8 @@ Item {
                         repeat: false
 
                         onTriggered: {
-                            groupItem.swipeOffset = groupItem.width + 100;
+                            if (!groupItem.pooled)
+                                groupItem.swipeOffset = groupItem.width + 100;
                         }
                     }
                     Timer {
@@ -217,12 +226,12 @@ Item {
                         id: cardColumn
 
                         anchors.left: parent.left
-                        anchors.leftMargin: 20
+                        anchors.leftMargin: 14
                         anchors.right: parent.right
-                        anchors.rightMargin: 20
+                        anchors.rightMargin: 14
                         anchors.top: parent.top
-                        anchors.topMargin: 12
-                        spacing: 10
+                        anchors.topMargin: 10
+                        spacing: 8
 
                         // ── Header: icon_app | App name | time | expand badge ──
                         RowLayout {
@@ -250,48 +259,46 @@ Item {
                                 onTranslationChanged: groupItem.swipeOffset = Math.max(0, translation.x)
                             }
                             NotificationIcon {
-                                Layout.preferredHeight: 28
-                                Layout.preferredWidth: 28
+                                Layout.preferredHeight: 32
+                                Layout.preferredWidth: 32
                                 appName: groupItem.appName
                                 asynchronous: true
                                 cacheImage: false
                                 iconSize: 18
                                 notificationData: groupItem.notifications[0] || null
-                                radius: 8
+                                radius: 10
                                 tintColor: Config.md3.on_surface_variant
                             }
 
                             // App name
                             Text {
                                 Layout.fillWidth: true
-                                color: Config.md3.on_surface_variant
+                                color: Config.md3.on_surface
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 14
+                                font.pixelSize: 15
                                 font.weight: Font.DemiBold
                                 text: groupItem.appName
                             }
 
                             // Expand/collapse badge (groups only)
                             Rectangle {
-                                Layout.preferredHeight: 20
-                                Layout.preferredWidth: badgeRow.implicitWidth + 20
-                                border.color: Config.alpha(Config.md3.on_surface, 0.08)
-                                border.width: 1
-                                color: groupItem.expanded ? Config.md3.surface_container_highest : Config.md3.surface
-                                radius: 50
+                                Layout.preferredHeight: 26
+                                Layout.preferredWidth: badgeRow.implicitWidth + 16
+                                color: Config.alpha(Config.md3.primary, groupItem.expanded ? 0.18 : 0.10)
+                                radius: 13
                                 visible: groupItem.isGroup
 
                                 RowLayout {
                                     id: badgeRow
 
                                     anchors.centerIn: parent
-                                    spacing: 5
+                                    spacing: 4
 
                                     Text {
-                                        color: Config.md3.on_surface
+                                        color: Config.md3.primary
                                         font.family: Config.fontName
-                                        font.pixelSize: 13
+                                        font.pixelSize: 12
                                         font.weight: Font.Bold
                                         text: groupItem.notifCount
                                     }
@@ -302,7 +309,7 @@ Item {
                                         source: groupItem.expanded ? Quickshell.iconPath("go-up-symbolic") : Quickshell.iconPath("go-down-symbolic")
 
                                         layer.effect: ColorOverlay {
-                                            color: Config.md3.on_surface_variant
+                                            color: Config.md3.primary
                                         }
                                     }
                                 }
@@ -322,14 +329,14 @@ Item {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 1
-                            color: Config.alpha(Config.md3.on_surface, 0.03)
+                            color: Config.alpha(Config.md3.on_surface, 0.045)
                         }
 
                         // ── Notification rows ────────────────────────────
                         // Collapsed group: show first 2; Expanded or single: show all
                         Column {
                             Layout.fillWidth: true
-                            spacing: 0
+                            spacing: 3
 
                             Repeater {
                                 id: groupRepeater
@@ -349,7 +356,7 @@ Item {
                                     clip: true
                                     height: implicitHeight
                                     // KEY: use implicitHeight so parent ColumnLayout stacks correctly
-                                    implicitHeight: isDismissing ? 0 : rowLoader.implicitHeight + (compact ? 16 : 24)
+                                    implicitHeight: isDismissing ? 0 : rowLoader.implicitHeight + (compact ? 12 : 22)
                                     opacity: isDismissing ? 0 : 1
                                     width: parent.width
 
@@ -440,24 +447,26 @@ Item {
 
                                         // ── COMPACT: [small icon] [Title] [Body] ──
                                         RowLayout {
-                                            spacing: 12
+                                            id: compactRow
+
+                                            spacing: 10
 
                                             NotificationIcon {
                                                 Layout.alignment: Qt.AlignVCenter
-                                                Layout.preferredHeight: 26
-                                                Layout.preferredWidth: 26
+                                                Layout.preferredHeight: 30
+                                                Layout.preferredWidth: 30
                                                 asynchronous: true
                                                 cacheImage: false
-                                                iconSize: 14
+                                                iconSize: 16
                                                 notificationData: notifItem.modelData
-                                                radius: 6
+                                                radius: 9
                                             }
                                             Text {
-                                                Layout.maximumWidth: 180
+                                                Layout.maximumWidth: Math.min(180, Math.max(105, compactRow.width * 0.38))
                                                 color: Config.md3.on_surface
                                                 elide: Text.ElideRight
                                                 font.family: Config.fontName
-                                                font.pixelSize: 15
+                                                font.pixelSize: 14
                                                 font.weight: Font.DemiBold
                                                 text: notifItem.modelData.summary || ""
                                                 textFormat: Text.PlainText
@@ -467,7 +476,7 @@ Item {
                                                 color: Config.md3.on_surface_variant
                                                 elide: Text.ElideRight
                                                 font.family: Config.fontName
-                                                font.pixelSize: 14
+                                                font.pixelSize: 13
                                                 font.weight: Font.Medium
                                                 text: notifItem.modelData.body || ""
                                                 textFormat: Text.PlainText
@@ -565,9 +574,8 @@ Item {
                                                         model: actionViewport.actions
 
                                                         delegate: NotificationActionButton {
-                                                            required property var modelData
-
                                                             readonly property real equalWidth: (actionViewport.width - Math.max(0, actionViewport.actions.length - 1) * actionRow.spacing) / Math.max(1, actionViewport.actions.length)
+                                                            required property var modelData
 
                                                             action: modelData
                                                             height: 36
@@ -595,6 +603,7 @@ Item {
 
                                         anchors.bottom: parent.bottom
                                         anchors.left: parent.left
+                                        anchors.leftMargin: 40
                                         anchors.right: parent.right
                                         color: Config.alpha(Config.md3.on_surface, 0.05)
                                         height: 1
@@ -603,9 +612,9 @@ Item {
                                 }
                             }
                             Rectangle {
-                                color: showMoreArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.06) : "transparent"
-                                height: visible ? 34 : 0
-                                radius: 8
+                                color: Config.alpha(Config.md3.primary, showMoreArea.containsMouse ? 0.14 : 0.08)
+                                height: visible ? 36 : 0
+                                radius: 10
                                 visible: groupItem.expanded && groupItem.renderedCount < groupItem.notifCount
                                 width: parent.width
 
@@ -617,11 +626,11 @@ Item {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    color: Config.md3.on_surface_variant
+                                    color: Config.md3.primary
                                     font.family: Config.fontName
                                     font.pixelSize: 13
                                     font.weight: Font.DemiBold
-                                    text: "Show " + Math.min(12, groupItem.notifCount - groupItem.renderedCount) + " older notifications"
+                                    text: qsTr("Show %1 older notifications").arg(Math.min(12, groupItem.notifCount - groupItem.renderedCount))
                                 }
                                 MouseArea {
                                     id: showMoreArea
@@ -649,27 +658,38 @@ Item {
             // Empty state
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 14
+                spacing: 12
                 visible: NotificationHistory.notifications.count === 0
 
-                IconImage {
+                Rectangle {
                     Layout.alignment: Qt.AlignCenter
-                    Layout.preferredHeight: 60
-                    Layout.preferredWidth: 60
-                    layer.enabled: true
-                    source: Quickshell.iconPath("preferences-system-notifications-symbolic")
+                    Layout.preferredHeight: 64
+                    Layout.preferredWidth: 64
+                    color: Config.alpha(Config.md3.primary, 0.09)
+                    radius: 32
 
-                    layer.effect: ColorOverlay {
-                        color: Config.alpha(Config.md3.on_surface, 0.12)
+                    IconImage {
+                        id: emptyNotificationIcon
+
+                        anchors.centerIn: parent
+                        implicitHeight: 28
+                        implicitWidth: 28
+                        source: Quickshell.iconPath("preferences-system-notifications-symbolic")
+                        visible: false
+                    }
+                    ColorOverlay {
+                        anchors.fill: emptyNotificationIcon
+                        color: Config.alpha(Config.md3.primary, 0.65)
+                        source: emptyNotificationIcon
                     }
                 }
                 Text {
                     Layout.alignment: Qt.AlignCenter
-                    color: Config.alpha(Config.md3.on_surface, 0.35)
+                    color: Config.md3.on_surface_variant
                     font.family: Config.fontName
                     font.pixelSize: 16
-                    font.weight: Font.Medium
-                    text: "No notifications"
+                    font.weight: Font.DemiBold
+                    text: qsTr("No notifications")
                 }
             }
         }
@@ -686,7 +706,7 @@ Item {
                 font.family: Config.fontName
                 font.pixelSize: 14
                 font.weight: Font.DemiBold
-                text: NotificationHistory.notifications.count + (NotificationHistory.notifications.count === 1 ? " notification" : " notifications")
+                text: NotificationHistory.notifications.count === 1 ? qsTr("1 notification") : qsTr("%1 notifications").arg(NotificationHistory.notifications.count)
             }
             Item {
                 Layout.fillWidth: true
@@ -727,9 +747,7 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
 
-                    onClicked: {
-                        notificationPageRoot.triggerClearAllAnimation();
-                    }
+                    onClicked: notificationPageRoot.triggerClearAllAnimation()
                 }
             }
         }

@@ -4,18 +4,12 @@ import "../../"
 Rectangle {
     id: root
 
-    property var options: []
-    property string selectedValue: ""
     property string accessibleName: ""
     property real minimumSegmentWidth: 112
+    property var options: []
+    property string selectedValue: ""
 
     signal selected(string value)
-
-    border.color: Config.alpha(Config.md3.outline, 0.24)
-    border.width: 1
-    color: Config.md3.surface_container_high
-    implicitHeight: 44
-    radius: 14
 
     function moveSelection(offset) {
         if (!enabled || options.length === 0)
@@ -51,6 +45,15 @@ Rectangle {
     Accessible.name: accessibleName
     Accessible.role: Accessible.Grouping
     activeFocusOnTab: enabled
+    border.color: Config.alpha(Config.md3.outline, 0.16)
+    border.width: 1
+    color: Config.md3.surface_container
+    implicitHeight: 40
+    radius: 12
+
+    Component.onCompleted: Qt.callLater(function () {
+        root.revealSelection();
+    })
     Keys.onLeftPressed: event => {
         moveSelection(-1);
         event.accepted = true;
@@ -59,9 +62,6 @@ Rectangle {
         moveSelection(1);
         event.accepted = true;
     }
-    Component.onCompleted: Qt.callLater(function () {
-        root.revealSelection();
-    })
     onOptionsChanged: Qt.callLater(function () {
         root.revealSelection();
     })
@@ -78,13 +78,13 @@ Rectangle {
         currentIndex: root.selectedIndex()
         flickableDirection: Flickable.HorizontalFlick
         interactive: contentWidth > width
-        leftMargin: 4
+        leftMargin: 3
         model: root.options
         orientation: ListView.Horizontal
-        rightMargin: 4
-        spacing: 4
+        rightMargin: 3
+        spacing: 3
 
-        delegate: Rectangle {
+        delegate: Item {
             id: segment
 
             readonly property bool active: root.selectedValue === modelData.value
@@ -95,33 +95,38 @@ Rectangle {
             Accessible.checked: active
             Accessible.name: String(segment.modelData.label)
             Accessible.role: Accessible.RadioButton
-            border.color: active ? Config.alpha(Config.md3.primary, 0.5) : "transparent"
-            border.width: 1
-            color: active ? Config.alpha(Config.md3.primary, 0.16) : (segmentArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.07) : "transparent")
-            height: segmentView.height - 8
+            height: segmentView.height
             opacity: available ? 1.0 : 0.38
-            radius: 10
             width: Math.max(root.minimumSegmentWidth, equalWidth)
-            y: 4
 
-            Behavior on border.color {
-                ColorAnimation {
-                    duration: 150
-                }
-            }
-            Behavior on color {
-                ColorAnimation {
-                    duration: 150
-                }
+            Accessible.onPressAction: {
+                if (segment.available)
+                    root.selected(segment.modelData.value);
             }
 
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 3
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.topMargin: 3
+                color: segment.active ? Config.md3.primary_container : (segmentArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.07) : "transparent")
+                radius: 9
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 150
+                    }
+                }
+            }
             Text {
                 anchors.left: parent.left
                 anchors.leftMargin: 8
                 anchors.right: parent.right
                 anchors.rightMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
-                color: segment.active ? Config.md3.primary : Config.md3.on_surface_variant
+                color: segment.active ? Config.md3.on_primary_container : Config.md3.on_surface_variant
                 elide: Text.ElideRight
                 font.family: Config.fontName
                 font.pixelSize: 14
@@ -145,10 +150,6 @@ Rectangle {
                 hoverEnabled: true
 
                 onClicked: root.selected(segment.modelData.value)
-            }
-            Accessible.onPressAction: {
-                if (segment.available)
-                    root.selected(segment.modelData.value);
             }
         }
     }

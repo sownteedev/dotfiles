@@ -14,15 +14,28 @@ PanelWindow {
     id: notifWindow
 
     readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
-    readonly property int maxVisiblePopups: screen && screen.height < 800 ? 2 : 3
+    readonly property int maxVisiblePopups: screen && screen.height < 800 ? Math.min(2, Config.notificationMaxVisible) : Config.notificationMaxVisible
     property var pendingUpdates: ({})
     readonly property real popupMaximumWidth: screen ? Responsive.fit(600, screen.width - 40, 260) : 600
     readonly property real popupMinimumWidth: Math.min(380, popupMaximumWidth)
+    readonly property bool popupsSuppressed: QuickSettingsService.effectiveDndActive || StateManager.sessionLocked || (!Config.notificationShowInFullscreen && ToplevelManager.activeToplevel && ToplevelManager.activeToplevel.fullscreen)
     property real retainedStackHeight: 0
 
     // Track active timer objects by notification ID
     property var timersMap: ({})
 
+    function appMatchesList(appName, rawList) {
+        var expected = String(appName || "").trim().toLowerCase();
+        if (expected === "")
+            return false;
+        var entries = String(rawList || "").split(",");
+        for (var i = 0; i < entries.length; ++i) {
+            var entry = entries[i].trim().toLowerCase();
+            if (entry !== "" && (expected === entry || expected.indexOf(entry) !== -1))
+                return true;
+        }
+        return false;
+    }
     function closeAllPopups() {
         var transientNotifications = [];
         for (var i = 0; i < notifModel.count; ++i) {
@@ -75,6 +88,8 @@ PanelWindow {
 
     // Handle incoming notifications
     function handleNotify(notification) {
+        if (appMatchesList(notification.appName, Config.notificationBlockedApps))
+            return;
         var index = -1;
         for (var i = 0; i < notifModel.count; i++) {
             if (notifModel.get(i).nid === notification.id) {
@@ -132,7 +147,7 @@ PanelWindow {
         return matchingSummary && (CaptureService.screenshotBusy || recentCapture);
     }
     function notificationTimeout(notification) {
-        return notification && notification.expireTimeout > 0 ? notification.expireTimeout : 5000;
+        return notification && notification.expireTimeout > 0 ? notification.expireTimeout : Config.notificationPopupDuration;
     }
     function removePopupAt(index) {
         if (index < 0 || index >= notifModel.count)
@@ -190,7 +205,7 @@ PanelWindow {
     function resumeNotifTimer(nid, remainingProgress, notifObj) {
         if (timersMap[nid]) {
             timersMap[nid].stop();
-            var timeout = (notifObj && notifObj.expireTimeout > 0) ? notifObj.expireTimeout : 5000;
+            var timeout = (notifObj && notifObj.expireTimeout > 0) ? notifObj.expireTimeout : Config.notificationPopupDuration;
             timersMap[nid].interval = Math.max(50, timeout * remainingProgress);
             timersMap[nid].start();
         }
@@ -277,12 +292,12 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
-    anchors.bottom: false
+    anchors.bottom: Config.notificationPosition === "bottom-right"
     anchors.left: false
-    anchors.right: false
+    anchors.right: Config.notificationPosition === "top-right" || Config.notificationPosition === "bottom-right"
 
     // Position: top center of screen
-    anchors.top: true
+    anchors.top: Config.notificationPosition !== "bottom-right"
     color: "transparent"
     exclusiveZone: 0 // Float, do not reserve space or push windows
 
@@ -290,16 +305,23 @@ PanelWindow {
     implicitHeight: visible ? Math.max(layout.implicitHeight, retainedStackHeight) + 30 : 0
     // Dynamically sized window wrapper to adapt to layout content
     implicitWidth: layout.implicitWidth + 30
+    margins.bottom: anchors.bottom ? 15 : 0
+    margins.right: anchors.right ? 15 : 0
+    margins.top: anchors.top ? 15 : 0
     visible: notifModel.count > 0
 
     onMaxVisiblePopupsChanged: Qt.callLater(function () {
         notifWindow.trimPopupStack();
     })
+    onPopupsSuppressedChanged: {
+        if (popupsSuppressed)
+            closeAllPopups();
+    }
 
     // Connect to global NotificationManager
     Connections {
         function onNotification(notification) {
-            if (QuickSettingsService.dndActive)
+            if (notifWindow.popupsSuppressed)
                 return;
 
             // Screenshot notifications have their own Windows-style toast
@@ -315,8 +337,8 @@ PanelWindow {
         target: globalNotificationManager
     }
     Connections {
-        function onDndActiveChanged() {
-            if (QuickSettingsService.dndActive)
+        function onEffectiveDndActiveChanged() {
+            if (QuickSettingsService.effectiveDndActive)
                 notifWindow.closeAllPopups();
         }
 
@@ -384,7 +406,7 @@ PanelWindow {
 
         move: Transition {
             NumberAnimation {
-                duration: 220
+                duration: Config.animationDuration(220)
                 easing.type: Easing.OutCubic
                 properties: "y"
             }
@@ -468,7 +490,7 @@ PanelWindow {
                         id: progressAnim
 
                         duration: {
-                            var timeout = (delegateWrapper.notifObj && delegateWrapper.notifObj.expireTimeout > 0) ? delegateWrapper.notifObj.expireTimeout : 5000;
+                            var timeout = (delegateWrapper.notifObj && delegateWrapper.notifObj.expireTimeout > 0) ? delegateWrapper.notifObj.expireTimeout : Config.notificationPopupDuration;
                             return timeout;
                         }
                         from: 1
@@ -518,7 +540,7 @@ PanelWindow {
                             enabled: delegateWrapper.completed
 
                             NumberAnimation {
-                                duration: 250
+                                duration: Config.animationDuration(250)
                                 easing.type: Easing.OutQuad
                             }
                         }
@@ -528,7 +550,7 @@ PanelWindow {
                             enabled: delegateWrapper.completed
 
                             NumberAnimation {
-                                duration: 250
+                                duration: Config.animationDuration(250)
                                 easing.type: Easing.OutQuad
                             }
                         }
@@ -561,7 +583,7 @@ PanelWindow {
                             enabled: !swipeDrag.active
 
                             NumberAnimation {
-                                duration: 150
+                                duration: Config.animationDuration(150)
                                 easing.type: Easing.OutCubic
                             }
                         }
@@ -577,23 +599,23 @@ PanelWindow {
 
                                 ParallelAnimation {
                                     NumberAnimation {
-                                        duration: 160
+                                        duration: Config.animationDuration(160)
                                         easing.type: Easing.OutCubic
                                         property: "opacity"
                                         target: container
                                     }
                                     NumberAnimation {
-                                        duration: 220
+                                        duration: Config.animationDuration(220)
                                         easing.type: Easing.OutCubic
                                         property: "yOffset"
                                         target: container
                                     }
                                     SequentialAnimation {
                                         PauseAnimation {
-                                            duration: 30
+                                            duration: Config.animationDuration(30)
                                         }
                                         NumberAnimation {
-                                            duration: 180
+                                            duration: Config.animationDuration(180)
                                             easing.type: Easing.OutCubic
                                             property: "contentReveal"
                                             target: container
@@ -607,19 +629,19 @@ PanelWindow {
 
                                 ParallelAnimation {
                                     NumberAnimation {
-                                        duration: 120
+                                        duration: Config.animationDuration(120)
                                         easing.type: Easing.InCubic
                                         property: "opacity"
                                         target: container
                                     }
                                     NumberAnimation {
-                                        duration: 150
+                                        duration: Config.animationDuration(150)
                                         easing.type: Easing.InCubic
                                         property: "yOffset"
                                         target: container
                                     }
                                     NumberAnimation {
-                                        duration: 90
+                                        duration: Config.animationDuration(90)
                                         easing.type: Easing.InQuad
                                         property: "contentReveal"
                                         target: container
@@ -749,15 +771,15 @@ PanelWindow {
 
                                 Behavior on opacity {
                                     NumberAnimation {
-                                        duration: 150
+                                        duration: Config.animationDuration(150)
                                     }
                                 }
 
                                 // Separator line
                                 Rectangle {
                                     Layout.fillWidth: true
+                                    Layout.preferredHeight: 1
                                     color: Config.alpha(Config.md3.on_surface, 0.08)
-                                    height: 1
                                 }
 
                                 // Full-width buttons row

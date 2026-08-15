@@ -904,8 +904,67 @@ def snapshot() -> dict[str, object]:
     insert_gradient = block_raw_setting(insert_hint_block, "gradient", 'from="#ffbb6680" to="#ffc88080" angle=45')
     quickshell_settings: dict[str, object] = {
         "fontName": qml_string(config_source, "fontName", "Inter"),
+        "audioMaxVolume": 1.0,
+        "barDensity": "comfortable",
+        "barHeight": 50,
+        "barShowActiveClient": True,
+        "barShowBattery": True,
+        "barShowBluetooth": True,
+        "barShowClock": True,
+        "barShowMedia": True,
+        "barShowMicrophone": True,
+        "barShowNetwork": True,
+        "barShowNotifications": True,
+        "barShowRecording": True,
+        "barShowSysTray": True,
+        "barShowWorkspaces": True,
+        "caffeineAutoDisableMinutes": 0,
+        "cavaEnabled": True,
+        "idleDisplayTimeout": 600,
+        "idleEnabled": True,
+        "idleLockBeforeSleep": True,
+        "idleLockedDisplayTimeout": 60,
+        "idleLockTimeout": 600,
+        "idleSuspendTimeout": 0,
+        "launcherCalculatorEnabled": True,
+        "launcherCalculatorPrefix": "=",
+        "launcherClipboardAutoPaste": True,
+        "launcherClipboardEnabled": True,
+        "launcherClipboardPrefix": "c",
+        "launcherEmojiEnabled": True,
+        "launcherEmojiPrefix": "e",
+        "launcherFilesEnabled": True,
+        "launcherFilesPrefix": "f",
+        "launcherFuzzySearch": True,
+        "launcherMaxResults": 20,
+        "notificationBlockedApps": "",
+        "notificationDndEnd": "07:00",
+        "notificationDndScheduleEnabled": False,
+        "notificationDndStart": "23:00",
+        "notificationHistoryExcludedApps": "",
+        "notificationHistoryLimit": 100,
+        "notificationMaxVisible": 3,
+        "notificationPopupDuration": 5000,
+        "notificationPosition": "top",
+        "notificationShowInFullscreen": True,
+        "notificationShowOnLock": False,
+        "osdDuration": 2000,
+        "osdEnabled": True,
+        "osdPosition": "bottom",
+        "osdShowBrightness": True,
+        "osdShowMicrophone": True,
+        "osdShowVolume": True,
+        "shellAnimationScale": 1.0,
+        "shellLowPowerMode": False,
+        "shellReducedMotion": False,
         "latLon": qml_string(config_source, "latLon"),
         "apiWeather": qml_string(config_source, "apiWeather"),
+        "steamUsername": qml_string(config_source, "steamUsername"),
+        "steamWebApiKey": qml_string(config_source, "steamWebApiKey"),
+        "wallhavenUsername": qml_string(config_source, "wallhavenUsername"),
+        "wallhavenApiKey": qml_string(config_source, "wallhavenApiKey"),
+        "wallhavenShowNsfw": qml_bool(config_source, "wallhavenShowNsfw", False),
+        "wallpaperWorkshopShowNsfw": qml_bool(config_source, "wallpaperWorkshopShowNsfw", False),
         "wallFolderPath": qml_string(config_source, "wallFolderPath"),
         "liveWallFolderPath": qml_string(config_source, "liveWallFolderPath"),
         "wallpaperBatteryFps": qml_int(config_source, "wallpaperBatteryFps", 20),
@@ -1833,21 +1892,151 @@ def set_input_entry_enabled(payload: dict[str, object]) -> dict[str, object]:
 
 
 def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
-    settings: dict[str, object] = {
-        "fontName": str(payload.get("fontName", "Inter")).strip() or "Inter",
-        "latLon": str(payload.get("latLon", "")).strip(),
-        "apiWeather": str(payload.get("apiWeather", "")).strip(),
-        "wallFolderPath": str(payload.get("wallFolderPath", "~/Dotfiles/dotf/.walls")).strip(),
-        "liveWallFolderPath": str(payload.get("liveWallFolderPath", "~/Dotfiles/dotf/.walls/live")).strip(),
-        "captureScreenshotDirPath": str(payload.get("captureScreenshotDirPath", "~/Pictures/Screenshots")).strip(),
-        "captureRecordingDirPath": str(payload.get("captureRecordingDirPath", "~/Videos")).strip(),
-        "captureRecordingCodec": str(payload.get("captureRecordingCodec", "hevc")).strip(),
-        "captureRecordingQuality": str(payload.get("captureRecordingQuality", "high")).strip(),
-        "captureEditorTool": str(payload.get("captureEditorTool", "pen")).strip(),
-        "captureEditorColor": str(payload.get("captureEditorColor", "#ff3b30")).strip(),
-        "wallpaperEngineAssetsDirPath": str(payload.get("wallpaperEngineAssetsDirPath", "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets")).strip(),
-        "wallpaperEngineWorkshopDirPath": str(payload.get("wallpaperEngineWorkshopDirPath", "~/.local/share/Steam/steamapps/workshop/content/431960")).strip(),
+    defaults: dict[str, object] = {
+        "fontName": "Inter",
+        "audioMaxVolume": 1.0,
+        "barDensity": "comfortable",
+        "barHeight": 50,
+        "barShowActiveClient": True,
+        "barShowBattery": True,
+        "barShowBluetooth": True,
+        "barShowClock": True,
+        "barShowMedia": True,
+        "barShowMicrophone": True,
+        "barShowNetwork": True,
+        "barShowNotifications": True,
+        "barShowRecording": True,
+        "barShowSysTray": True,
+        "barShowWorkspaces": True,
+        "caffeineAutoDisableMinutes": 0,
+        "cavaEnabled": True,
+        "idleDisplayTimeout": 600,
+        "idleEnabled": True,
+        "idleLockBeforeSleep": True,
+        "idleLockedDisplayTimeout": 60,
+        "idleLockTimeout": 600,
+        "idleSuspendTimeout": 0,
+        "launcherCalculatorEnabled": True,
+        "launcherCalculatorPrefix": "=",
+        "launcherClipboardAutoPaste": True,
+        "launcherClipboardEnabled": True,
+        "launcherClipboardPrefix": "c",
+        "launcherEmojiEnabled": True,
+        "launcherEmojiPrefix": "e",
+        "launcherFilesEnabled": True,
+        "launcherFilesPrefix": "f",
+        "launcherFuzzySearch": True,
+        "launcherMaxResults": 20,
+        "notificationBlockedApps": "",
+        "notificationDndEnd": "07:00",
+        "notificationDndScheduleEnabled": False,
+        "notificationDndStart": "23:00",
+        "notificationHistoryExcludedApps": "",
+        "notificationHistoryLimit": 100,
+        "notificationMaxVisible": 3,
+        "notificationPopupDuration": 5000,
+        "notificationPosition": "top",
+        "notificationShowInFullscreen": True,
+        "notificationShowOnLock": False,
+        "osdDuration": 2000,
+        "osdEnabled": True,
+        "osdPosition": "bottom",
+        "osdShowBrightness": True,
+        "osdShowMicrophone": True,
+        "osdShowVolume": True,
+        "shellAnimationScale": 1.0,
+        "shellLowPowerMode": False,
+        "shellReducedMotion": False,
+        "latLon": "",
+        "apiWeather": "",
+        "steamUsername": "",
+        "steamWebApiKey": "",
+        "wallhavenUsername": "",
+        "wallhavenApiKey": "",
+        "wallhavenShowNsfw": False,
+        "wallpaperWorkshopShowNsfw": False,
+        "wallFolderPath": "~/Dotfiles/dotf/.walls",
+        "liveWallFolderPath": "~/Dotfiles/dotf/.walls/live",
+        "wallpaperBatteryFps": 20,
+        "wallpaperEngineFps": 30,
+        "wallpaperPauseOnFullscreen": True,
+        "wallpaperPauseOnLock": True,
+        "wallpaperTransitionDuration": 360,
+        "matugenEnabled": True,
+        "matugenAnimateColors": True,
+        "matugenTransitionDuration": 300,
+        "captureScreenshotDirPath": "~/Pictures/Screenshots",
+        "captureRecordingDirPath": "~/Videos",
+        "captureAutoCopyScreenshot": True,
+        "captureAutoCopyRecording": True,
+        "captureRecordingFps": 60,
+        "captureRecordingCodec": "hevc",
+        "captureRecordingQuality": "high",
+        "captureRecordingMicrophone": False,
+        "captureEditorTool": "pen",
+        "captureEditorColor": "#ff3b30",
+        "captureEditorWidth": 6,
+        "wallpaperEngineAssetsDirPath": "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets",
+        "wallpaperEngineWorkshopDirPath": "~/.local/share/Steam/steamapps/workshop/content/431960",
+        "clock24h": True,
     }
+    stored: dict[str, object] = {}
+    if RUNTIME_SETTINGS_PATH.exists():
+        try:
+            decoded = json.loads(RUNTIME_SETTINGS_PATH.read_text(encoding="utf-8"))
+            if isinstance(decoded, dict):
+                stored = decoded
+        except (OSError, json.JSONDecodeError):
+            stored = {}
+
+    merged = defaults.copy()
+    merged.update({key: value for key, value in stored.items() if key in defaults})
+    merged.update({key: value for key, value in payload.items() if key in defaults})
+    settings = merged.copy()
+
+    for name in (
+        "fontName", "latLon", "apiWeather", "steamUsername", "steamWebApiKey",
+        "wallhavenUsername", "wallhavenApiKey", "wallFolderPath", "liveWallFolderPath",
+        "captureScreenshotDirPath", "captureRecordingDirPath", "captureRecordingCodec",
+        "captureRecordingQuality", "captureEditorTool", "captureEditorColor",
+        "wallpaperEngineAssetsDirPath", "wallpaperEngineWorkshopDirPath",
+        "notificationBlockedApps", "notificationHistoryExcludedApps",
+    ):
+        settings[name] = str(merged.get(name, defaults[name])).strip()
+    settings["fontName"] = settings["fontName"] or "Inter"
+
+    prefix_defaults = (
+        ("launcherClipboardPrefix", "c"),
+        ("launcherFilesPrefix", "f"),
+        ("launcherCalculatorPrefix", "="),
+        ("launcherEmojiPrefix", "e"),
+    )
+    used_prefixes: set[str] = set()
+    available_fallbacks = [fallback for _, fallback in prefix_defaults]
+    for name, fallback in prefix_defaults:
+        prefix = re.sub(r"\s+", "", str(merged.get(name, fallback)))
+        candidate = prefix[:3] if prefix else fallback
+        if candidate.casefold() in used_prefixes:
+            candidate = next(
+                (value for value in available_fallbacks if value.casefold() not in used_prefixes),
+                fallback,
+            )
+        settings[name] = candidate
+        used_prefixes.add(candidate.casefold())
+
+    for name, fallback in (("notificationDndStart", "23:00"), ("notificationDndEnd", "07:00")):
+        value = str(merged.get(name, fallback)).strip()
+        settings[name] = value if re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value) else fallback
+
+    settings["barDensity"] = str(merged.get("barDensity", "comfortable"))
+    if settings["barDensity"] not in ("compact", "comfortable", "spacious"):
+        settings["barDensity"] = "comfortable"
+    settings["notificationPosition"] = str(merged.get("notificationPosition", "top"))
+    if settings["notificationPosition"] not in ("top", "top-right", "bottom-right"):
+        settings["notificationPosition"] = "top"
+    settings["osdPosition"] = str(merged.get("osdPosition", "bottom"))
+    if settings["osdPosition"] not in ("top", "bottom"):
+        settings["osdPosition"] = "bottom"
     if settings["captureRecordingCodec"] not in ("h264", "hevc"):
         settings["captureRecordingCodec"] = "hevc"
     if settings["captureRecordingQuality"] not in ("medium", "high", "very_high"):
@@ -1859,6 +2048,17 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         settings["captureEditorTool"] = "pen"
 
     for name, minimum, maximum, fallback in (
+        ("barHeight", 40, 72, 50),
+        ("caffeineAutoDisableMinutes", 0, 720, 0),
+        ("idleDisplayTimeout", 0, 86400, 600),
+        ("idleLockedDisplayTimeout", 0, 86400, 60),
+        ("idleLockTimeout", 0, 86400, 600),
+        ("idleSuspendTimeout", 0, 86400, 0),
+        ("launcherMaxResults", 5, 50, 20),
+        ("notificationHistoryLimit", 0, 500, 100),
+        ("notificationMaxVisible", 1, 6, 3),
+        ("notificationPopupDuration", 1000, 30000, 5000),
+        ("osdDuration", 500, 10000, 2000),
         ("wallpaperBatteryFps", 5, 60, 20),
         ("wallpaperEngineFps", 5, 165, 30),
         ("wallpaperTransitionDuration", 0, 2000, 360),
@@ -1867,12 +2067,51 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         ("captureEditorWidth", 1, 96, 6),
     ):
         try:
-            value = int(payload.get(name, fallback))
+            value = int(merged.get(name, fallback))
+        except (TypeError, ValueError):
+            value = fallback
+        settings[name] = max(minimum, min(maximum, value))
+
+    for name, minimum, maximum, fallback in (
+        ("audioMaxVolume", 0.5, 1.5, 1.0),
+        ("shellAnimationScale", 0.0, 2.0, 1.0),
+    ):
+        try:
+            value = float(merged.get(name, fallback))
         except (TypeError, ValueError):
             value = fallback
         settings[name] = max(minimum, min(maximum, value))
 
     for name, fallback in (
+        ("barShowActiveClient", True),
+        ("barShowBattery", True),
+        ("barShowBluetooth", True),
+        ("barShowClock", True),
+        ("barShowMedia", True),
+        ("barShowMicrophone", True),
+        ("barShowNetwork", True),
+        ("barShowNotifications", True),
+        ("barShowRecording", True),
+        ("barShowSysTray", True),
+        ("barShowWorkspaces", True),
+        ("cavaEnabled", True),
+        ("idleEnabled", True),
+        ("idleLockBeforeSleep", True),
+        ("launcherCalculatorEnabled", True),
+        ("launcherClipboardAutoPaste", True),
+        ("launcherClipboardEnabled", True),
+        ("launcherEmojiEnabled", True),
+        ("launcherFilesEnabled", True),
+        ("launcherFuzzySearch", True),
+        ("notificationDndScheduleEnabled", False),
+        ("notificationShowInFullscreen", True),
+        ("notificationShowOnLock", False),
+        ("osdEnabled", True),
+        ("osdShowBrightness", True),
+        ("osdShowMicrophone", True),
+        ("osdShowVolume", True),
+        ("shellLowPowerMode", False),
+        ("shellReducedMotion", False),
         ("wallpaperPauseOnFullscreen", True),
         ("wallpaperPauseOnLock", True),
         ("matugenEnabled", True),
@@ -1881,8 +2120,10 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         ("captureAutoCopyRecording", True),
         ("captureRecordingMicrophone", False),
         ("clock24h", True),
+        ("wallhavenShowNsfw", False),
+        ("wallpaperWorkshopShowNsfw", False),
     ):
-        settings[name] = bool(payload.get(name, fallback))
+        settings[name] = bool(merged.get(name, fallback))
 
     behavior_path = INCLUDE_DIR / "behavior.kdl"
     behavior_original = read(behavior_path)

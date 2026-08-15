@@ -111,12 +111,13 @@ QtObject {
             root.startNextTaskAction();
         }
     }
+    readonly property bool active: activeConsumers > 0
+    property int activeConsumers: 0
 
     // An array of all events for the current loaded time window
     property var allEvents: []
     property var allTasks: []
-    readonly property bool active: activeConsumers > 0
-    property int activeConsumers: 0
+    property bool authCheckPending: false
     property Process authCheckProcess: Process {
         id: authCheckProcess
 
@@ -144,7 +145,6 @@ QtObject {
         }
     }
     property bool authChecked: false
-    property bool authCheckPending: false
     // Non-sensitive draft kept outside the panel so closing/recreating its
     // Loader does not discard a Client ID the user has already pasted.
     property string authClientIdDraft: ""
@@ -204,43 +204,7 @@ QtObject {
     property string authUrl: ""
     property bool authenticated: false
     property bool authenticating: false
-    property bool disconnecting: false
-    property Process disconnectProcess: Process {
-        id: disconnectProcess
-
-        command: ["python3", "-u", root.getScriptPath(), "--logout"]
-
-        stderr: StdioCollector {
-            id: disconnectError
-        }
-        stdout: StdioCollector {
-            id: disconnectOutput
-        }
-
-        onExited: {
-            var succeeded = false;
-            var failureMessage = disconnectError.text.trim();
-            try {
-                var result = JSON.parse(disconnectOutput.text.trim());
-                succeeded = result.success === true;
-                if (!succeeded && result.error)
-                    failureMessage = String(result.error);
-            } catch (error) {
-                if (failureMessage === "")
-                    failureMessage = "Invalid response while removing Google account";
-            }
-
-            root.disconnecting = false;
-            if (succeeded) {
-                root.finishDisconnect();
-            } else {
-                root.authStatus = "Could not remove Google account: " + (failureMessage || "Unknown error");
-                root.checkAuthentication();
-            }
-        }
-    }
     property var calendars: []
-    property bool calendarsRefreshPending: false
     property Process calendarsProcess: Process {
         id: calendarsProcess
 
@@ -282,9 +246,45 @@ QtObject {
             }
         }
     }
+    property bool calendarsRefreshPending: false
+    property Process disconnectProcess: Process {
+        id: disconnectProcess
+
+        command: ["python3", "-u", root.getScriptPath(), "--logout"]
+
+        stderr: StdioCollector {
+            id: disconnectError
+        }
+        stdout: StdioCollector {
+            id: disconnectOutput
+        }
+
+        onExited: {
+            var succeeded = false;
+            var failureMessage = disconnectError.text.trim();
+            try {
+                var result = JSON.parse(disconnectOutput.text.trim());
+                succeeded = result.success === true;
+                if (!succeeded && result.error)
+                    failureMessage = String(result.error);
+            } catch (error) {
+                if (failureMessage === "")
+                    failureMessage = "Invalid response while removing Google account";
+            }
+
+            root.disconnecting = false;
+            if (succeeded) {
+                root.finishDisconnect();
+            } else {
+                root.authStatus = "Could not remove Google account: " + (failureMessage || "Unknown error");
+                root.checkAuthentication();
+            }
+        }
+    }
+    property bool disconnecting: false
     property string errorMessage: ""
-    property var eventActionQueue: []
     readonly property bool eventActionBusy: actionProcess.running || eventActionQueue.length > 0
+    property var eventActionQueue: []
     property bool eventsRefreshPending: false
     property Process fetchProcess: Process {
         id: fetchProcess
@@ -384,15 +384,12 @@ QtObject {
     property bool isLoading: false
     property bool isLoadingTasks: false
     property date lastEventsUpdated
-    property date lastTasksUpdated
     property string lastTaskListId: "@default"
+    property date lastTasksUpdated
     // Internal state
     property int loadedMonth: new Date().getMonth() + 1
     property int loadedYear: new Date().getFullYear()
     property string pendingAuthContext: ""
-    property var taskActionQueue: []
-    readonly property bool taskActionBusy: actionTasksProcess.running || taskActionQueue.length > 0
-    property bool tasksRefreshPending: false
     property Timer refreshTimer: Timer {
         interval: 900000
         repeat: true
@@ -400,6 +397,9 @@ QtObject {
 
         onTriggered: root.fetchAll()
     }
+    readonly property bool taskActionBusy: actionTasksProcess.running || taskActionQueue.length > 0
+    property var taskActionQueue: []
+    property bool tasksRefreshPending: false
 
     signal authenticationSucceeded(string context)
     signal eventsChanged
@@ -414,7 +414,6 @@ QtObject {
             fetchAll();
         }
     }
-
     function cancelAuthentication() {
         authProcess.running = false;
         authenticating = false;
@@ -430,64 +429,6 @@ QtObject {
             return;
         }
         authCheckProcess.running = true;
-    }
-    function enqueueEventAction(command) {
-        var queue = eventActionQueue.slice();
-        queue.push(command);
-        eventActionQueue = queue;
-        startNextEventAction();
-    }
-    function enqueueTaskAction(command, context) {
-        var queue = taskActionQueue.slice();
-        queue.push({
-            "command": command,
-            "context": context || ({})
-        });
-        taskActionQueue = queue;
-        startNextTaskAction();
-    }
-    function handleRequestError(message) {
-        var text = String(message || "Google request failed").trim();
-        errorMessage = text;
-        var normalized = text.toLowerCase();
-        if (normalized.indexOf("invalid_grant") >= 0 || normalized.indexOf("unauthorized") >= 0 || normalized.indexOf("no access token") >= 0 || normalized.indexOf("no token file") >= 0 || normalized.indexOf("401") >= 0) {
-            authenticated = false;
-            authChecked = true;
-            authStatus = "Google session expired. Connect again to continue.";
-        }
-    }
-    function startNextEventAction() {
-        if (actionProcess.running || eventActionQueue.length === 0)
-            return;
-        var queue = eventActionQueue.slice();
-        actionProcess.command = queue.shift();
-        eventActionQueue = queue;
-        actionProcess.outputBuffer = "";
-        actionProcess.errorBuffer = "";
-        actionProcess.running = true;
-    }
-    function startNextTaskAction() {
-        if (actionTasksProcess.running || taskActionQueue.length === 0)
-            return;
-        var queue = taskActionQueue.slice();
-        var action = queue.shift();
-        // Accept queued commands created by an older hot-reloaded service.
-        var argv = Array.isArray(action) ? action : action && action.command;
-        var context = Array.isArray(action) ? ({}) : action && action.context || ({});
-        taskActionQueue = queue;
-        if (!argv || argv.length === 0) {
-            taskActionFinished(String(context.operation || ""), String(context.sourceId || ""), false, "", "Invalid Google Tasks command");
-            Qt.callLater(startNextTaskAction);
-            return;
-        }
-        var normalizedArgv = [];
-        for (var i = 0; i < argv.length; ++i)
-            normalizedArgv.push(String(argv[i]));
-        actionTasksProcess.command = normalizedArgv;
-        actionTasksProcess.actionContext = context;
-        actionTasksProcess.outputBuffer = "";
-        actionTasksProcess.errorBuffer = "";
-        actionTasksProcess.running = true;
     }
     function createEvent(calendarId, title, date, startTime, endTime, allDay, location, description) {
         if (!authenticated) {
@@ -571,6 +512,21 @@ QtObject {
 
         authStatus = "Removing Google account…";
         disconnectProcess.running = true;
+    }
+    function enqueueEventAction(command) {
+        var queue = eventActionQueue.slice();
+        queue.push(command);
+        eventActionQueue = queue;
+        startNextEventAction();
+    }
+    function enqueueTaskAction(command, context) {
+        var queue = taskActionQueue.slice();
+        queue.push({
+            "command": command,
+            "context": context || ({})
+        });
+        taskActionQueue = queue;
+        startNextTaskAction();
     }
     function fetchAll() {
         if (!authenticated)
@@ -662,15 +618,6 @@ QtObject {
         }
         return res;
     }
-    function needsRefresh() {
-        var eventsTime = lastEventsUpdated && !isNaN(lastEventsUpdated.getTime()) ? lastEventsUpdated.getTime() : 0;
-        var tasksTime = lastTasksUpdated && !isNaN(lastTasksUpdated.getTime()) ? lastTasksUpdated.getTime() : 0;
-        var newest = Math.min(eventsTime, tasksTime);
-        return newest === 0 || Date.now() - newest >= refreshTimer.interval;
-    }
-    function release() {
-        activeConsumers = Math.max(0, activeConsumers - 1);
-    }
 
     // Helper to get script path
     function getScriptPath() {
@@ -680,8 +627,27 @@ QtObject {
         }
         return path;
     }
+    function handleRequestError(message) {
+        var text = String(message || "Google request failed").trim();
+        errorMessage = text;
+        var normalized = text.toLowerCase();
+        if (normalized.indexOf("invalid_grant") >= 0 || normalized.indexOf("unauthorized") >= 0 || normalized.indexOf("no access token") >= 0 || normalized.indexOf("no token file") >= 0 || normalized.indexOf("401") >= 0) {
+            authenticated = false;
+            authChecked = true;
+            authStatus = "Google session expired. Connect again to continue.";
+        }
+    }
     function hasEvents(day, month, year) {
         return getEventsForDate(day, month, year).length > 0;
+    }
+    function needsRefresh() {
+        var eventsTime = lastEventsUpdated && !isNaN(lastEventsUpdated.getTime()) ? lastEventsUpdated.getTime() : 0;
+        var tasksTime = lastTasksUpdated && !isNaN(lastTasksUpdated.getTime()) ? lastTasksUpdated.getTime() : 0;
+        var newest = Math.min(eventsTime, tasksTime);
+        return newest === 0 || Date.now() - newest >= refreshTimer.interval;
+    }
+    function release() {
+        activeConsumers = Math.max(0, activeConsumers - 1);
     }
     function requireAuthentication(context) {
         if (authenticated)
@@ -708,6 +674,39 @@ QtObject {
             client_secret: clientSecret.trim()
         });
         authProcess.running = true;
+    }
+    function startNextEventAction() {
+        if (actionProcess.running || eventActionQueue.length === 0)
+            return;
+        var queue = eventActionQueue.slice();
+        actionProcess.command = queue.shift();
+        eventActionQueue = queue;
+        actionProcess.outputBuffer = "";
+        actionProcess.errorBuffer = "";
+        actionProcess.running = true;
+    }
+    function startNextTaskAction() {
+        if (actionTasksProcess.running || taskActionQueue.length === 0)
+            return;
+        var queue = taskActionQueue.slice();
+        var action = queue.shift();
+        // Accept queued commands created by an older hot-reloaded service.
+        var argv = Array.isArray(action) ? action : action && action.command;
+        var context = Array.isArray(action) ? ({}) : action && action.context || ({});
+        taskActionQueue = queue;
+        if (!argv || argv.length === 0) {
+            taskActionFinished(String(context.operation || ""), String(context.sourceId || ""), false, "", "Invalid Google Tasks command");
+            Qt.callLater(startNextTaskAction);
+            return;
+        }
+        var normalizedArgv = [];
+        for (var i = 0; i < argv.length; ++i)
+            normalizedArgv.push(String(argv[i]));
+        actionTasksProcess.command = normalizedArgv;
+        actionTasksProcess.actionContext = context;
+        actionTasksProcess.outputBuffer = "";
+        actionTasksProcess.errorBuffer = "";
+        actionTasksProcess.running = true;
     }
     function updateEvent(calendarId, eventId, title, date, startTime, endTime, allDay, location, description) {
         if (!authenticated) {

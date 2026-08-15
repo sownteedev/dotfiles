@@ -66,7 +66,7 @@ fn append_ranked(name: &str, values: Option<&[RankedProcess]>, output: &mut Stri
         if index > 0 {
             output.push(',');
         }
-        output.push_str("{\"name\":\"");
+        write!(output, "{{\"pid\":{},\"name\":\"", item.pid).unwrap();
         escape_into(&item.name, output);
         write!(output, "\",\"val\":{}}}", finite(item.value)).unwrap();
     }

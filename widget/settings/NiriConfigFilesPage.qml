@@ -16,11 +16,11 @@ Item {
     readonly property bool headerActionVisible: true
     readonly property bool headerResetVisible: editor.dirty
 
-    function triggerHeaderAction() {
-        editor.apply();
-    }
     function resetPage() {
         editor.reset();
+    }
+    function triggerHeaderAction() {
+        editor.apply();
     }
 
     ColumnLayout {

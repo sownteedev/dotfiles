@@ -16,11 +16,16 @@ Item {
     readonly property bool headerActionVisible: true
     readonly property bool headerResetVisible: true
     property bool revealApiKey: false
+    property bool revealSteamApiKey: false
+    property bool revealWallhavenApiKey: false
 
     function refreshIntegrations() {
         GoogleService.checkAuthentication();
         EngineWallpaperService.checkAvailability();
         SettingsHubService.refresh();
+    }
+    function resetPage() {
+        syncFields();
     }
     function syncFields() {
         var settings = SettingsHubService.quickshellSettings || ({});
@@ -28,6 +33,10 @@ Item {
         clockToggle.checked = settings.clock24h ?? Config.clock24h;
         locationField.text = settings.latLon || Config.latLon;
         apiField.text = settings.apiWeather || Config.apiWeather;
+        steamUsernameField.text = settings.steamUsername || Config.steamUsername;
+        steamApiKeyField.text = settings.steamWebApiKey || Config.steamWebApiKey;
+        wallhavenUsernameField.text = settings.wallhavenUsername || Config.wallhavenUsername;
+        wallhavenApiKeyField.text = settings.wallhavenApiKey || Config.wallhavenApiKey;
         wallFolderField.text = settings.wallFolderPath || Config.wallFolderPath;
         liveWallFolderField.text = settings.liveWallFolderPath || Config.liveWallFolderPath;
         batteryFpsField.text = String(settings.wallpaperBatteryFps ?? Config.wallpaperBatteryFps);
@@ -55,6 +64,12 @@ Item {
             "clock24h": clockToggle.checked,
             "latLon": locationField.text,
             "apiWeather": apiField.text,
+            "steamUsername": steamUsernameField.text,
+            "steamWebApiKey": steamApiKeyField.text,
+            "wallhavenUsername": wallhavenUsernameField.text,
+            "wallhavenApiKey": wallhavenApiKeyField.text,
+            "wallhavenShowNsfw": Config.wallhavenShowNsfw,
+            "wallpaperWorkshopShowNsfw": Config.wallpaperWorkshopShowNsfw,
             "wallFolderPath": wallFolderField.text,
             "liveWallFolderPath": liveWallFolderField.text,
             "wallpaperBatteryFps": Number(batteryFpsField.text),
@@ -79,9 +94,6 @@ Item {
             "wallpaperEngineAssetsDirPath": engineAssetsField.text,
             "wallpaperEngineWorkshopDirPath": engineWorkshopField.text
         });
-    }
-    function resetPage() {
-        syncFields();
     }
 
     Component.onCompleted: syncFields()
@@ -110,7 +122,6 @@ Item {
         ScrollBar.horizontal: SlimScrollBar {
             accentColor: root.activeSection === 0 ? Config.md3.secondary : root.activeSection === 1 ? Config.md3.tertiary : root.activeSection === 2 ? Config.md3.primary : Config.md3.error
         }
-
         ScrollBar.vertical: SlimScrollBar {
             accentColor: root.activeSection === 0 ? Config.md3.secondary : root.activeSection === 1 ? Config.md3.tertiary : root.activeSection === 2 ? Config.md3.primary : Config.md3.error
         }
@@ -505,14 +516,6 @@ Item {
                         text: GoogleService.disconnecting ? "Removing…" : confirmingRemoval ? "Confirm removal" : "Remove account"
                         visible: GoogleService.authenticated || GoogleService.disconnecting
 
-                        Timer {
-                            id: googleRemovalTimer
-
-                            interval: 3000
-
-                            onTriggered: removeGoogleButton.confirmingRemoval = false
-                        }
-
                         onClicked: {
                             if (!confirmingRemoval) {
                                 confirmingRemoval = true;
@@ -522,6 +525,14 @@ Item {
                                 googleRemovalTimer.stop();
                                 GoogleService.disconnectAccount();
                             }
+                        }
+
+                        Timer {
+                            id: googleRemovalTimer
+
+                            interval: 3000
+
+                            onTriggered: removeGoogleButton.confirmingRemoval = false
                         }
                     }
                 }
@@ -592,6 +603,68 @@ Item {
 
                     onActionClicked: {
                         SettingsHubService.filePickerDialog.open(engineWorkshopField, "file://" + Config.expandHomePath("~"), true);
+                    }
+                }
+                SettingsTextField {
+                    id: steamUsernameField
+
+                    Layout.fillWidth: true
+                    label: "Steam username"
+                    placeholder: "Account name used by SteamCMD"
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    SettingsTextField {
+                        id: steamApiKeyField
+
+                        Layout.fillWidth: true
+                        echoMode: root.revealSteamApiKey ? TextInput.Normal : TextInput.Password
+                        label: "Steam Web API key"
+                        placeholder: "Required for Workshop search"
+                    }
+                    SettingsActionButton {
+                        Layout.alignment: Qt.AlignBottom
+                        iconName: root.revealSteamApiKey ? "view-conceal-symbolic" : "view-reveal-symbolic"
+                        text: root.revealSteamApiKey ? "Hide" : "Show"
+
+                        onClicked: root.revealSteamApiKey = !root.revealSteamApiKey
+                    }
+                }
+            }
+            SettingsSectionCard {
+                Layout.fillWidth: true
+                accentColor: Config.md3.primary
+                note: "Optional account access for private collections and NSFW results"
+                title: "Wallhaven"
+                visible: root.activeSection === 3
+
+                SettingsTextField {
+                    id: wallhavenUsernameField
+
+                    Layout.fillWidth: true
+                    label: "Wallhaven username"
+                    placeholder: "Required for Collections"
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    SettingsTextField {
+                        id: wallhavenApiKeyField
+
+                        Layout.fillWidth: true
+                        echoMode: root.revealWallhavenApiKey ? TextInput.Normal : TextInput.Password
+                        label: "Wallhaven API key"
+                        placeholder: "Optional for Browse, required for account access"
+                    }
+                    SettingsActionButton {
+                        Layout.alignment: Qt.AlignBottom
+                        iconName: root.revealWallhavenApiKey ? "view-conceal-symbolic" : "view-reveal-symbolic"
+                        text: root.revealWallhavenApiKey ? "Hide" : "Show"
+
+                        onClicked: root.revealWallhavenApiKey = !root.revealWallhavenApiKey
                     }
                 }
             }

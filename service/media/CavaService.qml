@@ -11,18 +11,10 @@ Item {
     // Keep the last frame alive briefly after playback stops so consumers can
     // draw a natural release instead of disappearing in a single frame.
     property bool available: false
-    property bool waitingForSignal: false
     property var bars: []
     property int frameRevision: 0
     property real levelScale: 0
-
-    function clearBars() {
-        var emptyBars = [];
-        for (var i = 0; i < 48; ++i)
-            emptyBars.push(0);
-        bars = emptyBars;
-        frameRevision++;
-    }
+    property bool waitingForSignal: false
 
     function animateLevel(targetLevel, duration) {
         levelAnimation.stop();
@@ -31,7 +23,13 @@ Item {
         levelAnimation.duration = duration;
         levelAnimation.start();
     }
-
+    function clearBars() {
+        var emptyBars = [];
+        for (var i = 0; i < 48; ++i)
+            emptyBars.push(0);
+        bars = emptyBars;
+        frameRevision++;
+    }
     function setPlaying(playing) {
         if (playing) {
             releaseDelay.stop();
@@ -62,8 +60,6 @@ Item {
         releaseDelay.restart();
     }
 
-    onLevelScaleChanged: frameRevision++
-
     Component.onCompleted: {
         available = false;
         levelScale = 0;
@@ -71,23 +67,23 @@ Item {
         if (!MediaService.playing)
             clearBars();
     }
+    Component.onDestruction: cavaProcess.running = false
+    onLevelScaleChanged: frameRevision++
 
     Connections {
-        target: MediaService
-
         function onPlayingChanged() {
             root.setPlaying(MediaService.playing);
         }
-    }
 
+        target: MediaService
+    }
     NumberAnimation {
         id: levelAnimation
 
-        target: root
-        property: "levelScale"
         easing.type: Easing.OutCubic
+        property: "levelScale"
+        target: root
     }
-
     Timer {
         id: releaseDelay
 
@@ -101,12 +97,11 @@ Item {
             root.clearBars();
         }
     }
-
     Process {
         id: cavaProcess
 
         command: ["cava", "-p", Config.quickshellDir + "/cava.conf"]
-        running: MediaService.playing
+        running: Config.cavaEnabled && !Config.shellLowPowerMode && MediaService.playing
 
         stdout: SplitParser {
             onRead: line => {

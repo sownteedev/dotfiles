@@ -313,6 +313,7 @@ Item {
                                         CustomVolumeSlider {
                                             Layout.fillWidth: true
                                             isMuted: (modelData && modelData.audio) ? modelData.audio.muted : false
+                                            maximumValue: Config.audioMaxVolume
                                             peakColor: appDelegate.streamPeak > 0.88 ? Config.md3.error : appDelegate.streamPeak > 0.68 ? Config.md3.tertiary : Config.md3.secondary
                                             peakValue: appDelegate.streamPeak
                                             showPeak: true
@@ -481,6 +482,7 @@ Item {
                             CustomVolumeSlider {
                                 Layout.fillWidth: true
                                 isMuted: Pipewire.defaultAudioSink ? Pipewire.defaultAudioSink.audio.muted : true
+                                maximumValue: Config.audioMaxVolume
                                 value: {
                                     if (!Pipewire.defaultAudioSink || !Pipewire.defaultAudioSink.audio)
                                         return 0.0;

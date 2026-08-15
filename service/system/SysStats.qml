@@ -29,6 +29,7 @@ QtObject {
     property double prevCpuIdle: 0
     property double prevCpuTotal: 0
     property string processMode: "none"
+    property int processRevision: 0
     property var ramHistory: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     property string ramModelName: ""
     property string ramUsedText: ""
@@ -39,7 +40,7 @@ QtObject {
 
         // The launcher builds the Rust sampler only when missing or stale and
         // falls back to Python when Cargo is unavailable.
-        command: [getStatsLauncherPath()]
+        command: [statsRoot.getStatsLauncherPath()]
         running: statsRoot.pollingEnabled
         stdinEnabled: true
 
@@ -126,6 +127,26 @@ QtObject {
         Component.onDestruction: running = false
         onStarted: statsRoot.sendProcessMode()
     }
+    property int terminatingPid: -1
+    property string terminatingProcessName: ""
+    property string terminationError: ""
+    property Timer terminationErrorTimer: Timer {
+        interval: 3200
+
+        onTriggered: statsRoot.terminationError = ""
+    }
+    property Process terminator: Process {
+        id: terminator
+
+        onExited: exitCode => {
+            if (exitCode !== 0) {
+                statsRoot.terminationError = qsTr("Could not end %1").arg(statsRoot.terminatingProcessName || qsTr("process"));
+                statsRoot.terminationErrorTimer.restart();
+            }
+            statsRoot.terminatingPid = -1;
+            statsRoot.terminatingProcessName = "";
+        }
+    }
     property ListModel topCpu: ListModel {
     }
     property ListModel topGpu: ListModel {
@@ -143,6 +164,12 @@ QtObject {
         arr.shift();
         arr.push(newValue);
         return arr;
+    }
+    function clearProcessModels() {
+        topCpu.clear();
+        topRam.clear();
+        topGpu.clear();
+        processRevision++;
     }
     function formatSpeed(bytes) {
         if (bytes < 1024) {
@@ -190,35 +217,55 @@ QtObject {
         if (statsStream.running)
             statsStream.write(processMode + "\n");
     }
+    function terminateProcess(pid, name) {
+        var processId = Math.trunc(Number(pid));
+        if (processId <= 1 || terminator.running)
+            return;
+
+        terminationError = "";
+        terminatingPid = processId;
+        terminatingProcessName = String(name || "");
+        terminator.command = ["kill", "-TERM", "--", String(processId)];
+        terminator.running = true;
+    }
     function updateProcessModel(target, incoming) {
         if (!incoming)
             return;
 
-        var valuesByName = {};
-        for (var incomingIndex = 0; incomingIndex < incoming.length; incomingIndex++)
-            valuesByName["$" + incoming[incomingIndex].name] = incoming[incomingIndex];
+        var valuesByPid = {};
+        for (var incomingIndex = 0; incomingIndex < incoming.length; incomingIndex++) {
+            var incomingPid = Math.trunc(Number(incoming[incomingIndex].pid));
+            if (incomingPid > 0)
+                valuesByPid["$" + incomingPid] = incoming[incomingIndex];
+        }
 
         // Preserve the order of processes already on screen so rows do not jump
         // every sample. Remove vanished rows and append newcomers afterwards.
         for (var modelIndex = target.count - 1; modelIndex >= 0; modelIndex--) {
-            var currentName = target.get(modelIndex).name;
-            var incomingItem = valuesByName["$" + currentName];
+            var currentPid = target.get(modelIndex).pid;
+            var incomingItem = valuesByPid["$" + currentPid];
             if (incomingItem === undefined) {
                 target.remove(modelIndex);
             } else {
+                target.setProperty(modelIndex, "name", String(incomingItem.name || ""));
                 target.setProperty(modelIndex, "val", Number(incomingItem.val) || 0);
-                delete valuesByName["$" + currentName];
+                delete valuesByPid["$" + currentPid];
             }
         }
 
         for (var appendIndex = 0; appendIndex < incoming.length; appendIndex++) {
             var item = incoming[appendIndex];
-            if (valuesByName["$" + item.name] !== undefined)
+            var itemPid = Math.trunc(Number(item.pid));
+            if (itemPid > 0 && valuesByPid["$" + itemPid] !== undefined) {
                 target.append({
-                    "name": item.name,
+                    "pid": itemPid,
+                    "name": String(item.name || ""),
                     "val": Number(item.val) || 0
                 });
+                delete valuesByPid["$" + itemPid];
+            }
         }
+        processRevision++;
     }
     function updateUptime(secondsValue) {
         var seconds = Math.max(0, Number(secondsValue) || 0);
@@ -237,5 +284,8 @@ QtObject {
             processMode = "none";
         }
     }
-    onProcessModeChanged: sendProcessMode()
+    onProcessModeChanged: {
+        clearProcessModels();
+        sendProcessMode();
+    }
 }

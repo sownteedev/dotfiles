@@ -48,8 +48,8 @@ ColumnLayout {
             inputItem.text = text;
     }
 
-    spacing: 6
     opacity: enabled ? 1 : 0.5
+    spacing: 6
 
     Behavior on opacity {
         NumberAnimation {

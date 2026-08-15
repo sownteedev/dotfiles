@@ -48,6 +48,7 @@ MouseArea {
                 easing.type: Easing.OutCubic
             }
         }
+
         IconImage {
             id: microphoneIcon
 
@@ -138,160 +139,160 @@ MouseArea {
                         spacing: 10
                         width: parent.width
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-
-                        Rectangle {
-                            color: Config.alpha(Config.md3.tertiary, 0.14)
-                            height: 36
-                            radius: 12
-                            width: 36
-
-                            IconImage {
-                                id: headerMicIcon
-
-                                anchors.centerIn: parent
-                                height: 21
-                                source: Quickshell.iconPath("microphone-sensitivity-high-symbolic")
-                                visible: false
-                                width: 21
-                            }
-                            ColorOverlay {
-                                anchors.fill: headerMicIcon
-                                color: Config.md3.tertiary
-                                source: headerMicIcon
-                            }
-                        }
-                        Text {
+                        RowLayout {
                             Layout.fillWidth: true
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Bold
-                            text: "Microphone in use"
+                            spacing: 10
+
+                            Rectangle {
+                                color: Config.alpha(Config.md3.tertiary, 0.14)
+                                height: 36
+                                radius: 12
+                                width: 36
+
+                                IconImage {
+                                    id: headerMicIcon
+
+                                    anchors.centerIn: parent
+                                    height: 21
+                                    source: Quickshell.iconPath("microphone-sensitivity-high-symbolic")
+                                    visible: false
+                                    width: 21
+                                }
+                                ColorOverlay {
+                                    anchors.fill: headerMicIcon
+                                    color: Config.md3.tertiary
+                                    source: headerMicIcon
+                                }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                color: Config.md3.on_surface
+                                font.family: Config.fontName
+                                font.pixelSize: 15
+                                font.weight: Font.Bold
+                                text: "Microphone in use"
+                            }
                         }
-                    }
-                    Rectangle {
-                        Layout.fillWidth: true
-                        color: Config.alpha(Config.md3.on_surface, 0.08)
-                        height: 1
-                    }
+                        Rectangle {
+                            Layout.fillWidth: true
+                            color: Config.alpha(Config.md3.on_surface, 0.08)
+                            height: 1
+                        }
                         Repeater {
                             model: AudioService.microphoneApps
 
-                        delegate: Rectangle {
-                            id: appCard
+                            delegate: Rectangle {
+                                id: appCard
 
-                            required property var modelData
-                            readonly property bool streamAvailable: streamNode && streamNode.audio
-                            readonly property real streamGain: streamAvailable ? streamNode.audio.volume : 0
-                            readonly property bool streamMuted: streamAvailable ? streamNode.audio.muted : true
-                            readonly property var streamNode: modelData ? modelData.node : null
-                            readonly property real streamPeak: Math.max(0, Math.min(1, peakMonitor.peak))
+                                required property var modelData
+                                readonly property bool streamAvailable: streamNode && streamNode.audio
+                                readonly property real streamGain: streamAvailable ? streamNode.audio.volume : 0
+                                readonly property bool streamMuted: streamAvailable ? streamNode.audio.muted : true
+                                readonly property var streamNode: modelData ? modelData.node : null
+                                readonly property real streamPeak: Math.max(0, Math.min(1, peakMonitor.peak))
 
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 68
-                            color: Config.md3.surface
-                            opacity: streamAvailable ? 1 : 0.55
-                            radius: 10
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 68
+                                color: Config.md3.surface
+                                opacity: streamAvailable ? 1 : 0.55
+                                radius: 10
 
-                            PwNodePeakMonitor {
-                                id: peakMonitor
+                                PwNodePeakMonitor {
+                                    id: peakMonitor
 
-                                enabled: microphonePopup.visible && appCard.streamAvailable && !appCard.streamMuted
-                                node: appCard.streamNode
-                            }
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 8
-                                spacing: 4
+                                    enabled: microphonePopup.visible && appCard.streamAvailable && !appCard.streamMuted
+                                    node: appCard.streamNode
+                                }
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 4
 
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 9
-
-                                    Rectangle {
-                                        Layout.preferredHeight: 28
-                                        Layout.preferredWidth: 28
-                                        color: Config.md3.surface_container_high
-                                        radius: 8
-
-                                        IconImage {
-                                            anchors.centerIn: parent
-                                            height: 18
-                                            source: Quickshell.iconPath(appCard.modelData.icon || "audio-input-microphone-symbolic")
-                                            width: 18
-                                        }
-                                    }
-                                    Text {
+                                    RowLayout {
                                         Layout.fillWidth: true
-                                        color: Config.md3.on_surface
-                                        elide: Text.ElideRight
-                                        font.family: Config.fontName
-                                        font.pixelSize: 14
-                                        font.weight: Font.DemiBold
-                                        text: appCard.modelData.name
-                                    }
-                                    Rectangle {
-                                        Layout.preferredHeight: 27
-                                        Layout.preferredWidth: 27
-                                        color: Config.alpha(appCard.streamMuted ? Config.md3.error : Config.md3.on_surface, streamMuteMouse.containsMouse ? 0.18 : 0.08)
-                                        radius: 8
+                                        spacing: 9
 
-                                        Behavior on color {
-                                            ColorAnimation {
-                                                duration: 130
+                                        Rectangle {
+                                            Layout.preferredHeight: 28
+                                            Layout.preferredWidth: 28
+                                            color: Config.md3.surface_container_high
+                                            radius: 8
+
+                                            IconImage {
+                                                anchors.centerIn: parent
+                                                height: 18
+                                                source: Quickshell.iconPath(appCard.modelData.icon || "audio-input-microphone-symbolic")
+                                                width: 18
                                             }
                                         }
-
-                                        IconImage {
-                                            id: streamMuteIcon
-
-                                            anchors.centerIn: parent
-                                            height: 15
-                                            source: Quickshell.iconPath(appCard.streamMuted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic")
-                                            visible: false
-                                            width: 15
+                                        Text {
+                                            Layout.fillWidth: true
+                                            color: Config.md3.on_surface
+                                            elide: Text.ElideRight
+                                            font.family: Config.fontName
+                                            font.pixelSize: 14
+                                            font.weight: Font.DemiBold
+                                            text: appCard.modelData.name
                                         }
-                                        ColorOverlay {
-                                            anchors.fill: streamMuteIcon
-                                            color: appCard.streamMuted ? Config.md3.error : Config.md3.on_surface_variant
-                                            source: streamMuteIcon
-                                        }
-                                        MouseArea {
-                                            id: streamMuteMouse
+                                        Rectangle {
+                                            Layout.preferredHeight: 27
+                                            Layout.preferredWidth: 27
+                                            color: Config.alpha(appCard.streamMuted ? Config.md3.error : Config.md3.on_surface, streamMuteMouse.containsMouse ? 0.18 : 0.08)
+                                            radius: 8
 
-                                            anchors.fill: parent
-                                            cursorShape: appCard.streamAvailable ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                            enabled: appCard.streamAvailable
-                                            hoverEnabled: true
+                                            Behavior on color {
+                                                ColorAnimation {
+                                                    duration: 130
+                                                }
+                                            }
 
-                                            onClicked: appCard.streamNode.audio.muted = !appCard.streamNode.audio.muted
+                                            IconImage {
+                                                id: streamMuteIcon
+
+                                                anchors.centerIn: parent
+                                                height: 15
+                                                source: Quickshell.iconPath(appCard.streamMuted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic")
+                                                visible: false
+                                                width: 15
+                                            }
+                                            ColorOverlay {
+                                                anchors.fill: streamMuteIcon
+                                                color: appCard.streamMuted ? Config.md3.error : Config.md3.on_surface_variant
+                                                source: streamMuteIcon
+                                            }
+                                            MouseArea {
+                                                id: streamMuteMouse
+
+                                                anchors.fill: parent
+                                                cursorShape: appCard.streamAvailable ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                                enabled: appCard.streamAvailable
+                                                hoverEnabled: true
+
+                                                onClicked: appCard.streamNode.audio.muted = !appCard.streamNode.audio.muted
+                                            }
                                         }
                                     }
-                                }
-                                CustomVolumeSlider {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 16
-                                    highlightColor: Config.md3.tertiary
-                                    isMuted: appCard.streamMuted
-                                    peakColor: appCard.streamPeak > 0.88 ? Config.md3.error : appCard.streamPeak > 0.68 ? Config.md3.tertiary : Config.md3.secondary
-                                    peakValue: appCard.streamPeak
-                                    showPeak: true
-                                    value: appCard.streamGain
+                                    CustomVolumeSlider {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 16
+                                        highlightColor: Config.md3.tertiary
+                                        isMuted: appCard.streamMuted
+                                        peakColor: appCard.streamPeak > 0.88 ? Config.md3.error : appCard.streamPeak > 0.68 ? Config.md3.tertiary : Config.md3.secondary
+                                        peakValue: appCard.streamPeak
+                                        showPeak: true
+                                        value: appCard.streamGain
 
-                                    onSliderMoved: value => {
-                                        if (appCard.streamAvailable)
-                                            appCard.streamNode.audio.volume = value;
+                                        onSliderMoved: value => {
+                                            if (appCard.streamAvailable)
+                                                appCard.streamNode.audio.volume = value;
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }
                         }
                     }
                 }
+            }
             Rectangle {
                 border.color: Config.alpha(Config.md3.tertiary, 0.32)
                 border.width: 1

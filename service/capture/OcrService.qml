@@ -29,35 +29,6 @@ QtObject {
     property string language: ""
     property int pendingGeneration: 0
     property string pendingImagePath: ""
-    property int runningGeneration: 0
-    property Timer recognizeStopTimer: Timer {
-        interval: 1000
-        repeat: false
-
-        onTriggered: {
-            if (root.recognizeProcess.running && root.runningGeneration !== root.generation)
-                root.recognizeProcess.signal(9);
-        }
-    }
-    property Timer recognizeWatchdog: Timer {
-        interval: 15000
-        repeat: false
-
-        onTriggered: {
-            if (!root.recognizeProcess.running || root.runningGeneration !== root.generation)
-                return;
-
-            root.generation += 1;
-            root.cancellationReason = "timeout";
-            root.recognizedText = "";
-            root.statusText = "OCR timed out after 15 seconds";
-            root.statusIsError = true;
-            root.cleanupInput();
-            root.recognizeProcess.signal(15);
-            root.recognizeStopTimer.restart();
-            root.finished(false, "");
-        }
-    }
     property Process recognizeProcess: Process {
         stdout: StdioCollector {
             onStreamFinished: {
@@ -98,7 +69,36 @@ QtObject {
             root.finished(true, root.recognizedText);
         }
     }
+    property Timer recognizeStopTimer: Timer {
+        interval: 1000
+        repeat: false
+
+        onTriggered: {
+            if (root.recognizeProcess.running && root.runningGeneration !== root.generation)
+                root.recognizeProcess.signal(9);
+        }
+    }
+    property Timer recognizeWatchdog: Timer {
+        interval: 15000
+        repeat: false
+
+        onTriggered: {
+            if (!root.recognizeProcess.running || root.runningGeneration !== root.generation)
+                return;
+
+            root.generation += 1;
+            root.cancellationReason = "timeout";
+            root.recognizedText = "";
+            root.statusText = "OCR timed out after 15 seconds";
+            root.statusIsError = true;
+            root.cleanupInput();
+            root.recognizeProcess.signal(15);
+            root.recognizeStopTimer.restart();
+            root.finished(false, "");
+        }
+    }
     property string recognizedText: ""
+    property int runningGeneration: 0
     property bool statusIsError: false
     property string statusText: ""
 

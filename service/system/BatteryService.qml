@@ -76,9 +76,6 @@ QtObject {
     property string governorOverride: "default"
     property string gpuPower: "N/A"
     property string health: "N/A"
-    property string powerDraw: "N/A"
-    property bool powerProfilesAvailable: false
-    readonly property bool performanceDegraded: PowerProfiles.degradationReason !== PerformanceDegradationReason.None
     readonly property int performanceDegradationReason: PowerProfiles.degradationReason
     readonly property string performanceDegradationText: {
         switch (performanceDegradationReason) {
@@ -90,6 +87,9 @@ QtObject {
             return "";
         }
     }
+    readonly property bool performanceDegraded: PowerProfiles.degradationReason !== PerformanceDegradationReason.None
+    property string powerDraw: "N/A"
+    property bool powerProfilesAvailable: false
     property Timer refreshDelay: Timer {
         interval: 1000
         repeat: false

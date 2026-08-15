@@ -6,6 +6,7 @@ import Quickshell.Io
 QtObject {
     id: root
 
+    property string activeUpgradeResultPath: ""
     property bool available: true
     readonly property bool busy: checking || upgrading
     property Process checkProcess: Process {
@@ -50,10 +51,35 @@ QtObject {
 
         onTriggered: root.refresh(false)
     }
-    property string activeUpgradeResultPath: ""
+    property bool receivedResult: false
+    property Timer startupRefresh: Timer {
+        interval: 2500
+        repeat: false
+        running: true
+
+        onTriggered: root.refresh(true)
+    }
+    readonly property string statusText: {
+        if (!available)
+            return "yay missing";
+        if (upgrading)
+            return "Updating…";
+        if (checking)
+            return "Checking…";
+        if (error !== "")
+            return "Check failed";
+        if (updateCount === 0)
+            return "Up to date";
+        return updateCount + (updateCount === 1 ? " update" : " updates");
+    }
+    readonly property int updateCount: packages.length
     property int upgradePollMisses: 0
-    property bool upgradeResultReceived: false
-    property string upgradeResultText: ""
+    property Timer upgradePollTimer: Timer {
+        interval: 1500
+        repeat: false
+
+        onTriggered: root.pollUpgradeResult()
+    }
     property Process upgradeResultQuery: Process {
         stdout: StdioCollector {
             onStreamFinished: {
@@ -84,14 +110,8 @@ QtObject {
             root.upgradePollTimer.restart();
         }
     }
-    property Timer upgradePollTimer: Timer {
-        interval: 1500
-        repeat: false
-
-        onTriggered: root.pollUpgradeResult()
-    }
-    property bool upgrading: false
-    property bool upgradeTerminalExited: false
+    property bool upgradeResultReceived: false
+    property string upgradeResultText: ""
     property Process upgradeTerminal: Process {
         onExited: (exitCode, exitStatus) => {
             root.upgradeTerminalExited = true;
@@ -99,44 +119,9 @@ QtObject {
                 root.pollUpgradeResult();
         }
     }
-    property bool receivedResult: false
-    property Timer startupRefresh: Timer {
-        interval: 2500
-        repeat: false
-        running: true
+    property bool upgradeTerminalExited: false
+    property bool upgrading: false
 
-        onTriggered: root.refresh(true)
-    }
-    readonly property string statusText: {
-        if (!available)
-            return "yay missing";
-        if (upgrading)
-            return "Updating…";
-        if (checking)
-            return "Checking…";
-        if (error !== "")
-            return "Check failed";
-        if (updateCount === 0)
-            return "Up to date";
-        return updateCount + (updateCount === 1 ? " update" : " updates");
-    }
-    readonly property int updateCount: packages.length
-
-    function shellQuote(value) {
-        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
-    }
-    function refresh(force) {
-        if (busy)
-            return;
-        if (!force && lastCheckedAt > 0 && Date.now() - lastCheckedAt < 15 * 60 * 1000)
-            return;
-
-        checking = true;
-        receivedResult = false;
-        error = "";
-        checkProcess.running = false;
-        checkProcess.running = true;
-    }
     function finishUpgradeTracking() {
         var completedResultPath = activeUpgradeResultPath;
         upgradePollTimer.stop();
@@ -159,12 +144,25 @@ QtObject {
         upgradeResultQuery.command = ["sh", "-c", "[ -s \"$1\" ] || exit 3; cat -- \"$1\"", "upgrade-result", activeUpgradeResultPath];
         upgradeResultQuery.running = true;
     }
+    function refresh(force) {
+        if (busy)
+            return;
+        if (!force && lastCheckedAt > 0 && Date.now() - lastCheckedAt < 15 * 60 * 1000)
+            return;
+
+        checking = true;
+        receivedResult = false;
+        error = "";
+        checkProcess.running = false;
+        checkProcess.running = true;
+    }
+    function shellQuote(value) {
+        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
+    }
     function upgrade() {
         if (!available || busy)
             return;
 
-        // Keep yay and AUR builds unprivileged; pkexec is used only when yay
-        // invokes pacman for the repository transaction.
         activeUpgradeResultPath = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/quickshell-update-result-" + Date.now();
         upgradePollMisses = 0;
         upgradeResultReceived = false;
@@ -172,7 +170,7 @@ QtObject {
         upgradeTerminalExited = false;
         upgrading = true;
         error = "";
-        var upgradeCommand = "result_file=" + shellQuote(activeUpgradeResultPath) + "; printf 'started\\n' > \"$result_file\"; " + "print -r -- 'Updating repository and AUR packages…'; print; " + "/usr/bin/yay --sudo /usr/bin/pkexec -Syu --noconfirm " + "--answerclean None --answerdiff None --answeredit None; result=$?; " + "printf '%s\\n' \"$result\" > \"$result_file\"; " + "print; " + "if [ $result -eq 0 ]; then print -r -- 'Upgrade complete.'; " + "else print -r -- \"Upgrade failed (exit $result).\"; fi; " + "print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
+        var upgradeCommand = "result_file=" + shellQuote(activeUpgradeResultPath) + "; printf 'started\\n' > \"$result_file\"; " + "print -r -- 'Authenticate once to update repository and AUR packages…'; print; " + "/usr/bin/sudo -v; result=$?; " + "if [ $result -eq 0 ]; then " + "/usr/bin/yay --sudo /usr/bin/sudo --sudoloop -Syu --noconfirm " + "--answerclean None --answerdiff None --answeredit None; result=$?; fi; " + "printf '%s\\n' \"$result\" > \"$result_file\"; " + "print; " + "if [ $result -eq 0 ]; then print -r -- 'Upgrade complete.'; " + "else print -r -- \"Upgrade failed (exit $result).\"; fi; " + "print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
         var terminalCommand = "exec /usr/bin/zsh -c " + shellQuote(upgradeCommand);
         upgradeTerminal.command = ["blackbox-terminal", "--command", terminalCommand];
         upgradeTerminal.running = true;

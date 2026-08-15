@@ -1,3 +1,4 @@
+import "../../"
 import QtQuick
 import Quickshell
 
@@ -9369,16 +9370,17 @@ Item {
                     "data": entry
                 });
 
-            if (matches.length >= 40)
+            if (matches.length >= Config.launcherMaxResults)
                 break;
         }
         return matches;
     }
     readonly property string searchTerm: {
-        if (!query.toLowerCase().startsWith("e "))
+        var prefix = Config.launcherEmojiPrefix.toLowerCase();
+        if (!query.toLowerCase().startsWith(prefix + " "))
             return "";
 
-        return query.substring(2).trim().toLowerCase();
+        return query.substring(prefix.length + 1).trim().toLowerCase();
     }
 
     function copy(entry) {

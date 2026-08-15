@@ -38,10 +38,10 @@ Item {
         });
         return list;
     }
+    property bool googleDropHovered: false
     property string newTaskDue: ""
     property string newTaskNotes: ""
     property string newTaskTitle: ""
-    property bool googleDropHovered: false
     property bool showAddEvent: false
     property string taskSource: "local"
 
@@ -390,12 +390,12 @@ Item {
                         property bool syncDragging: false
                         readonly property bool taskSyncing: taskSource === "local" && LocalTaskService.isSyncing(modelData.id)
 
-                        color: Qt.tint(Config.md3.surface_container, Config.alpha(Config.md3.error, Math.min(1.0, Math.abs(swipeX) / 80)))
                         Drag.active: syncDragging
                         Drag.hotSpot.x: width / 2
                         Drag.hotSpot.y: 20
                         Drag.keys: ["local-task"]
                         Drag.supportedActions: Qt.CopyAction
+                        color: Qt.tint(Config.md3.surface_container, Config.alpha(Config.md3.error, Math.min(1.0, Math.abs(swipeX) / 80)))
                         height: parent.height
                         opacity: syncDragging ? 0.78 : taskSyncing ? 0.6 : 1
                         radius: 20
@@ -773,20 +773,20 @@ Item {
     DatePickerPopup {
         id: datePickerPopup
 
-        anchors.centerIn: parent
+        placementParent: root
         selectedDate: root.newTaskDue
 
         onDateCleared: root.newTaskDue = ""
         onDateSelected: value => root.newTaskDue = value
     }
     Connections {
-        function onAuthenticationSucceeded(context) {
-            if (context === "todo-google-tab")
-                root.taskSource = "google";
-        }
         function onAuthenticatedChanged() {
             if (!GoogleService.authenticated && root.taskSource === "google")
                 root.taskSource = "local";
+        }
+        function onAuthenticationSucceeded(context) {
+            if (context === "todo-google-tab")
+                root.taskSource = "google";
         }
 
         target: GoogleService

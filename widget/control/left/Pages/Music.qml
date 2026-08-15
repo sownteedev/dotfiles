@@ -115,10 +115,6 @@ Item {
 
     anchors.fill: parent
 
-    PwObjectTracker {
-        objects: Pipewire.nodes && Pipewire.nodes.values ? Pipewire.nodes.values : []
-    }
-
     Behavior on swipeOffset {
         enabled: !musicDrag.active && !root.isSwipingOut
 
@@ -128,6 +124,9 @@ Item {
         }
     }
 
+    PwObjectTracker {
+        objects: Pipewire.nodes && Pipewire.nodes.values ? Pipewire.nodes.values : []
+    }
     Timer {
         id: swipeActionTimer
 
@@ -469,6 +468,7 @@ Item {
                         layer.effect: ColorOverlay {
                             color: root.mediaMuted ? Config.md3.on_surface_variant : Config.md3.primary
                         }
+
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
@@ -485,6 +485,7 @@ Item {
                         highlightColor: Config.md3.primary
                         hoverTrackHeight: 5
                         isMuted: root.mediaMuted
+                        maximumValue: Config.audioMaxVolume
                         showThumbOnHover: true
                         thumbSize: 9
                         trackHeight: 3

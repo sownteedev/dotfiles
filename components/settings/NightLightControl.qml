@@ -55,7 +55,7 @@ Rectangle {
             anchors.left: parent.left
             anchors.leftMargin: 16
             anchors.verticalCenter: parent.verticalCenter
-            color: Config.alpha(nightLightEnabled ? "#ffad42" : Config.md3.on_surface, 0.16)
+            color: Config.alpha(nightLightEnabled ? "#ffad42" : Config.md3.primary, 0.16)
             height: 40
             radius: 20
             width: 40
@@ -68,7 +68,7 @@ Rectangle {
                 width: 22
 
                 layer.effect: ColorOverlay {
-                    color: root.nightLightEnabled ? "#ffad42" : Config.md3.on_surface_variant
+                    color: root.nightLightEnabled ? '#e7844b' : Config.md3.primary
                 }
             }
         }

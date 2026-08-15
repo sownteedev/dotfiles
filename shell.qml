@@ -14,6 +14,7 @@ import "service"
 import "widget/bar"
 import "widget/capture"
 import "widget/desktop"
+import "widget/lockscreen"
 import "widget/notification"
 import "widget/osd"
 import "widget/polkit"
@@ -509,12 +510,25 @@ ShellRoot {
         onNotification: n => {
             n.tracked = true;
             NotificationHistory.add(n);
-            if (n.transient && QuickSettingsService.dndActive) {
+            if (!QuickSettingsService.effectiveDndActive && LockscreenNotificationService.show(n)) {
+                n.closed.connect(function () {
+                    LockscreenNotificationService.dismiss(n.id, false);
+                });
+            }
+            if (n.transient && QuickSettingsService.effectiveDndActive) {
                 Qt.callLater(function () {
                     if (n && n.tracked)
                         n.expire();
                 });
             }
         }
+    }
+    Connections {
+        function onEffectiveDndActiveChanged() {
+            if (QuickSettingsService.effectiveDndActive)
+                LockscreenNotificationService.clear();
+        }
+
+        target: QuickSettingsService
     }
 }

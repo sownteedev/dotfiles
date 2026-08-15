@@ -56,22 +56,15 @@ MouseArea {
 
         spacing: 5
 
-        Rectangle {
+        Item {
             id: layoutToggleButton
 
             Layout.alignment: Qt.AlignVCenter
             Layout.rightMargin: 10
-            color: root.toggleFailed ? Config.alpha(Config.md3.error, 0.18) : toggleScriptProcess.running ? Config.alpha(Config.md3.primary, 0.16) : buttonArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : Config.alpha(Config.md3.surface, Config.lightTheme ? 0.7 : 0.5)
             height: 38
-            radius: 10
             scale: buttonArea.pressed ? 0.9 : 1
             width: 38
 
-            Behavior on color {
-                ColorAnimation {
-                    duration: 150
-                }
-            }
             Behavior on scale {
                 NumberAnimation {
                     duration: 120

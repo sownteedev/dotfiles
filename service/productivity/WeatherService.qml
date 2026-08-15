@@ -111,6 +111,9 @@ QtObject {
     property int windDegree: 0
     property real windSpeed: 0
 
+    function acquire() {
+        activeConsumers++;
+    }
     function applyForecast(result) {
         if (!result || !result.current)
             throw new Error(result && result.message ? result.message : "Invalid weather response");
@@ -228,9 +231,6 @@ QtObject {
         errorMessage = "";
         lastUpdated = new Date();
     }
-    function acquire() {
-        activeConsumers++;
-    }
     function dayName(timestamp) {
         var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         return days[new Date(timestamp * 1000).getDay()];
@@ -262,17 +262,6 @@ QtObject {
         forecastProcess.command = ["curl", "-fsS", "--connect-timeout", "10", "--max-time", "25", forecastUrl];
         forecastProcess.running = true;
     }
-    function stopRequests() {
-        refreshPending = false;
-        if (forecastProcess.running) {
-            forecastProcess.cancelled = true;
-            forecastProcess.running = false;
-        } else {
-            loading = false;
-        }
-        if (locationProcess.running)
-            locationProcess.running = false;
-    }
     function flagForCountry(countryCode) {
         var code = String(countryCode || "").trim().toUpperCase();
         if (code.length !== 2)
@@ -298,6 +287,17 @@ QtObject {
     }
     function release() {
         activeConsumers = Math.max(0, activeConsumers - 1);
+    }
+    function stopRequests() {
+        refreshPending = false;
+        if (forecastProcess.running) {
+            forecastProcess.cancelled = true;
+            forecastProcess.running = false;
+        } else {
+            loading = false;
+        }
+        if (locationProcess.running)
+            locationProcess.running = false;
     }
     function timeText(timestamp) {
         var date = new Date(timestamp * 1000);

@@ -741,6 +741,18 @@ Scope {
                             }
                         }
                     }
+                    LockscreenNotifications {
+                        anchors.right: parent.right
+                        anchors.rightMargin: container.marginR
+                        anchors.top: ambientPanel.bottom
+                        anchors.topMargin: 8 * container.s
+                        width: 220 * container.s
+                        z: 100
+
+                        transform: Translate {
+                            x: container.slideX
+                        }
+                    }
                     Column {
                         id: loginPanel
 

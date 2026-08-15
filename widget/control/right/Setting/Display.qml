@@ -420,7 +420,7 @@ Item {
                         anchors.left: parent.left
                         anchors.leftMargin: 16
                         anchors.verticalCenter: parent.verticalCenter
-                        color: Config.alpha(Config.md3.on_surface, 0.16)
+                        color: Config.alpha(Config.md3.primary, 0.16)
                         height: 40
                         radius: 20
                         width: 40
@@ -433,7 +433,7 @@ Item {
                             width: 22
 
                             layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface_variant
+                                color: Config.md3.primary
                             }
                         }
                     }
@@ -1302,9 +1302,14 @@ Item {
                         spacing: 12
 
                         IconImage {
-                            height: 24
+                            Layout.preferredHeight: 24
+                            Layout.preferredWidth: 24
+                            layer.enabled: true
                             source: Quickshell.iconPath("video-display-symbolic")
-                            width: 24
+
+                            layer.effect: ColorOverlay {
+                                color: Config.md3.primary
+                            }
                         }
                         ColumnLayout {
                             Layout.fillWidth: true

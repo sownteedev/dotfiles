@@ -9,7 +9,9 @@ Rectangle {
     property real dragValue: 0.0
     readonly property bool dragging: sliderMouse.pressed
     property color highlightColor: Config.md3.primary
+    property real hoverTrackHeight: trackHeight
     property bool isMuted: false
+    property real maximumValue: 1.0
     property color peakColor: Config.md3.secondary
     property real peakValue: 0.0
     property real pendingValue: 0.0
@@ -20,14 +22,13 @@ Rectangle {
     property real thumbSize: 10
     property real trackHeight: 8
     property int updateInterval: 16
-    property real hoverTrackHeight: trackHeight
     property real value: 0.0
-    readonly property real visualValue: dragging ? dragValue : clampedValue
+    readonly property real visualValue: (dragging ? dragValue : clampedValue) / Math.max(0.001, maximumValue)
 
     signal sliderMoved(real value)
 
     function clampValue(nextValue) {
-        return Math.max(0, Math.min(1, Number(nextValue) || 0));
+        return Math.max(0, Math.min(maximumValue, Number(nextValue) || 0));
     }
     function discardPendingValue() {
         updateTimer.stop();
@@ -42,7 +43,7 @@ Rectangle {
         sliderMoved(nextValue);
     }
     function updateFromPointer(pointerX) {
-        var nextValue = clampValue(pointerX / Math.max(1, sliderMouse.width));
+        var nextValue = clampValue(pointerX / Math.max(1, sliderMouse.width) * maximumValue);
         dragValue = nextValue;
         pendingValue = nextValue;
         pendingValueDirty = true;
