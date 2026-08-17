@@ -715,7 +715,9 @@ Rectangle {
                     LoadingIndicator {
                         anchors.centerIn: parent
                         animated: root.installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching
+                        height: 80
                         visible: animated
+                        width: 80
                     }
                     GridView {
                         id: resultGrid

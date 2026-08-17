@@ -21,7 +21,7 @@ MouseArea {
     hoverEnabled: true
     opacity: menuOpen ? 1 : 0
     scale: pressed ? 0.95 : 1
-    width: active ? 148 : 62
+    width: active ? Math.max(62, 28 + (labelItem.implicitWidth > 0 ? 10 + labelItem.implicitWidth : 0) + 36) : 62
 
     Behavior on opacity {
         SequentialAnimation {
@@ -72,17 +72,17 @@ MouseArea {
         border.color: Config.alpha(rootButton.accent, rootButton.active ? 0.62 : 0)
         border.width: 1
         color: Config.alpha(rootButton.accent, rootButton.active ? 0.24 : 0)
-        layer.enabled: true
+        layer.enabled: rootButton.active
         radius: height / 2
 
         Behavior on border.color {
             ColorAnimation {
-                duration: 210
+                duration: 180
             }
         }
         Behavior on color {
             ColorAnimation {
-                duration: 210
+                duration: 180
             }
         }
         layer.effect: DropShadow {
@@ -95,6 +95,8 @@ MouseArea {
         }
     }
     Row {
+        id: contentRow
+
         anchors.centerIn: parent
         spacing: 10
 
@@ -102,48 +104,60 @@ MouseArea {
             id: icon
 
             anchors.verticalCenter: parent.verticalCenter
-            height: width
+            height: 28
+            width: 28
             layer.enabled: true
             opacity: rootButton.active ? 1 : (rootButton.containsMouse ? 0.96 : 0.68)
             source: Quickshell.iconPath(rootButton.iconName)
-            width: rootButton.active ? 29 : 27
 
             layer.effect: ColorOverlay {
                 color: rootButton.active ? rootButton.accent : Config.md3.on_surface_variant
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 200
+                    }
+                }
             }
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 150
-                }
-            }
-            Behavior on width {
-                NumberAnimation {
-                    duration: 210
-                    easing.type: Easing.OutCubic
+                    duration: 160
                 }
             }
         }
-        Text {
+        Item {
+            id: labelItem
+
             anchors.verticalCenter: parent.verticalCenter
             clip: true
-            color: Config.md3.on_surface
-            font.family: Config.fontName
-            font.pixelSize: 16
-            font.weight: Font.DemiBold
+            height: buttonLabel.implicitHeight
+            implicitWidth: buttonLabel.implicitWidth
             opacity: rootButton.active ? 1 : 0
-            text: rootButton.label
-            width: rootButton.active ? implicitWidth : 0
+            width: rootButton.active ? buttonLabel.implicitWidth : 0
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: rootButton.active ? 170 : 70
+                    duration: rootButton.active ? 200 : 70
+                    easing.type: Easing.InOutCubic
                 }
             }
             Behavior on width {
                 NumberAnimation {
-                    duration: 230
+                    duration: 260
                     easing.type: Easing.InOutCubic
                 }
+            }
+
+            Text {
+                id: buttonLabel
+
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                color: Config.md3.on_surface
+                font.family: Config.fontName
+                font.pixelSize: 16
+                font.weight: Font.DemiBold
+                text: rootButton.label
             }
         }
     }

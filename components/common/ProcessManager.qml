@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import "../../"
+import ".."
 
 Item {
     id: root
@@ -365,15 +366,29 @@ Item {
                     }
                 }
             }
-            Text {
+            Column {
                 anchors.centerIn: parent
-                color: Config.md3.outline
-                font.family: Config.fontName
-                font.pixelSize: 12
-                font.weight: Font.Medium
-                horizontalAlignment: Text.AlignHCenter
-                text: root.processList && root.processList.count > 0 ? qsTr("No matching processes") : qsTr("Collecting process data…")
+                spacing: 8
                 visible: root.filteredCount === 0
+
+                LoadingIndicator {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    animated: visible
+                    color: Config.md3.primary
+                    height: 55
+                    visible: !root.processList || root.processList.count === 0
+                    width: 55
+                }
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    color: Config.md3.outline
+                    font.family: Config.fontName
+                    font.pixelSize: 12
+                    font.weight: Font.Medium
+                    horizontalAlignment: Text.AlignHCenter
+                    text: root.processList && root.processList.count > 0 ? qsTr("No matching processes") : ""
+                    visible: text !== ""
+                }
             }
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter

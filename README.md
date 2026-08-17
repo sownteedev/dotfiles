@@ -31,82 +31,75 @@ The visual language is based on Material Design 3. A palette generated from the 
 
 ## Highlights
 
-### Bar and workspaces
+### 🌟 Top Bar & Dynamic Workspaces
 
-- Niri workspace state and active-client information remain independent from shell panel focus.
-- Media controls and an optional Cava visualizer respond to the active MPRIS player.
-- System tray items follow the same sizing and spacing system as native bar modules.
-- Wi-Fi, Bluetooth, microphone privacy, battery, notifications, recording, and clock modules can be shown independently.
-- Battery rendering includes animated liquid, wave, bubble, and charging states.
+- **Niri Workspace Tracking:** Real-time workspace indicators and active-window title tracker that remain synchronized across dynamic workspace creation and window focusing.
+- **Interactive Media Player:** Adaptive track title and artist ticker with `LIVE` broadcast badges, interactive scrubber dragging, and an audio-reactive **Cava visualizer**.
+- **Intelligent Battery Widget:** Custom vector-rendered battery with animated liquid waves, bubble flows during charging, and critical level visual alerts.
+- **Unified Status Center:** Discrete indicators for Wi-Fi signal strength, Bluetooth connection & battery levels, Microphone privacy guard, Screen recording status, Do Not Disturb, and System Clock.
+- **Modern System Tray:** Pixel-aligned StatusNotifierItem host conforming strictly to the shell's Material You padding, spacing, and typography.
 
-### Launcher
+### 🚀 Spotlight Launcher
 
-- Fast application discovery with optional fuzzy matching.
-- Calculator expressions, clipboard history, emoji lookup, and file search.
-- Keyboard-first navigation with animated result, width, and height transitions.
-- Lazy loading keeps the launcher inactive until it is requested.
+- **Multi-Provider Architecture:** Search apps, run inline mathematical calculations (`=`), query clipboard history (`c`), search local files (`f`), and look up Unicode emojis (`e`).
+- **Fuzzy Matching Engine:** Instant, typo-tolerant search across all installed `.desktop` applications and binaries.
+- **Adaptive Geometry:** Smooth, responsive height and width animations as results filter down, with complete keyboard navigation support (`Tab`, `Arrows`, `Return`).
+- **Zero-Idle Footprint:** Component instances are lazily loaded on demand and immediately unloaded when dismissed.
 
-### Control center
+### 🎛️ Comprehensive Control Center
 
-- PipeWire output, input, stream, device, and volume controls.
-- NetworkManager Wi-Fi scanning and connection management.
-- Bluetooth device discovery, pairing, connection, and battery information.
-- Airplane Mode, Caffeine, Do Not Disturb, Tailscale, and Cloudflare WARP quick toggles.
-- Internal and DDC/CI external-display brightness controls.
-- Display output profiles, hotplug handling, laptop-only, external-only, mirror, and extend modes.
-- Night Light with adjustable color temperature and synchronized light/dark appearance.
-- Battery health and charge-limit controls where supported.
-- System statistics and a searchable process manager with process actions.
-- Repository and AUR update checks with an integrated upgrade workflow.
+- **Audio & Device Routing:** Per-stream PipeWire volume sliders, peak level monitors, audio input/output device switching, and individual application muting.
+- **Network & Privacy Toggles:** One-click toggles for Wi-Fi Networks, Bluetooth, Airplane Mode, Caffeine, Do Not Disturb, Tailscale VPN, and Cloudflare WARP.
+- **Apple AirPods Integration:** Custom native BLE reader showing granular battery levels for Left earbud, Right earbud, and Charging Case.
+- **Display & Brightness Management:** Dual controls for internal laptop backlight and external monitor **DDC/CI hardware brightness**, display output profile selection (Mirror, Extend, Internal-Only, External-Only), and smart hotplug detection.
+- **Game Streaming Profile Switcher:** Integrated Sunshine display output profile management with automatic capture source assignment and service restart.
+- **Night Light & Color Tuning:** Seamless gamma temperature transitions synchronized with system-wide Dark/Light theme modes.
+- **Battery Health & Charge Thresholds:** Real-time battery degradation health checks and ASUS/Lenovo hardware charge-limit toggles.
+- **System Diagnostics & Process Manager:** Live CPU/RAM/GPU usage charts with integrated process discovery, searchable process list with animated loading indicator, and instant process termination (`SIGTERM`/`SIGKILL`).
+- **Package & Update Manager:** Automated Arch Linux official repositories and AUR update checker with an integrated one-click terminal upgrade workflow.
 
-### Settings and system tools
+### ⚙️ Searchable Settings Hub
 
-- Searchable Settings Hub for both Niri and SownteeShell configuration.
-- Visual editors for Niri keybinds, layout, input, animations, behavior, rules, and KDL configuration files.
-- Controls for bar modules, launcher providers, notifications, wallpapers, capture, integrations, idle behavior, and rendering performance.
-- Dependency and service diagnostics with cache usage reporting and selective cleanup.
-- Howdy face model enrollment, refresh, and removal from the security settings.
+- **Visual Niri Compositor Configurator:** Full graphical editors for keybindings, layout dimensions, gesture inputs, animation curves, window rules, and raw KDL files.
+- **Shell Customization:** Granular controls for bar density, widget layout, launcher prefixes, OSD timeouts, wallpaper engine paths, and animations.
+- **Biometric Security Settings:** Direct facial authentication enrollment, model refresh, and verification management via Howdy.
+- **Diagnostics & Cache Pruning:** Deep inspection of system dependencies, active systemd user services, and single-click cache cleaners.
 
-### Productivity and media
+### 📅 Productivity & Rich Media Hub
 
-- Calendar, local todos, timers, and countdowns.
-- Optional Google Calendar and Google Tasks integration.
-- Weather data and animated weather presentation.
-- MPRIS media controls, artwork, playback state, and synchronized lyrics.
-- Caffeine and configurable idle behavior for focused work or long-running tasks.
+- **Calendar & Agenda:** Full monthly calendar with event badges, quick date jumps, and local task lists.
+- **Cloud Calendar Sync:** Optional two-way synchronization with Google Calendar and Google Tasks.
+- **Live Weather Widget:** Real-time location-based weather tracking with animated atmospheric icons (rain, snow, clouds, thunder).
+- **Synchronized Music Lyrics:** Real-time karaoke-style lyric scrolling synced with the active MPRIS music player.
+- **Pomodoro & Countdown Timers:** Precision countdown dial with customizable timers and audio-visual alarms.
 
-### Wallpapers and color system
+### 🎨 Wallpaper Engine & Material You Palette
 
-- Static local images with animated wallpaper transitions.
-- Local video wallpapers through `mpvpaper`.
-- Wallpaper Engine playback through `linux-wallpaperengine`.
-- Steam Workshop search, download progress, cancellation, installed-item management, and subscription links.
-- Wallhaven browsing, search, categories, purity, resolution, ratio, color, sorting, collections, and local management.
-- Cached previews and downloads keep remote wallpaper browsing separate from personal wallpaper files.
-- Matugen palette generation updates shared Material Design 3 tokens across the shell.
-- Optional animated palette blending prevents abrupt color changes between wallpapers.
+- **Versatile Wallpaper Backends:** Support for static images, seamless video loops via `mpvpaper`, and interactive Steam Workshop projects via `linux-wallpaperengine`.
+- **Steam Workshop Integration:** In-app Workshop explorer with real-time search, tag filtering, subscription management, download progress, and cancel/delete controls.
+- **Wallhaven Online Explorer:** Browse top-rated static wallpapers, filter by resolution, aspect ratio, color palette, categories, purity (SFW/Sketchy/NSFW), and user collections.
+- **Kinetic Transitions:** Cinematic Ken Burns zoom-and-fade transitions when switching wallpapers and videos.
+- **Automated Theme Synchronization:** Automatic color palette generation via **Matugen**, distributing consistent Material Design 3 color tokens across Quickshell, GTK, Qt, VS Code, and terminal emulators.
 
-### Capture and notifications
+### 📸 Screen Capture & Visual Privacy
 
-- Screenshot selection, annotation, copy, save, open, and post-capture actions.
-- OCR with language support for captured regions.
-- Screen recording with configurable codec, quality, FPS, microphone, and output path.
-- Notification popup queue, history, application filtering, Do Not Disturb scheduling, and fullscreen policy.
-- Compact lock-screen notifications persist independently from notification history.
-- Swipe-to-dismiss interactions and coordinated enter, exit, collapse, and reposition animations.
+- **Advanced Screenshot Editor:** Region selection, magnifier loupe, annotation tools (pencil, arrows, rectangles, text), pixelation/blur privacy tools, and color pickers.
+- **Optical Character Recognition (OCR):** Instant text extraction from selected screen regions directly to the system clipboard.
+- **High-Performance Screen Recorder:** Hardware-accelerated desktop recording with customizable codecs, bitrates, frame rates, microphone audio pass-through, and output paths.
 
-### Lock screen and security prompts
+### 🔔 iOS-Style Notification System
 
-- Multi-screen lock surfaces coordinated through shared shell state.
-- Password authentication with optional Howdy face authentication.
-- Media, clock, session, and notification information without weakening the authentication boundary.
-- Quickshell-native Polkit prompts for privileged actions initiated by the shell.
+- **Lockscreen Notification Stacks:** Group notifications intelligently by application into multi-layer 3D stacks with counter badges.
+- **Interactive Group Expansion:** Tap any stack on the lock screen to smoothly expand all individual notifications with fluid physics-based motion.
+- **Swipe-to-Dismiss:** Horizontal flick gestures to dismiss individual cards or entire stacks with automatic reflow of surrounding elements.
+- **Do Not Disturb & History Archive:** Configurable auto-dismiss timeouts, scheduled quiet hours, application blacklisting, and a searchable notification history center.
 
-### Gestures, overlays, and power
+### 🔒 Security, Gestures & Power
 
-- Edge-swipe gestures open the left and right panels with progress-following motion.
-- Volume, microphone, and brightness OSDs share the shell's visual language.
-- Power menu actions for shutdown, restart, lock, hibernate, suspend, and logout.
+- **Multi-Monitor Lock Screen:** Secure PAM-integrated lock surfaces across all attached displays with optional Howdy face authentication and clock widget.
+- **Native Polkit Agent:** Elevation dialogs rendered natively within the shell's theme.
+- **Edge-Swipe Gestures:** Interactive touchscreen and touchpad edge dragging to reveal the left and right control panels with 1:1 finger tracking.
+- **Minimalist Power Hub:** Quick access to Shutdown, Reboot, Lock, Hibernate, Suspend, and Logout with fluid pill expansion and confirmation safeguards.
 
 > and more features...
 

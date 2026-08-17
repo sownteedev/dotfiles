@@ -579,7 +579,9 @@ Rectangle {
                 LoadingIndicator {
                     anchors.centerIn: parent
                     animated: root.resultLoading
+                    height: 80
                     visible: animated
+                    width: 80
                 }
                 Column {
                     anchors.centerIn: parent
