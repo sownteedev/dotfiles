@@ -322,13 +322,13 @@ Item {
 
                 Accessible.name: qsTr("Open on Wallhaven")
                 Accessible.role: Accessible.Button
-                Layout.preferredHeight: 34
-                Layout.preferredWidth: 34
+                Layout.preferredHeight: 36
+                Layout.preferredWidth: 36
                 activeFocusOnTab: visible
                 border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
                 border.width: 1
                 color: openMouse.pressed ? Config.md3.secondary_container : (openMouse.containsMouse ? Config.alpha(Config.md3.secondary_container, 0.72) : Config.alpha(Config.md3.on_surface, 0.06))
-                radius: 11
+                radius: 12
                 visible: String(root.wallpaper.url || "") !== ""
 
                 Behavior on color {
@@ -342,10 +342,10 @@ Item {
 
                 IconImage {
                     anchors.centerIn: parent
-                    height: 17
+                    height: 18
                     layer.enabled: true
                     source: Quickshell.iconPath("internet-web-browser-symbolic")
-                    width: 17
+                    width: 18
 
                     layer.effect: ColorOverlay {
                         color: openMouse.containsMouse ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
@@ -366,15 +366,15 @@ Item {
 
                 Accessible.name: root.deleteArmed ? qsTr("Confirm delete") : qsTr("Delete wallpaper")
                 Accessible.role: Accessible.Button
-                Layout.preferredHeight: 34
-                Layout.preferredWidth: 72
+                Layout.preferredHeight: 36
+                Layout.preferredWidth: 36
                 activeFocusOnTab: visible
                 border.color: activeFocus ? Config.alpha(Config.md3.error, 0.68) : "transparent"
                 border.width: 1
                 color: deleteMouse.pressed ? Config.md3.error : (deleteMouse.containsMouse || root.deleteArmed ? Config.md3.error_container : Config.alpha(Config.md3.on_surface, 0.06))
                 enabled: !root.removing
                 opacity: enabled ? 1 : 0.5
-                radius: 11
+                radius: 12
                 visible: root.installedMode && !root.inUse
 
                 Behavior on color {
@@ -388,35 +388,25 @@ Item {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 6
 
                     LoadingIndicator {
                         anchors.verticalCenter: parent.verticalCenter
                         animated: root.removing
-                        height: 16
+                        height: 18
                         visible: animated
-                        width: 16
+                        width: 18
                     }
                     IconImage {
                         anchors.verticalCenter: parent.verticalCenter
-                        height: 17
+                        height: 18
                         layer.enabled: true
                         source: Quickshell.iconPath(root.deleteArmed ? "dialog-warning-symbolic" : "user-trash-symbolic")
                         visible: !root.removing
-                        width: 17
+                        width: 18
 
                         layer.effect: ColorOverlay {
                             color: deleteMouse.pressed ? Config.md3.on_error : (root.deleteArmed ? Config.md3.on_error_container : Config.md3.on_surface_variant)
                         }
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Config.md3.on_error_container
-                        font.family: Config.fontName
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        text: root.deleteArmed ? qsTr("Confirm") : qsTr("Delete")
-                        visible: !root.removing
                     }
                 }
                 MouseArea {
@@ -437,15 +427,15 @@ Item {
 
                 Accessible.name: root.downloaded ? qsTr("Apply wallpaper") : (root.downloading ? qsTr("Cancel download") : qsTr("Download wallpaper"))
                 Accessible.role: Accessible.Button
-                Layout.preferredHeight: 34
-                Layout.preferredWidth: root.downloaded ? 38 : 96
+                Layout.preferredHeight: 36
+                Layout.preferredWidth: 36
                 activeFocusOnTab: true
                 border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
                 border.width: 1
-                color: primaryMouse.pressed ? Config.md3.primary : (primaryAction.emphasized ? Config.alpha(Config.md3.primary, 0.9) : Config.md3.primary_container)
+                color: primaryMouse.pressed ? Config.md3.primary_container : (primaryAction.emphasized ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
                 enabled: !root.inUse && !root.removing && !root.downloadBlocked && (!root.cancelling || root.downloading)
                 opacity: enabled ? 1 : 0.42
-                radius: 11
+                radius: 12
 
                 Behavior on color {
                     ColorAnimation {
@@ -458,35 +448,25 @@ Item {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 7
 
                     LoadingIndicator {
                         anchors.verticalCenter: parent.verticalCenter
                         animated: root.downloading && !root.cancelling
-                        height: 16
+                        height: 18
                         visible: animated
-                        width: 16
+                        width: 18
                     }
                     IconImage {
                         anchors.verticalCenter: parent.verticalCenter
-                        height: 17
+                        height: 18
                         layer.enabled: true
                         source: Quickshell.iconPath(root.downloaded ? "media-playback-start-symbolic" : root.downloading ? "process-stop-symbolic" : "folder-download-symbolic")
                         visible: !root.downloading || root.cancelling
-                        width: 17
+                        width: 18
 
                         layer.effect: ColorOverlay {
-                            color: primaryAction.emphasized ? Config.md3.on_primary : Config.md3.on_primary_container
+                            color: primaryMouse.pressed ? Config.md3.primary : Config.md3.on_primary
                         }
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: primaryAction.emphasized ? Config.md3.on_primary : Config.md3.on_primary_container
-                        font.family: Config.fontName
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        text: root.downloading ? (root.cancelling ? qsTr("Stopping…") : qsTr("Cancel")) : qsTr("Download")
-                        visible: !root.downloaded
                     }
                 }
                 MouseArea {

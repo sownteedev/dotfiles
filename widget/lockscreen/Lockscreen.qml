@@ -597,8 +597,8 @@ Scope {
                             Text {
                                 color: root.lockscreenColors.text
                                 font.family: root.fontName
-                                font.letterSpacing: 8 * container.s
-                                font.pixelSize: 55 * container.s
+                                font.letterSpacing: 5 * container.s
+                                font.pixelSize: 70 * container.s
                                 font.weight: Font.Black
                                 text: Qt.formatDate(new Date(), "dddd").toUpperCase()
                             }
@@ -742,10 +742,13 @@ Scope {
                         }
                     }
                     LockscreenNotifications {
+                        id: lockscreenNotifications
+
                         anchors.right: parent.right
                         anchors.rightMargin: container.marginR
                         anchors.top: ambientPanel.bottom
                         anchors.topMargin: 8 * container.s
+                        maximumHeight: Math.max(0, loginPanel.y - lockscreenNotifications.y - 12 * container.s)
                         width: 220 * container.s
                         z: 100
 

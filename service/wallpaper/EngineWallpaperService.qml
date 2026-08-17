@@ -473,7 +473,8 @@ QtObject {
         requestStart();
     }
     function previewNeedsConversion(path) {
-        return String(path || "").split("?")[0].toLowerCase().endsWith(".gif");
+        var p = String(path || "").split("?")[0].toLowerCase();
+        return p.endsWith(".gif") || p.endsWith(".mp4") || p.endsWith(".webm") || p.endsWith(".mkv") || p.endsWith(".avi") || p.endsWith(".mov");
     }
     function previewThumbnailKnown(path, modified) {
         if (!previewNeedsConversion(path))

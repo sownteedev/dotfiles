@@ -108,6 +108,8 @@ The visual language is based on Material Design 3. A palette generated from the 
 - Volume, microphone, and brightness OSDs share the shell's visual language.
 - Power menu actions for shutdown, restart, lock, hibernate, suspend, and logout.
 
+> and more features...
+
 ## Inspiration
 
 SownteeShell takes inspiration from these open Linux desktop projects:

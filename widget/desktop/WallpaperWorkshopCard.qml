@@ -335,41 +335,24 @@ Item {
                 id: deleteAction
 
                 Layout.preferredHeight: 38
-                Layout.preferredWidth: root.deleteArmed ? 82 : 38
+                Layout.preferredWidth: 38
                 color: deleteMouse.pressed ? Config.md3.error_container : (deleteMouse.containsMouse || root.deleteArmed ? Config.alpha(Config.md3.error_container, 0.96) : Config.alpha(Config.md3.on_surface, 0.055))
                 radius: 12
                 visible: root.installedMode && !root.inUse
 
-                Behavior on Layout.preferredWidth {
-                    NumberAnimation {
-                        duration: 140
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
                 Row {
                     anchors.centerIn: parent
-                    spacing: 6
 
                     IconImage {
                         anchors.verticalCenter: parent.verticalCenter
-                        height: 17
+                        height: 18
                         layer.enabled: true
-                        source: Quickshell.iconPath("user-trash-symbolic")
-                        width: 17
+                        source: Quickshell.iconPath(root.deleteArmed ? "dialog-warning-symbolic" : "user-trash-symbolic")
+                        width: 18
 
                         layer.effect: ColorOverlay {
                             color: root.deleteArmed ? Config.md3.on_error_container : Config.md3.on_surface_variant
                         }
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Config.md3.on_error_container
-                        font.family: Config.fontName
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        text: qsTr("Delete")
-                        visible: root.deleteArmed
                     }
                 }
                 MouseArea {

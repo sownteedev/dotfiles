@@ -510,11 +510,8 @@ ShellRoot {
         onNotification: n => {
             n.tracked = true;
             NotificationHistory.add(n);
-            if (!QuickSettingsService.effectiveDndActive && LockscreenNotificationService.show(n)) {
-                n.closed.connect(function () {
-                    LockscreenNotificationService.dismiss(n.id, false);
-                });
-            }
+            if (!QuickSettingsService.effectiveDndActive)
+                LockscreenNotificationService.show(n);
             if (n.transient && QuickSettingsService.effectiveDndActive) {
                 Qt.callLater(function () {
                     if (n && n.tracked)

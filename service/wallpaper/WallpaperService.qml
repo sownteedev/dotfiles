@@ -360,12 +360,6 @@ QtObject {
                 var preview = project.preview || "";
                 root.fallbackVideoThumbnail = preview || Config.wallpaper;
                 if (preview) {
-                    // The Workshop preview is already available locally. Use
-                    // it as the temporary desktop cover while the renderer
-                    // starts. BackdropService deliberately waits for the
-                    // validated full-screen frame because this preview can be
-                    // square or use a different crop.
-                    root.stageVideoThumbnail(preview, false);
                     if (EngineWallpaperService.previewNeedsConversion(preview)) {
                         root.pendingEnginePreviewSource = preview;
                         var engineThumbnail = EngineWallpaperService.requestPreviewThumbnail(preview, selectedModified, true, videoTransitionGeneration);
@@ -785,7 +779,7 @@ QtObject {
         return "v1-" + stableHash("theme-source|" + identity) + "-" + stableHash(identity + "|theme-source");
     }
     function tryFinishVideoTransition() {
-        if (selectedMode !== "video" || backendReadyPath !== selectedPath || !pendingVideoThumbnail || !videoCoverReady || !videoQuickThemeReady)
+        if (selectedMode !== "video" || backendReadyPath !== selectedPath || !videoQuickThemeReady)
             return;
 
         backendReadyPath = "";

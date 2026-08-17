@@ -114,11 +114,7 @@ if command -v magick >/dev/null 2>&1; then
     fi
 
     if [ "$mode" = "auto" ] && [ -n "$mean_luminance" ] && [ -n "$high_lum_fraction" ]; then
-        if awk -v lum="$mean_luminance" 'BEGIN { exit !(lum > 0.65) }'; then
-            mode="light"
-        else
-            mode="dark"
-        fi
+        mode="dark"
     fi
 fi
 

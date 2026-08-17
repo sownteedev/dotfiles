@@ -274,7 +274,7 @@ Rectangle {
                     readonly property int selectedIndex: root.activeTab === "browse" ? 0 : (root.activeTab === "collections" ? 1 : 2)
 
                     Layout.preferredHeight: 42
-                    Layout.preferredWidth: 330
+                    Layout.preferredWidth: 360
                     color: Config.alpha(Config.md3.on_surface, 0.045)
                     radius: 14
 
@@ -284,8 +284,8 @@ Rectangle {
                         color: Config.md3.primary_container
                         height: parent.height - 8
                         radius: 11
-                        width: (parent.width - 12) / 3
-                        x: 4 + primaryTabs.selectedIndex * (width + 2)
+                        width: (parent.width - 8 - 12) / 3
+                        x: 4 + primaryTabs.selectedIndex * (width + 6)
                         y: 4
 
                         Behavior on x {
@@ -298,7 +298,7 @@ Rectangle {
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 4
-                        spacing: 2
+                        spacing: 6
 
                         Repeater {
                             model: [
@@ -338,7 +338,7 @@ Rectangle {
 
                                 Row {
                                     anchors.centerIn: parent
-                                    spacing: 6
+                                    spacing: 8
 
                                     IconImage {
                                         anchors.verticalCenter: parent.verticalCenter

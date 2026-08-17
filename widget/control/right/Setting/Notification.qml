@@ -264,8 +264,9 @@ Item {
                                 appName: groupItem.appName
                                 asynchronous: true
                                 cacheImage: false
-                                iconSize: 18
-                                notificationData: groupItem.notifications[0] || null
+                                forceAppIconOnly: true
+                                iconSize: 20
+                                notificationData: null
                                 radius: 10
                                 tintColor: Config.md3.on_surface_variant
                             }
@@ -276,7 +277,7 @@ Item {
                                 color: Config.md3.on_surface
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 15
+                                font.pixelSize: 16
                                 font.weight: Font.DemiBold
                                 text: groupItem.appName
                             }
@@ -466,7 +467,7 @@ Item {
                                                 color: Config.md3.on_surface
                                                 elide: Text.ElideRight
                                                 font.family: Config.fontName
-                                                font.pixelSize: 14
+                                                font.pixelSize: 15
                                                 font.weight: Font.DemiBold
                                                 text: notifItem.modelData.summary || ""
                                                 textFormat: Text.PlainText
@@ -476,7 +477,7 @@ Item {
                                                 color: Config.md3.on_surface_variant
                                                 elide: Text.ElideRight
                                                 font.family: Config.fontName
-                                                font.pixelSize: 13
+                                                font.pixelSize: 14
                                                 font.weight: Font.Medium
                                                 text: notifItem.modelData.body || ""
                                                 textFormat: Text.PlainText
@@ -526,7 +527,7 @@ Item {
                                                         Text {
                                                             color: Config.md3.outline
                                                             font.family: Config.fontName
-                                                            font.pixelSize: 15
+                                                            font.pixelSize: 14
                                                             font.weight: Font.Medium
                                                             text: notifItem.modelData.timestamp ? notificationPageRoot.formatRelativeTime(notifItem.modelData.timestamp, notificationPageRoot.currentTimeTick) : (notifItem.modelData.timeText || "now")
                                                         }
@@ -535,7 +536,7 @@ Item {
                                                         Layout.fillWidth: true
                                                         color: Config.md3.on_surface_variant
                                                         font.family: Config.fontName
-                                                        font.pixelSize: 15
+                                                        font.pixelSize: 14
                                                         font.weight: Font.Medium
                                                         lineHeight: 1.15
                                                         text: notifItem.modelData.body || ""

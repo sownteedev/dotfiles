@@ -172,7 +172,7 @@ PanelWindow {
                         }
                         MicrophonePrivacy {
                             parentWindow: bar
-                            visible: Config.barShowMicrophone
+                            visible: Config.barShowMicrophone && AudioService.microphoneInUse
                         }
                         MouseArea {
                             cursorShape: Qt.PointingHandCursor

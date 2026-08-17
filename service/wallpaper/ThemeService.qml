@@ -768,7 +768,7 @@ QtObject {
             modeQueryRetry.restart();
             return;
         }
-        var mode = text.indexOf("prefer-dark") >= 0 ? "dark" : text.indexOf("prefer-light") >= 0 || text.indexOf("default") >= 0 ? "light" : normalizeMode(colorMode);
+        var mode = text.indexOf("prefer-dark") >= 0 ? "dark" : text.indexOf("prefer-light") >= 0 ? "light" : text.indexOf("default") >= 0 ? "dark" : normalizeMode(colorMode);
         var wasResolved = modeResolved;
         var changed = colorMode !== mode;
         modeQueryRetry.stop();

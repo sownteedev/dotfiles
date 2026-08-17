@@ -303,6 +303,7 @@ Item {
                     spacing: 6
 
                     Text {
+                        anchors.verticalCenter: parent.verticalCenter
                         color: Config.md3.on_surface_variant
                         elide: Text.ElideRight
                         font.family: Config.fontName
@@ -315,6 +316,7 @@ Item {
                     Rectangle {
                         id: liveBadge
 
+                        anchors.verticalCenter: parent.verticalCenter
                         color: Config.md3.error
                         height: 14
                         radius: 4

@@ -60,11 +60,20 @@ def _scan_project(project_dir: Path) -> dict | None:
         return None
 
     preview = ""
-    configured_preview = data.get("preview")
-    if configured_preview:
-        candidate = project_dir / str(configured_preview)
-        if candidate.is_file():
-            preview = str(candidate)
+    media_file = str(data.get("file") or "")
+    # If project is a video type and has an mp4/webm file, prefer generating thumbnail from the video itself
+    # rather than a low-res 160x160 preview.gif
+    if media_file:
+        video_candidate = project_dir / media_file
+        if video_candidate.is_file() and video_candidate.suffix.lower() in (".mp4", ".mkv", ".webm", ".avi", ".mov"):
+            preview = str(video_candidate)
+
+    if not preview:
+        configured_preview = data.get("preview")
+        if configured_preview:
+            candidate = project_dir / str(configured_preview)
+            if candidate.is_file():
+                preview = str(candidate)
     if not preview:
         for name in PREVIEW_NAMES:
             candidate = project_dir / name

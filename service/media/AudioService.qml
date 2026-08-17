@@ -120,16 +120,23 @@ QtObject {
         var mediaClass = String(properties["media.class"] || "");
         if (mediaClass !== "" && mediaClass !== "Stream/Input/Audio")
             return false;
-        var applicationName = String(properties["application.name"] || "").trim();
-        var processBinary = String(properties["application.process.binary"] || "").trim();
-        if (applicationName !== "" || processBinary !== "")
-            return true;
-
-        // Quickshell 0.3 may expose an empty properties object for linked
-        // capture streams. Keep real streams in that case, but exclude our own
-        // Cava monitor helper so playback visualization never trips mic privacy.
+        var applicationName = String(properties["application.name"] || properties["app.name"] || "").trim();
+        var processBinary = String(properties["application.process.binary"] || properties["process.binary"] || "").trim();
         var nodeName = String(node.name || "").trim().toLowerCase();
-        return nodeName !== "" && nodeName !== "cava" && nodeName !== "quickshell-cava";
+        var nodeDescription = String(properties["node.description"] || node.description || node.nickname || "").trim().toLowerCase();
+        var mediaName = String(properties["media.name"] || "").trim().toLowerCase();
+        var combined = (applicationName + " " + processBinary + " " + nodeName + " " + nodeDescription + " " + mediaName).toLowerCase();
+
+        if (combined.indexOf("cava") !== -1 || combined.indexOf("quickshell") !== -1)
+            return false;
+
+        // Strictly require an identifiable application name or process binary to trigger microphone privacy,
+        // and ignore system loopbacks/monitors.
+        if (applicationName === "" && processBinary === "")
+            return false;
+        if (applicationName === "quickshell" || applicationName === "cava" || processBinary === "quickshell" || processBinary === "cava")
+            return false;
+        return true;
     }
     function isDevice(node, isSink) {
         if (!node || node.isStream || !node.audio || !node.properties)

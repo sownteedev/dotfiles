@@ -796,14 +796,14 @@ PanelWindow {
                 }
             }
             function scheduleThumbnailLoad() {
-                if (delegateRoot.PathView.isCurrentItem || (!delegateRoot.live && !delegateRoot.convertedEnginePreview)) {
-                    // Static images and current item: load immediately.
+                if (delegateRoot.PathView.isCurrentItem || (!delegateRoot.live && !delegateRoot.convertedEnginePreview) || delegateRoot.thumbnailAvailable || delegateRoot.engineThumbnailAvailable) {
+                    // Cached thumbnails, static images and current item: load immediately without delay.
                     delegateRoot.permitThumbnailLoad = true;
                     delegateRoot.requestCurrentThumbnail();
                     return;
                 }
-                // Video thumbnails that need generation: short staggered delay.
-                thumbnailLoadTimer.interval = 40 * Math.max(1, delegateRoot.circularDistanceFromCurrent());
+                // Video thumbnails that need generation in background: short staggered delay.
+                thumbnailLoadTimer.interval = 30 * Math.max(1, delegateRoot.circularDistanceFromCurrent());
                 thumbnailLoadTimer.restart();
             }
 

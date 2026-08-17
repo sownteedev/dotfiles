@@ -14,6 +14,7 @@ ClippingRectangle {
     property bool cacheImage: true
     readonly property bool directImageReady: hasDirectImage && directImage.status === Image.Ready
     readonly property string directImageSource: resolveDirectImage()
+    property bool forceAppIconOnly: false
     readonly property bool hasDirectImage: directImageSource !== ""
     readonly property bool hasProvidedIcon: notificationImage !== "" || appIcon !== ""
     property real iconSize: Math.min(width, height) * 0.55

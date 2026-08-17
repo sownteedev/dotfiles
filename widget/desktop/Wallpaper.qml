@@ -228,15 +228,10 @@ PanelWindow {
 
             anchors.fill: parent
             cacheKey: wallpaperWindow.allowVideoFade && WallpaperService.currentMode === "video" ? String(WallpaperService.videoTransitionGeneration) : ""
-            fillMode: blurEngineCover || WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
-            layer.enabled: blurEngineCover
+            fillMode: Image.PreserveAspectCrop
+            layer.enabled: false
             opacity: 0
             path: sourceKey
-
-            layer.effect: FastBlur {
-                radius: 56
-                transparentBorder: false
-            }
 
             onStatusChanged: wallpaperWindow.imageStatusChanged(staticImage, status)
         }
@@ -254,16 +249,11 @@ PanelWindow {
             anchors.fill: parent
             asynchronous: true
             cache: true
-            fillMode: blurEngineCover || WallpaperService.previewActive || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo ? Image.PreserveAspectCrop : Image.Stretch
-            layer.enabled: blurEngineCover
+            fillMode: Image.PreserveAspectCrop
+            layer.enabled: false
             opacity: 0
             source: sourceKey
             sourceSize: Qt.size(Math.ceil(wallpaperWindow.width * Screen.devicePixelRatio), Math.ceil(wallpaperWindow.height * Screen.devicePixelRatio))
-
-            layer.effect: FastBlur {
-                radius: 56
-                transparentBorder: false
-            }
 
             onStatusChanged: wallpaperWindow.imageStatusChanged(directImage, status)
         }
@@ -307,21 +297,33 @@ PanelWindow {
 
         onFinished: wallpaperWindow.finishCoverSwap(true)
 
-        NumberAnimation {
-            duration: Math.max(0, Math.round(Config.wallpaperTransitionDuration / 2))
+        OpacityAnimator {
+            duration: Math.max(280, Config.wallpaperTransitionDuration)
             easing.type: Easing.OutCubic
             from: 0
-            property: "opacity"
             target: wallpaperWindow.displayedImage
             to: 1
         }
-        NumberAnimation {
-            duration: Math.max(0, Math.round(Config.wallpaperTransitionDuration / 2))
+        OpacityAnimator {
+            duration: Math.max(280, Config.wallpaperTransitionDuration)
             easing.type: Easing.OutCubic
             from: 1
-            property: "opacity"
             target: wallpaperWindow.outgoingImage
             to: 0
+        }
+        ScaleAnimator {
+            duration: Math.max(340, Config.wallpaperTransitionDuration + 100)
+            easing.type: Easing.OutQuint
+            from: 1.04
+            target: wallpaperWindow.displayedImage
+            to: 1.0
+        }
+        ScaleAnimator {
+            duration: Math.max(340, Config.wallpaperTransitionDuration + 100)
+            easing.type: Easing.OutQuint
+            from: 1.0
+            target: wallpaperWindow.outgoingImage
+            to: 1.03
         }
     }
     ParallelAnimation {
@@ -329,21 +331,33 @@ PanelWindow {
 
         onFinished: wallpaperWindow.finishTransition()
 
-        NumberAnimation {
-            duration: Config.wallpaperTransitionDuration
+        OpacityAnimator {
+            duration: Math.max(280, Config.wallpaperTransitionDuration)
             easing.type: Easing.OutCubic
             from: 0
-            property: "opacity"
             target: wallpaperWindow.displayedImage
             to: 1
         }
-        NumberAnimation {
-            duration: Config.wallpaperTransitionDuration
+        OpacityAnimator {
+            duration: Math.max(280, Config.wallpaperTransitionDuration)
             easing.type: Easing.OutCubic
             from: 1
-            property: "opacity"
             target: wallpaperWindow.outgoingImage
             to: 0
+        }
+        ScaleAnimator {
+            duration: Math.max(340, Config.wallpaperTransitionDuration + 100)
+            easing.type: Easing.OutQuint
+            from: 1.04
+            target: wallpaperWindow.displayedImage
+            to: 1.0
+        }
+        ScaleAnimator {
+            duration: Math.max(340, Config.wallpaperTransitionDuration + 100)
+            easing.type: Easing.OutQuint
+            from: 1.0
+            target: wallpaperWindow.outgoingImage
+            to: 1.03
         }
     }
 }

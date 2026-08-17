@@ -312,7 +312,7 @@ Rectangle {
                     id: primaryTabs
 
                     Layout.preferredHeight: 44
-                    Layout.preferredWidth: 224
+                    Layout.preferredWidth: 248
                     color: Config.alpha(Config.md3.on_surface, 0.045)
                     radius: 15
 
@@ -322,8 +322,8 @@ Rectangle {
                         color: Config.md3.primary_container
                         height: parent.height - 8
                         radius: 12
-                        width: (parent.width - 11) / 2
-                        x: 4 + (root.installedMode ? width + 3 : 0)
+                        width: (parent.width - 8 - 6) / 2
+                        x: 4 + (root.installedMode ? width + 6 : 0)
                         y: 4
 
                         Behavior on x {
@@ -336,7 +336,7 @@ Rectangle {
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 4
-                        spacing: 3
+                        spacing: 6
 
                         Repeater {
                             model: [
@@ -371,7 +371,7 @@ Rectangle {
 
                                 Row {
                                     anchors.centerIn: parent
-                                    spacing: 7
+                                    spacing: 8
 
                                     IconImage {
                                         anchors.verticalCenter: parent.verticalCenter

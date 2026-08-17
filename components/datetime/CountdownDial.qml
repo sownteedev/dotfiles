@@ -155,7 +155,7 @@ Item {
     }
     Column {
         anchors.centerIn: parent
-        spacing: Math.max(7, Math.round(10 * root.visualScale))
+        spacing: Math.max(4, Math.round(6 * root.visualScale))
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -176,10 +176,10 @@ Item {
                 "tnum": 1
             }
             font.letterSpacing: 1.1 * root.visualScale
-            font.pixelSize: root.totalMilliseconds >= 3600000 ? 43 : 54
+            font.pixelSize: root.totalMilliseconds >= 3600000 ? 46 : 58
             font.weight: Font.ExtraBold
             fontSizeMode: Text.Fit
-            height: Math.max(42, Math.round(62 * root.visualScale))
+            height: Math.max(46, Math.round(68 * root.visualScale))
             horizontalAlignment: Text.AlignHCenter
             minimumPixelSize: root.totalMilliseconds >= 3600000 ? 20 : 26
             renderType: Text.NativeRendering
@@ -187,86 +187,6 @@ Item {
             verticalAlignment: Text.AlignVCenter
             width: root.timeContentWidth
             wrapMode: Text.NoWrap
-        }
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            border.color: Config.alpha(root.accentColor, 0.18)
-            border.width: 1
-            color: Config.alpha(root.accentColor, 0.085)
-            height: Math.max(25, Math.round(28 * root.visualScale))
-            radius: height / 2
-            width: statusRow.implicitWidth + Math.round(20 * root.visualScale)
-
-            Row {
-                id: statusRow
-
-                anchors.centerIn: parent
-                spacing: Math.max(6, Math.round(7 * root.visualScale))
-
-                Item {
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: Math.max(7, Math.round(8 * root.visualScale))
-                    width: height
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        color: root.accentColor
-                        height: parent.height
-                        radius: width / 2
-                        width: parent.width
-                    }
-                    Rectangle {
-                        anchors.centerIn: parent
-                        border.color: root.accentColor
-                        border.width: 1
-                        color: "transparent"
-                        height: parent.height
-                        radius: width / 2
-                        visible: root.running
-                        width: parent.width
-
-                        SequentialAnimation on opacity {
-                            loops: Animation.Infinite
-                            running: root.running
-
-                            OpacityAnimator {
-                                duration: 520
-                                from: 0.7
-                                to: 0.08
-                            }
-                            OpacityAnimator {
-                                duration: 520
-                                from: 0.08
-                                to: 0.7
-                            }
-                        }
-                        SequentialAnimation on scale {
-                            loops: Animation.Infinite
-                            running: root.running
-
-                            ScaleAnimator {
-                                duration: 520
-                                from: 1
-                                to: 1.8
-                            }
-                            ScaleAnimator {
-                                duration: 520
-                                from: 1.8
-                                to: 1
-                            }
-                        }
-                    }
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: root.accentColor
-                    font.family: Config.fontName
-                    font.pixelSize: Math.max(10, Math.round(12 * root.visualScale))
-                    font.weight: Font.DemiBold
-                    renderType: Text.NativeRendering
-                    text: root.stateLabel
-                }
-            }
         }
     }
 }
