@@ -33,7 +33,8 @@ The visual language is based on Material Design 3. A palette generated from the 
 
 ### 🌟 Top Bar & Dynamic Workspaces
 
-- **Niri Workspace Tracking:** Real-time workspace indicators and active-window title tracker that remain synchronized across dynamic workspace creation and window focusing.
+- **Smart Workspace Layout Toggle:** Quick vector toggle on the bar to seamlessly switch the active workspace between **Niri Scrolling Tiled Columns** and **Floating Window Manager Mode** with smooth animated glyph transitions.
+- **Niri Workspace & Active Client Tracking:** Real-time workspace indicators and active-window title tracker that remain synchronized across dynamic workspace creation and window focusing.
 - **Interactive Media Player:** Adaptive track title and artist ticker with `LIVE` broadcast badges, interactive scrubber dragging, and an audio-reactive **Cava visualizer**.
 - **Intelligent Battery Widget:** Custom vector-rendered battery with animated liquid waves, bubble flows during charging, and critical level visual alerts.
 - **Unified Status Center:** Discrete indicators for Wi-Fi signal strength, Bluetooth connection & battery levels, Microphone privacy guard, Screen recording status, Do Not Disturb, and System Clock.

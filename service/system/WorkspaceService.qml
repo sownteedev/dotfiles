@@ -101,23 +101,15 @@ QtObject {
         var fromOutput = String(sourceOutput || "");
         var targetOutput = String(workspace && workspace.output || "");
         var reference = workspaceReference(workspace);
-        var targetIndex = Number(columnIndex || 0);
         if (id === "" || reference === "")
             return;
 
         if (fromOutput !== "" && targetOutput !== "" && fromOutput !== targetOutput) {
-            var crossOutputCommand = "niri msg action move-window-to-monitor --id \"$1\" \"$2\" && niri msg action move-window-to-workspace --window-id \"$1\" \"$3\"";
-            if (targetIndex > 0)
-                crossOutputCommand += " && niri msg action focus-window --id \"$1\" && niri msg action move-column-to-index \"$4\"";
-            Quickshell.execDetached(["sh", "-c", crossOutputCommand, "workspace-cross-output", id, targetOutput, reference, String(targetIndex)]);
+            Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-monitor --id \"$1\" \"$2\" && niri msg action move-window-to-workspace --window-id \"$1\" --focus false \"$3\"", "workspace-cross-output", id, targetOutput, reference]);
             return;
         }
 
-        if (targetIndex > 0) {
-            Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-workspace --window-id \"$1\" \"$2\" && niri msg action focus-window --id \"$1\" && niri msg action move-column-to-index \"$3\"", "workspace-move-and-order", id, reference, String(targetIndex)]);
-        } else {
-            Quickshell.execDetached(["niri", "msg", "action", "move-window-to-workspace", "--window-id", id, reference]);
-        }
+        Quickshell.execDetached(["niri", "msg", "action", "move-window-to-workspace", "--window-id", id, "--focus", "false", reference]);
     }
     function parseNiriData(text) {
         try {

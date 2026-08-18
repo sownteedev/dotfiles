@@ -330,13 +330,10 @@ PanelWindow {
         }
 
         AnimatedStars {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
+            anchors.fill: parent
             color: Config.md3.primary
-            height: Math.min(panel.height, root.compactViewport ? 180 : 260)
             running: root.active && !Config.shellLowPowerMode
-            starCount: root.compactViewport ? 40 : 64
+            starCount: root.compactViewport ? 60 : 100
         }
         MouseArea {
             anchors.fill: parent

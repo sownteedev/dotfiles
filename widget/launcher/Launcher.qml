@@ -12,8 +12,8 @@ PanelWindow {
     id: launcherWindow
 
     property bool active: false
-    readonly property color activeModeColor: searchMode === "clipboard" ? Config.md3.secondary : searchMode === "files" ? Config.md3.primary : searchMode === "calculator" ? Config.md3.tertiary : Config.md3.error
-    readonly property string activeModeIcon: searchMode === "clipboard" ? "edit-paste-symbolic" : searchMode === "files" ? "system-file-manager-symbolic" : searchMode === "calculator" ? "accessories-calculator-symbolic" : "face-smile-symbolic"
+    readonly property color activeModeColor: searchMode === "clipboard" ? Config.md3.secondary : searchMode === "files" ? Config.md3.primary : searchMode === "calculator" ? Config.md3.tertiary : Config.md3.tertiary
+    readonly property string activeModeIcon: searchMode === "clipboard" ? "edit-paste-symbolic" : searchMode === "files" ? "system-file-manager-symbolic" : searchMode === "calculator" ? "accessories-calculator-symbolic" : "emojichooser-symbolic"
     readonly property string activeModeLabel: searchMode === "clipboard" ? "Clipboard" : searchMode === "files" ? "Files" : searchMode === "calculator" ? "Calculator" : searchMode === "emoji" ? "Emoji" : ""
     readonly property string activeModePlaceholder: searchMode === "clipboard" ? "Search clipboard" : searchMode === "files" ? "Find files" : searchMode === "calculator" ? "Enter expression" : searchMode === "emoji" ? "Search emoji" : "Search"
     property bool allAppsLoaderActive: false
@@ -172,8 +172,8 @@ PanelWindow {
     Rectangle {
         id: mainLayout
 
-        readonly property real desiredHeight: showAllApps ? 680 : (searchQuery.trim() !== "" && hasContent ? (97 + (calcView.hasResult ? 92 : 0) + searchView.implicitHeight) : 82)
-        readonly property real desiredWidth: showAllApps ? 900 : (searchQuery.trim() !== "" ? 500 : 380)
+        readonly property real desiredHeight: showAllApps ? 680 : (searchQuery.trim() !== "" && hasContent ? (97 + (calcView.hasResult ? 92 : 0) + searchView.implicitHeight) : (launcherWindow.compact ? 76 : 82))
+        readonly property real desiredWidth: showAllApps ? 900 : (searchQuery.trim() !== "" && hasContent ? 500 : (searchQuery.trim() !== "" ? 440 : 380))
         readonly property bool hasContent: calcView.hasResult || searchView.combinedResults.length > 0
         readonly property real targetHeight: Responsive.fitWithMargins(desiredHeight, launcherWindow.height, launcherWindow.compact ? 10 : 20, 82)
         readonly property real targetWidth: Responsive.fitWithMargins(desiredWidth, launcherWindow.width, launcherWindow.compact ? 10 : 20, 300)
@@ -275,59 +275,6 @@ PanelWindow {
                         color: searchEntry.activeFocus ? Config.md3.primary : Config.md3.on_surface_variant
                     }
                 }
-                Rectangle {
-                    id: modeChip
-
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.preferredHeight: 34
-                    Layout.preferredWidth: modeChipContent.implicitWidth + 24
-                    border.color: Config.alpha(launcherWindow.activeModeColor, 0.42)
-                    border.width: 1
-                    color: modeChipMouse.containsMouse ? Config.alpha(launcherWindow.activeModeColor, 0.22) : Config.alpha(launcherWindow.activeModeColor, 0.14)
-                    opacity: visible ? 1 : 0
-                    radius: 17
-                    visible: launcherWindow.searchMode !== ""
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: Config.animationDuration(140)
-                        }
-                    }
-
-                    RowLayout {
-                        id: modeChipContent
-
-                        anchors.centerIn: parent
-                        spacing: 7
-
-                        IconImage {
-                            Layout.preferredHeight: 17
-                            Layout.preferredWidth: 17
-                            layer.enabled: true
-                            source: Quickshell.iconPath(launcherWindow.activeModeIcon)
-
-                            layer.effect: ColorOverlay {
-                                color: launcherWindow.activeModeColor
-                            }
-                        }
-                        Text {
-                            color: launcherWindow.activeModeColor
-                            font.family: Config.fontName
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            text: launcherWindow.activeModeLabel
-                        }
-                    }
-                    MouseArea {
-                        id: modeChipMouse
-
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-
-                        onClicked: launcherWindow.clearSearchMode()
-                    }
-                }
                 TextInput {
                     id: searchEntry
 
@@ -376,6 +323,46 @@ PanelWindow {
                         visible: parent.text === ""
                     }
                 }
+                Rectangle {
+                    id: modeChip
+
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredHeight: 34
+                    Layout.preferredWidth: 34
+                    border.color: Config.alpha(launcherWindow.activeModeColor, 0.42)
+                    border.width: 1
+                    color: modeChipMouse.containsMouse ? Config.alpha(launcherWindow.activeModeColor, 0.22) : Config.alpha(launcherWindow.activeModeColor, 0.14)
+                    opacity: visible ? 1 : 0
+                    radius: 17
+                    visible: launcherWindow.searchMode !== ""
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Config.animationDuration(140)
+                        }
+                    }
+
+                    IconImage {
+                        anchors.centerIn: parent
+                        height: 18
+                        layer.enabled: true
+                        source: Quickshell.iconPath(launcherWindow.activeModeIcon)
+                        width: 18
+
+                        layer.effect: ColorOverlay {
+                            color: launcherWindow.activeModeColor
+                        }
+                    }
+                    MouseArea {
+                        id: modeChipMouse
+
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+
+                        onClicked: launcherWindow.clearSearchMode()
+                    }
+                }
                 Item {
                     id: toggleRect
 
@@ -383,6 +370,7 @@ PanelWindow {
                     Layout.preferredHeight: 40
                     Layout.preferredWidth: 40
                     scale: toggleMouse.containsMouse ? 1.05 : 1
+                    visible: launcherWindow.searchMode === ""
 
                     Behavior on scale {
                         NumberAnimation {
@@ -436,7 +424,7 @@ PanelWindow {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 clip: true
-                visible: launcherWindow.showAllApps || launcherWindow.searchQuery.trim() !== ""
+                visible: launcherWindow.showAllApps || (launcherWindow.searchQuery.trim() !== "" && mainLayout.hasContent)
 
                 // Search mode: calculator card + search results (stacked)
                 ColumnLayout {

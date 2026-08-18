@@ -42,12 +42,14 @@ Item {
 
             // Draw outer wobbly ring
             ctx.beginPath();
-            for (var i = 0; i <= Math.PI * 2 + 0.1; i += 0.1) {
+            var steps = 64;
+            for (var s = 0; s <= steps; ++s) {
+                var i = s * (Math.PI * 2 / steps);
                 var wobble = Math.sin(i * 3 + time) * 1.5 + Math.cos(i * 5 - time * 0.8) * 1.0;
                 var currR = r + wobble;
                 var x = cx + Math.cos(i) * currR;
                 var y = cy + Math.sin(i) * currR;
-                if (i === 0)
+                if (s === 0)
                     ctx.moveTo(x, y);
                 else
                     ctx.lineTo(x, y);
@@ -60,12 +62,13 @@ Item {
             // Draw inner wobbly solid shape
             ctx.beginPath();
             var innerR = r - 8;
-            for (var j = 0; j <= Math.PI * 2 + 0.1; j += 0.1) {
+            for (var s2 = 0; s2 <= steps; ++s2) {
+                var j = s2 * (Math.PI * 2 / steps);
                 var wobbleInner = Math.sin(j * 4 - time * 1.2) * 2.0 + Math.cos(j * 2 + time * 1.5) * 1.5;
                 var currRInner = innerR + wobbleInner;
                 var xInner = cx + Math.cos(j) * currRInner;
                 var yInner = cy + Math.sin(j) * currRInner;
-                if (j === 0)
+                if (s2 === 0)
                     ctx.moveTo(xInner, yInner);
                 else
                     ctx.lineTo(xInner, yInner);

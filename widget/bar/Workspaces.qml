@@ -301,10 +301,10 @@ RowLayout {
                                         return;
 
                                     if (draggedFromWorkspaceId === wsButton.workspaceId) {
-                                        var cmd = "niri msg action focus-window --id " + draggedWinId + " && niri msg action move-column-to-index " + targetPos;
-                                        Quickshell.execDetached(["sh", "-c", cmd]);
+                                        // Moving within the same workspace: re-order column position
+                                        Quickshell.execDetached(["sh", "-c", "niri msg action focus-window --id \"$1\" && niri msg action move-column-to-index \"$2\"", "reorder-window", String(draggedWinId), String(targetPos)]);
                                     } else {
-                                        WorkspaceService.moveWindowToWorkspace(draggedWinId, draggedFromOutput, wsButton.workspaceData, targetPos);
+                                        WorkspaceService.moveWindowToWorkspace(draggedWinId, draggedFromOutput, wsButton.workspaceData);
                                     }
                                 }
                             }
@@ -411,13 +411,19 @@ RowLayout {
                                 }
                                 Item {
                                     Layout.fillHeight: true
-                                    Layout.preferredWidth: String(modelData.id) === root.activeWindowId ? Math.min(titleText.implicitWidth, root.compact ? 86 : 150) + 7 : 0
+                                    Layout.preferredWidth: !winIconMouseArea.drag.active && String(modelData.id) === root.activeWindowId ? Math.min(titleText.implicitWidth, root.compact ? 86 : 150) + 7 : 0
                                     clip: true
+                                    opacity: !winIconMouseArea.drag.active && String(modelData.id) === root.activeWindowId ? 1 : 0
 
                                     Behavior on Layout.preferredWidth {
                                         NumberAnimation {
                                             duration: 250
                                             easing.type: Easing.OutCubic
+                                        }
+                                    }
+                                    Behavior on opacity {
+                                        NumberAnimation {
+                                            duration: 150
                                         }
                                     }
 

@@ -12,48 +12,61 @@ Rectangle {
     property string title: ""
 
     clip: true
-    color: Config.alpha(Config.md3.on_surface, 0.035)
-    implicitHeight: body.implicitHeight + (compact ? 24 : 32)
-    radius: compact ? 15 : 16
+    color: Config.alpha(Config.md3.on_surface, 0.04)
+    implicitHeight: body.implicitHeight + (compact ? 28 : 36)
+    radius: 18
 
-    Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.top: parent.top
-        color: root.accentColor
-        opacity: 0.8
-        width: 4
-    }
     ColumnLayout {
         id: body
 
-        anchors.bottomMargin: root.compact ? 12 : 16
+        anchors.bottomMargin: root.compact ? 14 : 18
         anchors.fill: parent
-        anchors.leftMargin: root.compact ? 18 : 20
-        anchors.rightMargin: root.compact ? 14 : 16
-        anchors.topMargin: root.compact ? 12 : 16
-        spacing: root.compact ? 12 : 16
+        anchors.leftMargin: root.compact ? 16 : 20
+        anchors.rightMargin: root.compact ? 16 : 20
+        anchors.topMargin: root.compact ? 14 : 18
+        spacing: root.compact ? 14 : 18
 
-        ColumnLayout {
+        RowLayout {
             Layout.fillWidth: true
-            spacing: root.compact ? 3 : 5
+            spacing: 14
 
-            Text {
-                Layout.fillWidth: true
-                color: Config.md3.on_surface
-                font.family: Config.fontName
-                font.pixelSize: root.compact ? 17 : 18
-                font.weight: Font.Bold
-                text: root.title
+            Rectangle {
+                Layout.preferredHeight: 36
+                Layout.preferredWidth: 36
+                color: Config.alpha(root.accentColor, 0.13)
+                radius: 11
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    border.color: root.accentColor
+                    border.width: 2
+                    color: "transparent"
+                    height: 14
+                    radius: 4
+                    width: 14
+                }
             }
-            Text {
+            ColumnLayout {
                 Layout.fillWidth: true
-                color: Config.alpha(Config.md3.on_surface, 0.55)
-                font.family: Config.fontName
-                font.pixelSize: 13
-                text: root.note
-                visible: text !== ""
-                wrapMode: Text.Wrap
+                spacing: 3
+
+                Text {
+                    Layout.fillWidth: true
+                    color: Config.md3.on_surface
+                    font.family: Config.fontName
+                    font.pixelSize: 18
+                    font.weight: Font.DemiBold
+                    text: root.title
+                }
+                Text {
+                    Layout.fillWidth: true
+                    color: Config.alpha(Config.md3.on_surface, 0.45)
+                    font.family: Config.fontName
+                    font.pixelSize: 12
+                    text: root.note
+                    visible: text !== ""
+                    wrapMode: Text.Wrap
+                }
             }
         }
     }
