@@ -2,7 +2,7 @@ layout {
     gaps 10.0
 	background-color "transparent"
 
-    center-focused-column "on-overflow"
+    center-focused-column "never"
 	always-center-single-column
     // empty-workspace-above-first
 
@@ -52,10 +52,10 @@ layout {
     shadow {
         on
         softness 20.0
-        spread 5.0
+        spread 2.0
         offset x=0.0 y=0.0
 		draw-behind-window true
-        color "#000000"
+        color "#00000088"
         inactive-color "#00000054"
     }
 
@@ -86,7 +86,7 @@ layout {
 }
 
 overview {
-    zoom 0.4
+    zoom 0.5
 	backdrop-color "#0a0a0a"
 	
     workspace-shadow {

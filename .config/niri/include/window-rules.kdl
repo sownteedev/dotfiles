@@ -5,23 +5,23 @@ window-rule {
 
 // Frequently-used utility apps that are usually better as floating.
 window-rule {
-    match app-id=r#"^(pavucontrol|neovide|vmware|spotify|blueman-manager|mpv|org\.gnome\.Calculator|org\.gnome\.Settings|io\.missioncenter\.MissionCenter|org\.gnome\.Nautilus|org\.gnome\.Loupe|org\.gnome\.FileRoller|org\.gnome\.NautilusPreviewer)$"#
+    match app-id=r"^(pavucontrol|neovide|vmware|spotify|blueman-manager|mpv|org\.gnome\.Calculator|org\.gnome\.Settings|io\.missioncenter\.MissionCenter|org\.gnome\.Nautilus|org\.gnome\.Loupe|org\.gnome\.FileRoller|org\.gnome\.NautilusPreviewer)$"
     open-floating true
 }
 
 window-rule {
-    match app-id=r#".*\.exe$"#
+    match app-id=r".*\.exe$"
     open-floating true
 }
 
 // Telegram Media Viewer
 window-rule {
-    match app-id=r#"^org\.telegram\.desktop$"# title="^Media viewer$"
+    match app-id=r"^org\.telegram\.desktop$" title="^Media viewer$"
     open-floating true
 }
 
 window-rule {
-	match app-id=r#"^com\.raggesilver\.BlackBox$"#
+	match app-id=r"^com\.raggesilver\.BlackBox$"
 	open-floating true
     default-column-width { fixed 1100; }
     default-window-height { fixed 750; }
@@ -37,14 +37,14 @@ window-rule {
 
 // Privacy example: hide password managers from all screenshots and screencasts.
 /-window-rule {
-    match app-id=r#"^org\.keepassxc\.KeePassXC$"#
-    match app-id=r#"^org\.gnome\.World\.Secrets$"#
+    match app-id=r"^org\.keepassxc\.KeePassXC$"
+    match app-id=r"^org\.gnome\.World\.Secrets$"
     block-out-from "screen-capture"
     // block-out-from "screencast"
 }
 
 window-rule {
-    match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
+    match app-id="steam" title=r"^notificationtoasts_\d+_desktop$"
     default-floating-position x=10 y=10 relative-to="bottom-right"
 }
 

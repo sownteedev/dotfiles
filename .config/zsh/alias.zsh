@@ -89,7 +89,34 @@ alias mv='mv -i'
 
 alias dotpush='git add . && git commit -m ":>" && git push'
 alias syncfont='sudo fc-cache -fv'
-alias cleanarch='sudo paccache -ruk0 && yay -Sc --noconfirm && sudo pacman -Scc --noconfirm && sudo pacman -Rns $(pacman -Qtdq) --noconfirm'
+
+cleanarch() {
+    print -r -- "Cleaning package caches..."
+
+    sudo paccache -rk2
+
+    sudo paccache -ruk0
+
+    yay -Sc --aur --noconfirm
+
+    local -a orphans
+    orphans=("${(@f)$(pacman -Qtdq 2>/dev/null)}")
+
+    if (( ${#orphans[@]} )); then
+        print -r -- "Orphan packages:"
+        print -l -- "${orphans[@]}"
+
+        sudo pacman -Rns -- "${orphans[@]}"
+    else
+        print -r -- "No orphan packages."
+    fi
+
+    print -r -- "Cleaning old journal logs..."
+    sudo journalctl --rotate
+    sudo journalctl --vacuum-time=14d
+
+    print -r -- "Arch cleanup completed."
+}
 
 bindkey '^e' "autosuggest-accept"
 

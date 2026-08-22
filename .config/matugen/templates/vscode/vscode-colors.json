@@ -62,6 +62,10 @@
       "sideBar.border": "#00000000",
       "sideBarSectionHeader.background": "{{colors.surface_container.default.hex}}",
       "sideBarSectionHeader.foreground": "{{colors.on_surface.default.hex}}",
+
+      "agentsPanel.background": "{{colors.surface_container_low.default.hex}}",
+      "agentsPanel.foreground": "{{colors.on_surface_variant.default.hex}}",
+      "agentsPanel.border": "#00000000",
       
       "auxiliaryBar.background": "{{colors.surface_container_low.default.hex}}",
       "auxiliaryBar.foreground": "{{colors.on_surface_variant.default.hex}}",

@@ -55,3 +55,8 @@ output_path = '~/.config/Kvantum/matugen/matugen.kvconfig'
 [templates.kvantum_svg]
 input_path = '~/Dotfiles/dotf/.config/matugen/templates/kvantum/kvantum-colors.svg'
 output_path = '~/.config/Kvantum/matugen/matugen.svg'
+
+[templates.steam]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/steam/steam.css'
+output_path = '~/.config/AdwSteamGtk/custom.css'
+post_hook =  'adwaita-steam-gtk -i'

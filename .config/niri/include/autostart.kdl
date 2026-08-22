@@ -5,5 +5,4 @@ spawn-at-startup "bash" "-c" "wl-paste --type text --watch cliphist store"
 spawn-at-startup "bash" "-c" "wl-paste --type image --watch cliphist store"
 spawn-at-startup "gnome-keyring-daemon" "--start" "--components=secrets"
 spawn-at-startup "bash" "-c" "sleep 1 && dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-spawn-at-startup "bash" "-c" r#"swayidle -w timeout 60 'if [ "$(quickshell ipc -p "$HOME/Dotfiles/quickshell/shell.qml" call lockscreen status | jq -r .locked)" = "true" ]; then niri msg action power-off-monitors; fi' resume 'if [ "$(quickshell ipc -p "$HOME/Dotfiles/quickshell/shell.qml" call lockscreen status | jq -r .locked)" = "true" ]; then quickshell ipc -p "$HOME/Dotfiles/quickshell/shell.qml" call lockscreen retryFace; fi' timeout 600 'quickshell ipc -p "$HOME/Dotfiles/quickshell/shell.qml" call lockscreen lock' timeout 600 'niri msg action power-off-monitors' before-sleep 'quickshell ipc -p "$HOME/Dotfiles/quickshell/shell.qml" call lockscreen lock'"#
 spawn-at-startup "sh" "-c" "exec \"$HOME/Dotfiles/dotf/.config/niri/scripts/niri-floating-daemon.py\""

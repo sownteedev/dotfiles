@@ -11,6 +11,16 @@ layer-rule {
     }
 }
 
+// Quickshell requests a precise rounded blur region for these full-screen
+// surfaces. Only switch the source to the real scene underneath; do not force
+// blur for the entire layer surface here.
+layer-rule {
+    match namespace=r"^quickshell-(control-left|control-right|settings-hub|launcher)$"
+    background-effect {
+        xray false
+    }
+}
+
 /////////////// EXAMPLE /////////////////////
 /-layer-rule {
     match namespace="example"

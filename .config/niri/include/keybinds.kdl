@@ -3,24 +3,23 @@ binds {
 
     Mod+Return									{ spawn "blackbox-terminal"; }
     Alt+Space									{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call launcher toggle"; }
-    Alt+I repeat=false							{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call settings toggle"; }
+    Mod+I repeat=false							{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call settings toggle"; }
     Mod+L										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call lockscreen lock"; }
 	Mod+M										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call wallpaper toggle"; }
-	Ctrl+Alt+R repeat=false					{ spawn-sh "killall quickshell; \"$HOME/Dotfiles/quickshell/run-quickshell\" -d"; }
+	Ctrl+Alt+R repeat=false					    { spawn-sh "killall quickshell; \"$HOME/Dotfiles/quickshell/run-quickshell\" -d"; }
 	Alt+F4										{ spawn "~/.config/niri/scripts/close"; }
 	Mod+E										{ spawn "nautilus"; }
 	Ctrl+Shift+Escape							{ spawn "missioncenter"; }
 	Alt+P										{ spawn-sh "hyprpicker -a"; }
-	Mod+I										{ spawn-sh "env XDG_CURRENT_DESKTOP=GNOME gnome-control-center"; }
 
-	XF86AudioRaiseVolume     allow-when-locked=true { spawn-sh "pactl set-sink-volume @DEFAULT_SINK@ +2%"; }
-    XF86AudioLowerVolume     allow-when-locked=true { spawn-sh "pactl set-sink-volume @DEFAULT_SINK@ -2%"; }
+	XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "pactl set-sink-volume @DEFAULT_SINK@ +2%"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "pactl set-sink-volume @DEFAULT_SINK@ -2%"; }
     Mod+XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "pactl set-source-volume @DEFAULT_SOURCE@ +2%"; }
     Mod+XF86AudioLowerVolume allow-when-locked=true { spawn-sh "pactl set-source-volume @DEFAULT_SOURCE@ -2%"; }
-    XF86AudioMute            allow-when-locked=true { spawn-sh "LAST=/tmp/mute_toggle_last_event; NOW=$(date +%s%3N); if [ ! -f $LAST ] || [ $((NOW - $(cat $LAST))) -ge 500 ]; then echo $NOW > $LAST; pactl set-sink-mute @DEFAULT_SINK@ toggle; fi"; }
-    XF86AudioMicMute         allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
-	XF86MonBrightnessUp      allow-when-locked=true { spawn-sh "brightnessctl s 5%+"; }
-	XF86MonBrightnessDown    allow-when-locked=true { spawn-sh "brightnessctl s 5%-"; }
+    XF86AudioMute allow-when-locked=true { spawn-sh "LAST=/tmp/mute_toggle_last_event; NOW=$(date +%s%3N); if [ ! -f $LAST ] || [ $((NOW - $(cat $LAST))) -ge 500 ]; then echo $NOW > $LAST; pactl set-sink-mute @DEFAULT_SINK@ toggle; fi"; }
+    XF86AudioMicMute allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+	XF86MonBrightnessUp allow-when-locked=true { spawn-sh "brightnessctl s 5%+"; }
+	XF86MonBrightnessDown allow-when-locked=true { spawn-sh "brightnessctl s 5%-"; }
 
 	// ------------------------------------ WINDOWS -----------------------------
     Alt+Left  { focus-column-left; }
@@ -98,10 +97,10 @@ binds {
     Alt+Ctrl+WheelScrollDown { move-column-right; }
     Alt+Ctrl+WheelScrollUp   { move-column-left; }
 
-	Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
-    Mod+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }
+	Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
+    Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
 	Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
-    Mod+Ctrl+WheelScrollUp   cooldown-ms=150 { move-column-to-workspace-up; }
+    Mod+Ctrl+WheelScrollUp cooldown-ms=150 { move-column-to-workspace-up; }
 
 	// ------------------------------------- TOUCHPAD ----------------------------------
     Mod+TouchpadScrollLeft   { spawn-sh "pactl set-sink-volume @DEFAULT_SINK@ +2%"; }
