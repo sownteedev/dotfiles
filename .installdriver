@@ -207,7 +207,7 @@ sleep 3 && clear
 
 # Audio
 red_echo "[*] Installing audio & mic driver ..."
-retry sudo pacman -S --needed --noconfirm pipewire pipewire-audio pipewire-pulse wireplumber alsa-ucm-conf sof-firmware playerctl
+retry sudo pacman -S --needed --noconfirm pipewire pipewire-audio pipewire-pulse pipewire-alsa wireplumber alsa-ucm-conf sof-firmware playerctl
 systemctl --user enable pipewire pipewire-pulse wireplumber
 green_echo "[*] Done."
 sleep 3 && clear
@@ -255,7 +255,7 @@ sleep 3 && clear
 
 # Monitor and Theme
 red_echo "[*] Installing monitor and theme ..."
-retry sudo pacman -S --needed --noconfirm nwg-look fastfetch xdg-desktop-portal-gtk gnome-control-center
+retry sudo pacman -S --needed --noconfirm nwg-look fastfetch xdg-desktop-portal-gtk
 echo "[*] Done."
 sleep 3 && clear
 
