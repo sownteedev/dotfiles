@@ -7,12 +7,28 @@ import QtQuick.Layouts
 Item {
     id: root
 
+    property string baselineState: ""
     readonly property bool headerActionEnabled: !SettingsHubService.busy
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Saving…" : "Apply & save"
     readonly property bool headerActionVisible: true
-    readonly property bool headerResetVisible: true
+    readonly property bool headerResetVisible: baselineState !== "" && JSON.stringify(currentState()) !== baselineState
 
+    function currentState() {
+        return {
+            "notificationPopupDuration": Number(durationField.text),
+            "notificationMaxVisible": Number(maxVisibleField.text),
+            "notificationPosition": positionChoice.value,
+            "notificationShowOnLock": lockToggle.checked,
+            "notificationShowInFullscreen": fullscreenToggle.checked,
+            "notificationHistoryLimit": Number(historyLimitField.text),
+            "notificationHistoryExcludedApps": historyExcludedField.text,
+            "notificationBlockedApps": blockedAppsField.text,
+            "notificationDndScheduleEnabled": scheduleToggle.checked,
+            "notificationDndStart": startField.text,
+            "notificationDndEnd": endField.text
+        };
+    }
     function resetPage() {
         syncFields();
     }
@@ -29,21 +45,10 @@ Item {
         scheduleToggle.checked = settings.notificationDndScheduleEnabled ?? Config.notificationDndScheduleEnabled;
         startField.text = settings.notificationDndStart || Config.notificationDndStart;
         endField.text = settings.notificationDndEnd || Config.notificationDndEnd;
+        baselineState = JSON.stringify(currentState());
     }
     function triggerHeaderAction() {
-        SettingsHubService.saveQuickshell({
-            "notificationPopupDuration": Number(durationField.text),
-            "notificationMaxVisible": Number(maxVisibleField.text),
-            "notificationPosition": positionChoice.value,
-            "notificationShowOnLock": lockToggle.checked,
-            "notificationShowInFullscreen": fullscreenToggle.checked,
-            "notificationHistoryLimit": Number(historyLimitField.text),
-            "notificationHistoryExcludedApps": historyExcludedField.text,
-            "notificationBlockedApps": blockedAppsField.text,
-            "notificationDndScheduleEnabled": scheduleToggle.checked,
-            "notificationDndStart": startField.text,
-            "notificationDndEnd": endField.text
-        });
+        SettingsHubService.saveQuickshell(currentState());
     }
 
     Component.onCompleted: syncFields()
@@ -56,9 +61,12 @@ Item {
         target: SettingsHubService
     }
     SettingsPageContent {
+        id: pageContent
+
         anchors.fill: parent
 
         SettingsSectionCard {
+            Layout.columnSpan: pageContent.columnCount
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
@@ -101,7 +109,6 @@ Item {
                 id: positionChoice
 
                 Layout.fillWidth: true
-                Layout.maximumWidth: 720
                 label: "Position"
                 options: [
                     {
@@ -123,7 +130,7 @@ Item {
             GridLayout {
                 Layout.fillWidth: true
                 columnSpacing: 10
-                columns: width >= 620 ? 2 : 1
+                columns: 1
                 rowSpacing: 10
                 uniformCellWidths: true
 
@@ -155,7 +162,7 @@ Item {
             GridLayout {
                 Layout.fillWidth: true
                 columnSpacing: 10
-                columns: width >= 860 ? 3 : width >= 500 ? 2 : 1
+                columns: 1
                 rowSpacing: 10
                 uniformCellWidths: true
 

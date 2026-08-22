@@ -23,6 +23,7 @@ Item {
     readonly property bool nsfw: Boolean(wallpaper.nsfw)
     readonly property bool nsfwBlurred: nsfw && blurNsfw
     property bool removing: false
+    readonly property string resolutionLabel: String(wallpaper.resolution || "")
     readonly property bool subscribed: Boolean(wallpaper.subscribed)
     readonly property bool supported: installedMode ? !["web", "application"].includes(String(wallpaper.type || "").toLowerCase()) : wallpaper.supported !== false
     required property var wallpaper
@@ -271,6 +272,47 @@ Item {
                 }
             }
             Rectangle {
+                id: resolutionBadge
+
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 9
+                anchors.left: parent.left
+                anchors.leftMargin: 10
+                color: Config.alpha(Config.md3.surface, 0.88)
+                height: 28
+                radius: 10
+                visible: root.resolutionLabel !== ""
+                width: resolutionRow.implicitWidth + 18
+                z: 4
+
+                Row {
+                    id: resolutionRow
+
+                    anchors.centerIn: parent
+                    spacing: 6
+
+                    IconImage {
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 15
+                        layer.enabled: true
+                        source: Quickshell.iconPath("video-display-symbolic")
+                        width: 15
+
+                        layer.effect: ColorOverlay {
+                            color: Config.md3.on_surface_variant
+                        }
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Config.md3.on_surface
+                        font.family: Config.fontName
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        text: root.resolutionLabel
+                    }
+                }
+            }
+            Rectangle {
                 id: fileSizeBadge
 
                 anchors.bottom: parent.bottom
@@ -280,7 +322,7 @@ Item {
                 color: Config.alpha(Config.md3.surface, 0.88)
                 height: 28
                 radius: 10
-                visible: !root.downloaded && root.fileSizeLabel !== ""
+                visible: root.fileSizeLabel !== ""
                 width: fileSizeRow.implicitWidth + 18
                 z: 4
 

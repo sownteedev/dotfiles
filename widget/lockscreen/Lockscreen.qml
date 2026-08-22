@@ -11,6 +11,7 @@ import Quickshell.Widgets
 import "../.."
 import "../../components"
 import "../../service"
+import "../idle"
 
 Scope {
     id: root
@@ -1335,6 +1336,10 @@ Scope {
                         target: loginPanel
                         to: 0
                     }
+                }
+                IdleDimShade {
+                    anchors.fill: parent
+                    z: 100000
                 }
             }
         }

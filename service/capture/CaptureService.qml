@@ -120,6 +120,30 @@ QtObject {
         }
         onStarted: console.log("[Capture] slurp process started")
     }
+    readonly property bool reverseImageSearchBusy: reverseImageSearchProcess.running
+    property Process reverseImageSearchProcess: Process {
+        stderr: StdioCollector {
+            id: reverseImageSearchErrorCollector
+        }
+        stdout: StdioCollector {
+            id: reverseImageSearchOutputCollector
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            var result = reverseImageSearchOutputCollector.text.trim();
+            if (exitCode !== 0) {
+                var errorMessage = reverseImageSearchErrorCollector.text.trim();
+                root.reverseImageSearchStatus = errorMessage || qsTr("Could not search this image");
+                root.reverseImageSearchStatusIsError = true;
+                return;
+            }
+
+            root.reverseImageSearchStatusIsError = false;
+            root.reverseImageSearchStatus = result === "fallback" ? qsTr("Image copied — paste it into Google Lens") : qsTr("Opened results in your browser");
+        }
+    }
+    property string reverseImageSearchStatus: ""
+    property bool reverseImageSearchStatusIsError: false
     property bool screenshotBusy: false
     property int screenshotCaptureSession: 0
     property double screenshotCapturedAt: 0
@@ -185,8 +209,12 @@ QtObject {
         screenshotWatchdog.restart();
         screenshotLaunchDelay.restart();
     }
+    function clearReverseImageSearchStatus() {
+        reverseImageSearchStatus = "";
+        reverseImageSearchStatusIsError = false;
+    }
     function closeScreenshotEditor() {
-        screenshotEditorVisible = false;
+        dismissScreenshotEditor();
         Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-u", "low", "-h", "boolean:transient:true", "Canceled", "Screenshot editing canceled"]);
     }
     function copyRecording(path) {
@@ -197,6 +225,9 @@ QtObject {
         // Copy the file URI instead of buffering the whole video in RAM.
         // File-aware Wayland applications can paste it as an MP4 file.
         Quickshell.execDetached(["sh", "-c", "printf 'file://%s\\r\\n' \"$1\" | wl-copy --type text/uri-list", "copy-recording", target]);
+    }
+    function dismissScreenshotEditor() {
+        screenshotEditorVisible = false;
     }
     function editedScreenshotPath() {
         if (!screenshotPath)
@@ -243,6 +274,7 @@ QtObject {
     function openScreenshotEditor(screenName) {
         if (!screenshotPath)
             return;
+        clearReverseImageSearchStatus();
         screenshotEditorScreenName = screenName || "";
         screenshotEditorSession++;
         screenshotEditorVisible = true;
@@ -272,6 +304,15 @@ QtObject {
         screenshotPath = "";
         screenshotCapturedAt = 0;
         beginScreenshotCapture();
+    }
+    function searchScreenshotWithLens(path, width, height) {
+        if (!path || reverseImageSearchProcess.running)
+            return;
+
+        clearReverseImageSearchStatus();
+        reverseImageSearchStatus = qsTr("Searching with Google Lens…");
+        reverseImageSearchProcess.command = ["bash", Config.quickshellDir + "/scripts/reverse-image-search.sh", path, String(Math.max(1, Math.round(width))), String(Math.max(1, Math.round(height)))];
+        reverseImageSearchProcess.running = true;
     }
     function startRecording() {
         if (recording || selectingRegion)

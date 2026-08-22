@@ -330,7 +330,7 @@ Item {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.on_surface, 0.06)
                 border.width: 1
-                color: Config.md3.surface_container
+                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                 height: 64
                 radius: 12
 
@@ -393,6 +393,7 @@ Item {
             // 2. Night Light temperature control
             NightLightControl {
                 Layout.fillWidth: true
+                backgroundColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                 nightLightEnabled: DisplayService.nightlightEnabled
                 temperature: DisplayService.nightlightTemperature
 
@@ -407,7 +408,7 @@ Item {
                 border.color: Config.alpha(Config.md3.on_surface, 0.06)
                 border.width: 1
                 clip: true
-                color: Config.md3.surface_container
+                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                 height: 68
                 radius: 14
 
@@ -488,7 +489,7 @@ Item {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.on_surface, 0.06)
                 border.width: 1
-                color: Config.md3.surface_container
+                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                 height: 118
                 radius: 14
 
@@ -507,6 +508,7 @@ Item {
                     SettingsSegmentedControl {
                         Layout.fillWidth: true
                         accessibleName: "Display mode"
+                        backgroundColor: Config.alpha(Config.md3.on_surface, 0.07)
                         enabled: !DisplayService.displayModeApplying
                         options: [
                             {
@@ -552,7 +554,7 @@ Item {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.on_surface, 0.06)
                 border.width: 1
-                color: Config.md3.surface_container
+                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                 height: displayPageRoot.allOutputs.length > 1 ? 300 : 200
                 radius: 12
                 visible: displayPageRoot.allOutputs.length > 0
@@ -706,7 +708,7 @@ Item {
 
                             border.color: isDragging || isSelected ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.15)
                             border.width: isDragging || isSelected ? 2 : 1
-                            color: isDragging ? Config.alpha(Config.md3.primary, 0.3) : (isSelected ? Config.alpha(Config.md3.primary, 0.15) : Config.md3.surface_container_high)
+                            color: isDragging ? Config.alpha(Config.md3.primary, 0.3) : (isSelected ? Config.alpha(Config.md3.primary, 0.15) : Config.alpha(Config.md3.on_surface, 0.12))
                             height: log.height * layoutArea.scaleFactor
                             radius: 6
 
@@ -899,7 +901,7 @@ Item {
                     Layout.fillWidth: true
                     border.color: Config.alpha(Config.md3.on_surface, 0.06)
                     border.width: 1
-                    color: Config.md3.surface_container
+                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                     height: 330
                     radius: 12
 
@@ -1291,7 +1293,7 @@ Item {
                     Layout.fillWidth: true
                     border.color: Config.alpha(Config.md3.on_surface, 0.06)
                     border.width: 1
-                    color: Config.md3.surface_container
+                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                     height: 76
                     radius: 12
 

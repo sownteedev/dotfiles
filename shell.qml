@@ -14,6 +14,7 @@ import "service"
 import "widget/bar"
 import "widget/capture"
 import "widget/desktop"
+import "widget/idle"
 import "widget/lockscreen"
 import "widget/notification"
 import "widget/osd"
@@ -207,6 +208,17 @@ ShellRoot {
         model: Quickshell.screens
 
         delegate: Component {
+            IdleDimOverlay {
+                required property var modelData
+
+                screen: modelData
+            }
+        }
+    }
+    Variants {
+        model: Quickshell.screens
+
+        delegate: Component {
             OSD {
                 required property var modelData
 
@@ -344,6 +356,23 @@ ShellRoot {
         target: lockscreenLoader.item
     }
     IpcHandler {
+        function hide(): bool {
+            IdleDimService.hide();
+            return true;
+        }
+        function show(): bool {
+            IdleDimService.show();
+            return true;
+        }
+        function status(): string {
+            return JSON.stringify({
+                "active": IdleDimService.active
+            });
+        }
+
+        target: "idleDim"
+    }
+    IpcHandler {
         function hide() {
             root.hideLazyWindow(powerLoader, "closeMenu");
         }
@@ -459,16 +488,17 @@ ShellRoot {
         target: "settings"
     }
     IpcHandler {
-        function lock() {
+        function lock(): bool {
             StateManager.lockScreen();
+            return true;
         }
-        function retryFace() {
-            if (lockscreenLoader.active && lockscreenLoader.item && typeof lockscreenLoader.item.retryFace === "function") {
-                lockscreenLoader.item.retryFace();
-            }
+        function retryFace(): bool {
+            IdleDimService.retryFaceAuthentication();
+            return true;
         }
-        function show() {
+        function show(): bool {
             StateManager.lockScreen();
+            return true;
         }
         function status(): string {
             return JSON.stringify({
@@ -480,8 +510,9 @@ ShellRoot {
 
         // Toggle intentionally never unlocks an active session. Unlocking is
         // only possible through the PAM flow inside the lock surface.
-        function toggle() {
+        function toggle(): bool {
             StateManager.lockScreen();
+            return true;
         }
 
         target: "lockscreen"

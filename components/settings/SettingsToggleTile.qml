@@ -9,27 +9,31 @@ Rectangle {
     property bool checked: false
     property string label: ""
     property string note: ""
+    property bool updateCheckedInternally: true
 
     signal toggled(bool checked)
 
     function requestToggle() {
         if (!enabled)
             return;
-        checked = !checked;
-        toggled(checked);
+        var nextChecked = !checked;
+        if (updateCheckedInternally)
+            checked = nextChecked;
+        toggled(nextChecked);
     }
 
     Accessible.checked: checked
+    Accessible.description: note
     Accessible.name: label
     Accessible.role: Accessible.CheckBox
     Layout.fillWidth: true
     activeFocusOnTab: enabled
     border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.7) : "transparent"
     border.width: 1
-    color: tileMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.075) : Config.alpha(Config.md3.on_surface, 0.045)
-    implicitHeight: note === "" ? 54 : 64
+    color: activeFocus ? Config.alpha(Config.md3.primary, 0.075) : tileMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.055) : "transparent"
+    implicitHeight: note === "" ? 50 : 60
     opacity: enabled ? 1 : 0.45
-    radius: 14
+    radius: 10
 
     Behavior on border.color {
         ColorAnimation {
@@ -59,9 +63,9 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 14
-        anchors.rightMargin: 12
-        spacing: 12
+        anchors.leftMargin: 4
+        anchors.rightMargin: 4
+        spacing: 16
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -74,6 +78,7 @@ Rectangle {
                 font.family: Config.fontName
                 font.pixelSize: 14
                 font.weight: Font.DemiBold
+                renderType: Text.NativeRendering
                 text: root.label
             }
             Text {
@@ -81,7 +86,8 @@ Rectangle {
                 color: Config.alpha(Config.md3.on_surface, 0.46)
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 11
+                font.pixelSize: 12
+                renderType: Text.NativeRendering
                 text: root.note
                 visible: text !== ""
             }

@@ -25,6 +25,7 @@ QtObject {
     property alias barShowNotifications: runtimeSettings.barShowNotifications
     property alias barShowRecording: runtimeSettings.barShowRecording
     property alias barShowSysTray: runtimeSettings.barShowSysTray
+    property alias barShowWeather: runtimeSettings.barShowWeather
     property alias barShowWorkspaces: runtimeSettings.barShowWorkspaces
     property var base16: ({})
     readonly property string cacheRoot: (Quickshell.env("XDG_CACHE_HOME") || homeDir + "/.cache") + "/quickshell"
@@ -173,6 +174,7 @@ QtObject {
             property bool barShowNotifications: true
             property bool barShowRecording: true
             property bool barShowSysTray: true
+            property bool barShowWeather: true
             property bool barShowWorkspaces: true
             property int caffeineAutoDisableMinutes: 0
             property bool captureAutoCopyRecording: true
@@ -229,6 +231,11 @@ QtObject {
             property bool osdShowMicrophone: true
             property bool osdShowVolume: true
             property real shellAnimationScale: 1.0
+            property bool shellBlurBarEnabled: true
+            property bool shellBlurControlLeftEnabled: true
+            property bool shellBlurControlRightEnabled: true
+            property bool shellBlurLauncherEnabled: true
+            property bool shellBlurSettingsEnabled: true
             property bool shellLowPowerMode: false
             property bool shellReducedMotion: false
             property string steamUsername: ""
@@ -252,6 +259,11 @@ QtObject {
     }
     readonly property string runtimeSettingsPath: cacheRoot + "/settings.json"
     property alias shellAnimationScale: runtimeSettings.shellAnimationScale
+    property alias shellBlurBarEnabled: runtimeSettings.shellBlurBarEnabled
+    property alias shellBlurControlLeftEnabled: runtimeSettings.shellBlurControlLeftEnabled
+    property alias shellBlurControlRightEnabled: runtimeSettings.shellBlurControlRightEnabled
+    property alias shellBlurLauncherEnabled: runtimeSettings.shellBlurLauncherEnabled
+    property alias shellBlurSettingsEnabled: runtimeSettings.shellBlurSettingsEnabled
     property alias shellLowPowerMode: runtimeSettings.shellLowPowerMode
     property alias shellReducedMotion: runtimeSettings.shellReducedMotion
     readonly property string steamDir: homeDir + "/.local/share/Steam"

@@ -15,6 +15,7 @@ singleton DisplayHotplugService 1.0 system/DisplayHotplugService.qml
 singleton DisplayService 1.0 system/DisplayService.qml
 singleton DisplayBrightnessService 1.0 system/DisplayBrightnessService.qml
 singleton FaceAuthService 1.0 system/FaceAuthService.qml
+singleton IdleDimService 1.0 system/IdleDimService.qml
 singleton LockscreenNotificationService 1.0 system/LockscreenNotificationService.qml
 singleton NotificationHistory 1.0 system/NotificationHistory.qml
 singleton PolkitService 1.0 system/PolkitService.qml

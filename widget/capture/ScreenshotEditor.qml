@@ -35,6 +35,8 @@ PanelWindow {
     readonly property var pixelateShapes: shapes.filter(function (shape) {
         return shape.tool === "pixelate";
     })
+    property bool reverseSearchPreparing: false
+    property int reverseSearchSessionToken: 0
     property string saveError: ""
     property bool saving: false
     property color selectedColor: Config.captureEditorColor
@@ -79,6 +81,8 @@ PanelWindow {
     }
     function cancelEditor() {
         cancelOcrSession();
+        reverseSearchSessionToken += 1;
+        reverseSearchPreparing = false;
         CaptureService.closeScreenshotEditor();
     }
     function cancelOcrSession() {
@@ -484,6 +488,8 @@ PanelWindow {
         nextMarkerNumber = highest + 1;
     }
     function resetEditorDefaults() {
+        reverseSearchSessionToken += 1;
+        reverseSearchPreparing = false;
         selectedTool = Config.captureEditorTool || "pen";
         selectedColor = Config.captureEditorColor || "#ff3b30";
         selectedWidth = Math.max(1, Number(Config.captureEditorWidth) || 6);
@@ -499,11 +505,56 @@ PanelWindow {
                 root.imageLoadEnabled = true;
         });
     }
+    function reverseImageSearch() {
+        if (inlineTextEditor.visible)
+            commitText();
+
+        if (reverseSearchPreparing || CaptureService.reverseImageSearchBusy || saving || sourceImage.status !== Image.Ready)
+            return;
+
+        cancelOcrSession();
+        reverseSearchPreparing = true;
+        saveError = "";
+        CaptureService.clearReverseImageSearchStatus();
+        committedCanvas.requestPaint();
+        liveCanvas.requestPaint();
+        var searchSession = ++reverseSearchSessionToken;
+        Qt.callLater(function () {
+            if (searchSession !== root.reverseSearchSessionToken || !CaptureService.screenshotEditorVisible) {
+                root.reverseSearchPreparing = false;
+                return;
+            }
+
+            var scaleX = sourceImage.sourceSize.width / Math.max(1, captureSurface.width);
+            var scaleY = sourceImage.sourceSize.height / Math.max(1, captureSurface.height);
+            var exportItem = root.cropActive ? cropExportSurface : captureSurface;
+            var targetWidth = root.cropActive ? Math.max(1, Math.round(root.cropRect.width * scaleX)) : Math.max(1, sourceImage.sourceSize.width);
+            var targetHeight = root.cropActive ? Math.max(1, Math.round(root.cropRect.height * scaleY)) : Math.max(1, sourceImage.sourceSize.height);
+            var outputPath = "/tmp/quickshell-reverse-image-" + Date.now() + ".png";
+            var started = exportItem.grabToImage(function (result) {
+                var saved = result.saveToFile(outputPath);
+                root.reverseSearchPreparing = false;
+                if (searchSession !== root.reverseSearchSessionToken || !CaptureService.screenshotEditorVisible) {
+                    if (saved)
+                        Quickshell.execDetached(["rm", "-f", "--", outputPath]);
+                } else if (saved) {
+                    CaptureService.searchScreenshotWithLens(outputPath, targetWidth, targetHeight);
+                    CaptureService.dismissScreenshotEditor();
+                } else {
+                    root.saveError = qsTr("Could not prepare the image search");
+                }
+            }, Qt.size(targetWidth, targetHeight));
+            if (!started) {
+                root.reverseSearchPreparing = false;
+                root.saveError = qsTr("Could not render the image search");
+            }
+        });
+    }
     function saveEditedImage() {
         if (inlineTextEditor.visible)
             commitText();
 
-        if (saving || sourceImage.status !== Image.Ready)
+        if (reverseSearchPreparing || saving || sourceImage.status !== Image.Ready)
             return;
 
         cancelOcrSession();
@@ -701,13 +752,13 @@ PanelWindow {
             }
             Text {
                 Layout.maximumWidth: root.width * 0.62
-                color: OcrService.statusIsError ? Config.md3.error : OcrService.statusText !== "" ? Config.md3.primary : Config.md3.on_surface_variant
+                color: CaptureService.reverseImageSearchStatusIsError ? Config.md3.error : CaptureService.reverseImageSearchStatus !== "" ? Config.md3.primary : OcrService.statusIsError ? Config.md3.error : OcrService.statusText !== "" ? Config.md3.primary : Config.md3.on_surface_variant
                 elide: Text.ElideRight
                 font.family: Config.fontName
                 font.pixelSize: 14
                 font.weight: Font.DemiBold
                 maximumLineCount: 1
-                text: OcrService.statusText !== "" ? OcrService.statusText : root.selectedTool === "ocr" ? "Drag over text to copy it" : "Enter to save · Backspace to clear · Ctrl+Z to undo · Esc to cancel"
+                text: CaptureService.reverseImageSearchStatus !== "" ? CaptureService.reverseImageSearchStatus : OcrService.statusText !== "" ? OcrService.statusText : root.selectedTool === "ocr" ? qsTr("Drag over text to copy it") : qsTr("Enter to save · Backspace to clear · Ctrl+Z to undo · Esc to cancel")
             }
         }
         Item {
@@ -1397,6 +1448,7 @@ PanelWindow {
                     id: toolbar
 
                     anchors.verticalCenter: parent.verticalCenter
+                    reverseSearchBusy: root.reverseSearchPreparing || CaptureService.reverseImageSearchBusy
                     selectedColor: root.selectedColor
                     selectedTool: root.selectedTool
                     selectedWidth: root.selectedWidth
@@ -1405,6 +1457,7 @@ PanelWindow {
                     onColorSelected: colorValue => {
                         return root.selectedColor = colorValue;
                     }
+                    onReverseSearchRequested: root.reverseImageSearch()
                     onToolSelected: tool => {
                         if (inlineTextEditor.visible)
                             root.commitText();

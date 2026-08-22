@@ -53,10 +53,10 @@ MouseArea {
             id: microphoneIcon
 
             anchors.centerIn: parent
-            height: 19
-            source: Quickshell.iconPath("microphone-sensitivity-high-symbolic")
+            height: 20
+            source: Quickshell.iconPath("audio-input-microphone-symbolic")
             visible: false
-            width: 19
+            width: 20
         }
         ColorOverlay {
             anchors.fill: microphoneIcon
@@ -154,7 +154,7 @@ MouseArea {
 
                                     anchors.centerIn: parent
                                     height: 21
-                                    source: Quickshell.iconPath("microphone-sensitivity-high-symbolic")
+                                    source: Quickshell.iconPath("audio-input-microphone-symbolic")
                                     visible: false
                                     width: 21
                                 }

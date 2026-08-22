@@ -300,14 +300,14 @@ Item {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 17
+                            font.pixelSize: 16
                             font.weight: Font.DemiBold
                             text: root.networkSsid
                         }
                         Text {
                             color: Config.alpha(Config.md3.on_surface, 0.48)
                             font.family: Config.fontName
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             text: root.applying ? "Saving profile and reconnecting…" : "Saved Wi-Fi network"
                         }
                     }
@@ -380,7 +380,7 @@ Item {
                             Text {
                                 color: Config.md3.primary
                                 font.family: Config.fontName
-                                font.pixelSize: 13
+                                font.pixelSize: 12
                                 font.weight: Font.DemiBold
                                 text: root.applying ? "Saving…" : "Save"
                             }
@@ -438,7 +438,7 @@ Item {
                         Layout.fillWidth: true
                         color: Config.md3.on_error_container
                         font.family: Config.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 12
                         text: root.saveError
                         wrapMode: Text.Wrap
                     }
@@ -448,7 +448,7 @@ Item {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.on_surface, 0.09)
                 border.width: 1
-                color: Config.md3.surface_container_low
+                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.58 : 0.22)
                 implicitHeight: ipv4Content.implicitHeight + 32
                 radius: 16
 
@@ -466,14 +466,14 @@ Item {
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 16
+                            font.pixelSize: 15
                             font.weight: Font.DemiBold
                             text: "IPv4"
                         }
                         Text {
                             color: Config.alpha(Config.md3.on_surface, 0.45)
                             font.family: Config.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 12
                             text: root.ipMethod === "auto" ? "Address and gateway are assigned by DHCP" : "Use a fixed address for this network"
                         }
                     }
@@ -485,12 +485,13 @@ Item {
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 14
+                            font.pixelSize: 13
                             font.weight: Font.DemiBold
                             text: "IP assignment"
                         }
                         SettingsSegmentedControl {
                             Layout.fillWidth: true
+                            backgroundColor: Config.alpha(Config.md3.on_surface, 0.07)
                             enabled: !root.applying
                             options: [
                                 {
@@ -529,14 +530,14 @@ Item {
                                 Text {
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 14
+                                    font.pixelSize: 13
                                     font.weight: Font.DemiBold
                                     text: "DNS assignment"
                                 }
                                 Text {
                                     color: Config.md3.on_surface_variant
                                     font.family: Config.fontName
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
                                     text: root.ipv4AutomaticDns ? "Automatic (from DHCP)" : "Custom servers below"
                                 }
                             }
@@ -622,7 +623,7 @@ Item {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.on_surface, 0.09)
                 border.width: 1
-                color: Config.md3.surface_container_low
+                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.58 : 0.22)
                 implicitHeight: ipv6Header.implicitHeight + (root.ipv6Expanded ? ipv6Body.implicitHeight + 14 : 0) + 32
                 radius: 16
 
@@ -655,7 +656,7 @@ Item {
                                 Layout.fillWidth: true
                                 color: Config.md3.on_surface
                                 font.family: Config.fontName
-                                font.pixelSize: 16
+                                font.pixelSize: 15
                                 font.weight: Font.DemiBold
                                 text: "IPv6"
                             }
@@ -663,7 +664,7 @@ Item {
                                 Layout.fillWidth: true
                                 color: Config.alpha(Config.md3.on_surface, 0.45)
                                 font.family: Config.fontName
-                                font.pixelSize: 13
+                                font.pixelSize: 12
                                 text: root.ipv6Method === "manual" ? "Manual address" : root.ipv6Method === "disabled" ? "Disabled" : "Automatic"
                             }
                         }
@@ -713,12 +714,13 @@ Item {
                                 Text {
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 14
+                                    font.pixelSize: 13
                                     font.weight: Font.DemiBold
                                     text: "IP assignment"
                                 }
                                 SettingsSegmentedControl {
                                     Layout.fillWidth: true
+                                    backgroundColor: Config.alpha(Config.md3.on_surface, 0.07)
                                     enabled: !root.applying
                                     options: [
                                         {
@@ -762,14 +764,14 @@ Item {
                                         Text {
                                             color: Config.md3.on_surface
                                             font.family: Config.fontName
-                                            font.pixelSize: 14
+                                            font.pixelSize: 13
                                             font.weight: Font.DemiBold
                                             text: "DNS assignment"
                                         }
                                         Text {
                                             color: Config.md3.on_surface_variant
                                             font.family: Config.fontName
-                                            font.pixelSize: 12
+                                            font.pixelSize: 11
                                             text: root.ipv6AutomaticDns ? "Automatic (from the network)" : "Custom servers below"
                                         }
                                     }
@@ -823,7 +825,7 @@ Item {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.on_surface, 0.09)
                 border.width: 1
-                color: Config.md3.surface_container_low
+                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.58 : 0.22)
                 implicitHeight: 64
                 radius: 16
 
@@ -840,14 +842,14 @@ Item {
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.pixelSize: 14
                             font.weight: Font.DemiBold
                             text: "Connect automatically"
                         }
                         Text {
                             color: Config.alpha(Config.md3.on_surface, 0.42)
                             font.family: Config.fontName
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             text: root.autoConnect ? "Join this network when it is available" : "Connect only when requested"
                         }
                     }

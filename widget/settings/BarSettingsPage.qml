@@ -7,12 +7,31 @@ import QtQuick.Layouts
 Item {
     id: root
 
+    property string baselineState: ""
     readonly property bool headerActionEnabled: !SettingsHubService.busy
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Saving…" : "Apply & save"
     readonly property bool headerActionVisible: true
-    readonly property bool headerResetVisible: true
+    readonly property bool headerResetVisible: baselineState !== "" && JSON.stringify(currentState()) !== baselineState
 
+    function currentState() {
+        return {
+            "barHeight": Number(heightField.text),
+            "barDensity": densityChoice.value,
+            "barShowActiveClient": activeClientToggle.checked,
+            "barShowMedia": mediaToggle.checked,
+            "barShowWorkspaces": workspacesToggle.checked,
+            "barShowRecording": recordingToggle.checked,
+            "barShowSysTray": trayToggle.checked,
+            "barShowMicrophone": microphoneToggle.checked,
+            "barShowNetwork": networkToggle.checked,
+            "barShowBluetooth": bluetoothToggle.checked,
+            "barShowBattery": batteryToggle.checked,
+            "barShowNotifications": notificationsToggle.checked,
+            "barShowWeather": weatherToggle.checked,
+            "barShowClock": clockToggle.checked
+        };
+    }
     function resetPage() {
         syncFields();
     }
@@ -30,24 +49,12 @@ Item {
         bluetoothToggle.checked = settings.barShowBluetooth ?? Config.barShowBluetooth;
         batteryToggle.checked = settings.barShowBattery ?? Config.barShowBattery;
         notificationsToggle.checked = settings.barShowNotifications ?? Config.barShowNotifications;
+        weatherToggle.checked = settings.barShowWeather ?? Config.barShowWeather;
         clockToggle.checked = settings.barShowClock ?? Config.barShowClock;
+        baselineState = JSON.stringify(currentState());
     }
     function triggerHeaderAction() {
-        SettingsHubService.saveQuickshell({
-            "barHeight": Number(heightField.text),
-            "barDensity": densityChoice.value,
-            "barShowActiveClient": activeClientToggle.checked,
-            "barShowMedia": mediaToggle.checked,
-            "barShowWorkspaces": workspacesToggle.checked,
-            "barShowRecording": recordingToggle.checked,
-            "barShowSysTray": trayToggle.checked,
-            "barShowMicrophone": microphoneToggle.checked,
-            "barShowNetwork": networkToggle.checked,
-            "barShowBluetooth": bluetoothToggle.checked,
-            "barShowBattery": batteryToggle.checked,
-            "barShowNotifications": notificationsToggle.checked,
-            "barShowClock": clockToggle.checked
-        });
+        SettingsHubService.saveQuickshell(currentState());
     }
 
     Component.onCompleted: syncFields()
@@ -60,6 +67,8 @@ Item {
         target: SettingsHubService
     }
     SettingsPageContent {
+        id: pageContent
+
         anchors.fill: parent
 
         SettingsSectionCard {
@@ -122,7 +131,7 @@ Item {
             GridLayout {
                 Layout.fillWidth: true
                 columnSpacing: 10
-                columns: width >= 820 ? 3 : width >= 500 ? 2 : 1
+                columns: 1
                 rowSpacing: 10
                 uniformCellWidths: true
 
@@ -153,6 +162,7 @@ Item {
             }
         }
         SettingsSectionCard {
+            Layout.columnSpan: pageContent.columnCount
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
@@ -162,7 +172,7 @@ Item {
             GridLayout {
                 Layout.fillWidth: true
                 columnSpacing: 10
-                columns: width >= 980 ? 4 : width >= 500 ? 2 : 1
+                columns: 1
                 rowSpacing: 10
                 uniformCellWidths: true
 
@@ -212,6 +222,14 @@ Item {
                     id: notificationsToggle
 
                     label: "Notifications"
+
+                    onToggled: value => checked = value
+                }
+                SettingsToggleTile {
+                    id: weatherToggle
+
+                    label: "Weather"
+                    note: "Current condition and temperature"
 
                     onToggled: value => checked = value
                 }

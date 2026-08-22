@@ -251,7 +251,7 @@ Item {
                             Layout.preferredWidth: 36
                             border.color: Config.alpha(Config.md3.on_surface, 0.10)
                             border.width: 1
-                            color: scanMouse.containsMouse ? Config.md3.surface_container_highest : Config.md3.surface_container
+                            color: Config.alpha(Config.md3.on_surface, scanMouse.containsMouse ? 0.16 : 0.09)
                             opacity: root.adapter && root.adapter.enabled ? 1 : 0.4
                             radius: 12
 

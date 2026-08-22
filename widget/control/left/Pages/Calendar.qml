@@ -185,6 +185,7 @@ Item {
 
         anchors.fill: parent
         clip: true
+        visible: !calendarRoot.showEvents && !eventEditor.opened
 
         Row {
             height: parent.height
@@ -285,7 +286,7 @@ Item {
                                                 anchors.horizontalCenter: parent.horizontalCenter
                                                 anchors.top: parent.top
                                                 anchors.topMargin: 16
-                                                color: isToday ? Config.md3.surface_container_highest : (dayArea.containsMouse ? Config.md3.surface_container : "transparent")
+                                                color: isToday ? Config.alpha(Config.md3.on_surface, 0.2) : (dayArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent")
                                                 height: Math.min(50, Math.max(34, parent.width - 4))
                                                 radius: height / 2
                                                 width: height
@@ -355,9 +356,10 @@ Item {
         id: eventsPanel
 
         anchors.fill: parent
-        color: Config.md3.surface
-        opacity: showEvents ? 1 : 0
-        visible: showEvents || opacity > 0
+        color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.56 : 0.22)
+        opacity: showEvents && !eventEditor.opened ? 1 : 0
+        radius: 20
+        visible: showEvents && !eventEditor.opened
 
         // Add transition for smooth open/close
         Behavior on opacity {
@@ -366,7 +368,7 @@ Item {
             }
         }
         transform: Translate {
-            y: showEvents ? 0 : 40
+            y: showEvents && !eventEditor.opened ? 0 : 40
 
             Behavior on y {
                 NumberAnimation {
@@ -413,7 +415,7 @@ Item {
 
                 // Add button
                 Rectangle {
-                    color: addArea.containsMouse ? Config.md3.surface_container_highest : Config.md3.surface_container_high
+                    color: Config.alpha(Config.md3.on_surface, addArea.containsMouse ? 0.16 : 0.09)
                     height: 30
                     radius: 15
                     width: 30
@@ -500,7 +502,7 @@ Item {
 
                         property real swipeX: 0
 
-                        color: Qt.tint(Config.md3.surface_container, Config.alpha(Config.md3.error, Math.min(0.8, Math.abs(swipeX) / 100)))
+                        color: Qt.tint(Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22), Config.alpha(Config.md3.error, Math.min(0.8, Math.abs(swipeX) / 100)))
                         height: parent.height
                         radius: 20
                         width: parent.width

@@ -119,7 +119,7 @@ Item {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.on_surface, 0.06)
                 border.width: 1
-                color: Config.md3.surface_container
+                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                 implicitHeight: batteryInfoColumn.implicitHeight + 32
                 radius: 12
 
@@ -428,7 +428,7 @@ Item {
                     Layout.fillWidth: true
                     border.color: powerDropMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
                     border.width: 1
-                    color: powerDropMouse.pressed ? Config.md3.surface_container_highest : (powerDropMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container)
+                    color: Config.alpha(Config.md3.on_surface, powerDropMouse.pressed ? 0.18 : (powerDropMouse.containsMouse ? 0.12 : 0.07))
                     height: 74
                     radius: 12
                     scale: powerDropMouse.pressed ? 0.98 : 1.0
@@ -576,7 +576,7 @@ Item {
                     Layout.fillWidth: true
                     border.color: chargeDropMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
                     border.width: 1
-                    color: chargeDropMouse.pressed ? Config.md3.surface_container_highest : (chargeDropMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container)
+                    color: Config.alpha(Config.md3.on_surface, chargeDropMouse.pressed ? 0.18 : (chargeDropMouse.containsMouse ? 0.12 : 0.07))
                     height: 74
                     radius: 12
                     scale: chargeDropMouse.pressed ? 0.98 : 1.0
@@ -703,7 +703,7 @@ Item {
                     Layout.fillWidth: true
                     border.color: Config.alpha(Config.md3.on_surface, 0.06)
                     border.width: 1
-                    color: Config.md3.surface_container
+                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                     implicitHeight: autoCpufreqColumn.implicitHeight + 24
                     radius: 12
 

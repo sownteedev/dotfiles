@@ -100,6 +100,7 @@ Item {
         anchors.fill: parent
         anchors.margins: 20
         spacing: 20
+        visible: !root.showAddEvent
 
         Item {
             Layout.fillWidth: true
@@ -283,7 +284,7 @@ Item {
             Rectangle {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                color: addButtonArea.pressed ? Config.md3.surface_container_high : Config.md3.surface_container
+                color: Config.alpha(Config.md3.on_surface, addButtonArea.pressed ? 0.16 : 0.09)
                 height: 40
                 radius: 20
                 width: 40
@@ -395,7 +396,7 @@ Item {
                         Drag.hotSpot.y: 20
                         Drag.keys: ["local-task"]
                         Drag.supportedActions: Qt.CopyAction
-                        color: Qt.tint(Config.md3.surface_container, Config.alpha(Config.md3.error, Math.min(1.0, Math.abs(swipeX) / 80)))
+                        color: Qt.tint(Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22), Config.alpha(Config.md3.error, Math.min(1.0, Math.abs(swipeX) / 80)))
                         height: parent.height
                         opacity: syncDragging ? 0.78 : taskSyncing ? 0.6 : 1
                         radius: 20
@@ -626,7 +627,7 @@ Item {
     Rectangle {
         id: addEventPanel
 
-        color: Config.md3.surface
+        color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.56 : 0.22)
         height: parent.height
         radius: 20
         width: parent.width

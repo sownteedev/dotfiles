@@ -1,6 +1,7 @@
 import "../../"
 import Qt5Compat.GraphicalEffects
 import QtQuick
+import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
@@ -15,6 +16,7 @@ Rectangle {
     property bool expanded: false
     property color iconColor: Config.md3.primary
     property string iconName: ""
+    readonly property real iconSize: indented ? 18 : 22
     property bool indented: false
     property real selectionProgress: active ? 1 : 0
     property string text: ""
@@ -22,7 +24,7 @@ Rectangle {
     signal clicked
 
     color: mouse.containsMouse && !active ? Config.alpha(root.iconColor, 0.075) : "transparent"
-    implicitHeight: dense ? 44 : 50
+    implicitHeight: compact ? 40 : dense ? 44 : 50
     radius: 14
     scale: mouse.pressed ? 0.985 : 1
 
@@ -54,22 +56,22 @@ Rectangle {
     }
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: root.compact ? (root.width - 22) / 2 : (root.indented ? 28 : 16)
+        anchors.leftMargin: root.compact ? (root.width - root.iconSize) / 2 : (root.indented ? 28 : 16)
         anchors.rightMargin: root.compact ? 0 : 14
         spacing: root.indented ? 11 : 13
 
         transform: Translate {
-            x: root.selectionProgress * 3
+            x: root.compact ? 0 : root.selectionProgress * 3
         }
 
         IconImage {
-            Layout.preferredHeight: root.indented ? 18 : 22
-            Layout.preferredWidth: root.indented ? 18 : 22
-            height: 22
+            Layout.preferredHeight: root.iconSize
+            Layout.preferredWidth: root.iconSize
+            height: root.iconSize
             layer.enabled: true
             source: Quickshell.iconPath(root.iconName)
             visible: root.iconName !== ""
-            width: 22
+            width: root.iconSize
 
             layer.effect: ColorOverlay {
                 color: root.active ? root.iconColor : Config.alpha(root.iconColor, root.indented ? 0.66 : 0.82)
@@ -79,7 +81,7 @@ Rectangle {
             Layout.fillWidth: true
             color: root.active ? root.iconColor : Config.md3.on_surface
             font.family: Config.fontName
-            font.pixelSize: root.dense ? 15 : 17
+            font.pixelSize: root.dense ? 14 : 16
             font.weight: root.active ? Font.DemiBold : Font.Medium
             text: root.text
             visible: !root.compact
@@ -100,5 +102,33 @@ Rectangle {
         hoverEnabled: true
 
         onClicked: root.clicked()
+    }
+    ToolTip {
+        id: compactToolTip
+
+        bottomPadding: 7
+        delay: 320
+        leftPadding: 10
+        rightPadding: 10
+        text: root.text
+        timeout: 2400
+        topPadding: 7
+        visible: root.compact && mouse.containsMouse && root.text !== ""
+        x: root.width + 8
+        y: (root.height - height) / 2
+
+        background: Rectangle {
+            border.color: Config.alpha(Config.md3.outline, 0.18)
+            border.width: 1
+            color: Config.md3.surface_container_highest
+            radius: 10
+        }
+        contentItem: Text {
+            color: Config.md3.on_surface
+            font.family: Config.fontName
+            font.pixelSize: 12
+            font.weight: Font.Medium
+            text: compactToolTip.text
+        }
     }
 }

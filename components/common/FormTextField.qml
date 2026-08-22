@@ -5,7 +5,7 @@ import "../../"
 ColumnLayout {
     id: root
 
-    property color backgroundColor: Config.md3.surface_container
+    property color backgroundColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.6 : 0.24)
     property int echoMode: TextInput.Normal
     readonly property bool editing: inputItem ? inputItem.activeFocus : false
     property int fieldHeight: multiline ? 100 : 50

@@ -119,7 +119,7 @@ ColumnLayout {
             anchors.verticalCenter: parent.verticalCenter
             color: Config.alpha(Config.md3.on_surface, clearMouse.containsMouse ? 0.9 : 0.55)
             font.family: Config.fontName
-            font.pixelSize: 18
+            font.pixelSize: 19
             text: "×"
             visible: searchInput.text !== ""
 

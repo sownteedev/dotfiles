@@ -8,13 +8,20 @@ import QtQuick.Layouts
 ScrollView {
     id: root
 
+    property string baselineState: ""
     readonly property bool headerActionEnabled: !SettingsHubService.busy && slowdownValid
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Applying…" : "Apply animations"
     readonly property bool headerActionVisible: true
-    readonly property bool headerResetVisible: true
+    readonly property bool headerResetVisible: baselineState !== "" && JSON.stringify(currentState()) !== baselineState
     readonly property bool slowdownValid: isFinite(Number(slowdownField.text)) && Number(slowdownField.text) >= 0.05 && Number(slowdownField.text) <= 10
 
+    function currentState() {
+        return {
+            "enabled": animationToggle.checked,
+            "slowdown": Number(slowdownField.text)
+        };
+    }
     function resetPage() {
         syncGlobal();
     }
@@ -22,6 +29,7 @@ ScrollView {
         var settings = SettingsHubService.animationSettings || {};
         animationToggle.checked = settings.enabled !== false;
         slowdownField.text = String(settings.slowdown === undefined ? 1 : settings.slowdown);
+        baselineState = JSON.stringify(currentState());
     }
     function triggerHeaderAction() {
         SettingsHubService.saveAnimationGlobal(animationToggle.checked, Number(slowdownField.text));
@@ -72,7 +80,7 @@ ScrollView {
                     Layout.fillWidth: true
                     color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 19
+                    font.pixelSize: 18
                     font.weight: Font.DemiBold
                     text: "Animation engine"
                 }
@@ -81,26 +89,30 @@ ScrollView {
                     spacing: 18
 
                     ColumnLayout {
-                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: 4
 
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.pixelSize: 14
                             font.weight: Font.DemiBold
                             text: "Enable Niri animations"
                         }
                         Text {
                             color: Config.alpha(Config.md3.on_surface, 0.5)
                             font.family: Config.fontName
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             text: "A global switch for every compositor animation"
                         }
+                    }
+                    Item {
+                        Layout.fillWidth: true
                     }
                     ToggleSwitch {
                         id: animationToggle
 
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                         accessibleName: "Enable Niri animations"
                         enabled: !SettingsHubService.busy
 
@@ -166,7 +178,7 @@ ScrollView {
                                 color: Config.md3.on_surface
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 14
+                                font.pixelSize: 13
                                 font.weight: Font.DemiBold
                                 text: String(animationCard.modelData.name).replace(/-/g, " ")
                             }

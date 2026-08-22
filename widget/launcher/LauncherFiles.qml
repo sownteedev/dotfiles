@@ -6,10 +6,53 @@ import Quickshell.Io
 Item {
     id: filesRoot
 
+    property int activePreviewGeneration: -1
+    property string activePreviewPath: ""
+    property string activePreviewTarget: ""
     property var fileResults: []
+    property var previewQueue: []
     property string query: ""
+    property var readyPreviewPaths: ({})
     property int requestGeneration: 0
+    readonly property string videoPreviewCacheDir: "/tmp/quickshell-launcher-video-previews"
 
+    function ensureVideoPreview(path) {
+        var sourcePath = String(path || "");
+        if (!isVideoFile(sourcePath) || readyPreviewPaths[sourcePath])
+            return;
+        if (previewProcess.running && activePreviewGeneration === requestGeneration && activePreviewPath === sourcePath)
+            return;
+        for (var i = 0; i < previewQueue.length; ++i) {
+            var queued = previewQueue[i];
+            if (queued.generation === requestGeneration && queued.path === sourcePath)
+                return;
+        }
+
+        previewQueue = previewQueue.concat([
+            {
+                generation: requestGeneration,
+                path: sourcePath,
+                target: videoPreviewPath(sourcePath)
+            }
+        ]);
+        startNextPreview();
+    }
+    function isVideoFile(path) {
+        var extension = String(path || "").split(".").pop().toLowerCase();
+        return ["mp4", "mkv", "avi", "mov", "webm", "m4v", "mpeg", "mpg"].indexOf(extension) !== -1;
+    }
+    function isVideoPreviewReady(path) {
+        return !!readyPreviewPaths[String(path || "")];
+    }
+    function markVideoPreviewReady(path, target, generation) {
+        if (generation !== requestGeneration)
+            return;
+        var updated = {};
+        for (var key in readyPreviewPaths)
+            updated[key] = readyPreviewPaths[key];
+        updated[path] = target;
+        readyPreviewPaths = updated;
+    }
     function removeFile(path) {
         var arr = [];
         for (var i = 0; i < fileResults.length; i++) {
@@ -45,15 +88,45 @@ Item {
         }
         fileSearchProcess.running = true;
     }
+    function startNextPreview() {
+        if (previewProcess.running)
+            return;
+
+        while (previewQueue.length > 0) {
+            var pending = previewQueue.slice();
+            var job = pending.shift();
+            previewQueue = pending;
+            if (job.generation !== requestGeneration)
+                continue;
+
+            activePreviewGeneration = job.generation;
+            activePreviewPath = job.path;
+            activePreviewTarget = job.target;
+            previewProcess.command = ["sh", "-c", "mkdir -p -- \"$3\"; if [ -s \"$2\" ] && [ \"$2\" -nt \"$1\" ]; then printf ready; exit 0; fi; rm -f -- \"$2.tmp.jpg\"; if ffmpeg -hide_banner -loglevel error -y -ss 0.1 -i \"$1\" -frames:v 1 -vf 'scale=160:160:force_original_aspect_ratio=increase,crop=160:160' \"$2.tmp.jpg\" && [ -s \"$2.tmp.jpg\" ]; then mv -- \"$2.tmp.jpg\" \"$2\"; printf ready; else rm -f -- \"$2.tmp.jpg\"; fi", "launcher_video_preview", job.path, job.target, videoPreviewCacheDir];
+            previewProcess.running = true;
+            return;
+        }
+    }
+    function videoPreviewPath(path) {
+        return videoPreviewCacheDir + "/" + Qt.md5(String(path || "")) + ".jpg";
+    }
+    function videoPreviewSource(path) {
+        return readyPreviewPaths[String(path || "")] || "";
+    }
 
     Component.onDestruction: {
         requestGeneration += 1;
+        previewQueue = [];
         fileSearchProcess.running = false;
+        previewProcess.running = false;
     }
     onQueryChanged: {
         requestGeneration += 1;
         fileResults = [];
+        previewQueue = [];
+        readyPreviewPaths = ({});
         fileSearchProcess.running = false;
+        previewProcess.running = false;
         searchDebounceTimer.restart();
     }
 
@@ -114,6 +187,24 @@ Item {
                 }
                 fileResults = results.slice(0, Config.launcherMaxResults);
             }
+        }
+    }
+    Process {
+        id: previewProcess
+
+        stdout: StdioCollector {
+            id: previewCollector
+        }
+
+        onRunningChanged: {
+            if (running)
+                return;
+            if (activePreviewPath !== "" && previewCollector.text.trim() === "ready")
+                markVideoPreviewReady(activePreviewPath, activePreviewTarget, activePreviewGeneration);
+            activePreviewGeneration = -1;
+            activePreviewPath = "";
+            activePreviewTarget = "";
+            startNextPreview();
         }
     }
 }

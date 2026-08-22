@@ -30,9 +30,8 @@ Item {
         id: scroll
 
         anchors.fill: parent
-        clip: true
         contentHeight: content.implicitHeight
-        contentWidth: Math.max(availableWidth, 520)
+        contentWidth: availableWidth
 
         ScrollBar.horizontal: SlimScrollBar {
             accentColor: Config.md3.primary
@@ -41,14 +40,22 @@ Item {
             accentColor: Config.md3.primary
         }
 
-        ColumnLayout {
+        GridLayout {
             id: content
 
-            spacing: 14
-            width: scroll.contentWidth
+            readonly property int columnCount: 1
+
+            columnSpacing: 12
+            columns: columnCount
+            rowSpacing: 12
+            uniformCellWidths: true
+            width: scroll.availableWidth
+            x: (scroll.availableWidth - width) / 2
 
             SettingsSectionCard {
+                Layout.column: 0
                 Layout.fillWidth: true
+                Layout.row: 0
                 accentColor: Config.md3.primary
                 note: FaceAuthService.installed ? "Use your face on the Quickshell lock screen while keeping password fallback" : "Howdy is installed by .installconfigtheme on a fresh Arch setup"
                 title: "Lock"
@@ -64,7 +71,10 @@ Item {
                 }
             }
             SettingsSectionCard {
+                Layout.column: 0
+                Layout.columnSpan: content.columnCount
                 Layout.fillWidth: true
+                Layout.row: 1
                 accentColor: Config.md3.secondary
                 note: FaceAuthService.installed ? (FaceAuthService.camera !== "" ? "Camera · " + FaceAuthService.camera : "The capture camera is detected when a model is added") : "Install support first, then reopen this page"
                 title: "Face models"
@@ -110,6 +120,7 @@ Item {
                         Layout.alignment: Qt.AlignBottom
                         enabled: !FaceAuthService.busy
                         iconName: "view-refresh-symbolic"
+                        iconOnly: true
                         opacity: enabled ? 1 : 0.45
                         text: "Refresh"
 
@@ -204,7 +215,7 @@ Item {
                                         anchors.centerIn: parent
                                         color: Config.md3.secondary
                                         font.family: Config.fontName
-                                        font.pixelSize: 18
+                                        font.pixelSize: 19
                                         font.weight: Font.Bold
                                         text: "◉"
                                     }
@@ -261,7 +272,9 @@ Item {
                 }
             }
             SettingsSectionCard {
+                Layout.column: content.columnCount > 1 ? 1 : 0
                 Layout.fillWidth: true
+                Layout.row: content.columnCount > 1 ? 0 : 2
                 accentColor: Config.md3.error
                 note: "This laptop uses an RGB webcam, not a depth or infrared sensor"
                 title: "Security note"
@@ -274,9 +287,6 @@ Item {
                     text: "Face unlock is for convenience and may be fooled by a photo or video. Keep your password private and available. Successful and failed camera snapshots are disabled."
                     wrapMode: Text.Wrap
                 }
-            }
-            Item {
-                Layout.preferredHeight: 10
             }
         }
     }

@@ -16,7 +16,44 @@ PanelWindow {
     property int activeSecuritySection: 0
     readonly property string activeSubtitle: activePage === 0 ? "Inspect and tune your Niri configuration" : activePage === 1 ? quickshellSectionSubtitles[activeQuickshellSection] : securitySectionSubtitles[activeSecuritySection]
     readonly property string activeTitle: activePage === 0 ? niriSectionNames[activeNiriSection] : activePage === 1 ? quickshellSectionNames[activeQuickshellSection] : securitySectionNames[activeSecuritySection]
-    readonly property bool compactViewport: Responsive.constrained(width, height, 1916, 1148)
+    property bool blurActive: false
+    readonly property var compactNavigationItems: {
+        var items = [];
+        var index = 0;
+
+        for (index = 0; index < niriSectionNames.length; ++index) {
+            items.push({
+                "color": niriSectionColors[index],
+                "divider": false,
+                "icon": niriSectionIcons[index],
+                "page": 0,
+                "section": index,
+                "title": niriSectionNames[index]
+            });
+        }
+        for (index = 0; index < quickshellSectionNames.length; ++index) {
+            items.push({
+                "color": quickshellSectionColors[index],
+                "divider": index === 0,
+                "icon": quickshellSectionIcons[index],
+                "page": 1,
+                "section": index,
+                "title": quickshellSectionNames[index]
+            });
+        }
+        for (index = 0; index < securitySectionNames.length; ++index) {
+            items.push({
+                "color": securitySectionColors[index],
+                "divider": index === 0,
+                "icon": securitySectionIcons[index],
+                "page": 2,
+                "section": index,
+                "title": securitySectionNames[index]
+            });
+        }
+        return items;
+    }
+    readonly property bool compactViewport: Responsive.constrained(width, height, 1280, 900)
     property bool niriExpanded: true
     readonly property var niriSectionColors: [Config.md3.primary, Config.md3.secondary, Config.md3.primary, Config.md3.secondary, Config.md3.tertiary, Config.md3.error, Config.md3.primary]
     readonly property var niriSectionIcons: ["input-keyboard-symbolic", "view-grid-symbolic", "input-mouse-symbolic", "media-playback-start-symbolic", "emblem-system-symbolic", "view-list-symbolic", "text-x-generic-symbolic"]
@@ -81,14 +118,14 @@ PanelWindow {
         {
             "title": "General",
             "group": "Quickshell",
-            "keywords": "font clock appearance localization",
+            "keywords": "font clock appearance localization blur transparency effects",
             "page": 1,
             "section": 0
         },
         {
             "title": "Bar & Panels",
             "group": "Quickshell",
-            "keywords": "height density widgets systray battery clock workspace media",
+            "keywords": "height density widgets systray battery clock workspace media weather temperature",
             "page": 1,
             "section": 1
         },
@@ -154,13 +191,16 @@ PanelWindow {
     readonly property var securitySectionIcons: ["avatar-default-symbolic", "preferences-system-power-symbolic"]
     readonly property var securitySectionNames: ["Lock & Face", "Idle & Power"]
     readonly property var securitySectionSubtitles: ["Manage lock screen authentication and face models", "Configure idle, display-off, suspend, and Caffeine behavior"]
-    property bool sidebarExpanded: true
+    property bool sidebarExpanded: false
     property real sidebarWidth: sidebarExpanded ? (compactViewport ? 240 : 264) : (compactViewport ? 78 : 84)
 
     signal dismissed
 
     function closeSettings() {
+        if (!active)
+            return;
         active = false;
+        blurReleaseTimer.restart();
         closeTimer.restart();
     }
     function legacyQuickshellSection() {
@@ -176,7 +216,9 @@ PanelWindow {
         var targetScreen = StateManager.resolvePanelScreen();
         if (targetScreen)
             screen = targetScreen;
+        blurReleaseTimer.stop();
         closeTimer.stop();
+        blurActive = true;
         sectionTransition.stop();
         pageFrame.opacity = 1;
         pageFrame.x = 0;
@@ -212,6 +254,7 @@ PanelWindow {
     }
 
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+    WlrLayershell.namespace: "quickshell-settings-hub"
     aboveWindows: true
     anchors.bottom: true
     anchors.left: true
@@ -222,6 +265,10 @@ PanelWindow {
     focusable: true
     visible: false
 
+    BackgroundEffect.blurRegion: Region {
+        item: Config.shellBlurSettingsEnabled && root.blurActive ? panelBlurRegion : null
+        radius: panel.radius
+    }
     Behavior on sidebarWidth {
         NumberAnimation {
             duration: Config.animationDuration(220)
@@ -230,12 +277,21 @@ PanelWindow {
     }
 
     Timer {
+        id: blurReleaseTimer
+
+        interval: Math.max(1, Config.animationDuration(10))
+        repeat: false
+
+        onTriggered: root.blurActive = false
+    }
+    Timer {
         id: closeTimer
 
-        interval: 230
+        interval: Math.max(1, Config.animationDuration(230))
         repeat: false
 
         onTriggered: {
+            root.blurActive = false;
             root.visible = false;
             root.dismissed();
         }
@@ -294,6 +350,11 @@ PanelWindow {
 
         onClicked: root.closeSettings()
     }
+    Item {
+        id: panelBlurRegion
+
+        anchors.fill: panel
+    }
     Rectangle {
         id: panel
 
@@ -301,13 +362,13 @@ PanelWindow {
         border.color: Config.alpha(Config.md3.on_surface, 0.08)
         border.width: 1
         clip: true
-        color: Config.alpha(Config.md3.background, 0.985)
+        color: Config.shellBlurSettingsEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.85) : Config.md3.background
         focus: true
-        height: Responsive.fitWithMargins(1120, root.height, root.compactViewport ? 8 : 14, 480)
+        height: Responsive.fitWithMargins(860, root.height, root.compactViewport ? 8 : 18, 480)
         opacity: root.active ? 1 : 0
-        radius: root.compactViewport ? 22 : 30
+        radius: root.compactViewport ? 22 : 26
         scale: root.active ? 1 : 0.96
-        width: Responsive.fitWithMargins(1880, root.width, root.compactViewport ? 10 : 18, 640)
+        width: Responsive.fitWithMargins(1240, root.width, root.compactViewport ? 10 : 20, 640)
 
         Behavior on opacity {
             NumberAnimation {
@@ -333,7 +394,7 @@ PanelWindow {
             anchors.fill: parent
             color: Config.md3.primary
             running: root.active && !Config.shellLowPowerMode
-            starCount: root.compactViewport ? 60 : 100
+            starCount: root.compactViewport ? 48 : 64
         }
         MouseArea {
             anchors.fill: parent
@@ -403,18 +464,18 @@ PanelWindow {
 
                                 Layout.preferredHeight: 42
                                 Layout.preferredWidth: 42
-                                anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: expandMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.045)
                                 height: 42
                                 radius: 13
                                 width: 42
+                                x: root.sidebarExpanded ? parent.width - width : (parent.width - width) / 2
 
                                 Text {
                                     anchors.centerIn: parent
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 24
+                                    font.pixelSize: 25
                                     text: root.sidebarExpanded ? "‹" : "›"
                                 }
                                 MouseArea {
@@ -436,6 +497,45 @@ PanelWindow {
 
                             onSelected: (page, section) => root.switchSection(page, section)
                         }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            visible: !root.sidebarExpanded
+
+                            Repeater {
+                                model: root.compactNavigationItems
+
+                                delegate: ColumnLayout {
+                                    required property int index
+                                    required property var modelData
+
+                                    Layout.fillWidth: true
+                                    spacing: 4
+
+                                    Rectangle {
+                                        Layout.alignment: Qt.AlignHCenter
+                                        Layout.bottomMargin: 3
+                                        Layout.preferredHeight: 1
+                                        Layout.preferredWidth: 24
+                                        Layout.topMargin: 3
+                                        color: Config.alpha(Config.md3.on_surface, 0.1)
+                                        visible: modelData.divider
+                                    }
+                                    SettingsNavButton {
+                                        Layout.fillWidth: true
+                                        active: root.activePage === modelData.page && (modelData.page === 0 ? root.activeNiriSection === modelData.section : modelData.page === 1 ? root.activeQuickshellSection === modelData.section : root.activeSecuritySection === modelData.section)
+                                        compact: true
+                                        dense: true
+                                        iconColor: modelData.color
+                                        iconName: modelData.icon
+                                        indented: true
+                                        text: modelData.title
+
+                                        onClicked: root.switchSection(modelData.page, modelData.section)
+                                    }
+                                }
+                            }
+                        }
                         SettingsNavButton {
                             Layout.fillWidth: true
                             active: root.activePage === 0 && (!root.sidebarExpanded || !root.niriExpanded)
@@ -445,6 +545,7 @@ PanelWindow {
                             iconColor: Config.md3.primary
                             iconName: "emblem-system-symbolic"
                             text: "Niri"
+                            visible: root.sidebarExpanded
 
                             onClicked: {
                                 const wasActive = root.activePage === 0;
@@ -494,6 +595,7 @@ PanelWindow {
                             iconColor: Config.md3.secondary
                             iconName: "applications-system-symbolic"
                             text: "Quickshell"
+                            visible: root.sidebarExpanded
 
                             onClicked: {
                                 const wasActive = root.activePage === 1;
@@ -543,6 +645,7 @@ PanelWindow {
                             iconColor: Config.md3.primary
                             iconName: "system-lock-screen-symbolic"
                             text: "Security"
+                            visible: root.sidebarExpanded
 
                             onClicked: {
                                 const wasActive = root.activePage === 2;
@@ -584,46 +687,6 @@ PanelWindow {
                         Item {
                             Layout.fillHeight: true
                         }
-                        Rectangle {
-                            Layout.fillWidth: true
-                            color: Config.alpha(SettingsHubService.statusSuccess ? Config.md3.on_surface : Config.md3.error, 0.055)
-                            implicitHeight: statusColumn.implicitHeight + 26
-                            radius: 14
-                            visible: root.sidebarExpanded && SettingsHubService.statusMessage !== ""
-
-                            ColumnLayout {
-                                id: statusColumn
-
-                                anchors.fill: parent
-                                anchors.margins: 13
-                                spacing: 5
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: SettingsHubService.statusSuccess ? Config.md3.on_surface : Config.md3.error
-                                    font.family: Config.fontName
-                                    font.pixelSize: 14
-                                    font.weight: Font.DemiBold
-                                    text: SettingsHubService.statusSuccess ? "Saved" : "Needs attention"
-                                }
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.alpha(Config.md3.on_surface, 0.58)
-                                    font.family: Config.fontName
-                                    font.pixelSize: 12
-                                    text: SettingsHubService.statusMessage
-                                    wrapMode: Text.Wrap
-                                }
-                            }
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.35)
-                            font.family: Config.fontName
-                            font.pixelSize: 12
-                            text: "Reads config only while opened"
-                            visible: root.sidebarExpanded
-                        }
                     }
                 }
             }
@@ -633,10 +696,13 @@ PanelWindow {
                 color: Config.alpha(Config.md3.on_surface, 0.065)
             }
             ColumnLayout {
+                Layout.bottomMargin: root.compactViewport ? 18 : 32
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.margins: root.compactViewport ? 18 : 32
+                Layout.leftMargin: root.compactViewport ? 10 : 18
                 Layout.minimumWidth: 0
+                Layout.rightMargin: root.compactViewport ? 10 : 18
+                Layout.topMargin: root.compactViewport ? 18 : 32
                 spacing: root.compactViewport ? 12 : 20
 
                 Item {
@@ -654,15 +720,15 @@ PanelWindow {
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: root.compactViewport ? 26 : 30
-                            font.weight: Font.Bold
+                            font.pixelSize: root.compactViewport ? 20 : 22
+                            font.weight: Font.DemiBold
                             text: root.activeTitle
                         }
                         Text {
                             color: Config.alpha(Config.md3.on_surface, 0.5)
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.pixelSize: 11
                             maximumLineCount: 1
                             text: root.activeSubtitle
                         }
@@ -675,9 +741,69 @@ PanelWindow {
                         anchors.verticalCenterOffset: root.compactViewport ? 32 : 0
                         spacing: 10
 
+                        Rectangle {
+                            id: statusChip
+
+                            readonly property color accentColor: SettingsHubService.statusSuccess ? Config.md3.primary : Config.md3.error
+
+                            Layout.alignment: Qt.AlignVCenter
+                            Layout.preferredHeight: 38
+                            Layout.preferredWidth: root.compactViewport ? 210 : 260
+                            border.color: Config.alpha(accentColor, 0.24)
+                            border.width: 1
+                            color: Config.alpha(accentColor, SettingsHubService.statusSuccess ? 0.09 : 0.12)
+                            radius: 13
+                            visible: SettingsHubService.statusMessage !== ""
+
+                            Behavior on border.color {
+                                ColorAnimation {
+                                    duration: 180
+                                }
+                            }
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 180
+                                }
+                            }
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 11
+                                spacing: 8
+
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.preferredHeight: 24
+                                    Layout.preferredWidth: 24
+                                    color: Config.alpha(statusChip.accentColor, 0.17)
+                                    radius: 8
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        color: statusChip.accentColor
+                                        font.family: Config.fontName
+                                        font.pixelSize: SettingsHubService.statusSuccess ? 14 : 13
+                                        font.weight: Font.Bold
+                                        text: SettingsHubService.statusSuccess ? "✓" : "!"
+                                    }
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    color: Config.md3.on_surface
+                                    elide: Text.ElideRight
+                                    font.family: Config.fontName
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                    maximumLineCount: 1
+                                    text: SettingsHubService.statusMessage
+                                }
+                            }
+                        }
                         SettingsActionButton {
                             enabled: !SettingsHubService.busy
                             iconName: "edit-undo-symbolic"
+                            iconOnly: true
                             text: "Reset"
                             visible: Boolean(pageLoader.item && pageLoader.item.headerResetVisible === true)
 
@@ -689,6 +815,7 @@ PanelWindow {
                         SettingsActionButton {
                             enabled: Boolean(pageLoader.item && pageLoader.item.headerActionEnabled !== false && !SettingsHubService.busy)
                             iconName: pageLoader.item ? pageLoader.item.headerActionIcon || "document-save-symbolic" : "document-save-symbolic"
+                            iconOnly: true
                             primary: true
                             text: pageLoader.item ? pageLoader.item.headerActionText || "Apply" : "Apply"
                             visible: Boolean(pageLoader.item && pageLoader.item.headerActionVisible === true)
@@ -698,30 +825,12 @@ PanelWindow {
                                     pageLoader.item.triggerHeaderAction();
                             }
                         }
-                        Rectangle {
-                            id: closeButton
+                        SettingsActionButton {
+                            iconName: "window-close-symbolic"
+                            iconOnly: true
+                            text: "Close"
 
-                            Layout.preferredHeight: 44
-                            Layout.preferredWidth: 44
-                            color: closeMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : Config.alpha(Config.md3.on_surface, 0.05)
-                            radius: 14
-
-                            Text {
-                                anchors.centerIn: parent
-                                color: Config.md3.on_surface
-                                font.family: Config.fontName
-                                font.pixelSize: 23
-                                text: "×"
-                            }
-                            MouseArea {
-                                id: closeMouse
-
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                hoverEnabled: true
-
-                                onClicked: root.closeSettings()
-                            }
+                            onClicked: root.closeSettings()
                         }
                     }
                 }
@@ -762,14 +871,14 @@ PanelWindow {
                                 anchors.centerIn: parent
                                 color: Config.md3.primary
                                 font.family: Config.fontName
-                                font.pixelSize: 19
+                                font.pixelSize: 20
                                 text: "…"
                             }
                         }
                         Text {
                             color: Config.alpha(Config.md3.on_surface, 0.58)
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.pixelSize: 16
                             text: "Reading configuration"
                         }
                     }

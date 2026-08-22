@@ -7,7 +7,7 @@ import "../../"
 GridView {
     id: appsGrid
 
-    readonly property int columns: Responsive.columnsFor(width, 150, 5, width < 300 ? 1 : 2, 0)
+    readonly property int columns: Responsive.columnsFor(width, 210, 8, width < 300 ? 1 : 2, 0)
     property bool entranceReady: false
     property bool entranceWaveActive: false
     readonly property var gridItems: {
@@ -45,20 +45,71 @@ GridView {
 
         return finalItems;
     }
+    readonly property real iconSize: Responsive.clamp(normalizedCellWidth * 0.38, 72, 96)
     readonly property int normalizedCellWidth: Math.floor(width / columns)
     property string query: ""
 
     signal appLaunched
 
+    function launchSelected() {
+        if (currentIndex < 0 || currentIndex >= gridItems.length)
+            return;
+        gridItems[currentIndex].entry.execute();
+        appLaunched();
+    }
+    function selectDown() {
+        selectIndex(currentIndex + columns);
+    }
+    function selectFirst() {
+        selectIndex(0);
+    }
+    function selectIndex(targetIndex) {
+        if (gridItems.length === 0) {
+            currentIndex = -1;
+            return;
+        }
+        currentIndex = Math.max(0, Math.min(targetIndex, gridItems.length - 1));
+        positionViewAtIndex(currentIndex, GridView.Contain);
+    }
+    function selectLast() {
+        selectIndex(gridItems.length - 1);
+    }
+    function selectLeft() {
+        selectIndex(currentIndex - 1);
+    }
+    function selectNextPage() {
+        var visibleRows = Math.max(1, Math.floor(height / cellHeight));
+        selectIndex(currentIndex + visibleRows * columns);
+    }
+    function selectPreviousPage() {
+        var visibleRows = Math.max(1, Math.floor(height / cellHeight));
+        selectIndex(currentIndex - visibleRows * columns);
+    }
+    function selectRight() {
+        selectIndex(currentIndex + 1);
+    }
+    function selectUp() {
+        selectIndex(currentIndex - columns);
+    }
+    function syncSelection() {
+        if (gridItems.length === 0) {
+            currentIndex = -1;
+            return;
+        }
+        selectIndex(currentIndex < 0 ? 0 : Math.min(currentIndex, gridItems.length - 1));
+    }
+
     Layout.fillHeight: true
     Layout.fillWidth: true
+    bottomMargin: 16
     boundsBehavior: Flickable.StopAtBounds
-    cellHeight: width < 620 ? 142 : 158
+    cellHeight: Responsive.clamp(iconSize + 92, 164, 196)
     cellWidth: normalizedCellWidth
     clip: true
     leftMargin: Math.floor((width - (normalizedCellWidth * columns)) / 2)
     model: gridItems
     rightMargin: leftMargin
+    topMargin: 16
 
     Behavior on contentY {
         enabled: !appsGrid.dragging && !appsGrid.flicking
@@ -72,6 +123,7 @@ GridView {
         id: delegateRoot
 
         readonly property bool entranceReady: appsGrid.entranceReady
+        readonly property bool isSelected: index === appsGrid.currentIndex
 
         function resetEntrance() {
             entryTimer.stop();
@@ -160,29 +212,16 @@ GridView {
             id: appCell
 
             anchors.fill: parent
-            anchors.margins: 6
-            border.color: gridMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : "transparent"
-            border.width: 1
-            color: gridMouse.pressed ? Config.md3.surface_container_highest : (gridMouse.containsMouse ? Config.md3.surface_container : "transparent")
-            opacity: gridMouse.pressed ? 0.8 : 1.0
+            anchors.margins: 10
+            color: delegateRoot.isSelected ? Config.alpha(Config.md3.on_surface, gridMouse.pressed ? 0.2 : 0.13) : (gridMouse.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : (gridMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : "transparent"))
             radius: 18
 
             // Multiply delegateRoot scale/opacity with hover effects
             scale: gridMouse.pressed ? 0.95 : (gridMouse.containsMouse ? 1.02 : 1.0)
 
-            Behavior on border.color {
-                ColorAnimation {
-                    duration: 120
-                }
-            }
             Behavior on color {
                 ColorAnimation {
                     duration: 120
-                }
-            }
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 100
                 }
             }
             Behavior on scale {
@@ -194,13 +233,13 @@ GridView {
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 10
-                width: parent.width - 16
+                spacing: 14
+                width: parent.width - 24
 
                 Item {
                     Layout.alignment: Qt.AlignHCenter
-                    height: appsGrid.width < 620 ? 60 : 70
-                    width: height
+                    Layout.preferredHeight: appsGrid.iconSize
+                    Layout.preferredWidth: appsGrid.iconSize
 
                     IconImage {
                         anchors.fill: parent
@@ -211,10 +250,10 @@ GridView {
                 }
                 Text {
                     Layout.fillWidth: true
-                    color: gridMouse.containsMouse ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.85)
+                    color: delegateRoot.isSelected || gridMouse.containsMouse ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.85)
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 15
                     font.weight: Font.DemiBold
                     horizontalAlignment: Text.AlignHCenter
                     maximumLineCount: 2
@@ -236,9 +275,12 @@ GridView {
                 hoverEnabled: true
 
                 onClicked: {
+                    appsGrid.currentIndex = index;
                     modelData.entry.execute();
                     appsGrid.appLaunched();
                 }
+                onEntered: appsGrid.currentIndex = index
+                onPressed: appsGrid.currentIndex = index
             }
         }
     }
@@ -261,12 +303,14 @@ GridView {
         }
     }
 
+    Component.onCompleted: syncSelection()
     onEntranceReadyChanged: {
         entranceWaveTimer.stop();
         entranceWaveActive = entranceReady;
         if (entranceReady)
             entranceWaveTimer.restart();
     }
+    onGridItemsChanged: Qt.callLater(syncSelection)
 
     Timer {
         id: entranceWaveTimer

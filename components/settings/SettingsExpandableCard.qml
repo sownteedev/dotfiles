@@ -44,10 +44,15 @@ Rectangle {
             spacing: 15
 
             Rectangle {
+                Layout.alignment: Qt.AlignVCenter
                 Layout.preferredHeight: 38
                 Layout.preferredWidth: 38
                 color: Config.alpha(root.accentColor, 0.13)
                 radius: 11
+
+                transform: Translate {
+                    y: -2
+                }
 
                 Rectangle {
                     anchors.centerIn: parent
@@ -60,6 +65,7 @@ Rectangle {
                 }
             }
             ColumnLayout {
+                Layout.alignment: Qt.AlignVCenter
                 Layout.fillWidth: true
                 spacing: 4
 
@@ -67,7 +73,7 @@ Rectangle {
                     Layout.fillWidth: true
                     color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 18
+                    font.pixelSize: 17
                     font.weight: Font.DemiBold
                     text: root.title
                 }
@@ -75,7 +81,7 @@ Rectangle {
                     Layout.fillWidth: true
                     color: Config.alpha(Config.md3.on_surface, 0.45)
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.pixelSize: 11
                     text: root.note
                     visible: text !== ""
                     wrapMode: Text.Wrap

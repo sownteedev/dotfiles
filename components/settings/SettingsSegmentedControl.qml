@@ -5,6 +5,7 @@ Rectangle {
     id: root
 
     property string accessibleName: ""
+    property color backgroundColor: Config.md3.surface_container
     property real minimumSegmentWidth: 112
     property var options: []
     property string selectedValue: ""
@@ -47,7 +48,7 @@ Rectangle {
     activeFocusOnTab: enabled
     border.color: Config.alpha(Config.md3.outline, 0.16)
     border.width: 1
-    color: Config.md3.surface_container
+    color: root.backgroundColor
     implicitHeight: 40
     radius: 12
 

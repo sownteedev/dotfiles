@@ -836,14 +836,14 @@ def parse_binds(source: str) -> list[dict[str, object]]:
         "Backlight": "display-brightness-symbolic",
         "Other": "applications-system-symbolic",
     }
-    # Balanced masonry columns.  Assign the next largest card to the shortest column.
-    column_sizes = [0, 0, 0]
+    # Balanced masonry columns. Assign each card to the shorter of two readable columns.
+    column_sizes = [0, 0]
     result: list[dict[str, object]] = []
     for name in order:
         items = groups.get(name)
         if not items:
             continue
-        column = min(range(3), key=column_sizes.__getitem__)
+        column = min(range(2), key=column_sizes.__getitem__)
         column_sizes[column] += len(items) + 2
         result.append({"name": name, "icon": icons[name], "column": column, "items": items})
     return result
@@ -917,6 +917,7 @@ def snapshot() -> dict[str, object]:
         "barShowNotifications": True,
         "barShowRecording": True,
         "barShowSysTray": True,
+        "barShowWeather": True,
         "barShowWorkspaces": True,
         "caffeineAutoDisableMinutes": 0,
         "cavaEnabled": True,
@@ -955,6 +956,11 @@ def snapshot() -> dict[str, object]:
         "osdShowMicrophone": True,
         "osdShowVolume": True,
         "shellAnimationScale": 1.0,
+        "shellBlurBarEnabled": True,
+        "shellBlurControlLeftEnabled": True,
+        "shellBlurControlRightEnabled": True,
+        "shellBlurLauncherEnabled": True,
+        "shellBlurSettingsEnabled": True,
         "shellLowPowerMode": False,
         "shellReducedMotion": False,
         "latLon": qml_string(config_source, "latLon"),
@@ -993,6 +999,16 @@ def snapshot() -> dict[str, object]:
         try:
             runtime_settings = json.loads(RUNTIME_SETTINGS_PATH.read_text(encoding="utf-8"))
             if isinstance(runtime_settings, dict):
+                legacy_blur = bool(runtime_settings.get("shellBlurEnabled", True))
+                for key in (
+                    "shellBlurBarEnabled",
+                    "shellBlurControlLeftEnabled",
+                    "shellBlurControlRightEnabled",
+                    "shellBlurLauncherEnabled",
+                    "shellBlurSettingsEnabled",
+                ):
+                    if key not in runtime_settings:
+                        quickshell_settings[key] = legacy_blur
                 quickshell_settings.update(
                     {
                         key: value
@@ -1907,6 +1923,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "barShowNotifications": True,
         "barShowRecording": True,
         "barShowSysTray": True,
+        "barShowWeather": True,
         "barShowWorkspaces": True,
         "caffeineAutoDisableMinutes": 0,
         "cavaEnabled": True,
@@ -1945,6 +1962,11 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "osdShowMicrophone": True,
         "osdShowVolume": True,
         "shellAnimationScale": 1.0,
+        "shellBlurBarEnabled": True,
+        "shellBlurControlLeftEnabled": True,
+        "shellBlurControlRightEnabled": True,
+        "shellBlurLauncherEnabled": True,
+        "shellBlurSettingsEnabled": True,
         "shellLowPowerMode": False,
         "shellReducedMotion": False,
         "latLon": "",
@@ -1988,6 +2010,17 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
                 stored = decoded
         except (OSError, json.JSONDecodeError):
             stored = {}
+
+    legacy_blur = bool(stored.get("shellBlurEnabled", True))
+    for key in (
+        "shellBlurBarEnabled",
+        "shellBlurControlLeftEnabled",
+        "shellBlurControlRightEnabled",
+        "shellBlurLauncherEnabled",
+        "shellBlurSettingsEnabled",
+    ):
+        if key not in stored:
+            stored[key] = legacy_blur
 
     merged = defaults.copy()
     merged.update({key: value for key, value in stored.items() if key in defaults})
@@ -2093,6 +2126,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         ("barShowNotifications", True),
         ("barShowRecording", True),
         ("barShowSysTray", True),
+        ("barShowWeather", True),
         ("barShowWorkspaces", True),
         ("cavaEnabled", True),
         ("idleEnabled", True),
@@ -2110,6 +2144,11 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         ("osdShowBrightness", True),
         ("osdShowMicrophone", True),
         ("osdShowVolume", True),
+        ("shellBlurBarEnabled", True),
+        ("shellBlurControlLeftEnabled", True),
+        ("shellBlurControlRightEnabled", True),
+        ("shellBlurLauncherEnabled", True),
+        ("shellBlurSettingsEnabled", True),
         ("shellLowPowerMode", False),
         ("shellReducedMotion", False),
         ("wallpaperPauseOnFullscreen", True),

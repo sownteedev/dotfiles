@@ -14,14 +14,15 @@ PanelWindow {
     readonly property real densityScale: Config.barDensity === "compact" ? 0.82 : Config.barDensity === "spacious" ? 1.18 : 1
     readonly property real horizontalInset: Responsive.clamp(width * 0.01, 10, 25) * densityScale
     readonly property bool narrow: width < 1280
+    readonly property real statusClusterSpacing: Responsive.clamp(width * 0.007, 10, 14) * densityScale
     readonly property real statusIconSpacing: Responsive.clamp(width * 0.014, 18, 26) * densityScale
     readonly property bool themeReady: ThemeService.hasAppliedTheme || (ThemeService.themeFileResolved && !Config.matugenEnabled)
 
-    WlrLayershell.namespace: "blur-bar"
+    WlrLayershell.namespace: Config.shellBlurBarEnabled ? "blur-bar" : "quickshell-bar"
     anchors.left: true
     anchors.right: true
     anchors.top: true
-    color: themeReady ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.2) : "transparent"
+    color: themeReady ? (Config.shellBlurBarEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.2) : Config.md3.background) : "transparent"
     implicitHeight: Config.barHeight
 
     SystemClock {
@@ -202,12 +203,22 @@ PanelWindow {
                             targetScreen: bar.screen
                             visible: Config.barShowBluetooth
                         }
-                        Battery {
-                            visible: Config.barShowBattery
-                        }
-                        NotificationIcon {
-                            targetScreen: bar.screen
-                            visible: Config.barShowNotifications
+                        RowLayout {
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: bar.statusClusterSpacing + 7
+                            visible: Config.barShowBattery || Config.barShowWeather || Config.barShowNotifications
+
+                            Weather {
+                                compact: bar.compact
+                                visible: Config.barShowWeather
+                            }
+                            Battery {
+                                visible: Config.barShowBattery
+                            }
+                            NotificationIcon {
+                                targetScreen: bar.screen
+                                visible: Config.barShowNotifications
+                            }
                         }
                         RowLayout {
                             Layout.alignment: Qt.AlignVCenter

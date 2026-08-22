@@ -9,14 +9,18 @@ import QtQuick.Layouts
 ScrollView {
     id: root
 
+    property string baselineState: ""
     readonly property bool headerActionEnabled: !SettingsHubService.busy
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Validating…" : "Apply behavior"
     readonly property bool headerActionVisible: true
-    readonly property bool headerResetVisible: true
+    readonly property bool headerResetVisible: baselineState !== "" && JSON.stringify(currentState()) !== baselineState
 
     function apply() {
-        SettingsHubService.saveBehavior({
+        SettingsHubService.saveBehavior(currentState());
+    }
+    function currentState() {
+        return {
             "showHotkeyOverlayAtStartup": showHotkeyOverlay.checked,
             "hideUnboundHotkeys": hideUnbound.checked,
             "preferNoCsd": preferNoCsd.checked,
@@ -55,7 +59,7 @@ ScrollView {
             "lidOpenAction": lidOpenAction.text,
             "tabletModeOnAction": tabletOnAction.text,
             "tabletModeOffAction": tabletOffAction.text
-        });
+        };
     }
     function resetPage() {
         syncFields();
@@ -100,6 +104,7 @@ ScrollView {
         lidOpenAction.text = value.lidOpenAction || "";
         tabletOnAction.text = value.tabletModeOnAction || "";
         tabletOffAction.text = value.tabletModeOffAction || "";
+        baselineState = JSON.stringify(currentState());
     }
     function triggerHeaderAction() {
         apply();
@@ -129,8 +134,7 @@ ScrollView {
         id: behaviorContent
 
         spacing: 16
-        width: Math.max(0, root.contentWidth - 24)
-        x: 12
+        width: root.contentWidth
         y: 8
 
         ColumnLayout {
@@ -594,7 +598,7 @@ ScrollView {
                     GridLayout {
                         Layout.fillWidth: true
                         columnSpacing: 18
-                        columns: 2
+                        columns: 1
                         rowSpacing: 14
 
                         SettingsComponents.SettingsToggleRow {

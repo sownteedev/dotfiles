@@ -122,7 +122,7 @@ Item {
                 Layout.preferredHeight: currentNetworkLayout.implicitHeight + 36
                 border.color: Config.alpha(Config.md3.on_surface, 0.04)
                 border.width: 1
-                color: Config.md3.surface_container
+                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                 radius: 12
 
                 ColumnLayout {
@@ -168,7 +168,7 @@ Item {
                             text: wifiPageRoot.connectionName
                         }
                         Rectangle {
-                            color: reloadMouse.containsMouse ? Config.md3.surface_container_high : "transparent"
+                            color: reloadMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : "transparent"
                             height: 35
                             radius: 15
                             width: 35

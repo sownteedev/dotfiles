@@ -20,6 +20,13 @@ Popup {
     function formatDate(date) {
         return String(date.getDate()).padStart(2, "0") + "/" + String(date.getMonth() + 1).padStart(2, "0") + "/" + date.getFullYear();
     }
+    function isSameDate(first, second) {
+        return first.getDate() === second.getDate() && first.getMonth() === second.getMonth() && first.getFullYear() === second.getFullYear();
+    }
+    function selectDate(date) {
+        root.dateSelected(root.formatDate(date));
+        root.close();
+    }
     function updatePlacement() {
         if (!placementParent || !parent)
             return;
@@ -28,42 +35,49 @@ Popup {
         y = Math.max(8, Math.min(origin.y + (placementParent.height - height) / 2, parent.height - height - 8));
     }
 
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     focus: true
-    height: placementParent ? Responsive.fitWithMargins(380, placementParent.height, 8, 280) : parent ? Responsive.fitWithMargins(380, parent.height, 8, 280) : 380
+    height: placementParent ? Responsive.fitWithMargins(430, placementParent.height, 8, 330) : parent ? Responsive.fitWithMargins(430, parent.height, 8, 330) : 430
     modal: true
+    padding: 16
     parent: Overlay.overlay
-    width: placementParent ? Responsive.fitWithMargins(320, placementParent.width, 8, 240) : parent ? Responsive.fitWithMargins(320, parent.width, 8, 240) : 320
+    width: placementParent ? Responsive.fitWithMargins(360, placementParent.width, 8, 300) : parent ? Responsive.fitWithMargins(360, parent.width, 8, 300) : 360
 
+    Overlay.modal: Rectangle {
+        color: Config.alpha(Config.md3.scrim, Config.lightTheme ? 0.22 : 0.38)
+    }
     background: Rectangle {
-        border.color: Config.md3.surface_container_high
+        border.color: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.14 : 0.1)
         border.width: 1
-        color: Config.md3.surface
-        radius: Math.min(15, root.width / 2, root.height / 2)
+        color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.97 : 0.92)
+        radius: Math.min(24, root.width / 2, root.height / 2)
     }
     contentItem: ColumnLayout {
         spacing: 10
 
         RowLayout {
             Layout.fillWidth: true
+            Layout.preferredHeight: 42
+            spacing: 8
 
             Rectangle {
-                color: previousArea.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : previousArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
-                height: 30
-                radius: 15
-                width: 30
+                Layout.preferredHeight: 40
+                Layout.preferredWidth: 40
+                color: previousArea.pressed ? Config.alpha(Config.md3.on_surface, 0.14) : previousArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.085) : Config.alpha(Config.md3.on_surface, 0.035)
+                radius: 20
 
                 Behavior on color {
                     ColorAnimation {
-                        duration: 100
+                        duration: Config.animationDuration(100)
                     }
                 }
 
                 IconImage {
                     anchors.centerIn: parent
-                    height: 16
+                    height: 18
                     layer.enabled: true
                     source: Quickshell.iconPath("go-previous-symbolic")
-                    width: 16
+                    width: 18
 
                     layer.effect: ColorOverlay {
                         color: Config.md3.on_surface
@@ -90,29 +104,30 @@ Popup {
                 Layout.fillWidth: true
                 color: Config.md3.on_surface
                 font.family: Config.fontName
-                font.pixelSize: 16
+                font.pixelSize: 18
                 font.weight: Font.Bold
                 horizontalAlignment: Text.AlignHCenter
                 text: new Date(root.currentYear, root.currentMonth, 1).toLocaleString(Qt.locale(), "MMMM yyyy")
+                verticalAlignment: Text.AlignVCenter
             }
             Rectangle {
-                color: nextArea.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : nextArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
-                height: 30
-                radius: 15
-                width: 30
+                Layout.preferredHeight: 40
+                Layout.preferredWidth: 40
+                color: nextArea.pressed ? Config.alpha(Config.md3.on_surface, 0.14) : nextArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.085) : Config.alpha(Config.md3.on_surface, 0.035)
+                radius: 20
 
                 Behavior on color {
                     ColorAnimation {
-                        duration: 100
+                        duration: Config.animationDuration(100)
                     }
                 }
 
                 IconImage {
                     anchors.centerIn: parent
-                    height: 16
+                    height: 18
                     layer.enabled: true
                     source: Quickshell.iconPath("go-next-symbolic")
-                    width: 16
+                    width: 18
 
                     layer.effect: ColorOverlay {
                         color: Config.md3.on_surface
@@ -138,10 +153,11 @@ Popup {
         }
         DayOfWeekRow {
             Layout.fillWidth: true
+            Layout.preferredHeight: 28
             locale: monthGrid.locale
 
             delegate: Text {
-                color: Config.md3.outline
+                color: Config.alpha(Config.md3.on_surface, 0.5)
                 font.family: Config.fontName
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
@@ -158,22 +174,40 @@ Popup {
             month: root.currentMonth
             year: root.currentYear
 
-            delegate: Rectangle {
-                color: dayArea.pressed ? Config.alpha(Config.md3.on_surface, 0.18) : dayArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.11) : "transparent"
-                radius: width / 2
+            delegate: Item {
+                readonly property bool inCurrentMonth: model.month === monthGrid.month
+                readonly property bool selected: root.selectedDate !== "" && root.formatDate(model.date) === root.selectedDate
+                readonly property bool today: root.isSameDate(model.date, new Date())
 
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 90
-                    }
-                }
-
-                Text {
+                Rectangle {
                     anchors.centerIn: parent
-                    color: model.month === monthGrid.month ? Config.md3.on_surface : Config.md3.surface_container_highest
-                    font.family: Config.fontName
-                    font.pixelSize: 14
-                    text: model.day
+                    border.color: today && !selected ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
+                    border.width: today && !selected ? 1 : 0
+                    color: selected ? Config.md3.primary : dayArea.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : dayArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : today ? Config.alpha(Config.md3.primary, 0.1) : "transparent"
+                    height: Math.min(38, parent.height - 2, parent.width - 2)
+                    radius: height / 2
+                    width: height
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Config.animationDuration(100)
+                        }
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        color: selected ? Config.md3.on_primary : inCurrentMonth ? Config.alpha(Config.md3.on_surface, 0.88) : Config.alpha(Config.md3.on_surface, 0.24)
+                        font.family: Config.fontName
+                        font.pixelSize: 14
+                        font.weight: selected || today ? Font.Bold : Font.Medium
+                        text: model.day
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(100)
+                            }
+                        }
+                    }
                 }
                 MouseArea {
                     id: dayArea
@@ -182,52 +216,100 @@ Popup {
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
 
+                    onClicked: root.selectDate(model.date)
+                }
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 40
+            spacing: 10
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                border.color: Config.alpha(Config.md3.primary, 0.18)
+                border.width: 1
+                color: todayArea.pressed ? Config.alpha(Config.md3.primary, 0.18) : todayArea.containsMouse ? Config.alpha(Config.md3.primary, 0.13) : Config.alpha(Config.md3.primary, 0.08)
+                radius: 20
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Config.animationDuration(100)
+                    }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    color: Config.md3.primary
+                    font.family: Config.fontName
+                    font.pixelSize: 14
+                    font.weight: Font.Bold
+                    text: qsTr("Today")
+                }
+                MouseArea {
+                    id: todayArea
+
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
+                    onClicked: root.selectDate(new Date())
+                }
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                border.color: Config.alpha(Config.md3.error, 0.18)
+                border.width: 1
+                color: clearArea.pressed ? Config.alpha(Config.md3.error, 0.18) : clearArea.containsMouse ? Config.alpha(Config.md3.error, 0.13) : Config.alpha(Config.md3.error, 0.075)
+                radius: 20
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Config.animationDuration(100)
+                    }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    color: Config.md3.error
+                    font.family: Config.fontName
+                    font.pixelSize: 14
+                    font.weight: Font.Bold
+                    text: qsTr("Clear")
+                }
+                MouseArea {
+                    id: clearArea
+
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
                     onClicked: {
-                        root.dateSelected(root.formatDate(model.date));
+                        root.dateCleared();
                         root.close();
                     }
                 }
             }
         }
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 36
-            color: Config.md3.surface_container
-            radius: 10
-
-            Rectangle {
-                anchors.fill: parent
-                color: Config.md3.error
-                opacity: clearArea.pressed ? 0.18 : clearArea.containsMouse ? 0.11 : 0
-                radius: parent.radius
-
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 100
-                        easing.type: Easing.OutCubic
-                    }
-                }
-            }
-            Text {
-                anchors.centerIn: parent
-                color: Config.md3.error
-                font.family: Config.fontName
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
-                text: "Clear Date"
-            }
-            MouseArea {
-                id: clearArea
-
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
-
-                onClicked: {
-                    root.dateCleared();
-                    root.close();
-                }
-            }
+    }
+    enter: Transition {
+        NumberAnimation {
+            duration: Config.animationDuration(170)
+            easing.type: Easing.OutCubic
+            from: 0
+            property: "opacity"
+            to: 1
+        }
+    }
+    exit: Transition {
+        NumberAnimation {
+            duration: Config.animationDuration(120)
+            easing.type: Easing.InCubic
+            from: 1
+            property: "opacity"
+            to: 0
         }
     }
 

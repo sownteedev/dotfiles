@@ -52,7 +52,7 @@ Rectangle {
                 Layout.fillWidth: true
                 color: Config.md3.on_surface
                 font.family: Config.fontName
-                font.pixelSize: 18
+                font.pixelSize: 17
                 font.weight: Font.DemiBold
                 text: root.groupData.name
             }
@@ -86,7 +86,7 @@ Rectangle {
                     color: Config.alpha(Config.md3.on_surface, 0.78)
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 13
                     font.weight: Font.Medium
                     text: modelData.description
                 }

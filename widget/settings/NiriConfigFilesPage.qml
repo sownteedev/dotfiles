@@ -55,7 +55,7 @@ Item {
                     anchors.centerIn: parent
                     color: root.activeFile === index ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.72)
                     font.family: Config.fontName
-                    font.pixelSize: 15
+                    font.pixelSize: 14
                     font.weight: Font.DemiBold
                     text: root.fileLabels[index]
                 }

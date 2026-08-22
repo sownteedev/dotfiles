@@ -6,6 +6,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import Quickshell.Widgets
 
 PanelWindow {
@@ -32,8 +33,8 @@ PanelWindow {
     readonly property real panelWidth: Responsive.sidePanelWidth(width)
     property int previousBottomTab: 0
     property int previousTopTab: 0
-    readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, 0.065)
-    readonly property color sectionColor: Config.md3.surface
+    readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09)
+    readonly property color sectionColor: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.66 : 0.46)
     readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
     readonly property var topPages: ["Calendar", "Todo", "Timers"]
     readonly property var topTabIcons: ["x-office-calendar-symbolic", "checkbox-checked-symbolic", "preferences-system-time-symbolic"]
@@ -114,6 +115,7 @@ PanelWindow {
         popup.closedProgress = 1 - edgeDragProgress;
     }
 
+    WlrLayershell.namespace: "quickshell-control-left"
     anchors.bottom: true
     anchors.left: true
     anchors.right: true
@@ -123,6 +125,11 @@ PanelWindow {
     color: "transparent"
     focusable: true
     visible: active || edgeDragging || slideAnim.running || popup.closedProgress < 0.999
+
+    BackgroundEffect.blurRegion: Region {
+        item: Config.shellBlurControlLeftEnabled ? popup : null
+        radius: popup.radius
+    }
 
     Component.onCompleted: {
         StateManager.controlLeftPanel = controlLeftWindow;
@@ -164,8 +171,10 @@ PanelWindow {
         anchors.leftMargin: controlLeftWindow.outerMargin - controlLeftWindow.panelWidth * closedProgress
         anchors.top: parent.top
         anchors.topMargin: controlLeftWindow.outerMargin
+        border.color: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.07)
+        border.width: 1
         clip: true
-        color: Config.alpha(Config.md3.background, 0.98)
+        color: Config.shellBlurControlLeftEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.85) : Config.md3.background
         radius: 20
         width: controlLeftWindow.panelWidth
 

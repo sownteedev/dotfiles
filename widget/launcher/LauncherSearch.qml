@@ -56,6 +56,7 @@ Item {
         "png": "image-x-generic-symbolic",
         "jpg": "image-x-generic-symbolic",
         "jpeg": "image-x-generic-symbolic",
+        "avif": "image-x-generic-symbolic",
         "gif": "image-x-generic-symbolic",
         "svg": "image-x-generic-symbolic",
         "webp": "image-x-generic-symbolic",
@@ -64,6 +65,9 @@ Item {
         "avi": "video-x-generic-symbolic",
         "mov": "video-x-generic-symbolic",
         "webm": "video-x-generic-symbolic",
+        "m4v": "video-x-generic-symbolic",
+        "mpeg": "video-x-generic-symbolic",
+        "mpg": "video-x-generic-symbolic",
         "mp3": "audio-x-generic-symbolic",
         "flac": "audio-x-generic-symbolic",
         "wav": "audio-x-generic-symbolic",
@@ -153,7 +157,14 @@ Item {
             return false;
 
         var ext = filename.split('.').pop().toLowerCase();
-        return ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"].indexOf(ext) !== -1;
+        return ["png", "jpg", "jpeg", "avif", "gif", "svg", "webp", "bmp"].indexOf(ext) !== -1;
+    }
+    function isVideoFile(filename) {
+        if (!filename)
+            return false;
+
+        var ext = filename.split('.').pop().toLowerCase();
+        return ["mp4", "mkv", "avi", "mov", "webm", "m4v", "mpeg", "mpg"].indexOf(ext) !== -1;
     }
     function launchSelected() {
         if (combinedResults.length > 0) {
@@ -196,9 +207,19 @@ Item {
 
         readonly property var fileResults: item ? item["fileResults"] : []
 
+        function ensureVideoPreview(path) {
+            if (item)
+                item["ensureVideoPreview"](path);
+        }
+        function isVideoPreviewReady(path) {
+            return item ? item["isVideoPreviewReady"](path) : false;
+        }
         function removeFile(path) {
             if (item)
                 item["removeFile"](path);
+        }
+        function videoPreviewSource(path) {
+            return item ? item["videoPreviewSource"](path) : "";
         }
 
         active: searchRoot.isFileMode
@@ -229,6 +250,9 @@ Item {
         }
         function previewPath(id) {
             return readyPreviewIds[id] || "";
+        }
+        function togglePinned(id) {
+            return status === Loader.Ready && item ? item["togglePinned"](id) : -1;
         }
 
         active: searchRoot.isClipboardMode
@@ -306,8 +330,12 @@ Item {
             readonly property var itemData: !isClipboard ? modelData.data : null
 
             function requestClipboardPreview() {
-                if (isClipboard && clipData && clipData.isImage && !clipboardSearch.isPreviewReady(clipData.id))
+                if (isClipboard && clipData && (clipData.isImage || clipData.isVideo) && !clipboardSearch.isPreviewReady(clipData.id))
                     clipboardSearch.ensurePreview(clipData.id);
+            }
+            function requestVideoPreview() {
+                if (isFile && itemData && isVideoFile(itemData.name) && !filesSearch.isVideoPreviewReady(itemData.path))
+                    filesSearch.ensureVideoPreview(itemData.path);
             }
             function snapBack() {
                 swipeContent.x = 0;
@@ -344,8 +372,12 @@ Item {
                 }
             }
 
-            Component.onCompleted: requestClipboardPreview()
+            Component.onCompleted: {
+                requestClipboardPreview();
+                requestVideoPreview();
+            }
             onClipDataChanged: requestClipboardPreview()
+            onItemDataChanged: requestVideoPreview()
 
             Timer {
                 id: collapseTimer
@@ -440,7 +472,7 @@ Item {
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: 15
-                    anchors.rightMargin: 15
+                    anchors.rightMargin: isClipboard ? 64 : 15
                     spacing: 15
 
                     Item {
@@ -448,16 +480,23 @@ Item {
 
                         readonly property color iconColor: delegateRoot.isSelected ? delegateRoot.accentColor : Config.md3.on_surface_variant
                         readonly property string imagePreviewSource: {
-                            if (isClipboard)
-                                return clipData.isImage ? clipboardSearch.previewPath(clipData.id) : "";
+                            if (isClipboard) {
+                                if (clipData.isFileImage)
+                                    return "file://" + clipData.sourcePath;
+                                return (clipData.isImage || clipData.isVideo) ? clipboardSearch.previewPath(clipData.id) : "";
+                            }
 
-                            return (isFile && isImageFile(itemData.name)) ? "file://" + itemData.path : "";
+                            if (!isFile)
+                                return "";
+                            if (isImageFile(itemData.name))
+                                return "file://" + itemData.path;
+                            return isVideoFile(itemData.name) ? filesSearch.videoPreviewSource(itemData.path) : "";
                         }
                         readonly property bool isImagePreview: {
                             if (isClipboard)
-                                return clipData.isImage && clipboardSearch.isPreviewReady(clipData.id);
+                                return clipData.isFileImage || (clipData.isImage || clipData.isVideo) && clipboardSearch.isPreviewReady(clipData.id);
 
-                            return isFile && isImageFile(itemData.name);
+                            return isFile && (isImageFile(itemData.name) || isVideoFile(itemData.name) && filesSearch.isVideoPreviewReady(itemData.path));
                         }
 
                         Layout.alignment: Qt.AlignVCenter
@@ -492,7 +531,7 @@ Item {
                             height: isApp ? 38 : 28
                             mipmap: true
                             smooth: true
-                            source: isClipboard ? Quickshell.iconPath("edit-copy-symbolic") : Quickshell.iconPath(isApp ? (itemData.icon || "application-x-executable") : (isFolder ? "folder-symbolic" : getFileIcon(itemData.name)))
+                            source: isClipboard ? Quickshell.iconPath(clipData.iconName || "edit-copy-symbolic") : Quickshell.iconPath(isApp ? (itemData.icon || "application-x-executable") : (isFolder ? "folder-symbolic" : getFileIcon(itemData.name)))
                             visible: !iconContainer.isImagePreview && !isEmoji
                             width: height
                         }
@@ -516,7 +555,7 @@ Item {
                             visible: isEmoji
                         }
 
-                        // Show real Image preview for image files and clipboard images
+                        // Show real Image preview for images, video frames, and clipboard images
                         Image {
                             anchors.fill: parent
                             asynchronous: true
@@ -551,7 +590,7 @@ Item {
                             font.family: Config.fontName
                             font.pixelSize: 16
                             font.weight: Font.DemiBold
-                            text: isClipboard ? (clipData.isImage ? "Image " + clipData.content.replace("[[ binary data ", "").replace(" ]]", "") : clipData.content.trim().split("\n")[0]) : itemData.name
+                            text: isClipboard ? clipData.title : itemData.name
                         }
                         Text {
                             Layout.fillWidth: true
@@ -559,7 +598,7 @@ Item {
                             elide: isApp ? Text.ElideRight : Text.ElideMiddle
                             font.family: Config.fontName
                             font.pixelSize: 15
-                            text: isClipboard ? (clipData.isImage ? "Clipboard History (Image)" : "Clipboard History") : (isEmoji ? "Emoji & Symbol · " + itemData.keywords : (isApp ? (itemData.comment || itemData.genericName || "") : itemData.path.replace(Config.homeDir, "~")))
+                            text: isClipboard ? clipData.subtitle : (isEmoji ? "Emoji & Symbol · " + itemData.keywords : (isApp ? (itemData.comment || itemData.genericName || "") : itemData.path.replace(Config.homeDir, "~")))
                         }
                     }
                 }
@@ -609,6 +648,60 @@ Item {
                             delegateRoot.snapToReveal();
                         else
                             delegateRoot.snapBack();
+                    }
+                }
+            }
+            Rectangle {
+                id: pinButton
+
+                readonly property bool pinned: isClipboard && clipData.pinned === true
+
+                Accessible.name: pinned ? qsTr("Unpin clipboard item") : qsTr("Pin clipboard item")
+                anchors.right: parent.right
+                anchors.rightMargin: 14
+                anchors.verticalCenter: parent.verticalCenter
+                border.color: pinned ? Config.alpha(Config.md3.secondary, 0.44) : Config.alpha(Config.md3.outline_variant, 0.4)
+                border.width: 1
+                color: pinned ? Config.alpha(Config.md3.secondary, 0.18) : (pinMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent")
+                height: 40
+                radius: 20
+                visible: isClipboard
+                width: 40
+                z: 2
+
+                Behavior on border.color {
+                    ColorAnimation {
+                        duration: 140
+                    }
+                }
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 140
+                    }
+                }
+
+                IconImage {
+                    anchors.centerIn: parent
+                    height: 21
+                    layer.enabled: true
+                    source: Quickshell.iconPath(pinButton.pinned ? "starred-symbolic" : "non-starred-symbolic")
+                    width: 21
+
+                    layer.effect: ColorOverlay {
+                        color: pinButton.pinned ? Config.md3.secondary : Config.md3.on_surface_variant
+                    }
+                }
+                MouseArea {
+                    id: pinMouse
+
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
+                    onClicked: mouse => {
+                        var updatedIndex = clipboardSearch.togglePinned(clipData.id);
+                        searchRoot.selectedIndex = updatedIndex >= 0 ? updatedIndex : index;
+                        mouse.accepted = true;
                     }
                 }
             }

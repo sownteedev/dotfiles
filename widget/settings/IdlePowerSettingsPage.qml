@@ -7,12 +7,24 @@ import QtQuick.Layouts
 Item {
     id: root
 
+    property string baselineState: ""
     readonly property bool headerActionEnabled: !SettingsHubService.busy
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Saving…" : "Apply & save"
     readonly property bool headerActionVisible: true
-    readonly property bool headerResetVisible: true
+    readonly property bool headerResetVisible: baselineState !== "" && JSON.stringify(currentState()) !== baselineState
 
+    function currentState() {
+        return {
+            "idleEnabled": idleToggle.checked,
+            "idleLockTimeout": Number(lockField.text),
+            "idleLockedDisplayTimeout": Number(lockedDisplayField.text),
+            "idleDisplayTimeout": Number(displayField.text),
+            "idleSuspendTimeout": Number(suspendField.text),
+            "idleLockBeforeSleep": beforeSleepToggle.checked,
+            "caffeineAutoDisableMinutes": Number(caffeineChoice.value)
+        };
+    }
     function resetPage() {
         syncFields();
     }
@@ -25,17 +37,10 @@ Item {
         suspendField.text = String(settings.idleSuspendTimeout ?? Config.idleSuspendTimeout);
         beforeSleepToggle.checked = settings.idleLockBeforeSleep ?? Config.idleLockBeforeSleep;
         caffeineChoice.value = String(settings.caffeineAutoDisableMinutes ?? Config.caffeineAutoDisableMinutes);
+        baselineState = JSON.stringify(currentState());
     }
     function triggerHeaderAction() {
-        SettingsHubService.saveQuickshell({
-            "idleEnabled": idleToggle.checked,
-            "idleLockTimeout": Number(lockField.text),
-            "idleLockedDisplayTimeout": Number(lockedDisplayField.text),
-            "idleDisplayTimeout": Number(displayField.text),
-            "idleSuspendTimeout": Number(suspendField.text),
-            "idleLockBeforeSleep": beforeSleepToggle.checked,
-            "caffeineAutoDisableMinutes": Number(caffeineChoice.value)
-        });
+        SettingsHubService.saveQuickshell(currentState());
     }
 
     Component.onCompleted: syncFields()
@@ -60,7 +65,7 @@ Item {
             GridLayout {
                 Layout.fillWidth: true
                 columnSpacing: 10
-                columns: width >= 620 ? 2 : 1
+                columns: 1
                 rowSpacing: 10
                 uniformCellWidths: true
 
@@ -152,7 +157,6 @@ Item {
                 id: caffeineChoice
 
                 Layout.fillWidth: true
-                Layout.maximumWidth: 760
                 label: "Automatic timeout"
                 options: [
                     {
@@ -174,22 +178,6 @@ Item {
                 ]
 
                 onSelected: value => caffeineChoice.value = value
-            }
-        }
-        SettingsSectionCard {
-            Layout.fillWidth: true
-            accentColor: Config.md3.tertiary
-            compact: true
-            note: "The service is applied after saving; zero disables an individual timeout"
-            title: "Policy summary"
-
-            Text {
-                Layout.fillWidth: true
-                color: Config.alpha(Config.md3.on_surface, 0.66)
-                font.family: Config.fontName
-                font.pixelSize: 14
-                text: idleToggle.checked ? "Lock: %1s  ·  Locked display: %2  ·  Display: %3s  ·  Suspend: %4".arg(lockField.text || "0").arg(Number(lockedDisplayField.text || 0) > 0 ? lockedDisplayField.text + "s" : "off").arg(displayField.text || "0").arg(Number(suspendField.text || 0) > 0 ? suspendField.text + "s" : "off") : "Idle management disabled"
-                wrapMode: Text.Wrap
             }
         }
     }

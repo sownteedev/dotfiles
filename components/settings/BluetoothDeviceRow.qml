@@ -82,7 +82,7 @@ Rectangle {
     Layout.fillWidth: true
     border.color: root.connected ? Config.alpha(Config.md3.primary, 0.42) : root.remembered ? Config.alpha(Config.md3.on_surface, 0.10) : "transparent"
     border.width: 1
-    color: root.connected ? Config.alpha(Config.md3.primary, 0.08) : root.remembered ? Config.md3.surface_container : Config.alpha(Config.md3.on_surface, 0.035)
+    color: root.connected ? Config.alpha(Config.md3.primary, 0.08) : root.remembered ? Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22) : Config.alpha(Config.md3.on_surface, 0.035)
     implicitHeight: root.hasDetailedBattery ? 72 : root.remembered ? 68 : 62
     radius: 16
 
@@ -130,7 +130,7 @@ Rectangle {
             Layout.preferredWidth: root.remembered ? 42 : 38
             border.color: Config.alpha(Config.md3.primary, 0.35)
             border.width: root.connected ? 1 : 0
-            color: root.connected ? Config.alpha(Config.md3.primary, 0.16) : root.remembered ? Config.md3.surface_container_high : Config.alpha(Config.md3.primary, 0.09)
+            color: root.connected ? Config.alpha(Config.md3.primary, 0.16) : root.remembered ? Config.alpha(Config.md3.on_surface, 0.11) : Config.alpha(Config.md3.primary, 0.09)
             radius: root.remembered ? 13 : 19
 
             IconImage {
@@ -180,7 +180,7 @@ Rectangle {
                 color: Config.md3.on_surface
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 15
+                font.pixelSize: 14
                 font.weight: root.connected ? Font.Bold : Font.DemiBold
                 text: root.deviceName
             }
@@ -202,7 +202,7 @@ Rectangle {
                     color: root.statusColor
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.pixelSize: 11
                     font.weight: Font.Medium
                     text: root.statusText
                 }
@@ -317,7 +317,7 @@ Rectangle {
             Layout.preferredWidth: Math.min(Layout.maximumWidth, Math.max(66, primaryLabel.implicitWidth + 20))
             border.color: root.connected ? Config.alpha(Config.md3.on_surface, 0.15) : "transparent"
             border.width: 1
-            color: root.busy ? Config.alpha(Config.md3.tertiary, 0.16) : root.connected ? (primaryMouse.containsMouse ? Config.md3.surface_container_highest : Config.md3.surface_container_high) : (primaryMouse.containsMouse ? Config.md3.primary_container : Config.md3.primary)
+            color: root.busy ? Config.alpha(Config.md3.tertiary, 0.16) : root.connected ? Config.alpha(Config.md3.on_surface, primaryMouse.containsMouse ? 0.16 : 0.1) : (primaryMouse.containsMouse ? Config.md3.primary_container : Config.md3.primary)
             opacity: root.busy ? 0.72 : 1
             radius: 12
 
@@ -328,7 +328,7 @@ Rectangle {
                 color: root.connected ? Config.md3.on_surface : primaryMouse.containsMouse ? Config.md3.on_primary_container : Config.md3.on_primary
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 13
+                font.pixelSize: 12
                 font.weight: Font.Bold
                 horizontalAlignment: Text.AlignHCenter
                 text: primaryAction.label

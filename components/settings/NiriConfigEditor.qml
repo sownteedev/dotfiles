@@ -69,7 +69,7 @@ Item {
                 Layout.fillWidth: true
                 color: Config.md3.on_surface
                 font.family: Config.fontName
-                font.pixelSize: 20
+                font.pixelSize: 19
                 font.weight: Font.DemiBold
                 text: root.title
             }
@@ -77,7 +77,7 @@ Item {
                 Layout.fillWidth: true
                 color: Config.alpha(Config.md3.on_surface, 0.48)
                 font.family: Config.fontName
-                font.pixelSize: 13
+                font.pixelSize: 12
                 text: root.description
                 wrapMode: Text.Wrap
             }
@@ -111,7 +111,7 @@ Item {
 
                     color: Config.alpha(Config.md3.on_surface, 0.84)
                     font.family: "monospace"
-                    font.pixelSize: 15
+                    font.pixelSize: 14
                     leftPadding: 10
                     rightPadding: 10
                     selectByKeyboard: true
@@ -128,7 +128,7 @@ Item {
             Layout.fillWidth: true
             color: Config.alpha(Config.md3.on_surface, 0.4)
             font.family: Config.fontName
-            font.pixelSize: 12
+            font.pixelSize: 11
             text: root.dirty ? "Unsaved changes · Apply or reset before switching files." : "Changes are validated before the live file is replaced."
         }
     }

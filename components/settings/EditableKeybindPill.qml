@@ -6,13 +6,24 @@ Rectangle {
 
     property bool capturing: false
     property string displayKey: ""
+    readonly property var displayParts: splitDisplay(visibleDisplay)
     property bool interactive: true
     property string oldHeader: ""
     property string pendingDisplay: ""
     property string pendingRaw: ""
+    readonly property string visibleDisplay: capturing ? (pendingDisplay === "" ? "Press shortcut…" : pendingDisplay) : displayKey
 
     signal committed(string oldHeader, string newKey)
 
+    function beginCapture() {
+        if (!interactive)
+            return;
+
+        pendingRaw = "";
+        pendingDisplay = "";
+        capturing = true;
+        forceActiveFocus(Qt.MouseFocusReason);
+    }
     function displayFromRaw(raw) {
         var parts = raw.split("+");
         var output = [];
@@ -98,6 +109,41 @@ Rectangle {
             return "";
         }
     }
+    function keycapLabel(key) {
+        switch (String(key).trim()) {
+        case "Mod":
+        case "Super":
+            return "⊞";
+        case "+":
+            return "＋";
+        case "-":
+        case "Minus":
+        case "−":
+            return "−";
+        case "Equal":
+            return "=";
+        case "Left":
+            return "←";
+        case "Right":
+            return "→";
+        case "Up":
+            return "↑";
+        case "Down":
+            return "↓";
+        case "PageUp":
+            return "PgUp";
+        case "PageDown":
+            return "PgDn";
+        case "BackSpace":
+            return "Backspace";
+        case "WheelScrollUp":
+            return "Wheel ↑";
+        case "WheelScrollDown":
+            return "Wheel ↓";
+        default:
+            return String(key).trim();
+        }
+    }
     function rawFromEvent(event) {
         var key = keyName(event);
         if (key === "")
@@ -119,17 +165,42 @@ Rectangle {
         parts.push(key);
         return parts.join("+");
     }
+    function splitDisplay(value) {
+        var text = String(value || "").trim();
+        if (text === "")
+            return [];
+
+        var trailingKey = "";
+        if (text.endsWith(" +")) {
+            trailingKey = "+";
+            text = text.slice(0, -2).trim();
+        } else if (text.endsWith(" -") || text.endsWith(" −")) {
+            trailingKey = "−";
+            text = text.slice(0, -2).trim();
+        }
+
+        var rawParts = text === "" ? [] : text.split(/\s*\+\s*/);
+        var parts = [];
+        for (var i = 0; i < rawParts.length; i++) {
+            var part = String(rawParts[i]).trim();
+            if (part !== "")
+                parts.push(part);
+        }
+        if (trailingKey !== "")
+            parts.push(trailingKey);
+        return parts;
+    }
 
     Accessible.name: capturing ? "Press a new keyboard shortcut" : displayKey
     Accessible.role: Accessible.Button
     activeFocusOnTab: interactive
-    border.color: activeFocus ? Config.md3.primary : "transparent"
+    border.color: activeFocus || capturing ? Config.alpha(Config.md3.primary, 0.7) : "transparent"
     border.width: 1
-    color: capturing ? Config.alpha(Config.md3.primary, 0.27) : Config.alpha(Config.md3.primary, 0.15)
+    color: capturing ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
     implicitHeight: 32
-    implicitWidth: keyText.implicitWidth + 24
+    implicitWidth: keycapRow.implicitWidth + 6
     opacity: interactive ? 1 : 0.5
-    radius: 15
+    radius: 10
 
     Behavior on color {
         ColorAnimation {
@@ -137,9 +208,15 @@ Rectangle {
         }
     }
 
+    Accessible.onPressAction: beginCapture()
     Keys.onPressed: event => {
-        if (!capturing)
+        if (!capturing) {
+            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                beginCapture();
+                event.accepted = true;
+            }
             return;
+        }
 
         if (event.key === Qt.Key_Escape) {
             capturing = false;
@@ -162,26 +239,80 @@ Rectangle {
             finishCapture();
     }
 
-    Text {
-        id: keyText
+    Row {
+        id: keycapRow
 
         anchors.centerIn: parent
-        color: Config.md3.primary
-        font.family: Config.fontName
-        font.pixelSize: 13
-        font.weight: Font.DemiBold
-        text: root.capturing ? (root.pendingDisplay === "" ? "Press shortcut…" : root.pendingDisplay) : root.displayKey
+        spacing: 5
+
+        Repeater {
+            model: root.displayParts
+
+            delegate: Item {
+                id: keyPart
+
+                readonly property string label: root.keycapLabel(modelData)
+                required property string modelData
+
+                height: 29
+                width: Math.max(28, keyLabel.implicitWidth + 16)
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    color: Config.alpha(root.capturing ? Config.md3.primary : Config.md3.on_surface, root.capturing ? 0.28 : 0.16)
+                    height: 27
+                    radius: 7
+                    width: parent.width
+                }
+                Rectangle {
+                    id: keyFace
+
+                    border.color: Config.alpha(root.capturing ? Config.md3.primary : Config.md3.outline, root.capturing ? 0.5 : 0.28)
+                    border.width: 1
+                    color: root.capturing ? Config.alpha(Config.md3.primary, 0.18) : Config.alpha(Config.md3.on_surface, 0.09)
+                    height: 27
+                    radius: 7
+                    width: parent.width
+                    y: keyPointer.pressed ? 2 : 0
+
+                    Behavior on border.color {
+                        ColorAnimation {
+                            duration: 130
+                        }
+                    }
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 130
+                        }
+                    }
+                    Behavior on y {
+                        NumberAnimation {
+                            duration: 80
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+
+                    Text {
+                        id: keyLabel
+
+                        anchors.centerIn: parent
+                        color: root.capturing ? Config.md3.primary : Config.md3.on_surface
+                        font.family: Config.fontName
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        text: keyPart.label
+                    }
+                }
+            }
+        }
     }
     MouseArea {
+        id: keyPointer
+
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         enabled: root.interactive
 
-        onClicked: {
-            root.pendingRaw = "";
-            root.pendingDisplay = "";
-            root.capturing = true;
-            root.forceActiveFocus(Qt.MouseFocusReason);
-        }
+        onClicked: root.beginCapture()
     }
 }

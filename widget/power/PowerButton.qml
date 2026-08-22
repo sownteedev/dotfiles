@@ -105,10 +105,10 @@ MouseArea {
 
             anchors.verticalCenter: parent.verticalCenter
             height: 28
-            width: 28
             layer.enabled: true
             opacity: rootButton.active ? 1 : (rootButton.containsMouse ? 0.96 : 0.68)
             source: Quickshell.iconPath(rootButton.iconName)
+            width: 28
 
             layer.effect: ColorOverlay {
                 color: rootButton.active ? rootButton.accent : Config.md3.on_surface_variant

@@ -27,6 +27,8 @@ QtObject {
             if (root.caffeineSyncPending || root.caffeineAppliedState !== root.caffeineEnabled) {
                 root.caffeineSyncPending = false;
                 Qt.callLater(root.syncCaffeineInhibitor);
+            } else {
+                root.idleSyncTimer.restart();
             }
         }
     }
@@ -85,9 +87,13 @@ QtObject {
             if (root.idleSyncPending) {
                 root.idleSyncPending = false;
                 root.idleSyncTimer.restart();
+            } else {
+                root.idlePolicyReady = exitCode === 0;
             }
         }
     }
+    readonly property int idleDimDuration: 5
+    property bool idlePolicyReady: false
     property bool idleSyncPending: false
     property Timer idleSyncTimer: Timer {
         interval: 250
@@ -319,16 +325,19 @@ QtObject {
             return;
         }
 
+        idlePolicyReady = false;
         caffeineAppliedState = caffeineEnabled;
         caffeineControlProcess.command = [Config.quickshellDir + "/scripts/caffeine-control.sh", caffeineAppliedState ? "enable" : "disable"];
         caffeineControlProcess.running = true;
     }
     function syncIdlePolicy() {
         if (idleControlProcess.running) {
+            idlePolicyReady = false;
             idleSyncPending = true;
             return;
         }
-        idleControlProcess.command = Config.idleEnabled ? [Config.quickshellDir + "/scripts/idle-control.sh", "apply", String(Config.idleLockTimeout), String(Config.idleDisplayTimeout), String(Config.idleSuspendTimeout), Config.idleLockBeforeSleep ? "true" : "false", String(Config.idleLockedDisplayTimeout)] : [Config.quickshellDir + "/scripts/idle-control.sh", "disable"];
+        idlePolicyReady = false;
+        idleControlProcess.command = Config.idleEnabled ? [Config.quickshellDir + "/scripts/idle-control.sh", "apply", String(Config.idleLockTimeout), String(Config.idleDisplayTimeout), String(Config.idleSuspendTimeout), Config.idleLockBeforeSleep ? "true" : "false", String(Config.idleLockedDisplayTimeout), String(root.idleDimDuration)] : [Config.quickshellDir + "/scripts/idle-control.sh", "disable"];
         idleControlProcess.running = true;
     }
     function timeMinutes(value) {
@@ -373,7 +382,6 @@ QtObject {
     Component.onCompleted: {
         Quickshell.execDetached(["mkdir", "-p", Config.homeDir + "/.cache/quickshell"]);
         Qt.callLater(root.syncCaffeineInhibitor);
-        Qt.callLater(root.syncIdlePolicy);
         root.updateDndSchedule();
     }
     onActiveChanged: {

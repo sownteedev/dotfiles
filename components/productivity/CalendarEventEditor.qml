@@ -88,7 +88,7 @@ Rectangle {
     }
 
     anchors.fill: parent
-    color: Config.md3.surface
+    color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.56 : 0.22)
     opacity: opened ? 1 : 0
     visible: opened || opacity > 0
     z: 20
@@ -160,7 +160,7 @@ Rectangle {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.on_surface, calendarMouse.containsMouse ? 0.12 : 0.06)
                 border.width: 1
-                color: calendarMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container
+                color: Config.alpha(Config.md3.on_surface, calendarMouse.containsMouse ? 0.14 : 0.08)
                 height: 50
                 radius: 12
 
@@ -260,7 +260,7 @@ Rectangle {
                             Layout.fillWidth: true
                             border.color: Config.alpha(Config.md3.on_surface, 0.06)
                             border.width: 1
-                            color: Config.md3.surface_container
+                            color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.6 : 0.24)
                             height: 50
                             radius: 12
 

@@ -24,7 +24,7 @@ Item {
         id: shadow
 
         anchors.fill: btnRect
-        color: mouseArea.pressed ? (buttonRoot.active ? Config.alpha(buttonRoot.activeColor, 0.2) : "#60000000") : (buttonRoot.active ? Config.alpha(buttonRoot.activeColor, 0.45) : "#90000000")
+        color: mouseArea.pressed ? (buttonRoot.active ? Config.alpha(buttonRoot.activeColor, 0.2) : Config.alpha(Config.md3.shadow, 0.14)) : (buttonRoot.active ? Config.alpha(buttonRoot.activeColor, 0.38) : Config.alpha(Config.md3.shadow, 0.24))
         horizontalOffset: 0
         radius: mouseArea.pressed ? 3 : (buttonRoot.active ? 12 : 6)
         samples: 25
@@ -53,7 +53,7 @@ Item {
         id: btnRect
 
         anchors.fill: parent
-        color: buttonRoot.active ? "transparent" : (mouseArea.pressed ? Config.md3.surface_container_highest : (mouseArea.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container))
+        color: buttonRoot.active ? "transparent" : (mouseArea.pressed ? Config.alpha(Config.md3.on_surface, 0.2) : (mouseArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.14) : Config.alpha(Config.md3.on_surface, 0.09)))
         radius: buttonRoot.active ? 16 : 27
         scale: mouseArea.pressed ? 0.93 : 1.0
 

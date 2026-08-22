@@ -7,12 +7,28 @@ import QtQuick.Layouts
 Item {
     id: root
 
+    property string baselineState: ""
     readonly property bool headerActionEnabled: !SettingsHubService.busy
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Saving…" : "Apply & save"
     readonly property bool headerActionVisible: true
-    readonly property bool headerResetVisible: true
+    readonly property bool headerResetVisible: baselineState !== "" && JSON.stringify(currentState()) !== baselineState
 
+    function currentState() {
+        return {
+            "launcherFuzzySearch": fuzzyToggle.checked,
+            "launcherClipboardAutoPaste": autoPasteToggle.checked,
+            "launcherMaxResults": Number(maxResultsField.text),
+            "launcherClipboardEnabled": clipboardToggle.checked,
+            "launcherFilesEnabled": filesToggle.checked,
+            "launcherCalculatorEnabled": calculatorToggle.checked,
+            "launcherEmojiEnabled": emojiToggle.checked,
+            "launcherClipboardPrefix": clipboardPrefixField.text,
+            "launcherFilesPrefix": filesPrefixField.text,
+            "launcherCalculatorPrefix": calculatorPrefixField.text,
+            "launcherEmojiPrefix": emojiPrefixField.text
+        };
+    }
     function resetPage() {
         syncFields();
     }
@@ -29,21 +45,10 @@ Item {
         filesPrefixField.text = settings.launcherFilesPrefix || Config.launcherFilesPrefix;
         calculatorPrefixField.text = settings.launcherCalculatorPrefix || Config.launcherCalculatorPrefix;
         emojiPrefixField.text = settings.launcherEmojiPrefix || Config.launcherEmojiPrefix;
+        baselineState = JSON.stringify(currentState());
     }
     function triggerHeaderAction() {
-        SettingsHubService.saveQuickshell({
-            "launcherFuzzySearch": fuzzyToggle.checked,
-            "launcherClipboardAutoPaste": autoPasteToggle.checked,
-            "launcherMaxResults": Number(maxResultsField.text),
-            "launcherClipboardEnabled": clipboardToggle.checked,
-            "launcherFilesEnabled": filesToggle.checked,
-            "launcherCalculatorEnabled": calculatorToggle.checked,
-            "launcherEmojiEnabled": emojiToggle.checked,
-            "launcherClipboardPrefix": clipboardPrefixField.text,
-            "launcherFilesPrefix": filesPrefixField.text,
-            "launcherCalculatorPrefix": calculatorPrefixField.text,
-            "launcherEmojiPrefix": emojiPrefixField.text
-        });
+        SettingsHubService.saveQuickshell(currentState());
     }
 
     Component.onCompleted: syncFields()
@@ -56,9 +61,12 @@ Item {
         target: SettingsHubService
     }
     SettingsPageContent {
+        id: pageContent
+
         anchors.fill: parent
 
         SettingsSectionCard {
+            Layout.columnSpan: pageContent.columnCount
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
@@ -68,7 +76,7 @@ Item {
             GridLayout {
                 Layout.fillWidth: true
                 columnSpacing: 10
-                columns: width >= 860 ? 3 : width >= 500 ? 2 : 1
+                columns: 1
                 rowSpacing: 10
                 uniformCellWidths: true
 
@@ -112,7 +120,7 @@ Item {
             GridLayout {
                 Layout.fillWidth: true
                 columnSpacing: 10
-                columns: width >= 980 ? 4 : width >= 500 ? 2 : 1
+                columns: 1
                 rowSpacing: 10
                 uniformCellWidths: true
 

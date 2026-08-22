@@ -19,6 +19,7 @@ SlimScrollBar 1.0 common/SlimScrollBar.qml
 WifiSignalIcon 1.0 common/WifiSignalIcon.qml
 SettingsPageTransition 1.0 common/SettingsPageTransition.qml
 SettingsTextField 1.0 common/SettingsTextField.qml
+SettingsFontPicker 1.0 settings/SettingsFontPicker.qml
 StatChart 1.0 common/StatChart.qml
 ToggleSwitch 1.0 common/ToggleSwitch.qml
 EdgeTrigger 1.0 common/EdgeTrigger.qml

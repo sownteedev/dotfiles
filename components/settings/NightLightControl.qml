@@ -9,6 +9,7 @@ import ".."
 Rectangle {
     id: root
 
+    property color backgroundColor: Config.md3.surface_container
     property bool dragging: false
     readonly property int maximumTemperature: 6500
     readonly property int minimumTemperature: 2500
@@ -25,7 +26,7 @@ Rectangle {
     border.color: Config.alpha(Config.md3.on_surface, 0.06)
     border.width: 1
     clip: true
-    color: Config.md3.surface_container
+    color: root.backgroundColor
     implicitHeight: nightLightEnabled ? 154 : 68
     radius: 14
 
@@ -83,7 +84,7 @@ Rectangle {
             Text {
                 color: Config.md3.on_surface
                 font.family: Config.fontName
-                font.pixelSize: 16
+                font.pixelSize: 15
                 font.weight: Font.Bold
                 renderType: Text.NativeRendering
                 text: "Night Light"
@@ -93,7 +94,7 @@ Rectangle {
                 color: Config.md3.on_surface_variant
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 13
+                font.pixelSize: 12
                 font.weight: Font.Medium
                 renderType: Text.NativeRendering
                 text: root.nightLightEnabled ? root.visualTemperature + "K · " + Math.round(root.visualWarmth * 100) + "% warmth" : "Warm colors to reduce eye strain"
@@ -221,7 +222,7 @@ Rectangle {
             Text {
                 color: Config.md3.on_surface_variant
                 font.family: Config.fontName
-                font.pixelSize: 12
+                font.pixelSize: 11
                 font.weight: Font.DemiBold
                 renderType: Text.NativeRendering
                 text: "Cool"
@@ -232,7 +233,7 @@ Rectangle {
             Text {
                 color: "#ffad42"
                 font.family: Config.fontName
-                font.pixelSize: 12
+                font.pixelSize: 11
                 font.weight: Font.DemiBold
                 renderType: Text.NativeRendering
                 text: "Warm"

@@ -36,7 +36,7 @@ Rectangle {
     border.color: connected ? Config.alpha(Config.md3.primary, 0.30) : expanded ? Config.alpha(Config.md3.primary, 0.20) : Config.alpha(Config.md3.on_surface, 0.06)
     border.width: 1
     clip: true
-    color: rowPointer.containsMouse && !expanded ? Config.md3.surface_container_high : Config.md3.surface_container
+    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? (rowPointer.containsMouse && !expanded ? 0.66 : 0.56) : (rowPointer.containsMouse && !expanded ? 0.28 : 0.2))
     height: expanded ? 50 + expandedContent.implicitHeight + 16 : 50
     radius: 12
     width: ListView.view ? ListView.view.width : implicitWidth
@@ -111,7 +111,7 @@ Rectangle {
             color: root.connected ? Config.md3.primary : Config.md3.on_surface
             elide: Text.ElideRight
             font.family: Config.fontName
-            font.pixelSize: 15
+            font.pixelSize: 14
             font.weight: root.connected ? Font.Bold : Font.Medium
             renderType: Text.NativeRendering
             text: root.ssid
@@ -221,7 +221,7 @@ Rectangle {
                 echoMode: passwordField.showPassword ? TextInput.Normal : TextInput.Password
                 enabled: !root.connecting
                 font.family: Config.fontName
-                font.pixelSize: 14
+                font.pixelSize: 13
                 font.weight: Font.Medium
                 passwordCharacter: "•"
                 selectedTextColor: "white"
@@ -242,7 +242,7 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 color: Config.alpha(Config.md3.on_surface, 0.28)
                 font.family: Config.fontName
-                font.pixelSize: 14
+                font.pixelSize: 13
                 font.weight: Font.Medium
                 renderType: Text.NativeRendering
                 text: "Enter WiFi password"
@@ -283,7 +283,7 @@ Rectangle {
             Layout.fillWidth: true
             color: Config.md3.error
             font.family: Config.fontName
-            font.pixelSize: 12
+            font.pixelSize: 11
             leftPadding: 2
             renderType: Text.NativeRendering
             text: root.errorMessage
@@ -332,7 +332,7 @@ Rectangle {
                     anchors.centerIn: parent
                     color: Config.md3.background
                     font.family: Config.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 13
                     font.weight: Font.Medium
                     renderType: Text.NativeRendering
                     text: "Connect"

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import mmap
 import os
 import re
 import shutil
@@ -26,7 +27,14 @@ QUERY_TYPES = {
 ACTIVE_PROCESS: subprocess.Popen[str] | None = None
 ACTIVE_DOWNLOAD_CLEANUP_PATHS: list[Path] = []
 NSFW_CONTENT_DESCRIPTOR_IDS = {1, 3, 4}
-SIZE_CACHE: dict[str, dict[str, int]] = {}
+RESOLUTION_PATTERN = re.compile(r"(?<!\d)(\d{3,5})\s*[x×]\s*(\d{3,5})(?!\d)", re.IGNORECASE)
+SCENE_HEIGHT_WIDTH_PATTERN = re.compile(
+    rb'"height"\s*:\s*(\d{2,5})\s*,\s*"width"\s*:\s*(\d{2,5})'
+)
+SCENE_WIDTH_HEIGHT_PATTERN = re.compile(
+    rb'"width"\s*:\s*(\d{2,5})\s*,\s*"height"\s*:\s*(\d{2,5})'
+)
+SIZE_CACHE: dict[str, dict[str, Any]] = {}
 SIZE_CACHE_DIRTY = False
 SIZE_CACHE_LOADED = False
 
@@ -146,7 +154,9 @@ def cached_directory_size(directory: Path) -> int:
     if isinstance(cached, dict) and int(cached.get("signature", -1)) == signature:
         return max(0, int(cached.get("size", 0)))
     size = directory_size(resolved)
-    SIZE_CACHE[key] = {"signature": signature, "size": size}
+    next_entry = dict(cached) if isinstance(cached, dict) else {}
+    next_entry.update({"signature": signature, "size": size})
+    SIZE_CACHE[key] = next_entry
     SIZE_CACHE_DIRTY = True
     return size
 
@@ -159,6 +169,118 @@ def wallpaper_type(tags: list[str]) -> str:
 
 def normalized_words(value: str) -> str:
     return " ".join(re.sub(r"[^\w+]+", " ", value.casefold()).split())
+
+def wallpaper_resolution(raw_item: dict[str, Any], tags: list[str]) -> str:
+    candidates = list(tags)
+    for key in ("metadata", "short_description", "description"):
+        value = raw_item.get(key)
+        if isinstance(value, str) and value:
+            candidates.append(value)
+
+    for value in candidates:
+        match = RESOLUTION_PATTERN.search(value)
+        if not match:
+            continue
+        width = int(match.group(1))
+        height = int(match.group(2))
+        if width > 0 and height > 0:
+            return f"{width}×{height}"
+    return ""
+
+def content_signature(content_path: Path, project_file: Path) -> str:
+    try:
+        project_stat = project_file.stat()
+        content_stat = content_path.stat()
+    except OSError:
+        return ""
+    return (
+        f"{project_stat.st_mtime_ns}:{project_stat.st_size}:"
+        f"{content_stat.st_mtime_ns}:{content_stat.st_size}"
+    )
+
+def video_resolution(video_path: Path) -> str:
+    ffprobe = shutil.which("ffprobe")
+    if not ffprobe or not video_path.is_file():
+        return ""
+    try:
+        result = subprocess.run(
+            [
+                ffprobe,
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=width,height",
+                "-of",
+                "csv=s=x:p=0",
+                str(video_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=4,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    match = RESOLUTION_PATTERN.search(result.stdout.strip())
+    return f"{match.group(1)}×{match.group(2)}" if match else ""
+
+def scene_resolution(scene_path: Path) -> str:
+    if not scene_path.is_file():
+        return ""
+    try:
+        with scene_path.open("rb") as scene_file:
+            with mmap.mmap(scene_file.fileno(), 0, access=mmap.ACCESS_READ) as scene_data:
+                match = SCENE_HEIGHT_WIDTH_PATTERN.search(scene_data)
+                if match:
+                    return f"{int(match.group(2))}×{int(match.group(1))}"
+                match = SCENE_WIDTH_HEIGHT_PATTERN.search(scene_data)
+                if match:
+                    return f"{int(match.group(1))}×{int(match.group(2))}"
+    except (OSError, ValueError):
+        return ""
+    return ""
+
+def cached_local_resolution(
+    project_dir: Path, metadata: dict[str, Any], tags: list[str]
+) -> str:
+    global SIZE_CACHE_DIRTY
+    item_type = str(metadata.get("type") or "unknown").casefold()
+    project_file = project_dir / "project.json"
+    media_name = str(metadata.get("file") or "")
+    content_path = project_dir / (media_name if media_name else "scene.pkg")
+    if item_type == "scene" and not content_path.is_file():
+        content_path = project_dir / "scene.pkg"
+
+    signature = content_signature(content_path, project_file)
+    load_size_cache()
+    key = str(project_dir.resolve())
+    cached = SIZE_CACHE.get(key)
+    if (
+        signature
+        and isinstance(cached, dict)
+        and str(cached.get("resolution_signature") or "") == signature
+    ):
+        return str(cached.get("resolution") or "")
+
+    if item_type == "video":
+        resolution = video_resolution(content_path)
+    elif item_type == "scene":
+        resolution = scene_resolution(content_path)
+    else:
+        resolution = ""
+    if not resolution:
+        resolution = wallpaper_resolution(metadata, tags)
+
+    if signature:
+        next_entry = dict(cached) if isinstance(cached, dict) else {}
+        next_entry.update(
+            {"resolution_signature": signature, "resolution": resolution}
+        )
+        SIZE_CACHE[key] = next_entry
+        SIZE_CACHE_DIRTY = True
+    return resolution
 
 def content_descriptor_ids(raw_item: dict[str, Any]) -> set[int]:
     raw_descriptors: Any = raw_item.get("content_descriptorids")
@@ -223,6 +345,8 @@ def local_project_item(project_dir: Path, subscribed: set[str]) -> dict[str, Any
         return None
 
     item_type = str(metadata.get("type") or "unknown").casefold()
+    raw_tags = metadata.get("tags")
+    tags = [str(tag) for tag in raw_tags if tag] if isinstance(raw_tags, list) else []
     preview = str(metadata.get("preview") or "")
     preview_path = project_dir / preview if preview else Path()
     return {
@@ -230,7 +354,8 @@ def local_project_item(project_dir: Path, subscribed: set[str]) -> dict[str, Any
         "title": str(metadata.get("title") or project_dir.name),
         "preview": str(preview_path) if preview and preview_path.is_file() else "",
         "type": item_type,
-        "tags": [],
+        "resolution": cached_local_resolution(project_dir, metadata, tags),
+        "tags": tags[:8],
         "subscriptions": 0,
         "updated": int(project_file.stat().st_mtime),
         "supported": item_type not in {"web", "application"},
@@ -267,6 +392,7 @@ def normalize_search_response(
         ]
         nsfw = is_nsfw_item(raw_item, tags)
         item_type = wallpaper_type(tags)
+        resolution = wallpaper_resolution(raw_item, tags)
         local_path = installed_path(published_file_id, roots)
         try:
             remote_file_size = int(raw_item.get("file_size", 0) or 0)
@@ -284,6 +410,7 @@ def normalize_search_response(
                 "title": str(raw_item.get("title") or published_file_id),
                 "preview": preview_url,
                 "type": item_type,
+                "resolution": resolution,
                 "tags": tags[:8],
                 "subscriptions": int(raw_item.get("subscriptions", 0) or 0),
                 "updated": int(raw_item.get("time_updated", 0) or 0),

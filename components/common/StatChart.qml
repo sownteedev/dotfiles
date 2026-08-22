@@ -126,7 +126,7 @@ Item {
             Layout.preferredHeight: root.chartHeight
             border.color: root.expanded ? Config.alpha(root.lineColor, 0.28) : Config.alpha(Config.md3.on_surface, 0.05)
             border.width: 1
-            color: Config.alpha(Config.md3.surface_container, 0.5)
+            color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.5 : 0.2)
             radius: 8
 
             Behavior on border.color {
@@ -250,7 +250,7 @@ Item {
                 anchors.top: parent.top
                 border.color: Config.alpha(root.lineColor, 0.25)
                 border.width: 1
-                color: Config.alpha(Config.md3.background, 0.65)
+                color: Config.alpha(Config.md3.background, Config.lightTheme ? 0.64 : 0.36)
                 height: 22
                 radius: 6
                 visible: root.valueText !== ""

@@ -1,4 +1,5 @@
 pragma Singleton
+import QtPositioning
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -12,10 +13,20 @@ QtObject {
     property string city: ""
     property int cloudiness: 0
     property string condition: "Loading..."
+    property Timer coordinateRefreshTimer: Timer {
+        interval: 180
+        repeat: false
+
+        onTriggered: {
+            if (root.active)
+                root.fetchWeather();
+        }
+    }
     readonly property var coordinates: Config.latLon.split(",")
     property string country: ""
     readonly property string countryFlag: flagForCountry(country)
     property var dailyForecast: []
+    property bool detectingLocation: false
     property real dewPoint: 0
     property string errorMessage: ""
     property int feelsLike: 0
@@ -67,6 +78,47 @@ QtObject {
     property date lastUpdated
     readonly property string latitude: coordinates.length > 0 ? coordinates[0] : ""
     property bool loading: false
+    property Timer locationDetectionDelay: Timer {
+        interval: 700
+        repeat: false
+
+        onTriggered: {
+            if (!root.detectingLocation)
+                return;
+            if (!root.locationDetector.valid) {
+                root.failLocationDetection(qsTr("Location provider is unavailable"));
+                return;
+            }
+            root.locationDetectionStatus = qsTr("Finding your location…");
+            root.locationDetectionTimeout.restart();
+            root.locationDetector.update(15000);
+        }
+    }
+    property bool locationDetectionError: false
+    property string locationDetectionStatus: ""
+    property Timer locationDetectionTimeout: Timer {
+        interval: 17000
+        repeat: false
+
+        onTriggered: root.failLocationDetection(qsTr("Location request timed out"))
+    }
+    property PositionSource locationDetector: PositionSource {
+        id: locationDetector
+
+        name: "geoclue2"
+        preferredPositioningMethods: PositionSource.NonSatellitePositioningMethods
+
+        onPositionChanged: root.acceptDetectedPosition(position)
+        onSourceErrorChanged: {
+            if (root.detectingLocation && sourceError !== PositionSource.NoError)
+                root.failLocationDetection(root.locationErrorText(sourceError));
+        }
+
+        PluginParameter {
+            name: "desktopId"
+            value: "org.quickshell"
+        }
+    }
     property Process locationProcess: Process {
         id: locationProcess
 
@@ -111,6 +163,26 @@ QtObject {
     property int windDegree: 0
     property real windSpeed: 0
 
+    signal locationDetected(string coordinates)
+
+    function acceptDetectedPosition(position) {
+        if (!detectingLocation || !position)
+            return;
+
+        var detectedLatitude = Number(position.coordinate.latitude);
+        var detectedLongitude = Number(position.coordinate.longitude);
+        if (!isFinite(detectedLatitude) || !isFinite(detectedLongitude) || detectedLatitude < -90 || detectedLatitude > 90 || detectedLongitude < -180 || detectedLongitude > 180)
+            return;
+
+        detectingLocation = false;
+        locationDetector.stop();
+        locationDetectionDelay.stop();
+        locationDetectionTimeout.stop();
+        locationDetectionError = false;
+        var formattedCoordinates = detectedLatitude.toFixed(5) + "," + detectedLongitude.toFixed(5);
+        locationDetectionStatus = qsTr("Location detected · Apply & save to use it");
+        locationDetected(formattedCoordinates);
+    }
     function acquire() {
         activeConsumers++;
     }
@@ -231,9 +303,35 @@ QtObject {
         errorMessage = "";
         lastUpdated = new Date();
     }
+    function cancelLocationDetection() {
+        detectingLocation = false;
+        locationDetector.stop();
+        locationDetectionDelay.stop();
+        locationDetectionTimeout.stop();
+        locationDetectionError = false;
+        locationDetectionStatus = qsTr("Location detection cancelled");
+    }
     function dayName(timestamp) {
         var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         return days[new Date(timestamp * 1000).getDay()];
+    }
+    function detectLocation() {
+        if (detectingLocation)
+            return;
+
+        detectingLocation = true;
+        locationDetectionError = false;
+        locationDetectionStatus = qsTr("Waiting for location permission…");
+        Quickshell.execDetached(["/usr/lib/geoclue-2.0/demos/agent"]);
+        locationDetectionDelay.restart();
+    }
+    function failLocationDetection(message) {
+        detectingLocation = false;
+        locationDetector.stop();
+        locationDetectionDelay.stop();
+        locationDetectionTimeout.stop();
+        locationDetectionError = true;
+        locationDetectionStatus = message;
     }
     function fetchLocation() {
         if (!active || locationProcess.running)
@@ -281,6 +379,15 @@ QtObject {
         if (hour === 12)
             return "12PM";
         return hour < 12 ? hour + "AM" : (hour - 12) + "PM";
+    }
+    function locationErrorText(sourceError) {
+        if (sourceError === PositionSource.AccessError)
+            return qsTr("Location permission was denied");
+        if (sourceError === PositionSource.ClosedError)
+            return qsTr("Location service is unavailable or disabled");
+        if (sourceError === PositionSource.UpdateTimeoutError)
+            return qsTr("Location request timed out");
+        return qsTr("Could not determine your location");
     }
     function needsRefresh() {
         return !hasData || !lastUpdated || Date.now() - lastUpdated.getTime() >= refreshTimer.interval;
@@ -355,4 +462,6 @@ QtObject {
             fetchWeather();
         }
     }
+    onLatitudeChanged: coordinateRefreshTimer.restart()
+    onLongitudeChanged: coordinateRefreshTimer.restart()
 }

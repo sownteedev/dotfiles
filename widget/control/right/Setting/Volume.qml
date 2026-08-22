@@ -129,7 +129,7 @@ Item {
                     Layout.fillWidth: true
                     border.color: Config.alpha(Config.md3.on_surface, 0.06)
                     border.width: 1
-                    color: Config.md3.surface_container
+                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                     implicitHeight: appStreamListColumn.height + 24
                     radius: 12
                     visible: volumePageRoot.appStreamCount > 0
@@ -198,7 +198,7 @@ Item {
 
                                         border.color: routeMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
                                         border.width: 1
-                                        color: routeMouse.pressed ? Config.md3.surface_container_highest : (routeMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container)
+                                        color: Config.alpha(Config.md3.on_surface, routeMouse.pressed ? 0.18 : (routeMouse.containsMouse ? 0.12 : 0.07))
                                         height: 32
                                         radius: 8
                                         scale: routeMouse.pressed ? 0.97 : 1.0
@@ -268,7 +268,7 @@ Item {
                                 Rectangle {
                                     border.color: Config.alpha(Config.md3.on_surface, 0.06)
                                     border.width: 1
-                                    color: Config.md3.surface_container
+                                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                                     height: 48
                                     radius: 12
                                     width: parent.width
@@ -367,7 +367,7 @@ Item {
                         Layout.fillWidth: true
                         border.color: outputDropMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
                         border.width: 1
-                        color: outputDropMouse.pressed ? Config.md3.surface_container_highest : (outputDropMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container)
+                        color: Config.alpha(Config.md3.on_surface, outputDropMouse.pressed ? 0.18 : (outputDropMouse.containsMouse ? 0.12 : 0.07))
                         height: 46
                         radius: 12
                         scale: outputDropMouse.pressed ? 0.98 : 1.0
@@ -438,7 +438,7 @@ Item {
                         Layout.fillWidth: true
                         border.color: Config.alpha(Config.md3.on_surface, 0.06)
                         border.width: 1
-                        color: Config.md3.surface_container
+                        color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                         height: 48
                         radius: 12
 
@@ -541,7 +541,7 @@ Item {
                         Layout.fillWidth: true
                         border.color: Config.alpha(Config.md3.on_surface, 0.06)
                         border.width: 1
-                        color: Config.md3.surface_container
+                        color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                         height: 48
                         radius: 12
                         visible: Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.audio && Pipewire.defaultAudioSink.audio.volumes && Pipewire.defaultAudioSink.audio.volumes.length >= 2
@@ -647,7 +647,7 @@ Item {
                         Layout.fillWidth: true
                         border.color: inputDropMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
                         border.width: 1
-                        color: inputDropMouse.pressed ? Config.md3.surface_container_highest : (inputDropMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container)
+                        color: Config.alpha(Config.md3.on_surface, inputDropMouse.pressed ? 0.18 : (inputDropMouse.containsMouse ? 0.12 : 0.07))
                         height: 46
                         radius: 12
                         scale: inputDropMouse.pressed ? 0.98 : 1.0
@@ -718,7 +718,7 @@ Item {
                         Layout.fillWidth: true
                         border.color: Config.alpha(Config.md3.on_surface, 0.06)
                         border.width: 1
-                        color: Config.md3.surface_container
+                        color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
                         height: 48
                         radius: 12
 

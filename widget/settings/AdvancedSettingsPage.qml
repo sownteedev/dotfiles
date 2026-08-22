@@ -7,13 +7,29 @@ import QtQuick.Layouts
 Item {
     id: root
 
+    property string baselineState: ""
     property string confirmCacheScope: ""
     readonly property bool headerActionEnabled: !SettingsHubService.busy
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Saving…" : "Apply & save"
     readonly property bool headerActionVisible: true
-    readonly property bool headerResetVisible: true
+    readonly property bool headerResetVisible: baselineState !== "" && JSON.stringify(currentState()) !== baselineState
 
+    function currentState() {
+        return {
+            "shellReducedMotion": reducedMotionToggle.checked,
+            "shellAnimationScale": Number(animationScaleField.text),
+            "shellLowPowerMode": lowPowerToggle.checked,
+            "cavaEnabled": cavaToggle.checked,
+            "osdEnabled": osdToggle.checked,
+            "osdDuration": Number(osdDurationField.text),
+            "osdPosition": osdPositionChoice.value,
+            "osdShowVolume": volumeOsdToggle.checked,
+            "osdShowMicrophone": microphoneOsdToggle.checked,
+            "osdShowBrightness": brightnessOsdToggle.checked,
+            "audioMaxVolume": Number(maxVolumeField.text) / 100
+        };
+    }
     function resetPage() {
         syncFields();
     }
@@ -30,21 +46,10 @@ Item {
         microphoneOsdToggle.checked = settings.osdShowMicrophone ?? Config.osdShowMicrophone;
         brightnessOsdToggle.checked = settings.osdShowBrightness ?? Config.osdShowBrightness;
         maxVolumeField.text = String(Math.round(Number(settings.audioMaxVolume ?? Config.audioMaxVolume) * 100));
+        baselineState = JSON.stringify(currentState());
     }
     function triggerHeaderAction() {
-        SettingsHubService.saveQuickshell({
-            "shellReducedMotion": reducedMotionToggle.checked,
-            "shellAnimationScale": Number(animationScaleField.text),
-            "shellLowPowerMode": lowPowerToggle.checked,
-            "cavaEnabled": cavaToggle.checked,
-            "osdEnabled": osdToggle.checked,
-            "osdDuration": Number(osdDurationField.text),
-            "osdPosition": osdPositionChoice.value,
-            "osdShowVolume": volumeOsdToggle.checked,
-            "osdShowMicrophone": microphoneOsdToggle.checked,
-            "osdShowBrightness": brightnessOsdToggle.checked,
-            "audioMaxVolume": Number(maxVolumeField.text) / 100
-        });
+        SettingsHubService.saveQuickshell(currentState());
     }
 
     Component.onCompleted: {
@@ -60,6 +65,8 @@ Item {
         target: SettingsHubService
     }
     SettingsPageContent {
+        id: pageContent
+
         anchors.fill: parent
 
         SettingsSectionCard {
@@ -72,7 +79,7 @@ Item {
             GridLayout {
                 Layout.fillWidth: true
                 columnSpacing: 10
-                columns: width >= 720 ? 2 : 1
+                columns: 1
                 rowSpacing: 10
                 uniformCellWidths: true
 
@@ -185,7 +192,7 @@ Item {
             GridLayout {
                 Layout.fillWidth: true
                 columnSpacing: 10
-                columns: width >= 820 ? 3 : width >= 500 ? 2 : 1
+                columns: 1
                 enabled: osdToggle.checked
                 opacity: enabled ? 1 : 0.45
                 rowSpacing: 10
@@ -215,6 +222,7 @@ Item {
             }
         }
         SettingsSectionCard {
+            Layout.columnSpan: pageContent.columnCount
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
@@ -256,12 +264,14 @@ Item {
             SettingsActionButton {
                 enabled: !DiagnosticsService.busy
                 iconName: "view-refresh-symbolic"
+                iconOnly: true
                 text: DiagnosticsService.busy ? "Checking…" : "Refresh"
 
                 onClicked: DiagnosticsService.refresh()
             }
         }
         SettingsSectionCard {
+            Layout.columnSpan: pageContent.columnCount
             Layout.fillWidth: true
             accentColor: Config.md3.error
             compact: true
@@ -311,6 +321,7 @@ Item {
                         SettingsActionButton {
                             enabled: !DiagnosticsService.busy
                             iconName: root.confirmCacheScope === cacheRow.modelData.scope ? "dialog-warning-symbolic" : "user-trash-symbolic"
+                            iconOnly: root.confirmCacheScope !== cacheRow.modelData.scope
                             text: root.confirmCacheScope === cacheRow.modelData.scope ? "Confirm clear" : "Clear"
 
                             onClicked: {

@@ -17,12 +17,16 @@ Item {
     readonly property string headerActionIcon: activeActionPage ? activeActionPage.headerActionIcon || "document-save-symbolic" : "document-save-symbolic"
     readonly property string headerActionText: activeSection === 1 ? (SettingsHubService.busy ? "Applying…" : "Apply layout") : activeActionPage ? activeActionPage.headerActionText || "Apply" : ""
     readonly property bool headerActionVisible: activeSection === 1 || Boolean(activeActionPage && activeActionPage.headerActionVisible === true)
-    readonly property bool headerResetVisible: activeSection === 1 || Boolean(activeActionPage && activeActionPage.headerResetVisible === true)
+    readonly property bool headerResetVisible: activeSection === 1 ? layoutBaselineState !== "" && JSON.stringify(currentLayoutState()) !== layoutBaselineState : Boolean(activeActionPage && activeActionPage.headerResetVisible === true)
+    property string layoutBaselineState: ""
     property var recentBindValues: []
     readonly property var sectionNames: ["Keybinds", "Layout", "Input", "Animations", "Behavior", "Rules", "Config files"]
 
     function applyLayout() {
-        SettingsHubService.saveLayout({
+        SettingsHubService.saveLayout(currentLayoutState());
+    }
+    function currentLayoutState() {
+        return {
             "gaps": Number(gapsField.text),
             "borderWidth": Number(borderField.text),
             "shadow": shadowCard.checked,
@@ -109,7 +113,7 @@ Item {
             "recentPreviewHeight": Number(recentPreviewHeight.text),
             "recentPreviewScale": Number(recentPreviewScale.text),
             "recentBinds": root.recentBindValues
-        });
+        };
     }
     function groupsForColumn(column) {
         var groups = SettingsHubService.keybindGroups || [];
@@ -252,6 +256,7 @@ Item {
         recentBindValues = (settings.recentBinds || []).map(binding => {
             return Object.assign({}, binding);
         });
+        layoutBaselineState = JSON.stringify(currentLayoutState());
     }
     function triggerHeaderAction() {
         if (activeSection === 1) {
@@ -331,7 +336,7 @@ Item {
                         anchors.top: parent.top
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 14
+                        font.pixelSize: 13
                         verticalAlignment: TextInput.AlignVCenter
 
                         Text {
@@ -389,7 +394,7 @@ Item {
                         width: keybindScroll.contentWidth
 
                         Repeater {
-                            model: 3
+                            model: 2
 
                             delegate: ColumnLayout {
                                 property int columnIndex: index
@@ -397,7 +402,7 @@ Item {
 
                                 Layout.alignment: Qt.AlignTop
                                 Layout.fillWidth: true
-                                Layout.preferredWidth: (keybindScroll.contentWidth - 28) / 3
+                                Layout.preferredWidth: (keybindScroll.contentWidth - 14) / 2
                                 spacing: 14
 
                                 Repeater {
@@ -440,8 +445,7 @@ Item {
                     id: layoutContent
 
                     spacing: 18
-                    width: Math.max(0, layoutScroll.contentWidth - 36)
-                    x: 18
+                    width: layoutScroll.contentWidth
                     y: 12
 
                     SettingsExpandableCard {
@@ -570,7 +574,7 @@ Item {
                         GridLayout {
                             Layout.fillWidth: true
                             columnSpacing: 12
-                            columns: 2
+                            columns: 1
                             rowSpacing: 12
                             uniformCellWidths: true
 
@@ -1490,7 +1494,7 @@ Item {
                                                 Layout.fillWidth: true
                                                 color: Config.md3.on_surface
                                                 font.family: Config.fontName
-                                                font.pixelSize: 14
+                                                font.pixelSize: 13
                                                 font.weight: Font.DemiBold
                                                 text: (sameApp ? "Same application · " : "All applications · ") + (previous ? "Previous window" : "Next window")
                                             }
@@ -1543,8 +1547,7 @@ Item {
                     id: inputContent
 
                     spacing: 16
-                    width: Math.max(0, inputScroll.contentWidth - 32)
-                    x: 16
+                    width: inputScroll.contentWidth
                     y: 8
 
                     Repeater {
@@ -1621,7 +1624,7 @@ Item {
                                                 clip: true
                                                 color: activeFocus ? inputCard.accentColor : Config.alpha(Config.md3.on_surface, 0.76)
                                                 font.family: Config.fontName
-                                                font.pixelSize: 15
+                                                font.pixelSize: 14
                                                 selectByMouse: true
                                                 text: modelData.text
                                                 verticalAlignment: TextInput.AlignVCenter

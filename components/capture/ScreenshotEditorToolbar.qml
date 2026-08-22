@@ -6,11 +6,13 @@ import QtQuick.Layouts
 Rectangle {
     id: root
 
+    property bool reverseSearchBusy: false
     property color selectedColor: "#ff3b30"
     property string selectedTool: "pen"
     property real selectedWidth: 6
 
     signal colorSelected(color colorValue)
+    signal reverseSearchRequested
     signal toolSelected(string tool)
     signal widthSelected(real widthValue)
 
@@ -233,6 +235,112 @@ Rectangle {
 
                 onSelected: tool => {
                     return root.toolSelected(tool);
+                }
+            }
+            Rectangle {
+                id: reverseSearchButton
+
+                Accessible.name: qsTr("Search image with Google Lens")
+                Accessible.role: Accessible.Button
+                Layout.leftMargin: 4
+                Layout.preferredHeight: 32
+                Layout.preferredWidth: 48
+                color: reverseSearchPointer.pressed ? Config.md3.primary_container : reverseSearchPointer.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container
+                opacity: root.reverseSearchBusy ? 0.55 : 1
+                radius: 11
+                scale: reverseSearchPointer.pressed ? 0.88 : 1
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 120
+                    }
+                }
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 160
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Item {
+                    anchors.centerIn: parent
+                    height: 22
+                    width: 22
+
+                    Rectangle {
+                        color: "#4285f4"
+                        height: 3
+                        radius: 1.5
+                        width: 8
+                        x: 1
+                        y: 1
+                    }
+                    Rectangle {
+                        color: "#4285f4"
+                        height: 8
+                        radius: 1.5
+                        width: 3
+                        x: 1
+                        y: 1
+                    }
+                    Rectangle {
+                        color: "#ea4335"
+                        height: 3
+                        radius: 1.5
+                        width: 8
+                        x: 13
+                        y: 1
+                    }
+                    Rectangle {
+                        color: "#ea4335"
+                        height: 8
+                        radius: 1.5
+                        width: 3
+                        x: 18
+                        y: 1
+                    }
+                    Rectangle {
+                        color: "#34a853"
+                        height: 8
+                        radius: 1.5
+                        width: 3
+                        x: 1
+                        y: 13
+                    }
+                    Rectangle {
+                        color: "#34a853"
+                        height: 3
+                        radius: 1.5
+                        width: 8
+                        x: 1
+                        y: 18
+                    }
+                    Rectangle {
+                        color: "#fbbc04"
+                        height: 7
+                        radius: 3.5
+                        width: 7
+                        x: 7.5
+                        y: 7.5
+                    }
+                    Rectangle {
+                        color: "#4285f4"
+                        height: 4
+                        radius: 2
+                        width: 4
+                        x: 16
+                        y: 16
+                    }
+                }
+                MouseArea {
+                    id: reverseSearchPointer
+
+                    anchors.fill: parent
+                    cursorShape: root.reverseSearchBusy ? Qt.BusyCursor : Qt.PointingHandCursor
+                    enabled: !root.reverseSearchBusy
+                    hoverEnabled: true
+
+                    onClicked: root.reverseSearchRequested()
                 }
             }
         }

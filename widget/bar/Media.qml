@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
 import "../../"
@@ -10,26 +11,50 @@ Item {
 
     readonly property var activePlayer: MediaService.activePlayer
     readonly property string description: MediaService.artist
+    readonly property bool hasMedia: activePlayer !== null && activePlayer.trackTitle && activePlayer.trackTitle !== ""
+    readonly property bool idleAnimating: !hasMedia && visible && !Config.shellReducedMotion
     property real maximumWidth: 350
     readonly property bool playing: MediaService.playing
     readonly property string title: MediaService.title
 
     implicitHeight: 46
-    implicitWidth: activePlayer !== null && activePlayer.trackTitle && activePlayer.trackTitle !== "" ? Math.max(90, Math.min(350, maximumWidth)) : 0
+    implicitWidth: hasMedia ? Math.max(90, Math.min(350, maximumWidth)) : Math.max(90, Math.min(220, maximumWidth))
     visible: implicitWidth > 0
 
     Behavior on implicitWidth {
         NumberAnimation {
             id: mediaWidthAnim
 
-            duration: 350
+            duration: Config.shellReducedMotion ? 0 : 280
             easing.type: Easing.OutCubic
         }
     }
 
     RowLayout {
+        id: playerContent
+
         anchors.fill: parent
+        enabled: root.hasMedia
+        opacity: root.hasMedia ? 1 : 0
         spacing: 10
+        visible: opacity > 0
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Config.shellReducedMotion ? 0 : 180
+                easing.type: Easing.OutCubic
+            }
+        }
+        transform: Translate {
+            x: root.hasMedia ? 0 : 8
+
+            Behavior on x {
+                NumberAnimation {
+                    duration: Config.shellReducedMotion ? 0 : 220
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
 
         Item {
             id: artwork
@@ -365,6 +390,174 @@ Item {
                         root.activePlayer.previous();
                     metadataReturnAnimation.restart();
                 }
+            }
+        }
+    }
+    RowLayout {
+        id: idleContent
+
+        anchors.fill: parent
+        opacity: root.hasMedia ? 0 : 1
+        spacing: 10
+        visible: opacity > 0
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Config.shellReducedMotion ? 0 : 160
+                easing.type: Easing.OutCubic
+            }
+        }
+        transform: Translate {
+            x: root.hasMedia ? -8 : 0
+
+            Behavior on x {
+                NumberAnimation {
+                    duration: Config.shellReducedMotion ? 0 : 200
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
+
+        Item {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredHeight: 46
+            Layout.preferredWidth: 46
+
+            Rectangle {
+                id: idleHalo
+
+                anchors.centerIn: parent
+                border.color: Config.alpha(Config.md3.primary, 0.3)
+                border.width: 1
+                color: Config.alpha(Config.md3.primary, 0.075)
+                height: 42
+                opacity: Config.shellReducedMotion ? 0.55 : 0.32
+                radius: 21
+                scale: Config.shellReducedMotion ? 1 : 0.88
+                width: 42
+
+                SequentialAnimation {
+                    alwaysRunToEnd: false
+                    loops: Animation.Infinite
+                    running: root.idleAnimating
+
+                    ParallelAnimation {
+                        ScaleAnimator {
+                            duration: Config.animationDuration(900)
+                            easing.type: Easing.InOutSine
+                            from: 0.88
+                            target: idleHalo
+                            to: 1.16
+                        }
+                        OpacityAnimator {
+                            duration: Config.animationDuration(900)
+                            easing.type: Easing.InOutSine
+                            from: 0.32
+                            target: idleHalo
+                            to: 0.88
+                        }
+                    }
+                    ParallelAnimation {
+                        ScaleAnimator {
+                            duration: Config.animationDuration(1100)
+                            easing.type: Easing.InOutSine
+                            from: 1.16
+                            target: idleHalo
+                            to: 0.88
+                        }
+                        OpacityAnimator {
+                            duration: Config.animationDuration(1100)
+                            easing.type: Easing.InOutSine
+                            from: 0.88
+                            target: idleHalo
+                            to: 0.32
+                        }
+                    }
+                }
+            }
+            Rectangle {
+                id: idleDisc
+
+                anchors.centerIn: parent
+                color: Config.alpha(Config.md3.primary, 0.16)
+                height: 30
+                radius: 15
+                rotation: root.idleAnimating ? -5 : 0
+                scale: root.idleAnimating ? 0.96 : 1
+                width: 30
+
+                SequentialAnimation {
+                    alwaysRunToEnd: false
+                    loops: Animation.Infinite
+                    running: root.idleAnimating
+
+                    ParallelAnimation {
+                        RotationAnimator {
+                            duration: Config.animationDuration(850)
+                            easing.type: Easing.InOutSine
+                            from: -5
+                            target: idleDisc
+                            to: 5
+                        }
+                        ScaleAnimator {
+                            duration: Config.animationDuration(850)
+                            easing.type: Easing.InOutSine
+                            from: 0.96
+                            target: idleDisc
+                            to: 1.07
+                        }
+                    }
+                    ParallelAnimation {
+                        RotationAnimator {
+                            duration: Config.animationDuration(850)
+                            easing.type: Easing.InOutSine
+                            from: 5
+                            target: idleDisc
+                            to: -5
+                        }
+                        ScaleAnimator {
+                            duration: Config.animationDuration(850)
+                            easing.type: Easing.InOutSine
+                            from: 1.07
+                            target: idleDisc
+                            to: 0.96
+                        }
+                    }
+                }
+                IconImage {
+                    anchors.centerIn: parent
+                    height: 17
+                    layer.enabled: true
+                    source: Quickshell.iconPath("audio-x-generic-symbolic")
+                    width: 17
+
+                    layer.effect: ColorOverlay {
+                        color: Config.alpha(Config.md3.primary, 0.78)
+                    }
+                }
+            }
+        }
+        ColumnLayout {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.fillWidth: true
+            spacing: 1
+
+            Text {
+                Layout.fillWidth: true
+                color: Config.md3.on_surface
+                elide: Text.ElideRight
+                font.family: Config.fontName
+                font.pixelSize: 16
+                font.weight: Font.DemiBold
+                text: qsTr("Nothing playing")
+            }
+            Text {
+                Layout.fillWidth: true
+                color: Config.md3.on_surface_variant
+                elide: Text.ElideRight
+                font.family: Config.fontName
+                font.pixelSize: 14
+                text: qsTr("Waiting for media")
             }
         }
     }

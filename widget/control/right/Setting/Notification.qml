@@ -129,7 +129,7 @@ Item {
                     border.color: Config.alpha(Config.md3.on_surface, 0.075)
                     border.width: 1
                     clip: true
-                    color: Config.md3.surface_container_low
+                    color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.54 : 0.18)
                     height: isDismissing ? 0 : cardColumn.implicitHeight + 20
                     radius: 16
                     visible: !groupItem.pooled

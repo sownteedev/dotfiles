@@ -9,6 +9,7 @@ import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Io
 import Quickshell.Networking
+import Quickshell.Wayland
 import Quickshell.Widgets
 
 PanelWindow {
@@ -37,6 +38,8 @@ PanelWindow {
     readonly property real panelWidth: Responsive.sidePanelWidth(width)
     property int previousBottomTab: 0
     property int previousTab: 0
+    readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09)
+    readonly property color sectionColor: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.66 : 0.46)
     readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
     readonly property var tabIcons: ["preferences-system-notifications-symbolic", "network-wireless-symbolic", "bluetooth-symbolic", "audio-volume-high-symbolic"]
     readonly property var tabLabels: ["Notifications", "Wi-Fi", "Bluetooth", "Volume"]
@@ -128,6 +131,7 @@ PanelWindow {
         SysStats.pollingEnabled = active && (activeBottomTab === 0 || activeTab === 1);
     }
 
+    WlrLayershell.namespace: "quickshell-control-right"
     anchors.bottom: true
     anchors.left: true
     anchors.right: true
@@ -137,6 +141,11 @@ PanelWindow {
     color: "transparent"
     focusable: true
     visible: active || edgeDragging || slideAnim.running || popup.closedProgress < 0.999
+
+    BackgroundEffect.blurRegion: Region {
+        item: Config.shellBlurControlRightEnabled ? popup : null
+        radius: popup.radius
+    }
 
     Component.onCompleted: {
         if (activeBottomTab >= bottomPages.length)
@@ -193,11 +202,11 @@ PanelWindow {
         anchors.rightMargin: controlRightWindow.outerMargin - controlRightWindow.panelWidth * closedProgress
         anchors.top: parent.top
         anchors.topMargin: controlRightWindow.outerMargin
-        border.color: Config.alpha(Config.md3.on_surface, 0.06)
+        border.color: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.07)
         border.width: 1
         clip: true // Prevent bubbles from flying completely outside the panel bounds
 
-        color: Config.alpha(Config.md3.background, 0.98)
+        color: Config.shellBlurControlRightEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.85) : Config.md3.background
         radius: 20
         width: controlRightWindow.panelWidth
 
@@ -248,12 +257,14 @@ PanelWindow {
                 Layout.leftMargin: controlRightWindow.compact ? 8 : 50
                 Layout.preferredHeight: controlRightWindow.compact ? 72 : 80
                 Layout.rightMargin: controlRightWindow.compact ? 8 : 50
-                color: Config.md3.surface
+                border.color: controlRightWindow.sectionBorderColor
+                border.width: 1
+                color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.68 : 0.5)
                 layer.enabled: controlRightWindow.visible
                 radius: height / 2
 
                 layer.effect: DropShadow {
-                    color: "#80000000"
+                    color: Config.alpha(Config.md3.shadow, 0.28)
                     horizontalOffset: 0
                     radius: 10
                     samples: 20
@@ -332,10 +343,10 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 Layout.preferredHeight: 600
-                border.color: Config.alpha(Config.md3.on_surface, 0.065)
+                border.color: controlRightWindow.sectionBorderColor
                 border.width: 1
                 clip: true
-                color: Config.md3.surface
+                color: controlRightWindow.sectionColor
                 radius: 18
 
                 ColumnLayout {
@@ -491,10 +502,10 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 Layout.preferredHeight: 600
-                border.color: Config.alpha(Config.md3.on_surface, 0.065)
+                border.color: controlRightWindow.sectionBorderColor
                 border.width: 1
                 clip: true
-                color: Config.md3.surface
+                color: controlRightWindow.sectionColor
                 radius: 18
 
                 ColumnLayout {

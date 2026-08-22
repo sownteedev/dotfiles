@@ -9384,7 +9384,9 @@ Item {
     }
 
     function copy(entry) {
-        if (entry && entry.glyph)
-            Quickshell.execDetached(["wl-copy", entry.glyph]);
+        if (entry && entry.glyph) {
+            var command = Config.launcherClipboardAutoPaste ? "if wl-copy \"$1\"; then if command -v wtype >/dev/null 2>&1; then sleep 0.35; wtype -M ctrl -k v -m ctrl; fi; fi" : "wl-copy \"$1\"";
+            Quickshell.execDetached(["sh", "-c", command, "emoji_paste", entry.glyph]);
+        }
     }
 }
