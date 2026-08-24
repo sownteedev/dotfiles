@@ -15,7 +15,7 @@ layer-rule {
 // surfaces. Only switch the source to the real scene underneath; do not force
 // blur for the entire layer surface here.
 layer-rule {
-    match namespace=r"^quickshell-(control-left|control-right|settings-hub|launcher)$"
+    match namespace=r"^quickshell-(control-left|control-right|settings-hub|launcher|dock|osd|notification-popup|notification-screenshot)$"
     background-effect {
         xray false
     }
