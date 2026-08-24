@@ -149,6 +149,8 @@ QtObject {
     property alias osdShowMicrophone: runtimeSettings.osdShowMicrophone
     property alias osdShowVolume: runtimeSettings.osdShowVolume
     property var palette: ({})
+    readonly property string profileImage: expandHomePath(profileImagePath)
+    property alias profileImagePath: runtimeSettings.profileImagePath
     readonly property string quickshellDir: dotfilesRoot + "/quickshell"
     // Color
     property FileView runtimeSettingsFile: FileView {
@@ -230,14 +232,34 @@ QtObject {
             property bool osdShowBrightness: true
             property bool osdShowMicrophone: true
             property bool osdShowVolume: true
+            property string profileImagePath: ""
             property real shellAnimationScale: 1.0
             property bool shellBlurBarEnabled: true
+            property real shellBlurBarOpacityDark: 0.24
+            property real shellBlurBarOpacityLight: 0.86
             property bool shellBlurControlLeftEnabled: true
             property bool shellBlurControlRightEnabled: true
+            property bool shellBlurDockEnabled: true
             property bool shellBlurLauncherEnabled: true
+            property bool shellBlurNotificationEnabled: true
+            property bool shellBlurOsdEnabled: true
+            property real shellBlurPanelOpacityDark: 0.76
+            property real shellBlurPanelOpacityLight: 0.88
             property bool shellBlurSettingsEnabled: true
+            property real shellComponentShadowBlur: 10
+            property bool shellComponentShadowEnabled: true
+            property real shellComponentShadowOffsetX: 0
+            property real shellComponentShadowOffsetY: 2
+            property real shellComponentShadowOpacity: 0.18
+            property real shellComponentShadowSpread: 0
             property bool shellLowPowerMode: false
             property bool shellReducedMotion: false
+            property real shellShadowBlur: 18
+            property bool shellShadowEnabled: true
+            property real shellShadowOffsetX: 0
+            property real shellShadowOffsetY: 3
+            property real shellShadowOpacity: 0.28
+            property real shellShadowSpread: 1
             property string steamUsername: ""
             property string steamWebApiKey: ""
             property string wallFolderPath: "~/Dotfiles/dotf/.walls"
@@ -260,12 +282,31 @@ QtObject {
     readonly property string runtimeSettingsPath: cacheRoot + "/settings.json"
     property alias shellAnimationScale: runtimeSettings.shellAnimationScale
     property alias shellBlurBarEnabled: runtimeSettings.shellBlurBarEnabled
+    property alias shellBlurBarOpacityDark: runtimeSettings.shellBlurBarOpacityDark
+    property alias shellBlurBarOpacityLight: runtimeSettings.shellBlurBarOpacityLight
     property alias shellBlurControlLeftEnabled: runtimeSettings.shellBlurControlLeftEnabled
     property alias shellBlurControlRightEnabled: runtimeSettings.shellBlurControlRightEnabled
+    property alias shellBlurDockEnabled: runtimeSettings.shellBlurDockEnabled
     property alias shellBlurLauncherEnabled: runtimeSettings.shellBlurLauncherEnabled
+    property alias shellBlurNotificationEnabled: runtimeSettings.shellBlurNotificationEnabled
+    property alias shellBlurOsdEnabled: runtimeSettings.shellBlurOsdEnabled
+    property alias shellBlurPanelOpacityDark: runtimeSettings.shellBlurPanelOpacityDark
+    property alias shellBlurPanelOpacityLight: runtimeSettings.shellBlurPanelOpacityLight
     property alias shellBlurSettingsEnabled: runtimeSettings.shellBlurSettingsEnabled
+    property alias shellComponentShadowBlur: runtimeSettings.shellComponentShadowBlur
+    property alias shellComponentShadowEnabled: runtimeSettings.shellComponentShadowEnabled
+    property alias shellComponentShadowOffsetX: runtimeSettings.shellComponentShadowOffsetX
+    property alias shellComponentShadowOffsetY: runtimeSettings.shellComponentShadowOffsetY
+    property alias shellComponentShadowOpacity: runtimeSettings.shellComponentShadowOpacity
+    property alias shellComponentShadowSpread: runtimeSettings.shellComponentShadowSpread
     property alias shellLowPowerMode: runtimeSettings.shellLowPowerMode
     property alias shellReducedMotion: runtimeSettings.shellReducedMotion
+    property alias shellShadowBlur: runtimeSettings.shellShadowBlur
+    property alias shellShadowEnabled: runtimeSettings.shellShadowEnabled
+    property alias shellShadowOffsetX: runtimeSettings.shellShadowOffsetX
+    property alias shellShadowOffsetY: runtimeSettings.shellShadowOffsetY
+    property alias shellShadowOpacity: runtimeSettings.shellShadowOpacity
+    property alias shellShadowSpread: runtimeSettings.shellShadowSpread
     readonly property string steamDir: homeDir + "/.local/share/Steam"
     property alias steamUsername: runtimeSettings.steamUsername
     property alias steamWebApiKey: runtimeSettings.steamWebApiKey

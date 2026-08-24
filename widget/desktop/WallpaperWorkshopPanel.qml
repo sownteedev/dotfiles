@@ -14,15 +14,33 @@ Rectangle {
     property string activeTab: "browse"
     property int contentTransitionDirection: 1
     property string deleteArmedId: ""
-    readonly property int gridColumns: Math.max(1, Math.floor((browser.width - 40) / 270))
+    readonly property int filteredResultCount: installedMode ? WallpaperWorkshopService.filteredInstalledResults.count : WallpaperWorkshopService.filteredResults.count
+    readonly property int gridColumns: Math.max(1, Math.min(4, Math.floor((browser.width - 48) / 280)))
     readonly property bool installedMode: activeTab === "installed"
     property bool open: false
     readonly property string panelErrorMessage: installedMode ? WallpaperWorkshopService.manageErrorMessage : WallpaperWorkshopService.browseErrorMessage
-    readonly property string panelStatusMessage: installedMode ? WallpaperWorkshopService.manageStatusMessage : WallpaperWorkshopService.browseStatusMessage
+    readonly property string panelStatusMessage: GreeterBackgroundService.statusMessage || (installedMode ? WallpaperWorkshopService.manageStatusMessage : WallpaperWorkshopService.browseStatusMessage)
+    readonly property string panelStatusText: GreeterBackgroundService.errorMessage || panelStatusMessage
+    readonly property int sourceResultCount: installedMode ? WallpaperWorkshopService.installedResults.count : WallpaperWorkshopService.results.count
 
     signal applyRequested(string path, var modified)
     signal closeRequested
 
+    function applyDestination(item, destination) {
+        var target = String(destination || "desktop");
+        var greetdRequested = target === "greetd" || target === "both";
+        if (greetdRequested && String(item.type || "").toLowerCase() !== "video")
+            return;
+        var path = String(item.path || "");
+        if (path === "") {
+            WallpaperWorkshopService.download(item, target);
+            return;
+        }
+        if (target === "desktop" || target === "both")
+            root.applyRequested(path, item.modified || 0);
+        if (greetdRequested)
+            GreeterBackgroundService.setEngineVideo(path);
+    }
     function closePanel() {
         if (!open)
             return;
@@ -30,6 +48,10 @@ Rectangle {
         closeTimer.restart();
     }
     function selectTab(tab) {
+        if (tab === "installed") {
+            workshopFilters.closePopup();
+            WallpaperWorkshopService.clearFilters();
+        }
         if (activeTab === tab) {
             if (tab === "installed")
                 WallpaperWorkshopService.loadInstalled(true);
@@ -43,8 +65,8 @@ Rectangle {
             WallpaperWorkshopService.loadInstalled(true);
         else {
             searchInput.forceActiveFocus();
-            if (WallpaperWorkshopService.configured && WallpaperWorkshopService.results.count === 0 && !WallpaperWorkshopService.searching)
-                WallpaperWorkshopService.search("", 1, "trending");
+            if (WallpaperWorkshopService.configured && (WallpaperWorkshopService.results.count === 0 || WallpaperWorkshopService.browseFiltersDirty) && !WallpaperWorkshopService.searching)
+                WallpaperWorkshopService.search(searchInput.text, 1, WallpaperWorkshopService.sortMode);
         }
         contentTransition.restart();
     }
@@ -78,8 +100,9 @@ Rectangle {
         WallpaperWorkshopService.refreshSubscriptions(false);
         if (!installedMode)
             searchInput.forceActiveFocus();
-        if (WallpaperWorkshopService.configured && WallpaperWorkshopService.results.count === 0 && !WallpaperWorkshopService.searching)
-            WallpaperWorkshopService.search("", 1, "trending");
+
+        if (WallpaperWorkshopService.configured && (WallpaperWorkshopService.results.count === 0 || WallpaperWorkshopService.browseFiltersDirty) && !WallpaperWorkshopService.searching)
+            WallpaperWorkshopService.search(searchInput.text, 1, WallpaperWorkshopService.sortMode);
     }
 
     Timer {
@@ -99,7 +122,9 @@ Rectangle {
         onTriggered: root.deleteArmedId = ""
     }
     Connections {
-        function onDownloadCompleted(publishedFileId, path, modified) {
+        function onDownloadCompleted(publishedFileId, path, modified, purpose) {
+            if (purpose === "greetd")
+                return;
             root.applyRequested(path, modified);
         }
 
@@ -110,16 +135,29 @@ Rectangle {
 
         onClicked: root.closePanel()
     }
+    ShellShadow {
+        cornerRadius: browser.radius
+        scale: browser.scale
+        target: browser
+    }
     Rectangle {
         id: browser
 
         anchors.centerIn: parent
-        border.color: Config.alpha(Config.md3.outline, 0.24)
+        border.color: Config.alpha(Config.md3.outline, 0.14)
         border.width: 1
-        color: Config.alpha(Config.md3.surface_container, 0.98)
-        height: Math.min(parent.height - 64, 780)
-        radius: 24
-        width: Math.min(parent.width - 64, 1180)
+        color: Config.alpha(Config.md3.surface_container, 0.97)
+        height: Math.min(parent.height - 40, 920)
+        radius: 32
+        scale: root.open ? 1 : 0.975
+        width: Math.min(parent.width - 40, 1500)
+
+        Behavior on scale {
+            ScaleAnimator {
+                duration: 210
+                easing.type: Easing.OutCubic
+            }
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -128,18 +166,18 @@ Rectangle {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 22
-            spacing: 16
+            anchors.margins: 24
+            spacing: 14
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: 14
 
                 Rectangle {
-                    Layout.preferredHeight: 46
-                    Layout.preferredWidth: 46
+                    Layout.preferredHeight: 48
+                    Layout.preferredWidth: 48
                     color: Config.md3.primary_container
-                    radius: 15
+                    radius: 16
 
                     IconImage {
                         anchors.centerIn: parent
@@ -160,31 +198,31 @@ Rectangle {
                     Text {
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 22
+                        font.pixelSize: 24
                         font.weight: Font.Bold
-                        text: qsTr("Steam Workshop")
+                        text: qsTr("Wallpaper Engine")
                     }
                     Text {
                         Layout.fillWidth: true
-                        color: Config.md3.on_surface_variant
+                        color: GreeterBackgroundService.errorMessage !== "" ? Config.md3.error : Config.md3.on_surface_variant
                         elide: Text.ElideRight
                         font.family: Config.fontName
                         font.pixelSize: 13
-                        text: root.panelStatusMessage !== "" ? root.panelStatusMessage : qsTr("Find, install and manage Wallpaper Engine projects")
+                        text: root.panelStatusText !== "" ? root.panelStatusText : qsTr("Browse and manage Steam Workshop wallpapers")
                     }
                 }
                 Rectangle {
-                    Layout.preferredHeight: 42
-                    Layout.preferredWidth: 42
+                    Layout.preferredHeight: 38
+                    Layout.preferredWidth: 38
                     color: closeMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.10) : Config.alpha(Config.md3.on_surface, 0.055)
-                    radius: 14
+                    radius: 13
 
                     IconImage {
                         anchors.centerIn: parent
-                        height: 20
+                        height: 16
                         layer.enabled: true
                         source: Quickshell.iconPath("window-close-symbolic")
-                        width: 20
+                        width: 16
 
                         layer.effect: ColorOverlay {
                             color: Config.md3.on_surface
@@ -203,7 +241,7 @@ Rectangle {
             }
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 66
+                Layout.preferredHeight: 64
                 border.color: Config.alpha(WallpaperWorkshopService.loginRequired ? Config.md3.tertiary : Config.md3.error, 0.28)
                 border.width: 1
                 color: WallpaperWorkshopService.loginRequired ? Config.alpha(Config.md3.tertiary_container, 0.72) : Config.alpha(Config.md3.error_container, 0.72)
@@ -306,14 +344,16 @@ Rectangle {
             }
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: 8
 
                 Rectangle {
                     id: primaryTabs
 
-                    Layout.preferredHeight: 44
-                    Layout.preferredWidth: 248
-                    color: Config.alpha(Config.md3.on_surface, 0.045)
+                    Layout.preferredHeight: 40
+                    Layout.preferredWidth: 236
+                    border.color: Config.alpha(Config.md3.outline, 0.08)
+                    border.width: 1
+                    color: Config.alpha(Config.md3.on_surface, 0.03)
                     radius: 15
 
                     Rectangle {
@@ -418,16 +458,118 @@ Rectangle {
                         }
                     }
                 }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 260
+                    Layout.preferredHeight: 40
+                    border.color: searchInput.activeFocus ? Config.alpha(Config.md3.primary, 0.52) : Config.alpha(Config.md3.outline, 0.1)
+                    border.width: 1
+                    color: searchInput.activeFocus ? Config.alpha(Config.md3.primary_container, 0.18) : Config.alpha(Config.md3.on_surface, 0.025)
+                    radius: 13
+                    visible: !root.installedMode && WallpaperWorkshopService.configured
+
+                    IconImage {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 15
+                        layer.enabled: true
+                        source: Quickshell.iconPath("system-search-symbolic")
+                        width: 15
+
+                        layer.effect: ColorOverlay {
+                            color: searchInput.activeFocus ? Config.md3.primary : Config.md3.on_surface_variant
+                        }
+                    }
+                    TextInput {
+                        id: searchInput
+
+                        anchors.bottom: parent.bottom
+                        anchors.left: parent.left
+                        anchors.leftMargin: 40
+                        anchors.right: searchAction.left
+                        anchors.rightMargin: 7
+                        anchors.top: parent.top
+                        color: Config.md3.on_surface
+                        font.family: Config.fontName
+                        font.pixelSize: 13
+                        selectByMouse: true
+                        verticalAlignment: TextInput.AlignVCenter
+
+                        Keys.onReturnPressed: WallpaperWorkshopService.search(text, 1, WallpaperWorkshopService.sortMode)
+                    }
+                    Text {
+                        anchors.fill: searchInput
+                        color: Config.alpha(Config.md3.on_surface_variant, 0.68)
+                        font: searchInput.font
+                        text: qsTr("Search Workshop…")
+                        verticalAlignment: Text.AlignVCenter
+                        visible: searchInput.text === ""
+                    }
+                    Rectangle {
+                        id: searchAction
+
+                        anchors.right: parent.right
+                        anchors.rightMargin: 5
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: searchMouse.pressed ? Config.md3.primary_container : (searchMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent")
+                        enabled: !WallpaperWorkshopService.searching
+                        height: 30
+                        opacity: enabled ? 1 : 0.45
+                        radius: 10
+                        width: 30
+
+                        IconImage {
+                            anchors.centerIn: parent
+                            height: 14
+                            layer.enabled: true
+                            source: Quickshell.iconPath("arrow-right-symbolic", "system-search-symbolic")
+                            width: 14
+
+                            layer.effect: ColorOverlay {
+                                color: searchMouse.containsMouse || searchMouse.pressed ? Config.md3.primary : Config.md3.on_surface_variant
+                            }
+                        }
+                        MouseArea {
+                            id: searchMouse
+
+                            anchors.fill: parent
+                            cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            enabled: parent.enabled
+                            hoverEnabled: true
+
+                            onClicked: WallpaperWorkshopService.search(searchInput.text, 1, WallpaperWorkshopService.sortMode)
+                        }
+                    }
+                }
                 Item {
                     Layout.fillWidth: true
+                    visible: root.installedMode || !WallpaperWorkshopService.configured
+                }
+                WallpaperWorkshopFilters {
+                    id: workshopFilters
+
+                    Layout.preferredHeight: 40
+                    Layout.preferredWidth: 190
+                    installedMode: root.installedMode
+                    popupParent: browser
+                    visible: root.installedMode || WallpaperWorkshopService.configured
+
+                    onSearchRequested: {
+                        resultGrid.positionViewAtBeginning();
+                        WallpaperWorkshopService.search(searchInput.text, 1, WallpaperWorkshopService.sortMode);
+                    }
                 }
                 Rectangle {
+                    Accessible.name: Config.wallpaperWorkshopShowNsfw ? qsTr("Hide NSFW Workshop previews") : qsTr("Show NSFW Workshop previews")
+                    Accessible.role: Accessible.Button
                     Layout.preferredHeight: 40
-                    Layout.preferredWidth: 142
+                    Layout.preferredWidth: 40
+                    activeFocusOnTab: true
                     border.color: Config.alpha(Config.wallpaperWorkshopShowNsfw ? Config.md3.error : Config.md3.outline, 0.22)
                     border.width: 1
-                    color: Config.wallpaperWorkshopShowNsfw ? Config.alpha(Config.md3.error_container, 0.72) : Config.alpha(Config.md3.on_surface, 0.035)
-                    radius: 14
+                    color: Config.wallpaperWorkshopShowNsfw ? Config.md3.error_container : (nsfwMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.035))
+                    radius: 13
                     visible: !root.installedMode && WallpaperWorkshopService.configured
 
                     Behavior on border.color {
@@ -441,35 +583,18 @@ Rectangle {
                         }
                     }
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 10
-                        spacing: 8
+                    Keys.onReturnPressed: root.setNsfwVisible(!Config.wallpaperWorkshopShowNsfw)
+                    Keys.onSpacePressed: root.setNsfwVisible(!Config.wallpaperWorkshopShowNsfw)
 
-                        IconImage {
-                            Layout.preferredHeight: 16
-                            Layout.preferredWidth: 16
-                            layer.enabled: true
-                            source: Quickshell.iconPath(Config.wallpaperWorkshopShowNsfw ? "view-reveal-symbolic" : "view-conceal-symbolic")
+                    IconImage {
+                        anchors.centerIn: parent
+                        height: 17
+                        layer.enabled: true
+                        source: Quickshell.iconPath(Config.wallpaperWorkshopShowNsfw ? "view-reveal-symbolic" : "view-conceal-symbolic")
+                        width: 17
 
-                            layer.effect: ColorOverlay {
-                                color: Config.wallpaperWorkshopShowNsfw ? Config.md3.on_error_container : Config.md3.on_surface_variant
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 140
-                                    }
-                                }
-                            }
-                        }
-                        Text {
-                            Layout.fillWidth: true
+                        layer.effect: ColorOverlay {
                             color: Config.wallpaperWorkshopShowNsfw ? Config.md3.on_error_container : Config.md3.on_surface_variant
-                            font.family: Config.fontName
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            text: qsTr("NSFW")
 
                             Behavior on color {
                                 ColorAnimation {
@@ -477,13 +602,15 @@ Rectangle {
                                 }
                             }
                         }
-                        ToggleSwitch {
-                            accessibleName: qsTr("Show NSFW Workshop previews")
-                            checked: Config.wallpaperWorkshopShowNsfw
-                            checkedColor: Config.md3.error
+                    }
+                    MouseArea {
+                        id: nsfwMouse
 
-                            onToggled: checked => root.setNsfwVisible(checked)
-                        }
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+
+                        onClicked: root.setNsfwVisible(!Config.wallpaperWorkshopShowNsfw)
                     }
                 }
                 Rectangle {
@@ -492,9 +619,9 @@ Rectangle {
                     readonly property int selectedIndex: WallpaperWorkshopService.sortMode === "popular" ? 1 : (WallpaperWorkshopService.sortMode === "recent" ? 2 : 0)
 
                     Layout.preferredHeight: 40
-                    Layout.preferredWidth: 294
+                    Layout.preferredWidth: 260
                     color: Config.alpha(Config.md3.on_surface, 0.035)
-                    radius: 14
+                    radius: 13
                     visible: !root.installedMode && WallpaperWorkshopService.configured
 
                     Rectangle {
@@ -580,89 +707,6 @@ Rectangle {
                     }
                 }
             }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 50
-                border.color: searchInput.activeFocus ? Config.alpha(Config.md3.primary, 0.68) : Config.alpha(Config.md3.outline, 0.16)
-                border.width: 1
-                color: Config.alpha(Config.md3.on_surface, 0.035)
-                radius: 17
-                visible: !root.installedMode && WallpaperWorkshopService.configured
-
-                IconImage {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 16
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: 20
-                    layer.enabled: true
-                    source: Quickshell.iconPath("system-search-symbolic")
-                    width: 20
-
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.on_surface_variant
-                    }
-                }
-                TextInput {
-                    id: searchInput
-
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    anchors.leftMargin: 48
-                    anchors.right: searchAction.left
-                    anchors.rightMargin: 10
-                    anchors.top: parent.top
-                    color: Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: 15
-                    selectByMouse: true
-                    verticalAlignment: TextInput.AlignVCenter
-
-                    Keys.onReturnPressed: WallpaperWorkshopService.search(text, 1, WallpaperWorkshopService.sortMode)
-                }
-                Text {
-                    anchors.fill: searchInput
-                    color: Config.alpha(Config.md3.on_surface, 0.38)
-                    font: searchInput.font
-                    text: qsTr("Search Wallpaper Engine Workshop")
-                    verticalAlignment: Text.AlignVCenter
-                    visible: searchInput.text === ""
-                }
-                Rectangle {
-                    id: searchAction
-
-                    anchors.right: parent.right
-                    anchors.rightMargin: 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: searchMouse.pressed ? Config.md3.primary_container : (searchMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
-                    enabled: !WallpaperWorkshopService.searching
-                    height: 38
-                    opacity: enabled ? 1 : 0.55
-                    radius: 13
-                    width: 46
-
-                    IconImage {
-                        anchors.centerIn: parent
-                        height: 19
-                        layer.enabled: true
-                        source: Quickshell.iconPath("system-search-symbolic")
-                        width: 19
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_primary
-                        }
-                    }
-                    MouseArea {
-                        id: searchMouse
-
-                        anchors.fill: parent
-                        cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: parent.enabled
-                        hoverEnabled: true
-
-                        onClicked: WallpaperWorkshopService.search(searchInput.text, 1, WallpaperWorkshopService.sortMode)
-                    }
-                }
-            }
             Item {
                 id: contentHost
 
@@ -724,10 +768,10 @@ Rectangle {
 
                         anchors.fill: parent
                         cacheBuffer: cellHeight
-                        cellHeight: cellWidth * 0.72
+                        cellHeight: cellWidth * 0.67
                         cellWidth: width / root.gridColumns
                         clip: true
-                        model: root.installedMode ? WallpaperWorkshopService.installedResults : WallpaperWorkshopService.results
+                        model: root.installedMode ? WallpaperWorkshopService.filteredInstalledResults : WallpaperWorkshopService.filteredResults
                         visible: (root.installedMode || WallpaperWorkshopService.configured) && !(root.installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching) && count > 0
 
                         ScrollBar.vertical: SlimScrollBar {
@@ -738,7 +782,9 @@ Rectangle {
                             blurNsfw: !Config.wallpaperWorkshopShowNsfw
                             cancelling: WallpaperWorkshopService.downloadCancelling && WallpaperWorkshopService.downloadingId === String(model.id || "")
                             deleteArmed: root.deleteArmedId === String(model.id || "")
+                            downloadBlocked: WallpaperWorkshopService.downloading && WallpaperWorkshopService.downloadingId !== String(model.id || "")
                             downloading: WallpaperWorkshopService.downloadingId === String(model.id || "")
+                            greetdBusy: GreeterBackgroundService.busy
                             height: resultGrid.cellHeight
                             inUse: root.installedMode && String(WallpaperService.currentWallpaper || "") === String(model.path || "")
                             installedMode: root.installedMode
@@ -757,14 +803,14 @@ Rectangle {
                                 deleteArmTimer.stop();
                                 WallpaperWorkshopService.removeInstalled(item);
                             }
-                            onDownloadRequested: item => WallpaperWorkshopService.download(item)
+                            onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
                             onSubscribeRequested: item => WallpaperWorkshopService.openInSteam(item)
                         }
                     }
                     Column {
                         anchors.centerIn: parent
                         spacing: 8
-                        visible: (root.installedMode || WallpaperWorkshopService.configured) && !(root.installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching) && (root.installedMode ? WallpaperWorkshopService.installedResults.count : WallpaperWorkshopService.results.count) === 0
+                        visible: (root.installedMode || WallpaperWorkshopService.configured) && !(root.installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching) && root.filteredResultCount === 0
                         width: Math.max(0, parent.width - 48)
 
                         Text {
@@ -774,7 +820,7 @@ Rectangle {
                             font.pixelSize: 17
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignHCenter
-                            text: root.panelErrorMessage !== "" ? (root.installedMode ? qsTr("Installed wallpapers unavailable") : qsTr("Search unavailable")) : (root.installedMode ? qsTr("No installed Workshop wallpapers") : qsTr("No wallpapers found"))
+                            text: root.panelErrorMessage !== "" ? (root.installedMode ? qsTr("Installed wallpapers unavailable") : qsTr("Search unavailable")) : (root.sourceResultCount > 0 ? qsTr("No wallpapers match this filter") : (root.installedMode ? qsTr("No installed Workshop wallpapers") : qsTr("No wallpapers found")))
                             width: parent.width
                             wrapMode: Text.Wrap
                         }
@@ -783,7 +829,7 @@ Rectangle {
                             font.family: Config.fontName
                             font.pixelSize: 13
                             horizontalAlignment: Text.AlignHCenter
-                            text: root.panelErrorMessage !== "" ? root.panelErrorMessage : (root.installedMode ? qsTr("Downloaded Workshop wallpapers will appear here") : qsTr("Try another search"))
+                            text: root.panelErrorMessage !== "" ? root.panelErrorMessage : (root.sourceResultCount > 0 ? qsTr("Choose another filter") : (root.installedMode ? qsTr("Downloaded Workshop wallpapers will appear here") : qsTr("Try another search or filter")))
                             width: parent.width
                             wrapMode: Text.Wrap
                         }

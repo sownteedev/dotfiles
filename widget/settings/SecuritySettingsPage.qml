@@ -57,6 +57,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.row: 0
                 accentColor: Config.md3.primary
+                iconName: "system-lock-screen-symbolic"
                 note: FaceAuthService.installed ? "Use your face on the Quickshell lock screen while keeping password fallback" : "Howdy is installed by .installconfigtheme on a fresh Arch setup"
                 title: "Lock"
 
@@ -76,6 +77,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.row: 1
                 accentColor: Config.md3.secondary
+                iconName: "avatar-default-symbolic"
                 note: FaceAuthService.installed ? (FaceAuthService.camera !== "" ? "Camera · " + FaceAuthService.camera : "The capture camera is detected when a model is added") : "Install support first, then reopen this page"
                 title: "Face models"
 
@@ -276,6 +278,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.row: content.columnCount > 1 ? 0 : 2
                 accentColor: Config.md3.error
+                iconName: "dialog-warning-symbolic"
                 note: "This laptop uses an RGB webcam, not a depth or infrared sensor"
                 title: "Security note"
 

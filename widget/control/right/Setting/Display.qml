@@ -328,9 +328,9 @@ Item {
             // 1. Brightness Slider Card
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                border.color: controlRightWindow.sectionCardBorderColor
                 border.width: 1
-                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                color: controlRightWindow.sectionCardColor
                 height: 64
                 radius: 12
 
@@ -393,7 +393,7 @@ Item {
             // 2. Night Light temperature control
             NightLightControl {
                 Layout.fillWidth: true
-                backgroundColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                backgroundColor: controlRightWindow.sectionCardColor
                 nightLightEnabled: DisplayService.nightlightEnabled
                 temperature: DisplayService.nightlightTemperature
 
@@ -405,10 +405,10 @@ Item {
             // 3. Dark Mode toggle
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                border.color: controlRightWindow.sectionCardBorderColor
                 border.width: 1
                 clip: true
-                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                color: controlRightWindow.sectionCardColor
                 height: 68
                 radius: 14
 
@@ -487,9 +487,9 @@ Item {
             // 4. Windows-style display modes
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                border.color: controlRightWindow.sectionCardBorderColor
                 border.width: 1
-                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                color: controlRightWindow.sectionCardColor
                 height: 118
                 radius: 14
 
@@ -552,9 +552,9 @@ Item {
                 id: monitorLayoutContainer
 
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                border.color: controlRightWindow.sectionCardBorderColor
                 border.width: 1
-                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                color: controlRightWindow.sectionCardColor
                 height: displayPageRoot.allOutputs.length > 1 ? 300 : 200
                 radius: 12
                 visible: displayPageRoot.allOutputs.length > 0
@@ -899,9 +899,9 @@ Item {
                 }
                 Rectangle {
                     Layout.fillWidth: true
-                    border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                    border.color: controlRightWindow.sectionCardBorderColor
                     border.width: 1
-                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                    color: controlRightWindow.sectionCardColor
                     height: 330
                     radius: 12
 
@@ -1291,9 +1291,9 @@ Item {
                 }
                 Rectangle {
                     Layout.fillWidth: true
-                    border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                    border.color: controlRightWindow.sectionCardBorderColor
                     border.width: 1
-                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                    color: controlRightWindow.sectionCardColor
                     height: 76
                     radius: 12
 

@@ -5,6 +5,7 @@ WallhavenColorPopup 1.0 WallhavenColorPopup.qml
 WallhavenFilterButton 1.0 WallhavenFilterButton.qml
 WallhavenFilterPopup 1.0 WallhavenFilterPopup.qml
 WallhavenFilterToolbar 1.0 WallhavenFilterToolbar.qml
+WallhavenFilters 1.0 WallhavenFilters.qml
 WallhavenRatioPopup 1.0 WallhavenRatioPopup.qml
 WallhavenResolutionPopup 1.0 WallhavenResolutionPopup.qml
 WallhavenSearchBar 1.0 WallhavenSearchBar.qml

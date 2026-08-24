@@ -16,6 +16,9 @@ PanelWindow {
     readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
     readonly property int maxVisiblePopups: screen && screen.height < 800 ? Math.min(2, Config.notificationMaxVisible) : Config.notificationMaxVisible
     property var pendingUpdates: ({})
+    readonly property bool popupAtBottom: Config.notificationPosition === "bottom-right"
+    readonly property bool popupAtRight: Config.notificationPosition === "top-right" || Config.notificationPosition === "bottom-right"
+    readonly property bool popupFromTop: Config.notificationPosition === "top"
     readonly property real popupMaximumWidth: screen ? Responsive.fit(600, screen.width - 40, 260) : 600
     readonly property real popupMinimumWidth: Math.min(380, popupMaximumWidth)
     readonly property bool popupsSuppressed: QuickSettingsService.effectiveDndActive || StateManager.sessionLocked || (!Config.notificationShowInFullscreen && ToplevelManager.activeToplevel && ToplevelManager.activeToplevel.fullscreen)
@@ -119,7 +122,10 @@ PanelWindow {
             resetNotifTimer(notification.id);
         } else {
             console.log("[Notification] Adding notification ID:", notification.id);
-            notifModel.append(notifData);
+            if (notifWindow.popupAtBottom)
+                notifModel.insert(0, notifData);
+            else
+                notifModel.append(notifData);
             // Connect to native closed signal to run exit animation automatically
             notification.closed.connect(function () {
                 console.log("[Notification] Received closed signal for ID:", notification.id);
@@ -148,6 +154,12 @@ PanelWindow {
     }
     function notificationTimeout(notification) {
         return notification && notification.expireTimeout > 0 ? notification.expireTimeout : Config.notificationPopupDuration;
+    }
+    function popupBlurTarget(index) {
+        if (!Config.shellBlurNotificationEnabled || index < 0 || index >= notifModel.count)
+            return null;
+        var delegateItem = notificationRepeater.itemAt(index);
+        return delegateItem ? delegateItem.blurTarget : null;
     }
     function removePopupAt(index) {
         if (index < 0 || index >= notifModel.count)
@@ -272,13 +284,16 @@ PanelWindow {
             // Prefer keeping critical notifications visible. Everything removed
             // here remains available in NotificationHistory.
             var removeIndex = -1;
-            for (var i = 0; i < notifModel.count; i++) {
+            var startIndex = notifWindow.popupAtBottom ? notifModel.count - 1 : 0;
+            var endIndex = notifWindow.popupAtBottom ? -1 : notifModel.count;
+            var step = notifWindow.popupAtBottom ? -1 : 1;
+            for (var i = startIndex; i !== endIndex; i += step) {
                 if (!notifModel.get(i).isCritical) {
                     removeIndex = i;
                     break;
                 }
             }
-            var finalIndex = removeIndex >= 0 ? removeIndex : 0;
+            var finalIndex = removeIndex >= 0 ? removeIndex : startIndex;
             var removedNotification = notifModel.get(finalIndex).rawNotification;
             removePopupAt(finalIndex);
             if (removedNotification && removedNotification.transient) {
@@ -292,12 +307,14 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
-    anchors.bottom: Config.notificationPosition === "bottom-right"
+    WlrLayershell.namespace: "quickshell-notification-popup"
+    anchors.bottom: popupAtBottom
     anchors.left: false
-    anchors.right: Config.notificationPosition === "top-right" || Config.notificationPosition === "bottom-right"
+    anchors.right: popupAtRight
 
-    // Position: top center of screen
-    anchors.top: Config.notificationPosition !== "bottom-right"
+    // Bottom stacks use a vertically stable surface so the compositor does not
+    // move the entire popup window whenever the stack grows or shrinks.
+    anchors.top: true
     color: "transparent"
     exclusiveZone: 0 // Float, do not reserve space or push windows
 
@@ -309,6 +326,36 @@ PanelWindow {
     margins.right: anchors.right ? 15 : 0
     margins.top: anchors.top ? 15 : 0
     visible: notifModel.count > 0
+
+    BackgroundEffect.blurRegion: Region {
+        Region {
+            item: notifWindow.popupBlurTarget(0)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupBlurTarget(1)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupBlurTarget(2)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupBlurTarget(3)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupBlurTarget(4)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupBlurTarget(5)
+            radius: item ? item.radius : 0
+        }
+    }
+    mask: Region {
+        item: layout
+    }
 
     onMaxVisiblePopupsChanged: Qt.callLater(function () {
         notifWindow.trimPopupStack();
@@ -394,25 +441,33 @@ PanelWindow {
 
         onTriggered: notifWindow.retainedStackHeight = 0
     }
-
     // UI Layout (Stacked list)
     Column {
         id: layout
 
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: 15
         spacing: 10
+        y: notifWindow.popupAtBottom ? parent.height - implicitHeight - 15 : 15
 
         move: Transition {
             NumberAnimation {
-                duration: Config.animationDuration(220)
+                duration: Config.animationDuration(notifWindow.retainedStackHeight > 0 ? 220 : 0)
                 easing.type: Easing.OutCubic
                 properties: "y"
             }
         }
+        Behavior on y {
+            enabled: notifWindow.popupAtBottom && notifWindow.retainedStackHeight > 0
+
+            NumberAnimation {
+                duration: Config.animationDuration(220)
+                easing.type: Easing.OutCubic
+            }
+        }
 
         Repeater {
+            id: notificationRepeater
+
             model: notifModel
 
             delegate: Component {
@@ -425,6 +480,7 @@ PanelWindow {
                     property bool active: model.active
                     property string appIcon: model.appIcon
                     property string appName: model.appName
+                    readonly property Item blurTarget: container
                     property string body: model.body
                     property bool completed: false
                     property string image: model.image
@@ -511,6 +567,17 @@ PanelWindow {
                     // Loop-free natural width calculations (bypasses circular dependency between container and layout)
 
                     // Main Container with Auto-fitting Width and Stable Heights!
+                    ShellShadow {
+                        active: container.opacity > 0
+                        componentShadow: true
+                        cornerRadius: container.radius
+                        opacity: container.opacity
+                        target: container
+
+                        transform: Translate {
+                            x: container.swipeOffset + container.xOffset
+                        }
+                    }
                     Rectangle {
                         id: container
 
@@ -522,13 +589,14 @@ PanelWindow {
                         // Swipe-right-to-dismiss
                         property real swipeOffset: 0
                         // Keep the travel short so the popup feels attached to the bar.
-                        property real yOffset: -18
+                        property real xOffset: notifWindow.popupAtRight ? 18 : 0
+                        property real yOffset: notifWindow.popupFromTop ? -18 : 0
 
                         anchors.horizontalCenter: parent.horizontalCenter
                         border.color: delegateWrapper.isCritical ? Config.alpha(Config.md3.error, 0.72) : Config.alpha(Config.md3.outline_variant, 0.26)
                         border.width: 1
                         clip: true // Clean rounded clipping of actions panel
-                        color: Config.md3.background
+                        color: Config.shellBlurNotificationEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
                         height: delegateWrapper.showActions ? expandedHeight : collapsedHeight
                         opacity: 0
                         radius: delegateWrapper.showActions ? 45 : height / 2
@@ -564,6 +632,7 @@ PanelWindow {
                                     contentReveal: 1
                                     opacity: 1
                                     target: container
+                                    xOffset: 0
                                     yOffset: 0
                                 }
                             },
@@ -575,7 +644,8 @@ PanelWindow {
                                     contentReveal: 0
                                     opacity: 0
                                     target: container
-                                    yOffset: -14
+                                    xOffset: notifWindow.popupAtRight ? 14 : 0
+                                    yOffset: notifWindow.popupFromTop ? -14 : 0
                                 }
                             }
                         ]
@@ -588,7 +658,7 @@ PanelWindow {
                             }
                         }
                         transform: Translate {
-                            x: container.swipeOffset
+                            x: container.swipeOffset + container.xOffset
                         }
                         // Animate compositor-friendly properties only. Scaling the clipped
                         // card forced the text, rounded mask, and progress canvas to redraw.
@@ -607,7 +677,7 @@ PanelWindow {
                                     NumberAnimation {
                                         duration: Config.animationDuration(220)
                                         easing.type: Easing.OutCubic
-                                        property: "yOffset"
+                                        properties: "xOffset,yOffset"
                                         target: container
                                     }
                                     SequentialAnimation {
@@ -637,7 +707,7 @@ PanelWindow {
                                     NumberAnimation {
                                         duration: Config.animationDuration(150)
                                         easing.type: Easing.InCubic
-                                        property: "yOffset"
+                                        properties: "xOffset,yOffset"
                                         target: container
                                     }
                                     NumberAnimation {

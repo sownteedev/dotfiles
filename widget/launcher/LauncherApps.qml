@@ -1,8 +1,11 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import "../../"
+import "../../components"
+import "../../service"
 
 GridView {
     id: appsGrid
@@ -136,8 +139,7 @@ GridView {
             resetEntrance();
             var col = index % appsGrid.columns;
             var row = Math.floor(index / appsGrid.columns);
-            // Staggered delay: 25ms per column/row step
-            entryTimer.interval = Math.min(col + row, appsGrid.columns + 3) * 25 + 10;
+            entryTimer.interval = Math.min(col + row, appsGrid.columns + 3) * 20;
             entryTimer.start();
         }
         function showEntranceFinal() {
@@ -270,14 +272,19 @@ GridView {
             MouseArea {
                 id: gridMouse
 
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 hoverEnabled: true
 
-                onClicked: {
+                onClicked: mouse => {
                     appsGrid.currentIndex = index;
-                    modelData.entry.execute();
-                    appsGrid.appLaunched();
+                    if (mouse.button === Qt.RightButton) {
+                        appActionPopup.openFor(modelData.entry, modelData.name, appCell, mouse.x, mouse.y);
+                    } else {
+                        modelData.entry.execute();
+                        appsGrid.appLaunched();
+                    }
                 }
                 onEntered: appsGrid.currentIndex = index
                 onPressed: appsGrid.currentIndex = index
@@ -310,8 +317,16 @@ GridView {
         if (entranceReady)
             entranceWaveTimer.restart();
     }
-    onGridItemsChanged: Qt.callLater(syncSelection)
+    onGridItemsChanged: {
+        appActionPopup.close();
+        Qt.callLater(syncSelection);
+    }
 
+    AppActionPopup {
+        id: appActionPopup
+
+        onAppLaunched: appsGrid.appLaunched()
+    }
     Timer {
         id: entranceWaveTimer
 
@@ -328,7 +343,7 @@ GridView {
         font.family: Config.fontName
         font.pixelSize: 16
         font.weight: Font.Medium
-        text: "No matching applications"
+        text: qsTr("No matching applications")
         visible: appsGrid.gridItems.length === 0
     }
 }

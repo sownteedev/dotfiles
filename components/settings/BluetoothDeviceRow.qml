@@ -80,9 +80,9 @@ Rectangle {
     }
 
     Layout.fillWidth: true
-    border.color: root.connected ? Config.alpha(Config.md3.primary, 0.42) : root.remembered ? Config.alpha(Config.md3.on_surface, 0.10) : "transparent"
+    border.color: root.connected ? Config.alpha(Config.md3.primary, 0.42) : root.remembered ? Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09) : "transparent"
     border.width: 1
-    color: root.connected ? Config.alpha(Config.md3.primary, 0.08) : root.remembered ? Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22) : Config.alpha(Config.md3.on_surface, 0.035)
+    color: root.connected ? Config.alpha(Config.md3.primary, 0.12) : root.remembered ? Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.64 : 0.30) : Config.alpha(Config.md3.on_surface, 0.055)
     implicitHeight: root.hasDetailedBattery ? 72 : root.remembered ? 68 : 62
     radius: 16
 

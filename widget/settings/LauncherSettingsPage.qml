@@ -70,6 +70,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            iconName: "system-search-symbolic"
             note: "Search behavior shared by applications and every optional provider"
             title: "Search"
 
@@ -114,6 +115,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary
             compact: true
+            iconName: "view-grid-symbolic"
             note: "Applications remain the default provider and cannot be disabled"
             title: "Providers"
 
@@ -158,6 +160,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
+            iconName: "preferences-desktop-keyboard-shortcuts-symbolic"
             note: "Type the prefix followed by a space to activate a provider"
             title: "Prefixes"
 

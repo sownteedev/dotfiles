@@ -12,10 +12,13 @@ Item {
     property bool blurNsfw: false
     property bool cancelling: false
     property bool deleteArmed: false
+    property bool downloadBlocked: false
     readonly property bool downloaded: installedMode || Boolean(wallpaper.downloaded)
     property bool downloading: false
     readonly property real fileSizeBytes: Number(wallpaper.file_size || 0)
     readonly property string fileSizeLabel: formatFileSize(fileSizeBytes)
+    property bool greetdBusy: false
+    readonly property bool greetdEligible: String(wallpaper.type || "").toLowerCase() === "video"
     property bool inUse: false
     property bool installedMode: false
     readonly property string itemId: String(wallpaper.id || "")
@@ -32,7 +35,7 @@ Item {
     signal armDeleteRequested(string publishedFileId)
     signal cancelDownloadRequested
     signal deleteRequested(var item)
-    signal downloadRequested(var item)
+    signal destinationRequested(var item, string destination)
     signal subscribeRequested(var item)
 
     function formatFileSize(bytes) {
@@ -48,16 +51,19 @@ Item {
         var decimals = unitIndex === 0 || size >= 100 ? 0 : 1;
         return size.toLocaleString(Qt.locale(), "f", decimals) + " " + units[unitIndex];
     }
+    function triggerPrimaryAction() {
+        destinationPopup.openFor(primaryAction);
+    }
 
     Rectangle {
         id: card
 
         anchors.fill: parent
-        anchors.margins: 7
-        border.color: cardMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.55) : Config.alpha(Config.md3.outline, 0.16)
+        anchors.margins: 8
+        border.color: cardMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.42) : Config.alpha(Config.md3.outline, 0.12)
         border.width: 1
         color: cardMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container_low
-        radius: 18
+        radius: 20
 
         Behavior on border.color {
             ColorAnimation {
@@ -73,7 +79,7 @@ Item {
             anchors.top: parent.top
             color: Config.alpha(Config.md3.surface, 0.55)
             height: parent.height - 56
-            radius: 18
+            radius: 20
             z: 2
 
             Image {
@@ -122,7 +128,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 color: "transparent"
-                radius: 18
+                radius: 20
 
                 gradient: Gradient {
                     GradientStop {
@@ -376,8 +382,8 @@ Item {
             Rectangle {
                 id: deleteAction
 
-                Layout.preferredHeight: 38
-                Layout.preferredWidth: 38
+                Layout.preferredHeight: 36
+                Layout.preferredWidth: 36
                 color: deleteMouse.pressed ? Config.md3.error_container : (deleteMouse.containsMouse || root.deleteArmed ? Config.alpha(Config.md3.error_container, 0.96) : Config.alpha(Config.md3.on_surface, 0.055))
                 radius: 12
                 visible: root.installedMode && !root.inUse
@@ -415,18 +421,24 @@ Item {
             Rectangle {
                 id: primaryAction
 
-                Layout.preferredHeight: 38
-                Layout.preferredWidth: 38
+                Accessible.name: qsTr("Choose wallpaper destination")
+                Accessible.role: Accessible.Button
+                Layout.preferredHeight: 36
+                Layout.preferredWidth: 36
+                activeFocusOnTab: true
                 color: primaryMouse.pressed ? Config.md3.primary_container : (primaryMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
-                enabled: root.supported && !root.downloading && !root.removing
+                enabled: root.supported && !root.downloading && !root.removing && !root.downloadBlocked
                 opacity: enabled ? 1 : 0.5
                 radius: 12
+
+                Keys.onReturnPressed: root.triggerPrimaryAction()
+                Keys.onSpacePressed: root.triggerPrimaryAction()
 
                 IconImage {
                     anchors.centerIn: parent
                     height: 18
                     layer.enabled: true
-                    source: Quickshell.iconPath(root.downloaded ? "media-playback-start-symbolic" : "folder-download-symbolic")
+                    source: Quickshell.iconPath(root.downloaded ? "preferences-desktop-wallpaper-symbolic" : "folder-download-symbolic")
                     width: 18
 
                     layer.effect: ColorOverlay {
@@ -441,12 +453,7 @@ Item {
                     enabled: parent.enabled
                     hoverEnabled: true
 
-                    onClicked: {
-                        if (root.downloaded && root.itemPath)
-                            root.applyRequested(root.itemPath, root.wallpaper.modified || 0);
-                        else
-                            root.downloadRequested(root.wallpaper);
-                    }
+                    onClicked: root.triggerPrimaryAction()
                 }
             }
         }
@@ -459,17 +466,12 @@ Item {
             hoverEnabled: true
             z: 1
 
-            onClicked: {
-                if (root.downloaded && root.itemPath)
-                    root.applyRequested(root.itemPath, root.wallpaper.modified || 0);
-                else
-                    root.downloadRequested(root.wallpaper);
-            }
+            onClicked: root.triggerPrimaryAction()
         }
         Rectangle {
             anchors.fill: parent
             color: Config.alpha(Config.md3.surface, 0.76)
-            radius: 18
+            radius: 20
             visible: root.downloading || root.removing
             z: 6
 
@@ -545,5 +547,12 @@ Item {
             radius: card.radius
             z: 7
         }
+    }
+    WallpaperDestinationPopup {
+        id: destinationPopup
+
+        greetdAvailable: root.greetdEligible && !root.greetdBusy
+
+        onDestinationSelected: destination => root.destinationRequested(root.wallpaper, destination)
     }
 }

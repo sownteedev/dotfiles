@@ -73,6 +73,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary
             compact: true
+            iconName: "applications-system-symbolic"
             note: "Reduce rendering work without changing the visual hierarchy"
             title: "Motion and performance"
 
@@ -126,6 +127,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            iconName: "audio-volume-high-symbolic"
             note: "On-screen feedback for hardware controls"
             title: "OSD and audio"
 
@@ -226,6 +228,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
+            iconName: "system-run-symbolic"
             note: DiagnosticsService.busy ? "Checking the local system…" : "Required tools should be available; optional tools only affect their matching feature"
             title: "Dependencies"
 
@@ -275,6 +278,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.error
             compact: true
+            iconName: "user-trash-symbolic"
             note: "Only generated previews and backdrops are removed; downloaded wallpapers stay installed"
             title: "Cache"
 

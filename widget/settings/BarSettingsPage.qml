@@ -75,6 +75,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary
             compact: true
+            iconName: "view-grid-symbolic"
             note: "Global bar geometry. Responsive compression still applies on narrow outputs."
             title: "Layout"
 
@@ -125,6 +126,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            iconName: "focus-windows-symbolic"
             note: "Primary navigation and current workspace context"
             title: "Left and center"
 
@@ -166,6 +168,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
+            iconName: "emblem-system-symbolic"
             note: "Status modules are hidden without stopping their underlying services"
             title: "Status area"
 

@@ -1,4 +1,5 @@
 import "../../"
+import "../../components"
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
@@ -84,10 +85,11 @@ RowLayout {
 
                     readonly property var activeMenu: menuStack.length > 0 ? menuStack[menuStack.length - 1] : rootMenu
                     readonly property string activeMenuTitle: menuStack.length > 0 ? String(menuStack[menuStack.length - 1].text || "Menu") : ""
-                    readonly property real desiredHeight: layout.implicitHeight + 42
+                    readonly property real desiredHeight: layout.implicitHeight + 30 + shadowPadding * 2
                     property var menuStack: []
                     readonly property var rootMenu: itemArea.trayItem && itemArea.trayItem.hasMenu ? itemArea.trayItem.menu : null
                     readonly property real screenHeight: root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.height : 720
+                    readonly property real shadowPadding: Math.min(24, Math.ceil(Math.max(8, Config.shellComponentShadowBlur + Math.max(Math.abs(Config.shellComponentShadowOffsetX), Math.abs(Config.shellComponentShadowOffsetY)) + Math.max(0, Config.shellComponentShadowSpread) + 2)))
 
                     function closeMenu() {
                         for (var i = 0; i < menuStack.length; i++) {
@@ -116,12 +118,12 @@ RowLayout {
                     anchor.edges: Edges.Bottom | Edges.Left
                     // ONLY set anchor.item (setting anchor.window unsets anchor.item, causing positioning/crash issues)
                     anchor.item: itemArea
-                    anchor.margins.left: -30
-                    anchor.margins.top: 30
+                    anchor.margins.left: -24 - shadowPadding
+                    anchor.margins.top: 36 - shadowPadding
                     color: "transparent"
                     grabFocus: true
                     implicitHeight: Responsive.fit(desiredHeight, screenHeight - 70, 120)
-                    implicitWidth: Math.min(240, Math.max(0, root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.width - 16 : 240))
+                    implicitWidth: Math.min(228 + shadowPadding * 2, Math.max(0, root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.width - 16 : 228 + shadowPadding * 2))
                     visible: true
 
                     onActiveMenuChanged: Qt.callLater(function () {
@@ -139,30 +141,26 @@ RowLayout {
 
                         menu: menuPopup.activeMenu
                     }
+                    ShellShadow {
+                        componentShadow: true
+                        cornerRadius: bgRect.radius
+                        target: bgRect
+                    }
                     Rectangle {
                         id: bgRect
 
                         anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 6
+                        anchors.bottomMargin: menuPopup.shadowPadding
                         anchors.left: parent.left
-                        anchors.leftMargin: 6
+                        anchors.leftMargin: menuPopup.shadowPadding
                         anchors.right: parent.right
-                        anchors.rightMargin: 6
+                        anchors.rightMargin: menuPopup.shadowPadding
                         anchors.top: parent.top
-                        anchors.topMargin: 16 // Room for the top arrow inside window boundaries
+                        anchors.topMargin: menuPopup.shadowPadding + 10 // Room for the top arrow inside window boundaries
                         border.color: Config.alpha(Config.md3.on_surface, 0.08)
                         border.width: 1
                         color: Config.md3.surface_container
-                        layer.enabled: true
                         radius: 12
-
-                        layer.effect: DropShadow {
-                            color: "#60000000"
-                            horizontalOffset: 0
-                            radius: 8
-                            samples: 17
-                            verticalOffset: 4
-                        }
 
                         Flickable {
                             id: menuFlickable

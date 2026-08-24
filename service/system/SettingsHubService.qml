@@ -60,7 +60,7 @@ QtObject {
     property Process filePickerDialog: Process {
         id: filePickerDialog
 
-        function open(targetField, folder, folderOnly) {
+        function open(targetField, folder, folderOnly, filters) {
             if (running || root.filePickerActive)
                 return;
 
@@ -73,6 +73,9 @@ QtObject {
             if (folder !== "") {
                 args.push("--filename=" + folder.replace("file://", ""));
             }
+            var selectedFilters = filters || [];
+            for (var i = 0; i < selectedFilters.length; ++i)
+                args.push("--file-filter=" + selectedFilters[i]);
             command = ["zenity"].concat(args);
 
             // Temporarily push SettingsHub to the background (Wayland layer shell prevents zenity from being on top)
@@ -260,14 +263,34 @@ QtObject {
             "osdShowBrightness": Config.osdShowBrightness,
             "osdShowMicrophone": Config.osdShowMicrophone,
             "osdShowVolume": Config.osdShowVolume,
+            "profileImagePath": Config.profileImagePath,
             "shellAnimationScale": Config.shellAnimationScale,
             "shellBlurBarEnabled": Config.shellBlurBarEnabled,
+            "shellBlurBarOpacityDark": Config.shellBlurBarOpacityDark,
+            "shellBlurBarOpacityLight": Config.shellBlurBarOpacityLight,
             "shellBlurControlLeftEnabled": Config.shellBlurControlLeftEnabled,
             "shellBlurControlRightEnabled": Config.shellBlurControlRightEnabled,
+            "shellBlurDockEnabled": Config.shellBlurDockEnabled,
             "shellBlurLauncherEnabled": Config.shellBlurLauncherEnabled,
+            "shellBlurNotificationEnabled": Config.shellBlurNotificationEnabled,
+            "shellBlurOsdEnabled": Config.shellBlurOsdEnabled,
+            "shellBlurPanelOpacityDark": Config.shellBlurPanelOpacityDark,
+            "shellBlurPanelOpacityLight": Config.shellBlurPanelOpacityLight,
             "shellBlurSettingsEnabled": Config.shellBlurSettingsEnabled,
+            "shellComponentShadowBlur": Config.shellComponentShadowBlur,
+            "shellComponentShadowEnabled": Config.shellComponentShadowEnabled,
+            "shellComponentShadowOffsetX": Config.shellComponentShadowOffsetX,
+            "shellComponentShadowOffsetY": Config.shellComponentShadowOffsetY,
+            "shellComponentShadowOpacity": Config.shellComponentShadowOpacity,
+            "shellComponentShadowSpread": Config.shellComponentShadowSpread,
             "shellLowPowerMode": Config.shellLowPowerMode,
             "shellReducedMotion": Config.shellReducedMotion,
+            "shellShadowBlur": Config.shellShadowBlur,
+            "shellShadowEnabled": Config.shellShadowEnabled,
+            "shellShadowOffsetX": Config.shellShadowOffsetX,
+            "shellShadowOffsetY": Config.shellShadowOffsetY,
+            "shellShadowOpacity": Config.shellShadowOpacity,
+            "shellShadowSpread": Config.shellShadowSpread,
             "latLon": Config.latLon,
             "apiWeather": Config.apiWeather,
             "steamUsername": Config.steamUsername,

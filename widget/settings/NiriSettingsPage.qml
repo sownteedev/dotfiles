@@ -20,7 +20,6 @@ Item {
     readonly property bool headerResetVisible: activeSection === 1 ? layoutBaselineState !== "" && JSON.stringify(currentLayoutState()) !== layoutBaselineState : Boolean(activeActionPage && activeActionPage.headerResetVisible === true)
     property string layoutBaselineState: ""
     property var recentBindValues: []
-    readonly property var sectionNames: ["Keybinds", "Layout", "Input", "Animations", "Behavior", "Rules", "Config files"]
 
     function applyLayout() {
         SettingsHubService.saveLayout(currentLayoutState());
@@ -451,6 +450,7 @@ Item {
                     SettingsExpandableCard {
                         Layout.fillWidth: true
                         accentColor: Config.md3.secondary
+                        iconName: "view-column-symbolic"
                         note: "Column sizing and centering behavior"
                         title: "Window geometry"
                         toggleVisible: false
@@ -615,6 +615,7 @@ Item {
                                 Layout.minimumWidth: 0
                                 Layout.preferredWidth: 1
                                 accentColor: Config.md3.primary
+                                iconName: "view-column-symbolic"
                                 note: "Widths used by Niri's preset-column-width action"
                                 title: "Preset column widths"
 
@@ -638,6 +639,7 @@ Item {
                                 Layout.minimumWidth: 0
                                 Layout.preferredWidth: 1
                                 accentColor: Config.md3.secondary
+                                iconName: "view-list-symbolic"
                                 note: "Heights used by Niri's preset-window-height action"
                                 title: "Preset window heights"
 
@@ -659,6 +661,7 @@ Item {
 
                             Layout.fillWidth: true
                             accentColor: Config.md3.tertiary
+                            iconName: "preferences-system-windows-symbolic"
                             note: "Reserve space around the working area"
                             title: "Struts"
 
@@ -703,6 +706,7 @@ Item {
                     SettingsExpandableCard {
                         Layout.fillWidth: true
                         accentColor: Config.md3.error
+                        iconName: "view-grid-symbolic"
                         note: "Zoom, backdrop and workspace preview shadow"
                         title: "Overview"
                         toggleVisible: false
@@ -739,6 +743,7 @@ Item {
 
                             Layout.fillWidth: true
                             accentColor: Config.md3.tertiary
+                            iconName: "preferences-desktop-effects-symbolic"
                             note: "Shadow behind each workspace preview"
                             title: "Workspace shadow"
 
@@ -801,6 +806,7 @@ Item {
                             accentColor: Config.md3.primary
                             anchors.left: parent.left
                             anchors.top: parent.top
+                            iconName: "focus-windows-symbolic"
                             note: "Draw a configurable border around windows"
                             title: "Window border"
                             width: (parent.width - 16) / 2
@@ -852,6 +858,7 @@ Item {
 
                                 Layout.fillWidth: true
                                 accentColor: Config.md3.primary
+                                iconName: "color-select-symbolic"
                                 note: "Gradient overrides the solid colors above"
                                 title: "Gradient colors"
 
@@ -885,6 +892,7 @@ Item {
                             accentColor: Config.md3.secondary
                             anchors.right: parent.right
                             anchors.top: parent.top
+                            iconName: "focus-windows-symbolic"
                             note: "Highlight the currently focused window"
                             title: "Focus ring"
                             width: (parent.width - 16) / 2
@@ -935,6 +943,7 @@ Item {
 
                                 Layout.fillWidth: true
                                 accentColor: Config.md3.secondary
+                                iconName: "color-select-symbolic"
                                 note: "Gradient overrides the solid colors above"
                                 title: "Gradient colors"
 
@@ -969,6 +978,7 @@ Item {
                             anchors.left: parent.left
                             anchors.top: borderCard.bottom
                             anchors.topMargin: 16
+                            iconName: "insert-object-symbolic"
                             note: "Show where a dragged window will be inserted"
                             title: "Drag insert hint"
                             width: (parent.width - 16) / 2
@@ -989,6 +999,7 @@ Item {
 
                                 Layout.fillWidth: true
                                 accentColor: Config.md3.tertiary
+                                iconName: "color-select-symbolic"
                                 note: "Gradient overrides the solid hint color"
                                 title: "Gradient"
 
@@ -1011,6 +1022,7 @@ Item {
                             anchors.left: parent.left
                             anchors.top: insertHintCard.bottom
                             anchors.topMargin: 16
+                            iconName: "weather-fog-symbolic"
                             note: "GPU blur quality and performance controls"
                             title: "Experimental blur"
                             width: (parent.width - 16) / 2
@@ -1079,6 +1091,7 @@ Item {
                             anchors.right: parent.right
                             anchors.top: focusRingCard.bottom
                             anchors.topMargin: 16
+                            iconName: "preferences-desktop-effects-symbolic"
                             note: "Draw a configurable shadow behind windows"
                             title: "Window shadow"
                             width: (parent.width - 16) / 2
@@ -1157,6 +1170,7 @@ Item {
                             anchors.right: parent.right
                             anchors.top: shadowCard.bottom
                             anchors.topMargin: 16
+                            iconName: "view-list-symbolic"
                             note: "Marker for tabs in a tabbed column"
                             title: "Tabbed column indicator"
                             width: (parent.width - 16) / 2
@@ -1271,6 +1285,7 @@ Item {
 
                                 Layout.fillWidth: true
                                 accentColor: Config.md3.primary
+                                iconName: "color-select-symbolic"
                                 note: "Gradient overrides the solid colors above"
                                 title: "Gradient colors"
 
@@ -1325,6 +1340,7 @@ Item {
                         Layout.fillWidth: true
                         accentColor: Config.md3.secondary
                         detailsSpacing: 16
+                        iconName: "view-restore-symbolic"
                         note: "Timing, highlight, previews and four switcher shortcuts"
                         title: "Recent windows"
 
@@ -1335,6 +1351,7 @@ Item {
                         SettingsSectionCard {
                             Layout.fillWidth: true
                             accentColor: Config.md3.secondary
+                            iconName: "preferences-system-time-symbolic"
                             note: "Controls how quickly the switcher opens and reacts"
                             title: "Timing"
 
@@ -1372,6 +1389,7 @@ Item {
                         SettingsSectionCard {
                             Layout.fillWidth: true
                             accentColor: Config.md3.primary
+                            iconName: "color-select-symbolic"
                             note: "Appearance of the currently selected preview"
                             title: "Highlight"
 
@@ -1423,6 +1441,7 @@ Item {
                         SettingsSectionCard {
                             Layout.fillWidth: true
                             accentColor: Config.md3.tertiary
+                            iconName: "video-display-symbolic"
                             note: "Limits preview size to keep the switcher responsive"
                             title: "Previews"
 
@@ -1460,6 +1479,7 @@ Item {
                         SettingsSectionCard {
                             Layout.fillWidth: true
                             accentColor: Config.md3.error
+                            iconName: "preferences-desktop-keyboard-shortcuts-symbolic"
                             note: "Click a shortcut and press a new combination; save it with Apply layout"
                             title: "Shortcuts"
 
@@ -1576,6 +1596,7 @@ Item {
                                     Layout.fillWidth: true
                                     accentColor: root.inputAccent(sectionName)
                                     checked: sectionEnabled
+                                    iconName: sectionName === "Keyboard" ? "input-keyboard-symbolic" : sectionName === "Touchpad" ? "input-touchpad-symbolic" : "input-mouse-symbolic"
                                     note: canDisable ? "Disable the whole " + sectionName.toLowerCase() + " section" : "Always available in the active Niri input block"
                                     title: sectionName
                                     toggleVisible: canDisable

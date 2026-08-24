@@ -14,6 +14,7 @@ import "service"
 import "widget/bar"
 import "widget/capture"
 import "widget/desktop"
+import "widget/dock"
 import "widget/idle"
 import "widget/lockscreen"
 import "widget/notification"
@@ -25,6 +26,7 @@ ShellRoot {
     id: root
 
     property var lazyOpenRequests: ({})
+    readonly property bool profileImageSyncBusy: ProfileImageService.busy
 
     function clearLazyOpenRequest(loader) {
         if (!loader || !loader.objectName)
@@ -173,6 +175,19 @@ ShellRoot {
                 required property var modelData
 
                 screen: modelData
+            }
+        }
+    }
+    Variants {
+        model: Quickshell.screens
+
+        delegate: Component {
+            Dock {
+                required property var modelData
+
+                screen: modelData
+
+                onLauncherRequested: root.showLazyWindow(launcherLoader, "openAllApps")
             }
         }
     }

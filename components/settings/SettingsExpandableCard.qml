@@ -1,7 +1,10 @@
 import "../../"
 import ".."
+import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Widgets
 
 Rectangle {
     id: root
@@ -12,6 +15,7 @@ Rectangle {
     property int contentPadding: 20
     property int detailsSpacing: 16
     readonly property bool expanded: !toggleVisible || checked
+    property string iconName: "preferences-system-symbolic"
     property string note: ""
     property string title: ""
     property bool toggleVisible: true
@@ -45,23 +49,21 @@ Rectangle {
 
             Rectangle {
                 Layout.alignment: Qt.AlignVCenter
-                Layout.preferredHeight: 38
-                Layout.preferredWidth: 38
-                color: Config.alpha(root.accentColor, 0.13)
-                radius: 11
+                Layout.preferredHeight: 42
+                Layout.preferredWidth: 42
+                color: Config.alpha(root.accentColor, 0.14)
+                radius: 13
 
-                transform: Translate {
-                    y: -2
-                }
-
-                Rectangle {
+                IconImage {
                     anchors.centerIn: parent
-                    border.color: root.accentColor
-                    border.width: 2
-                    color: "transparent"
-                    height: 15
-                    radius: 4
-                    width: 15
+                    height: 21
+                    layer.enabled: true
+                    source: Quickshell.iconPath(root.iconName)
+                    width: 21
+
+                    layer.effect: ColorOverlay {
+                        color: root.accentColor
+                    }
                 }
             }
             ColumnLayout {

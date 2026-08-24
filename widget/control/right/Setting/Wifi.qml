@@ -120,9 +120,9 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: currentNetworkLayout.implicitHeight + 36
-                border.color: Config.alpha(Config.md3.on_surface, 0.04)
+                border.color: controlRightWindow.sectionCardBorderColor
                 border.width: 1
-                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                color: controlRightWindow.sectionCardColor
                 radius: 12
 
                 ColumnLayout {

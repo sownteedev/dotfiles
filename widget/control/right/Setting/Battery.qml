@@ -117,9 +117,9 @@ Item {
             // Battery Info Card - one large card containing everything
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                border.color: controlRightWindow.sectionCardBorderColor
                 border.width: 1
-                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                color: controlRightWindow.sectionCardColor
                 implicitHeight: batteryInfoColumn.implicitHeight + 32
                 radius: 12
 
@@ -701,9 +701,9 @@ Item {
                 }
                 Rectangle {
                     Layout.fillWidth: true
-                    border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                    border.color: controlRightWindow.sectionCardBorderColor
                     border.width: 1
-                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                    color: controlRightWindow.sectionCardColor
                     implicitHeight: autoCpufreqColumn.implicitHeight + 24
                     radius: 12
 

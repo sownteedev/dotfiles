@@ -59,7 +59,8 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
-            note: "Managed by a user systemd service so Quickshell reloads do not leave duplicate swayidle processes"
+            iconName: "preferences-system-power-symbolic"
+            note: "swayidle controls idle timing; Quickshell renders dim and handles lockscreen actions"
             title: "Idle policy"
 
             GridLayout {
@@ -150,6 +151,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary
             compact: true
+            iconName: "media-playback-pause-symbolic"
             note: "Choose how long the quick Caffeine toggle remains active"
             title: "Caffeine"
 

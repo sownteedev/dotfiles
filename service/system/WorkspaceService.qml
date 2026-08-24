@@ -8,6 +8,7 @@ QtObject {
 
     property var activeWindowByOutput: ({})
     property string activeWindowId: ""
+    property var activeWindowsByOutput: ({})
     property int activeWorkspaceId: -1
     property Timer debounceTimer: Timer {
         interval: 50
@@ -70,6 +71,7 @@ QtObject {
 
         onTriggered: root.refresh()
     }
+    property var workspaceIdByWindow: ({})
     property var workspaces: []
 
     function compareWindowsByLayout(a, b, floating) {
@@ -127,6 +129,8 @@ QtObject {
                 if (wsList[j].is_focused) {
                     newActiveWorkspaceId = wsList[j].id;
                     newFocusedOutputName = String(wsList[j].output || "");
+                    if (wsList[j].active_window_id !== null && wsList[j].active_window_id !== undefined)
+                        newActiveWindowId = String(wsList[j].active_window_id);
                 }
             }
             var outputSet = {};
@@ -151,15 +155,31 @@ QtObject {
                     newFloatingByOutput[floatingOutput] = floatingData[String(floatingWorkspace.id)] === true;
             }
 
+            var previousWorkspaceIdByWindow = root.workspaceIdByWindow || {};
+            var newWorkspaceIdByWindow = {};
             var windowsByWorkspace = {};
             for (var k = 0; k < winList.length; k++) {
                 var win = winList[k];
+                var windowId = String(win.id || "");
                 var wsId = win.workspace_id;
+                if ((wsId === null || wsId === undefined) && windowId !== "" && previousWorkspaceIdByWindow[windowId] !== undefined)
+                    wsId = previousWorkspaceIdByWindow[windowId];
+                if (wsId === null || wsId === undefined)
+                    continue;
+
+                var resolvedWindow = win;
+                if (win.workspace_id !== wsId) {
+                    resolvedWindow = Object.assign({}, win);
+                    resolvedWindow.workspace_id = wsId;
+                }
+                if (windowId !== "")
+                    newWorkspaceIdByWindow[windowId] = wsId;
                 if (!windowsByWorkspace[wsId])
                     windowsByWorkspace[wsId] = [];
 
-                windowsByWorkspace[wsId].push(win);
+                windowsByWorkspace[wsId].push(resolvedWindow);
             }
+            root.workspaceIdByWindow = newWorkspaceIdByWindow;
             for (var wsIdKey in windowsByWorkspace) {
                 var workspaceIsFloating = floatingData[String(wsIdKey)] === true;
                 windowsByWorkspace[wsIdKey].sort(function (a, b) {
@@ -173,6 +193,7 @@ QtObject {
                 processed.push({
                     "id": ws.id,
                     "idx": ws.idx,
+                    "active_window_id": ws.active_window_id === undefined ? null : ws.active_window_id,
                     "is_active": ws.is_active,
                     "is_focused": ws.is_focused,
                     "name": String(ws.name || ""),
@@ -187,15 +208,20 @@ QtObject {
             });
             var previousActiveWindowByOutput = root.activeWindowByOutput || {};
             var newActiveWindowByOutput = {};
+            var newActiveWindowsByOutput = {};
             for (var activeWorkspaceIndex = 0; activeWorkspaceIndex < processed.length; activeWorkspaceIndex++) {
                 var activeWorkspace = processed[activeWorkspaceIndex];
                 if (!activeWorkspace.is_active || activeWorkspace.output === "")
                     continue;
 
+                newActiveWindowsByOutput[activeWorkspace.output] = activeWorkspace.windows;
                 var activeCandidate = null;
-                if (activeWorkspace.output === newFocusedOutputName && newActiveWindowId !== "") {
+                var activeCandidateId = activeWorkspace.active_window_id;
+                if ((activeCandidateId === null || activeCandidateId === undefined) && activeWorkspace.output === newFocusedOutputName && newActiveWindowId !== "")
+                    activeCandidateId = newActiveWindowId;
+                if (activeCandidateId !== null && activeCandidateId !== undefined && String(activeCandidateId) !== "") {
                     for (var focusedWindowIndex = 0; focusedWindowIndex < activeWorkspace.windows.length; focusedWindowIndex++) {
-                        if (String(activeWorkspace.windows[focusedWindowIndex].id) === newActiveWindowId) {
+                        if (String(activeWorkspace.windows[focusedWindowIndex].id) === String(activeCandidateId)) {
                             activeCandidate = activeWorkspace.windows[focusedWindowIndex];
                             break;
                         }
@@ -217,7 +243,7 @@ QtObject {
             var needsRebuild = root.workspaces.length !== processed.length;
             if (!needsRebuild) {
                 for (var n = 0; n < processed.length && !needsRebuild; n++) {
-                    if (root.workspaces[n].id !== processed[n].id || root.workspaces[n].idx !== processed[n].idx || root.workspaces[n].output !== processed[n].output || root.workspaces[n].name !== processed[n].name || root.workspaces[n].windows.length !== processed[n].windows.length) {
+                    if (root.workspaces[n].id !== processed[n].id || root.workspaces[n].idx !== processed[n].idx || root.workspaces[n].active_window_id !== processed[n].active_window_id || root.workspaces[n].output !== processed[n].output || root.workspaces[n].name !== processed[n].name || root.workspaces[n].windows.length !== processed[n].windows.length) {
                         needsRebuild = true;
                         break;
                     }
@@ -233,6 +259,8 @@ QtObject {
             root.activeWorkspaceId = newActiveWorkspaceId;
             if (JSON.stringify(root.activeWindowByOutput) !== JSON.stringify(newActiveWindowByOutput))
                 root.activeWindowByOutput = newActiveWindowByOutput;
+            if (JSON.stringify(root.activeWindowsByOutput) !== JSON.stringify(newActiveWindowsByOutput))
+                root.activeWindowsByOutput = newActiveWindowsByOutput;
             root.focusedOutputName = newFocusedOutputName;
             root.outputNames = newOutputNames;
             if (JSON.stringify(root.floatingByOutput) !== JSON.stringify(newFloatingByOutput))

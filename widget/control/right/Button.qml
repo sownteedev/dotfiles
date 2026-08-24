@@ -19,35 +19,11 @@ Item {
     height: 54
     width: 54
 
-    // Smooth shadow that transitions in radius, offset, and color
-    DropShadow {
-        id: shadow
-
-        anchors.fill: btnRect
-        color: mouseArea.pressed ? (buttonRoot.active ? Config.alpha(buttonRoot.activeColor, 0.2) : Config.alpha(Config.md3.shadow, 0.14)) : (buttonRoot.active ? Config.alpha(buttonRoot.activeColor, 0.38) : Config.alpha(Config.md3.shadow, 0.24))
-        horizontalOffset: 0
-        radius: mouseArea.pressed ? 3 : (buttonRoot.active ? 12 : 6)
-        samples: 25
-        source: btnRect
-        verticalOffset: mouseArea.pressed ? 1 : (buttonRoot.active ? 4 : 2)
-
-        Behavior on color {
-            ColorAnimation {
-                duration: 150
-            }
-        }
-        Behavior on radius {
-            NumberAnimation {
-                duration: 150
-                easing.type: Easing.OutQuad
-            }
-        }
-        Behavior on verticalOffset {
-            NumberAnimation {
-                duration: 150
-                easing.type: Easing.OutQuad
-            }
-        }
+    ShellShadow {
+        componentShadow: true
+        cornerRadius: btnRect.radius
+        scale: btnRect.scale
+        target: btnRect
     }
     Rectangle {
         id: btnRect

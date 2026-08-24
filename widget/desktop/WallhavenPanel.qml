@@ -11,12 +11,12 @@ import Quickshell.Widgets
 Rectangle {
     id: root
 
-    readonly property string actionError: installedMode ? WallhavenService.removeErrorMessage : WallhavenService.downloadErrorMessage
+    readonly property string actionError: GreeterBackgroundService.errorMessage || (installedMode ? WallhavenService.removeErrorMessage : WallhavenService.downloadErrorMessage)
     property string activeTab: "browse"
     readonly property bool collectionsMode: activeTab === "collections"
     property int contentTransitionDirection: 1
     property string deleteArmedId: ""
-    readonly property int gridColumns: Math.max(1, Math.floor((browser.width - 44) / 280))
+    readonly property int gridColumns: Math.max(1, Math.min(4, Math.floor((browser.width - 48) / 270)))
     readonly property bool installedMode: activeTab === "installed"
     readonly property bool nsfwVisible: Config.wallhavenApiKey.trim() !== "" && Config.wallhavenShowNsfw
     property bool open: false
@@ -27,11 +27,23 @@ Rectangle {
     signal applyRequested(string path, var modified)
     signal closeRequested
 
+    function applyDestination(item, destination) {
+        var target = String(destination || "desktop");
+        var path = String(item.path || "");
+        if (path === "") {
+            WallhavenService.download(item, target);
+            return;
+        }
+        if (target === "desktop" || target === "both")
+            root.applyRequested(path, item.modified || 0);
+        if (target === "greetd" || target === "both")
+            GreeterBackgroundService.setImage(path);
+    }
     function closePanel() {
         if (!open)
             return;
 
-        browseControls.closePopup();
+        wallhavenFilters.closePopup();
         open = false;
         closeTimer.restart();
     }
@@ -63,6 +75,8 @@ Rectangle {
         WallhavenService.loadCollection(String(item.id || ""), String(item.label || ""), 1);
     }
     function selectTab(tab) {
+        if (tab === "installed" && wallhavenFilters.activeFilterCount > 0)
+            wallhavenFilters.resetFilters();
         if (activeTab === tab) {
             resetResultView();
             if (tab === "collections")
@@ -72,7 +86,7 @@ Rectangle {
             return;
         }
         contentTransition.stop();
-        browseControls.closePopup();
+        wallhavenFilters.closePopup();
         var oldIndex = activeTab === "browse" ? 0 : (activeTab === "collections" ? 1 : 2);
         var newIndex = tab === "browse" ? 0 : (tab === "collections" ? 1 : 2);
         contentTransitionDirection = newIndex > oldIndex ? 1 : -1;
@@ -82,7 +96,7 @@ Rectangle {
             return root.resetResultView();
         });
         if (collectionsMode) {
-            WallhavenService.loadCollections(false);
+            WallhavenService.loadCollections(true);
         } else if (installedMode) {
             WallhavenService.loadInstalled(true);
         } else {
@@ -109,8 +123,8 @@ Rectangle {
 
     Component.onCompleted: open = true
     Keys.onEscapePressed: {
-        if (browseControls.openMenu !== "")
-            browseControls.closePopup();
+        if (wallhavenFilters.popupOpen)
+            wallhavenFilters.closePopup();
         else
             root.closePanel();
     }
@@ -119,7 +133,7 @@ Rectangle {
             return;
 
         if (collectionsMode) {
-            WallhavenService.loadCollections(false);
+            WallhavenService.loadCollections(true);
         } else if (installedMode) {
             WallhavenService.loadInstalled(true);
         } else {
@@ -130,7 +144,9 @@ Rectangle {
     }
 
     Connections {
-        function onDownloadCompleted(wallpaperId, path, modified) {
+        function onDownloadCompleted(wallpaperId, path, modified, purpose) {
+            if (purpose === "greetd")
+                return;
             root.applyRequested(path, modified);
         }
 
@@ -157,15 +173,22 @@ Rectangle {
 
         onClicked: root.closePanel()
     }
+    ShellShadow {
+        cornerRadius: browser.radius
+        scale: browser.scale
+        target: browser
+    }
     Rectangle {
         id: browser
 
         anchors.centerIn: parent
-        color: Config.alpha(Config.md3.surface_container, 0.985)
-        height: Math.min(parent.height - 64, 800)
-        radius: 28
+        border.color: Config.alpha(Config.md3.outline, 0.14)
+        border.width: 1
+        color: Config.alpha(Config.md3.surface_container, 0.97)
+        height: Math.min(parent.height - 40, 920)
+        radius: 32
         scale: root.open ? 1 : 0.975
-        width: Math.min(parent.width - 64, 1200)
+        width: Math.min(parent.width - 40, 1500)
 
         Behavior on scale {
             ScaleAnimator {
@@ -183,13 +206,13 @@ Rectangle {
         }
         Rectangle {
             anchors.right: parent.right
-            anchors.rightMargin: 20
+            anchors.rightMargin: 24
             anchors.top: parent.top
-            anchors.topMargin: 20
+            anchors.topMargin: 24
             color: closeMouse.containsMouse ? Config.md3.surface_container_highest : Config.alpha(Config.md3.on_surface, 0.055)
-            height: 40
-            radius: 14
-            width: 40
+            height: 38
+            radius: 13
+            width: 38
             z: 20
 
             IconImage {
@@ -215,26 +238,26 @@ Rectangle {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 12
+            anchors.margins: 24
+            spacing: 14
 
             RowLayout {
                 Layout.fillWidth: true
-                Layout.rightMargin: 48
-                spacing: 12
+                Layout.rightMargin: 50
+                spacing: 14
 
                 Rectangle {
-                    Layout.preferredHeight: 40
-                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 48
+                    Layout.preferredWidth: 48
                     color: Config.md3.primary_container
-                    radius: 13
+                    radius: 16
 
                     IconImage {
                         anchors.centerIn: parent
-                        height: 20
+                        height: 23
                         layer.enabled: true
                         source: Quickshell.iconPath("preferences-desktop-wallpaper-symbolic", "image-x-generic-symbolic")
-                        width: 20
+                        width: 23
 
                         layer.effect: ColorOverlay {
                             color: Config.md3.on_primary_container
@@ -248,7 +271,7 @@ Rectangle {
                     Text {
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 22
+                        font.pixelSize: 24
                         font.weight: Font.Bold
                         text: qsTr("Wallhaven")
                     }
@@ -263,27 +286,29 @@ Rectangle {
             }
             RowLayout {
                 Layout.fillWidth: true
-                Layout.maximumHeight: 42
-                Layout.minimumHeight: 42
-                Layout.preferredHeight: 42
-                spacing: 12
+                Layout.maximumHeight: 40
+                Layout.minimumHeight: 40
+                Layout.preferredHeight: 40
+                spacing: 8
 
                 Rectangle {
                     id: primaryTabs
 
                     readonly property int selectedIndex: root.activeTab === "browse" ? 0 : (root.activeTab === "collections" ? 1 : 2)
 
-                    Layout.preferredHeight: 42
-                    Layout.preferredWidth: 360
-                    color: Config.alpha(Config.md3.on_surface, 0.045)
-                    radius: 14
+                    Layout.preferredHeight: 40
+                    Layout.preferredWidth: 320
+                    border.color: Config.alpha(Config.md3.outline, 0.08)
+                    border.width: 1
+                    color: Config.alpha(Config.md3.on_surface, 0.03)
+                    radius: 13
 
                     Rectangle {
                         id: primaryTabIndicator
 
                         color: Config.md3.primary_container
                         height: parent.height - 8
-                        radius: 11
+                        radius: 10
                         width: (parent.width - 8 - 12) / 3
                         x: 4 + primaryTabs.selectedIndex * (width + 6)
                         y: 4
@@ -379,124 +404,139 @@ Rectangle {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.fillWidth: true
                     Layout.minimumWidth: 280
-                    Layout.preferredHeight: 42
+                    Layout.preferredHeight: 40
                     visible: root.activeTab === "browse"
 
                     onAccepted: root.performSearch(1, false)
+                }
+                WallhavenFilters {
+                    id: wallhavenFilters
+
+                    Layout.preferredHeight: 40
+                    Layout.preferredWidth: 40
+                    popupParent: browser
+                    visible: root.activeTab === "browse"
+
+                    onSearchRequested: {
+                        root.resetResultView();
+                        root.performSearch(1, false);
+                    }
                 }
                 Item {
                     Layout.fillWidth: true
                     visible: root.activeTab !== "browse"
                 }
                 Rectangle {
-                    Layout.preferredHeight: 42
-                    Layout.preferredWidth: installedRefreshRow.implicitWidth + 20
-                    color: installedRefreshMouse.containsMouse ? Config.md3.secondary_container : Config.alpha(Config.md3.on_surface, 0.06)
-                    enabled: !WallhavenService.listingInstalled
-                    opacity: enabled ? 1 : 0.65
-                    radius: 13
-                    visible: root.installedMode
+                    readonly property int count: root.collectionsMode ? WallhavenService.collectionTotalResults : WallhavenService.installedResults.count
 
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 120
-                        }
-                    }
+                    Accessible.name: root.collectionsMode ? qsTr("%1 wallpapers in the selected collection").arg(count) : qsTr("%1 installed wallpapers").arg(count)
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredHeight: 28
+                    Layout.preferredWidth: Math.max(28, collectionCountLabel.implicitWidth + 14)
+                    color: Config.md3.primary_container
+                    radius: 9
+                    visible: root.collectionsMode || root.installedMode
 
-                    Row {
-                        id: installedRefreshRow
+                    Text {
+                        id: collectionCountLabel
 
                         anchors.centerIn: parent
-                        spacing: 7
-
-                        LoadingIndicator {
-                            anchors.verticalCenter: parent.verticalCenter
-                            animated: WallhavenService.listingInstalled
-                            height: 16
-                            visible: animated
-                            width: 16
-                        }
-                        IconImage {
-                            anchors.verticalCenter: parent.verticalCenter
-                            height: 16
-                            layer.enabled: true
-                            source: Quickshell.iconPath("view-refresh-symbolic")
-                            visible: !WallhavenService.listingInstalled
-                            width: 16
-
-                            layer.effect: ColorOverlay {
-                                color: installedRefreshMouse.containsMouse ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
-                            }
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: installedRefreshMouse.containsMouse ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
-                            font.family: Config.fontName
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            text: qsTr("%1 installed").arg(WallhavenService.installedResults.count)
-                        }
-                    }
-                    MouseArea {
-                        id: installedRefreshMouse
-
-                        anchors.fill: parent
-                        cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: parent.enabled
-                        hoverEnabled: true
-
-                        onClicked: WallhavenService.loadInstalled(true)
+                        color: Config.md3.on_primary_container
+                        font.family: Config.fontName
+                        font.pixelSize: 12
+                        font.weight: Font.Bold
+                        text: String(parent.count)
                     }
                 }
             }
-            WallhavenBrowseControls {
-                id: browseControls
-
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: implicitHeight
-                visible: root.activeTab === "browse"
+                Layout.maximumHeight: 44
+                Layout.minimumHeight: 44
+                Layout.preferredHeight: 44
+                spacing: 10
+                visible: root.collectionsMode && WallhavenService.accountConfigured && WallhavenService.collections.count > 1
 
-                onSearchRequested: root.performSearch(1, false)
-            }
-            Flickable {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 42
-                clip: true
-                contentWidth: collectionRow.implicitWidth
-                interactive: contentWidth > width
-                visible: root.collectionsMode && WallhavenService.accountConfigured && WallhavenService.collections.count > 0
+                Flickable {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.fillWidth: true
+                    Layout.maximumHeight: 40
+                    Layout.minimumHeight: 40
+                    Layout.preferredHeight: 40
+                    clip: true
+                    contentHeight: height
+                    contentWidth: collectionRow.implicitWidth
+                    interactive: contentWidth > width
 
-                Row {
-                    id: collectionRow
+                    Row {
+                        id: collectionRow
 
-                    spacing: 7
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 7
 
-                    Repeater {
-                        model: WallhavenService.collections
+                        Repeater {
+                            model: WallhavenService.collections
 
-                        delegate: Rectangle {
-                            required property var model
+                            delegate: Rectangle {
+                                id: collectionChip
 
-                            color: WallhavenService.selectedCollectionId === String(model.id || "") ? Config.md3.secondary_container : Config.alpha(Config.md3.on_surface, 0.055)
-                            height: 38
-                            radius: 12
-                            width: collectionLabel.implicitWidth + 26
+                                required property var model
+                                readonly property bool selected: WallhavenService.selectedCollectionId === String(model.id || "")
 
-                            Text {
-                                id: collectionLabel
+                                Accessible.name: qsTr("Open collection %1").arg(String(model.label || qsTr("Collection")))
+                                Accessible.role: Accessible.Button
+                                activeFocusOnTab: true
+                                border.color: activeFocus ? Config.md3.primary : (selected ? Config.alpha(Config.md3.secondary, 0.34) : Config.alpha(Config.md3.outline, 0.12))
+                                border.width: activeFocus ? 2 : 1
+                                color: selected ? Config.md3.secondary_container : (collectionMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.045))
+                                height: 40
+                                radius: 13
+                                width: collectionChipContent.implicitWidth + 26
 
-                                anchors.centerIn: parent
-                                color: WallhavenService.selectedCollectionId === String(parent.model.id || "") ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
-                                font.family: Config.fontName
-                                font.pixelSize: 12
-                                font.weight: Font.DemiBold
-                                text: qsTr("%1 · %2").arg(String(parent.model.label || qsTr("Collection"))).arg(Number(parent.model.count || 0))
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: 120
+                                    }
+                                }
 
-                                onClicked: root.selectCollection(parent.model)
+                                Keys.onReturnPressed: root.selectCollection(collectionChip.model)
+                                Keys.onSpacePressed: root.selectCollection(collectionChip.model)
+
+                                Row {
+                                    id: collectionChipContent
+
+                                    anchors.centerIn: parent
+                                    spacing: 8
+
+                                    IconImage {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        height: 15
+                                        layer.enabled: true
+                                        source: Quickshell.iconPath(collectionChip.selected ? "folder-open-symbolic" : "folder-symbolic")
+                                        width: 15
+
+                                        layer.effect: ColorOverlay {
+                                            color: collectionChip.selected ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
+                                        }
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: collectionChip.selected ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
+                                        font.family: Config.fontName
+                                        font.pixelSize: 12
+                                        font.weight: Font.DemiBold
+                                        text: String(collectionChip.model.label || qsTr("Collection"))
+                                    }
+                                }
+                                MouseArea {
+                                    id: collectionMouse
+
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+
+                                    onClicked: root.selectCollection(collectionChip.model)
+                                }
                             }
                         }
                     }
@@ -638,7 +678,7 @@ Rectangle {
 
                     anchors.fill: parent
                     cacheBuffer: cellHeight
-                    cellHeight: cellWidth * 0.76
+                    cellHeight: cellWidth * 0.67
                     cellWidth: width / root.gridColumns
                     clip: true
                     model: root.resultModel
@@ -653,6 +693,7 @@ Rectangle {
                         deleteArmed: root.deleteArmedId === String(model.id || "")
                         downloadBlocked: WallhavenService.downloading && WallhavenService.downloadingId !== String(model.id || "")
                         downloading: WallhavenService.downloadingId === String(model.id || "")
+                        greetdBusy: GreeterBackgroundService.busy
                         height: resultGrid.cellHeight
                         inUse: String(WallpaperService.currentWallpaper || "") === String(model.path || "")
                         installedMode: root.installedMode
@@ -673,9 +714,7 @@ Rectangle {
                             deleteArmTimer.stop();
                             WallhavenService.removeInstalled(item);
                         }
-                        onDownloadRequested: item => {
-                            return WallhavenService.download(item);
-                        }
+                        onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
                         onOpenRequested: url => {
                             return WallhavenService.openPage(url);
                         }
@@ -693,7 +732,7 @@ Rectangle {
                     elide: Text.ElideRight
                     font.family: Config.fontName
                     font.pixelSize: 12
-                    text: root.actionError || root.resultError || (root.installedMode ? WallhavenService.installedStatusMessage : WallhavenService.statusMessage)
+                    text: root.actionError || root.resultError || GreeterBackgroundService.statusMessage || (root.installedMode ? WallhavenService.installedStatusMessage : WallhavenService.statusMessage)
                 }
                 Rectangle {
                     Accessible.name: qsTr("Previous page")

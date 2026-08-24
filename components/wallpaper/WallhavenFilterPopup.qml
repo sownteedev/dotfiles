@@ -1,14 +1,16 @@
+import ".."
 import "../../"
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import Quickshell
 import Quickshell.Widgets
 
-Rectangle {
+Item {
     id: root
 
     readonly property real bodyHeight: bodyLoader.item ? bodyLoader.item.implicitHeight : 0
     readonly property real bodyWidth: bodyLoader.item ? bodyLoader.item.implicitWidth : 0
+    readonly property real cornerRadius: 16
     property bool expanded: false
     property string menu: ""
 
@@ -29,11 +31,9 @@ Rectangle {
         return qsTr("Sort wallpapers");
     }
 
-    color: Config.md3.surface_container_high
     implicitHeight: bodyHeight + 58
     implicitWidth: bodyWidth + 28
     opacity: expanded ? 1 : 0
-    radius: 16
     scale: expanded ? 1 : 0.97
     visible: expanded || opacity > 0
 
@@ -50,6 +50,17 @@ Rectangle {
         }
     }
 
+    ShellShadow {
+        cornerRadius: popupSurface.radius
+        target: popupSurface
+    }
+    Rectangle {
+        id: popupSurface
+
+        anchors.fill: parent
+        color: Config.md3.surface_container_high
+        radius: root.cornerRadius
+    }
     Row {
         anchors.left: parent.left
         anchors.leftMargin: 14

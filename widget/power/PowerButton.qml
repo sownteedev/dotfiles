@@ -3,6 +3,7 @@ import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
 import "../../"
+import "../../components"
 
 MouseArea {
     id: rootButton
@@ -65,6 +66,12 @@ MouseArea {
 
     onClicked: triggered()
 
+    ShellShadow {
+        active: rootButton.active
+        componentShadow: true
+        cornerRadius: selectionSurface.radius
+        target: selectionSurface
+    }
     Rectangle {
         id: selectionSurface
 
@@ -72,7 +79,6 @@ MouseArea {
         border.color: Config.alpha(rootButton.accent, rootButton.active ? 0.62 : 0)
         border.width: 1
         color: Config.alpha(rootButton.accent, rootButton.active ? 0.24 : 0)
-        layer.enabled: rootButton.active
         radius: height / 2
 
         Behavior on border.color {
@@ -84,14 +90,6 @@ MouseArea {
             ColorAnimation {
                 duration: 180
             }
-        }
-        layer.effect: DropShadow {
-            color: Config.alpha(rootButton.accent, rootButton.active ? 0.28 : 0)
-            horizontalOffset: 0
-            radius: 13
-            samples: 17
-            transparentBorder: true
-            verticalOffset: 2
         }
     }
     Row {

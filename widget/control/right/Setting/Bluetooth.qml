@@ -293,9 +293,9 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 76
-                        border.color: Config.alpha(Config.md3.on_surface, 0.08)
+                        border.color: controlRightWindow.sectionCardBorderColor
                         border.width: 1
-                        color: Config.alpha(Config.md3.on_surface, 0.03)
+                        color: controlRightWindow.sectionCardColor
                         radius: 16
                         visible: root.availableDevices.length === 0
 

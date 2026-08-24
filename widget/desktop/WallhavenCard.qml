@@ -16,6 +16,7 @@ Item {
     readonly property bool downloaded: installedMode || (Boolean(wallpaper.downloaded) && String(wallpaper.path || "") !== "")
     property bool downloading: false
     readonly property string fileSizeLabel: formatFileSize(Number(wallpaper.file_size || 0))
+    property bool greetdBusy: false
     property bool inUse: false
     property bool installedMode: false
     readonly property string itemId: String(wallpaper.id || "")
@@ -28,7 +29,7 @@ Item {
     signal armDeleteRequested(string wallpaperId)
     signal cancelDownloadRequested
     signal deleteRequested(var item)
-    signal downloadRequested(var item)
+    signal destinationRequested(var item, string destination)
     signal openRequested(string url)
 
     function formatFileSize(bytes) {
@@ -51,23 +52,28 @@ Item {
             armDeleteRequested(itemId);
     }
     function triggerPrimaryAction() {
-        if (downloaded)
-            applyRequested(String(wallpaper.path || ""), wallpaper.modified || 0);
-        else if (downloading)
+        if (downloading)
             cancelDownloadRequested();
         else
-            downloadRequested(wallpaper);
+            destinationPopup.openFor(primaryAction);
     }
 
     Rectangle {
         id: card
 
         anchors.fill: parent
-        anchors.margins: 6
+        anchors.margins: 8
+        border.color: cardHover.hovered ? Config.alpha(Config.md3.primary, 0.42) : Config.alpha(Config.md3.outline, 0.12)
+        border.width: 1
         color: cardHover.hovered ? Config.md3.surface_container_high : Config.md3.surface_container_low
-        radius: 18
-        scale: cardHover.hovered ? 1.008 : 1
+        radius: 20
+        scale: cardHover.hovered ? 1.006 : 1
 
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 140
+            }
+        }
         Behavior on color {
             ColorAnimation {
                 duration: 140
@@ -88,7 +94,7 @@ Item {
             anchors.top: parent.top
             color: Config.md3.surface_container
             height: parent.height - 66
-            radius: 18
+            radius: 20
 
             Image {
                 id: previewImage
@@ -109,7 +115,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 color: "transparent"
-                radius: 18
+                radius: 20
 
                 gradient: Gradient {
                     GradientStop {
@@ -425,7 +431,7 @@ Item {
 
                 readonly property bool emphasized: primaryMouse.containsMouse || primaryMouse.pressed || activeFocus
 
-                Accessible.name: root.downloaded ? qsTr("Apply wallpaper") : (root.downloading ? qsTr("Cancel download") : qsTr("Download wallpaper"))
+                Accessible.name: root.downloading ? qsTr("Cancel download") : qsTr("Choose wallpaper destination")
                 Accessible.role: Accessible.Button
                 Layout.preferredHeight: 36
                 Layout.preferredWidth: 36
@@ -433,7 +439,7 @@ Item {
                 border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
                 border.width: 1
                 color: primaryMouse.pressed ? Config.md3.primary_container : (primaryAction.emphasized ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
-                enabled: !root.inUse && !root.removing && !root.downloadBlocked && (!root.cancelling || root.downloading)
+                enabled: !root.removing && !root.downloadBlocked && (!root.cancelling || root.downloading)
                 opacity: enabled ? 1 : 0.42
                 radius: 12
 
@@ -460,7 +466,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         height: 18
                         layer.enabled: true
-                        source: Quickshell.iconPath(root.downloaded ? "media-playback-start-symbolic" : root.downloading ? "process-stop-symbolic" : "folder-download-symbolic")
+                        source: Quickshell.iconPath(root.downloading ? "process-stop-symbolic" : root.downloaded ? "preferences-desktop-wallpaper-symbolic" : "folder-download-symbolic")
                         visible: !root.downloading || root.cancelling
                         width: 18
 
@@ -484,5 +490,12 @@ Item {
         HoverHandler {
             id: cardHover
         }
+    }
+    WallpaperDestinationPopup {
+        id: destinationPopup
+
+        greetdAvailable: !root.greetdBusy
+
+        onDestinationSelected: destination => root.destinationRequested(root.wallpaper, destination)
     }
 }

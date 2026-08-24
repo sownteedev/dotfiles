@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
+import ".."
 import "../../"
 
 Popup {
@@ -46,11 +47,20 @@ Popup {
     Overlay.modal: Rectangle {
         color: Config.alpha(Config.md3.scrim, Config.lightTheme ? 0.22 : 0.38)
     }
-    background: Rectangle {
-        border.color: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.14 : 0.1)
-        border.width: 1
-        color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.97 : 0.92)
-        radius: Math.min(24, root.width / 2, root.height / 2)
+    background: Item {
+        ShellShadow {
+            cornerRadius: pickerSurface.radius
+            target: pickerSurface
+        }
+        Rectangle {
+            id: pickerSurface
+
+            anchors.fill: parent
+            border.color: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.14 : 0.1)
+            border.width: 1
+            color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.97 : 0.92)
+            radius: Math.min(24, root.width / 2, root.height / 2)
+        }
     }
     contentItem: ColumnLayout {
         spacing: 10

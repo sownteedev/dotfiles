@@ -146,17 +146,9 @@ PanelWindow {
 
         onClicked: hideControl()
     }
-    Rectangle {
-        anchors.fill: popup
-        anchors.margins: -10
-        color: Config.alpha("#000000", 0.05)
-        radius: popup.radius + 10
-    }
-    Rectangle {
-        anchors.fill: popup
-        anchors.margins: -5
-        color: Config.alpha("#000000", 0.12)
-        radius: popup.radius + 5
+    ShellShadow {
+        cornerRadius: popup.radius
+        target: popup
     }
 
     // ─── Sliding Sidebar Container ───────────────────────────────────────────────
@@ -174,7 +166,7 @@ PanelWindow {
         border.color: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.07)
         border.width: 1
         clip: true
-        color: Config.shellBlurControlLeftEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.85) : Config.md3.background
+        color: Config.shellBlurControlLeftEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
         radius: 20
         width: controlLeftWindow.panelWidth
 
@@ -272,7 +264,6 @@ PanelWindow {
                                 Layout.preferredWidth: width
                                 color: isActive ? Config.md3.primary : (topTabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.06) : "transparent")
                                 height: 40
-                                layer.enabled: isActive
                                 radius: 22
                                 width: isActive ? (topTabInnerRow.implicitWidth + 36) : 44
 
@@ -281,13 +272,6 @@ PanelWindow {
                                         duration: 150
                                     }
                                 }
-                                layer.effect: DropShadow {
-                                    color: Config.alpha(Config.md3.primary, 0.6)
-                                    horizontalOffset: 0
-                                    radius: 15
-                                    samples: 31
-                                    verticalOffset: 0
-                                }
                                 Behavior on width {
                                     NumberAnimation {
                                         duration: 150
@@ -295,6 +279,13 @@ PanelWindow {
                                     }
                                 }
 
+                                ShellShadow {
+                                    active: topTabBtn.isActive
+                                    componentShadow: true
+                                    cornerRadius: parent.radius
+                                    target: parent
+                                    z: -1
+                                }
                                 Row {
                                     id: topTabInnerRow
 
@@ -491,7 +482,6 @@ PanelWindow {
                                 Layout.preferredWidth: width
                                 color: isActive ? Config.md3.primary : (bottomTabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.06) : "transparent")
                                 height: 40
-                                layer.enabled: isActive
                                 radius: 22
                                 width: isActive ? (bottomTabInnerRow.implicitWidth + 36) : 44
 
@@ -500,13 +490,6 @@ PanelWindow {
                                         duration: 150
                                     }
                                 }
-                                layer.effect: DropShadow {
-                                    color: Config.alpha(Config.md3.primary, 0.35)
-                                    horizontalOffset: 0
-                                    radius: 8
-                                    samples: 16
-                                    verticalOffset: 0
-                                }
                                 Behavior on width {
                                     NumberAnimation {
                                         duration: 150
@@ -514,6 +497,13 @@ PanelWindow {
                                     }
                                 }
 
+                                ShellShadow {
+                                    active: bottomTabBtn.isActive
+                                    componentShadow: true
+                                    cornerRadius: parent.radius
+                                    target: parent
+                                    z: -1
+                                }
                                 Row {
                                     id: bottomTabInnerRow
 

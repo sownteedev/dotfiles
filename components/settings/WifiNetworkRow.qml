@@ -217,22 +217,41 @@ Rectangle {
                 anchors.rightMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
                 clip: true
-                color: root.errorMessage !== "" ? Config.md3.error : Config.md3.on_surface
+                color: passwordField.showPassword ? (root.errorMessage !== "" ? Config.md3.error : Config.md3.on_surface) : "transparent"
                 echoMode: passwordField.showPassword ? TextInput.Normal : TextInput.Password
                 enabled: !root.connecting
                 font.family: Config.fontName
                 font.pixelSize: 13
                 font.weight: Font.Medium
                 passwordCharacter: "•"
-                selectedTextColor: "white"
-                selectionColor: Config.md3.primary
+                selectedTextColor: passwordField.showPassword ? "white" : "transparent"
+                selectionColor: passwordField.showPassword ? Config.md3.primary : "transparent"
                 verticalAlignment: TextInput.AlignVCenter
+
+                cursorDelegate: Rectangle {
+                    color: root.errorMessage !== "" ? Config.md3.error : Config.md3.primary
+                    radius: 1
+                    visible: passwordField.showPassword
+                    width: 2
+                }
 
                 onAccepted: root.submitPassword()
                 onTextChanged: {
                     if (root.errorMessage !== "")
                         root.clearErrorRequested();
                 }
+            }
+            AnimatedPasswordDots {
+                active: passwordInput.activeFocus
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.leftMargin: 16
+                anchors.right: visibilityButton.left
+                anchors.rightMargin: 8
+                anchors.top: parent.top
+                characterCount: passwordInput.text.length
+                error: root.errorMessage !== ""
+                revealed: passwordField.showPassword
             }
             Text {
                 anchors.left: parent.left
@@ -245,8 +264,8 @@ Rectangle {
                 font.pixelSize: 13
                 font.weight: Font.Medium
                 renderType: Text.NativeRendering
-                text: "Enter WiFi password"
-                visible: passwordInput.text === ""
+                text: qsTr("Enter WiFi password")
+                visible: passwordInput.text === "" && !passwordInput.activeFocus
             }
             Item {
                 id: visibilityButton

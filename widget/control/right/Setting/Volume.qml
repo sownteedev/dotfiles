@@ -127,9 +127,9 @@ Item {
                 // App list card container
                 Rectangle {
                     Layout.fillWidth: true
-                    border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                    border.color: controlRightWindow.sectionCardBorderColor
                     border.width: 1
-                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                    color: controlRightWindow.sectionCardColor
                     implicitHeight: appStreamListColumn.height + 24
                     radius: 12
                     visible: volumePageRoot.appStreamCount > 0
@@ -266,9 +266,9 @@ Item {
 
                                 // Application slider card (identical styling to system device sliders)
                                 Rectangle {
-                                    border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                                    border.color: controlRightWindow.sectionCardBorderColor
                                     border.width: 1
-                                    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                                    color: controlRightWindow.sectionCardColor
                                     height: 48
                                     radius: 12
                                     width: parent.width
@@ -436,9 +436,9 @@ Item {
                     // Output speaker slider card
                     Rectangle {
                         Layout.fillWidth: true
-                        border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                        border.color: controlRightWindow.sectionCardBorderColor
                         border.width: 1
-                        color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                        color: controlRightWindow.sectionCardColor
                         height: 48
                         radius: 12
 
@@ -539,9 +539,9 @@ Item {
                     // Balance slider card
                     Rectangle {
                         Layout.fillWidth: true
-                        border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                        border.color: controlRightWindow.sectionCardBorderColor
                         border.width: 1
-                        color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                        color: controlRightWindow.sectionCardColor
                         height: 48
                         radius: 12
                         visible: Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.audio && Pipewire.defaultAudioSink.audio.volumes && Pipewire.defaultAudioSink.audio.volumes.length >= 2
@@ -716,9 +716,9 @@ Item {
                     // Microphone slider card
                     Rectangle {
                         Layout.fillWidth: true
-                        border.color: Config.alpha(Config.md3.on_surface, 0.06)
+                        border.color: controlRightWindow.sectionCardBorderColor
                         border.width: 1
-                        color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22)
+                        color: controlRightWindow.sectionCardColor
                         height: 48
                         radius: 12
 

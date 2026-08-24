@@ -146,6 +146,7 @@ ScrollView {
             SettingsExpandableCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                iconName: "preferences-desktop-keyboard-shortcuts-symbolic"
                 note: "Control Niri's built-in shortcut guide"
                 title: "Hotkey overlay"
                 toggleVisible: false
@@ -177,6 +178,7 @@ ScrollView {
                 Layout.fillWidth: true
                 accentColor: Config.md3.secondary
                 checked: true
+                iconName: "camera-photo-symbolic"
                 note: "Write Niri screenshots to disk as well as the clipboard"
                 title: "Save screenshots"
 
@@ -195,6 +197,7 @@ ScrollView {
             SettingsExpandableCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.error
+                iconName: "input-mouse-symbolic"
                 note: "Pointer focus behavior configured in input.kdl"
                 title: "Pointer focus"
                 toggleVisible: false
@@ -205,6 +208,7 @@ ScrollView {
                     Layout.fillWidth: true
                     accentColor: Config.md3.error
                     contentPadding: 15
+                    iconName: "go-jump-symbolic"
                     note: "Move the pointer when keyboard focus changes"
                     title: "Warp pointer to focus"
 
@@ -240,6 +244,7 @@ ScrollView {
                     Layout.fillWidth: true
                     accentColor: Config.md3.error
                     contentPadding: 15
+                    iconName: "focus-windows-symbolic"
                     note: "Focus windows and outputs when the pointer enters"
                     title: "Focus follows pointer"
 
@@ -259,6 +264,7 @@ ScrollView {
             SettingsExpandableCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                iconName: "preferences-desktop-workspaces-symbolic"
                 note: "Global keyboard and workspace behavior"
                 title: "Modifier & workspace"
                 toggleVisible: false
@@ -366,6 +372,7 @@ ScrollView {
 
                 Layout.fillWidth: true
                 accentColor: Config.md3.error
+                iconName: "video-display-symbolic"
                 note: "Enable only after removing the manual xwayland-satellite autostart entry"
                 title: "Xwayland satellite"
 
@@ -386,6 +393,7 @@ ScrollView {
 
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                iconName: "computer-laptop-symbolic"
                 note: "Commands run for laptop lid and convertible-tablet events"
                 title: "Laptop & tablet switch events"
 
@@ -432,6 +440,7 @@ ScrollView {
             SettingsExpandableCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.secondary
+                iconName: "preferences-system-windows-symbolic"
                 note: "Window decorations, clipboard and error reporting"
                 title: "Windows & system behavior"
                 toggleVisible: false
@@ -470,6 +479,7 @@ ScrollView {
             SettingsExpandableCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                iconName: "input-touchpad-symbolic"
                 note: "Drag behavior at screen edges and configurable hot corners"
                 title: "Gestures"
                 toggleVisible: false
@@ -478,6 +488,7 @@ ScrollView {
                     Layout.fillWidth: true
                     accentColor: Config.md3.primary
                     contentPadding: 15
+                    iconName: "view-restore-symbolic"
                     note: "Scroll the overview while dragging near a horizontal edge"
                     title: "Drag edge view scroll"
                     toggleVisible: false
@@ -531,6 +542,7 @@ ScrollView {
                     Layout.fillWidth: true
                     accentColor: Config.md3.secondary
                     contentPadding: 15
+                    iconName: "preferences-desktop-workspaces-symbolic"
                     note: "Switch workspaces while dragging near the top or bottom edge"
                     title: "Drag edge workspace switch"
                     toggleVisible: false
@@ -586,6 +598,7 @@ ScrollView {
                     Layout.fillWidth: true
                     accentColor: Config.md3.tertiary
                     contentPadding: 15
+                    iconName: "selection-mode-symbolic"
                     note: "Open the overview when the pointer reaches a selected corner"
                     title: "Hot corners"
 
@@ -639,6 +652,7 @@ ScrollView {
             SettingsExpandableCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                iconName: "input-mouse-symbolic"
                 note: "Theme, size and automatic cursor hiding"
                 title: "Cursor"
                 toggleVisible: false
@@ -685,6 +699,7 @@ ScrollView {
                     Layout.fillWidth: true
                     accentColor: Config.md3.tertiary
                     contentPadding: 15
+                    iconName: "preferences-system-time-symbolic"
                     note: "Hide the pointer after it remains idle"
                     title: "Idle cursor timeout"
 

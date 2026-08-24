@@ -35,6 +35,7 @@ Its interface follows Material Design 3, with wallpaper-derived colors, real bac
 - Live Niri workspace and active-window tracking, including dynamic workspace creation.
 - Drag-and-drop window reordering and movement between workspaces without focus stealing.
 - Per-workspace tiled/floating switching from the bar.
+- Persistent multi-monitor app Dock with drag reordering, overlap-aware auto-hide, and focus-aware unread notification badges.
 - MPRIS media widget with playback controls, seeking, `LIVE` status, animated empty state, and Cava visualization.
 - Configurable weather, battery, Wi-Fi, Bluetooth, microphone privacy, recording, DND, clock, and system tray modules.
 
@@ -44,6 +45,7 @@ Its interface follows Material Design 3, with wallpaper-derived colors, real bac
 - Full-screen All Apps grid with responsive sizing, animated filtering, and keyboard navigation using arrows, `Home`, `End`, `Page Up/Down`, and `Enter`.
 - Clipboard history for text, files, images, and videos, with thumbnails, pinned entries, and optional direct paste.
 - Emoji search and direct paste into the previously focused application.
+- Right-click app actions for launching and pinning or removing entries from the Dock.
 - Lazy-loaded result providers and adaptive launcher geometry when no results are available.
 
 ### Control panels and productivity
@@ -63,14 +65,17 @@ Its interface follows Material Design 3, with wallpaper-derived colors, real bac
 - Searchable GUI settings for both Niri and the shell.
 - Niri editors for keybindings, layout, input devices, animations, behavior, window/layer rules, and raw configuration files.
 - Shell controls for appearance, font selection, bar modules, launcher providers, notifications, wallpapers, capture, integrations, performance, audio, and OSD behavior.
-- Independent background-blur toggles for the bar, launcher, Settings, and both control panels.
+- Independent background-blur toggles for the bar, Dock, launcher, Settings, and both control panels, with separate light/dark surface opacity.
+- Shared Material You shadow controls for large panels and compact components, including blur, opacity, spread, and offsets.
 - Face-authentication management, idle and power policy, dependency diagnostics, and cache cleanup.
 - Contextual Apply actions, with Reset shown only when a page has unsaved changes.
 
 ### Wallpapers and theming
 
 - Static wallpapers, video loops through `mpvpaper`, and Steam Workshop projects through `linux-wallpaperengine`.
-- Integrated Wallhaven and Wallpaper Workshop browsers with filters, resolution and file metadata, downloads, installed-item management, and image/video previews.
+- Integrated Wallhaven and Steam Workshop browsers with responsive preview grids, installed-library management, and source-specific filters for category, purity, resolution, aspect ratio, color, rating, features, genre, and sorting.
+- Per-item actions can download, preview, subscribe, and target the desktop, Greetd, or both; Greetd accepts Wallhaven images and Wallpaper Engine video projects.
+- Greetd keeps an independent Material You palette generated from its selected image or a representative video frame, so desktop wallpaper changes do not recolor the login screen.
 - Playback policy that can pause wallpapers while locked or fullscreen and reduce video FPS on battery power.
 - Staged video startup, cached frames, transition rollback, and animated crossfades to reduce backend-switching flicker.
 - Automatic Material You palette generation through Matugen, with animated shell color transitions and optional propagation through the surrounding dotfiles templates.
@@ -81,14 +86,15 @@ Its interface follows Material Design 3, with wallpaper-derived colors, real bac
 - Region screenshots with an in-shell editor for crop, freehand drawing, arrows, rectangles, text, blur, pixelation, undo, and color selection.
 - OCR with English/Vietnamese language support and Google Lens reverse image search.
 - GPU screen recording with configurable region, FPS, codec, quality, microphone capture, and CPU-encoding fallback.
-- Grouped notification popups, actions exposed by applications, swipe-to-dismiss, expandable groups, and persistent history.
+- Grouped notification popups with configurable top, top-right, or bottom-right placement, direction-aware stacking, application actions, swipe-to-dismiss, expandable groups, and persistent history.
 - Lock-screen notification stacks, scheduled DND, critical-notification handling, popup exclusions, history exclusions, and configurable retention limits.
 
 ### Security and session
 
+- Standalone Quickshell Greetd interface on Cage, with installed-session discovery, network and battery status, and a clean handoff into the selected Wayland session.
 - Multi-monitor PAM lock screen with password authentication, optional Howdy face recognition, and retry after monitor wake.
 - Idle dimming followed by monitor power-off, with separate unlocked and locked timeouts plus Caffeine inhibition.
-- Native Polkit authentication dialogs and volume, brightness, microphone, and media OSDs.
+- Native Polkit authentication dialogs and configurable top/bottom volume, brightness, microphone, and media OSDs with matching transitions.
 - Edge-drag gestures for opening the left and right control panels.
 - Animated session menu for Lock, Suspend, Hibernate, Logout, Reboot, and Shutdown.
 

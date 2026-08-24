@@ -70,6 +70,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            iconName: "preferences-system-notifications-symbolic"
             note: "Popup placement and lifetime on the currently focused output"
             title: "Popups"
 
@@ -156,6 +157,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary
             compact: true
+            iconName: "notifications-disabled-symbolic"
             note: "Schedule adds to manual Do Not Disturb; it does not overwrite the quick toggle"
             title: "Do Not Disturb"
 
@@ -200,6 +202,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
+            iconName: "document-properties-symbolic"
             note: "Use comma-separated application names; matching is case-insensitive"
             title: "History and application rules"
 

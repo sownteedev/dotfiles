@@ -6,6 +6,8 @@ import "../../components" as Components
 Item {
     id: root
 
+    property color chartBackgroundColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.60 : 0.30)
+    property color chartBorderColor: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.11 : 0.08)
     property int chartHeight: 130
     property var displayedHistory: []
     property var displayedHistory2: []
@@ -124,9 +126,9 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: root.chartHeight
-            border.color: root.expanded ? Config.alpha(root.lineColor, 0.28) : Config.alpha(Config.md3.on_surface, 0.05)
+            border.color: root.expanded ? Config.alpha(root.lineColor, 0.28) : root.chartBorderColor
             border.width: 1
-            color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.5 : 0.2)
+            color: root.chartBackgroundColor
             radius: 8
 
             Behavior on border.color {

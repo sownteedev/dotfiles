@@ -22,7 +22,7 @@ PanelWindow {
     anchors.left: true
     anchors.right: true
     anchors.top: true
-    color: themeReady ? (Config.shellBlurBarEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.2) : Config.md3.background) : "transparent"
+    color: themeReady ? (Config.shellBlurBarEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurBarOpacityLight : Config.shellBlurBarOpacityDark) : Config.md3.background) : "transparent"
     implicitHeight: Config.barHeight
 
     SystemClock {

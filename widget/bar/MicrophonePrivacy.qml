@@ -82,17 +82,18 @@ MouseArea {
         PopupWindow {
             id: microphonePopup
 
-            readonly property real desiredHeight: popupColumn.implicitHeight + 50
+            readonly property real desiredHeight: popupColumn.implicitHeight + 38 + shadowPadding * 2
             readonly property real screenHeight: root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.height : 720
+            readonly property real shadowPadding: Math.min(24, Math.ceil(Math.max(8, Config.shellComponentShadowBlur + Math.max(Math.abs(Config.shellComponentShadowOffsetX), Math.abs(Config.shellComponentShadowOffsetY)) + Math.max(0, Config.shellComponentShadowSpread) + 2)))
 
             anchor.edges: Edges.Bottom | Edges.Left
             anchor.item: root
-            anchor.margins.left: -34
-            anchor.margins.top: 30
+            anchor.margins.left: -28 - shadowPadding
+            anchor.margins.top: 36 - shadowPadding
             color: "transparent"
             grabFocus: true
             implicitHeight: Responsive.fit(desiredHeight, screenHeight - 70, 180)
-            implicitWidth: Math.min(280, Math.max(0, root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.width - 16 : 280))
+            implicitWidth: Math.min(268 + shadowPadding * 2, Math.max(0, root.parentWindow && root.parentWindow.screen ? root.parentWindow.screen.width - 16 : 268 + shadowPadding * 2))
             visible: true
 
             onVisibleChanged: {
@@ -100,28 +101,26 @@ MouseArea {
                     popupLoader.active = false;
             }
 
+            ShellShadow {
+                componentShadow: true
+                cornerRadius: popupCard.radius
+                target: popupCard
+            }
             Rectangle {
                 id: popupCard
 
                 anchors.bottom: parent.bottom
+                anchors.bottomMargin: microphonePopup.shadowPadding
                 anchors.left: parent.left
-                anchors.margins: 6
+                anchors.leftMargin: microphonePopup.shadowPadding
                 anchors.right: parent.right
+                anchors.rightMargin: microphonePopup.shadowPadding
                 anchors.top: parent.top
-                anchors.topMargin: 16
+                anchors.topMargin: microphonePopup.shadowPadding + 10
                 border.color: Config.alpha(Config.md3.tertiary, 0.32)
                 border.width: 1
                 color: Config.md3.surface_container
-                layer.enabled: true
                 radius: 16
-
-                layer.effect: DropShadow {
-                    color: "#70000000"
-                    horizontalOffset: 0
-                    radius: 9
-                    samples: 19
-                    verticalOffset: 4
-                }
 
                 Flickable {
                     anchors.fill: parent

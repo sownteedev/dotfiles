@@ -16,6 +16,9 @@ Item {
     readonly property string headerActionText: SettingsHubService.busy ? "Saving…" : "Apply & save"
     readonly property bool headerActionVisible: true
     readonly property bool headerResetVisible: baselineState !== "" && JSON.stringify(currentState()) !== baselineState
+    property QtObject profileImageField: QtObject {
+        property string text: ""
+    }
     property bool revealApiKey: false
     property bool revealSteamApiKey: false
     property bool revealWallhavenApiKey: false
@@ -24,11 +27,31 @@ Item {
         var settings = SettingsHubService.quickshellSettings || ({});
         return {
             "fontName": fontField.text,
+            "profileImagePath": profileImageField.text,
             "shellBlurBarEnabled": barBlurToggle.checked,
+            "shellBlurBarOpacityDark": barOpacityDarkField.text === "" ? Config.shellBlurBarOpacityDark : Number(barOpacityDarkField.text),
+            "shellBlurBarOpacityLight": barOpacityLightField.text === "" ? Config.shellBlurBarOpacityLight : Number(barOpacityLightField.text),
             "shellBlurControlLeftEnabled": controlLeftBlurToggle.checked,
             "shellBlurControlRightEnabled": controlRightBlurToggle.checked,
+            "shellBlurDockEnabled": dockBlurToggle.checked,
             "shellBlurLauncherEnabled": launcherBlurToggle.checked,
+            "shellBlurNotificationEnabled": notificationBlurToggle.checked,
+            "shellBlurOsdEnabled": osdBlurToggle.checked,
+            "shellBlurPanelOpacityDark": panelOpacityDarkField.text === "" ? Config.shellBlurPanelOpacityDark : Number(panelOpacityDarkField.text),
+            "shellBlurPanelOpacityLight": panelOpacityLightField.text === "" ? Config.shellBlurPanelOpacityLight : Number(panelOpacityLightField.text),
             "shellBlurSettingsEnabled": settingsBlurToggle.checked,
+            "shellComponentShadowBlur": componentShadowBlurField.text === "" ? Config.shellComponentShadowBlur : Number(componentShadowBlurField.text),
+            "shellComponentShadowEnabled": componentShadowEnabledToggle.checked,
+            "shellComponentShadowOffsetX": componentShadowOffsetXField.text === "" ? Config.shellComponentShadowOffsetX : Number(componentShadowOffsetXField.text),
+            "shellComponentShadowOffsetY": componentShadowOffsetYField.text === "" ? Config.shellComponentShadowOffsetY : Number(componentShadowOffsetYField.text),
+            "shellComponentShadowOpacity": componentShadowOpacityField.text === "" ? Config.shellComponentShadowOpacity : Number(componentShadowOpacityField.text),
+            "shellComponentShadowSpread": componentShadowSpreadField.text === "" ? Config.shellComponentShadowSpread : Number(componentShadowSpreadField.text),
+            "shellShadowBlur": Number(shadowBlurField.text),
+            "shellShadowEnabled": shadowEnabledToggle.checked,
+            "shellShadowOffsetX": Number(shadowOffsetXField.text),
+            "shellShadowOffsetY": Number(shadowOffsetYField.text),
+            "shellShadowOpacity": Number(shadowOpacityField.text),
+            "shellShadowSpread": Number(shadowSpreadField.text),
             "clock24h": clockToggle.checked,
             "latLon": locationField.text,
             "apiWeather": apiField.text,
@@ -74,11 +97,31 @@ Item {
     function syncFields() {
         var settings = SettingsHubService.quickshellSettings || ({});
         fontField.text = settings.fontName || Config.fontName;
+        profileImageField.text = settings.profileImagePath || Config.profileImagePath;
         barBlurToggle.checked = settings.shellBlurBarEnabled ?? Config.shellBlurBarEnabled;
+        barOpacityDarkField.text = String(settings.shellBlurBarOpacityDark ?? Config.shellBlurBarOpacityDark);
+        barOpacityLightField.text = String(settings.shellBlurBarOpacityLight ?? Config.shellBlurBarOpacityLight);
         controlLeftBlurToggle.checked = settings.shellBlurControlLeftEnabled ?? Config.shellBlurControlLeftEnabled;
         controlRightBlurToggle.checked = settings.shellBlurControlRightEnabled ?? Config.shellBlurControlRightEnabled;
+        dockBlurToggle.checked = settings.shellBlurDockEnabled ?? Config.shellBlurDockEnabled;
         launcherBlurToggle.checked = settings.shellBlurLauncherEnabled ?? Config.shellBlurLauncherEnabled;
+        notificationBlurToggle.checked = settings.shellBlurNotificationEnabled ?? Config.shellBlurNotificationEnabled;
+        osdBlurToggle.checked = settings.shellBlurOsdEnabled ?? Config.shellBlurOsdEnabled;
+        panelOpacityDarkField.text = String(settings.shellBlurPanelOpacityDark ?? Config.shellBlurPanelOpacityDark);
+        panelOpacityLightField.text = String(settings.shellBlurPanelOpacityLight ?? Config.shellBlurPanelOpacityLight);
         settingsBlurToggle.checked = settings.shellBlurSettingsEnabled ?? Config.shellBlurSettingsEnabled;
+        componentShadowBlurField.text = String(settings.shellComponentShadowBlur ?? Config.shellComponentShadowBlur);
+        componentShadowEnabledToggle.checked = settings.shellComponentShadowEnabled ?? Config.shellComponentShadowEnabled;
+        componentShadowOffsetXField.text = String(settings.shellComponentShadowOffsetX ?? Config.shellComponentShadowOffsetX);
+        componentShadowOffsetYField.text = String(settings.shellComponentShadowOffsetY ?? Config.shellComponentShadowOffsetY);
+        componentShadowOpacityField.text = String(settings.shellComponentShadowOpacity ?? Config.shellComponentShadowOpacity);
+        componentShadowSpreadField.text = String(settings.shellComponentShadowSpread ?? Config.shellComponentShadowSpread);
+        shadowBlurField.text = String(settings.shellShadowBlur ?? Config.shellShadowBlur);
+        shadowEnabledToggle.checked = settings.shellShadowEnabled ?? Config.shellShadowEnabled;
+        shadowOffsetXField.text = String(settings.shellShadowOffsetX ?? Config.shellShadowOffsetX);
+        shadowOffsetYField.text = String(settings.shellShadowOffsetY ?? Config.shellShadowOffsetY);
+        shadowOpacityField.text = String(settings.shellShadowOpacity ?? Config.shellShadowOpacity);
+        shadowSpreadField.text = String(settings.shellShadowSpread ?? Config.shellShadowSpread);
         clockToggle.checked = settings.clock24h ?? Config.clock24h;
         locationField.text = settings.latLon || Config.latLon;
         apiField.text = settings.apiWeather || Config.apiWeather;
@@ -162,8 +205,66 @@ Item {
                 Layout.columnSpan: content.columns
                 Layout.fillWidth: true
                 accentColor: Config.md3.secondary
-                note: "Typography and surface blur"
-                title: "Appearance"
+                iconName: "avatar-default-symbolic"
+                note: qsTr("Used by authentication prompts and the login screen")
+                title: qsTr("Profile image")
+                visible: root.activeSection === 0
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 16
+
+                    ProfileAvatar {
+                        Layout.preferredHeight: 76
+                        Layout.preferredWidth: 76
+                        sourcePath: root.profileImageField.text
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 5
+
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.md3.on_surface
+                            elide: Text.ElideMiddle
+                            font.family: Config.fontName
+                            font.pixelSize: 15
+                            font.weight: Font.DemiBold
+                            text: root.profileImageField.text === "" ? qsTr("Default profile icon") : root.profileImageField.text.split("/").pop()
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            color: ProfileImageService.errorMessage !== "" ? Config.md3.error : Config.alpha(Config.md3.on_surface, 0.5)
+                            font.family: Config.fontName
+                            font.pixelSize: 12
+                            text: ProfileImageService.errorMessage || ProfileImageService.statusMessage || qsTr("PNG, JPEG, WebP or AVIF")
+                            wrapMode: Text.Wrap
+                        }
+                    }
+                    SettingsActionButton {
+                        iconName: "document-open-symbolic"
+                        iconOnly: true
+                        text: qsTr("Choose image")
+
+                        onClicked: SettingsHubService.filePickerDialog.open(root.profileImageField, "file://" + Config.expandHomePath("~"), false, [qsTr("Images | *.png *.jpg *.jpeg *.webp *.avif")])
+                    }
+                    SettingsActionButton {
+                        enabled: root.profileImageField.text !== ""
+                        iconName: "user-trash-symbolic"
+                        iconOnly: true
+                        text: qsTr("Remove profile image")
+
+                        onClicked: root.profileImageField.text = ""
+                    }
+                }
+            }
+            SettingsSectionCard {
+                Layout.columnSpan: content.columns
+                Layout.fillWidth: true
+                accentColor: Config.md3.secondary
+                iconName: "preferences-desktop-font-symbolic"
+                note: "Shell typography"
+                title: "Typography"
                 visible: root.activeSection === 0
 
                 SettingsFontPicker {
@@ -173,50 +274,140 @@ Item {
                     label: "Font family"
                     placeholder: "Inter"
                 }
+            }
+            SettingsSectionCard {
+                Layout.columnSpan: content.columns
+                Layout.fillWidth: true
+                accentColor: Config.md3.secondary
+                iconName: "weather-fog-symbolic"
+                note: "Higher values make surfaces more opaque"
+                title: "Surface blur"
+                visible: root.activeSection === 0
+
                 GridLayout {
                     Layout.fillWidth: true
                     columnSpacing: 10
-                    columns: 1
+                    columns: width >= 620 ? 2 : 1
                     rowSpacing: 10
+                    uniformCellWidths: true
+
+                    SettingsTextField {
+                        id: panelOpacityLightField
+
+                        Layout.fillWidth: true
+                        label: "Panels · Light mode"
+                        placeholder: "0.88"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: 0
+                            decimals: 2
+                            notation: DoubleValidator.StandardNotation
+                            top: 1
+                        }
+                    }
+                    SettingsTextField {
+                        id: panelOpacityDarkField
+
+                        Layout.fillWidth: true
+                        label: "Panels · Dark mode"
+                        placeholder: "0.76"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: 0
+                            decimals: 2
+                            notation: DoubleValidator.StandardNotation
+                            top: 1
+                        }
+                    }
+                    SettingsTextField {
+                        id: barOpacityLightField
+
+                        Layout.fillWidth: true
+                        label: "Bar · Light mode"
+                        placeholder: "0.86"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: 0
+                            decimals: 2
+                            notation: DoubleValidator.StandardNotation
+                            top: 1
+                        }
+                    }
+                    SettingsTextField {
+                        id: barOpacityDarkField
+
+                        Layout.fillWidth: true
+                        label: "Bar · Dark mode"
+                        placeholder: "0.24"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: 0
+                            decimals: 2
+                            notation: DoubleValidator.StandardNotation
+                            top: 1
+                        }
+                    }
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columnSpacing: 10
+                    columns: width >= 620 ? 2 : 1
+                    rowSpacing: 4
                     uniformCellWidths: true
 
                     SettingsToggleTile {
                         id: barBlurToggle
 
-                        label: "Bar blur"
-                        note: "Blur the wallpaper behind the top bar"
+                        label: "Bar"
 
                         onToggled: value => checked = value
                     }
                     SettingsToggleTile {
                         id: launcherBlurToggle
 
-                        label: "Launcher blur"
-                        note: "Blur content behind the launcher"
+                        label: "Launcher"
+
+                        onToggled: value => checked = value
+                    }
+                    SettingsToggleTile {
+                        id: osdBlurToggle
+
+                        label: "OSD"
+
+                        onToggled: value => checked = value
+                    }
+                    SettingsToggleTile {
+                        id: notificationBlurToggle
+
+                        label: "Notifications"
 
                         onToggled: value => checked = value
                     }
                     SettingsToggleTile {
                         id: settingsBlurToggle
 
-                        label: "Settings blur"
-                        note: "Blur content behind Settings"
+                        label: "Settings"
 
                         onToggled: value => checked = value
                     }
                     SettingsToggleTile {
                         id: controlLeftBlurToggle
 
-                        label: "Control Left blur"
-                        note: "Blur content behind the left panel"
+                        label: "Control Left"
 
                         onToggled: value => checked = value
                     }
                     SettingsToggleTile {
                         id: controlRightBlurToggle
 
-                        label: "Control Right blur"
-                        note: "Blur content behind the right panel"
+                        label: "Control Right"
+
+                        onToggled: value => checked = value
+                    }
+                    SettingsToggleTile {
+                        id: dockBlurToggle
+
+                        label: "Dock"
 
                         onToggled: value => checked = value
                     }
@@ -225,8 +416,221 @@ Item {
             SettingsSectionCard {
                 Layout.columnSpan: content.columns
                 Layout.fillWidth: true
+                accentColor: Config.md3.tertiary
+                iconName: "preferences-desktop-effects-symbolic"
+                note: "Shadow used by large panels, dialogs and popups"
+                title: "Panel shadows"
+                visible: root.activeSection === 0
+
+                SettingsToggleTile {
+                    id: shadowEnabledToggle
+
+                    label: "Enable panel shadows"
+                    note: "Uses the current Material You shadow color"
+
+                    onToggled: value => checked = value
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columnSpacing: 10
+                    columns: width >= 620 ? 3 : 2
+                    rowSpacing: 10
+                    uniformCellWidths: true
+
+                    SettingsTextField {
+                        id: shadowBlurField
+
+                        Layout.fillWidth: true
+                        editable: shadowEnabledToggle.checked
+                        label: "Blur (0–64)"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "18"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: 0
+                            decimals: 1
+                            notation: DoubleValidator.StandardNotation
+                            top: 64
+                        }
+                    }
+                    SettingsTextField {
+                        id: shadowOpacityField
+
+                        Layout.fillWidth: true
+                        editable: shadowEnabledToggle.checked
+                        label: "Opacity (0–1)"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "0.28"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: 0
+                            decimals: 2
+                            notation: DoubleValidator.StandardNotation
+                            top: 1
+                        }
+                    }
+                    SettingsTextField {
+                        id: shadowSpreadField
+
+                        Layout.fillWidth: true
+                        editable: shadowEnabledToggle.checked
+                        label: "Spread (-32–32)"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "1"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: -32
+                            decimals: 1
+                            notation: DoubleValidator.StandardNotation
+                            top: 32
+                        }
+                    }
+                    SettingsTextField {
+                        id: shadowOffsetXField
+
+                        Layout.fillWidth: true
+                        editable: shadowEnabledToggle.checked
+                        label: "Horizontal offset"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "0"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: -32
+                            decimals: 1
+                            notation: DoubleValidator.StandardNotation
+                            top: 32
+                        }
+                    }
+                    SettingsTextField {
+                        id: shadowOffsetYField
+
+                        Layout.fillWidth: true
+                        editable: shadowEnabledToggle.checked
+                        label: "Vertical offset"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "3"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: -32
+                            decimals: 1
+                            notation: DoubleValidator.StandardNotation
+                            top: 32
+                        }
+                    }
+                }
+            }
+            SettingsSectionCard {
+                Layout.columnSpan: content.columns
+                Layout.fillWidth: true
+                accentColor: Config.md3.primary
+                iconName: "color-select-symbolic"
+                note: "Lighter shadow for buttons, tabs and compact controls"
+                title: "Component shadows"
+                visible: root.activeSection === 0
+
+                SettingsToggleTile {
+                    id: componentShadowEnabledToggle
+
+                    label: "Enable component shadows"
+                    note: "Independent from panel shadow settings"
+
+                    onToggled: value => checked = value
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columnSpacing: 10
+                    columns: width >= 620 ? 3 : 2
+                    rowSpacing: 10
+                    uniformCellWidths: true
+
+                    SettingsTextField {
+                        id: componentShadowBlurField
+
+                        Layout.fillWidth: true
+                        editable: componentShadowEnabledToggle.checked
+                        label: "Blur (0–64)"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "10"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: 0
+                            decimals: 1
+                            notation: DoubleValidator.StandardNotation
+                            top: 64
+                        }
+                    }
+                    SettingsTextField {
+                        id: componentShadowOpacityField
+
+                        Layout.fillWidth: true
+                        editable: componentShadowEnabledToggle.checked
+                        label: "Opacity (0–1)"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "0.18"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: 0
+                            decimals: 2
+                            notation: DoubleValidator.StandardNotation
+                            top: 1
+                        }
+                    }
+                    SettingsTextField {
+                        id: componentShadowSpreadField
+
+                        Layout.fillWidth: true
+                        editable: componentShadowEnabledToggle.checked
+                        label: "Spread (-32–32)"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "0"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: -32
+                            decimals: 1
+                            notation: DoubleValidator.StandardNotation
+                            top: 32
+                        }
+                    }
+                    SettingsTextField {
+                        id: componentShadowOffsetXField
+
+                        Layout.fillWidth: true
+                        editable: componentShadowEnabledToggle.checked
+                        label: "Horizontal offset"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "0"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: -32
+                            decimals: 1
+                            notation: DoubleValidator.StandardNotation
+                            top: 32
+                        }
+                    }
+                    SettingsTextField {
+                        id: componentShadowOffsetYField
+
+                        Layout.fillWidth: true
+                        editable: componentShadowEnabledToggle.checked
+                        label: "Vertical offset"
+                        opacity: editable ? 1 : 0.45
+                        placeholder: "2"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: -32
+                            decimals: 1
+                            notation: DoubleValidator.StandardNotation
+                            top: 32
+                        }
+                    }
+                }
+            }
+            SettingsSectionCard {
+                Layout.columnSpan: content.columns
+                Layout.fillWidth: true
                 accentColor: Config.md3.primary
                 compact: true
+                iconName: "preferences-system-time-symbolic"
                 note: "Regional date and time presentation"
                 title: "Date & time"
                 visible: root.activeSection === 0
@@ -244,6 +648,7 @@ Item {
                 Layout.columnSpan: content.columns
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                iconName: "preferences-desktop-wallpaper-symbolic"
                 note: "Folders scanned by the static and live wallpaper selectors"
                 title: "Wallpaper library"
                 visible: root.activeSection === 1
@@ -281,6 +686,7 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                iconName: "media-playback-start-symbolic"
                 note: "Playback policy and transition timing"
                 title: "Playback"
                 visible: root.activeSection === 1
@@ -346,6 +752,7 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                iconName: "color-select-symbolic"
                 note: "Generate the shell and application palette from the selected wallpaper"
                 title: "Matugen"
                 visible: root.activeSection === 1
@@ -387,6 +794,7 @@ Item {
                 Layout.columnSpan: content.columns
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                iconName: "folder-symbolic"
                 note: "The screenshot path is also written to Niri so the watcher stays in sync"
                 title: "Storage"
                 visible: root.activeSection === 2
@@ -424,6 +832,7 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                iconName: "media-record-symbolic"
                 note: "Defaults passed directly to gpu-screen-recorder"
                 title: "Recording"
                 visible: root.activeSection === 2
@@ -501,6 +910,7 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                iconName: "camera-photo-symbolic"
                 note: "Clipboard behavior after editing a screenshot"
                 title: "Screenshot"
                 visible: root.activeSection === 2
@@ -514,258 +924,203 @@ Item {
                     onToggled: value => checked = value
                 }
             }
-            SettingsSectionCard {
-                Layout.fillWidth: true
+            SettingsIntegrationCard {
+                id: weatherIntegration
+
                 accentColor: Config.md3.primary
-                note: "OpenWeatherMap location and credentials"
-                title: "Weather"
+                actionIcon: WeatherService.detectingLocation ? "process-stop-symbolic" : "find-location-symbolic"
+                actionText: WeatherService.detectingLocation ? qsTr("Cancel location detection") : qsTr("Detect location")
+                actionVisible: true
+                iconName: "weather-clear-symbolic"
+                note: qsTr("OpenWeatherMap coordinates and credentials")
+                statusColor: WeatherService.locationDetectionError ? Config.md3.error : locationField.text !== "" && apiField.text !== "" ? Config.md3.secondary : Config.md3.tertiary
+                statusIcon: WeatherService.detectingLocation ? "process-working-symbolic" : WeatherService.locationDetectionError ? "dialog-error-symbolic" : locationField.text !== "" && apiField.text !== "" ? "emblem-ok-symbolic" : "dialog-information-symbolic"
+                statusText: WeatherService.detectingLocation ? qsTr("Detecting") : WeatherService.locationDetectionError ? qsTr("Location error") : locationField.text !== "" && apiField.text !== "" ? qsTr("Ready") : qsTr("Setup")
+                title: qsTr("Weather")
                 visible: root.activeSection === 3
 
-                SettingsTextField {
-                    id: locationField
+                onActionClicked: {
+                    if (WeatherService.detectingLocation)
+                        WeatherService.cancelLocationDetection();
+                    else
+                        WeatherService.detectLocation();
+                }
+
+                GridLayout {
+                    id: weatherFields
 
                     Layout.fillWidth: true
-                    actionIcon: WeatherService.detectingLocation ? "process-stop-symbolic" : "find-location-symbolic"
-                    label: "Location (latitude, longitude)"
-                    placeholder: "21.03,105.85"
+                    columnSpacing: 12
+                    columns: width >= 720 ? 2 : 1
+                    rowSpacing: 10
+                    uniformCellWidths: true
 
-                    onActionClicked: {
-                        if (WeatherService.detectingLocation)
-                            WeatherService.cancelLocationDetection();
-                        else
-                            WeatherService.detectLocation();
+                    SettingsTextField {
+                        id: locationField
+
+                        Layout.fillWidth: true
+                        label: qsTr("Location")
+                        placeholder: "21.03,105.85"
                     }
-                }
-                Text {
-                    Layout.fillWidth: true
-                    color: WeatherService.locationDetectionError ? Config.md3.error : Config.alpha(Config.md3.on_surface, 0.58)
-                    font.family: Config.fontName
-                    font.pixelSize: 13
-                    text: WeatherService.locationDetectionStatus || qsTr("Use the location button to detect coordinates automatically")
-                    visible: text !== ""
-                    wrapMode: Text.Wrap
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 10
-
                     SettingsTextField {
                         id: apiField
 
                         Layout.fillWidth: true
+                        actionIcon: root.revealApiKey ? "view-conceal-symbolic" : "view-reveal-symbolic"
                         echoMode: root.revealApiKey ? TextInput.Normal : TextInput.Password
-                        label: "OpenWeatherMap API key"
-                        placeholder: "Enter API key"
-                    }
-                    SettingsActionButton {
-                        Layout.alignment: Qt.AlignBottom
-                        iconName: root.revealApiKey ? "view-conceal-symbolic" : "view-reveal-symbolic"
-                        iconOnly: true
-                        text: root.revealApiKey ? "Hide" : "Show"
+                        label: qsTr("OpenWeatherMap API key")
+                        placeholder: qsTr("Enter API key")
 
-                        onClicked: root.revealApiKey = !root.revealApiKey
-                    }
-                }
-            }
-            SettingsSectionCard {
-                Layout.fillWidth: true
-                accentColor: Config.md3.secondary
-                note: "Calendar and Tasks share the same OAuth session"
-                title: "Google Calendar & Tasks"
-                visible: root.activeSection === 3
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 14
-
-                    Rectangle {
-                        color: GoogleService.authenticated ? Config.alpha(Config.md3.secondary, 0.16) : Config.alpha(Config.md3.tertiary, 0.13)
-                        implicitHeight: 42
-                        implicitWidth: googleStatus.implicitWidth + 30
-                        radius: 12
-
-                        Text {
-                            id: googleStatus
-
-                            anchors.centerIn: parent
-                            color: GoogleService.authenticated ? Config.md3.secondary : Config.md3.tertiary
-                            font.family: Config.fontName
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                            text: GoogleService.authenticated ? "Connected" : GoogleService.authChecked ? "Not connected" : "Checking…"
-                        }
+                        onActionClicked: root.revealApiKey = !root.revealApiKey
                     }
                     Text {
+                        Layout.columnSpan: weatherFields.columns
                         Layout.fillWidth: true
-                        color: Config.alpha(Config.md3.on_surface, 0.55)
+                        color: WeatherService.locationDetectionError ? Config.md3.error : Config.alpha(Config.md3.on_surface, 0.58)
                         font.family: Config.fontName
-                        font.pixelSize: 13
-                        text: GoogleService.authStatus || "Authentication is managed from Calendar and Todo."
-                        wrapMode: Text.Wrap
-                    }
-                    SettingsActionButton {
-                        id: removeGoogleButton
-
-                        property bool confirmingRemoval: false
-
-                        enabled: !GoogleService.disconnecting
-                        iconName: confirmingRemoval ? "dialog-warning-symbolic" : "user-trash-symbolic"
-                        text: GoogleService.disconnecting ? "Removing…" : confirmingRemoval ? "Confirm removal" : "Remove account"
-                        visible: GoogleService.authenticated || GoogleService.disconnecting
-
-                        onClicked: {
-                            if (!confirmingRemoval) {
-                                confirmingRemoval = true;
-                                googleRemovalTimer.restart();
-                            } else {
-                                confirmingRemoval = false;
-                                googleRemovalTimer.stop();
-                                GoogleService.disconnectAccount();
-                            }
-                        }
-
-                        Timer {
-                            id: googleRemovalTimer
-
-                            interval: 3000
-
-                            onTriggered: removeGoogleButton.confirmingRemoval = false
-                        }
-                    }
-                }
-            }
-            SettingsSectionCard {
-                Layout.columnSpan: content.columns
-                Layout.fillWidth: true
-                accentColor: Config.md3.error
-                note: "Paths used to discover and launch Steam Workshop projects"
-                title: "Wallpaper Engine"
-                visible: root.activeSection === 3
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 14
-
-                    Rectangle {
-                        color: EngineWallpaperService.available ? Config.alpha(Config.md3.secondary, 0.16) : Config.alpha(Config.md3.error, 0.13)
-                        implicitHeight: 42
-                        implicitWidth: engineStatus.implicitWidth + 30
-                        radius: 12
-
-                        Text {
-                            id: engineStatus
-
-                            anchors.centerIn: parent
-                            color: EngineWallpaperService.available ? Config.md3.secondary : Config.md3.error
-                            font.family: Config.fontName
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                            text: EngineWallpaperService.availabilityKnown ? (EngineWallpaperService.available ? "Ready" : "Unavailable") : "Checking…"
-                        }
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        color: Config.alpha(Config.md3.on_surface, 0.55)
-                        font.family: Config.fontName
-                        font.pixelSize: 13
-                        text: EngineWallpaperService.errorMessage
+                        font.pixelSize: 12
+                        renderType: Text.NativeRendering
+                        text: WeatherService.locationDetectionStatus
                         visible: text !== ""
                         wrapMode: Text.Wrap
                     }
-                    SettingsActionButton {
-                        iconName: "view-refresh-symbolic"
-                        iconOnly: true
-                        text: "Rescan"
+                }
+            }
+            SettingsIntegrationCard {
+                id: googleIntegration
 
-                        onClicked: EngineWallpaperService.refresh()
+                property bool confirmingRemoval: false
+                property Timer removalTimer: Timer {
+                    interval: 3000
+
+                    onTriggered: googleIntegration.confirmingRemoval = false
+                }
+
+                accentColor: Config.md3.secondary
+                actionEnabled: !GoogleService.disconnecting
+                actionIcon: confirmingRemoval ? "dialog-warning-symbolic" : "user-trash-symbolic"
+                actionText: GoogleService.disconnecting ? qsTr("Removing account") : confirmingRemoval ? qsTr("Confirm account removal") : qsTr("Remove account")
+                actionVisible: GoogleService.authenticated || GoogleService.disconnecting
+                iconName: "x-office-calendar-symbolic"
+                note: GoogleService.authStatus || qsTr("Authentication is managed from Calendar and Todo")
+                title: qsTr("Google Calendar & Tasks")
+                visible: root.activeSection === 3
+
+                onActionClicked: {
+                    if (!confirmingRemoval) {
+                        confirmingRemoval = true;
+                        removalTimer.restart();
+                    } else {
+                        confirmingRemoval = false;
+                        removalTimer.stop();
+                        GoogleService.disconnectAccount();
                     }
                 }
-                SettingsTextField {
-                    id: engineAssetsField
+            }
+            SettingsIntegrationCard {
+                id: engineIntegration
+
+                accentColor: Config.md3.error
+                actionIcon: "view-refresh-symbolic"
+                actionText: qsTr("Rescan Wallpaper Engine")
+                actionVisible: true
+                iconName: "applications-games-symbolic"
+                note: EngineWallpaperService.errorMessage || qsTr("Steam Workshop paths and account access")
+                statusColor: EngineWallpaperService.availabilityKnown ? (EngineWallpaperService.available ? Config.md3.secondary : Config.md3.error) : Config.md3.tertiary
+                statusIcon: EngineWallpaperService.availabilityKnown ? (EngineWallpaperService.available ? "emblem-ok-symbolic" : "dialog-error-symbolic") : "process-working-symbolic"
+                statusText: EngineWallpaperService.availabilityKnown ? (EngineWallpaperService.available ? qsTr("Ready") : qsTr("Unavailable")) : qsTr("Checking")
+                title: qsTr("Wallpaper Engine")
+                visible: root.activeSection === 3
+
+                onActionClicked: EngineWallpaperService.refresh()
+
+                GridLayout {
+                    id: engineFields
 
                     Layout.fillWidth: true
-                    actionIcon: "folder-open-symbolic"
-                    label: "Wallpaper Engine assets"
-                    placeholder: "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets"
+                    columnSpacing: 12
+                    columns: width >= 760 ? 2 : 1
+                    rowSpacing: 10
+                    uniformCellWidths: true
 
-                    onActionClicked: {
-                        SettingsHubService.filePickerDialog.open(engineAssetsField, "file://" + Config.expandHomePath("~"), true);
+                    SettingsTextField {
+                        id: engineAssetsField
+
+                        Layout.fillWidth: true
+                        actionIcon: "folder-open-symbolic"
+                        label: qsTr("Wallpaper Engine assets")
+                        placeholder: "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets"
+
+                        onActionClicked: SettingsHubService.filePickerDialog.open(engineAssetsField, "file://" + Config.expandHomePath("~"), true)
                     }
-                }
-                SettingsTextField {
-                    id: engineWorkshopField
+                    SettingsTextField {
+                        id: engineWorkshopField
 
-                    Layout.fillWidth: true
-                    actionIcon: "folder-open-symbolic"
-                    label: "Workshop folder"
-                    placeholder: "~/.local/share/Steam/steamapps/workshop/content/431960"
+                        Layout.fillWidth: true
+                        actionIcon: "folder-open-symbolic"
+                        label: qsTr("Workshop folder")
+                        placeholder: "~/.local/share/Steam/steamapps/workshop/content/431960"
 
-                    onActionClicked: {
-                        SettingsHubService.filePickerDialog.open(engineWorkshopField, "file://" + Config.expandHomePath("~"), true);
+                        onActionClicked: SettingsHubService.filePickerDialog.open(engineWorkshopField, "file://" + Config.expandHomePath("~"), true)
                     }
-                }
-                SettingsTextField {
-                    id: steamUsernameField
+                    SettingsTextField {
+                        id: steamUsernameField
 
-                    Layout.fillWidth: true
-                    label: "Steam username"
-                    placeholder: "Account name used by SteamCMD"
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 10
-
+                        Layout.fillWidth: true
+                        label: qsTr("Steam username")
+                        placeholder: qsTr("Account name used by SteamCMD")
+                    }
                     SettingsTextField {
                         id: steamApiKeyField
 
                         Layout.fillWidth: true
+                        actionIcon: root.revealSteamApiKey ? "view-conceal-symbolic" : "view-reveal-symbolic"
                         echoMode: root.revealSteamApiKey ? TextInput.Normal : TextInput.Password
-                        label: "Steam Web API key"
-                        placeholder: "Required for Workshop search"
-                    }
-                    SettingsActionButton {
-                        Layout.alignment: Qt.AlignBottom
-                        iconName: root.revealSteamApiKey ? "view-conceal-symbolic" : "view-reveal-symbolic"
-                        iconOnly: true
-                        text: root.revealSteamApiKey ? "Hide" : "Show"
+                        label: qsTr("Steam Web API key")
+                        placeholder: qsTr("Required for Workshop search")
 
-                        onClicked: root.revealSteamApiKey = !root.revealSteamApiKey
+                        onActionClicked: root.revealSteamApiKey = !root.revealSteamApiKey
                     }
                 }
             }
-            SettingsSectionCard {
-                Layout.fillWidth: true
-                accentColor: Config.md3.primary
-                note: "Optional account access for private collections and NSFW results"
-                title: "Wallhaven"
+            SettingsIntegrationCard {
+                id: wallhavenIntegration
+
+                accentColor: Config.md3.tertiary
+                iconName: "preferences-desktop-wallpaper-symbolic"
+                note: qsTr("Optional account access for collections and NSFW results")
+                statusColor: wallhavenApiKeyField.text !== "" ? Config.md3.secondary : Config.md3.tertiary
+                statusIcon: wallhavenApiKeyField.text !== "" ? "emblem-ok-symbolic" : "dialog-information-symbolic"
+                statusText: wallhavenApiKeyField.text !== "" ? qsTr("Configured") : qsTr("Optional")
+                title: qsTr("Wallhaven")
                 visible: root.activeSection === 3
 
-                SettingsTextField {
-                    id: wallhavenUsernameField
+                GridLayout {
+                    id: wallhavenFields
 
                     Layout.fillWidth: true
-                    label: "Wallhaven username"
-                    placeholder: "Required for Collections"
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 10
+                    columnSpacing: 12
+                    columns: width >= 720 ? 2 : 1
+                    rowSpacing: 10
+                    uniformCellWidths: true
 
+                    SettingsTextField {
+                        id: wallhavenUsernameField
+
+                        Layout.fillWidth: true
+                        label: qsTr("Wallhaven username")
+                        placeholder: qsTr("Required for Collections")
+                    }
                     SettingsTextField {
                         id: wallhavenApiKeyField
 
                         Layout.fillWidth: true
+                        actionIcon: root.revealWallhavenApiKey ? "view-conceal-symbolic" : "view-reveal-symbolic"
                         echoMode: root.revealWallhavenApiKey ? TextInput.Normal : TextInput.Password
-                        label: "Wallhaven API key"
-                        placeholder: "Optional for Browse, required for account access"
-                    }
-                    SettingsActionButton {
-                        Layout.alignment: Qt.AlignBottom
-                        iconName: root.revealWallhavenApiKey ? "view-conceal-symbolic" : "view-reveal-symbolic"
-                        iconOnly: true
-                        text: root.revealWallhavenApiKey ? "Hide" : "Show"
+                        label: qsTr("Wallhaven API key")
+                        placeholder: qsTr("Optional for Browse, required for account access")
 
-                        onClicked: root.revealWallhavenApiKey = !root.revealWallhavenApiKey
+                        onActionClicked: root.revealWallhavenApiKey = !root.revealWallhavenApiKey
                     }
                 }
             }

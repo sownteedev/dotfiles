@@ -46,6 +46,7 @@ QtObject {
                 root.replaceModel(root.collectionResults, response.items);
                 root.collectionPage = Number(response.current_page || 1);
                 root.collectionLastPage = Number(response.last_page || 1);
+                root.collectionTotalResults = Number(response.total || root.collectionResults.count);
             }
             root.runPendingCollection();
         }
@@ -66,6 +67,7 @@ QtObject {
     property ListModel collectionResults: ListModel {
         dynamicRoles: true
     }
+    property int collectionTotalResults: 0
     property ListModel collections: ListModel {
         dynamicRoles: true
     }
@@ -86,6 +88,10 @@ QtObject {
 
         onExited: (exitCode, exitStatus) => {
             var response = root.parseResponse(collectionsOutput.text, collectionsError.text, qsTr("Could not load Wallhaven collections"));
+            if (root.collectionsRefreshPending) {
+                root.restartCollectionsLoadIfPending();
+                return;
+            }
             if (exitCode !== 0 || !response.ok) {
                 root.collectionErrorMessage = response.message || qsTr("Could not load Wallhaven collections");
                 return;
@@ -96,6 +102,7 @@ QtObject {
             if (root.collections.count === 0) {
                 root.selectedCollectionId = "";
                 root.selectedCollectionLabel = "";
+                root.collectionTotalResults = 0;
                 root.collectionResults.clear();
                 return;
             }
@@ -110,6 +117,7 @@ QtObject {
             if (!running && launchPending) {
                 launchPending = false;
                 root.collectionErrorMessage = qsTr("Could not start the Wallhaven collection request");
+                root.restartCollectionsLoadIfPending();
             }
         }
         onStarted: {
@@ -118,17 +126,20 @@ QtObject {
             requestJson = "{}";
         }
     }
+    property bool collectionsRefreshPending: false
     property string colors: ""
     property Connections configConnections: Connections {
         function onWallhavenApiKeyChanged() {
             root.collectionsLoaded = false;
             root.collections.clear();
             root.collectionResults.clear();
+            root.collectionTotalResults = 0;
         }
         function onWallhavenUsernameChanged() {
             root.collectionsLoaded = false;
             root.collections.clear();
             root.collectionResults.clear();
+            root.collectionTotalResults = 0;
         }
 
         target: Config
@@ -152,11 +163,13 @@ QtObject {
         onExited: (exitCode, exitStatus) => {
             var completedId = root.downloadingId;
             var completedTitle = root.downloadingTitle || completedId;
+            var completedPurpose = root.downloadPurpose;
             var cancelled = root.downloadCancelRequested;
             var response = root.parseResponse(downloadOutput.text, downloadError.text, qsTr("Wallpaper download failed"));
             root.downloadCancelRequested = false;
             root.downloadingId = "";
             root.downloadingTitle = "";
+            root.downloadPurpose = "";
             if (cancelled && (exitCode !== 0 || !response.ok)) {
                 root.downloadErrorMessage = "";
                 root.statusMessage = qsTr("Cancelled %1").arg(completedTitle);
@@ -171,7 +184,7 @@ QtObject {
             root.statusMessage = response.existing ? qsTr("%1 is already downloaded").arg(completedTitle) : qsTr("Downloaded %1").arg(completedTitle);
             root.markDownloaded(completedId, response.path, response.modified, response.file_size);
             root.installedLoaded = false;
-            root.downloadCompleted(completedId, response.path, response.modified);
+            root.downloadCompleted(completedId, response.path, response.modified, completedPurpose);
         }
         onRunningChanged: {
             if (!running && launchPending) {
@@ -179,6 +192,7 @@ QtObject {
                 root.downloadCancelRequested = false;
                 root.downloadingId = "";
                 root.downloadingTitle = "";
+                root.downloadPurpose = "";
                 root.downloadErrorMessage = qsTr("Could not start the Wallhaven downloader");
             }
         }
@@ -188,6 +202,7 @@ QtObject {
             requestJson = "{}";
         }
     }
+    property string downloadPurpose: ""
     readonly property bool downloading: downloadingId !== ""
     property string downloadingId: ""
     property string downloadingTitle: ""
@@ -248,7 +263,7 @@ QtObject {
     property int lastPage: 1
     readonly property bool listingInstalled: installedProcess.running || installedReloadPending
     readonly property bool loadingCollection: collectionProcess.running || collectionRefreshPending
-    readonly property bool loadingCollections: collectionsProcess.running
+    readonly property bool loadingCollections: collectionsProcess.running || collectionsRefreshPending
     property string order: "desc"
     property int page: 1
     property string purity: "111"
@@ -369,7 +384,7 @@ QtObject {
     property string topRange: "1M"
     property int totalResults: 0
 
-    signal downloadCompleted(string wallpaperId, string path, var modified)
+    signal downloadCompleted(string wallpaperId, string path, var modified, string purpose)
     signal removeCompleted(string wallpaperId, string path)
 
     function cancelDownload() {
@@ -380,7 +395,7 @@ QtObject {
         downloadProcess.running = false;
         return true;
     }
-    function download(item) {
+    function download(item, purpose) {
         if (!item || downloadProcess.running)
             return false;
 
@@ -392,6 +407,7 @@ QtObject {
         }
         downloadingId = wallpaperId;
         downloadingTitle = qsTr("wallhaven-%1").arg(wallpaperId);
+        downloadPurpose = String(purpose || "desktop");
         downloadErrorMessage = "";
         statusMessage = qsTr("Downloading %1…").arg(downloadingTitle);
         downloadProcess.requestJson = JSON.stringify({
@@ -409,6 +425,10 @@ QtObject {
 
         selectedCollectionId = String(collectionId);
         selectedCollectionLabel = String(label || "");
+        var collectionIndex = modelIndexForId(collections, selectedCollectionId);
+        if (collectionIndex >= 0)
+            collectionTotalResults = Number(collections.get(collectionIndex).count || 0);
+
         var targetPage = Math.max(1, Number(requestedPage || 1));
         if (collectionProcess.running) {
             collectionPendingId = selectedCollectionId;
@@ -431,11 +451,16 @@ QtObject {
     }
     function loadCollections(force) {
         if (!accountConfigured) {
+            collectionsRefreshPending = false;
             collectionErrorMessage = qsTr("Add your Wallhaven username and API key in Settings");
             return false;
         }
-        if (collectionsProcess.running)
-            return false;
+        if (collectionsProcess.running) {
+            if (force === true)
+                collectionsRefreshPending = true;
+
+            return force === true;
+        }
 
         if (collectionsLoaded && !force) {
             if (selectedCollectionId !== "" && collectionResults.count === 0)
@@ -556,6 +581,18 @@ QtObject {
         }
         if (model.count > incoming.length)
             model.remove(incoming.length, model.count - incoming.length);
+    }
+    function restartCollectionsLoadIfPending() {
+        if (!collectionsRefreshPending)
+            return;
+
+        Qt.callLater(() => {
+            if (!root.collectionsRefreshPending)
+                return;
+
+            root.collectionsRefreshPending = false;
+            root.loadCollections(true);
+        });
     }
     function restartInstalledLoadIfPending() {
         if (!installedReloadPending)

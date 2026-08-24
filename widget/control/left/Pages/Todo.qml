@@ -118,23 +118,23 @@ Item {
                 Rectangle {
                     color: Config.md3.primary
                     height: 30
-                    layer.enabled: true
                     radius: 15
                     width: (parent.width - 6) / 2
                     x: 3 + currentTab * width
                     y: 3
 
-                    layer.effect: DropShadow {
-                        color: Config.alpha(Config.md3.background, 0.5)
-                        radius: 4
-                        samples: 9
-                        verticalOffset: 2
-                    }
                     Behavior on x {
                         NumberAnimation {
                             duration: 250
                             easing.type: Easing.OutCubic
                         }
+                    }
+
+                    ShellShadow {
+                        componentShadow: true
+                        cornerRadius: parent.radius
+                        target: parent
+                        z: -1
                     }
                 }
                 Row {

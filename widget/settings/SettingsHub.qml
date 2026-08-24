@@ -118,7 +118,7 @@ PanelWindow {
         {
             "title": "General",
             "group": "Quickshell",
-            "keywords": "font clock appearance localization blur transparency effects",
+            "keywords": "font clock appearance localization blur shadow opacity spread offset transparency effects",
             "page": 1,
             "section": 0
         },
@@ -199,6 +199,7 @@ PanelWindow {
     function closeSettings() {
         if (!active)
             return;
+        blurAcquireTimer.stop();
         active = false;
         blurReleaseTimer.restart();
         closeTimer.restart();
@@ -216,14 +217,16 @@ PanelWindow {
         var targetScreen = StateManager.resolvePanelScreen();
         if (targetScreen)
             screen = targetScreen;
+        blurAcquireTimer.stop();
         blurReleaseTimer.stop();
         closeTimer.stop();
-        blurActive = true;
+        blurActive = false;
         sectionTransition.stop();
         pageFrame.opacity = 1;
         pageFrame.x = 0;
         visible = true;
         active = true;
+        blurAcquireTimer.restart();
         panel.forceActiveFocus();
         SettingsHubService.refresh();
     }
@@ -276,6 +279,17 @@ PanelWindow {
         }
     }
 
+    Timer {
+        id: blurAcquireTimer
+
+        interval: Math.max(1, Config.animationDuration(40))
+        repeat: false
+
+        onTriggered: {
+            if (root.active)
+                root.blurActive = true;
+        }
+    }
     Timer {
         id: blurReleaseTimer
 
@@ -355,6 +369,13 @@ PanelWindow {
 
         anchors.fill: panel
     }
+    ShellShadow {
+        active: root.visible
+        cornerRadius: panel.radius
+        opacity: panel.opacity
+        scale: panel.scale
+        target: panel
+    }
     Rectangle {
         id: panel
 
@@ -362,7 +383,7 @@ PanelWindow {
         border.color: Config.alpha(Config.md3.on_surface, 0.08)
         border.width: 1
         clip: true
-        color: Config.shellBlurSettingsEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.85) : Config.md3.background
+        color: Config.shellBlurSettingsEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
         focus: true
         height: Responsive.fitWithMargins(860, root.height, root.compactViewport ? 8 : 18, 480)
         opacity: root.active ? 1 : 0
@@ -728,7 +749,7 @@ PanelWindow {
                             color: Config.alpha(Config.md3.on_surface, 0.5)
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 11
+                            font.pixelSize: 14
                             maximumLineCount: 1
                             text: root.activeSubtitle
                         }

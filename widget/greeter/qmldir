@@ -1,0 +1,11 @@
+singleton GreeterSession 1.0 GreeterSession.qml
+singleton GreeterTheme 1.0 GreeterTheme.qml
+GreeterBackground 1.0 GreeterBackground.qml
+GreeterAvatar 1.0 GreeterAvatar.qml
+singleton GreeterProfile 1.0 GreeterProfile.qml
+GreeterSurface 1.0 GreeterSurface.qml
+GreeterWindow 1.0 GreeterWindow.qml
+LoginCard 1.0 LoginCard.qml
+GreeterPasswordDots 1.0 GreeterPasswordDots.qml
+MdIconButton 1.0 MdIconButton.qml
+StatusPill 1.0 StatusPill.qml

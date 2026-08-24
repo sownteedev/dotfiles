@@ -1,5 +1,6 @@
 pragma Singleton
 import "../../"
+import ".."
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -112,11 +113,19 @@ QtObject {
             historyFile.setText(JSON.stringify(list));
         }
     }
+    property var unreadNotifications: []
     property Timer updateTimer: Timer {
         interval: 0
         repeat: false
 
         onTriggered: root.flushNativeUpdates()
+    }
+    property Connections workspaceConnections: Connections {
+        function onActiveWindowByOutputChanged() {
+            root.clearUnreadForFocusedWindows();
+        }
+
+        target: WorkspaceService
     }
 
     function add(n) {
@@ -142,11 +151,50 @@ QtObject {
             [n.id]: n
         });
         connectNativeUpdates(n);
+        trackUnread(n);
         // 2. Insert into the ListModel and trigger UI update
         notifications.insert(0, notifData);
         trimToLimit();
         scheduleGroupRebuild();
         saveHistory();
+    }
+    function addAppKey(keys, value) {
+        var rawValue = String(value || "").trim().toLowerCase();
+        if (rawValue === "")
+            return;
+
+        var baseName = rawValue.replace(/^.*[\\/]/, "");
+        var normalized = baseName.replace(/[^a-z0-9]/g, "");
+        if (normalized !== "" && keys.indexOf(normalized) === -1)
+            keys.push(normalized);
+    }
+    function addDesktopEntryKeys(keys, value) {
+        var rawValue = String(value || "").trim();
+        if (rawValue === "")
+            return;
+
+        var baseName = rawValue.replace(/^.*[\\/]/, "");
+        var candidates = [baseName];
+        if (baseName.toLowerCase().endsWith(".desktop"))
+            candidates.push(baseName.slice(0, -8));
+
+        var entry = null;
+        for (var i = 0; i < candidates.length && !entry; ++i)
+            entry = DesktopEntries.byId(candidates[i]);
+        for (var lookupIndex = 0; lookupIndex < candidates.length && !entry; ++lookupIndex)
+            entry = DesktopEntries.heuristicLookup(candidates[lookupIndex]);
+        if (!entry)
+            return;
+        addAppKey(keys, entry.id);
+        addAppKey(keys, entry.name);
+    }
+    function appKeys(identity, displayName) {
+        var keys = [];
+        addAppKey(keys, identity);
+        addAppKey(keys, displayName);
+        addDesktopEntryKeys(keys, identity);
+        addDesktopEntryKeys(keys, displayName);
+        return keys;
     }
     function appMatchesList(appName, rawList) {
         var expected = String(appName || "").trim().toLowerCase();
@@ -178,6 +226,7 @@ QtObject {
         }
         notifications.clear();
         rawMap = {};
+        unreadNotifications = [];
         var connectionIds = Object.keys(nativeConnections);
         for (var connectionIndex = 0; connectionIndex < connectionIds.length; ++connectionIndex)
             disconnectNativeUpdates(connectionIds[connectionIndex]);
@@ -194,6 +243,16 @@ QtObject {
     function clearAllAfter(delayMs) {
         clearAllDelayTimer.interval = Math.max(0, delayMs);
         clearAllDelayTimer.restart();
+    }
+    function clearUnreadForFocusedWindows() {
+        var next = [];
+        for (var i = 0; i < root.unreadNotifications.length; ++i) {
+            var unread = root.unreadNotifications[i];
+            if (!isNotificationAppFocused(unread))
+                next.push(unread);
+        }
+        if (next.length !== root.unreadNotifications.length)
+            root.unreadNotifications = next;
     }
     function connectNativeUpdates(n) {
         if (!n)
@@ -220,6 +279,7 @@ QtObject {
         n.imageChanged.connect(schedule);
         n.urgencyChanged.connect(schedule);
         n.transientChanged.connect(schedule);
+        n.desktopEntryChanged.connect(schedule);
 
         var nextConnections = Object.assign({}, nativeConnections);
         nextConnections[notificationId] = {
@@ -245,6 +305,7 @@ QtObject {
                 n.imageChanged.disconnect(connection.schedule);
                 n.urgencyChanged.disconnect(connection.schedule);
                 n.transientChanged.disconnect(connection.schedule);
+                n.desktopEntryChanged.disconnect(connection.schedule);
             } catch (error) {
                 // The notification may already have been destroyed natively.
             }
@@ -281,6 +342,7 @@ QtObject {
             disconnectNativeUpdates(nids[mapIndex]);
         }
         rawMap = cleanRawMap;
+        removeUnreadMany(nids);
         scheduleGroupRebuild();
         saveHistory();
         for (var nativeIndex = 0; nativeIndex < nativeNotifications.length; nativeIndex++) {
@@ -296,6 +358,27 @@ QtObject {
         pendingNativeUpdates = {};
         for (var nid in updates)
             updateFromNative(updates[nid]);
+    }
+    function isNotificationAppFocused(notification) {
+        var keys = notificationKeys(notification);
+        if (keys.length === 0)
+            return false;
+        var focusedWindows = WorkspaceService.activeWindowByOutput || {};
+        for (var outputName in focusedWindows) {
+            if (keysIntersect(keys, windowKeys(focusedWindows[outputName])))
+                return true;
+        }
+        return false;
+    }
+    function keysIntersect(first, second) {
+        for (var i = 0; i < first.length; ++i) {
+            if (second.indexOf(first[i]) !== -1)
+                return true;
+        }
+        return false;
+    }
+    function notificationKeys(notification) {
+        return appKeys(notification ? notification.desktopEntry : "", notification ? notification.appName : "");
     }
     function rebuildNotificationGroups() {
         var groups = [];
@@ -329,6 +412,26 @@ QtObject {
         }
         notificationGroups = groups;
     }
+    function refreshUnread(notification) {
+        if (!notification)
+            return;
+        for (var i = 0; i < root.unreadNotifications.length; ++i) {
+            if (root.unreadNotifications[i].nid === notification.id) {
+                if (isNotificationAppFocused(notification)) {
+                    removeUnread(notification.id);
+                } else {
+                    var next = root.unreadNotifications.slice();
+                    next[i] = {
+                        "nid": notification.id,
+                        "desktopEntry": String(notification.desktopEntry || ""),
+                        "appName": String(notification.appName || "")
+                    };
+                    root.unreadNotifications = next;
+                }
+                return;
+            }
+        }
+    }
     function releaseNative(nid, expectedObject) {
         var trackedObject = rawMap[nid];
         if (expectedObject && trackedObject && trackedObject !== expectedObject)
@@ -355,9 +458,33 @@ QtObject {
         var m = Object.assign({}, rawMap);
         delete m[nid];
         rawMap = m;
+        removeUnread(nid);
         disconnectNativeUpdates(nid);
         scheduleGroupRebuild();
         saveHistory();
+    }
+    function removeUnread(nid) {
+        var next = [];
+        for (var i = 0; i < root.unreadNotifications.length; ++i) {
+            if (root.unreadNotifications[i].nid !== nid)
+                next.push(root.unreadNotifications[i]);
+        }
+        if (next.length !== root.unreadNotifications.length)
+            root.unreadNotifications = next;
+    }
+    function removeUnreadMany(nids) {
+        if (!nids || nids.length === 0)
+            return;
+        var idSet = {};
+        for (var i = 0; i < nids.length; ++i)
+            idSet[nids[i]] = true;
+        var next = [];
+        for (var unreadIndex = 0; unreadIndex < root.unreadNotifications.length; ++unreadIndex) {
+            if (!idSet[root.unreadNotifications[unreadIndex].nid])
+                next.push(root.unreadNotifications[unreadIndex]);
+        }
+        if (next.length !== root.unreadNotifications.length)
+            root.unreadNotifications = next;
     }
     function saveHistory() {
         saveTimer.restart();
@@ -386,6 +513,23 @@ QtObject {
             "timestamp": timestamp
         };
     }
+    function trackUnread(notification) {
+        if (!notification)
+            return;
+        var next = [];
+        for (var i = 0; i < root.unreadNotifications.length; ++i) {
+            if (root.unreadNotifications[i].nid !== notification.id)
+                next.push(root.unreadNotifications[i]);
+        }
+        if (!isNotificationAppFocused(notification)) {
+            next.push({
+                "nid": notification.id,
+                "desktopEntry": String(notification.desktopEntry || ""),
+                "appName": String(notification.appName || "")
+            });
+        }
+        root.unreadNotifications = next;
+    }
     function trimToLimit() {
         var limit = Math.max(0, Config.notificationHistoryLimit);
         while (notifications.count > limit) {
@@ -396,9 +540,20 @@ QtObject {
             rawMap = cleanRawMap;
             disconnectNativeUpdates(oldestId, oldestNative);
             notifications.remove(notifications.count - 1);
+            removeUnread(oldestId);
             // Do not expire the native notification here. A history limit of
             // zero must still allow its popup and actions to live normally.
         }
+    }
+    function unreadCountForEntry(entryId, appName) {
+        var unread = root.unreadNotifications;
+        var entryKeys = appKeys(entryId, appName);
+        var count = 0;
+        for (var i = 0; i < unread.length; ++i) {
+            if (keysIntersect(entryKeys, notificationKeys(unread[i])))
+                ++count;
+        }
+        return count;
     }
     function updateFromNative(n) {
         if (!n)
@@ -416,13 +571,21 @@ QtObject {
 
         if (n.transient) {
             notifications.remove(index);
+            removeUnread(n.id);
             releaseNative(n.id, n);
         } else {
             var oldItem = notifications.get(index);
             notifications.set(index, snapshotFor(n, oldItem.timestamp || Date.now()));
+            refreshUnread(n);
         }
         scheduleGroupRebuild();
         saveHistory();
+    }
+    function windowKeys(windowData) {
+        if (!windowData)
+            return [];
+        var appId = String(windowData.app_id || "");
+        return appKeys(appId, appId === "" ? windowData.title : "");
     }
 
     Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", Config.homeDir + "/.cache/quickshell"])

@@ -6,6 +6,7 @@ import Quickshell.Widgets
 import Quickshell.Wayland
 import Quickshell.Services.Pipewire
 import "../../"
+import "../../components"
 import "../../service"
 
 PanelWindow {
@@ -121,6 +122,7 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "quickshell-osd"
 
     // Position: bottom center of screen
     anchors.bottom: Config.osdPosition === "bottom"
@@ -140,6 +142,11 @@ PanelWindow {
 
     // Keep the window alive only while the popup is visible so it does not block clicks when hidden
     visible: isOsdScreen && (active || popup.opacity > 0.0)
+
+    BackgroundEffect.blurRegion: Region {
+        item: Config.shellBlurOsdEnabled ? popup : null
+        radius: popup.radius
+    }
 
     Component.onCompleted: {
         if (brightnessReady)
@@ -231,19 +238,15 @@ PanelWindow {
     // Window root content holder to contain drop shadow bounds
     Item {
         anchors.fill: parent
-        clip: true // Cleanly clip the popup as it slides down below the window boundary
+        clip: true // Cleanly clip the popup as it slides past the nearest window boundary
 
-        // Premium drop shadow for floating glassmorphism effect
-        DropShadow {
-            anchors.fill: popup
-            cached: true
-            color: "#66000000"
-            horizontalOffset: 3
-            radius: 14
-            samples: 24
-            source: popup
-            verticalOffset: 3
-            visible: popup.opacity > 0.0 // Only enable shader drawing when the popup is visible/opaque
+        ShellShadow {
+            active: popup.opacity > 0.0
+            componentShadow: true
+            cornerRadius: popup.radius
+            opacity: popup.opacity
+            scale: popup.scale
+            target: popup
         }
 
         // Morphing layout container
@@ -262,7 +265,7 @@ PanelWindow {
 
             // Premium glassmorphic background styling
             clip: true
-            color: Config.alpha(Config.md3.background, 0.85)
+            color: Config.shellBlurOsdEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
             height: Math.min(parent.height, 60 + 10 * modeProgress)
             opacity: 0.0
             radius: Math.min(width, height) / 2
@@ -300,7 +303,7 @@ PanelWindow {
                         opacity: 0.0
                         popScale: 0.85
                         target: popup
-                        yOffset: 40
+                        yOffset: Config.osdPosition === "top" ? -40 : 40
                     }
                 }
             ]

@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland
 import "../../"
+import "../../components"
 
 PanelWindow {
     id: launcherWindow
@@ -74,6 +75,19 @@ PanelWindow {
         if (mode === "emoji")
             return Config.launcherEmojiPrefix + " ";
         return "";
+    }
+    function openAllApps() {
+        var targetScreen = StateManager.resolvePanelScreen();
+        if (targetScreen)
+            screen = targetScreen;
+        blurReleaseTimer.stop();
+        closeTimer.stop();
+        blurActive = true;
+        resetSearch();
+        showAllApps = true;
+        visible = true;
+        active = true;
+        searchEntry.forceActiveFocus();
     }
     function openLauncher() {
         var targetScreen = StateManager.resolvePanelScreen();
@@ -215,6 +229,13 @@ PanelWindow {
 
         onClicked: closeLauncher()
     }
+    ShellShadow {
+        active: launcherWindow.visible && !launcherWindow.showAllApps && mainLayout.opacity > 0
+        cornerRadius: mainLayout.radius
+        opacity: mainLayout.opacity
+        scale: mainLayout.scale
+        target: mainLayout
+    }
 
     // Main Container
     Rectangle {
@@ -230,10 +251,9 @@ PanelWindow {
         border.color: Config.alpha(Config.md3.outline_variant, 0.38)
         border.width: showAllApps ? 0 : 1
         clip: true
-        color: Config.shellBlurLauncherEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.84 : 0.66) : Config.md3.background
+        color: Config.shellBlurLauncherEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
         focus: true
         height: targetHeight
-        layer.enabled: launcherWindow.visible && !showAllApps
         opacity: launcherWindow.active ? 1.0 : 0.0
         radius: showAllApps ? 0 : Math.min(40, height / 2, width / 2)
         scale: launcherWindow.active ? 1.0 : 0.92
@@ -245,15 +265,6 @@ PanelWindow {
                 easing.type: Easing.OutCubic
             }
         }
-        layer.effect: DropShadow {
-            color: Config.alpha(Config.md3.shadow, 0.58)
-            horizontalOffset: 0
-            radius: 14
-            samples: 21
-            transparentBorder: true
-            verticalOffset: 2
-        }
-
         // Unified transition behaviors
         Behavior on opacity {
             NumberAnimation {

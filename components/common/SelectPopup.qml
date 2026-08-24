@@ -1,5 +1,5 @@
 import QtQuick
-import Qt5Compat.GraphicalEffects
+import ".."
 import "../../"
 
 Item {
@@ -104,6 +104,11 @@ Item {
             }
         }
 
+        ShellShadow {
+            active: root.opened
+            cornerRadius: popupCard.radius
+            target: popupCard
+        }
         Rectangle {
             id: popupCard
 
@@ -113,19 +118,10 @@ Item {
             border.width: 1
             color: Config.md3.surface_container
             height: Responsive.fit(desiredHeight, root.maxPopupHeight, root.rowHeight + 16)
-            layer.enabled: root.opened
             radius: 12
             width: Responsive.fit(root.popupWidth, root.width - root.rightMargin - 12, 180)
             x: Math.max(0, root.width - width - root.rightMargin)
             y: Math.max(12, Math.min(root.popupY, root.height - height - 12))
-
-            layer.effect: DropShadow {
-                color: Config.alpha(Config.black, 0.4)
-                radius: 10
-                samples: 15
-                transparentBorder: true
-                verticalOffset: 4
-            }
 
             ListView {
                 id: popupItems

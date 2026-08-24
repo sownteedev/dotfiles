@@ -24,6 +24,7 @@ QUERY_TYPES = {
     "recent": 1,
     "trending": 3,
 }
+UNSUPPORTED_WORKSHOP_TYPES = {"application", "web"}
 ACTIVE_PROCESS: subprocess.Popen[str] | None = None
 ACTIVE_DOWNLOAD_CLEANUP_PATHS: list[Path] = []
 NSFW_CONTENT_DESCRIPTOR_IDS = {1, 3, 4}
@@ -169,6 +170,20 @@ def wallpaper_type(tags: list[str]) -> str:
 
 def normalized_words(value: str) -> str:
     return " ".join(re.sub(r"[^\w+]+", " ", value.casefold()).split())
+
+def normalized_tag_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    tags: list[str] = []
+    seen: set[str] = set()
+    for entry in value:
+        tag = str(entry or "").strip()
+        normalized = tag.casefold()
+        if not tag or normalized in seen:
+            continue
+        seen.add(normalized)
+        tags.append(tag)
+    return tags
 
 def wallpaper_resolution(raw_item: dict[str, Any], tags: list[str]) -> str:
     candidates = list(tags)
@@ -345,6 +360,8 @@ def local_project_item(project_dir: Path, subscribed: set[str]) -> dict[str, Any
         return None
 
     item_type = str(metadata.get("type") or "unknown").casefold()
+    if item_type in UNSUPPORTED_WORKSHOP_TYPES:
+        return None
     raw_tags = metadata.get("tags")
     tags = [str(tag) for tag in raw_tags if tag] if isinstance(raw_tags, list) else []
     preview = str(metadata.get("preview") or "")
@@ -355,10 +372,10 @@ def local_project_item(project_dir: Path, subscribed: set[str]) -> dict[str, Any
         "preview": str(preview_path) if preview and preview_path.is_file() else "",
         "type": item_type,
         "resolution": cached_local_resolution(project_dir, metadata, tags),
-        "tags": tags[:8],
+        "tags": tags,
         "subscriptions": 0,
         "updated": int(project_file.stat().st_mtime),
-        "supported": item_type not in {"web", "application"},
+        "supported": True,
         "downloaded": True,
         "subscribed": project_dir.name in subscribed,
         "path": str(project_dir),
@@ -392,6 +409,8 @@ def normalize_search_response(
         ]
         nsfw = is_nsfw_item(raw_item, tags)
         item_type = wallpaper_type(tags)
+        if item_type in UNSUPPORTED_WORKSHOP_TYPES:
+            continue
         resolution = wallpaper_resolution(raw_item, tags)
         local_path = installed_path(published_file_id, roots)
         try:
@@ -411,10 +430,10 @@ def normalize_search_response(
                 "preview": preview_url,
                 "type": item_type,
                 "resolution": resolution,
-                "tags": tags[:8],
+                "tags": tags,
                 "subscriptions": int(raw_item.get("subscriptions", 0) or 0),
                 "updated": int(raw_item.get("time_updated", 0) or 0),
-                "supported": item_type not in {"web", "application"},
+                "supported": True,
                 "downloaded": local_path is not None,
                 "subscribed": published_file_id in subscribed,
                 "path": str(local_path) if local_path else "",
@@ -441,6 +460,12 @@ def search(payload: dict[str, Any]) -> dict[str, Any]:
         page = max(1, int(payload.get("page", 1)))
     except (TypeError, ValueError):
         page = 1
+    required_tags = normalized_tag_list(payload.get("required_tags"))
+    excluded_tags = normalized_tag_list(payload.get("excluded_tags"))
+    excluded_tag_names = {tag.casefold() for tag in excluded_tags}
+    for unsupported_tag in ("Application", "Web"):
+        if unsupported_tag.casefold() not in excluded_tag_names:
+            excluded_tags.append(unsupported_tag)
     query_parameters = {
         "query_type": QUERY_TYPES.get(sort_mode, QUERY_TYPES["trending"]),
         "page": page,
@@ -454,6 +479,10 @@ def search(payload: dict[str, Any]) -> dict[str, Any]:
         "return_short_description": True,
         "strip_description_bbcode": True,
     }
+    if required_tags:
+        query_parameters["requiredtags"] = required_tags
+        query_parameters["match_all_tags"] = bool(payload.get("match_all_tags", True))
+    query_parameters["excludedtags"] = excluded_tags
     query_string = urllib.parse.urlencode(
         {
             "key": api_key,

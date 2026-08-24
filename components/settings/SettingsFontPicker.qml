@@ -1,3 +1,4 @@
+import ".."
 import "../../"
 import QtQuick
 import QtQuick.Controls.Basic
@@ -157,11 +158,20 @@ ColumnLayout {
         x: 0
         y: root.height + 6
 
-        background: Rectangle {
-            border.color: Config.alpha(Config.md3.outline, 0.28)
-            border.width: 1
-            color: Config.md3.surface_container_high
-            radius: 14
+        background: Item {
+            ShellShadow {
+                cornerRadius: pickerSurface.radius
+                target: pickerSurface
+            }
+            Rectangle {
+                id: pickerSurface
+
+                anchors.fill: parent
+                border.color: Config.alpha(Config.md3.outline, 0.28)
+                border.width: 1
+                color: Config.md3.surface_container_high
+                radius: 14
+            }
         }
         contentItem: ColumnLayout {
             spacing: 8

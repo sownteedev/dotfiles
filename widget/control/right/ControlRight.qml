@@ -38,8 +38,10 @@ PanelWindow {
     readonly property real panelWidth: Responsive.sidePanelWidth(width)
     property int previousBottomTab: 0
     property int previousTab: 0
-    readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09)
-    readonly property color sectionColor: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.66 : 0.46)
+    readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.14 : 0.11)
+    readonly property color sectionCardBorderColor: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09)
+    readonly property color sectionCardColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.64 : 0.30)
+    readonly property color sectionColor: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.72 : 0.54)
     readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
     readonly property var tabIcons: ["preferences-system-notifications-symbolic", "network-wireless-symbolic", "bluetooth-symbolic", "audio-volume-high-symbolic"]
     readonly property var tabLabels: ["Notifications", "Wi-Fi", "Bluetooth", "Volume"]
@@ -173,21 +175,9 @@ PanelWindow {
 
         onClicked: hideControl()
     }
-
-    // A full-height DropShadow turns the entire panel into an FBO. Every
-    // notification delegate change then repaints that large texture. These two
-    // cheap rounded layers preserve the depth without a blur pass.
-    Rectangle {
-        anchors.fill: popup
-        anchors.margins: -10
-        color: Config.alpha("#000000", 0.05)
-        radius: popup.radius + 10
-    }
-    Rectangle {
-        anchors.fill: popup
-        anchors.margins: -5
-        color: Config.alpha("#000000", 0.12)
-        radius: popup.radius + 5
+    ShellShadow {
+        cornerRadius: popup.radius
+        target: popup
     }
 
     // ─── Sliding Sidebar Container ───────────────────────────────────────────────
@@ -206,7 +196,7 @@ PanelWindow {
         border.width: 1
         clip: true // Prevent bubbles from flying completely outside the panel bounds
 
-        color: Config.shellBlurControlRightEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? 0.92 : 0.85) : Config.md3.background
+        color: Config.shellBlurControlRightEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
         radius: 20
         width: controlRightWindow.panelWidth
 
@@ -260,17 +250,15 @@ PanelWindow {
                 border.color: controlRightWindow.sectionBorderColor
                 border.width: 1
                 color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.68 : 0.5)
-                layer.enabled: controlRightWindow.visible
                 radius: height / 2
 
-                layer.effect: DropShadow {
-                    color: Config.alpha(Config.md3.shadow, 0.28)
-                    horizontalOffset: 0
-                    radius: 10
-                    samples: 20
-                    verticalOffset: 0
+                ShellShadow {
+                    active: controlRightWindow.visible
+                    componentShadow: true
+                    cornerRadius: parent.radius
+                    target: parent
+                    z: -1
                 }
-
                 Flickable {
                     id: quickToggleViewport
 
@@ -373,7 +361,6 @@ PanelWindow {
                                 Layout.preferredWidth: width
                                 color: isActive ? Config.md3.primary : (tabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.06) : "transparent")
                                 height: 40
-                                layer.enabled: isActive
                                 radius: 22
                                 width: isActive && !controlRightWindow.compact ? (tabInnerRow.implicitWidth + 36) : 44
 
@@ -382,13 +369,6 @@ PanelWindow {
                                         duration: 150
                                     }
                                 }
-                                layer.effect: DropShadow {
-                                    color: Config.alpha(Config.md3.primary, 0.35)
-                                    horizontalOffset: 0
-                                    radius: 8
-                                    samples: 16
-                                    verticalOffset: 0
-                                }
                                 Behavior on width {
                                     NumberAnimation {
                                         duration: 150
@@ -396,6 +376,13 @@ PanelWindow {
                                     }
                                 }
 
+                                ShellShadow {
+                                    active: tabBtn.isActive
+                                    componentShadow: true
+                                    cornerRadius: parent.radius
+                                    target: parent
+                                    z: -1
+                                }
                                 Row {
                                     id: tabInnerRow
 
@@ -532,7 +519,6 @@ PanelWindow {
                                 Layout.preferredWidth: width
                                 color: isActive ? Config.md3.primary : (bottomTabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.06) : "transparent")
                                 height: 40
-                                layer.enabled: isActive
                                 radius: 22
                                 width: isActive && !controlRightWindow.compact ? (bottomTabInnerRow.implicitWidth + 36) : 44
 
@@ -541,13 +527,6 @@ PanelWindow {
                                         duration: 150
                                     }
                                 }
-                                layer.effect: DropShadow {
-                                    color: Config.alpha(Config.md3.primary, 0.35)
-                                    horizontalOffset: 0
-                                    radius: 8
-                                    samples: 16
-                                    verticalOffset: 0
-                                }
                                 Behavior on width {
                                     NumberAnimation {
                                         duration: 150
@@ -555,6 +534,13 @@ PanelWindow {
                                     }
                                 }
 
+                                ShellShadow {
+                                    active: bottomTabBtn.isActive
+                                    componentShadow: true
+                                    cornerRadius: parent.radius
+                                    target: parent
+                                    z: -1
+                                }
                                 Row {
                                     id: bottomTabInnerRow
 

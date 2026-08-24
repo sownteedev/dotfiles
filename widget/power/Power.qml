@@ -1,7 +1,7 @@
 import QtQuick
-import Qt5Compat.GraphicalEffects
 import Quickshell
 import "../../"
+import "../../components"
 
 PanelWindow {
     id: powerWindow
@@ -203,6 +203,11 @@ PanelWindow {
                 }
             }
 
+            ShellShadow {
+                active: powerWindow.visible
+                cornerRadius: popup.radius
+                target: popup
+            }
             Rectangle {
                 id: popup
 
@@ -211,18 +216,8 @@ PanelWindow {
                 border.width: 1
                 color: Config.alpha(Config.md3.background, 0.97)
                 height: 104
-                layer.enabled: powerWindow.visible
                 radius: height / 2
                 width: Responsive.fitWithMargins(572, powerWindow.width, 16, 340)
-
-                layer.effect: DropShadow {
-                    color: Config.alpha(Config.md3.shadow, 0.55)
-                    horizontalOffset: 0
-                    radius: 22
-                    samples: 29
-                    transparentBorder: true
-                    verticalOffset: 8
-                }
 
                 Rectangle {
                     anchors.fill: parent

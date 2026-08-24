@@ -126,10 +126,10 @@ Item {
                     property int renderedCount: notificationPageRoot.renderedCountFor(appName)
                     property real swipeOffset: 0
 
-                    border.color: Config.alpha(Config.md3.on_surface, 0.075)
+                    border.color: controlRightWindow.sectionCardBorderColor
                     border.width: 1
                     clip: true
-                    color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.54 : 0.18)
+                    color: controlRightWindow.sectionCardColor
                     height: isDismissing ? 0 : cardColumn.implicitHeight + 20
                     radius: 16
                     visible: !groupItem.pooled

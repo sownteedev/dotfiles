@@ -13,6 +13,7 @@ PanelWindow {
     id: root
 
     property bool active: false
+    readonly property real blurSurfaceOpacity: Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark
     property string body: ""
     readonly property int exitAnimationDuration: 260
     readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
@@ -98,6 +99,7 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "quickshell-notification-screenshot"
     anchors.bottom: true
     anchors.right: true
     color: "transparent"
@@ -106,6 +108,11 @@ PanelWindow {
     implicitHeight: screen ? Math.min(480, screen.height) : 480
     implicitWidth: screen ? Math.min(480, screen.width) : 480
     visible: false
+
+    BackgroundEffect.blurRegion: Region {
+        item: Config.shellBlurNotificationEnabled ? toastBlurGeometry : null
+        radius: toast.radius
+    }
 
     Connections {
         function onNotification(notification) {
@@ -173,6 +180,25 @@ PanelWindow {
             }
         }
     }
+    Item {
+        id: toastBlurGeometry
+
+        height: toast.height
+        width: toast.width
+        x: toast.x + toast.slideOffset + toast.swipeOffset
+        y: toast.y
+    }
+    ShellShadow {
+        active: root.visible && toast.opacity > 0
+        componentShadow: true
+        cornerRadius: toast.radius
+        opacity: toast.opacity
+        target: toast
+
+        transform: Translate {
+            x: toast.slideOffset + toast.swipeOffset
+        }
+    }
     ClippingRectangle {
         id: toast
 
@@ -188,7 +214,7 @@ PanelWindow {
         anchors.rightMargin: outerMargin
         border.color: Config.alpha(Config.md3.outline_variant, 0.28)
         border.width: 1
-        color: Config.md3.surface
+        color: Config.shellBlurNotificationEnabled ? Config.alpha(Config.md3.surface, root.blurSurfaceOpacity) : Config.md3.surface
         height: mainColumn.implicitHeight + 32
         opacity: Math.max(0, 1 - toast.swipeOffset / (toast.width * 0.78))
         radius: Math.min(24, width / 2, height / 2)
@@ -316,7 +342,7 @@ PanelWindow {
                     anchors.fill: parent
                     border.color: previewArea.containsMouse ? Config.alpha(Config.md3.primary, 0.72) : Config.alpha(Config.md3.outline_variant, 0.3)
                     border.width: 1
-                    color: Config.md3.surface_container_lowest
+                    color: Config.shellBlurNotificationEnabled ? Config.alpha(Config.md3.surface_container_lowest, root.blurSurfaceOpacity) : Config.md3.surface_container_lowest
                     radius: 12
                     scale: previewArea.pressed ? 0.985 : 1
 
@@ -395,7 +421,7 @@ PanelWindow {
                 Layout.preferredHeight: toast.infoHeight
                 border.color: Config.alpha(Config.md3.outline_variant, 0.16)
                 border.width: 1
-                color: Config.md3.surface_container
+                color: Config.shellBlurNotificationEnabled ? Config.alpha(Config.md3.surface_container, root.blurSurfaceOpacity) : Config.md3.surface_container
                 radius: 14
 
                 RowLayout {
