@@ -93,8 +93,8 @@ has_display_gpu_vendor() {
 # Quickshell runtime and optional features
 install_shell_runtime() {
     local -a packages=(
-        niri xwayland-satellite quickshell-git qt6-connectivity qt6-positioning
-        qt6-avif-image-plugin geoclue
+        niri xwayland-satellite quickshell-git qt6-connectivity qt6-multimedia qt6-positioning
+        qt6-avif-image-plugin qt6-5compat qt6-imageformats geoclue
         libnotify inotify-tools libcanberra zenity cava cliphist
         slurp wl-clipboard wtype hyprpicker gpu-screen-recorder ffmpeg imagemagick
         mesa libva-utils
@@ -330,7 +330,7 @@ install_shell_environment() {
     sleep 3 && clear
 }
 
-# Boot and display-manager themes
+# Boot and display-manager configuration
 prompt_theme_selection() {
     local theme_root="$1"
     local theme_label="$2"
@@ -372,14 +372,142 @@ prompt_theme_selection() {
     done
 }
 
-select_theme_sddm() {
-    local theme_name
+enable_greetd_display_manager() {
+    local display_manager_link="/etc/systemd/system/display-manager.service"
+    local current_target=""
+    local current_unit=""
 
-    sudo mkdir -p /etc/sddm.conf.d
-    prompt_theme_selection "$DOTFILES_DIR/.root/sddm-theme" "SDDM"
-    theme_name="$SELECTED_THEME_NAME"
-    printf '[Theme]\nCurrent=%s\n' "$theme_name" | sudo tee /etc/sddm.conf.d/20-theme.conf >/dev/null
-    sudo systemctl enable sddm
+    if [ -L "$display_manager_link" ]; then
+        current_target=$(readlink -f -- "$display_manager_link" 2>/dev/null || true)
+        current_unit=${current_target##*/}
+        if [ -n "$current_unit" ] && [ "$current_unit" != "greetd.service" ]; then
+            blue_echo "[*] Replacing the existing display manager: $current_unit"
+            sudo systemctl disable "$current_unit" || true
+        fi
+    fi
+
+    sudo systemctl enable --force greetd.service
+    current_target=$(readlink -f -- "$display_manager_link" 2>/dev/null || true)
+    if [ "${current_target##*/}" != "greetd.service" ]; then
+        red_echo "[!] greetd did not become the active display-manager service."
+        return 1
+    fi
+}
+
+install_greetd() {
+    local greetd_pam_source="$DOTFILES_DIR/.root/greetd/pam/greetd"
+    local greeter_source="$QUICKSHELL_DIR/widget/greeter"
+    local greeter_install_dir="/usr/share/quickshell-greeter"
+    local greeter_theme_dir="/var/lib/quickshell-greeter"
+    local greeter_theme_file="$greeter_theme_dir/colors.json"
+    local greeter_background_file="$greeter_theme_dir/background.json"
+    local greeter_profile_file="$greeter_theme_dir/profile.json"
+    local greeter_runtime_dir="$greeter_theme_dir/runtime"
+    local config_temp=""
+    local required_command=""
+    # Keep the standalone --greetd path self-contained on a fresh installation.
+    local -a packages=(
+        greetd cage quickshell-git qt6-multimedia qt6-5compat qt6-imageformats qt6-avif-image-plugin
+        ffmpeg matugen-bin gnome-keyring niri python upower rsync inter-font ttf-nerd-fonts-symbols
+    )
+
+    if [ "$(id -u)" -eq 0 ] || [ "$USER" = "root" ]; then
+        red_echo "[!] Run this installer as the target desktop user, not as root."
+        return 1
+    fi
+    if [[ ! "$USER" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] || ! getent passwd "$USER" >/dev/null; then
+        red_echo "[!] Refusing to write an invalid greetd user name: $USER"
+        return 1
+    fi
+    if [ ! -f "$greeter_source/shell.qml" ]; then
+        red_echo "[!] Quickshell greeter source not found: $greeter_source"
+        return 1
+    fi
+    if [ ! -f "$greeter_source/scripts/list_sessions.py" ] || [ ! -f "$greeter_source/qmldir" ]; then
+        red_echo "[!] Quickshell greeter source is incomplete: $greeter_source"
+        return 1
+    fi
+    if [ ! -f "$greetd_pam_source" ]; then
+        red_echo "[!] greetd PAM configuration not found: $greetd_pam_source"
+        return 1
+    fi
+
+    if [ "$INSTALLER_DRY_RUN" != "1" ] && ! command -v yay >/dev/null 2>&1; then
+        red_echo "[!] yay is required. Run the driver installation stage first."
+        return 1
+    fi
+    run_yay "${packages[@]}"
+    if [ "$INSTALLER_DRY_RUN" = "1" ]; then
+        printf '[dry-run] deploy %q to %q with stale files removed\n' "$greeter_source" "$greeter_install_dir"
+        printf '[dry-run] configure greetd state under %q for user %q and group greeter\n' "$greeter_theme_dir" "$USER"
+        printf '[dry-run] install PAM configuration from %q\n' "$greetd_pam_source"
+        printf '[dry-run] replace display-manager.service with greetd.service\n'
+        return 0
+    fi
+
+    if [ ! -f /usr/lib/sysusers.d/greetd.conf ]; then
+        red_echo "[!] greetd installed without its sysusers configuration."
+        return 1
+    fi
+    if ! getent passwd greeter >/dev/null || ! getent group greeter >/dev/null; then
+        sudo systemd-sysusers /usr/lib/sysusers.d/greetd.conf
+    fi
+    if ! getent passwd greeter >/dev/null || ! getent group greeter >/dev/null; then
+        red_echo "[!] The greetd greeter account could not be created."
+        return 1
+    fi
+    if getent group video >/dev/null && ! id -nG greeter | tr ' ' '\n' | grep -qx video; then
+        sudo usermod -aG video greeter
+    fi
+
+    for required_command in cage ffmpeg matugen quickshell python3 niri-session systemd-cat; do
+        if ! command -v "$required_command" >/dev/null 2>&1; then
+            red_echo "[!] Required greetd command is missing after installation: $required_command"
+            return 1
+        fi
+    done
+
+    sudo install -d -m 0755 "$greeter_install_dir" /etc/greetd /etc/pam.d
+    sudo install -d -o "$USER" -g greeter -m 2750 "$greeter_theme_dir"
+    sudo chown "$USER:greeter" "$greeter_theme_dir"
+    sudo chmod 2750 "$greeter_theme_dir"
+    sudo find "$greeter_theme_dir" -maxdepth 1 -type f -exec chown "$USER:greeter" {} +
+    sudo find "$greeter_theme_dir" -maxdepth 1 -type f -exec chmod 0640 {} +
+    sudo install -d -o greeter -g greeter -m 0700 \
+        "$greeter_runtime_dir" \
+        "$greeter_runtime_dir/cache" \
+        "$greeter_runtime_dir/config" \
+        "$greeter_runtime_dir/data"
+    sudo chown -R greeter:greeter "$greeter_runtime_dir"
+    sudo find "$greeter_runtime_dir" -type d -exec chmod 0700 {} +
+
+    sudo rsync -a --delete "$greeter_source/" "$greeter_install_dir/"
+    sudo chown -R root:root "$greeter_install_dir"
+    sudo find "$greeter_install_dir" -type d -exec chmod 0755 {} +
+    sudo find "$greeter_install_dir" -type f -exec chmod 0644 {} +
+    sudo install -m 0644 "$greetd_pam_source" /etc/pam.d/greetd
+    config_temp=$(mktemp /tmp/quickshell-greetd-config.XXXXXX)
+    cat > "$config_temp" << EOF
+[terminal]
+vt = 1
+
+[default_session]
+command = "env HOME=$greeter_runtime_dir XDG_CACHE_HOME=$greeter_runtime_dir/cache XDG_CONFIG_HOME=$greeter_runtime_dir/config XDG_DATA_HOME=$greeter_runtime_dir/data GREETD_DEFAULT_USER=$USER GREETD_SESSION_NAME=Niri GREETD_THEME_PATH=$greeter_theme_file GREETD_BACKGROUND_PATH=$greeter_background_file GREETD_PROFILE_PATH=$greeter_profile_file systemd-cat --identifier=quickshell-greeter cage -d -s -m extend -- quickshell --no-color --path $greeter_install_dir"
+user = "greeter"
+EOF
+    if ! python3 -c 'import pathlib, sys, tomllib; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' "$config_temp"; then
+        rm -f -- "$config_temp"
+        red_echo "[!] Generated greetd configuration is not valid TOML."
+        return 1
+    fi
+    if ! sudo install -m 0644 "$config_temp" /etc/greetd/config.toml; then
+        rm -f -- "$config_temp"
+        return 1
+    fi
+    rm -f -- "$config_temp"
+
+    enable_greetd_display_manager
+    green_echo "[*] Greetd is configured for the next boot."
 }
 
 select_theme_grub() {
@@ -491,10 +619,8 @@ install_workspace() {
     green_echo "[*] Grub Theme setup done."
     sleep 3 && clear
 
-    red_echo "[*] Installing Display Manager (SDDM)"
-    run_yay sddm qt6-svg qt6-base qt6-multimedia qt6-5compat qt6-imageformats qt6-declarative gst-libav gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-plugins-base
-    sudo mkdir -p /usr/share/sddm/themes && sudo cp -a "$DOTFILES_DIR/.root/sddm-theme/." /usr/share/sddm/themes/
-    select_theme_sddm
+    red_echo "[*] Installing Display Manager (greetd + Quickshell)"
+    install_greetd
     green_echo "[*] Display Manager setup done."
     sleep 3 && clear
 
@@ -560,23 +686,23 @@ main() {
     local option
 
     if [ "$#" -ne 1 ]; then
-        printf 'Usage: %s {--all|--dots|--env|--shell-deps|--features|--workspace|--sddm|--grub|--waylandflag}\n' "$0" >&2
+        printf 'Usage: %s {--all|--dots|--env|--shell-deps|--features|--workspace|--greetd|--grub|--waylandflag}\n' "$0" >&2
         return 2
     fi
     option="$1"
 
     case "$option" in
-        --all|--dots|--env|--shell-deps|--features|--workspace|--sddm|--grub|--waylandflag)
+        --all|--dots|--env|--shell-deps|--features|--workspace|--greetd|--grub|--waylandflag)
             ;;
         *)
             red_echo "[!] Unknown option: $option"
-            printf 'Usage: %s {--all|--dots|--env|--shell-deps|--features|--workspace|--sddm|--grub|--waylandflag}\n' "$0" >&2
+            printf 'Usage: %s {--all|--dots|--env|--shell-deps|--features|--workspace|--greetd|--grub|--waylandflag}\n' "$0" >&2
             return 2
             ;;
     esac
 
     case "$option:$INSTALLER_DRY_RUN" in
-        --waylandflag:*|--shell-deps:1|--features:1)
+        --waylandflag:*|--shell-deps:1|--features:1|--greetd:1)
             ;;
         *)
             start_sudo_keepalive
@@ -605,8 +731,8 @@ main() {
         --workspace)
             install_workspace
             ;;
-        --sddm)
-            select_theme_sddm
+        --greetd)
+            install_greetd
             ;;
         --grub)
             select_theme_grub
