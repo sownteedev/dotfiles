@@ -13,7 +13,7 @@ Variants {
             id: wallpaperLoader
 
             required property var modelData
-            readonly property bool requested: (!LiveWallpaperService.active && !EngineWallpaperService.active) || WallpaperService.liveRevealActive || WallpaperService.previewActive || EngineWallpaperService.policyRestarting
+            readonly property bool requested: (!LiveWallpaperService.active && !EngineWallpaperService.active) || WallpaperService.liveRevealActive || (WallpaperService.previewActive && WallpaperService.previewPath !== "") || EngineWallpaperService.policyRestarting
 
             function syncRequestedState() {
                 if (requested) {

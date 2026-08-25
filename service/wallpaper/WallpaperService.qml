@@ -32,20 +32,36 @@ QtObject {
                 root.handleVideoFailure(sourcePath, message);
         }
         function onPlaybackReady(sourcePath, framePath, generation) {
-            if (generation === root.videoTransitionGeneration && root.isTransitionPending && root.selectedMode === "video" && root.isEngineVideo && sourcePath === root.selectedPath) {
-                root.backendReadyPath = sourcePath;
-                if (framePath)
-                    root.stageVideoFrame(framePath, true);
-                else if (root.fallbackVideoThumbnail && !root.pendingVideoThumbnail)
-                    root.stageVideoThumbnail(root.fallbackVideoThumbnail, true);
-                root.tryFinishVideoTransition();
+            if (generation !== root.videoTransitionGeneration || root.selectedMode !== "video" || !root.isEngineVideo || sourcePath !== root.selectedPath)
+                return;
+
+            if (framePath) {
+                root.rememberVideoFrame(framePath, true);
+                if (!root.isTransitionPending) {
+                    root.saveState(root.persistedVideoThumbnail());
+                    return;
+                }
             }
+            if (!root.isTransitionPending)
+                return;
+
+            root.backendReadyPath = sourcePath;
+            if (!framePath && root.fallbackVideoThumbnail && !root.pendingVideoThumbnail)
+                root.stageVideoThumbnail(root.fallbackVideoThumbnail, true);
+            root.tryFinishVideoTransition();
         }
         function onPreviewThumbnailReady(sourcePath, thumbnailPath, requestToken) {
-            if (requestToken === root.videoTransitionGeneration && root.isTransitionPending && root.selectedMode === "video" && root.isEngineVideo && sourcePath === root.pendingEnginePreviewSource) {
-                root.pendingEnginePreviewSource = "";
-                root.prepareVideoTheme(thumbnailPath, root.selectedModified);
-            }
+            var expectedCover = EngineWallpaperService.previewCoverPath(sourcePath, root.selectedModified);
+            if (requestToken !== root.videoTransitionGeneration || root.selectedMode !== "video" || !root.isEngineVideo || sourcePath !== root.pendingEnginePreviewSource || thumbnailPath !== expectedCover)
+                return;
+
+            root.pendingEnginePreviewSource = "";
+            root.fallbackVideoThumbnail = thumbnailPath;
+            if (root.isTransitionPending)
+                root.stageVideoThumbnail(thumbnailPath, false);
+            root.prepareVideoTheme(thumbnailPath, root.selectedModified);
+            if (!root.isTransitionPending)
+                root.saveState(thumbnailPath);
         }
 
         target: EngineWallpaperService
@@ -89,32 +105,43 @@ QtObject {
                 root.handleVideoFailure(sourcePath, message);
         }
         function onPlaybackReady(sourcePath, framePath, generation) {
-            if (generation === root.videoTransitionGeneration && root.isTransitionPending && root.selectedMode === "video" && !root.isEngineVideo && sourcePath === root.selectedPath) {
-                root.backendReadyPath = sourcePath;
-                if (framePath)
-                    root.stageVideoFrame(framePath, true);
-                else if (root.fallbackVideoThumbnail && !root.pendingVideoThumbnail)
-                    root.stageVideoThumbnail(root.fallbackVideoThumbnail, true);
-                root.tryFinishVideoTransition();
+            if (generation !== root.videoTransitionGeneration || root.selectedMode !== "video" || root.isEngineVideo || sourcePath !== root.selectedPath)
+                return;
+
+            if (framePath) {
+                root.rememberVideoFrame(framePath, true);
+                if (!root.isTransitionPending) {
+                    root.saveState(root.persistedVideoThumbnail());
+                    return;
+                }
             }
+            if (!root.isTransitionPending)
+                return;
+
+            root.backendReadyPath = sourcePath;
+            if (!framePath && root.fallbackVideoThumbnail && !root.pendingVideoThumbnail)
+                root.stageVideoThumbnail(root.fallbackVideoThumbnail, true);
+            root.tryFinishVideoTransition();
         }
         function onThumbnailReady(sourcePath, thumbnailPath, requestToken) {
             var expectedPath = "";
             var isValid = false;
 
             if (root.selectedMode === "video" && !root.isEngineVideo) {
-                expectedPath = LiveWallpaperService.thumbnailPath(root.selectedPath, root.selectedModified);
+                expectedPath = LiveWallpaperService.coverPath(root.selectedPath, root.selectedModified);
                 isValid = true;
             }
 
-            if (!isValid || thumbnailPath !== expectedPath || root.isTransitionPending && requestToken !== root.videoTransitionGeneration)
+            if (!isValid || thumbnailPath !== expectedPath || requestToken !== root.videoTransitionGeneration)
                 return;
 
             root.fallbackVideoThumbnail = thumbnailPath;
-            if (root.isTransitionPending && !root.pendingVideoThumbnail)
+            if (root.isTransitionPending)
                 root.stageVideoThumbnail(thumbnailPath, false);
-            if (root.isTransitionPending && !root.videoQuickThemeReady && !root.pendingVideoThemeSource)
+            if (!root.videoQuickThemeReady && !root.pendingVideoThemeSource)
                 root.prepareVideoTheme(thumbnailPath, root.selectedModified);
+            if (!root.isTransitionPending)
+                root.saveState(thumbnailPath);
         }
 
         target: LiveWallpaperService
@@ -125,6 +152,13 @@ QtObject {
 
         onTriggered: {
             root.liveRevealActive = false;
+            var renderedFrame = root.lastVideoFrame;
+            if (root.selectedMode === "video" && renderedFrame) {
+                Qt.callLater(() => {
+                    if (!root.liveRevealActive && !root.isTransitionPending && root.selectedMode === "video" && root.lastVideoFrame === renderedFrame)
+                        Config.wallpaper = renderedFrame;
+                });
+            }
         }
     }
     property string pendingEnginePreviewSource: ""
@@ -150,12 +184,15 @@ QtObject {
                 root.applyTheme(thumbnailPath);
                 return;
             }
-            if (requestToken === root.videoTransitionGeneration && root.selectedMode === "video" && root.isTransitionPending && sourcePath === root.pendingVideoThemeSource) {
+            if (requestToken === root.videoTransitionGeneration && root.selectedMode === "video" && sourcePath === root.pendingVideoThemeSource) {
                 root.pendingVideoThemeSource = "";
                 root.pendingVideoSystemThemePath = thumbnailPath;
+                root.videoPaletteReady = true;
+                root.videoPaletteRevealFallback.stop();
                 // The cached Quickshell palette is already animating. Let that
                 // settle before generating GTK/Qt/application themes.
                 root.videoQuickThemeSettle.restart();
+                root.tryFinishVideoTransition();
             }
         }
 
@@ -166,6 +203,7 @@ QtObject {
     property Connections screenConnections: Connections {
         function onScreensChanged() {
             root.updateVideoCoverReadiness();
+            root.updateStaticTransitionReadiness();
         }
 
         target: Quickshell
@@ -202,6 +240,7 @@ QtObject {
         }
         onSaveFailed: error => console.warn("[WallpaperService] Could not save wallpaper state:", error)
     }
+    property var staticReadyScreens: ({})
     property Timer staticRevealDelay: Timer {
         interval: 220
         repeat: false
@@ -214,6 +253,18 @@ QtObject {
             root.liveRevealActive = false;
         }
     }
+    property Timer staticTransitionFallback: Timer {
+        interval: Math.max(1400, Config.wallpaperTransitionDuration + 900)
+        repeat: false
+
+        onTriggered: {
+            if (!root.staticTransitionPending)
+                return;
+            console.warn("[WallpaperService] Static wallpaper transition timed out, stopping the previous renderer");
+            root.finishStaticTransition();
+        }
+    }
+    property bool staticTransitionPending: false
     property Connections themeConnections: Connections {
         function onModeResolvedChanged() {
             root.ensureInitialTheme();
@@ -244,6 +295,7 @@ QtObject {
                 if (Object.keys(root.coverReadyScreens).length > 0) {
                     console.warn("[WallpaperService] Some screens did not report the video cover ready, continuing with the loaded cover");
                     root.videoCoverReady = true;
+                    root.startDeferredVideoRenderer();
                     root.tryFinishVideoTransition();
                 } else {
                     console.warn("[WallpaperService] Video cover has not loaded yet, waiting for the transition deadline");
@@ -251,19 +303,35 @@ QtObject {
             }
         }
     }
+    property bool videoPaletteReady: false
+    property Timer videoPaletteRevealFallback: Timer {
+        interval: 320
+        repeat: false
+
+        onTriggered: {
+            if (!root.isTransitionPending || root.selectedMode !== "video" || root.videoPaletteReady)
+                return;
+            root.videoPaletteReady = true;
+            root.tryFinishVideoTransition();
+        }
+    }
     property Timer videoQuickThemeFallback: Timer {
         interval: 4500
         repeat: false
 
         onTriggered: {
-            if (!root.isTransitionPending || root.selectedMode !== "video" || root.videoQuickThemeReady)
+            if (root.selectedMode !== "video" || root.videoQuickThemeReady)
                 return;
             console.warn("[WallpaperService] Video palette preparation timed out, continuing with the available theme source");
-            root.pendingEnginePreviewSource = "";
+            if (root.videoRendererStartPending) {
+                root.videoRendererStartPending = false;
+                root.liveRevealActive = true;
+                root.launchSelectedVideoRenderer();
+            }
             root.pendingVideoThemeSource = "";
             root.videoQuickThemeSettle.stop();
             root.videoQuickThemeReady = true;
-            var source = root.pendingVideoSystemThemePath || root.fallbackVideoThumbnail || root.pendingVideoThumbnail;
+            var source = root.pendingVideoSystemThemePath || root.lastVideoFrame || root.fallbackVideoThumbnail || root.pendingVideoThumbnail;
             root.pendingVideoSystemThemePath = "";
             if (source)
                 root.applyTheme(source);
@@ -276,7 +344,7 @@ QtObject {
         repeat: false
 
         onTriggered: {
-            if (!root.isTransitionPending || root.selectedMode !== "video")
+            if (root.selectedMode !== "video")
                 return;
             var source = root.pendingVideoSystemThemePath;
             root.pendingVideoSystemThemePath = "";
@@ -287,6 +355,7 @@ QtObject {
             root.tryFinishVideoTransition();
         }
     }
+    property bool videoRendererStartPending: false
     property Timer videoTransitionDeadline: Timer {
         interval: 12000
         repeat: false
@@ -315,6 +384,10 @@ QtObject {
             WallpaperPreviewService.cancel();
             return;
         }
+        var rendererWasActive = LiveWallpaperService.active || EngineWallpaperService.active;
+        var previewCover = previewActive && previewPath ? String(previewPath) : "";
+        var outgoingCover = previewCover || String(Config.wallpaper || Config.defaultWallpaper);
+        resetStaticTransition();
         if (nextMode === "video") {
             if (preserveRollback !== true)
                 transitionRollbackState = cloneState(lastStableState);
@@ -329,10 +402,11 @@ QtObject {
         ThemeService.setExpectedSource(themeIdentity());
         if (nextMode === "video") {
             videoTransitionGeneration += 1;
-            cancelPreview();
-            WallpaperPreviewService.cancel();
             staticRevealDelay.stop();
-            liveRevealActive = true;
+            liveRevealFinish.stop();
+            // During video-to-video changes, leave the old renderer fully
+            // visible until the incoming cover has actually been decoded.
+            liveRevealActive = previewCover !== "" || !rendererWasActive;
             root.isTransitionPending = true;
             root.backendReadyPath = "";
             root.fallbackVideoThumbnail = "";
@@ -341,7 +415,10 @@ QtObject {
             root.pendingVideoSystemThemePath = "";
             root.pendingVideoThemeSource = "";
             root.pendingVideoThumbnail = "";
+            root.videoPaletteReady = !Config.matugenEnabled;
+            root.videoPaletteRevealFallback.stop();
             root.videoQuickThemeReady = false;
+            root.videoRendererStartPending = rendererWasActive;
             root.videoQuickThemeSettle.stop();
             root.videoQuickThemeFallback.restart();
             if (WallpaperPlaybackPolicy.shouldPause)
@@ -349,39 +426,42 @@ QtObject {
             else
                 root.videoTransitionDeadline.restart();
             root.resetVideoCoverReadiness();
-
-            // Both renderers are stopped before the new one is launched. The
-            // opaque desktop cover remains visible while the new frame loads.
-            LiveWallpaperService.stop();
-            EngineWallpaperService.stop();
+            root.stageVideoThumbnail(outgoingCover, false);
+            cancelPreview();
+            WallpaperPreviewService.cancel();
 
             if (nextIsEngine) {
                 var project = EngineWallpaperService.projectForPath(path) || {};
                 var preview = project.preview || "";
-                root.fallbackVideoThumbnail = preview || Config.wallpaper;
                 if (preview) {
                     if (EngineWallpaperService.previewNeedsConversion(preview)) {
                         root.pendingEnginePreviewSource = preview;
-                        var engineThumbnail = EngineWallpaperService.requestPreviewThumbnail(preview, selectedModified, true, videoTransitionGeneration);
-                        if (EngineWallpaperService.previewThumbnailKnown(preview, selectedModified)) {
+                        var engineCover = EngineWallpaperService.requestPreviewCover(preview, selectedModified, true, videoTransitionGeneration);
+                        if (EngineWallpaperService.previewCoverKnown(preview, selectedModified)) {
                             root.pendingEnginePreviewSource = "";
-                            root.prepareVideoTheme(engineThumbnail, selectedModified);
+                            root.fallbackVideoThumbnail = engineCover;
+                            root.stageVideoThumbnail(engineCover, false);
+                            root.prepareVideoTheme(engineCover, selectedModified);
                         }
                     } else {
+                        root.fallbackVideoThumbnail = preview;
+                        root.stageVideoThumbnail(preview, false);
                         root.prepareVideoTheme(preview, selectedModified);
                     }
                 }
-
-                EngineWallpaperService.play(path, videoTransitionGeneration);
             } else {
-                var liveThumbnail = LiveWallpaperService.requestThumbnail(path, selectedModified, true, videoTransitionGeneration);
-                root.fallbackVideoThumbnail = liveThumbnail;
-                if (LiveWallpaperService.thumbnailKnown(path, selectedModified))
-                    root.stageVideoThumbnail(liveThumbnail, false);
-                LiveWallpaperService.play(path, videoTransitionGeneration);
+                var liveCover = LiveWallpaperService.requestCover(path, selectedModified, true, videoTransitionGeneration);
+                if (LiveWallpaperService.coverKnown(path, selectedModified)) {
+                    root.fallbackVideoThumbnail = liveCover;
+                    root.stageVideoThumbnail(liveCover, false);
+                    root.prepareVideoTheme(liveCover, selectedModified);
+                }
             }
+            if (!root.videoRendererStartPending)
+                root.launchSelectedVideoRenderer();
             return;
         }
+        videoRendererStartPending = false;
         liveRevealActive = false;
         isTransitionPending = false;
         backendReadyPath = "";
@@ -391,6 +471,8 @@ QtObject {
         pendingVideoSystemThemePath = "";
         pendingVideoThemeSource = "";
         pendingVideoThumbnail = "";
+        videoPaletteReady = false;
+        videoPaletteRevealFallback.stop();
         videoQuickThemeReady = false;
         videoQuickThemeFallback.stop();
         videoQuickThemeSettle.stop();
@@ -398,13 +480,14 @@ QtObject {
         resetVideoCoverReadiness();
         liveRevealFinish.stop();
         if (LiveWallpaperService.active || LiveWallpaperService.desiredPath !== "" || EngineWallpaperService.active || EngineWallpaperService.desiredPath !== "") {
-            // Show the new static image immediately while it safely covers the
-            // old renderer. The video processes are stopped underneath it.
+            // Keep the old renderer visible underneath the new static image.
+            // Wallpaper.qml fades the image in, then reports every screen ready
+            // before the renderer is stopped.
             liveRevealActive = true;
+            staticTransitionPending = true;
+            staticReadyScreens = {};
+            staticTransitionFallback.restart();
             stageStatic(path);
-            LiveWallpaperService.stop();
-            EngineWallpaperService.stop();
-            staticRevealDelay.restart();
             return;
         }
         commitStatic(path);
@@ -475,6 +558,15 @@ QtObject {
         initialThemeChecked = true;
         ThemeService.generate(source, ThemeService.colorMode, true, sourceKey);
     }
+    function finishStaticTransition() {
+        if (!staticTransitionPending)
+            return;
+
+        resetStaticTransition();
+        LiveWallpaperService.stop();
+        EngineWallpaperService.stop();
+        staticRevealDelay.restart();
+    }
     function handleVideoFailure(sourcePath, message) {
         if (selectedMode !== "video" || sourcePath !== selectedPath)
             return;
@@ -485,6 +577,7 @@ QtObject {
         console.warn("[WallpaperService] Wallpaper playback failed:", message);
         videoTransitionDeadline.stop();
         videoCoverReadyFallback.stop();
+        videoPaletteRevealFallback.stop();
         videoQuickThemeFallback.stop();
         videoQuickThemeSettle.stop();
         liveRevealFinish.stop();
@@ -536,12 +629,28 @@ QtObject {
         Quickshell.execDetached(["notify-send", "-a", "Wallpaper", "-u", "normal", "-h", "boolean:transient:true", "Wallpaper missing", "Using the default wallpaper instead"]);
         apply(Config.defaultWallpaper, "static", "0");
     }
+    function launchSelectedVideoRenderer() {
+        if (!isTransitionPending || selectedMode !== "video")
+            return;
+
+        if (isEngineVideo) {
+            LiveWallpaperService.stop();
+            EngineWallpaperService.play(selectedPath, videoTransitionGeneration);
+        } else {
+            EngineWallpaperService.stop();
+            LiveWallpaperService.play(selectedPath, videoTransitionGeneration);
+        }
+    }
     function loadDefaultWallpaper() {
+        resetStaticTransition();
         isTransitionPending = false;
+        videoRendererStartPending = false;
         transitionRollbackState = null;
         backendReadyPath = "";
         videoTransitionDeadline.stop();
         videoCoverReadyFallback.stop();
+        videoPaletteReady = false;
+        videoPaletteRevealFallback.stop();
         videoQuickThemeFallback.stop();
         videoQuickThemeSettle.stop();
         selectedPath = Config.defaultWallpaper;
@@ -566,6 +675,7 @@ QtObject {
             loadDefaultWallpaper();
             return;
         }
+        resetStaticTransition();
         var backend = state.backend === "engine" || state.mode === "engine" ? "engine" : state.backend === "live" || state.mode === "live" ? "live" : "";
         var mode = (backend !== "" || state.mode === "video" || LiveWallpaperService.isLivePath(savedPath)) ? "video" : "static";
         if (mode === "video" && backend === "")
@@ -594,7 +704,10 @@ QtObject {
         pendingVideoSystemThemePath = "";
         pendingVideoThemeSource = "";
         pendingVideoThumbnail = "";
+        videoPaletteReady = mode === "video";
+        videoPaletteRevealFallback.stop();
         videoQuickThemeReady = false;
+        videoRendererStartPending = false;
         videoQuickThemeFallback.stop();
         videoQuickThemeSettle.stop();
         resetVideoCoverReadiness();
@@ -613,9 +726,9 @@ QtObject {
             videoQuickThemeReady = true;
             var isEngine = backend === "engine";
 
-            if (state.thumbnail) {
-                fallbackVideoThumbnail = String(state.thumbnail);
-            }
+            var savedThumbnail = state.thumbnail ? String(state.thumbnail) : "";
+            if (savedThumbnail && !EngineWallpaperService.previewNeedsConversion(savedThumbnail))
+                fallbackVideoThumbnail = savedThumbnail;
             // Prefer the last renderer frame at startup. Engine frames reach
             // this state only after wallpaper_frame_probe has validated them,
             // and EngineWallpaperService writes the next launch into the
@@ -635,7 +748,7 @@ QtObject {
                 EngineWallpaperService.play(selectedPath, videoTransitionGeneration);
             } else {
                 EngineWallpaperService.stop();
-                LiveWallpaperService.requestThumbnail(selectedPath, selectedModified, true, videoTransitionGeneration);
+                LiveWallpaperService.requestCover(selectedPath, selectedModified, true, videoTransitionGeneration);
                 LiveWallpaperService.play(selectedPath, videoTransitionGeneration);
             }
         } else {
@@ -646,6 +759,29 @@ QtObject {
             EngineWallpaperService.stop();
         }
         StateManager.wallpaperLoaded = true;
+    }
+    function markStaticTransitionReady(path, screenName) {
+        if (!staticTransitionPending || selectedMode !== "static")
+            return;
+
+        var readyPath = String(path || "").replace(/^file:\/\//, "");
+        var expectedPath = String(selectedPath || "").replace(/^file:\/\//, "");
+        if (!readyPath || readyPath !== expectedPath)
+            return;
+
+        var reportedScreen = String(screenName || "");
+        var currentScreens = currentScreenNames();
+        if (currentScreens.indexOf(reportedScreen) < 0)
+            return;
+
+        var nextScreens = {};
+        for (var key in staticReadyScreens) {
+            if (currentScreens.indexOf(key) >= 0)
+                nextScreens[key] = true;
+        }
+        nextScreens[reportedScreen] = true;
+        staticReadyScreens = nextScreens;
+        updateStaticTransitionReadiness();
     }
     function markVideoCoverReady(thumbnailPath, screenName) {
         if (!isTransitionPending || selectedMode !== "video" || !pendingVideoThumbnail)
@@ -689,8 +825,18 @@ QtObject {
             "modified": "0"
         };
     }
+    function persistedVideoThumbnail() {
+        if (fallbackVideoThumbnail)
+            return fallbackVideoThumbnail;
+        if (lastStableState && lastStableState.mode === "video" && String(lastStableState.path || "") === String(selectedPath || "")) {
+            var savedThumbnail = String(lastStableState.thumbnail || "");
+            if (savedThumbnail && !EngineWallpaperService.previewNeedsConversion(savedThumbnail))
+                return savedThumbnail;
+        }
+        return "";
+    }
     function prepareVideoTheme(path, modified) {
-        if (!path || selectedMode !== "video" || !isTransitionPending || videoQuickThemeReady)
+        if (!path || selectedMode !== "video" || videoQuickThemeReady)
             return;
 
         pendingVideoThemeSource = path;
@@ -700,6 +846,19 @@ QtObject {
         if (!previewActive || !path)
             return;
         previewPath = path;
+    }
+    function rememberVideoFrame(framePath, updateTheme) {
+        if (!framePath)
+            return;
+
+        lastVideoFrame = framePath;
+        if (updateTheme && !videoQuickThemeReady && !pendingVideoThemeSource)
+            prepareVideoTheme(framePath, selectedModified);
+    }
+    function resetStaticTransition() {
+        staticTransitionPending = false;
+        staticReadyScreens = {};
+        staticTransitionFallback.stop();
     }
     function resetVideoCoverReadiness() {
         coverReadyScreens = {};
@@ -745,11 +904,19 @@ QtObject {
         var wallpaperChanged = Config.wallpaper !== thumbnailPath;
         if (wallpaperChanged)
             Config.wallpaper = thumbnailPath;
+        liveRevealActive = true;
         if (wallpaperChanged && updateTheme && !videoQuickThemeReady && !pendingVideoThemeSource)
             prepareVideoTheme(thumbnailPath, selectedModified);
         ensureInitialTheme();
         videoCoverReadyFallback.restart();
         tryFinishVideoTransition();
+    }
+    function startDeferredVideoRenderer() {
+        if (!videoRendererStartPending || !videoCoverReady || !isTransitionPending || selectedMode !== "video")
+            return;
+
+        videoRendererStartPending = false;
+        launchSelectedVideoRenderer();
     }
     function staticRollbackState(state) {
         if (state && state.mode === "static" && state.path) {
@@ -779,20 +946,44 @@ QtObject {
         return "v1-" + stableHash("theme-source|" + identity) + "-" + stableHash(identity + "|theme-source");
     }
     function tryFinishVideoTransition() {
-        if (selectedMode !== "video" || backendReadyPath !== selectedPath || !videoQuickThemeReady)
+        if (selectedMode !== "video" || backendReadyPath !== selectedPath || (pendingVideoThumbnail !== "" && !videoCoverReady))
             return;
+        if (!videoPaletteReady) {
+            if (!videoPaletteRevealFallback.running)
+                videoPaletteRevealFallback.restart();
+            return;
+        }
 
         backendReadyPath = "";
         videoTransitionDeadline.stop();
         videoCoverReadyFallback.stop();
-        videoQuickThemeFallback.stop();
-        videoQuickThemeSettle.stop();
+        videoPaletteRevealFallback.stop();
         isTransitionPending = false;
-        saveState(fallbackVideoThumbnail || pendingVideoThumbnail);
+        saveState(persistedVideoThumbnail() || pendingVideoThumbnail);
         transitionRollbackState = null;
         liveRevealActive = true;
-        liveRevealFinish.interval = 420;
+        // Video transitions use a short capped fade so the cover cannot linger
+        // when the general wallpaper duration is configured very high.
+        liveRevealFinish.interval = Math.max(380, Math.min(440, Config.wallpaperTransitionDuration + 80));
         liveRevealFinish.restart();
+    }
+    function updateStaticTransitionReadiness() {
+        if (!staticTransitionPending || selectedMode !== "static")
+            return;
+
+        var names = currentScreenNames();
+        var nextScreens = {};
+        var allReady = names.length > 0;
+        for (var i = 0; i < names.length; ++i) {
+            var name = names[i];
+            if (staticReadyScreens[name] === true)
+                nextScreens[name] = true;
+            else
+                allReady = false;
+        }
+        staticReadyScreens = nextScreens;
+        if (allReady)
+            finishStaticTransition();
     }
     function updateVideoCoverReadiness() {
         if (!isTransitionPending || selectedMode !== "video")
@@ -811,6 +1002,7 @@ QtObject {
         if (allReady) {
             videoCoverReady = true;
             videoCoverReadyFallback.stop();
+            startDeferredVideoRenderer();
             tryFinishVideoTransition();
         }
     }

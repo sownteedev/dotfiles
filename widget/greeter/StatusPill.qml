@@ -25,8 +25,8 @@ Item {
     IconImage {
         anchors.centerIn: parent
         height: 23 * root.scaleFactor
-        layer.enabled: true
-        source: Quickshell.iconPath(root.iconName)
+        layer.enabled: visible
+        source: root.iconName === "" ? "" : Quickshell.iconPath(root.iconName)
         visible: root.iconName !== ""
         width: height
 

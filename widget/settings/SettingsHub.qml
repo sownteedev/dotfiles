@@ -429,7 +429,9 @@ PanelWindow {
             Rectangle {
                 Layout.fillHeight: true
                 Layout.preferredWidth: root.sidebarWidth
+                bottomLeftRadius: panel.radius
                 color: Config.alpha(Config.md3.on_surface, 0.025)
+                topLeftRadius: panel.radius
 
                 Flickable {
                     id: sidebarFlickable
@@ -460,7 +462,7 @@ PanelWindow {
 
                             ColumnLayout {
                                 anchors.left: parent.left
-                                anchors.right: expandButton.left
+                                anchors.right: profileButton.left
                                 anchors.rightMargin: 12
                                 anchors.verticalCenter: parent.verticalCenter
                                 spacing: 1
@@ -480,27 +482,26 @@ PanelWindow {
                                     text: "Niri & Quickshell"
                                 }
                             }
-                            Rectangle {
-                                id: expandButton
+                            ProfileAvatar {
+                                id: profileButton
 
-                                Layout.preferredHeight: 42
-                                Layout.preferredWidth: 42
+                                accentColor: Config.md3.primary
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: expandMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.045)
-                                height: 42
-                                radius: 13
-                                width: 42
+                                height: 40
+                                scale: profileMouse.pressed ? 0.94 : profileMouse.containsMouse ? 1.04 : 1
+                                sourcePath: Config.profileImagePath
+                                width: 40
                                 x: root.sidebarExpanded ? parent.width - width : (parent.width - width) / 2
 
-                                Text {
-                                    anchors.centerIn: parent
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 25
-                                    text: root.sidebarExpanded ? "‹" : "›"
+                                Behavior on scale {
+                                    ScaleAnimator {
+                                        duration: Config.animationDuration(140)
+                                        easing.type: Easing.OutCubic
+                                    }
                                 }
+
                                 MouseArea {
-                                    id: expandMouse
+                                    id: profileMouse
 
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor

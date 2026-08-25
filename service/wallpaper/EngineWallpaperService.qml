@@ -114,6 +114,7 @@ QtObject {
             var exitedPath = root.startedPath;
             root.activePath = "";
             root.playbackReadyState = false;
+            root.validatedFramePath = "";
             root.readyTimer.stop();
             if (root.readyProbe.running)
                 root.readyProbe.running = false;
@@ -238,9 +239,11 @@ QtObject {
             requestJson = "{}";
         }
     }
+    readonly property int previewCoverWidth: 2560
     property var previewThumbnailJob: null
     property var previewThumbnailQueue: []
     property bool previewThumbnailStopRequested: false
+    readonly property int previewThumbnailWidth: 960
     property Process previewThumbnailWorker: Process {
         onExited: (exitCode, exitStatus) => {
             var completedJob = root.previewThumbnailJob;
@@ -262,21 +265,28 @@ QtObject {
     property string readyFramePath: ""
     property Process readyProbe: Process {
         onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0 && root.player.running && root.startedPath === root.desiredPath)
-                root.markReady(root.startedPath, root.readyFramePath);
+            if (exitCode !== 0 || !root.player.running || root.startedPath !== root.desiredPath)
+                return;
+
+            root.validatedFramePath = root.readyFramePath;
+            root.cacheRenderedPreview(root.startedPath, root.validatedFramePath);
+            if (root.playbackReadyState)
+                root.playbackReady(root.startedPath, root.validatedFramePath, root.startedGeneration);
+            else
+                root.markReady(root.startedPath, root.validatedFramePath);
         }
     }
     readonly property string readyProbeScript: Config.quickshellDir + "/scripts/wallpaper_frame_probe.py"
     property Timer readyTimer: Timer {
-        interval: 8000
+        interval: 1600
         repeat: false
 
         onTriggered: {
-            if (!root.player.running || root.startedPath !== root.desiredPath)
+            if (root.playbackReadyState || !root.player.running || root.startedPath !== root.desiredPath)
                 return;
             if (WallpaperPlaybackPolicy.shouldPause)
                 return;
-            root.reportFailure(root.startedPath, "Wallpaper Engine did not become ready", root.startedGeneration);
+            root.markReady(root.startedPath, "");
         }
     }
     property Timer rendererRestartDebounce: Timer {
@@ -328,6 +338,7 @@ QtObject {
     property bool startAfterCleanup: false
     property int startedGeneration: 0
     property string startedPath: ""
+    property string validatedFramePath: ""
     property var wallpapers: []
     property FolderListModel workshopWatcher: FolderListModel {
         folder: root.browsing ? "file://" + Config.wallpaperEngineWorkshopDir : ""
@@ -347,6 +358,14 @@ QtObject {
     function beginBrowsing() {
         browsing = true;
         refresh();
+    }
+    function cacheRenderedPreview(path, framePath) {
+        if (!path || !framePath)
+            return;
+
+        var target = renderedPreviewPath(path);
+        Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\"; cp -f -- \"$2\" \"$3.tmp\" && mv -f -- \"$3.tmp\" \"$3\"", "engine-rendered-preview", previewCacheDir, framePath, target]);
+        previewCachePruneTimer.restart();
     }
     function checkAvailability() {
         if (availabilityQuery.running)
@@ -369,7 +388,7 @@ QtObject {
         scanDebounce.stop();
         var requiredTarget = "";
         if (WallpaperService.isTransitionPending && WallpaperService.currentMode === "video" && WallpaperService.isEngineVideo && WallpaperService.pendingEnginePreviewSource)
-            requiredTarget = previewThumbnailPath(WallpaperService.pendingEnginePreviewSource, WallpaperService.selectedModified);
+            requiredTarget = previewCoverPath(WallpaperService.pendingEnginePreviewSource, WallpaperService.selectedModified);
         var retainedQueue = [];
         for (var i = 0; i < previewThumbnailQueue.length; ++i) {
             if (requiredTarget !== "" && previewThumbnailQueue[i].target === requiredTarget)
@@ -392,8 +411,6 @@ QtObject {
             if (path)
                 indexed[path] = true;
         }
-        if (previewThumbnailJob && previewThumbnailJob.target)
-            indexed[previewThumbnailJob.target] = true;
         knownPreviewThumbnails = indexed;
     }
     function isEnginePath(path) {
@@ -411,13 +428,13 @@ QtObject {
         launchedScreenSignature = currentScreenSignature();
         screenRestartPending = false;
         playbackReadyState = false;
+        validatedFramePath = "";
         var currentFrame = String(Config.wallpaper || "");
         var nextSlot = currentFrame === cacheDir + "/render-frame-1.jpg" ? 0 : 1;
         readyFramePath = cacheDir + "/render-frame-" + String(nextSlot) + ".jpg";
-        // linux-wallpaperengine counts --screenshot-delay in frames, not
-        // seconds. Two frames captured several projects before their shaders
-        // had initialized, producing black/noisy lock-screen backdrops.
-        var screenshotDelayFrames = Math.max(45, Math.round(WallpaperPlaybackPolicy.targetFps * 2));
+        // Capture early so a usable frame can reveal the renderer immediately.
+        // Invalid startup frames no longer block the short live-renderer grace.
+        var screenshotDelayFrames = Math.max(24, Math.round(WallpaperPlaybackPolicy.targetFps * 0.8));
         var args = ["linux-wallpaperengine", "--silent", "--fps", String(WallpaperPlaybackPolicy.targetFps), "--layer", "background", "--no-fullscreen-pause", "--screenshot", readyFramePath, "--screenshot-delay", String(screenshotDelayFrames), "--assets-dir", Config.wallpaperEngineAssetsDir];
         for (var i = 0; i < Quickshell.screens.length; ++i) {
             args.push("--screen-root", Quickshell.screens[i].name, "--bg", startedPath, "--scaling", "fill", "--clamp", "border");
@@ -472,6 +489,17 @@ QtObject {
         }
         requestStart();
     }
+    function previewCoverKnown(path, modified) {
+        if (!previewNeedsConversion(path))
+            return true;
+        return knownPreviewThumbnails[previewCoverPath(path, modified)] === true;
+    }
+    function previewCoverPath(path, modified) {
+        return previewImagePath(path, modified, "cover", previewCoverWidth);
+    }
+    function previewImagePath(path, modified, variant, width) {
+        return previewCacheDir + "/" + WallpaperService.stableHash("video-preview-v3|" + String(variant) + "|" + String(width) + "|" + String(path) + "|" + String(modified || "0")) + ".jpg";
+    }
     function previewNeedsConversion(path) {
         var p = String(path || "").split("?")[0].toLowerCase();
         return p.endsWith(".gif") || p.endsWith(".mp4") || p.endsWith(".webm") || p.endsWith(".mkv") || p.endsWith(".avi") || p.endsWith(".mov");
@@ -482,7 +510,7 @@ QtObject {
         return knownPreviewThumbnails[previewThumbnailPath(path, modified)] === true;
     }
     function previewThumbnailPath(path, modified) {
-        return previewCacheDir + "/" + WallpaperService.stableHash(String(path) + "|" + String(modified || "0")) + ".jpg";
+        return previewImagePath(path, modified, "thumbnail", previewThumbnailWidth);
     }
     function processNextPreviewThumbnail() {
         if (previewThumbnailWorker.running || previewThumbnailJob || previewThumbnailQueue.length === 0)
@@ -490,7 +518,7 @@ QtObject {
 
         previewThumbnailJob = previewThumbnailQueue[0];
         previewThumbnailQueue = previewThumbnailQueue.slice(1);
-        previewThumbnailWorker.command = ["sh", "-c", "mkdir -p \"$3\"; if [ ! -s \"$2\" ]; then ffmpeg -hide_banner -loglevel error -y -ss 0.5 -i \"$1\" -frames:v 1 -vf 'scale=960:-2:force_original_aspect_ratio=decrease' \"$2.tmp.jpg\" && mv \"$2.tmp.jpg\" \"$2\"; fi", "engine-preview-thumbnail", previewThumbnailJob.path, previewThumbnailJob.target, previewCacheDir];
+        previewThumbnailWorker.command = ["sh", "-c", "mkdir -p \"$3\"; if [ ! -s \"$2\" ]; then rm -f \"$2.tmp.jpeg\"; if ! nice -n 10 ffmpeg -hide_banner -loglevel error -y -ss 0.5 -i \"$1\" -frames:v 1 -vf \"scale='min($4,iw)':'min($4,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=fast_bilinear,format=yuvj420p\" -q:v 3 -update 1 \"$2.tmp.jpeg\" || [ ! -s \"$2.tmp.jpeg\" ]; then rm -f \"$2.tmp.jpeg\"; nice -n 10 ffmpeg -hide_banner -loglevel error -y -i \"$1\" -frames:v 1 -vf \"scale='min($4,iw)':'min($4,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=fast_bilinear,format=yuvj420p\" -q:v 3 -update 1 \"$2.tmp.jpeg\"; fi && mv \"$2.tmp.jpeg\" \"$2\"; fi", "engine-preview-thumbnail", previewThumbnailJob.path, previewThumbnailJob.target, previewCacheDir, String(previewThumbnailJob.width)];
         previewThumbnailWorker.running = true;
     }
     function processPendingRendererRestart() {
@@ -528,6 +556,12 @@ QtObject {
         checkAvailability();
         scan();
     }
+    function renderedPreviewKnown(path) {
+        return knownPreviewThumbnails[renderedPreviewPath(path)] === true;
+    }
+    function renderedPreviewPath(path) {
+        return previewCacheDir + "/rendered-" + WallpaperService.stableHash(String(path || "")) + ".jpg";
+    }
     function rendererFailureMessage(exitCode, exitStatus) {
         var errorText = String(playerError.text || "").trim();
         var outputText = String(playerOutput.text || "").trim();
@@ -553,11 +587,13 @@ QtObject {
         errorMessage = message;
         playbackFailed(path, message, failureGeneration);
     }
-    function requestPreviewThumbnail(path, modified, priority, requestToken) {
+    function requestPreviewCover(path, modified, priority, requestToken) {
+        return requestPreviewImage(path, modified, priority, requestToken, previewCoverPath(path, modified), previewCoverWidth);
+    }
+    function requestPreviewImage(path, modified, priority, requestToken, target, width) {
         if (!previewNeedsConversion(path))
             return path;
 
-        var target = previewThumbnailPath(path, modified);
         if (knownPreviewThumbnails[target] === true) {
             Qt.callLater(() => root.previewThumbnailReady(path, target, Number(requestToken || 0)));
             return target;
@@ -580,11 +616,15 @@ QtObject {
         var job = {
             "path": path,
             "requestToken": Number(requestToken || 0),
-            "target": target
+            "target": target,
+            "width": Number(width)
         };
         previewThumbnailQueue = priority ? [job].concat(previewThumbnailQueue) : previewThumbnailQueue.concat([job]);
         processNextPreviewThumbnail();
         return target;
+    }
+    function requestPreviewThumbnail(path, modified, priority, requestToken) {
+        return requestPreviewImage(path, modified, priority, requestToken, previewThumbnailPath(path, modified), previewThumbnailWidth);
     }
     function requestStart() {
         if (!available || !desiredPath || player.running)
@@ -666,6 +706,7 @@ QtObject {
         policyRestartFinish.stop();
         readyTimer.stop();
         readyFramePath = "";
+        validatedFramePath = "";
         if (readyProbe.running)
             readyProbe.running = false;
         if (player.running)

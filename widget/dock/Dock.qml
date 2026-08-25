@@ -26,13 +26,36 @@ PanelWindow {
         return false;
     }
     property bool dragActive: false
+    property string hoveredEntryId: ""
     property bool modelSyncPending: false
-    readonly property bool revealRequested: dockHover.hovered || revealHover.hovered || dragActive || unpinEntryId !== ""
+    property real previewAnchorCenterX: width / 2
+    property string previewAppName: ""
+    property string previewEntryId: ""
+    property string previewIconName: "application-x-executable"
+    property bool previewShown: false
+    readonly property var previewWindows: windowsForEntry(previewEntryId, previewAppName)
+    readonly property bool revealRequested: dockHover.hovered || revealHover.hovered || dragActive || unpinEntryId !== "" || previewShown || previewShowTimer.running || windowPreview.hovered
     property real surfaceBottomMargin: autoHidden ? -74 : 12
     property string unpinEntryId: ""
 
     signal launcherRequested
 
+    function cancelWindowPreview(entryId) {
+        if (hoveredEntryId === String(entryId || ""))
+            hoveredEntryId = "";
+        previewShowTimer.stop();
+        previewHideTimer.restart();
+    }
+    function closePreviewWindow(windowId) {
+        var id = String(windowId || "");
+        if (id === "")
+            return;
+        if (previewWindows.length <= 1) {
+            previewShown = false;
+            hoveredEntryId = "";
+        }
+        Quickshell.execDetached(["niri", "msg", "action", "close-window", "--id", id]);
+    }
     function commitDockOrder() {
         var ids = [];
         for (var i = 0; i < dockModel.count; ++i)
@@ -52,6 +75,14 @@ PanelWindow {
             Qt.callLater(syncDockModel);
         updateAutoHide();
     }
+    function focusPreviewWindow(windowId) {
+        var id = String(windowId || "");
+        if (id === "")
+            return;
+        previewShown = false;
+        hoveredEntryId = "";
+        Quickshell.execDetached(["niri", "msg", "action", "focus-window", "--id", id]);
+    }
     function modelIndexForId(entryId) {
         var id = String(entryId || "");
         for (var i = 0; i < dockModel.count; ++i) {
@@ -66,6 +97,26 @@ PanelWindow {
         if (sourceIndex === -1 || sourceIndex === target)
             return;
         dockModel.move(sourceIndex, target, 1);
+    }
+    function requestWindowPreview(entryId, appName, iconName, anchorItem) {
+        var id = String(entryId || "");
+        var matchingWindows = windowsForEntry(id, appName);
+        if (id === "" || !anchorItem || matchingWindows.length === 0) {
+            cancelWindowPreview(id);
+            return;
+        }
+
+        hoveredEntryId = id;
+        previewEntryId = id;
+        previewAppName = String(appName || id);
+        previewIconName = String(iconName || "application-x-executable");
+        var anchorPosition = anchorItem.mapToItem(dockSurface.parent, 0, 0);
+        previewAnchorCenterX = anchorPosition.x + anchorItem.width / 2;
+        previewHideTimer.stop();
+        if (previewShown)
+            previewShowTimer.stop();
+        else
+            previewShowTimer.restart();
     }
     function syncDockModel() {
         if (dragActive) {
@@ -141,6 +192,32 @@ PanelWindow {
         var dockBottom = workAreaHeight - 8;
         return windowRight > dockLeft && windowLeft < dockRight && windowBottom > dockTop && windowTop < dockBottom;
     }
+    function windowsForEntry(entryId, appName) {
+        var entryKeys = NotificationHistory.appKeys(entryId, appName);
+        if (entryKeys.length === 0)
+            return [];
+
+        var result = [];
+        var workspaces = WorkspaceService.workspaces || [];
+        for (var workspaceIndex = 0; workspaceIndex < workspaces.length; ++workspaceIndex) {
+            var workspace = workspaces[workspaceIndex];
+            var windows = workspace.windows || [];
+            for (var windowIndex = 0; windowIndex < windows.length; ++windowIndex) {
+                var windowData = windows[windowIndex];
+                if (!NotificationHistory.keysIntersect(entryKeys, NotificationHistory.windowKeys(windowData)))
+                    continue;
+                result.push({
+                    "id": String(windowData.id || ""),
+                    "isFocused": String(windowData.id || "") === String(WorkspaceService.activeWindowId || ""),
+                    "output": String(workspace.output || ""),
+                    "title": String(windowData.title || appName || entryId),
+                    "workspaceId": workspace.id,
+                    "workspaceLabel": String(workspace.name || "") !== "" ? String(workspace.name) : qsTr("Workspace %1").arg(workspace.idx)
+                });
+            }
+        }
+        return result;
+    }
 
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.layer: WlrLayer.Top
@@ -160,11 +237,19 @@ PanelWindow {
             item: Config.shellBlurDockEnabled ? dockSurface : null
             radius: dockSurface.radius
         }
+        Region {
+            item: Config.shellBlurDockEnabled && windowPreview.shown ? windowPreview.regionItem : null
+            radius: windowPreview.cornerRadius
+        }
     }
     mask: Region {
         Region {
             item: dockSurface
             radius: dockSurface.radius
+        }
+        Region {
+            item: windowPreview.visible ? windowPreview.regionItem : null
+            radius: windowPreview.cornerRadius
         }
         Region {
             item: revealEdge
@@ -182,6 +267,10 @@ PanelWindow {
         updateAutoHide();
     }
     onDockObstructedChanged: updateAutoHide()
+    onPreviewWindowsChanged: {
+        if (previewWindows.length === 0)
+            previewShown = false;
+    }
     onRevealRequestedChanged: updateAutoHide()
 
     Connections {
@@ -215,6 +304,28 @@ PanelWindow {
         repeat: false
 
         onTriggered: dockWindow.unpinEntryId = ""
+    }
+    Timer {
+        id: previewShowTimer
+
+        interval: 180
+        repeat: false
+
+        onTriggered: {
+            if (dockWindow.hoveredEntryId === dockWindow.previewEntryId && dockWindow.previewWindows.length > 0)
+                dockWindow.previewShown = true;
+        }
+    }
+    Timer {
+        id: previewHideTimer
+
+        interval: 170
+        repeat: false
+
+        onTriggered: {
+            if (dockWindow.hoveredEntryId === "" && !windowPreview.hovered)
+                dockWindow.previewShown = false;
+        }
     }
     ShellShadow {
         active: dockWindow.visible
@@ -272,11 +383,13 @@ PanelWindow {
                     id: appButton
 
                     required property string appName
+                    readonly property var appWindows: dockWindow.windowsForEntry(entryId, appName)
                     property bool draggedDuringPress: false
                     required property string entryId
                     required property string iconName
                     required property int index
                     readonly property int unreadCount: NotificationHistory.unreadCountForEntry(entryId, appName)
+                    readonly property int windowCount: appWindows.length
 
                     Accessible.name: appName
                     Accessible.role: Accessible.Button
@@ -346,6 +459,41 @@ PanelWindow {
                             width: 40
                         }
                     }
+                    Row {
+                        id: runningIndicator
+
+                        anchors.bottom: parent.bottom
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        height: 4
+                        spacing: 3
+                        visible: appButton.windowCount > 0 && !appMouse.drag.active
+                        z: 160
+
+                        Repeater {
+                            model: Math.min(appButton.windowCount, 4)
+
+                            delegate: Rectangle {
+                                required property int index
+
+                                color: appButton.appWindows[index].isFocused ? Config.md3.primary : Config.alpha(Config.md3.on_surface_variant, 0.72)
+                                height: 4
+                                radius: height / 2
+                                width: appButton.appWindows[index].isFocused ? 12 : 4
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: Config.animationDuration(120)
+                                    }
+                                }
+                                Behavior on width {
+                                    NumberAnimation {
+                                        duration: Config.animationDuration(140)
+                                        easing.type: Easing.OutCubic
+                                    }
+                                }
+                            }
+                        }
+                    }
                     MouseArea {
                         id: appMouse
 
@@ -362,6 +510,8 @@ PanelWindow {
                             if (drag.active) {
                                 unpinDismissTimer.stop();
                                 dockWindow.unpinEntryId = "";
+                                dockWindow.previewShown = false;
+                                dockWindow.cancelWindowPreview(appButton.entryId);
                                 appButton.draggedDuringPress = true;
                                 dockWindow.dragActive = true;
                             }
@@ -369,14 +519,23 @@ PanelWindow {
                         onCanceled: dockWindow.finishReorder(dragProxy)
                         onClicked: mouse => {
                             if (mouse.button === Qt.RightButton) {
+                                dockWindow.previewShown = false;
+                                dockWindow.cancelWindowPreview(appButton.entryId);
                                 dockWindow.unpinEntryId = dockWindow.unpinEntryId === appButton.entryId ? "" : appButton.entryId;
                                 unpinDismissTimer.stop();
                             } else if (!appButton.draggedDuringPress) {
                                 unpinDismissTimer.stop();
                                 dockWindow.unpinEntryId = "";
+                                dockWindow.previewShown = false;
+                                dockWindow.cancelWindowPreview(appButton.entryId);
                                 DockService.launch(appButton.entryId);
                             }
                         }
+                        onEntered: {
+                            if (!drag.active && appButton.windowCount > 0)
+                                dockWindow.requestWindowPreview(appButton.entryId, appButton.appName, appButton.iconName, appButton);
+                        }
+                        onExited: dockWindow.cancelWindowPreview(appButton.entryId)
                         onPressed: mouse => {
                             if (mouse.button === Qt.LeftButton) {
                                 appButton.draggedDuringPress = false;
@@ -541,6 +700,29 @@ PanelWindow {
                 }
             }
         }
+    }
+    DockWindowPreview {
+        id: windowPreview
+
+        anchors.bottom: dockSurface.top
+        anchors.bottomMargin: 12
+        height: implicitHeight
+        iconName: dockWindow.previewIconName
+        shown: dockWindow.previewShown && dockWindow.previewWindows.length > 0
+        width: implicitWidth
+        windows: dockWindow.previewWindows
+        x: Math.max(16, Math.min(dockWindow.previewAnchorCenterX - width / 2, dockWindow.width - width - 16))
+        z: 300
+
+        onHoveredChanged: {
+            if (hovered) {
+                previewHideTimer.stop();
+            } else if (dockWindow.hoveredEntryId === "") {
+                previewHideTimer.restart();
+            }
+        }
+        onWindowActivated: windowId => dockWindow.focusPreviewWindow(windowId)
+        onWindowCloseRequested: windowId => dockWindow.closePreviewWindow(windowId)
     }
     Item {
         id: revealEdge

@@ -59,6 +59,7 @@ QtObject {
         }
     }
     property bool cleanupRestartPending: false
+    readonly property int coverWidth: 2560
     property int desiredGeneration: 0
     property string desiredPath: ""
     property string errorMessage: ""
@@ -180,6 +181,7 @@ QtObject {
     property var thumbnailJob: null
     property var thumbnailQueue: []
     property bool thumbnailStopRequested: false
+    readonly property int thumbnailWidth: 960
     property Process thumbnailWorker: Process {
         onExited: (exitCode, exitStatus) => {
             var completedJob = root.thumbnailJob;
@@ -213,11 +215,17 @@ QtObject {
 
         availabilityRestart.restart();
     }
+    function coverKnown(path, modified) {
+        return knownThumbnails[coverPath(path, modified)] === true;
+    }
+    function coverPath(path, modified) {
+        return cacheDir + "/" + WallpaperService.stableHash("live-video-cover-v1|" + String(coverWidth) + "|" + String(path) + "|" + modifiedKey(modified)) + ".jpg";
+    }
     function endBrowsing() {
         browsing = false;
         var requiredTarget = "";
         if (WallpaperService.isTransitionPending && WallpaperService.currentMode === "video" && !WallpaperService.isEngineVideo)
-            requiredTarget = thumbnailPath(WallpaperService.currentWallpaper, WallpaperService.selectedModified);
+            requiredTarget = coverPath(WallpaperService.currentWallpaper, WallpaperService.selectedModified);
         var retainedQueue = [];
         for (var i = 0; i < thumbnailQueue.length; ++i) {
             if (requiredTarget !== "" && thumbnailQueue[i].target === requiredTarget)
@@ -238,8 +246,6 @@ QtObject {
             if (path)
                 indexed[path] = true;
         }
-        if (thumbnailJob && thumbnailJob.target)
-            indexed[thumbnailJob.target] = true;
         knownThumbnails = indexed;
     }
     function isLivePath(path) {
@@ -316,7 +322,7 @@ QtObject {
 
         thumbnailJob = thumbnailQueue[0];
         thumbnailQueue = thumbnailQueue.slice(1);
-        thumbnailWorker.command = ["sh", "-c", "mkdir -p \"$3\"; if [ ! -s \"$2\" ]; then ffmpeg -hide_banner -loglevel error -y -ss 0.5 -i \"$1\" -frames:v 1 -vf 'scale=960:-2:force_original_aspect_ratio=decrease' \"$2.tmp.jpg\" && mv \"$2.tmp.jpg\" \"$2\"; fi", "live-wallpaper-thumbnail", thumbnailJob.path, thumbnailJob.target, cacheDir];
+        thumbnailWorker.command = ["sh", "-c", "mkdir -p \"$3\"; if [ ! -s \"$2\" ]; then rm -f \"$2.tmp.jpeg\"; if ! nice -n 10 ffmpeg -hide_banner -loglevel error -y -ss 0.5 -i \"$1\" -frames:v 1 -vf \"scale='min($4,iw)':'min($4,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=fast_bilinear,format=yuvj420p\" -q:v 3 -update 1 \"$2.tmp.jpeg\" || [ ! -s \"$2.tmp.jpeg\" ]; then rm -f \"$2.tmp.jpeg\"; nice -n 10 ffmpeg -hide_banner -loglevel error -y -i \"$1\" -frames:v 1 -vf \"scale='min($4,iw)':'min($4,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=fast_bilinear,format=yuvj420p\" -q:v 3 -update 1 \"$2.tmp.jpeg\"; fi && mv \"$2.tmp.jpeg\" \"$2\"; fi", "live-wallpaper-thumbnail", thumbnailJob.path, thumbnailJob.target, cacheDir, String(thumbnailJob.width)];
         thumbnailWorker.running = true;
     }
     function reportFailure(path, message, generation) {
@@ -326,18 +332,13 @@ QtObject {
         errorMessage = message;
         playbackFailed(path, message, failureGeneration);
     }
-    function requestStart() {
-        if (!available || !desiredPath || player.running)
-            return;
-
-        startAfterCleanup = true;
-        stopOwnedProcess();
+    function requestCover(path, modified, priority, requestToken) {
+        return requestImage(path, modified, priority, requestToken, coverPath(path, modified), coverWidth);
     }
-    function requestThumbnail(path, modified, priority, requestToken) {
+    function requestImage(path, modified, priority, requestToken, target, width) {
         if (!isLivePath(path))
             return "";
 
-        var target = thumbnailPath(path, modified);
         if (knownThumbnails[target] === true) {
             Qt.callLater(() => {
                 return root.thumbnailReady(path, target, Number(requestToken || 0));
@@ -363,11 +364,22 @@ QtObject {
         var job = {
             "path": path,
             "requestToken": Number(requestToken || 0),
-            "target": target
+            "target": target,
+            "width": Number(width)
         };
         thumbnailQueue = priority ? [job].concat(thumbnailQueue) : thumbnailQueue.concat([job]);
         processNextThumbnail();
         return target;
+    }
+    function requestStart() {
+        if (!available || !desiredPath || player.running)
+            return;
+
+        startAfterCleanup = true;
+        stopOwnedProcess();
+    }
+    function requestThumbnail(path, modified, priority, requestToken) {
+        return requestImage(path, modified, priority, requestToken, thumbnailPath(path, modified), thumbnailWidth);
     }
     function shutdownForReload() {
         pidFile.reload();

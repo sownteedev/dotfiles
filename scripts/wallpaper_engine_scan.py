@@ -9,6 +9,7 @@ from pathlib import Path
 
 PREVIEW_NAMES = ("preview.jpg", "preview.jpeg", "preview.png", "preview.gif")
 CACHE_FILENAME = "scan_cache.json"
+CACHE_VERSION = 2
 
 
 def _cache_path() -> Path:
@@ -19,7 +20,10 @@ def _cache_path() -> Path:
 def _load_cache() -> dict:
     path = _cache_path()
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        cache = json.loads(path.read_text(encoding="utf-8"))
+        if cache.get("version") != CACHE_VERSION:
+            return {}
+        return cache
     except (OSError, json.JSONDecodeError, ValueError):
         return {}
 
@@ -146,7 +150,13 @@ def scan(roots):
         dirty = True
 
     if dirty:
-        _save_cache({"projects": next_projects, "mtimes": next_mtimes})
+        _save_cache(
+            {
+                "version": CACHE_VERSION,
+                "projects": next_projects,
+                "mtimes": next_mtimes,
+            }
+        )
 
     projects.sort(key=lambda item: item["title"].casefold())
     return projects

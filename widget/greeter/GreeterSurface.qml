@@ -14,8 +14,11 @@ Item {
         }
         return null;
     }
+    readonly property bool batteryCharging: batteryDevice && (batteryDevice.state === UPowerDeviceState.Charging || batteryDevice.state === UPowerDeviceState.PendingCharge || (batteryDevice.state === UPowerDeviceState.FullyCharged && !UPower.onBattery))
+    readonly property var batteryDevice: UPower.displayDevice
+    readonly property int batteryPercentage: batteryDevice ? Math.round(batteryDevice.percentage * 100) : 0
     readonly property var devices: Networking.devices ? Networking.devices.values : []
-    readonly property bool hasBattery: UPower.displayDevice ? UPower.displayDevice.isLaptopBattery : false
+    readonly property bool hasBattery: batteryDevice && batteryDevice.ready && batteryDevice.isLaptopBattery
     property bool interactive: true
     readonly property string networkIcon: wiredDevice ? "󰈀" : activeNetwork ? (activeNetwork.signalStrength > 0.7 ? "󰤨" : activeNetwork.signalStrength > 0.4 ? "󰤥" : "󰤟") : "󰤭"
     property date now: new Date()
@@ -112,9 +115,10 @@ Item {
             icon: root.networkIcon
             scaleFactor: root.scaleFactor
         }
-        StatusPill {
-            accentColor: GreeterTheme.surfaceVariantText
-            iconName: UPower.displayDevice ? UPower.displayDevice.iconName : ""
+        GreeterBatteryIcon {
+            accentColor: root.batteryCharging ? GreeterTheme.primary : root.batteryPercentage <= 15 ? GreeterTheme.error : GreeterTheme.surfaceVariantText
+            charging: root.batteryCharging
+            percentage: root.batteryPercentage
             scaleFactor: root.scaleFactor
             visible: root.hasBattery
         }

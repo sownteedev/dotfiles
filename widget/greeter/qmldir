@@ -1,6 +1,7 @@
 singleton GreeterSession 1.0 GreeterSession.qml
 singleton GreeterTheme 1.0 GreeterTheme.qml
 GreeterBackground 1.0 GreeterBackground.qml
+GreeterBatteryIcon 1.0 GreeterBatteryIcon.qml
 GreeterAvatar 1.0 GreeterAvatar.qml
 singleton GreeterProfile 1.0 GreeterProfile.qml
 GreeterSurface 1.0 GreeterSurface.qml

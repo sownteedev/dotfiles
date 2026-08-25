@@ -13,13 +13,21 @@ PanelWindow {
     property Item candidateImage: null
     property string currentWall: ""
     property Item displayedImage: null
+    property real irisAperture: irisMaxDiameter
+    readonly property real irisMaxDiameter: Math.sqrt(width * width + height * height) * 1.04
+    property bool irisTransitionActive: false
     property bool isTransitionPending: WallpaperService.isTransitionPending
     property bool isVideoWallpaper: allowVideoFade && WallpaperService.currentMode === "video"
     property Item outgoingImage: null
+    readonly property bool pendingStaticTransition: allowVideoFade && WallpaperService.staticTransitionPending && WallpaperService.currentMode === "static"
+    readonly property int previewCoverDuration: Math.max(220, Math.min(300, Config.wallpaperTransitionDuration))
+    property bool previewCoverTransition: false
     readonly property bool revealVideo: isVideoWallpaper && !isTransitionPending && !waitingForPolicyRestart && transitionStarted && !WallpaperService.previewActive
     property int sourceGeneration: 0
     property bool transitionStarted: false
     property bool useNativeCache: true
+    readonly property int videoCoverInDuration: Math.max(140, Math.min(200, Config.wallpaperTransitionDuration))
+    readonly property int videoRevealDuration: Math.max(260, Math.min(340, Config.wallpaperTransitionDuration))
     readonly property bool waitingForPolicyRestart: WallpaperService.isEngineVideo && EngineWallpaperService.policyRestarting && !EngineWallpaperService.playbackReadyState
     property string wallpaperPath: ""
     property string windowNamespace: "wallpaper"
@@ -31,19 +39,6 @@ PanelWindow {
         var path = String(wallpaperPath || "");
         return path.startsWith("/") ? "file://" + path : path;
     }
-    function finishCoverSwap(reportReady) {
-        if (outgoingImage) {
-            var old = outgoingImage;
-            outgoingImage = null;
-            old.destroy();
-        }
-        if (displayedImage) {
-            displayedImage.opacity = 1;
-            displayedImage.z = 0;
-        }
-        if (reportReady !== false)
-            reportVideoCoverReady(displayedImage);
-    }
     function finishTransition() {
         if (outgoingImage) {
             var old = outgoingImage;
@@ -52,8 +47,10 @@ PanelWindow {
         }
         if (displayedImage) {
             displayedImage.opacity = 1;
+            displayedImage.scale = 1;
             displayedImage.z = 0;
         }
+        previewCoverTransition = false;
     }
     function imageStatusChanged(image, status) {
         if (image !== candidateImage)
@@ -75,8 +72,14 @@ PanelWindow {
         var cleanSource = String(source || "").split("?")[0].toLowerCase();
         return cleanSource.endsWith(".gif");
     }
+    function isPendingStaticCover(image) {
+        return pendingStaticTransition && image && normalizedPath(image.sourceKey) === normalizedPath(WallpaperService.selectedPath);
+    }
     function isPendingVideoCover(image) {
         return allowVideoFade && WallpaperService.currentMode === "video" && WallpaperService.isTransitionPending && image && normalizedPath(image.sourceKey) === normalizedPath(WallpaperService.pendingVideoThumbnail);
+    }
+    function isPreviewCover(image) {
+        return image && image.previewCover;
     }
     function normalizedPath(path) {
         return String(path || "").replace(/^file:\/\//, "");
@@ -86,7 +89,6 @@ PanelWindow {
             return;
 
         candidateImage = null;
-        image.opacity = 1;
         image.visible = true;
         image.z = 0;
         currentWall = image.sourceKey;
@@ -94,22 +96,46 @@ PanelWindow {
         if (!displayedImage) {
             displayedImage = image;
             transitionStarted = true;
+            if (isPendingVideoCover(image)) {
+                previewCoverTransition = false;
+                startVideoIrisClose(image);
+                return;
+            }
+            if (isPendingStaticCover(image)) {
+                previewCoverTransition = false;
+                displayedImage.opacity = 0;
+                initialRevealAnimation.restart();
+                return;
+            }
+            if (isPreviewCover(image)) {
+                previewCoverTransition = true;
+                displayedImage.opacity = 0;
+                initialRevealAnimation.restart();
+                return;
+            }
+            previewCoverTransition = false;
+            displayedImage.opacity = 1;
             reportVideoCoverReady(image);
             return;
         }
 
         if (isPendingVideoCover(image)) {
-            outgoingImage = displayedImage;
-            outgoingImage.opacity = 1;
-            outgoingImage.visible = true;
-            outgoingImage.z = 0;
+            previewCoverTransition = false;
+            if (outgoingImage) {
+                var staleOutgoing = outgoingImage;
+                outgoingImage = null;
+                staleOutgoing.destroy();
+            }
+            var staleDisplayed = displayedImage;
             displayedImage = image;
-            displayedImage.opacity = 0;
-            displayedImage.z = 1;
+            staleDisplayed.destroy();
             transitionStarted = true;
-            coverFadeAnimation.restart();
+            startVideoIrisClose(image);
             return;
         }
+
+        if (startVideoIrisOpen(image))
+            return;
 
         outgoingImage = displayedImage;
         outgoingImage.opacity = 1;
@@ -118,16 +144,26 @@ PanelWindow {
         displayedImage = image;
         displayedImage.opacity = 0;
         displayedImage.z = 1;
+        previewCoverTransition = isPreviewCover(image);
         transitionStarted = true;
         transitionAnimation.restart();
     }
+    function reportStaticCoverReady(image) {
+        if (!isPendingStaticCover(image))
+            return;
+        WallpaperService.markStaticTransitionReady(wallpaperPath, screen ? screen.name : windowNamespace);
+    }
     function reportVideoCoverReady(image) {
         if (!isPendingVideoCover(image))
+            return;
+        if (irisTransitionActive && (irisCloseAnimation.running || irisAperture > 0.5))
             return;
         WallpaperService.markVideoCoverReady(wallpaperPath, screen ? screen.name : windowNamespace);
     }
     function requestWallpaper() {
         var source = effectiveSource();
+        if (!isVideoWallpaper && irisTransitionActive)
+            resetVideoIris();
         if (candidateImage && candidateImage.sourceKey === source)
             return;
         if (!candidateImage && displayedImage && displayedImage.sourceKey === source)
@@ -137,9 +173,12 @@ PanelWindow {
             transitionAnimation.stop();
             finishTransition();
         }
-        if (coverFadeAnimation.running) {
-            coverFadeAnimation.stop();
-            finishCoverSwap(false);
+        if (initialRevealAnimation.running) {
+            initialRevealAnimation.stop();
+            if (displayedImage) {
+                displayedImage.opacity = 1;
+                displayedImage.scale = 1;
+            }
         }
         if (candidateImage) {
             var stale = candidateImage;
@@ -152,10 +191,13 @@ PanelWindow {
         // frame, including GIF previews, instead of starting another animated
         // decoder while the real renderer is launching underneath.
         var animateSource = WallpaperService.currentMode !== "video" && isAnimated(source);
+        var previewCover = WallpaperService.previewActive && WallpaperService.currentMode === "video" && normalizedPath(source) === normalizedPath(WallpaperService.previewPath);
         var component = source === "" ? transparentWallpaper : (animateSource ? animatedWallpaper : (useNativeCache ? staticWallpaper : directStaticWallpaper));
         candidateImage = component.createObject(imageHost, {
             "requestId": sourceGeneration,
-            "sourceKey": source
+            "sourceKey": source,
+            "videoCover": WallpaperService.currentMode === "video" && WallpaperService.isTransitionPending && source !== "",
+            "previewCover": previewCover
         });
         if (!candidateImage) {
             console.warn("[Wallpaper] Could not create wallpaper item for", source);
@@ -173,6 +215,12 @@ PanelWindow {
                 wallpaperWindow.imageStatusChanged(createdImage, createdImage.status);
         });
     }
+    function resetVideoIris() {
+        irisCloseAnimation.stop();
+        irisOpenAnimation.stop();
+        irisAperture = irisMaxDiameter;
+        irisTransitionActive = false;
+    }
     function shouldBlurEngineCover(path) {
         if (!allowVideoFade || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo || WallpaperService.lastVideoFrame !== "")
             return false;
@@ -181,8 +229,52 @@ PanelWindow {
         var preview = normalizedPath(WallpaperService.fallbackVideoThumbnail);
         return cover !== "" && preview !== "" && cover === preview;
     }
+    function startVideoIrisClose(image) {
+        if (!isPendingVideoCover(image))
+            return false;
 
-    WlrLayershell.layer: WlrLayer.Background
+        if (irisCloseAnimation.running)
+            return true;
+        if (irisOpenAnimation.running)
+            irisOpenAnimation.stop();
+        if (!irisTransitionActive) {
+            irisTransitionActive = true;
+            irisAperture = irisMaxDiameter;
+        }
+        image.opacity = isPreviewCover(image) ? 1 : (WallpaperService.videoRendererStartPending ? 0 : 1);
+        image.scale = 1;
+        if (irisAperture <= 0.5) {
+            reportVideoCoverReady(image);
+            return true;
+        }
+        irisCloseAnimation.restart();
+        return true;
+    }
+    function startVideoIrisOpen(image) {
+        if (!irisTransitionActive || !isVideoWallpaper || image.sourceKey !== "")
+            return false;
+
+        irisCloseAnimation.stop();
+        if (outgoingImage) {
+            var oldOutgoing = outgoingImage;
+            outgoingImage = null;
+            oldOutgoing.destroy();
+        }
+        if (displayedImage) {
+            var oldDisplayed = displayedImage;
+            displayedImage = null;
+            oldDisplayed.destroy();
+        }
+        displayedImage = image;
+        displayedImage.opacity = 0;
+        displayedImage.z = 0;
+        previewCoverTransition = false;
+        transitionStarted = true;
+        irisOpenAnimation.restart();
+        return true;
+    }
+
+    WlrLayershell.layer: allowVideoFade ? WlrLayer.Bottom : WlrLayer.Background
     WlrLayershell.namespace: windowNamespace
     aboveWindows: false
     anchors.bottom: true
@@ -201,12 +293,19 @@ PanelWindow {
         if (displayedImage)
             displayedImage.destroy();
     }
+    onIsVideoWallpaperChanged: {
+        if (isVideoWallpaper)
+            return;
+        resetVideoIris();
+        requestWallpaper();
+    }
     onRevealVideoChanged: requestWallpaper()
     onWallpaperPathChanged: requestWallpaper()
 
     Connections {
         function onPendingVideoThumbnailChanged() {
-            wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
+            if (!wallpaperWindow.startVideoIrisClose(wallpaperWindow.displayedImage))
+                wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
         }
 
         target: WallpaperService
@@ -216,6 +315,22 @@ PanelWindow {
 
         anchors.fill: parent
     }
+    Rectangle {
+        id: irisOverlay
+
+        readonly property real overscan: wallpaperWindow.irisMaxDiameter
+
+        anchors.centerIn: parent
+        antialiasing: true
+        border.color: Config.md3.primary_container
+        border.width: overscan
+        color: "transparent"
+        height: width
+        radius: width / 2
+        visible: wallpaperWindow.irisTransitionActive
+        width: wallpaperWindow.irisAperture + overscan * 2
+        z: 100
+    }
     Component {
         id: staticWallpaper
 
@@ -223,12 +338,14 @@ PanelWindow {
             id: staticImage
 
             readonly property bool blurEngineCover: wallpaperWindow.shouldBlurEngineCover(sourceKey)
+            property bool previewCover: false
             property int requestId: 0
             property string sourceKey: ""
+            property bool videoCover: false
 
             anchors.fill: parent
             cacheKey: wallpaperWindow.allowVideoFade && WallpaperService.currentMode === "video" ? String(WallpaperService.videoTransitionGeneration) : ""
-            fillMode: Image.PreserveAspectCrop
+            fillMode: videoCover ? Image.Stretch : Image.PreserveAspectCrop
             layer.enabled: false
             opacity: 0
             path: sourceKey
@@ -243,13 +360,15 @@ PanelWindow {
             id: directImage
 
             readonly property bool blurEngineCover: wallpaperWindow.shouldBlurEngineCover(sourceKey)
+            property bool previewCover: false
             property int requestId: 0
             property string sourceKey: ""
+            property bool videoCover: false
 
             anchors.fill: parent
             asynchronous: true
             cache: true
-            fillMode: Image.PreserveAspectCrop
+            fillMode: videoCover ? Image.Stretch : Image.PreserveAspectCrop
             layer.enabled: false
             opacity: 0
             source: sourceKey
@@ -264,8 +383,10 @@ PanelWindow {
         AnimatedImage {
             id: animatedImage
 
+            property bool previewCover: false
             property int requestId: 0
             property string sourceKey: ""
+            property bool videoCover: false
 
             anchors.fill: parent
             asynchronous: true
@@ -285,79 +406,106 @@ PanelWindow {
         Item {
             id: transparentItem
 
+            property bool previewCover: false
             property int requestId: 0
             property string sourceKey: ""
+            property bool videoCover: false
 
             anchors.fill: parent
             opacity: 0
         }
     }
     ParallelAnimation {
-        id: coverFadeAnimation
+        id: initialRevealAnimation
 
-        onFinished: wallpaperWindow.finishCoverSwap(true)
+        onFinished: {
+            if (wallpaperWindow.displayedImage) {
+                wallpaperWindow.displayedImage.opacity = 1;
+                wallpaperWindow.displayedImage.scale = 1;
+            }
+            wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
+            wallpaperWindow.reportStaticCoverReady(wallpaperWindow.displayedImage);
+        }
 
         OpacityAnimator {
-            duration: Math.max(280, Config.wallpaperTransitionDuration)
-            easing.type: Easing.OutCubic
+            duration: wallpaperWindow.previewCoverTransition ? wallpaperWindow.previewCoverDuration : (wallpaperWindow.isVideoWallpaper ? wallpaperWindow.videoCoverInDuration : Math.max(280, Config.wallpaperTransitionDuration))
+            easing.type: wallpaperWindow.previewCoverTransition ? Easing.OutCubic : (wallpaperWindow.isVideoWallpaper ? Easing.InOutSine : Easing.OutCubic)
             from: 0
             target: wallpaperWindow.displayedImage
             to: 1
         }
-        OpacityAnimator {
-            duration: Math.max(280, Config.wallpaperTransitionDuration)
-            easing.type: Easing.OutCubic
-            from: 1
-            target: wallpaperWindow.outgoingImage
-            to: 0
-        }
         ScaleAnimator {
-            duration: Math.max(340, Config.wallpaperTransitionDuration + 100)
+            duration: wallpaperWindow.previewCoverTransition ? wallpaperWindow.previewCoverDuration : (wallpaperWindow.isVideoWallpaper ? wallpaperWindow.videoCoverInDuration : Math.max(340, Config.wallpaperTransitionDuration + 100))
             easing.type: Easing.OutQuint
-            from: 1.04
+            from: wallpaperWindow.previewCoverTransition ? 1.04 : (wallpaperWindow.isVideoWallpaper ? 1 : 1.04)
             target: wallpaperWindow.displayedImage
-            to: 1.0
+            to: 1
         }
-        ScaleAnimator {
-            duration: Math.max(340, Config.wallpaperTransitionDuration + 100)
-            easing.type: Easing.OutQuint
-            from: 1.0
-            target: wallpaperWindow.outgoingImage
-            to: 1.03
+    }
+    NumberAnimation {
+        id: irisCloseAnimation
+
+        duration: wallpaperWindow.videoCoverInDuration
+        easing.type: Easing.InOutCubic
+        property: "irisAperture"
+        target: wallpaperWindow
+        to: 0
+
+        onFinished: {
+            wallpaperWindow.irisAperture = 0;
+            wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
+        }
+    }
+    NumberAnimation {
+        id: irisOpenAnimation
+
+        duration: wallpaperWindow.videoRevealDuration
+        easing.type: Easing.InOutCubic
+        property: "irisAperture"
+        target: wallpaperWindow
+        to: wallpaperWindow.irisMaxDiameter
+
+        onFinished: {
+            wallpaperWindow.irisAperture = wallpaperWindow.irisMaxDiameter;
+            wallpaperWindow.irisTransitionActive = false;
+            wallpaperWindow.finishTransition();
         }
     }
     ParallelAnimation {
         id: transitionAnimation
 
-        onFinished: wallpaperWindow.finishTransition()
+        onFinished: {
+            wallpaperWindow.finishTransition();
+            wallpaperWindow.reportStaticCoverReady(wallpaperWindow.displayedImage);
+        }
 
         OpacityAnimator {
-            duration: Math.max(280, Config.wallpaperTransitionDuration)
-            easing.type: Easing.OutCubic
+            duration: wallpaperWindow.previewCoverTransition ? wallpaperWindow.previewCoverDuration : (wallpaperWindow.isVideoWallpaper ? wallpaperWindow.videoRevealDuration : Math.max(280, Config.wallpaperTransitionDuration))
+            easing.type: wallpaperWindow.previewCoverTransition ? Easing.OutCubic : (wallpaperWindow.isVideoWallpaper ? Easing.InOutSine : Easing.OutCubic)
             from: 0
             target: wallpaperWindow.displayedImage
             to: 1
         }
         OpacityAnimator {
-            duration: Math.max(280, Config.wallpaperTransitionDuration)
-            easing.type: Easing.OutCubic
+            duration: wallpaperWindow.previewCoverTransition ? wallpaperWindow.previewCoverDuration : (wallpaperWindow.isVideoWallpaper ? wallpaperWindow.videoRevealDuration : Math.max(280, Config.wallpaperTransitionDuration))
+            easing.type: wallpaperWindow.previewCoverTransition ? Easing.OutCubic : (wallpaperWindow.isVideoWallpaper ? Easing.InOutSine : Easing.OutCubic)
             from: 1
             target: wallpaperWindow.outgoingImage
             to: 0
         }
         ScaleAnimator {
-            duration: Math.max(340, Config.wallpaperTransitionDuration + 100)
+            duration: wallpaperWindow.previewCoverTransition ? wallpaperWindow.previewCoverDuration : (wallpaperWindow.isVideoWallpaper ? wallpaperWindow.videoRevealDuration : Math.max(340, Config.wallpaperTransitionDuration + 100))
             easing.type: Easing.OutQuint
-            from: 1.04
+            from: wallpaperWindow.previewCoverTransition ? 1.04 : (wallpaperWindow.isVideoWallpaper ? 1 : 1.04)
             target: wallpaperWindow.displayedImage
             to: 1.0
         }
         ScaleAnimator {
-            duration: Math.max(340, Config.wallpaperTransitionDuration + 100)
+            duration: wallpaperWindow.previewCoverTransition ? wallpaperWindow.previewCoverDuration : (wallpaperWindow.isVideoWallpaper ? wallpaperWindow.videoRevealDuration : Math.max(340, Config.wallpaperTransitionDuration + 100))
             easing.type: Easing.OutQuint
             from: 1.0
             target: wallpaperWindow.outgoingImage
-            to: 1.03
+            to: wallpaperWindow.previewCoverTransition ? 1.03 : (wallpaperWindow.isVideoWallpaper ? 1 : 1.03)
         }
     }
 }

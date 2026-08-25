@@ -23,6 +23,7 @@ PanelWindow {
     property bool selectionCommitted: false
     property int staticIndex: 0
     property int videoIndex: 0
+    property bool videoPreviewStarted: false
     property bool wallhavenOpen: false
     property bool workshopOpen: false
 
@@ -44,6 +45,32 @@ PanelWindow {
         wallhavenOpen = false;
         workshopOpen = false;
     }
+    function handleVideoCoverReady(sourcePath, coverPath, engineSource) {
+        if (!wallpaperWindow.visible || selectedMode !== "video" || !videoPreviewStarted || pathView.currentIndex < 0)
+            return;
+
+        for (var i = 0; i < activeCount; ++i) {
+            var isEngine = roleAt(i, "isEngine", false);
+            if (isEngine !== engineSource)
+                continue;
+
+            var modified = roleAt(i, "fileModified", 0);
+            var expectedSource = isEngine ? roleAt(i, "preview", "") : pathAt(i);
+            var expectedCover = isEngine ? EngineWallpaperService.previewCoverPath(expectedSource, modified) : LiveWallpaperService.coverPath(expectedSource, modified);
+            if (sourcePath !== expectedSource || coverPath !== expectedCover)
+                continue;
+
+            if (i === pathView.currentIndex) {
+                schedulePreview();
+            } else {
+                var distance = Math.abs(i - pathView.currentIndex);
+                distance = Math.min(distance, activeCount - distance);
+                if (distance <= 1)
+                    WallpaperPreviewService.preload(coverPath, modified);
+            }
+            return;
+        }
+    }
     function openSelector() {
         var generation = ++openGeneration;
         var targetScreen = StateManager.resolvePanelScreen();
@@ -57,8 +84,10 @@ PanelWindow {
         wallhavenOpen = false;
         workshopOpen = false;
         selectedMode = WallpaperService.currentMode;
+        videoPreviewStarted = false;
         wallpaperWindow.visible = true;
         if (selectedMode === "video") {
+            WallpaperService.beginPreview();
             EngineWallpaperService.beginBrowsing();
             LiveWallpaperService.beginBrowsing();
             LiveWallpaperService.checkAvailability();
@@ -88,12 +117,14 @@ PanelWindow {
 
         WallpaperPreviewService.resetPreloads();
         var current = pathView.currentIndex;
-        var offsets = [1, -1, 2, -2];
+        var offsets = selectedMode === "video" ? [1, -1] : [1, -1, 2, -2];
         for (var i = 0; i < offsets.length; ++i) {
             var index = (current + offsets[i] + activeCount) % activeCount;
             if (index === current)
                 continue;
 
+            if (selectedMode === "video")
+                requestVideoCoverAt(index, false);
             var preloadPath = selectedMode === "video" ? videoPreviewImageAt(index) : pathAt(index);
             if (preloadPath)
                 WallpaperPreviewService.preload(preloadPath, roleAt(index, "fileModified", 0));
@@ -113,11 +144,15 @@ PanelWindow {
             WallpaperPreviewService.preview(path, modified);
             preloadTimer.restart();
         } else if (selectedMode === "video") {
-            var previewImage = videoPreviewImageAt(pathView.currentIndex);
+            var currentIndex = pathView.currentIndex;
+            var videoModified = roleAt(currentIndex, "fileModified", 0);
+            requestVideoCoverAt(currentIndex, true);
+
+            var previewImage = videoPreviewImageAt(currentIndex);
             if (!previewImage)
                 return;
 
-            var videoModified = roleAt(pathView.currentIndex, "fileModified", 0);
+            WallpaperService.previewStatic(previewImage);
             WallpaperPreviewService.preview(previewImage, videoModified);
             preloadTimer.restart();
         }
@@ -163,6 +198,29 @@ PanelWindow {
         if (videoModel.count > items.length)
             videoModel.remove(items.length, videoModel.count - items.length);
     }
+    function requestVideoCoverAt(index, priority) {
+        if (index < 0 || index >= activeCount || selectedMode !== "video")
+            return "";
+
+        var filePath = pathAt(index);
+        var modified = roleAt(index, "fileModified", 0);
+        if (roleAt(index, "isEngine", false)) {
+            if (filePath === EngineWallpaperService.activePath && EngineWallpaperService.validatedFramePath !== "")
+                return EngineWallpaperService.validatedFramePath;
+            if (EngineWallpaperService.renderedPreviewKnown(filePath))
+                return EngineWallpaperService.renderedPreviewPath(filePath);
+
+            var previewPath = roleAt(index, "preview", "");
+            if (!previewPath)
+                return "";
+            if (!EngineWallpaperService.previewNeedsConversion(previewPath))
+                return previewPath;
+
+            return EngineWallpaperService.requestPreviewCover(previewPath, modified, priority === true);
+        }
+
+        return LiveWallpaperService.requestCover(filePath, modified, priority === true);
+    }
     function restoreModeIndex() {
         if (activeCount === 0) {
             pathView.currentIndex = -1;
@@ -183,7 +241,7 @@ PanelWindow {
         return item && item[role] !== undefined ? item[role] : fallbackValue;
     }
     function schedulePreview() {
-        if (changingMode || initialSelectionPath !== "" || browserOpen)
+        if (changingMode || initialSelectionPath !== "" || browserOpen || (selectedMode === "video" && !videoPreviewStarted))
             return;
 
         previewTimer.restart();
@@ -198,6 +256,8 @@ PanelWindow {
     }
     function startUserNavigation() {
         initialSelectionPath = "";
+        if (selectedMode === "video")
+            videoPreviewStarted = true;
     }
     function staticModelIndexForPath(path) {
         var expectedPath = String(path || "");
@@ -216,9 +276,10 @@ PanelWindow {
         initialSelectionPath = "";
         selectedMode = mode;
         if (mode === "video") {
+            videoPreviewStarted = false;
             previewTimer.stop();
             preloadTimer.stop();
-            WallpaperService.cancelPreview();
+            WallpaperService.beginPreview();
             WallpaperPreviewService.cancel();
             WallpaperPreviewService.begin();
             EngineWallpaperService.beginBrowsing();
@@ -346,17 +407,45 @@ PanelWindow {
         var filePath = pathAt(index);
         var modified = roleAt(index, "fileModified", 0);
         if (isEngine) {
+            if (filePath === EngineWallpaperService.activePath && EngineWallpaperService.validatedFramePath !== "")
+                return EngineWallpaperService.validatedFramePath;
+
+            var renderedPreview = EngineWallpaperService.renderedPreviewPath(filePath);
+            if (EngineWallpaperService.renderedPreviewKnown(filePath))
+                return renderedPreview;
+
             var preview = roleAt(index, "preview", "");
             if (!preview)
                 return "";
 
             if (EngineWallpaperService.previewNeedsConversion(preview)) {
-                var thumbPath = EngineWallpaperService.previewThumbnailPath(preview, modified);
-                return EngineWallpaperService.previewThumbnailKnown(preview, modified) ? thumbPath : "";
+                var coverPath = EngineWallpaperService.previewCoverPath(preview, modified);
+                if (EngineWallpaperService.previewCoverKnown(preview, modified))
+                    return coverPath;
+                return "";
             }
             return preview;
         }
-        // Live wallpaper — use the ffmpeg-generated thumbnail.
+        var liveCover = LiveWallpaperService.coverPath(filePath, modified);
+        return LiveWallpaperService.coverKnown(filePath, modified) ? liveCover : "";
+    }
+    function videoThumbnailImageAt(index) {
+        if (index < 0 || index >= activeCount || selectedMode !== "video")
+            return "";
+
+        var filePath = pathAt(index);
+        var modified = roleAt(index, "fileModified", 0);
+        if (roleAt(index, "isEngine", false)) {
+            var preview = roleAt(index, "preview", "");
+            if (!preview)
+                return "";
+            if (!EngineWallpaperService.previewNeedsConversion(preview))
+                return preview;
+
+            var thumbnailPath = EngineWallpaperService.previewThumbnailPath(preview, modified);
+            return EngineWallpaperService.previewThumbnailKnown(preview, modified) ? thumbnailPath : "";
+        }
+
         var livePath = LiveWallpaperService.thumbnailPath(filePath, modified);
         return LiveWallpaperService.thumbnailKnown(filePath, modified) ? livePath : "";
     }
@@ -412,6 +501,20 @@ PanelWindow {
         repeat: false
 
         onTriggered: wallpaperWindow.preloadNeighbours()
+    }
+    Connections {
+        function onPreviewThumbnailReady(sourcePath, thumbnailPath) {
+            wallpaperWindow.handleVideoCoverReady(sourcePath, thumbnailPath, true);
+        }
+
+        target: EngineWallpaperService
+    }
+    Connections {
+        function onThumbnailReady(sourcePath, thumbnailPath) {
+            wallpaperWindow.handleVideoCoverReady(sourcePath, thumbnailPath, false);
+        }
+
+        target: LiveWallpaperService
     }
     Item {
         id: contentRoot
@@ -537,6 +640,14 @@ PanelWindow {
             target: liveModel
         }
         Connections {
+            function onKnownPreviewThumbnailsChanged() {
+                if (wallpaperWindow.visible && wallpaperWindow.selectedMode === "video" && wallpaperWindow.videoPreviewStarted)
+                    wallpaperWindow.schedulePreview();
+            }
+            function onValidatedFramePathChanged() {
+                if (wallpaperWindow.visible && wallpaperWindow.selectedMode === "video" && wallpaperWindow.videoPreviewStarted)
+                    wallpaperWindow.schedulePreview();
+            }
             function onWallpapersChanged() {
                 if (wallpaperWindow.visible)
                     wallpaperWindow.syncVideoModel();
@@ -676,6 +787,17 @@ PanelWindow {
                         wallpaperWindow.schedulePreview();
                 }
             }
+            onMovementEnded: {
+                if (wallpaperWindow.selectedMode === "video")
+                    Qt.callLater(wallpaperWindow.schedulePreview);
+            }
+            onMovementStarted: {
+                wallpaperWindow.startUserNavigation();
+                if (wallpaperWindow.selectedMode === "video") {
+                    preloadTimer.stop();
+                    WallpaperPreviewService.resetPreloads();
+                }
+            }
 
             MouseArea {
                 acceptedButtons: Qt.NoButton
@@ -796,6 +918,11 @@ PanelWindow {
                 }
             }
             function scheduleThumbnailLoad() {
+                var thumbnailCached = delegateRoot.live ? delegateRoot.thumbnailAvailable : delegateRoot.engineThumbnailAvailable;
+                if (wallpaperWindow.selectedMode === "video" && pathView.moving && !thumbnailCached) {
+                    thumbnailLoadTimer.stop();
+                    return;
+                }
                 if (delegateRoot.PathView.isCurrentItem || (!delegateRoot.live && !delegateRoot.convertedEnginePreview) || delegateRoot.thumbnailAvailable || delegateRoot.engineThumbnailAvailable) {
                     // Cached thumbnails, static images and current item: load immediately without delay.
                     delegateRoot.permitThumbnailLoad = true;
@@ -840,6 +967,10 @@ PanelWindow {
                     if (delegateRoot.PathView.isCurrentItem || !delegateRoot.permitThumbnailLoad)
                         delegateRoot.scheduleThumbnailLoad();
                 }
+                function onMovingChanged() {
+                    if (!pathView.moving && (delegateRoot.PathView.isCurrentItem || !delegateRoot.permitThumbnailLoad))
+                        delegateRoot.scheduleThumbnailLoad();
+                }
 
                 target: pathView
             }
@@ -857,6 +988,10 @@ PanelWindow {
                 repeat: false
 
                 onTriggered: {
+                    if (pathView.moving) {
+                        delegateRoot.scheduleThumbnailLoad();
+                        return;
+                    }
                     delegateRoot.permitThumbnailLoad = true;
                     delegateRoot.requestCurrentThumbnail();
                 }
