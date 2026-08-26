@@ -87,6 +87,7 @@ QtObject {
     property ListModel notifications: ListModel {
     }
     property var pendingNativeUpdates: ({})
+    property var popupOwners: ({})
     property var rawMap: ({})
     property Timer saveTimer: Timer {
         id: saveTimer
@@ -131,8 +132,16 @@ QtObject {
     function add(n) {
         // Transient notifications are intentionally popup-only and must not be
         // retained or serialized in the notification centre.
-        if (!n || n.transient || appMatchesList(n.appName, Config.notificationHistoryExcludedApps))
+        if (!n)
             return;
+        if (n.transient || appMatchesList(n.appName, Config.notificationHistoryExcludedApps)) {
+            if (!n.transient) {
+                Qt.callLater(function () {
+                    root.releaseUnownedNative(n.id, n);
+                });
+            }
+            return;
+        }
 
         // Check if it already exists (update in place)
         var index = -1;
@@ -146,6 +155,12 @@ QtObject {
         if (index !== -1)
             notifications.remove(index);
 
+        var previousNative = rawMap[n.id];
+        if (previousNative && previousNative !== n && pendingNativeUpdates[n.id] !== undefined) {
+            var remainingUpdates = Object.assign({}, pendingNativeUpdates);
+            delete remainingUpdates[n.id];
+            pendingNativeUpdates = remainingUpdates;
+        }
         // 1. Update rawMap FIRST using a shallow copy so the delegate can find the raw notification actions on creation
         rawMap = Object.assign({}, rawMap, {
             [n.id]: n
@@ -157,6 +172,11 @@ QtObject {
         trimToLimit();
         scheduleGroupRebuild();
         saveHistory();
+        Qt.callLater(function () {
+            if (previousNative && previousNative !== n)
+                root.releaseUnownedNative(n.id, previousNative);
+            root.releaseUnownedNative(n.id, n);
+        });
     }
     function addAppKey(keys, value) {
         var rawValue = String(value || "").trim().toLowerCase();
@@ -221,11 +241,14 @@ QtObject {
     function clearAll() {
         var nativeNotifications = [];
         for (var nid in rawMap) {
-            if (rawMap[nid])
+            if (rawMap[nid]) {
                 nativeNotifications.push(rawMap[nid]);
+                forgetPopupOwner(nid, rawMap[nid]);
+            }
         }
         notifications.clear();
         rawMap = {};
+        pendingNativeUpdates = {};
         unreadNotifications = [];
         var connectionIds = Object.keys(nativeConnections);
         for (var connectionIndex = 0; connectionIndex < connectionIds.length; ++connectionIndex)
@@ -278,6 +301,7 @@ QtObject {
         n.bodyChanged.connect(schedule);
         n.imageChanged.connect(schedule);
         n.urgencyChanged.connect(schedule);
+        n.actionsChanged.connect(schedule);
         n.transientChanged.connect(schedule);
         n.desktopEntryChanged.connect(schedule);
 
@@ -304,6 +328,7 @@ QtObject {
                 n.bodyChanged.disconnect(connection.schedule);
                 n.imageChanged.disconnect(connection.schedule);
                 n.urgencyChanged.disconnect(connection.schedule);
+                n.actionsChanged.disconnect(connection.schedule);
                 n.transientChanged.disconnect(connection.schedule);
                 n.desktopEntryChanged.disconnect(connection.schedule);
             } catch (error) {
@@ -327,8 +352,10 @@ QtObject {
         for (var i = 0; i < nids.length; i++) {
             var nid = nids[i];
             idSet[nid] = true;
-            if (rawMap[nid])
-                nativeNotifications.push(rawMap[nid]);
+            var popupOwner = popupOwners[nid];
+            var nativeNotification = rawMap[nid] || (popupOwner ? popupOwner.object : null);
+            if (nativeNotification && nativeNotifications.indexOf(nativeNotification) < 0)
+                nativeNotifications.push(nativeNotification);
         }
         // Mutate the model and derived data once. The previous implementation
         // rebuilt every group and serialized history once per removed item.
@@ -338,6 +365,8 @@ QtObject {
         }
         var cleanRawMap = Object.assign({}, rawMap);
         for (var mapIndex = 0; mapIndex < nids.length; mapIndex++) {
+            var owner = popupOwners[nids[mapIndex]];
+            forgetPopupOwner(nids[mapIndex], rawMap[nids[mapIndex]] || (owner ? owner.object : null));
             delete cleanRawMap[nids[mapIndex]];
             disconnectNativeUpdates(nids[mapIndex]);
         }
@@ -358,6 +387,24 @@ QtObject {
         pendingNativeUpdates = {};
         for (var nid in updates)
             updateFromNative(updates[nid]);
+    }
+    function forgetPopupOwner(nid, expectedObject) {
+        var owner = popupOwners[nid];
+        if (!owner || expectedObject && owner.object !== expectedObject)
+            return;
+
+        var nextOwners = Object.assign({}, popupOwners);
+        delete nextOwners[nid];
+        popupOwners = nextOwners;
+    }
+    function hasInteractiveActions(notification) {
+        if (!notification)
+            return false;
+        try {
+            return Boolean(notification.hasInlineReply || notification.actions && notification.actions.length > 0);
+        } catch (error) {
+            return false;
+        }
     }
     function isNotificationAppFocused(notification) {
         var keys = notificationKeys(notification);
@@ -436,6 +483,7 @@ QtObject {
         var trackedObject = rawMap[nid];
         if (expectedObject && trackedObject && trackedObject !== expectedObject)
             return;
+        forgetPopupOwner(nid, expectedObject);
         disconnectNativeUpdates(nid, expectedObject);
         if (!trackedObject)
             return;
@@ -448,7 +496,44 @@ QtObject {
         delete cleanRawMap[nid];
         rawMap = cleanRawMap;
     }
+    function releasePopup(nid, expectedObject) {
+        var owner = popupOwners[nid];
+        if (!owner || expectedObject && owner.object !== expectedObject)
+            return;
+
+        var nextOwners = Object.assign({}, popupOwners);
+        var remaining = Math.max(0, Number(owner.count || 1) - 1);
+        if (remaining > 0) {
+            nextOwners[nid] = {
+                "count": remaining,
+                "object": owner.object
+            };
+        } else {
+            delete nextOwners[nid];
+        }
+        popupOwners = nextOwners;
+        if (remaining === 0)
+            releaseUnownedNative(nid, owner.object);
+    }
+    function releaseUnownedNative(nid, notification) {
+        if (!notification)
+            return;
+
+        var owner = popupOwners[nid];
+        if (owner && owner.object === notification && Number(owner.count || 0) > 0)
+            return;
+        if (rawMap[nid] === notification && hasInteractiveActions(notification))
+            return;
+
+        try {
+            if (notification.tracked)
+                notification.expire();
+        } catch (error) {
+            console.log("[NotificationHistory] Native notification already closed:", error);
+        }
+    }
     function remove(nid) {
+        var nativeNotification = rawMap[nid];
         for (var i = 0; i < notifications.count; i++) {
             if (notifications.get(i).nid === nid) {
                 notifications.remove(i);
@@ -462,6 +547,7 @@ QtObject {
         disconnectNativeUpdates(nid);
         scheduleGroupRebuild();
         saveHistory();
+        releaseUnownedNative(nid, nativeNotification);
     }
     function removeUnread(nid) {
         var next = [];
@@ -485,6 +571,19 @@ QtObject {
         }
         if (next.length !== root.unreadNotifications.length)
             root.unreadNotifications = next;
+    }
+    function retainPopup(notification) {
+        if (!notification)
+            return;
+
+        var nid = notification.id;
+        var owner = popupOwners[nid];
+        var nextOwners = Object.assign({}, popupOwners);
+        nextOwners[nid] = {
+            "count": owner && owner.object === notification ? Number(owner.count || 0) + 1 : 1,
+            "object": notification
+        };
+        popupOwners = nextOwners;
     }
     function saveHistory() {
         saveTimer.restart();
@@ -541,8 +640,14 @@ QtObject {
             disconnectNativeUpdates(oldestId, oldestNative);
             notifications.remove(notifications.count - 1);
             removeUnread(oldestId);
-            // Do not expire the native notification here. A history limit of
-            // zero must still allow its popup and actions to live normally.
+            if (pendingNativeUpdates[oldestId] !== undefined) {
+                var remainingUpdates = Object.assign({}, pendingNativeUpdates);
+                delete remainingUpdates[oldestId];
+                pendingNativeUpdates = remainingUpdates;
+            }
+            // A visible popup remains an owner until its exit animation ends.
+            // Otherwise the native object can be released immediately.
+            releaseUnownedNative(oldestId, oldestNative);
         }
     }
     function unreadCountForEntry(entryId, appName) {
@@ -570,9 +675,8 @@ QtObject {
             return;
 
         if (n.transient) {
-            notifications.remove(index);
-            removeUnread(n.id);
-            releaseNative(n.id, n);
+            remove(n.id);
+            return;
         } else {
             var oldItem = notifications.get(index);
             notifications.set(index, snapshotFor(n, oldItem.timestamp || Date.now()));
@@ -580,6 +684,9 @@ QtObject {
         }
         scheduleGroupRebuild();
         saveHistory();
+        Qt.callLater(function () {
+            root.releaseUnownedNative(n.id, n);
+        });
     }
     function windowKeys(windowData) {
         if (!windowData)

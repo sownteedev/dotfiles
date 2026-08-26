@@ -18,6 +18,7 @@
 #include <QStandardPaths>
 #include <QThreadPool>
 #include <QUrl>
+#include <utility>
 
 namespace {
 
@@ -110,7 +111,15 @@ QSize scaledSize(const QSize& source, const QSize& target, CachingImageProvider:
             : Qt::KeepAspectRatio);
 }
 
-QImage decodeScaled(const QString& sourcePath, const QSize& target, CachingImageProvider::FillMode fillMode) {
+QImage decodeScaled(
+    const QString& sourcePath,
+    const QSize& target,
+    CachingImageProvider::FillMode fillMode,
+    const std::atomic<bool>& cancelled
+) {
+    if (cancelled.load(std::memory_order_relaxed))
+        return {};
+
     QImageReader reader(sourcePath);
     reader.setAutoTransform(true);
 
@@ -119,12 +128,15 @@ QImage decodeScaled(const QString& sourcePath, const QSize& target, CachingImage
         reader.setScaledSize(scaledSize(sourceSize, target, fillMode));
 
     QImage image = reader.read();
-    if (image.isNull())
+    if (image.isNull() || cancelled.load(std::memory_order_relaxed))
         return {};
 
     const QSize wanted = scaledSize(image.size(), target, fillMode);
-    if (image.size() != wanted)
+    if (image.size() != wanted) {
         image = image.scaled(wanted, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        if (cancelled.load(std::memory_order_relaxed))
+            return {};
+    }
 
     if (fillMode == CachingImageProvider::FillMode::Stretch)
         return image;
@@ -133,7 +145,8 @@ QImage decodeScaled(const QString& sourcePath, const QSize& target, CachingImage
         // Directly crop from the centre — avoids a canvas allocation.
         const int x = (image.width()  - target.width())  / 2;
         const int y = (image.height() - target.height()) / 2;
-        return image.copy(x, y, target.width(), target.height());
+        QImage cropped = image.copy(x, y, target.width(), target.height());
+        return cancelled.load(std::memory_order_relaxed) ? QImage() : cropped;
     }
 
     // Fit: paint centred onto an opaque canvas.
@@ -142,7 +155,7 @@ QImage decodeScaled(const QString& sourcePath, const QSize& target, CachingImage
     QPainter painter(&canvas);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.drawImage((target.width() - image.width()) / 2, (target.height() - image.height()) / 2, image);
-    return canvas;
+    return cancelled.load(std::memory_order_relaxed) ? QImage() : canvas;
 }
 
 class CachingImageResponse final : public QQuickImageResponse, public QRunnable {
@@ -162,13 +175,29 @@ public:
         return m_error;
     }
 
+    void cancel() override {
+        m_cancelled.store(true, std::memory_order_relaxed);
+    }
+
     void run() override {
-        process();
+        if (!isCancelled())
+            process();
+        if (isCancelled()) {
+            m_image = {};
+            m_error.clear();
+        }
         emit finished();
     }
 
 private:
+    [[nodiscard]] bool isCancelled() const {
+        return m_cancelled.load(std::memory_order_relaxed);
+    }
+
     void process() {
+        if (isCancelled())
+            return;
+
         const QString sourcePath = sourcePathFromId(m_id);
         if (!QFileInfo::exists(sourcePath)) {
             m_error = QStringLiteral("Image does not exist: ") + sourcePath;
@@ -186,6 +215,8 @@ private:
         }
 
         const QString cachePath = cachePathFor(sourcePath, target, m_fillMode);
+        if (isCancelled())
+            return;
         {
             QMutexLocker locker(&cacheMutex);
             if (!initialCachePruneDone) {
@@ -196,25 +227,42 @@ private:
 
         QImageReader cachedReader(cachePath);
         if (cachedReader.canRead()) {
-            m_image = cachedReader.read();
-            if (!m_image.isNull()) {
+            QImage cachedImage = cachedReader.read();
+            if (isCancelled())
+                return;
+            if (!cachedImage.isNull()) {
                 QMutexLocker locker(&cacheMutex);
                 markCacheEntryUsed(cachePath);
+                m_image = std::move(cachedImage);
                 return;
             }
         }
 
-        m_image = decodeScaled(sourcePath, target, m_fillMode);
-        if (m_image.isNull()) {
+        QImage decodedImage = decodeScaled(sourcePath, target, m_fillMode, m_cancelled);
+        if (isCancelled())
+            return;
+        if (decodedImage.isNull()) {
             m_error = QStringLiteral("Could not decode image: ") + sourcePath;
             return;
         }
+        m_image = std::move(decodedImage);
 
         {
+            if (isCancelled()) {
+                m_image = {};
+                return;
+            }
             QMutexLocker locker(&cacheMutex);
             QDir().mkpath(cacheDirectory());
             QSaveFile output(cachePath);
-            if (output.open(QIODevice::WriteOnly) && m_image.save(&output, "JPEG", 92) && output.commit()) {
+            if (output.open(QIODevice::WriteOnly) && m_image.save(&output, "JPEG", 92)) {
+                if (isCancelled()) {
+                    output.cancelWriting();
+                    m_image = {};
+                    return;
+                }
+                if (!output.commit())
+                    return;
                 if (++cacheWritesSincePrune >= kPruneBatchInterval) {
                     cacheWritesSincePrune.store(0);
                     pruneCache();
@@ -226,6 +274,7 @@ private:
     QString m_id;
     QSize m_requestedSize;
     CachingImageProvider::FillMode m_fillMode;
+    std::atomic<bool> m_cancelled{false};
     QImage m_image;
     QString m_error;
 };

@@ -18,6 +18,7 @@ PanelWindow {
     property var pendingUpdates: ({})
     readonly property bool popupAtBottom: Config.notificationPosition === "bottom-right"
     readonly property bool popupAtRight: Config.notificationPosition === "top-right" || Config.notificationPosition === "bottom-right"
+    property var popupConnections: ({})
     readonly property bool popupFromTop: Config.notificationPosition === "top"
     readonly property real popupMaximumWidth: screen ? Responsive.fit(600, screen.width - 40, 260) : 600
     readonly property real popupMinimumWidth: Math.min(380, popupMaximumWidth)
@@ -64,9 +65,25 @@ PanelWindow {
         triggerCloseAnimation(nid);
     }
     function connectNotificationUpdates(notification) {
+        if (!notification)
+            return;
+
+        var notificationId = notification.id;
+        var existing = popupConnections[notificationId];
+        if (existing && existing.object === notification)
+            return;
+        if (existing)
+            disconnectNotificationUpdates(notificationId, existing.object);
+
         var schedule = function () {
             notifWindow.scheduleNotificationUpdate(notification);
         };
+        var closed = function () {
+            console.log("[Notification] Received closed signal for ID:", notificationId);
+            stopNotifTimer(notificationId);
+            triggerCloseAnimation(notificationId);
+        };
+        notification.closed.connect(closed);
         notification.appNameChanged.connect(schedule);
         notification.appIconChanged.connect(schedule);
         notification.summaryChanged.connect(schedule);
@@ -76,6 +93,46 @@ PanelWindow {
         notification.actionsChanged.connect(schedule);
         notification.expireTimeoutChanged.connect(schedule);
         notification.transientChanged.connect(schedule);
+
+        var nextConnections = Object.assign({}, popupConnections);
+        nextConnections[notificationId] = {
+            "closed": closed,
+            "object": notification,
+            "schedule": schedule
+        };
+        popupConnections = nextConnections;
+    }
+    function disconnectNotificationUpdates(nid, expectedObject) {
+        var connection = popupConnections[nid];
+        if (!connection || expectedObject && connection.object !== expectedObject)
+            return;
+
+        var notification = connection.object;
+        if (notification) {
+            try {
+                notification.closed.disconnect(connection.closed);
+                notification.appNameChanged.disconnect(connection.schedule);
+                notification.appIconChanged.disconnect(connection.schedule);
+                notification.summaryChanged.disconnect(connection.schedule);
+                notification.bodyChanged.disconnect(connection.schedule);
+                notification.imageChanged.disconnect(connection.schedule);
+                notification.urgencyChanged.disconnect(connection.schedule);
+                notification.actionsChanged.disconnect(connection.schedule);
+                notification.expireTimeoutChanged.disconnect(connection.schedule);
+                notification.transientChanged.disconnect(connection.schedule);
+            } catch (error) {
+                // The native object may already have completed destruction.
+            }
+        }
+
+        var nextConnections = Object.assign({}, popupConnections);
+        delete nextConnections[nid];
+        popupConnections = nextConnections;
+        if (pendingUpdates[nid] !== undefined) {
+            var remainingUpdates = Object.assign({}, pendingUpdates);
+            delete remainingUpdates[nid];
+            pendingUpdates = remainingUpdates;
+        }
     }
 
     // Step 2: Remove from model immediately after animation finishes
@@ -116,23 +173,25 @@ PanelWindow {
         };
         if (index !== -1) {
             console.log("[Notification] Updating notification ID:", notification.id);
+            var previousNotification = notifModel.get(index).rawNotification;
+            if (previousNotification !== notification) {
+                disconnectNotificationUpdates(notification.id, previousNotification);
+                NotificationHistory.releasePopup(notification.id, previousNotification);
+                NotificationHistory.retainPopup(notification);
+                connectNotificationUpdates(notification);
+            }
             // Preserving the active state during updates
             notifData.active = notifModel.get(index).active;
             notifModel.set(index, notifData);
             resetNotifTimer(notification.id);
         } else {
             console.log("[Notification] Adding notification ID:", notification.id);
+            NotificationHistory.retainPopup(notification);
+            connectNotificationUpdates(notification);
             if (notifWindow.popupAtBottom)
                 notifModel.insert(0, notifData);
             else
                 notifModel.append(notifData);
-            // Connect to native closed signal to run exit animation automatically
-            notification.closed.connect(function () {
-                console.log("[Notification] Received closed signal for ID:", notification.id);
-                stopNotifTimer(notification.id);
-                triggerCloseAnimation(notification.id);
-            });
-            connectNotificationUpdates(notification);
             // Manage auto-dismiss timeout using pre-compiled Timer Component
             if (shouldAutoExpire(notification, isCritical)) {
                 var timeout = notificationTimeout(notification);
@@ -176,11 +235,14 @@ PanelWindow {
         }
 
         var nid = notifModel.get(index).nid;
+        var nativeNotification = notifModel.get(index).rawNotification;
         if (timersMap[nid]) {
             timersMap[nid].destroy();
             delete timersMap[nid];
         }
+        disconnectNotificationUpdates(nid, nativeNotification);
         notifModel.remove(index);
+        NotificationHistory.releasePopup(nid, nativeNotification);
     }
 
     // Reset notification timer
@@ -294,15 +356,7 @@ PanelWindow {
                 }
             }
             var finalIndex = removeIndex >= 0 ? removeIndex : startIndex;
-            var removedNotification = notifModel.get(finalIndex).rawNotification;
             removePopupAt(finalIndex);
-            if (removedNotification && removedNotification.transient) {
-                try {
-                    removedNotification.expire();
-                } catch (error) {
-                    console.log("[Notification] Trimmed transient notification already closed:", error);
-                }
-            }
         }
     }
 
@@ -357,6 +411,22 @@ PanelWindow {
         item: layout
     }
 
+    Component.onDestruction: {
+        for (var index = notifModel.count - 1; index >= 0; --index) {
+            var notification = notifModel.get(index).rawNotification;
+            var notificationId = notifModel.get(index).nid;
+            disconnectNotificationUpdates(notificationId, notification);
+            NotificationHistory.releasePopup(notificationId, notification);
+        }
+        var timerIds = Object.keys(timersMap);
+        for (var timerIndex = 0; timerIndex < timerIds.length; ++timerIndex) {
+            var timer = timersMap[timerIds[timerIndex]];
+            if (timer)
+                timer.destroy();
+        }
+        timersMap = {};
+        pendingUpdates = {};
+    }
     onMaxVisiblePopupsChanged: Qt.callLater(function () {
         notifWindow.trimPopupStack();
     })
@@ -421,11 +491,6 @@ PanelWindow {
             onTriggered: {
                 console.log("[Notification] Timer triggered for ID:", nid);
                 triggerCloseAnimation(nid);
-                // History already owns a lightweight snapshot. Once a normal
-                // notification without actions expires, release its native
-                // object and any image-provider resources it retains.
-                if (notif && (notif.transient || !notif.actions || notif.actions.length === 0))
-                    notif.expire();
             }
         }
     }
@@ -608,7 +673,7 @@ PanelWindow {
                             enabled: delegateWrapper.completed
 
                             NumberAnimation {
-                                duration: Config.animationDuration(250)
+                                duration: Config.animationDuration(140)
                                 easing.type: Easing.OutQuad
                             }
                         }
@@ -618,7 +683,7 @@ PanelWindow {
                             enabled: delegateWrapper.completed
 
                             NumberAnimation {
-                                duration: Config.animationDuration(250)
+                                duration: Config.animationDuration(140)
                                 easing.type: Easing.OutQuad
                             }
                         }
@@ -841,7 +906,7 @@ PanelWindow {
 
                                 Behavior on opacity {
                                     NumberAnimation {
-                                        duration: Config.animationDuration(150)
+                                        duration: Config.animationDuration(100)
                                     }
                                 }
 

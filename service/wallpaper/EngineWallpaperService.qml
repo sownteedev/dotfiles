@@ -262,6 +262,33 @@ QtObject {
             root.processNextPreviewThumbnail();
         }
     }
+    property var projectResolutionJob: null
+    property var projectResolutionQueue: []
+    property Process projectResolver: Process {
+        stdout: StdioCollector {
+            id: projectResolverOutput
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            var completedJob = root.projectResolutionJob;
+            var project = null;
+            root.projectResolutionJob = null;
+            if (exitCode === 0) {
+                try {
+                    var parsed = JSON.parse(projectResolverOutput.text || "{}");
+                    if (parsed && typeof parsed === "object" && String(parsed.path || "") !== "")
+                        project = parsed;
+                } catch (error) {
+                    console.warn("[EngineWallpaperService] Invalid project metadata:", error);
+                }
+            }
+            if (project)
+                root.cacheProject(project);
+            if (completedJob)
+                root.projectResolved(completedJob.path, project, completedJob.requestToken);
+            root.processNextProjectResolution();
+        }
+    }
     property string readyFramePath: ""
     property Process readyProbe: Process {
         onExited: (exitCode, exitStatus) => {
@@ -354,10 +381,28 @@ QtObject {
     signal playbackFailed(string sourcePath, string message, int generation)
     signal playbackReady(string sourcePath, string framePath, int generation)
     signal previewThumbnailReady(string sourcePath, string thumbnailPath, int requestToken)
+    signal projectResolved(string sourcePath, var project, int requestToken)
 
     function beginBrowsing() {
         browsing = true;
         refresh();
+    }
+    function cacheProject(project) {
+        if (!project || String(project.path || "") === "")
+            return;
+
+        var nextWallpapers = wallpapers.slice();
+        var replaced = false;
+        for (var i = 0; i < nextWallpapers.length; ++i) {
+            if (String(nextWallpapers[i].path || "") === String(project.path)) {
+                nextWallpapers[i] = project;
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced)
+            nextWallpapers.push(project);
+        wallpapers = nextWallpapers;
     }
     function cacheRenderedPreview(path, framePath) {
         if (!path || !framePath)
@@ -419,6 +464,10 @@ QtObject {
         var sourcePath = String(path);
         return sourcePath.indexOf(Config.wallpaperEngineWorkshopDir) === 0 || sourcePath.indexOf(Config.legacyWallpaperEngineWorkshopDir) === 0;
     }
+    function isNativeVideoProject(path, projectOverride) {
+        var project = projectOverride !== undefined ? projectOverride : projectForPath(path);
+        return project && String(project.type || "").toLowerCase() === "video";
+    }
     function launchDesired() {
         if (!available || !desiredPath || player.running)
             return;
@@ -460,6 +509,18 @@ QtObject {
         playbackReady(path, framePath || "", startedGeneration);
         if (policyRestarting)
             policyRestartFinish.restart();
+    }
+    function nativeVideoSource(path, projectOverride) {
+        var project = projectOverride !== undefined ? projectOverride : projectForPath(path);
+        if (!isNativeVideoProject(path, project))
+            return "";
+
+        var relativeFile = String(project.file || "").replace(/^[\\/]+/, "");
+        if (relativeFile === "")
+            return "";
+        var projectPath = String(project.path || path || "").replace(/[\\/]+$/, "");
+        var sourcePath = projectPath + "/" + relativeFile;
+        return LiveWallpaperService.isLivePath(sourcePath) ? sourcePath : "";
     }
     function play(path, generation) {
         if (!path)
@@ -520,6 +581,15 @@ QtObject {
         previewThumbnailQueue = previewThumbnailQueue.slice(1);
         previewThumbnailWorker.command = ["sh", "-c", "mkdir -p \"$3\"; if [ ! -s \"$2\" ]; then rm -f \"$2.tmp.jpeg\"; if ! nice -n 10 ffmpeg -hide_banner -loglevel error -y -ss 0.5 -i \"$1\" -frames:v 1 -vf \"scale='min($4,iw)':'min($4,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=fast_bilinear,format=yuvj420p\" -q:v 3 -update 1 \"$2.tmp.jpeg\" || [ ! -s \"$2.tmp.jpeg\" ]; then rm -f \"$2.tmp.jpeg\"; nice -n 10 ffmpeg -hide_banner -loglevel error -y -i \"$1\" -frames:v 1 -vf \"scale='min($4,iw)':'min($4,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=fast_bilinear,format=yuvj420p\" -q:v 3 -update 1 \"$2.tmp.jpeg\"; fi && mv \"$2.tmp.jpeg\" \"$2\"; fi", "engine-preview-thumbnail", previewThumbnailJob.path, previewThumbnailJob.target, previewCacheDir, String(previewThumbnailJob.width)];
         previewThumbnailWorker.running = true;
+    }
+    function processNextProjectResolution() {
+        if (projectResolver.running || projectResolutionJob || projectResolutionQueue.length === 0)
+            return;
+
+        projectResolutionJob = projectResolutionQueue[0];
+        projectResolutionQueue = projectResolutionQueue.slice(1);
+        projectResolver.command = ["python3", scannerPath, "--project", projectResolutionJob.path];
+        projectResolver.running = true;
     }
     function processPendingRendererRestart() {
         if (WallpaperPlaybackPolicy.shouldPause)
@@ -626,6 +696,24 @@ QtObject {
     function requestPreviewThumbnail(path, modified, priority, requestToken) {
         return requestPreviewImage(path, modified, priority, requestToken, previewThumbnailPath(path, modified), previewThumbnailWidth);
     }
+    function requestProject(path, requestToken) {
+        var sourcePath = String(path || "");
+        if (sourcePath === "")
+            return;
+
+        var cachedProject = projectForPath(sourcePath);
+        if (cachedProject) {
+            Qt.callLater(() => root.projectResolved(sourcePath, cachedProject, Number(requestToken || 0)));
+            return;
+        }
+        projectResolutionQueue = projectResolutionQueue.concat([
+            {
+                "path": sourcePath,
+                "requestToken": Number(requestToken || 0)
+            }
+        ]);
+        processNextProjectResolution();
+    }
     function requestStart() {
         if (!available || !desiredPath || player.running)
             return;
@@ -656,12 +744,16 @@ QtObject {
         var expectedPid = pidFile.loaded ? pidFile.text().trim() : "";
         browsing = false;
         previewThumbnailQueue = [];
+        projectResolutionQueue = [];
+        projectResolutionJob = null;
         desiredPath = "";
         startAfterCleanup = false;
         if (previewThumbnailWorker.running)
             previewThumbnailStopRequested = true;
         if (previewThumbnailWorker.running)
             previewThumbnailWorker.running = false;
+        if (projectResolver.running)
+            projectResolver.running = false;
         if (scanner.running)
             scanner.running = false;
         if (readyProbe.running)

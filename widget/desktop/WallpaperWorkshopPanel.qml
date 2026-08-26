@@ -90,7 +90,11 @@ Rectangle {
         }
     }
 
-    Component.onCompleted: open = true
+    Component.onCompleted: {
+        WallpaperWorkshopService.acquirePanel();
+        open = true;
+    }
+    Component.onDestruction: WallpaperWorkshopService.releasePanel()
     Keys.onEscapePressed: root.closePanel()
     onOpenChanged: {
         if (!open)

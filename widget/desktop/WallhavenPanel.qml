@@ -121,7 +121,11 @@ Rectangle {
         }
     }
 
-    Component.onCompleted: open = true
+    Component.onCompleted: {
+        WallhavenService.acquirePanel();
+        open = true;
+    }
+    Component.onDestruction: WallhavenService.releasePanel()
     Keys.onEscapePressed: {
         if (wallhavenFilters.popupOpen)
             wallhavenFilters.closePopup();

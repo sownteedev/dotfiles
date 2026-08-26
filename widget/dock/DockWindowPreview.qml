@@ -17,8 +17,8 @@ Item {
     signal windowActivated(string windowId)
     signal windowCloseRequested(string windowId)
 
-    implicitHeight: 164
-    implicitWidth: Math.max(248, Math.min(920, windows.length * 224 + 24))
+    implicitHeight: 156
+    implicitWidth: Math.min(920, windows.length > 0 ? (windows.length * 224 - 8 + 16) : 0)
     opacity: shown ? 1 : 0
     scale: shown ? 1 : 0.96
     transformOrigin: Item.Bottom
@@ -58,13 +58,13 @@ Item {
             id: previewList
 
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 12
+            anchors.bottomMargin: 8
             anchors.left: parent.left
-            anchors.leftMargin: 12
+            anchors.leftMargin: 8
             anchors.right: parent.right
-            anchors.rightMargin: 12
+            anchors.rightMargin: 8
             anchors.top: parent.top
-            anchors.topMargin: 12
+            anchors.topMargin: 8
             boundsBehavior: Flickable.StopAtBounds
             clip: contentWidth > width
             interactive: contentWidth > width

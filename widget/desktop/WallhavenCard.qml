@@ -58,7 +58,7 @@ Item {
             destinationPopup.openFor(primaryAction);
     }
 
-    Rectangle {
+    ClippingRectangle {
         id: card
 
         anchors.fill: parent
@@ -93,15 +93,14 @@ Item {
             anchors.right: parent.right
             anchors.top: parent.top
             color: Config.md3.surface_container
-            height: parent.height - 66
-            radius: 20
+            height: parent.height - 62
 
             Image {
                 id: previewImage
 
                 anchors.fill: parent
                 asynchronous: true
-                cache: true
+                cache: false
                 fillMode: Image.PreserveAspectCrop
                 layer.enabled: root.nsfwBlurred
                 source: String(root.wallpaper.preview || root.wallpaper.path || "")
@@ -115,7 +114,6 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 color: "transparent"
-                radius: 20
 
                 gradient: Gradient {
                     GradientStop {

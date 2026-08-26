@@ -20,6 +20,7 @@ PanelWindow {
     property int openGeneration: 0
     readonly property real pathSpan: Math.min(450, Math.max(cardWidth * 0.85, width * 0.34))
     property string selectedMode: "static"
+    readonly property bool selectedVideoNeedsEngine: selectedMode === "video" && roleAt(pathView.currentIndex, "isEngine", false) && String(roleAt(pathView.currentIndex, "type", "")).toLowerCase() !== "video"
     property bool selectionCommitted: false
     property int staticIndex: 0
     property int videoIndex: 0
@@ -703,15 +704,12 @@ PanelWindow {
                     return "";
 
                 var msgs = [];
-                if (!EngineWallpaperService.available && EngineWallpaperService.availabilityKnown)
+                if (wallpaperWindow.selectedVideoNeedsEngine && !EngineWallpaperService.available && EngineWallpaperService.availabilityKnown)
                     msgs.push(qsTr("Install linux-wallpaperengine"));
-
-                if (!LiveWallpaperService.available && LiveWallpaperService.availabilityKnown)
-                    msgs.push(qsTr("Install mpvpaper"));
 
                 return msgs.length > 0 ? qsTr("Missing: %1").arg(msgs.join(" / ")) : "";
             }
-            visible: wallpaperWindow.selectedMode === "video" && ((!LiveWallpaperService.available && LiveWallpaperService.availabilityKnown) || (!EngineWallpaperService.available && EngineWallpaperService.availabilityKnown))
+            visible: wallpaperWindow.selectedVideoNeedsEngine && !EngineWallpaperService.available && EngineWallpaperService.availabilityKnown
             width: Math.max(0, parent.width - 24)
             z: 300
         }

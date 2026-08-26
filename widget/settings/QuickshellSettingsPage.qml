@@ -699,7 +699,7 @@ Item {
                         id: batteryFpsField
 
                         Layout.fillWidth: true
-                        label: "Battery FPS"
+                        label: "Engine battery FPS"
                         placeholder: "20"
 
                         inputItem.validator: IntValidator {
@@ -711,7 +711,7 @@ Item {
                         id: engineFpsField
 
                         Layout.fillWidth: true
-                        label: "Live / Engine FPS"
+                        label: "Engine FPS"
                         placeholder: "30"
 
                         inputItem.validator: IntValidator {

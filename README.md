@@ -72,12 +72,12 @@ Its interface follows Material Design 3, with wallpaper-derived colors, real bac
 
 ### Wallpapers and theming
 
-- Static wallpapers, video loops through `mpvpaper`, and Steam Workshop projects through `linux-wallpaperengine`.
+- Static wallpapers and video/GIF loops use native Qt playback; Steam Workshop video projects use the same renderer, while scene projects use `linux-wallpaperengine`.
 - Integrated Wallhaven and Steam Workshop browsers with responsive preview grids, installed-library management, and source-specific filters for category, purity, resolution, aspect ratio, color, rating, features, genre, and sorting.
 - Per-item actions can download, preview, subscribe, and target the desktop, Greetd, or both; Greetd accepts Wallhaven images and Wallpaper Engine video projects.
 - Greetd keeps an independent Material You palette generated from its selected image or a representative video frame, so desktop wallpaper changes do not recolor the login screen.
-- Playback policy that can pause wallpapers while locked or fullscreen and reduce video FPS on battery power.
-- Staged video startup, cached frames, transition rollback, and animated crossfades to reduce backend-switching flicker.
+- Playback policy that can pause wallpapers while locked or fullscreen and reduce Wallpaper Engine FPS on battery power.
+- Dual-player video handoff waits for a decoded frame before crossfading, while cached covers, transition rollback, and Matugen stay synchronized.
 - Automatic Material You palette generation through Matugen, with animated shell color transitions and optional propagation through the surrounding dotfiles templates.
 - Cached wallpaper backdrops for consistent blurred desktop surfaces.
 

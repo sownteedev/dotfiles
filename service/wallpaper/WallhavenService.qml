@@ -20,6 +20,7 @@ QtObject {
     property int collectionPendingPage: 1
     property Process collectionProcess: Process {
         property bool launchPending: false
+        property int requestGeneration: -1
         property string requestJson: "{}"
 
         command: ["python3", "-u", root.helperPath, "collection"]
@@ -33,6 +34,10 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            if (!root.requestIsCurrent(collectionProcess)) {
+                root.runPendingCollection();
+                return;
+            }
             var response = root.parseResponse(collectionOutput.text, collectionError.text, qsTr("Could not load this Wallhaven collection"));
             var superseded = root.collectionRefreshPending;
             if (superseded) {
@@ -53,12 +58,21 @@ QtObject {
         onRunningChanged: {
             if (!running && launchPending) {
                 launchPending = false;
+                if (!root.requestIsCurrent(collectionProcess)) {
+                    root.runPendingCollection();
+                    return;
+                }
                 root.collectionErrorMessage = qsTr("Could not start the Wallhaven collection request");
                 root.runPendingCollection();
             }
         }
         onStarted: {
             launchPending = false;
+            if (!root.requestIsCurrent(collectionProcess)) {
+                requestJson = "{}";
+                running = false;
+                return;
+            }
             write(requestJson + "\n");
             requestJson = "{}";
         }
@@ -74,6 +88,7 @@ QtObject {
     property bool collectionsLoaded: false
     property Process collectionsProcess: Process {
         property bool launchPending: false
+        property int requestGeneration: -1
         property string requestJson: "{}"
 
         command: ["python3", "-u", root.helperPath, "collections"]
@@ -87,6 +102,10 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            if (!root.requestIsCurrent(collectionsProcess)) {
+                root.restartCollectionsLoadIfPending();
+                return;
+            }
             var response = root.parseResponse(collectionsOutput.text, collectionsError.text, qsTr("Could not load Wallhaven collections"));
             if (root.collectionsRefreshPending) {
                 root.restartCollectionsLoadIfPending();
@@ -116,12 +135,21 @@ QtObject {
         onRunningChanged: {
             if (!running && launchPending) {
                 launchPending = false;
+                if (!root.requestIsCurrent(collectionsProcess)) {
+                    root.restartCollectionsLoadIfPending();
+                    return;
+                }
                 root.collectionErrorMessage = qsTr("Could not start the Wallhaven collection request");
                 root.restartCollectionsLoadIfPending();
             }
         }
         onStarted: {
             launchPending = false;
+            if (!root.requestIsCurrent(collectionsProcess)) {
+                requestJson = "{}";
+                running = false;
+                return;
+            }
             write(requestJson + "\n");
             requestJson = "{}";
         }
@@ -211,6 +239,7 @@ QtObject {
     property bool installedLoaded: false
     property Process installedProcess: Process {
         property bool launchPending: false
+        property int requestGeneration: -1
         property string requestJson: "{}"
 
         command: ["python3", "-u", root.helperPath, "list"]
@@ -224,6 +253,10 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            if (!root.requestIsCurrent(installedProcess)) {
+                root.restartInstalledLoadIfPending();
+                return;
+            }
             var response = root.parseResponse(installedOutput.text, installedError.text, qsTr("Could not load installed Wallhaven wallpapers"));
             if (root.installedReloadPending) {
                 root.restartInstalledLoadIfPending();
@@ -244,6 +277,10 @@ QtObject {
         onRunningChanged: {
             if (!running && launchPending) {
                 launchPending = false;
+                if (!root.requestIsCurrent(installedProcess)) {
+                    root.restartInstalledLoadIfPending();
+                    return;
+                }
                 root.installedErrorMessage = qsTr("Could not start the installed-wallpaper helper");
                 root.installedStatusMessage = "";
                 root.restartInstalledLoadIfPending();
@@ -251,6 +288,11 @@ QtObject {
         }
         onStarted: {
             launchPending = false;
+            if (!root.requestIsCurrent(installedProcess)) {
+                requestJson = "{}";
+                running = false;
+                return;
+            }
             write(requestJson + "\n");
             requestJson = "{}";
         }
@@ -266,6 +308,7 @@ QtObject {
     readonly property bool loadingCollections: collectionsProcess.running || collectionsRefreshPending
     property string order: "desc"
     property int page: 1
+    property int panelConsumers: 0
     property string purity: "111"
     property string query: ""
     property string ratios: ""
@@ -317,6 +360,7 @@ QtObject {
     readonly property bool removing: removeProcess.running
     property string removingId: ""
     property string removingTitle: ""
+    property int requestGeneration: 0
     property string resolutionMode: "atleast"
     property string resolutions: ""
     property ListModel results: ListModel {
@@ -327,6 +371,7 @@ QtObject {
     property bool searchPendingPreserveSeed: false
     property Process searchProcess: Process {
         property bool launchPending: false
+        property int requestGeneration: -1
         property string requestJson: "{}"
 
         command: ["python3", "-u", root.helperPath, "search"]
@@ -340,6 +385,10 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            if (!root.requestIsCurrent(searchProcess)) {
+                root.runPendingSearch();
+                return;
+            }
             var response = root.parseResponse(searchOutput.text, searchError.text, qsTr("Wallhaven search failed"));
             var superseded = root.searchRefreshPending;
             if (superseded) {
@@ -363,6 +412,10 @@ QtObject {
         onRunningChanged: {
             if (!running && launchPending) {
                 launchPending = false;
+                if (!root.requestIsCurrent(searchProcess)) {
+                    root.runPendingSearch();
+                    return;
+                }
                 root.searchErrorMessage = qsTr("Could not start Wallhaven search");
                 root.statusMessage = "";
                 root.runPendingSearch();
@@ -370,6 +423,11 @@ QtObject {
         }
         onStarted: {
             launchPending = false;
+            if (!root.requestIsCurrent(searchProcess)) {
+                requestJson = "{}";
+                running = false;
+                return;
+            }
             write(requestJson + "\n");
             requestJson = "{}";
         }
@@ -387,6 +445,18 @@ QtObject {
     signal downloadCompleted(string wallpaperId, string path, var modified, string purpose)
     signal removeCompleted(string wallpaperId, string path)
 
+    function acquirePanel() {
+        panelConsumers += 1;
+    }
+    function cancelBrowseProcess(process) {
+        if (!process)
+            return;
+
+        process.launchPending = false;
+        process.requestJson = "{}";
+        if (process.running)
+            process.running = false;
+    }
     function cancelDownload() {
         if (!downloadProcess.running)
             return false;
@@ -394,6 +464,24 @@ QtObject {
         downloadCancelRequested = true;
         downloadProcess.running = false;
         return true;
+    }
+    function clearPanelModels() {
+        results.clear();
+        installedResults.clear();
+        collections.clear();
+        collectionResults.clear();
+        installedLoaded = false;
+        collectionsLoaded = false;
+        page = 1;
+        lastPage = 1;
+        totalResults = 0;
+        collectionPage = 1;
+        collectionLastPage = 1;
+        collectionTotalResults = 0;
+        searchErrorMessage = "";
+        collectionErrorMessage = "";
+        installedErrorMessage = "";
+        installedStatusMessage = "";
     }
     function download(item, purpose) {
         if (!item || downloadProcess.running)
@@ -420,7 +508,7 @@ QtObject {
         return true;
     }
     function loadCollection(collectionId, label, requestedPage) {
-        if (!accountConfigured || String(collectionId || "") === "")
+        if (panelConsumers <= 0 || !accountConfigured || String(collectionId || "") === "")
             return false;
 
         selectedCollectionId = String(collectionId);
@@ -446,10 +534,14 @@ QtObject {
             "wallpaper_dir": Config.wallhavenCacheFolder
         });
         collectionProcess.launchPending = true;
+        collectionProcess.requestGeneration = requestGeneration;
         collectionProcess.running = true;
         return true;
     }
     function loadCollections(force) {
+        if (panelConsumers <= 0)
+            return false;
+
         if (!accountConfigured) {
             collectionsRefreshPending = false;
             collectionErrorMessage = qsTr("Add your Wallhaven username and API key in Settings");
@@ -473,10 +565,14 @@ QtObject {
             "api_key": Config.wallhavenApiKey.trim()
         });
         collectionsProcess.launchPending = true;
+        collectionsProcess.requestGeneration = requestGeneration;
         collectionsProcess.running = true;
         return true;
     }
     function loadInstalled(force) {
+        if (panelConsumers <= 0)
+            return false;
+
         if (force !== true && installedLoaded)
             return false;
 
@@ -492,6 +588,7 @@ QtObject {
             "wallpaper_dir": Config.wallhavenCacheFolder
         });
         installedProcess.launchPending = true;
+        installedProcess.requestGeneration = requestGeneration;
         installedProcess.running = true;
         return true;
     }
@@ -541,6 +638,28 @@ QtObject {
             "message": String(errorOutput || "").trim() || fallbackMessage
         };
     }
+    function releasePanel() {
+        if (panelConsumers <= 0)
+            return;
+
+        panelConsumers -= 1;
+        if (panelConsumers > 0)
+            return;
+
+        requestGeneration += 1;
+        searchRefreshPending = false;
+        collectionRefreshPending = false;
+        collectionsRefreshPending = false;
+        installedReloadPending = false;
+        collectionPendingId = "";
+        collectionPendingLabel = "";
+        searchPendingPreserveSeed = false;
+        cancelBrowseProcess(searchProcess);
+        cancelBrowseProcess(collectionProcess);
+        cancelBrowseProcess(collectionsProcess);
+        cancelBrowseProcess(installedProcess);
+        clearPanelModels();
+    }
     function removeInstalled(item) {
         if (!item || removeProcess.running)
             return false;
@@ -582,11 +701,21 @@ QtObject {
         if (model.count > incoming.length)
             model.remove(incoming.length, model.count - incoming.length);
     }
+    function requestIsCurrent(process) {
+        return panelConsumers > 0 && process && process.requestGeneration === requestGeneration;
+    }
     function restartCollectionsLoadIfPending() {
+        if (panelConsumers <= 0) {
+            collectionsRefreshPending = false;
+            return;
+        }
         if (!collectionsRefreshPending)
             return;
 
+        var generation = requestGeneration;
         Qt.callLater(() => {
+            if (root.panelConsumers <= 0 || root.requestGeneration !== generation)
+                return;
             if (!root.collectionsRefreshPending)
                 return;
 
@@ -595,10 +724,17 @@ QtObject {
         });
     }
     function restartInstalledLoadIfPending() {
+        if (panelConsumers <= 0) {
+            installedReloadPending = false;
+            return;
+        }
         if (!installedReloadPending)
             return;
 
+        var generation = requestGeneration;
         Qt.callLater(() => {
+            if (root.panelConsumers <= 0 || root.requestGeneration !== generation)
+                return;
             if (!root.installedReloadPending)
                 return;
 
@@ -607,6 +743,12 @@ QtObject {
         });
     }
     function runPendingCollection() {
+        if (panelConsumers <= 0) {
+            collectionRefreshPending = false;
+            collectionPendingId = "";
+            collectionPendingLabel = "";
+            return;
+        }
         if (!collectionRefreshPending)
             return;
 
@@ -615,24 +757,38 @@ QtObject {
         var targetPage = collectionPendingPage;
         collectionPendingId = "";
         collectionPendingLabel = "";
+        var generation = requestGeneration;
         Qt.callLater(() => {
+            if (root.panelConsumers <= 0 || root.requestGeneration !== generation)
+                return;
             root.collectionRefreshPending = false;
             root.loadCollection(collectionId, label, targetPage);
         });
     }
     function runPendingSearch() {
+        if (panelConsumers <= 0) {
+            searchRefreshPending = false;
+            searchPendingPreserveSeed = false;
+            return;
+        }
         if (!searchRefreshPending)
             return;
 
         var targetPage = searchPendingPage;
         var preserveSeed = searchPendingPreserveSeed;
+        var generation = requestGeneration;
         Qt.callLater(() => {
+            if (root.panelConsumers <= 0 || root.requestGeneration !== generation)
+                return;
             root.searchRefreshPending = false;
             root.searchPendingPreserveSeed = false;
             root.search(root.query, targetPage, root.sorting, preserveSeed);
         });
     }
     function search(searchText, requestedPage, requestedSorting, preserveRandomSeed) {
+        if (panelConsumers <= 0)
+            return false;
+
         query = String(searchText || "").trim();
         page = Math.max(1, Number(requestedPage || 1));
         sorting = String(requestedSorting || sorting || "toplist");
@@ -664,6 +820,7 @@ QtObject {
             "wallpaper_dir": Config.wallhavenCacheFolder
         });
         searchProcess.launchPending = true;
+        searchProcess.requestGeneration = requestGeneration;
         searchProcess.running = true;
         return true;
     }

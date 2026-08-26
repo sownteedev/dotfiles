@@ -62,7 +62,9 @@ QtObject {
             root.actionStatusMessage = qsTr("Downloaded %1").arg(response.title || completedId);
             root.markDownloaded(completedId, response.path, response.modified, response.file_size);
             EngineWallpaperService.refresh();
-            root.loadInstalled(true);
+            root.installedLoaded = false;
+            if (root.panelConsumers > 0)
+                root.loadInstalled(true);
             root.downloadCompleted(completedId, response.path, response.modified, completedPurpose);
         }
         onRunningChanged: {
@@ -101,6 +103,7 @@ QtObject {
     property bool installedLoaded: false
     property Process installedProcess: Process {
         property bool launchPending: false
+        property int requestGeneration: -1
         property string requestJson: "{}"
 
         command: ["python3", "-u", root.helperPath, "list"]
@@ -114,6 +117,10 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            if (!root.requestIsCurrent(installedProcess)) {
+                root.restartInstalledLoadIfPending();
+                return;
+            }
             var response = root.parseResponse(installedOutput.text, installedError.text, qsTr("Could not load installed wallpapers"));
             if (exitCode !== 0 || !response.ok) {
                 root.installedLoadErrorMessage = response.message || qsTr("Could not load installed wallpapers");
@@ -132,6 +139,10 @@ QtObject {
         onRunningChanged: {
             if (!running && launchPending) {
                 launchPending = false;
+                if (!root.requestIsCurrent(installedProcess)) {
+                    root.restartInstalledLoadIfPending();
+                    return;
+                }
                 root.installedLoadErrorMessage = qsTr("Could not start the installed-wallpaper helper");
                 root.installedStatusMessage = "";
                 root.restartInstalledLoadIfPending();
@@ -139,6 +150,11 @@ QtObject {
         }
         onStarted: {
             launchPending = false;
+            if (!root.requestIsCurrent(installedProcess)) {
+                requestJson = "{}";
+                running = false;
+                return;
+            }
             write(requestJson + "\n");
             requestJson = "{}";
         }
@@ -180,6 +196,7 @@ QtObject {
     readonly property string manageErrorMessage: loginErrorMessage || downloadErrorMessage || removeErrorMessage || installedLoadErrorMessage
     readonly property string manageStatusMessage: actionStatusMessage || installedStatusMessage
     property int page: 1
+    property int panelConsumers: 0
     property var pendingSearchRequest: null
     property string query: ""
     property string removeErrorMessage: ""
@@ -212,7 +229,9 @@ QtObject {
             root.actionStatusMessage = qsTr("Deleted %1 permanently").arg(response.title || completedId);
             root.markRemoved(completedId);
             EngineWallpaperService.refresh();
-            root.loadInstalled(true);
+            root.installedLoaded = false;
+            if (root.panelConsumers > 0)
+                root.loadInstalled(true);
             root.removeCompleted(completedId, response.path || "");
         }
         onRunningChanged: {
@@ -233,6 +252,7 @@ QtObject {
     readonly property bool removing: removeProcess.running
     property string removingId: ""
     property string removingTitle: ""
+    property int requestGeneration: 0
     property string resolutionFilter: ""
     property ListModel results: ListModel {
         dynamicRoles: true
@@ -240,6 +260,7 @@ QtObject {
     property string searchErrorMessage: ""
     property Process searchProcess: Process {
         property bool launchPending: false
+        property int requestGeneration: -1
         property string requestJson: "{}"
 
         command: ["python3", "-u", root.helperPath, "search"]
@@ -253,6 +274,10 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            if (!root.requestIsCurrent(searchProcess)) {
+                root.restartSearchIfPending();
+                return;
+            }
             var response = root.parseResponse(searchOutput.text, searchError.text, qsTr("Could not search Steam Workshop"));
             if (exitCode !== 0 || !response.ok) {
                 root.results.clear();
@@ -272,6 +297,10 @@ QtObject {
         onRunningChanged: {
             if (!running && launchPending) {
                 launchPending = false;
+                if (!root.requestIsCurrent(searchProcess)) {
+                    root.restartSearchIfPending();
+                    return;
+                }
                 root.results.clear();
                 root.rebuildFilteredResults();
                 root.totalResults = 0;
@@ -282,6 +311,11 @@ QtObject {
         }
         onStarted: {
             launchPending = false;
+            if (!root.requestIsCurrent(searchProcess)) {
+                requestJson = "{}";
+                running = false;
+                return;
+            }
             write(requestJson + "\n");
             requestJson = "{}";
         }
@@ -312,6 +346,7 @@ QtObject {
     }
     property Process subscriptionProcess: Process {
         property bool launchPending: false
+        property int requestGeneration: -1
         property string requestJson: "{}"
 
         command: ["python3", "-u", root.helperPath, "subscriptions"]
@@ -325,6 +360,10 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            if (!root.requestIsCurrent(subscriptionProcess)) {
+                root.restartSubscriptionRefreshIfPending();
+                return;
+            }
             var response = root.parseResponse(subscriptionOutput.text, subscriptionError.text, qsTr("Could not refresh Steam subscriptions"));
             if (exitCode === 0 && response.ok) {
                 root.subscriptionsLoaded = true;
@@ -335,11 +374,20 @@ QtObject {
         onRunningChanged: {
             if (!running && launchPending) {
                 launchPending = false;
+                if (!root.requestIsCurrent(subscriptionProcess)) {
+                    root.restartSubscriptionRefreshIfPending();
+                    return;
+                }
                 root.restartSubscriptionRefreshIfPending();
             }
         }
         onStarted: {
             launchPending = false;
+            if (!root.requestIsCurrent(subscriptionProcess)) {
+                requestJson = "{}";
+                running = false;
+                return;
+            }
             write(requestJson + "\n");
             requestJson = "{}";
         }
@@ -358,6 +406,9 @@ QtObject {
     signal downloadCompleted(string publishedFileId, string path, var modified, string purpose)
     signal removeCompleted(string publishedFileId, string path)
 
+    function acquirePanel() {
+        panelConsumers += 1;
+    }
     function applySubscriptionState(model, subscribedIds) {
         var subscribed = {};
         for (var i = 0; i < subscribedIds.length; ++i)
@@ -387,6 +438,15 @@ QtObject {
         steamItemId = "";
         steamItemTitle = "";
     }
+    function cancelBrowseProcess(process) {
+        if (!process)
+            return;
+
+        process.launchPending = false;
+        process.requestJson = "{}";
+        if (process.running)
+            process.running = false;
+    }
     function cancelDownload() {
         if (!downloading || downloadCancelRequested)
             return false;
@@ -406,6 +466,20 @@ QtObject {
         typeFilter = "all";
         markFiltersChanged();
         return true;
+    }
+    function clearPanelModels() {
+        results.clear();
+        filteredResults.clear();
+        installedResults.clear();
+        filteredInstalledResults.clear();
+        installedLoaded = false;
+        subscriptionsLoaded = false;
+        page = 1;
+        totalResults = 0;
+        searchErrorMessage = "";
+        searchStatusMessage = "";
+        installedLoadErrorMessage = "";
+        installedStatusMessage = "";
     }
     function containsFilter(filters, value) {
         var expected = normalizedTag(value);
@@ -476,6 +550,9 @@ QtObject {
         return true;
     }
     function loadInstalled(force) {
+        if (panelConsumers <= 0)
+            return false;
+
         if (force !== true && installedLoaded)
             return false;
         if (installedProcess.running) {
@@ -491,6 +568,7 @@ QtObject {
             "workshop_root": Config.wallpaperEngineWorkshopDir
         });
         installedProcess.launchPending = true;
+        installedProcess.requestGeneration = requestGeneration;
         installedProcess.running = true;
         return true;
     }
@@ -601,6 +679,9 @@ QtObject {
         replaceModel(filteredResults, items);
     }
     function refreshSubscriptions(force) {
+        if (panelConsumers <= 0)
+            return false;
+
         if (force !== true && subscriptionsLoaded)
             return false;
         if (subscriptionProcess.running) {
@@ -612,8 +693,27 @@ QtObject {
             "steam_root": Config.steamDir
         });
         subscriptionProcess.launchPending = true;
+        subscriptionProcess.requestGeneration = requestGeneration;
         subscriptionProcess.running = true;
         return true;
+    }
+    function releasePanel() {
+        if (panelConsumers <= 0)
+            return;
+
+        panelConsumers -= 1;
+        if (panelConsumers > 0)
+            return;
+
+        requestGeneration += 1;
+        pendingSearchRequest = null;
+        installedReloadPending = false;
+        subscriptionRefreshPending = false;
+        subscriptionRefreshDebounce.stop();
+        cancelBrowseProcess(searchProcess);
+        cancelBrowseProcess(installedProcess);
+        cancelBrowseProcess(subscriptionProcess);
+        clearPanelModels();
     }
     function removeInstalled(item) {
         if (!item || removeProcess.running)
@@ -661,6 +761,9 @@ QtObject {
         if (model.count > incoming.length)
             model.remove(incoming.length, model.count - incoming.length);
     }
+    function requestIsCurrent(process) {
+        return panelConsumers > 0 && process && process.requestGeneration === requestGeneration;
+    }
     function requiredTags() {
         var tags = [];
         if (typeFilter === "video")
@@ -680,25 +783,52 @@ QtObject {
         return tags;
     }
     function restartInstalledLoadIfPending() {
+        if (panelConsumers <= 0) {
+            installedReloadPending = false;
+            return;
+        }
         if (!installedReloadPending)
             return;
         installedReloadPending = false;
-        Qt.callLater(() => root.loadInstalled(true));
+        var generation = requestGeneration;
+        Qt.callLater(() => {
+            if (root.panelConsumers > 0 && root.requestGeneration === generation)
+                root.loadInstalled(true);
+        });
     }
     function restartSearchIfPending() {
+        if (panelConsumers <= 0) {
+            pendingSearchRequest = null;
+            return;
+        }
         if (!pendingSearchRequest)
             return;
         var request = pendingSearchRequest;
+        var generation = requestGeneration;
         pendingSearchRequest = null;
-        Qt.callLater(() => root.search(request.query, request.page, request.sort));
+        Qt.callLater(() => {
+            if (root.panelConsumers > 0 && root.requestGeneration === generation)
+                root.search(request.query, request.page, request.sort);
+        });
     }
     function restartSubscriptionRefreshIfPending() {
+        if (panelConsumers <= 0) {
+            subscriptionRefreshPending = false;
+            return;
+        }
         if (!subscriptionRefreshPending)
             return;
         subscriptionRefreshPending = false;
-        Qt.callLater(() => root.refreshSubscriptions(true));
+        var generation = requestGeneration;
+        Qt.callLater(() => {
+            if (root.panelConsumers > 0 && root.requestGeneration === generation)
+                root.refreshSubscriptions(true);
+        });
     }
     function search(searchText, requestedPage, requestedSort) {
+        if (panelConsumers <= 0)
+            return false;
+
         if (!configured) {
             results.clear();
             rebuildFilteredResults();
@@ -735,6 +865,7 @@ QtObject {
             "workshop_root": Config.wallpaperEngineWorkshopDir
         });
         searchProcess.launchPending = true;
+        searchProcess.requestGeneration = requestGeneration;
         searchProcess.running = true;
         return true;
     }

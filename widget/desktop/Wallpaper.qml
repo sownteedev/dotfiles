@@ -11,22 +11,23 @@ PanelWindow {
 
     property bool allowVideoFade: true
     property Item candidateImage: null
+    readonly property real commitRippleDiameter: Math.max(120, Math.min(width, height) * 0.18)
+    property int commitRippleGeneration: -1
+    readonly property real commitRippleTargetScale: Math.max(1, Math.sqrt(width * width + height * height) * 1.08 / commitRippleDiameter)
     property string currentWall: ""
     property Item displayedImage: null
-    property real irisAperture: irisMaxDiameter
-    readonly property real irisMaxDiameter: Math.sqrt(width * width + height * height) * 1.04
-    property bool irisTransitionActive: false
     property bool isTransitionPending: WallpaperService.isTransitionPending
     property bool isVideoWallpaper: allowVideoFade && WallpaperService.currentMode === "video"
     property Item outgoingImage: null
     readonly property bool pendingStaticTransition: allowVideoFade && WallpaperService.staticTransitionPending && WallpaperService.currentMode === "static"
     readonly property int previewCoverDuration: Math.max(220, Math.min(300, Config.wallpaperTransitionDuration))
     property bool previewCoverTransition: false
-    readonly property bool revealVideo: isVideoWallpaper && !isTransitionPending && !waitingForPolicyRestart && transitionStarted && !WallpaperService.previewActive
+    readonly property bool revealVideo: isVideoWallpaper && !isTransitionPending && !waitingForPolicyRestart && videoRendererReady && transitionStarted && !WallpaperService.previewActive
     property int sourceGeneration: 0
     property bool transitionStarted: false
     property bool useNativeCache: true
     readonly property int videoCoverInDuration: Math.max(140, Math.min(200, Config.wallpaperTransitionDuration))
+    readonly property bool videoRendererReady: WallpaperService.isEngineVideo ? EngineWallpaperService.playbackReadyState : LiveWallpaperService.activePath !== "" && LiveWallpaperService.activePath === LiveWallpaperService.desiredPath
     readonly property int videoRevealDuration: Math.max(260, Math.min(340, Config.wallpaperTransitionDuration))
     readonly property bool waitingForPolicyRestart: WallpaperService.isEngineVideo && EngineWallpaperService.policyRestarting && !EngineWallpaperService.playbackReadyState
     property string wallpaperPath: ""
@@ -38,6 +39,27 @@ PanelWindow {
 
         var path = String(wallpaperPath || "");
         return path.startsWith("/") ? "file://" + path : path;
+    }
+    function finishStartupVideoRestore(image) {
+        if (!WallpaperService.startupVideoRestore || !isVideoWallpaper || image.sourceKey !== "")
+            return false;
+
+        if (outgoingImage) {
+            var oldOutgoing = outgoingImage;
+            outgoingImage = null;
+            oldOutgoing.destroy();
+        }
+        if (displayedImage) {
+            var oldDisplayed = displayedImage;
+            displayedImage = null;
+            oldDisplayed.destroy();
+        }
+        displayedImage = image;
+        displayedImage.opacity = 0;
+        displayedImage.z = 0;
+        previewCoverTransition = false;
+        transitionStarted = true;
+        return true;
     }
     function finishTransition() {
         if (outgoingImage) {
@@ -98,7 +120,9 @@ PanelWindow {
             transitionStarted = true;
             if (isPendingVideoCover(image)) {
                 previewCoverTransition = false;
-                startVideoIrisClose(image);
+                displayedImage.opacity = 1;
+                startVideoCommitPulse(image);
+                reportVideoCoverReady(image);
                 return;
             }
             if (isPendingStaticCover(image)) {
@@ -126,15 +150,20 @@ PanelWindow {
                 outgoingImage = null;
                 staleOutgoing.destroy();
             }
-            var staleDisplayed = displayedImage;
+            outgoingImage = displayedImage;
+            outgoingImage.opacity = 1;
+            outgoingImage.visible = true;
+            outgoingImage.z = 0;
             displayedImage = image;
-            staleDisplayed.destroy();
+            displayedImage.opacity = 0;
+            displayedImage.z = 1;
             transitionStarted = true;
-            startVideoIrisClose(image);
+            startVideoCommitPulse(image);
+            transitionAnimation.restart();
             return;
         }
 
-        if (startVideoIrisOpen(image))
+        if (finishStartupVideoRestore(image))
             return;
 
         outgoingImage = displayedImage;
@@ -156,14 +185,10 @@ PanelWindow {
     function reportVideoCoverReady(image) {
         if (!isPendingVideoCover(image))
             return;
-        if (irisTransitionActive && (irisCloseAnimation.running || irisAperture > 0.5))
-            return;
         WallpaperService.markVideoCoverReady(wallpaperPath, screen ? screen.name : windowNamespace);
     }
     function requestWallpaper() {
         var source = effectiveSource();
-        if (!isVideoWallpaper && irisTransitionActive)
-            resetVideoIris();
         if (candidateImage && candidateImage.sourceKey === source)
             return;
         if (!candidateImage && displayedImage && displayedImage.sourceKey === source)
@@ -193,12 +218,15 @@ PanelWindow {
         var animateSource = WallpaperService.currentMode !== "video" && isAnimated(source);
         var previewCover = WallpaperService.previewActive && WallpaperService.currentMode === "video" && normalizedPath(source) === normalizedPath(WallpaperService.previewPath);
         var component = source === "" ? transparentWallpaper : (animateSource ? animatedWallpaper : (useNativeCache ? staticWallpaper : directStaticWallpaper));
-        candidateImage = component.createObject(imageHost, {
+        var imageProperties = {
             "requestId": sourceGeneration,
             "sourceKey": source,
             "videoCover": WallpaperService.currentMode === "video" && WallpaperService.isTransitionPending && source !== "",
             "previewCover": previewCover
-        });
+        };
+        if (component === staticWallpaper)
+            imageProperties.cacheKey = wallpaperWindow.allowVideoFade && WallpaperService.currentMode === "video" ? String(WallpaperService.videoTransitionGeneration) : "";
+        candidateImage = component.createObject(imageHost, imageProperties);
         if (!candidateImage) {
             console.warn("[Wallpaper] Could not create wallpaper item for", source);
             return;
@@ -215,12 +243,6 @@ PanelWindow {
                 wallpaperWindow.imageStatusChanged(createdImage, createdImage.status);
         });
     }
-    function resetVideoIris() {
-        irisCloseAnimation.stop();
-        irisOpenAnimation.stop();
-        irisAperture = irisMaxDiameter;
-        irisTransitionActive = false;
-    }
     function shouldBlurEngineCover(path) {
         if (!allowVideoFade || WallpaperService.currentMode !== "video" || !WallpaperService.isEngineVideo || WallpaperService.lastVideoFrame !== "")
             return false;
@@ -229,48 +251,22 @@ PanelWindow {
         var preview = normalizedPath(WallpaperService.fallbackVideoThumbnail);
         return cover !== "" && preview !== "" && cover === preview;
     }
-    function startVideoIrisClose(image) {
+    function startVideoCommitPulse(image) {
         if (!isPendingVideoCover(image))
             return false;
 
-        if (irisCloseAnimation.running)
-            return true;
-        if (irisOpenAnimation.running)
-            irisOpenAnimation.stop();
-        if (!irisTransitionActive) {
-            irisTransitionActive = true;
-            irisAperture = irisMaxDiameter;
-        }
-        image.opacity = isPreviewCover(image) ? 1 : (WallpaperService.videoRendererStartPending ? 0 : 1);
+        image.opacity = 1;
         image.scale = 1;
-        if (irisAperture <= 0.5) {
-            reportVideoCoverReady(image);
+        if (WallpaperService.startupVideoRestore)
             return true;
-        }
-        irisCloseAnimation.restart();
-        return true;
-    }
-    function startVideoIrisOpen(image) {
-        if (!irisTransitionActive || !isVideoWallpaper || image.sourceKey !== "")
-            return false;
 
-        irisCloseAnimation.stop();
-        if (outgoingImage) {
-            var oldOutgoing = outgoingImage;
-            outgoingImage = null;
-            oldOutgoing.destroy();
+        var generation = WallpaperService.videoTransitionGeneration;
+        if (commitRippleGeneration !== generation) {
+            commitRippleGeneration = generation;
+            commitRipple.opacity = 0.72;
+            commitRipple.scale = 0.28;
+            commitRippleAnimation.restart();
         }
-        if (displayedImage) {
-            var oldDisplayed = displayedImage;
-            displayedImage = null;
-            oldDisplayed.destroy();
-        }
-        displayedImage = image;
-        displayedImage.opacity = 0;
-        displayedImage.z = 0;
-        previewCoverTransition = false;
-        transitionStarted = true;
-        irisOpenAnimation.restart();
         return true;
     }
 
@@ -296,7 +292,7 @@ PanelWindow {
     onIsVideoWallpaperChanged: {
         if (isVideoWallpaper)
             return;
-        resetVideoIris();
+        commitRippleAnimation.stop();
         requestWallpaper();
     }
     onRevealVideoChanged: requestWallpaper()
@@ -304,8 +300,12 @@ PanelWindow {
 
     Connections {
         function onPendingVideoThumbnailChanged() {
-            if (!wallpaperWindow.startVideoIrisClose(wallpaperWindow.displayedImage))
+            if (wallpaperWindow.startVideoCommitPulse(wallpaperWindow.displayedImage))
                 wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
+        }
+        function onStartupVideoRestoreChanged() {
+            if (WallpaperService.startupVideoRestore)
+                commitRippleAnimation.stop();
         }
 
         target: WallpaperService
@@ -316,19 +316,16 @@ PanelWindow {
         anchors.fill: parent
     }
     Rectangle {
-        id: irisOverlay
-
-        readonly property real overscan: wallpaperWindow.irisMaxDiameter
+        id: commitRipple
 
         anchors.centerIn: parent
         antialiasing: true
-        border.color: Config.md3.primary_container
-        border.width: overscan
-        color: "transparent"
+        color: Config.alpha(Config.md3.primary, 0.16)
         height: width
+        opacity: 0
         radius: width / 2
-        visible: wallpaperWindow.irisTransitionActive
-        width: wallpaperWindow.irisAperture + overscan * 2
+        visible: commitRippleAnimation.running || opacity > 0
+        width: wallpaperWindow.commitRippleDiameter
         z: 100
     }
     Component {
@@ -344,8 +341,7 @@ PanelWindow {
             property bool videoCover: false
 
             anchors.fill: parent
-            cacheKey: wallpaperWindow.allowVideoFade && WallpaperService.currentMode === "video" ? String(WallpaperService.videoTransitionGeneration) : ""
-            fillMode: videoCover ? Image.Stretch : Image.PreserveAspectCrop
+            fillMode: Image.PreserveAspectCrop
             layer.enabled: false
             opacity: 0
             path: sourceKey
@@ -368,7 +364,7 @@ PanelWindow {
             anchors.fill: parent
             asynchronous: true
             cache: true
-            fillMode: videoCover ? Image.Stretch : Image.PreserveAspectCrop
+            fillMode: Image.PreserveAspectCrop
             layer.enabled: false
             opacity: 0
             source: sourceKey
@@ -442,33 +438,27 @@ PanelWindow {
             to: 1
         }
     }
-    NumberAnimation {
-        id: irisCloseAnimation
-
-        duration: wallpaperWindow.videoCoverInDuration
-        easing.type: Easing.InOutCubic
-        property: "irisAperture"
-        target: wallpaperWindow
-        to: 0
+    ParallelAnimation {
+        id: commitRippleAnimation
 
         onFinished: {
-            wallpaperWindow.irisAperture = 0;
-            wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
+            commitRipple.opacity = 0;
+            commitRipple.scale = 1;
         }
-    }
-    NumberAnimation {
-        id: irisOpenAnimation
 
-        duration: wallpaperWindow.videoRevealDuration
-        easing.type: Easing.InOutCubic
-        property: "irisAperture"
-        target: wallpaperWindow
-        to: wallpaperWindow.irisMaxDiameter
-
-        onFinished: {
-            wallpaperWindow.irisAperture = wallpaperWindow.irisMaxDiameter;
-            wallpaperWindow.irisTransitionActive = false;
-            wallpaperWindow.finishTransition();
+        ScaleAnimator {
+            duration: 360
+            easing.type: Easing.OutCubic
+            from: 0.28
+            target: commitRipple
+            to: wallpaperWindow.commitRippleTargetScale
+        }
+        OpacityAnimator {
+            duration: 360
+            easing.type: Easing.OutQuad
+            from: 0.72
+            target: commitRipple
+            to: 0
         }
     }
     ParallelAnimation {
@@ -476,6 +466,7 @@ PanelWindow {
 
         onFinished: {
             wallpaperWindow.finishTransition();
+            wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
             wallpaperWindow.reportStaticCoverReady(wallpaperWindow.displayedImage);
         }
 

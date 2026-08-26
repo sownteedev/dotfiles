@@ -163,4 +163,8 @@ def scan(roots):
 
 
 if __name__ == "__main__":
-    print(json.dumps(scan(sys.argv[1:]), ensure_ascii=False, separators=(",", ":")))
+    if len(sys.argv) == 3 and sys.argv[1] == "--project":
+        result = _scan_project(Path(sys.argv[2]).expanduser()) or {}
+    else:
+        result = scan(sys.argv[1:])
+    print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))

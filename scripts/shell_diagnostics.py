@@ -27,7 +27,6 @@ DEPENDENCIES = (
     ("matugen", "Dynamic colors", False),
     ("ffmpeg", "Video thumbnails", False),
     ("magick", "Image thumbnails", False),
-    ("mpvpaper", "Live wallpapers", False),
     ("linux-wallpaperengine", "Wallpaper Engine playback", False),
     ("steamcmd", "Workshop downloads", False),
 )

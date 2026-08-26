@@ -36,6 +36,7 @@ PanelWindow {
     readonly property var previewWindows: windowsForEntry(previewEntryId, previewAppName)
     readonly property bool revealRequested: dockHover.hovered || revealHover.hovered || dragActive || unpinEntryId !== "" || previewShown || previewShowTimer.running || windowPreview.hovered
     property real surfaceBottomMargin: autoHidden ? -74 : 12
+    readonly property bool themeReady: ThemeService.hasAppliedTheme || (ThemeService.themeFileResolved && !Config.matugenEnabled)
     property string unpinEntryId: ""
 
     signal launcherRequested
@@ -234,7 +235,7 @@ PanelWindow {
 
     BackgroundEffect.blurRegion: Region {
         Region {
-            item: Config.shellBlurDockEnabled ? dockSurface : null
+            item: Config.shellBlurDockEnabled && dockWindow.themeReady ? dockSurface : null
             radius: dockSurface.radius
         }
         Region {
@@ -244,7 +245,7 @@ PanelWindow {
     }
     mask: Region {
         Region {
-            item: dockSurface
+            item: dockWindow.themeReady ? dockSurface : null
             radius: dockSurface.radius
         }
         Region {
@@ -257,7 +258,7 @@ PanelWindow {
     }
     Behavior on surfaceBottomMargin {
         NumberAnimation {
-            duration: Config.animationDuration(dockWindow.autoHidden ? 210 : 260)
+            duration: dockWindow.themeReady ? Config.animationDuration(dockWindow.autoHidden ? 210 : 260) : 0
             easing.type: dockWindow.autoHidden ? Easing.InCubic : Easing.OutBack
         }
     }
@@ -328,7 +329,7 @@ PanelWindow {
         }
     }
     ShellShadow {
-        active: dockWindow.visible
+        active: dockWindow.visible && dockWindow.themeReady
         cornerRadius: dockSurface.radius
         target: dockSurface
     }
@@ -343,11 +344,12 @@ PanelWindow {
         color: Config.shellBlurDockEnabled ? Config.alpha(Config.md3.surface_container, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.surface_container
         height: 70
         radius: 20
+        visible: dockWindow.themeReady
         width: Math.min(dockWindow.width - 32, dockWindow.desiredSurfaceWidth)
 
         Behavior on width {
             NumberAnimation {
-                duration: Config.animationDuration(220)
+                duration: dockWindow.themeReady ? Config.animationDuration(220) : 0
                 easing.type: Easing.OutCubic
             }
         }

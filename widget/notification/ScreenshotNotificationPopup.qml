@@ -17,10 +17,12 @@ PanelWindow {
     property string body: ""
     readonly property int exitAnimationDuration: 260
     readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
+    property var notificationConnections: null
     property int notificationId: -1
     property var notificationObject: null
     property var pendingNotification: null
-    readonly property bool screenshotPathReady: CaptureService.screenshotPath !== ""
+    property string previewPath: ""
+    readonly property bool screenshotPathReady: previewPath !== ""
     readonly property bool screenshotPreviewFailed: screenshotPathReady && screenshotPreview.status === Image.Error
     readonly property bool screenshotReady: screenshotPathReady && screenshotPreview.status === Image.Ready
     readonly property bool screenshotSettled: screenshotReady || screenshotPreviewFailed
@@ -33,13 +35,65 @@ PanelWindow {
         active = false;
         removeTimer.restart();
     }
+    function connectNotificationSignals(notification) {
+        if (!notification)
+            return;
+        disconnectNotificationSignals();
+
+        var notificationId = notification.id;
+        var closed = function () {
+            if (root.notificationObject !== notification)
+                return;
+            root.disconnectNotificationSignals(notification);
+            root.notificationObject = null;
+            root.notificationId = -1;
+            NotificationHistory.releasePopup(notificationId, notification);
+            root.closeToast();
+        };
+        var summaryChanged = function () {
+            if (root.notificationObject === notification)
+                root.summary = notification.summary || qsTr("Screenshot captured");
+        };
+        var bodyChanged = function () {
+            if (root.notificationObject === notification)
+                root.body = notification.body || qsTr("The screenshot is ready.");
+        };
+        notification.closed.connect(closed);
+        notification.summaryChanged.connect(summaryChanged);
+        notification.bodyChanged.connect(bodyChanged);
+        notificationConnections = {
+            "bodyChanged": bodyChanged,
+            "closed": closed,
+            "object": notification,
+            "summaryChanged": summaryChanged
+        };
+    }
+    function disconnectNotificationSignals(expectedObject) {
+        var connection = notificationConnections;
+        if (!connection || expectedObject && connection.object !== expectedObject)
+            return;
+
+        var notification = connection.object;
+        if (notification) {
+            try {
+                notification.closed.disconnect(connection.closed);
+                notification.summaryChanged.disconnect(connection.summaryChanged);
+                notification.bodyChanged.disconnect(connection.bodyChanged);
+            } catch (error) {
+                // The native object may already have completed destruction.
+            }
+        }
+        notificationConnections = null;
+    }
     function finishAction(callback) {
         if (!screenshotReady)
             return;
 
         var id = notificationId;
+        var notification = notificationObject;
         // The history service owns dismissal from this point. Clear the local
         // reference first so removeTimer cannot dismiss the same object twice.
+        disconnectNotificationSignals(notification);
         notificationObject = null;
         notificationId = -1;
         callback();
@@ -64,18 +118,24 @@ PanelWindow {
     }
     function showNotification(notification) {
         if (notificationObject && notificationObject !== notification) {
-            try {
-                notificationObject.expire();
-            } catch (error) {
-                console.log("[ScreenshotToast] Replaced notification already closed:", error);
-            }
+            var replacedNotification = notificationObject;
+            var replacedId = notificationId;
+            disconnectNotificationSignals(replacedNotification);
+            notificationObject = null;
+            notificationId = -1;
+            NotificationHistory.releasePopup(replacedId, replacedNotification);
         }
         removeTimer.stop();
         toast.swipeOffset = 0;
+        previewPath = CaptureService.screenshotPath;
+        if (notificationObject !== notification) {
+            NotificationHistory.retainPopup(notification);
+            connectNotificationSignals(notification);
+        }
         notificationId = notification.id;
         notificationObject = notification;
-        summary = notification.summary || "Screenshot captured";
-        body = notification.body || "The screenshot is ready.";
+        summary = notification.summary || qsTr("Screenshot captured");
+        body = notification.body || qsTr("The screenshot is ready.");
 
         if (screenshotSettled)
             revealToast();
@@ -83,19 +143,6 @@ PanelWindow {
             pendingNotification = notification;
             pendingShowTimer.restart();
         }
-
-        notification.closed.connect(function () {
-            if (root.notificationObject === notification)
-                root.closeToast();
-        });
-        notification.summaryChanged.connect(function () {
-            if (root.notificationObject === notification)
-                root.summary = notification.summary || "Screenshot captured";
-        });
-        notification.bodyChanged.connect(function () {
-            if (root.notificationObject === notification)
-                root.body = notification.body || "The screenshot is ready.";
-        });
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -112,6 +159,21 @@ PanelWindow {
     BackgroundEffect.blurRegion: Region {
         item: Config.shellBlurNotificationEnabled ? toastBlurGeometry : null
         radius: toast.radius
+    }
+
+    Component.onDestruction: {
+        autoCloseTimer.stop();
+        pendingShowTimer.stop();
+        removeTimer.stop();
+        swipeDismissTimer.stop();
+        var notification = notificationObject;
+        var notificationId = root.notificationId;
+        disconnectNotificationSignals(notification);
+        notificationObject = null;
+        root.notificationId = -1;
+        previewPath = "";
+        if (notification)
+            NotificationHistory.releasePopup(notificationId, notification);
     }
 
     Connections {
@@ -135,8 +197,14 @@ PanelWindow {
     }
     Connections {
         function onScreenshotCapturedAtChanged() {
+            if (root.notificationObject || root.pendingNotification)
+                root.previewPath = CaptureService.screenshotPath;
             if (root.pendingNotification && root.screenshotSettled)
                 root.revealToast();
+        }
+        function onScreenshotPathChanged() {
+            if (root.notificationObject || root.pendingNotification)
+                root.previewPath = CaptureService.screenshotPath;
         }
 
         target: CaptureService
@@ -168,15 +236,14 @@ PanelWindow {
         onTriggered: {
             if (!root.active) {
                 root.visible = false;
-                if (root.notificationObject && (!root.notificationObject.actions || root.notificationObject.actions.length === 0)) {
-                    try {
-                        root.notificationObject.dismiss();
-                    } catch (error) {
-                        console.log("[ScreenshotToast] Notification already dismissed:", error);
-                    }
-                }
+                var notification = root.notificationObject;
+                var notificationId = root.notificationId;
+                root.disconnectNotificationSignals(notification);
                 root.notificationObject = null;
                 root.notificationId = -1;
+                root.previewPath = "";
+                if (notification)
+                    NotificationHistory.releasePopup(notificationId, notification);
             }
         }
     }
@@ -366,7 +433,8 @@ PanelWindow {
                         cache: false
                         fillMode: Image.PreserveAspectFit
                         horizontalAlignment: Image.AlignHCenter
-                        source: CaptureService.screenshotPath ? ("file://" + CaptureService.screenshotPath) : ""
+                        source: root.previewPath !== "" ? ("file://" + root.previewPath) : ""
+                        sourceSize: Qt.size(Math.max(1, Math.ceil(width)), Math.max(1, Math.ceil(height)))
                         verticalAlignment: Image.AlignVCenter
 
                         onStatusChanged: {
