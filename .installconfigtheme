@@ -152,7 +152,7 @@ prepare_wallpaper_engine_stack() {
 install_shell_features() {
     local -a packages=(
         tesseract tesseract-data-eng tesseract-data-vie
-        mpvpaper linux-wallpaperengine-git steam steamcmd xdg-utils
+        linux-wallpaperengine-git steam steamcmd xdg-utils
         tailscale cloudflare-warp-bin
         howdy-git v4l-utils
     )
@@ -633,7 +633,7 @@ install_workspace() {
     sleep 3 && clear
 
     red_echo "[*] Installing Development Applications..."
-    run_yay visual-studio-code-bin jetbrains-toolbox docker docker-compose lazydocker blackbox-terminal
+    run_yay visual-studio-code-bin jetbrains-toolbox postman-bin docker docker-compose lazydocker blackbox-terminal
     configure_blackbox
     sudo usermod -aG docker "$USER"
     sudo systemctl enable --now docker.service
