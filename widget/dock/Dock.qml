@@ -13,10 +13,11 @@ PanelWindow {
     id: dockWindow
 
     readonly property var activeWindows: WorkspaceService.activeWindowsByOutput[screen ? screen.name : ""] || []
-    readonly property int appCount: dockModel.count
+    readonly property int appCount: pinnedAppCount + runningAppCount
     property bool autoHidden: false
-    readonly property real desiredPinnedWidth: appCount > 0 ? appCount * 54 - 6 : 0
-    readonly property real desiredSurfaceWidth: 20 + desiredPinnedWidth + (appCount > 0 ? 13 : 0) + 52
+    readonly property real desiredAppListWidth: appCount > 0 ? appCount * 54 - 6 + (runningAppCount > 0 ? 7 : 0) : 0
+    readonly property real desiredSurfaceWidth: 20 + (appCount > 0 ? desiredAppListWidth + 6 : 0) + (showAllAppsSeparator ? 8 : 0) + 50
+    readonly property var desktopApplications: DesktopEntries.applications.values || []
     readonly property int dockBandHeight: 94
     readonly property bool dockObstructed: {
         for (var i = 0; i < activeWindows.length; ++i) {
@@ -28,16 +29,19 @@ PanelWindow {
     property bool dragActive: false
     property string hoveredEntryId: ""
     property bool modelSyncPending: false
+    property string pinActionEntryId: ""
+    property int pinnedAppCount: 0
     property real previewAnchorCenterX: width / 2
     property string previewAppName: ""
     property string previewEntryId: ""
     property string previewIconName: "application-x-executable"
     property bool previewShown: false
     readonly property var previewWindows: windowsForEntry(previewEntryId, previewAppName)
-    readonly property bool revealRequested: dockHover.hovered || revealHover.hovered || dragActive || unpinEntryId !== "" || previewShown || previewShowTimer.running || windowPreview.hovered
+    readonly property bool revealRequested: dockHover.hovered || revealHover.hovered || dragActive || pinActionEntryId !== "" || previewShown || previewShowTimer.running || windowPreview.hovered
+    property int runningAppCount: 0
+    readonly property bool showAllAppsSeparator: pinnedAppCount > 0 && runningAppCount === 0
     property real surfaceBottomMargin: autoHidden ? -74 : 12
     readonly property bool themeReady: ThemeService.hasAppliedTheme || (ThemeService.themeFileResolved && !Config.matugenEnabled)
-    property string unpinEntryId: ""
 
     signal launcherRequested
 
@@ -59,9 +63,22 @@ PanelWindow {
     }
     function commitDockOrder() {
         var ids = [];
-        for (var i = 0; i < dockModel.count; ++i)
-            ids.push(dockModel.get(i).entryId);
+        for (var i = 0; i < dockModel.count; ++i) {
+            var item = dockModel.get(i);
+            if (item.kind === "app" && item.pinned)
+                ids.push(item.entryId);
+        }
         DockService.setPinnedOrder(ids);
+    }
+    function desktopEntryForWindow(windowData, availableById) {
+        var appId = String(windowData && windowData.app_id || "").trim();
+        if (appId === "")
+            return null;
+
+        var entry = availableById[appId] || availableById[appId.toLowerCase()] || DesktopEntries.byId(appId);
+        if (!entry && appId.toLowerCase().endsWith(".desktop"))
+            entry = DesktopEntries.byId(appId.slice(0, -8));
+        return entry || DesktopEntries.heuristicLookup(appId);
     }
     function finishReorder(proxy) {
         if (proxy && proxy.Drag.active)
@@ -87,10 +104,21 @@ PanelWindow {
     function modelIndexForId(entryId) {
         var id = String(entryId || "");
         for (var i = 0; i < dockModel.count; ++i) {
-            if (dockModel.get(i).entryId === id)
+            if (dockModel.get(i).kind === "app" && dockModel.get(i).entryId === id)
                 return i;
         }
         return -1;
+    }
+    function modelIndexForKey(modelKey) {
+        var key = String(modelKey || "");
+        for (var i = 0; i < dockModel.count; ++i) {
+            if (dockModel.get(i).modelKey === key)
+                return i;
+        }
+        return -1;
+    }
+    function modelKeyForEntry(entryId) {
+        return "app:" + String(entryId || "").toLowerCase();
     }
     function reorderModel(entryId, targetIndex) {
         var sourceIndex = modelIndexForId(entryId);
@@ -119,42 +147,154 @@ PanelWindow {
         else
             previewShowTimer.restart();
     }
+    function runningEntries() {
+        var availableById = {};
+        for (var availableIndex = 0; availableIndex < desktopApplications.length; ++availableIndex) {
+            var availableEntry = desktopApplications[availableIndex];
+            var availableId = String(availableEntry.id || "");
+            if (availableId === "")
+                continue;
+            availableById[availableId] = availableEntry;
+            availableById[availableId.toLowerCase()] = availableEntry;
+        }
+
+        var pinned = DockService.pinnedEntries || [];
+        var pinnedKeys = [];
+        for (var pinnedIndex = 0; pinnedIndex < pinned.length; ++pinnedIndex)
+            pinnedKeys.push(NotificationHistory.appKeys(pinned[pinnedIndex].id, pinned[pinnedIndex].name));
+
+        var entries = [];
+        var seen = {};
+        var workspaces = WorkspaceService.workspaces || [];
+        for (var workspaceIndex = 0; workspaceIndex < workspaces.length; ++workspaceIndex) {
+            var windows = workspaces[workspaceIndex].windows || [];
+            for (var windowIndex = 0; windowIndex < windows.length; ++windowIndex) {
+                var windowData = windows[windowIndex];
+                var appId = String(windowData.app_id || "").trim();
+                if (appId === "")
+                    continue;
+
+                var windowKeys = NotificationHistory.windowKeys(windowData);
+                var pinnedMatch = false;
+                for (var pinnedKeyIndex = 0; pinnedKeyIndex < pinnedKeys.length; ++pinnedKeyIndex) {
+                    if (NotificationHistory.keysIntersect(windowKeys, pinnedKeys[pinnedKeyIndex])) {
+                        pinnedMatch = true;
+                        break;
+                    }
+                }
+                if (pinnedMatch)
+                    continue;
+
+                var entry = desktopEntryForWindow(windowData, availableById);
+                var entryId = String(entry ? entry.id : appId);
+                var modelKey = modelKeyForEntry(entryId);
+                if (seen[modelKey])
+                    continue;
+                seen[modelKey] = true;
+
+                var iconName = String(entry && entry.icon || "");
+                if (iconName === "" && Quickshell.iconPath(appId, true) !== "")
+                    iconName = appId;
+                if (iconName === "" && Quickshell.iconPath(appId.toLowerCase(), true) !== "")
+                    iconName = appId.toLowerCase();
+                entries.push({
+                    "appName": String(entry && entry.name || appId || windowData.title || qsTr("Application")),
+                    "entryId": entryId,
+                    "iconName": iconName !== "" ? iconName : "application-x-executable",
+                    "kind": "app",
+                    "launchable": !!entry,
+                    "modelKey": modelKey,
+                    "pinned": false
+                });
+            }
+        }
+        return entries;
+    }
     function syncDockModel() {
         if (dragActive) {
             modelSyncPending = true;
             return;
         }
         modelSyncPending = false;
-        var desired = DockService.pinnedEntries || [];
-        var desiredIds = {};
+        var pinned = DockService.pinnedEntries || [];
+        var discoveredRunning = runningEntries();
+        var runningByKey = {};
+        for (var discoveredIndex = 0; discoveredIndex < discoveredRunning.length; ++discoveredIndex)
+            runningByKey[discoveredRunning[discoveredIndex].modelKey] = discoveredRunning[discoveredIndex];
+
+        var stableRunning = [];
+        var includedRunning = {};
+        for (var currentRunningIndex = 0; currentRunningIndex < dockModel.count; ++currentRunningIndex) {
+            var currentRunning = dockModel.get(currentRunningIndex);
+            if (currentRunning.kind !== "app" || currentRunning.pinned || !runningByKey[currentRunning.modelKey])
+                continue;
+            stableRunning.push(runningByKey[currentRunning.modelKey]);
+            includedRunning[currentRunning.modelKey] = true;
+        }
+        for (var appendIndex = 0; appendIndex < discoveredRunning.length; ++appendIndex) {
+            var discoveredEntry = discoveredRunning[appendIndex];
+            if (!includedRunning[discoveredEntry.modelKey])
+                stableRunning.push(discoveredEntry);
+        }
+
+        var desired = [];
+        for (var pinnedIndex = 0; pinnedIndex < pinned.length; ++pinnedIndex) {
+            var pinnedEntry = pinned[pinnedIndex];
+            var pinnedId = String(pinnedEntry.id || "");
+            desired.push({
+                "appName": String(pinnedEntry.name || pinnedId),
+                "entryId": pinnedId,
+                "iconName": String(pinnedEntry.icon || "application-x-executable"),
+                "kind": "app",
+                "launchable": true,
+                "modelKey": modelKeyForEntry(pinnedId),
+                "pinned": true
+            });
+        }
+        if (stableRunning.length > 0) {
+            desired.push({
+                "appName": "",
+                "entryId": "",
+                "iconName": "",
+                "kind": "separator",
+                "launchable": false,
+                "modelKey": "running-separator",
+                "pinned": false
+            });
+            for (var stableIndex = 0; stableIndex < stableRunning.length; ++stableIndex)
+                desired.push(stableRunning[stableIndex]);
+        }
+
+        var desiredKeys = {};
         for (var desiredIndex = 0; desiredIndex < desired.length; ++desiredIndex)
-            desiredIds[String(desired[desiredIndex].id || "")] = true;
-        if (unpinEntryId !== "" && !desiredIds[unpinEntryId]) {
-            unpinDismissTimer.stop();
-            unpinEntryId = "";
+            desiredKeys[desired[desiredIndex].modelKey] = true;
+        if (pinActionEntryId !== "" && !desiredKeys[modelKeyForEntry(pinActionEntryId)]) {
+            pinActionDismissTimer.stop();
+            pinActionEntryId = "";
         }
 
         for (var removeIndex = dockModel.count - 1; removeIndex >= 0; --removeIndex) {
-            if (!desiredIds[dockModel.get(removeIndex).entryId])
+            if (!desiredKeys[dockModel.get(removeIndex).modelKey])
                 dockModel.remove(removeIndex);
         }
         for (var targetIndex = 0; targetIndex < desired.length; ++targetIndex) {
             var entry = desired[targetIndex];
-            var entryId = String(entry.id || "");
-            var currentIndex = modelIndexForId(entryId);
+            var currentIndex = modelIndexForKey(entry.modelKey);
             if (currentIndex === -1) {
-                dockModel.insert(targetIndex, {
-                    "appName": String(entry.name || entryId),
-                    "entryId": entryId,
-                    "iconName": String(entry.icon || "application-x-executable")
-                });
+                dockModel.insert(targetIndex, entry);
             } else {
                 if (currentIndex !== targetIndex)
                     dockModel.move(currentIndex, targetIndex, 1);
-                dockModel.setProperty(targetIndex, "appName", String(entry.name || entryId));
-                dockModel.setProperty(targetIndex, "iconName", String(entry.icon || "application-x-executable"));
+                dockModel.setProperty(targetIndex, "appName", entry.appName);
+                dockModel.setProperty(targetIndex, "entryId", entry.entryId);
+                dockModel.setProperty(targetIndex, "iconName", entry.iconName);
+                dockModel.setProperty(targetIndex, "kind", entry.kind);
+                dockModel.setProperty(targetIndex, "launchable", entry.launchable);
+                dockModel.setProperty(targetIndex, "pinned", entry.pinned);
             }
         }
+        pinnedAppCount = pinned.length;
+        runningAppCount = stableRunning.length;
     }
     function updateAutoHide() {
         if (!dockObstructed || revealRequested) {
@@ -267,6 +407,7 @@ PanelWindow {
         syncDockModel();
         updateAutoHide();
     }
+    onDesktopApplicationsChanged: Qt.callLater(syncDockModel)
     onDockObstructedChanged: updateAutoHide()
     onPreviewWindowsChanged: {
         if (previewWindows.length === 0)
@@ -284,6 +425,13 @@ PanelWindow {
 
         target: DockService
     }
+    Connections {
+        function onWorkspacesChanged() {
+            Qt.callLater(dockWindow.syncDockModel);
+        }
+
+        target: WorkspaceService
+    }
     ListModel {
         id: dockModel
     }
@@ -299,12 +447,12 @@ PanelWindow {
         }
     }
     Timer {
-        id: unpinDismissTimer
+        id: pinActionDismissTimer
 
         interval: 900
         repeat: false
 
-        onTriggered: dockWindow.unpinEntryId = ""
+        onTriggered: dockWindow.pinActionEntryId = ""
     }
     Timer {
         id: previewShowTimer
@@ -359,9 +507,9 @@ PanelWindow {
 
             onHoveredChanged: {
                 if (hovered)
-                    unpinDismissTimer.stop();
-                else if (dockWindow.unpinEntryId !== "")
-                    unpinDismissTimer.restart();
+                    pinActionDismissTimer.stop();
+                else if (dockWindow.pinActionEntryId !== "")
+                    pinActionDismissTimer.restart();
             }
         }
         RowLayout {
@@ -370,37 +518,53 @@ PanelWindow {
             spacing: 6
 
             ListView {
-                id: pinnedList
+                id: dockAppList
 
                 Layout.fillHeight: true
-                Layout.preferredWidth: Math.min(dockWindow.desiredPinnedWidth, Math.max(0, dockSurface.width - 85))
+                Layout.preferredWidth: Math.min(dockWindow.desiredAppListWidth, Math.max(0, dockSurface.width - 76))
                 boundsBehavior: Flickable.StopAtBounds
                 clip: contentWidth > width
                 interactive: contentWidth > width && !dockWindow.dragActive
                 model: dockModel
                 orientation: ListView.Horizontal
                 spacing: 6
+                visible: dockWindow.appCount > 0
 
                 delegate: Item {
                     id: appButton
 
                     required property string appName
-                    readonly property var appWindows: dockWindow.windowsForEntry(entryId, appName)
+                    readonly property var appWindows: isSeparator ? [] : dockWindow.windowsForEntry(entryId, appName)
                     property bool draggedDuringPress: false
                     required property string entryId
                     required property string iconName
                     required property int index
-                    readonly property int unreadCount: NotificationHistory.unreadCountForEntry(entryId, appName)
+                    readonly property bool isSeparator: kind === "separator"
+                    required property string kind
+                    required property bool launchable
+                    required property string modelKey
+                    required property bool pinned
+                    readonly property int unreadCount: isSeparator ? 0 : NotificationHistory.unreadCountForEntry(entryId, appName)
                     readonly property int windowCount: appWindows.length
 
+                    Accessible.ignored: isSeparator
                     Accessible.name: appName
                     Accessible.role: Accessible.Button
                     height: 50
-                    width: 48
+                    width: isSeparator ? 1 : 48
                     z: appMouse.drag.active ? 100 : 0
 
+                    Rectangle {
+                        anchors.centerIn: parent
+                        color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.62 : 0.48)
+                        height: 32
+                        radius: width / 2
+                        visible: appButton.isSeparator
+                        width: 1
+                    }
                     DropArea {
                         anchors.fill: parent
+                        enabled: appButton.pinned && !appButton.isSeparator
                         keys: ["dock-app"]
 
                         onEntered: drag => {
@@ -430,6 +594,7 @@ PanelWindow {
                         radius: 15
                         rotation: appMouse.drag.active ? 5 : 0
                         scale: appMouse.drag.active ? 1.13 : appMouse.pressed ? 0.92 : appMouse.containsMouse ? 1.08 : 1
+                        visible: !appButton.isSeparator
                         width: 48
                         x: appMouse.drag.active ? dragProxy.x : 0
                         y: appMouse.drag.active ? dragProxy.y : 1
@@ -468,7 +633,7 @@ PanelWindow {
                         anchors.horizontalCenter: parent.horizontalCenter
                         height: 4
                         spacing: 3
-                        visible: appButton.windowCount > 0 && !appMouse.drag.active
+                        visible: !appButton.isSeparator && appButton.windowCount > 0 && !appMouse.drag.active
                         z: 160
 
                         Repeater {
@@ -504,14 +669,15 @@ PanelWindow {
                         cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.PointingHandCursor
                         drag.axis: Drag.XAxis
                         drag.smoothed: false
-                        drag.target: (pressedButtons & Qt.LeftButton) ? dragProxy : null
+                        drag.target: appButton.pinned && (pressedButtons & Qt.LeftButton) ? dragProxy : null
+                        enabled: !appButton.isSeparator
                         hoverEnabled: true
                         preventStealing: true
 
                         drag.onActiveChanged: {
                             if (drag.active) {
-                                unpinDismissTimer.stop();
-                                dockWindow.unpinEntryId = "";
+                                pinActionDismissTimer.stop();
+                                dockWindow.pinActionEntryId = "";
                                 dockWindow.previewShown = false;
                                 dockWindow.cancelWindowPreview(appButton.entryId);
                                 appButton.draggedDuringPress = true;
@@ -521,16 +687,21 @@ PanelWindow {
                         onCanceled: dockWindow.finishReorder(dragProxy)
                         onClicked: mouse => {
                             if (mouse.button === Qt.RightButton) {
+                                if (!appButton.pinned && !appButton.launchable)
+                                    return;
                                 dockWindow.previewShown = false;
                                 dockWindow.cancelWindowPreview(appButton.entryId);
-                                dockWindow.unpinEntryId = dockWindow.unpinEntryId === appButton.entryId ? "" : appButton.entryId;
-                                unpinDismissTimer.stop();
+                                dockWindow.pinActionEntryId = dockWindow.pinActionEntryId === appButton.entryId ? "" : appButton.entryId;
+                                pinActionDismissTimer.stop();
                             } else if (!appButton.draggedDuringPress) {
-                                unpinDismissTimer.stop();
-                                dockWindow.unpinEntryId = "";
+                                pinActionDismissTimer.stop();
+                                dockWindow.pinActionEntryId = "";
                                 dockWindow.previewShown = false;
                                 dockWindow.cancelWindowPreview(appButton.entryId);
-                                DockService.launch(appButton.entryId);
+                                if (appButton.launchable)
+                                    DockService.launch(appButton.entryId);
+                                else if (appButton.windowCount > 0)
+                                    dockWindow.focusPreviewWindow(appButton.appWindows[0].id);
                             }
                         }
                         onEntered: {
@@ -544,26 +715,26 @@ PanelWindow {
                             }
                         }
                         onReleased: mouse => {
-                            if (mouse.button === Qt.LeftButton)
+                            if (mouse.button === Qt.LeftButton && appButton.pinned)
                                 dockWindow.finishReorder(dragProxy);
                         }
                     }
                     Rectangle {
-                        id: unpinBadge
+                        id: pinActionBadge
 
-                        Accessible.name: qsTr("Unpin from Dock")
+                        Accessible.name: appButton.pinned ? qsTr("Unpin from Dock") : qsTr("Pin to Dock")
                         Accessible.role: Accessible.Button
                         anchors.left: appVisual.left
                         anchors.leftMargin: -4
                         anchors.top: appVisual.top
                         anchors.topMargin: -4
-                        border.color: Config.alpha(Config.md3.on_error, 0.5)
+                        border.color: Config.alpha(appButton.pinned ? Config.md3.on_error : Config.md3.on_primary, 0.5)
                         border.width: 1
-                        color: unpinMouse.pressed ? Config.md3.error_container : Config.md3.error
+                        color: pinActionMouse.pressed ? (appButton.pinned ? Config.md3.error_container : Config.md3.primary_container) : (appButton.pinned ? Config.md3.error : Config.md3.primary)
                         height: 20
                         radius: 10
-                        scale: unpinMouse.pressed ? 0.9 : unpinMouse.containsMouse ? 1.08 : 1
-                        visible: dockWindow.unpinEntryId === appButton.entryId && !appMouse.drag.active
+                        scale: pinActionMouse.pressed ? 0.9 : pinActionMouse.containsMouse ? 1.08 : 1
+                        visible: !appButton.isSeparator && dockWindow.pinActionEntryId === appButton.entryId && !appMouse.drag.active
                         width: 20
                         z: 200
 
@@ -576,15 +747,15 @@ PanelWindow {
 
                         Text {
                             anchors.centerIn: parent
-                            color: unpinMouse.pressed ? Config.md3.on_error_container : Config.md3.on_error
+                            color: pinActionMouse.pressed ? (appButton.pinned ? Config.md3.on_error_container : Config.md3.on_primary_container) : (appButton.pinned ? Config.md3.on_error : Config.md3.on_primary)
                             font.family: Config.fontName
                             font.pixelSize: 16
                             font.weight: Font.Bold
                             renderType: Text.NativeRendering
-                            text: "−"
+                            text: appButton.pinned ? "−" : "+"
                         }
                         MouseArea {
-                            id: unpinMouse
+                            id: pinActionMouse
 
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
@@ -592,9 +763,12 @@ PanelWindow {
                             preventStealing: true
 
                             onClicked: {
-                                unpinDismissTimer.stop();
-                                DockService.unpin(appButton.entryId);
-                                dockWindow.unpinEntryId = "";
+                                pinActionDismissTimer.stop();
+                                dockWindow.pinActionEntryId = "";
+                                if (appButton.pinned)
+                                    DockService.unpin(appButton.entryId);
+                                else
+                                    DockService.pin(appButton.entryId);
                             }
                         }
                     }
@@ -639,8 +813,8 @@ PanelWindow {
                 Layout.fillHeight: true
                 Layout.leftMargin: 1
                 Layout.preferredWidth: 1
-                color: Config.alpha(Config.md3.outline_variant, 0.42)
-                visible: dockWindow.appCount > 0
+                color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.62 : 0.48)
+                visible: dockWindow.showAllAppsSeparator
             }
             Rectangle {
                 id: allAppsButton
@@ -695,8 +869,8 @@ PanelWindow {
                     hoverEnabled: true
 
                     onClicked: {
-                        unpinDismissTimer.stop();
-                        dockWindow.unpinEntryId = "";
+                        pinActionDismissTimer.stop();
+                        dockWindow.pinActionEntryId = "";
                         dockWindow.launcherRequested();
                     }
                 }

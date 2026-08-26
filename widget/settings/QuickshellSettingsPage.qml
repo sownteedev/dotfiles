@@ -20,6 +20,7 @@ Item {
         property string text: ""
     }
     property bool revealApiKey: false
+    property bool revealGoogleToken: false
     property bool revealSteamApiKey: false
     property bool revealWallhavenApiKey: false
 
@@ -1002,7 +1003,10 @@ Item {
                 actionText: GoogleService.disconnecting ? qsTr("Removing account") : confirmingRemoval ? qsTr("Confirm account removal") : qsTr("Remove account")
                 actionVisible: GoogleService.authenticated || GoogleService.disconnecting
                 iconName: "x-office-calendar-symbolic"
-                note: GoogleService.authStatus || qsTr("Authentication is managed from Calendar and Todo")
+                note: GoogleService.authenticated ? (GoogleService.connectedAccount !== "" ? qsTr("Connected as %1").arg(GoogleService.connectedAccount) : qsTr("Connected Google account")) : GoogleService.authStatus || qsTr("Connect your account from Calendar or Todo")
+                statusColor: GoogleService.authenticated ? Config.md3.secondary : Config.md3.tertiary
+                statusIcon: GoogleService.disconnecting ? "process-working-symbolic" : GoogleService.authenticated ? "emblem-ok-symbolic" : "dialog-information-symbolic"
+                statusText: GoogleService.disconnecting ? qsTr("Disconnecting") : GoogleService.authenticated ? qsTr("Connected") : qsTr("Not connected")
                 title: qsTr("Google Calendar & Tasks")
                 visible: root.activeSection === 3
 
@@ -1014,6 +1018,35 @@ Item {
                         confirmingRemoval = false;
                         removalTimer.stop();
                         GoogleService.disconnectAccount();
+                    }
+                }
+
+                GridLayout {
+                    id: googleCredentialFields
+
+                    Layout.fillWidth: true
+                    columnSpacing: 12
+                    columns: width >= 720 ? 2 : 1
+                    rowSpacing: 10
+                    uniformCellWidths: true
+
+                    SettingsTextField {
+                        Layout.fillWidth: true
+                        inputItem.readOnly: true
+                        label: qsTr("App ID (Client ID)")
+                        placeholder: qsTr("No App ID stored")
+                        text: GoogleService.oauthClientId
+                    }
+                    SettingsTextField {
+                        Layout.fillWidth: true
+                        actionIcon: GoogleService.oauthClientSecret !== "" ? (root.revealGoogleToken ? "view-conceal-symbolic" : "view-reveal-symbolic") : ""
+                        echoMode: root.revealGoogleToken ? TextInput.Normal : TextInput.Password
+                        inputItem.readOnly: true
+                        label: qsTr("Token (Client Secret)")
+                        placeholder: qsTr("No token stored")
+                        text: GoogleService.oauthClientSecret
+
+                        onActionClicked: root.revealGoogleToken = !root.revealGoogleToken
                     }
                 }
             }

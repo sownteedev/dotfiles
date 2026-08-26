@@ -341,6 +341,7 @@ PanelWindow {
             property bool videoCover: false
 
             anchors.fill: parent
+            cache: false
             fillMode: Image.PreserveAspectCrop
             layer.enabled: false
             opacity: 0
@@ -363,7 +364,7 @@ PanelWindow {
 
             anchors.fill: parent
             asynchronous: true
-            cache: true
+            cache: false
             fillMode: Image.PreserveAspectCrop
             layer.enabled: false
             opacity: 0

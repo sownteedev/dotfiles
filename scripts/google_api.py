@@ -93,7 +93,11 @@ def auth_status():
         token_data.get("client_id")
         and (access_valid or token_data.get("refresh_token"))
     )
-    print(json.dumps({"authenticated": authenticated}))
+    print(json.dumps({
+        "authenticated": authenticated,
+        "client_id": str(token_data.get("client_id", "")),
+        "client_secret": str(token_data.get("client_secret", ""))
+    }))
 
 
 def remove_authentication():
@@ -269,7 +273,8 @@ def fetch_calendars(access_token):
                 calendars.append({
                     "id": item.get("id"),
                     "name": item.get("summary"),
-                    "color": item.get("backgroundColor")
+                    "color": item.get("backgroundColor"),
+                    "primary": bool(item.get("primary"))
                 })
         return calendars
 

@@ -128,8 +128,14 @@ QtObject {
                 try {
                     var result = JSON.parse(text.trim());
                     root.authenticated = result.authenticated === true;
+                    root.oauthClientId = String(result.client_id || "");
+                    root.oauthClientSecret = String(result.client_secret || "");
+                    if (root.authClientIdDraft === "" && root.oauthClientId !== "")
+                        root.authClientIdDraft = root.oauthClientId;
                 } catch (error) {
                     root.authenticated = false;
+                    root.oauthClientId = "";
+                    root.oauthClientSecret = "";
                 }
                 root.authChecked = true;
                 if (root.authenticated)
@@ -247,6 +253,15 @@ QtObject {
         }
     }
     property bool calendarsRefreshPending: false
+    readonly property string connectedAccount: {
+        var availableCalendars = calendars || [];
+        for (var i = 0; i < availableCalendars.length; ++i) {
+            var calendar = availableCalendars[i];
+            if (calendar && calendar.primary === true && String(calendar.id || "") !== "")
+                return String(calendar.id);
+        }
+        return "";
+    }
     property Process disconnectProcess: Process {
         id: disconnectProcess
 
@@ -389,6 +404,8 @@ QtObject {
     // Internal state
     property int loadedMonth: new Date().getMonth() + 1
     property int loadedYear: new Date().getFullYear()
+    property string oauthClientId: ""
+    property string oauthClientSecret: ""
     property string pendingAuthContext: ""
     property Timer refreshTimer: Timer {
         interval: 900000
@@ -589,6 +606,8 @@ QtObject {
         allEvents = [];
         calendars = [];
         allTasks = [];
+        oauthClientId = "";
+        oauthClientSecret = "";
         authStatus = "Google account removed from this device.";
         eventsChanged();
         tasksChanged();
@@ -668,6 +687,8 @@ QtObject {
         authError = "";
         authUrl = "";
         authStatus = "Starting local authentication…";
+        oauthClientId = clientId.trim();
+        oauthClientSecret = clientSecret.trim();
         authenticating = true;
         authProcess.credentialsJson = JSON.stringify({
             client_id: clientId.trim(),
