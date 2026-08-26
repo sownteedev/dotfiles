@@ -105,7 +105,11 @@ def set_window_floating(window_id, to_floating):
     if not run_niri_action(action, "--id", window_id):
         return False
     if not to_floating:
-        run_niri_action("set-window-width", "100%", "--id", window_id)
+        time.sleep(0.18)
+        if not run_niri_action("reset-window-height", "--id", window_id):
+            return False
+        if not run_niri_action("set-window-width", "100%", "--id", window_id):
+            return False
     return True
 
 

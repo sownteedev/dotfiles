@@ -196,20 +196,18 @@ toggle_floating_workspace() {
         fi
 
         window_ids+=("$window_id")
-        if [ "$is_floating" != "$target_windows_floating" ]; then
-            original_floating["$window_id"]=$is_floating
-            if [ "$target_windows_floating" = "true" ]; then
-                action="move-window-to-floating"
-            else
-                action="move-window-to-tiling"
-            fi
+        original_floating["$window_id"]=$is_floating
+        if [ "$target_windows_floating" = "true" ]; then
+            action="move-window-to-floating"
+        else
+            action="move-window-to-tiling"
+        fi
 
-            if niri msg action "$action" --id "$window_id" >/dev/null; then
-                changed_window_ids+=("$window_id")
-            else
-                action_failed=true
-                break
-            fi
+        if niri msg action "$action" --id "$window_id" >/dev/null; then
+            changed_window_ids+=("$window_id")
+        else
+            action_failed=true
+            break
         fi
     done <<< "$(jq -r '.[] | [.id, .is_floating, (.app_id // "")] | @tsv' <<< "$workspace_data")"
 
@@ -227,7 +225,9 @@ toggle_floating_workspace() {
 
     if [ "$target_windows_floating" = "false" ]; then
         local window_id
+        sleep 0.18
         for window_id in "${window_ids[@]}"; do
+            niri msg action reset-window-height --id "$window_id" >/dev/null 2>&1 || true
             niri msg action set-window-width 100% --id "$window_id" >/dev/null 2>&1 || true
         done
     else
