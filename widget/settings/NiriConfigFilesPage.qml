@@ -77,7 +77,7 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
             description: "Full source editor for settings that do not map cleanly to simple controls."
-            editorHeight: Math.max(320, height - 104)
+            editorHeight: Math.max(180, height - 104)
             fileName: root.fileNames[root.activeFile]
             title: root.fileLabels[root.activeFile] + " · " + fileName
         }

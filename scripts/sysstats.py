@@ -1,6 +1,7 @@
 import json
 import os
 import select
+import signal
 import subprocess
 import sys
 import time
@@ -119,35 +120,54 @@ def get_net(interface):
 
 
 def get_process_name(pid, reported_name):
-    if not reported_name.lower().startswith("electron"):
-        return reported_name
+    electron_process = reported_name.lower().startswith("electron")
+
+    if electron_process:
+        try:
+            with open(f"/proc/{pid}/environ", "rb") as env_file:
+                for entry in env_file.read().split(b"\0"):
+                    if not entry.startswith(b"CHROME_DESKTOP="):
+                        continue
+                    desktop = entry.split(b"=", 1)[1].decode(
+                        "utf-8", errors="replace"
+                    )
+                    if desktop.endswith(".desktop"):
+                        desktop = desktop[:-8]
+                    if desktop.endswith("-url-handler"):
+                        desktop = desktop[:-12]
+                    if desktop:
+                        return desktop
+        except OSError:
+            pass
+
+    if electron_process:
+        try:
+            with open(f"/proc/{pid}/cmdline", "rb") as cmdline_file:
+                arguments = cmdline_file.read().split(b"\0")
+            for argument in arguments[1:]:
+                path = argument.decode("utf-8", errors="replace")
+                if os.path.basename(path) == "app.asar":
+                    app_name = os.path.basename(os.path.dirname(path))
+                    if app_name:
+                        return app_name
+        except OSError:
+            pass
 
     try:
-        with open(f"/proc/{pid}/environ", "rb") as env_file:
-            for entry in env_file.read().split(b"\0"):
-                if not entry.startswith(b"CHROME_DESKTOP="):
-                    continue
-                desktop = entry.split(b"=", 1)[1].decode(
-                    "utf-8", errors="replace"
-                )
-                if desktop.endswith(".desktop"):
-                    desktop = desktop[:-8]
-                if desktop.endswith("-url-handler"):
-                    desktop = desktop[:-12]
-                if desktop:
-                    return desktop
+        executable = os.readlink(f"/proc/{pid}/exe")
+        if executable:
+            return executable
     except OSError:
         pass
 
     try:
         with open(f"/proc/{pid}/cmdline", "rb") as cmdline_file:
             arguments = cmdline_file.read().split(b"\0")
-        for argument in arguments[1:]:
-            path = argument.decode("utf-8", errors="replace")
-            if os.path.basename(path) == "app.asar":
-                app_name = os.path.basename(os.path.dirname(path))
-                if app_name:
-                    return app_name
+        executable = arguments[0].decode(
+            "utf-8", errors="replace"
+        ).split(maxsplit=1)[0] if arguments and arguments[0] else ""
+        if executable and executable != "exe":
+            return executable
     except OSError:
         pass
 
@@ -230,6 +250,70 @@ def get_top_processes(previous, current, elapsed):
     return top_cpu, top_ram
 
 
+def read_process_memory_rollup(pid):
+    values = {}
+    try:
+        with open(f"/proc/{pid}/smaps_rollup", "r", encoding="utf-8") as handle:
+            for line in handle:
+                name, separator, value = line.partition(":")
+                if not separator or name not in {
+                        "Pss", "Pss_Dirty", "Private_Clean", "Private_Dirty"}:
+                    continue
+                values[name] = int(value.split()[0])
+    except (IndexError, OSError, ValueError):
+        return None
+
+    required = {"Pss", "Pss_Dirty", "Private_Clean", "Private_Dirty"}
+    if not required.issubset(values):
+        return None
+    return {
+        "pss_kib": values["Pss"],
+        "pss_dirty_kib": values["Pss_Dirty"],
+        "private_kib": values["Private_Clean"] + values["Private_Dirty"],
+    }
+
+
+def get_process_memory_details(root_pid):
+    if root_pid <= 1:
+        raise ValueError("process id must be greater than one")
+
+    snapshot = get_process_snapshot(include_cpu=False, include_ram=True)
+    target = snapshot.get(root_pid)
+    if target is None:
+        raise ProcessLookupError("process no longer exists")
+    target_name = target[0]
+    process_count = 0
+    measured_process_count = 0
+    rss_mib = 0
+    pss_kib = 0
+    pss_dirty_kib = 0
+    private_kib = 0
+
+    for pid, (name, _parent_pid, _ticks, process_rss_mib) in snapshot.items():
+        if name != target_name or get_process_group_pid(snapshot, pid) != root_pid:
+            continue
+        process_count += 1
+        rss_mib += process_rss_mib
+        memory = read_process_memory_rollup(pid)
+        if memory is None:
+            continue
+        measured_process_count += 1
+        pss_kib += memory["pss_kib"]
+        pss_dirty_kib += memory["pss_dirty_kib"]
+        private_kib += memory["private_kib"]
+
+    has_detailed_sample = measured_process_count > 0
+    return {
+        "pid": root_pid,
+        "process_count": process_count,
+        "measured_process_count": measured_process_count,
+        "rss_mib": rss_mib,
+        "pss_mib": pss_kib / 1024 if has_detailed_sample else None,
+        "pss_dirty_mib": pss_dirty_kib / 1024 if has_detailed_sample else None,
+        "private_mib": private_kib / 1024 if has_detailed_sample else None,
+    }
+
+
 def get_process_group_pid(snapshot, pid):
     process = snapshot.get(pid)
     if process is None:
@@ -250,6 +334,194 @@ def get_process_group_pid(snapshot, pid):
         leader = parent_pid
 
     return leader
+
+def terminate_process_tree(root_pid):
+    if root_pid <= 1:
+        raise ValueError("process id must be greater than one")
+    root_identity = process_state_and_start_time(root_pid)
+    if root_identity is None:
+        return
+    root_start_time = root_identity[1]
+
+    initial_tree = collect_process_tree(root_pid)
+    initial_helpers = linked_crashpad_handlers(initial_tree)
+    initial_order = initial_tree + initial_helpers
+    tracked = {}
+    track_processes(initial_order, tracked)
+    tracked.setdefault(root_pid, root_start_time)
+
+    # Stop the application parent first, then its current helpers. This avoids
+    # Electron/Chromium replacing helpers while shutdown is already underway.
+    terminate_order = list(reversed(initial_tree)) + initial_helpers
+    signal_tracked_processes(signal.SIGTERM, terminate_order, tracked)
+
+    deadline = time.monotonic() + 0.9
+    while time.monotonic() < deadline:
+        if not has_live_tracked_processes(tracked):
+            return
+        if process_matches(root_pid, root_start_time):
+            current_tree = collect_process_tree(root_pid)
+            current_order = current_tree + linked_crashpad_handlers(current_tree)
+            new_processes = [pid for pid in current_order if pid not in tracked]
+            track_processes(new_processes, tracked)
+            signal_tracked_processes(
+                signal.SIGTERM, reversed(new_processes), tracked)
+        time.sleep(0.05)
+
+    if process_matches(root_pid, root_start_time):
+        current_tree = collect_process_tree(root_pid)
+        track_processes(current_tree, tracked)
+        track_processes(linked_crashpad_handlers(current_tree), tracked)
+    force_order = sorted(tracked, key=lambda pid: pid == root_pid)
+    permission_error = signal_tracked_processes(
+        signal.SIGKILL, force_order, tracked)
+
+    force_deadline = time.monotonic() + 0.35
+    while time.monotonic() < force_deadline:
+        if not has_live_tracked_processes(tracked):
+            return
+        time.sleep(0.025)
+
+    remaining = sum(
+        1 for pid, start_time in tracked.items()
+        if process_matches(pid, start_time)
+    )
+    if permission_error is not None:
+        raise permission_error
+    if remaining:
+        raise RuntimeError(f"failed to terminate {remaining} process(es)")
+
+
+def collect_process_tree(root_pid):
+    if not os.path.exists(f"/proc/{root_pid}"):
+        return []
+
+    children_by_parent = {}
+    try:
+        process_ids = os.listdir("/proc")
+    except OSError:
+        process_ids = []
+    for entry in process_ids:
+        if not entry.isdigit():
+            continue
+        stat = read_text(f"/proc/{entry}/stat")
+        close_paren = stat.rfind(")")
+        if close_paren < 0:
+            continue
+        fields = stat[close_paren + 2:].split()
+        if len(fields) < 2:
+            continue
+        try:
+            parent_pid = int(fields[1])
+            children_by_parent.setdefault(parent_pid, []).append(int(entry))
+        except ValueError:
+            continue
+
+    order = []
+    seen = set()
+    stack = [(root_pid, False)]
+    while stack:
+        pid, visited = stack.pop()
+        if visited:
+            order.append(pid)
+            continue
+        if pid in seen:
+            continue
+        seen.add(pid)
+        stack.append((pid, True))
+        for child in children_by_parent.get(pid, []):
+            stack.append((child, False))
+
+    return order
+
+
+def linked_crashpad_handlers(process_ids):
+    result = []
+    seen = set()
+    for pid in process_ids:
+        try:
+            with open(f"/proc/{pid}/cmdline", "rb") as command_file:
+                arguments = command_file.read().split(b"\0")
+        except OSError:
+            continue
+        for argument in arguments:
+            prefix = b"--crashpad-handler-pid="
+            if not argument.startswith(prefix):
+                continue
+            try:
+                helper_pid = int(argument[len(prefix):])
+            except ValueError:
+                continue
+            if (helper_pid > 1 and helper_pid not in seen
+                    and is_crashpad_handler(helper_pid)):
+                seen.add(helper_pid)
+                result.append(helper_pid)
+    return result
+
+
+def is_crashpad_handler(pid):
+    try:
+        if "crashpad_handler" in os.path.basename(os.readlink(f"/proc/{pid}/exe")):
+            return True
+    except OSError:
+        pass
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as command_file:
+            executable = command_file.read().split(b"\0", 1)[0]
+        return b"crashpad_handler" in executable
+    except OSError:
+        return False
+
+
+def process_state_and_start_time(pid):
+    stat = read_text(f"/proc/{pid}/stat")
+    close_paren = stat.rfind(")")
+    if close_paren < 0:
+        return None
+    fields = stat[close_paren + 2:].split()
+    if len(fields) <= 19:
+        return None
+    try:
+        return fields[0], int(fields[19])
+    except ValueError:
+        return None
+
+
+def process_matches(pid, start_time):
+    identity = process_state_and_start_time(pid)
+    return (identity is not None and identity[0] not in {"Z", "X", "x"}
+            and identity[1] == start_time)
+
+
+def track_processes(process_ids, tracked):
+    for pid in process_ids:
+        if pid in tracked:
+            continue
+        identity = process_state_and_start_time(pid)
+        if identity is not None and identity[0] not in {"Z", "X", "x"}:
+            tracked[pid] = identity[1]
+
+
+def signal_tracked_processes(signal_number, process_ids, tracked):
+    permission_error = None
+    for pid in process_ids:
+        start_time = tracked.get(pid)
+        if start_time is None or not process_matches(pid, start_time):
+            continue
+        try:
+            os.kill(pid, signal_number)
+        except ProcessLookupError:
+            continue
+        except PermissionError as error:
+            permission_error = error
+    return permission_error
+
+
+def has_live_tracked_processes(tracked):
+    return any(
+        process_matches(pid, start_time)
+        for pid, start_time in tracked.items()
+    )
 
 
 def find_nvidia_device():
@@ -428,12 +700,24 @@ def read_pickle_choice(path, choices, fallback):
 
 
 def battery_control_payload():
-    threshold = read_text(os.path.join(
-        BATTERY_PATH, "charge_control_end_threshold")) if BATTERY_PATH else ""
+    start_path = os.path.join(
+        BATTERY_PATH, "charge_control_start_threshold") if BATTERY_PATH else ""
+    end_path = os.path.join(
+        BATTERY_PATH, "charge_control_end_threshold") if BATTERY_PATH else ""
+    start_threshold = read_threshold(start_path)
+    end_threshold = read_threshold(end_path)
+    charge_mode = {
+        (55, 60): "conservation",
+        (75, 80): "preserve",
+        (50, 100): "maximize",
+    }.get((start_threshold, end_threshold), "custom")
     governor = read_text(
         "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
     return {
-        "charge_mode": "preserve" if threshold == "80" else "maximize",
+        "charge_mode": charge_mode,
+        "charge_start_threshold": start_threshold,
+        "charge_end_threshold": end_threshold,
+        "charge_threshold_supported": bool(end_path and os.path.exists(end_path)),
         "current_governor": governor or "N/A",
         "governor_override": read_pickle_choice(
             "/opt/auto-cpufreq/override.pickle",
@@ -445,21 +729,48 @@ def battery_control_payload():
 
 
 def set_charge_mode(mode):
-    if mode not in {"preserve", "maximize"}:
-        raise ValueError("charge mode must be preserve or maximize")
+    thresholds = {
+        "conservation": (55, 60),
+        "preserve": (75, 80),
+        "maximize": (50, 100),
+    }
+    if mode not in thresholds:
+        raise ValueError(
+            "charge mode must be conservation, preserve or maximize")
+    set_charge_thresholds(*thresholds[mode])
+
+def set_charge_thresholds(start, end):
+    if not 0 <= start < end <= 100:
+        raise ValueError(
+            "charge thresholds must satisfy 0 <= start < end <= 100")
     if not BATTERY_PATH:
         raise FileNotFoundError("battery not found")
 
-    start, end = ("75", "80") if mode == "preserve" else ("50", "100")
-    with open(os.path.join(BATTERY_PATH, "charge_control_end_threshold"),
-              "w", encoding="utf-8") as handle:
-        handle.write(end)
     start_path = os.path.join(BATTERY_PATH,
                               "charge_control_start_threshold")
-    if os.path.exists(start_path):
-        with open(start_path, "w", encoding="utf-8") as handle:
-            handle.write(start)
+    end_path = os.path.join(BATTERY_PATH, "charge_control_end_threshold")
+    if not os.path.exists(end_path):
+        raise OSError("charge thresholds are not supported by this battery")
 
+    def write_threshold(path, value):
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(str(value))
+
+    current_start = read_threshold(start_path)
+    if (os.path.exists(start_path) and current_start is not None
+            and end <= current_start):
+        write_threshold(start_path, start)
+        write_threshold(end_path, end)
+    else:
+        write_threshold(end_path, end)
+        if os.path.exists(start_path):
+            write_threshold(start_path, start)
+
+def read_threshold(path):
+    try:
+        return int(read_text(path)) if path else None
+    except ValueError:
+        return None
 
 def battery_payload():
     def number(name):
@@ -504,6 +815,8 @@ def battery_payload():
         "voltage": positive(voltage / 1_000_000),
         "power_draw": positive(power / 1_000_000) if power > 0 else positive(
             voltage * current / 1_000_000_000_000),
+        "full_energy": positive(energy_full / 1_000_000) if energy_full > 0
+        else positive(voltage_design * charge_full / 1_000_000_000_000),
         "design_energy": positive(energy_design / 1_000_000) if energy_design > 0
         else positive(voltage_design * charge_design / 1_000_000_000_000),
         "device_name": device
@@ -511,12 +824,24 @@ def battery_payload():
 
 
 def main():
+    if len(sys.argv) > 2 and sys.argv[1] == "--process-memory":
+        print(json.dumps(get_process_memory_details(int(sys.argv[2]))))
+        return
+
+    if len(sys.argv) > 2 and sys.argv[1] == "--terminate-tree":
+        terminate_process_tree(int(sys.argv[2]))
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "--battery-control":
         print(json.dumps(battery_control_payload()))
         return
 
     if len(sys.argv) > 2 and sys.argv[1] == "--set-charge-mode":
         set_charge_mode(sys.argv[2])
+        return
+
+    if len(sys.argv) > 3 and sys.argv[1] == "--set-charge-thresholds":
+        set_charge_thresholds(int(sys.argv[2]), int(sys.argv[3]))
         return
 
     if len(sys.argv) > 1 and sys.argv[1] in {"--battery", "--battery-stream"}:

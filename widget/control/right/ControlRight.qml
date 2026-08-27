@@ -48,6 +48,8 @@ PanelWindow {
     readonly property bool tailscaleEnabled: QuickSettingsService.tailscaleEnabled
     readonly property bool warpEnabled: QuickSettingsService.warpEnabled
     readonly property bool wifiEnabled: QuickSettingsService.wifiEnabled
+    property bool wifiQrPopupOpen: false
+    property string wifiQrSsid: ""
 
     signal dismissed
     signal statsUpdated
@@ -68,6 +70,11 @@ PanelWindow {
         edgeDragging = true;
         active = true;
         popup.closedProgress = 1;
+    }
+    function closeWifiQrCode() {
+        wifiQrPopupOpen = false;
+        wifiQrSsid = "";
+        WifiService.clearQrCode();
     }
     function finishEdgeDrag(shouldOpen) {
         if (!edgeDragging)
@@ -96,6 +103,21 @@ PanelWindow {
         edgeDragProgress = 0;
         active = false;
         animatePopup(1, 300, Easing.OutCubic);
+    }
+    function openWifiQrCode(network) {
+        if (!network)
+            return;
+
+        wifiQrSsid = String(network.name || "");
+        wifiQrPopupOpen = true;
+        WifiService.requestQrCode(network);
+    }
+    function retryWifiQrCode() {
+        var network = WifiService.findNetwork(wifiQrSsid);
+        if (network)
+            WifiService.requestQrCode(network);
+        else
+            WifiService.qrCodeError = qsTr("The Wi-Fi network is no longer available.");
     }
     function runAction(cmd) {
         QuickSettingsService.runAction(cmd);
@@ -159,6 +181,8 @@ PanelWindow {
     Component.onDestruction: {
         SysStats.pollingEnabled = false;
         QuickSettingsService.active = false;
+        if (wifiQrPopupOpen)
+            WifiService.clearQrCode();
         if (StateManager.controlPanel === controlRightWindow)
             StateManager.controlPanel = null;
     }
@@ -166,8 +190,14 @@ PanelWindow {
     onActiveChanged: {
         updateStatsPolling();
         QuickSettingsService.active = active;
+        if (!active && wifiQrPopupOpen)
+            closeWifiQrCode();
     }
-    onActiveTabChanged: updateStatsPolling()
+    onActiveTabChanged: {
+        updateStatsPolling();
+        if (activeTab !== 1 && wifiQrPopupOpen)
+            closeWifiQrCode();
+    }
 
     // Clicks on backdrop close the panel
     MouseArea {
@@ -327,6 +357,8 @@ PanelWindow {
 
             // ── 3. Tab Content Box ────────────────────────────────────────────
             Rectangle {
+                id: topTabSection
+
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
@@ -481,6 +513,26 @@ PanelWindow {
                     }
                 }  // end ColumnLayout (tab content ColumnLayout)
 
+                Loader {
+                    id: wifiQrOverlayLoader
+
+                    active: controlRightWindow.wifiQrPopupOpen
+                    anchors.fill: parent
+                    z: 100
+
+                    sourceComponent: Component {
+                        WifiQrPopup {
+                            backdropRadius: topTabSection.radius
+                            busy: WifiService.qrCodeBusy
+                            errorText: WifiService.qrCodeError
+                            qrPath: WifiService.qrCodePath
+                            ssid: WifiService.qrCodeSsid || controlRightWindow.wifiQrSsid
+
+                            onDismissed: controlRightWindow.closeWifiQrCode()
+                            onRetryRequested: controlRightWindow.retryWifiQrCode()
+                        }
+                    }
+                }
             }  // end Rectangle (tab content box)
 
             // ── 4. Bottom Tab Content Box ────────────────────────────────────────────

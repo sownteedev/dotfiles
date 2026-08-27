@@ -43,6 +43,8 @@ PanelWindow {
     property string selectedTool: Config.captureEditorTool
     property real selectedWidth: Config.captureEditorWidth
     property var shapes: []
+    readonly property bool statusIsError: saveError !== "" ? true : CaptureService.reverseImageSearchStatus !== "" ? CaptureService.reverseImageSearchStatusIsError : OcrService.statusText !== "" ? OcrService.statusIsError : false
+    readonly property string statusText: saveError !== "" ? saveError : CaptureService.reverseImageSearchStatus !== "" ? CaptureService.reverseImageSearchStatus : OcrService.statusText !== "" ? OcrService.statusText : selectedTool === "ocr" ? qsTr("Drag over text to copy it") : ""
 
     function addNumberMarker(x, y) {
         lastMoveUndo = null;
@@ -729,36 +731,95 @@ PanelWindow {
         spacing: root.height < 720 ? 10 : 16
 
         RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 30
+            id: headerContent
 
-            Text {
-                color: Config.md3.on_surface
-                font.family: Config.fontName
-                font.pixelSize: 18
-                font.weight: Font.Bold
-                text: "Edit screenshot"
-            }
-            Item {
+            Layout.fillWidth: true
+            spacing: 12
+
+            ColumnLayout {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 170
+                spacing: 5
+
+                Text {
+                    Layout.fillWidth: true
+                    color: Config.md3.on_surface
+                    elide: Text.ElideRight
+                    font.family: Config.fontName
+                    font.pixelSize: 18
+                    font.weight: Font.Bold
+                    text: qsTr("Edit screenshot")
+                }
+                Rectangle {
+                    Layout.maximumWidth: 430
+                    Layout.preferredHeight: 25
+                    Layout.preferredWidth: Math.min(430, statusLabel.implicitWidth + 34)
+                    color: Config.alpha(root.statusIsError ? Config.md3.error_container : Config.md3.primary_container, 0.72)
+                    radius: 9
+                    visible: root.statusText !== ""
+
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        spacing: 7
+
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: root.statusIsError ? Config.md3.error : Config.md3.primary
+                            height: 6
+                            radius: 3
+                            width: 6
+                        }
+                        Text {
+                            id: statusLabel
+
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: root.statusIsError ? Config.md3.on_error_container : Config.md3.on_primary_container
+                            elide: Text.ElideRight
+                            font.family: Config.fontName
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            text: root.statusText
+                            width: Math.min(390, implicitWidth)
+                        }
+                    }
+                }
             }
-            Text {
-                color: Config.md3.error
-                font.family: Config.fontName
-                font.pixelSize: 13
-                font.weight: Font.Medium
-                text: root.saveError
-                visible: text !== ""
-            }
-            Text {
-                Layout.maximumWidth: root.width * 0.62
-                color: CaptureService.reverseImageSearchStatusIsError ? Config.md3.error : CaptureService.reverseImageSearchStatus !== "" ? Config.md3.primary : OcrService.statusIsError ? Config.md3.error : OcrService.statusText !== "" ? Config.md3.primary : Config.md3.on_surface_variant
-                elide: Text.ElideRight
-                font.family: Config.fontName
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
-                maximumLineCount: 1
-                text: CaptureService.reverseImageSearchStatus !== "" ? CaptureService.reverseImageSearchStatus : OcrService.statusText !== "" ? OcrService.statusText : root.selectedTool === "ocr" ? qsTr("Drag over text to copy it") : qsTr("Enter to save · Backspace to clear · Ctrl+Z to undo · Esc to cancel")
+            RowLayout {
+                id: shortcutActions
+
+                spacing: 7
+
+                ScreenshotShortcutButton {
+                    actionText: root.saving ? qsTr("Saving…") : qsTr("Save")
+                    enabled: !root.saving && !root.reverseSearchPreparing && sourceImage.status === Image.Ready
+                    shortcutKeys: ["Enter"]
+                    tone: "primary"
+
+                    onClicked: root.saveEditedImage()
+                }
+                ScreenshotShortcutButton {
+                    actionText: qsTr("Clear")
+                    enabled: root.shapes.length > 0 || root.cropActive || root.ocrRect.width > 0 || inlineTextEditor.visible
+                    shortcutKeys: ["Backspace"]
+
+                    onClicked: root.clearAll()
+                }
+                ScreenshotShortcutButton {
+                    actionText: qsTr("Undo")
+                    enabled: root.shapes.length > 0 || (root.cropActive && root.cropWasLastAction) || root.lastMoveUndo !== null
+                    shortcutKeys: ["Ctrl", "Z"]
+
+                    onClicked: root.undo()
+                }
+                ScreenshotShortcutButton {
+                    actionText: qsTr("Cancel")
+                    shortcutKeys: ["Esc"]
+                    tone: "error"
+
+                    onClicked: root.cancelEditor()
+                }
             }
         }
         Item {

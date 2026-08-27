@@ -6,6 +6,7 @@ Rectangle {
 
     property string accessibleName: ""
     property color backgroundColor: Config.md3.surface_container
+    property real fontPixelSize: 14
     property real minimumSegmentWidth: 112
     property var options: []
     property string selectedValue: ""
@@ -130,7 +131,7 @@ Rectangle {
                 color: segment.active ? Config.md3.on_primary_container : Config.md3.on_surface_variant
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 14
+                font.pixelSize: root.fontPixelSize
                 font.weight: segment.active ? Font.DemiBold : Font.Medium
                 horizontalAlignment: Text.AlignHCenter
                 maximumLineCount: 1

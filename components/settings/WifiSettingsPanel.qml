@@ -12,6 +12,9 @@ Item {
 
     property bool applying: false
     property bool autoConnect: true
+    readonly property real bodyFontSize: 14
+    readonly property color cardColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.76 : 0.36)
+    readonly property color cardOutlineColor: Config.alpha(Config.md3.outline, Config.lightTheme ? 0.18 : 0.13)
     property real closeSwipeOffset: 0
     readonly property real closeSwipeThreshold: Math.min(120, width * 0.24)
     property string ipMethod: "auto"
@@ -22,6 +25,8 @@ Item {
     property string networkSsid: ""
     property bool opened: false
     property string saveError: ""
+    readonly property real supportingFontSize: 13
+    readonly property real titleFontSize: 17
 
     signal applyRequested(string ssid, var settings)
     signal forgetRequested(string ssid)
@@ -258,37 +263,37 @@ Item {
         ColumnLayout {
             id: panelContent
 
-            spacing: 14
+            spacing: 16
             width: settingsFlick.width
             x: 0
 
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.outline, 0.12)
+                border.color: Config.alpha(Config.md3.primary, Config.lightTheme ? 0.22 : 0.18)
                 border.width: 1
-                color: Config.alpha(Config.md3.on_surface, 0.025)
-                implicitHeight: 68
-                radius: 16
+                color: Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.82 : 0.46)
+                implicitHeight: 84
+                radius: 18
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 10
-                    anchors.rightMargin: 10
-                    spacing: 10
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 12
+                    spacing: 12
 
                     Rectangle {
-                        color: Config.alpha(Config.md3.primary, 0.10)
-                        implicitHeight: 40
-                        implicitWidth: 40
-                        radius: 20
+                        color: Config.md3.primary_container
+                        implicitHeight: 48
+                        implicitWidth: 48
+                        radius: 16
 
                         WifiSignalIcon {
                             anchors.centerIn: parent
-                            color: Config.md3.primary
+                            color: Config.md3.on_primary_container
                             connected: true
-                            height: 21
+                            height: 25
                             signalStrength: 100
-                            width: 21
+                            width: 25
                         }
                     }
                     ColumnLayout {
@@ -300,33 +305,35 @@ Item {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 16
-                            font.weight: Font.DemiBold
+                            font.pixelSize: root.titleFontSize
+                            font.weight: Font.Bold
                             text: root.networkSsid
                         }
                         Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.48)
+                            Layout.fillWidth: true
+                            color: Config.alpha(Config.md3.on_surface, 0.58)
+                            elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 11
+                            font.pixelSize: root.supportingFontSize
                             text: root.applying ? "Saving profile and reconnecting…" : "Saved Wi-Fi network"
                         }
                     }
                     Rectangle {
-                        Layout.preferredHeight: 36
-                        Layout.preferredWidth: 36
-                        border.color: Config.alpha(Config.md3.error, 0.14)
+                        Layout.preferredHeight: 42
+                        Layout.preferredWidth: 42
+                        border.color: Config.alpha(Config.md3.error, 0.18)
                         border.width: 1
-                        color: forgetPointer.containsMouse ? Config.alpha(Config.md3.error, 0.16) : Config.alpha(Config.md3.error, 0.06)
+                        color: forgetPointer.containsMouse ? Config.alpha(Config.md3.error, 0.18) : Config.alpha(Config.md3.error, 0.08)
                         enabled: !root.applying
                         opacity: enabled ? 1 : 0.45
-                        radius: 12
+                        radius: 13
 
                         IconImage {
                             anchors.centerIn: parent
-                            height: 15
+                            height: 18
                             layer.enabled: true
                             source: Quickshell.iconPath("user-trash-symbolic")
-                            width: 15
+                            width: 18
 
                             layer.effect: ColorOverlay {
                                 color: Config.md3.error
@@ -347,42 +354,33 @@ Item {
                         }
                     }
                     Rectangle {
-                        Layout.preferredHeight: 36
-                        Layout.preferredWidth: 84
-                        border.color: Config.alpha(Config.md3.primary, 0.18)
-                        border.width: 1
-                        color: Config.alpha(Config.md3.primary, root.applying ? 0.08 : savePointer.containsMouse ? 0.18 : 0.12)
-                        radius: 12
+                        Layout.preferredHeight: 42
+                        Layout.preferredWidth: 42
+                        color: root.applying ? Config.alpha(Config.md3.primary, 0.68) : savePointer.containsMouse ? Qt.lighter(Config.md3.primary, 1.08) : Config.md3.primary
+                        radius: 13
 
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 6
+                            spacing: 8
 
                             AnimatedSpinner {
-                                color: Config.md3.primary
-                                height: 15
+                                color: Config.md3.on_primary
+                                height: 17
                                 lineWidth: 2
                                 running: root.applying
                                 visible: root.applying
-                                width: 15
+                                width: 17
                             }
                             IconImage {
-                                height: 14
+                                height: 17
                                 layer.enabled: true
                                 source: Quickshell.iconPath("document-save-symbolic")
                                 visible: !root.applying
-                                width: 14
+                                width: 17
 
                                 layer.effect: ColorOverlay {
-                                    color: Config.md3.primary
+                                    color: Config.md3.on_primary
                                 }
-                            }
-                            Text {
-                                color: Config.md3.primary
-                                font.family: Config.fontName
-                                font.pixelSize: 12
-                                font.weight: Font.DemiBold
-                                text: root.applying ? "Saving…" : "Save"
                             }
                         }
                         MouseArea {
@@ -438,7 +436,7 @@ Item {
                         Layout.fillWidth: true
                         color: Config.md3.on_error_container
                         font.family: Config.fontName
-                        font.pixelSize: 12
+                        font.pixelSize: root.bodyFontSize
                         text: root.saveError
                         wrapMode: Text.Wrap
                     }
@@ -446,53 +444,77 @@ Item {
             }
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.on_surface, 0.09)
+                border.color: root.cardOutlineColor
                 border.width: 1
-                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.58 : 0.22)
-                implicitHeight: ipv4Content.implicitHeight + 32
-                radius: 16
+                color: root.cardColor
+                implicitHeight: ipv4Content.implicitHeight + 36
+                radius: 18
 
                 ColumnLayout {
                     id: ipv4Content
 
                     anchors.fill: parent
-                    anchors.margins: 16
+                    anchors.margins: 18
                     spacing: 0
 
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+
+                        Rectangle {
+                            Layout.preferredHeight: 38
+                            Layout.preferredWidth: 38
+                            color: Config.md3.primary_container
+                            radius: 12
+
+                            Text {
+                                anchors.centerIn: parent
+                                color: Config.md3.on_primary_container
+                                font.family: Config.fontName
+                                font.pixelSize: 18
+                                font.weight: Font.Black
+                                text: "4"
+                            }
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            Text {
+                                color: Config.md3.on_surface
+                                font.family: Config.fontName
+                                font.pixelSize: root.titleFontSize
+                                font.weight: Font.Bold
+                                text: "IPv4"
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                color: Config.alpha(Config.md3.on_surface, 0.58)
+                                elide: Text.ElideRight
+                                font.family: Config.fontName
+                                font.pixelSize: root.supportingFontSize
+                                text: root.ipMethod === "auto" ? "Address and gateway are assigned by DHCP" : "Use a fixed address for this network"
+                            }
+                        }
+                    }
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 3
+                        Layout.topMargin: 16
+                        spacing: 8
 
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
                             font.pixelSize: 15
                             font.weight: Font.DemiBold
-                            text: "IPv4"
-                        }
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.45)
-                            font.family: Config.fontName
-                            font.pixelSize: 12
-                            text: root.ipMethod === "auto" ? "Address and gateway are assigned by DHCP" : "Use a fixed address for this network"
-                        }
-                    }
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 14
-                        spacing: 6
-
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 13
-                            font.weight: Font.DemiBold
                             text: "IP assignment"
                         }
                         SettingsSegmentedControl {
                             Layout.fillWidth: true
-                            backgroundColor: Config.alpha(Config.md3.on_surface, 0.07)
+                            Layout.preferredHeight: 44
+                            backgroundColor: Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.70 : 0.46)
                             enabled: !root.applying
+                            fontPixelSize: 15
                             options: [
                                 {
                                     "label": "Automatic (DHCP)",
@@ -510,18 +532,18 @@ Item {
                     }
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.topMargin: 14
-                        border.color: Config.alpha(Config.md3.primary, 0.10)
+                        Layout.topMargin: 16
+                        border.color: Config.alpha(Config.md3.primary, 0.16)
                         border.width: 1
-                        color: Config.alpha(Config.md3.primary, 0.055)
-                        implicitHeight: 60
-                        radius: 14
+                        color: Config.alpha(Config.md3.primary, Config.lightTheme ? 0.09 : 0.075)
+                        implicitHeight: 68
+                        radius: 15
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.leftMargin: 14
-                            anchors.rightMargin: 14
-                            spacing: 14
+                            anchors.leftMargin: 16
+                            anchors.rightMargin: 16
+                            spacing: 16
 
                             ColumnLayout {
                                 Layout.fillWidth: true
@@ -530,14 +552,14 @@ Item {
                                 Text {
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 13
-                                    font.weight: Font.DemiBold
+                                    font.pixelSize: 15
+                                    font.weight: Font.Bold
                                     text: "DNS assignment"
                                 }
                                 Text {
-                                    color: Config.md3.on_surface_variant
+                                    color: Config.alpha(Config.md3.on_surface, 0.58)
                                     font.family: Config.fontName
-                                    font.pixelSize: 11
+                                    font.pixelSize: root.supportingFontSize
                                     text: root.ipv4AutomaticDns ? "Automatic (from DHCP)" : "Custom servers below"
                                 }
                             }
@@ -621,11 +643,11 @@ Item {
             }
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.on_surface, 0.09)
+                border.color: root.cardOutlineColor
                 border.width: 1
-                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.58 : 0.22)
-                implicitHeight: ipv6Header.implicitHeight + (root.ipv6Expanded ? ipv6Body.implicitHeight + 14 : 0) + 32
-                radius: 16
+                color: root.cardColor
+                implicitHeight: ipv6Header.implicitHeight + (root.ipv6Expanded ? ipv6Body.implicitHeight + 16 : 0) + 36
+                radius: 18
 
                 Behavior on implicitHeight {
                     NumberAnimation {
@@ -636,61 +658,88 @@ Item {
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 14
+                    anchors.margins: 18
+                    spacing: 16
 
                     Item {
                         id: ipv6Header
 
                         Layout.fillWidth: true
-                        implicitHeight: 40
+                        implicitHeight: 52
 
-                        ColumnLayout {
-                            anchors.left: parent.left
-                            anchors.right: ipv6ExpandIcon.left
-                            anchors.rightMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
+                        RowLayout {
+                            anchors.fill: parent
+                            spacing: 12
 
-                            Text {
+                            Rectangle {
+                                Layout.preferredHeight: 38
+                                Layout.preferredWidth: 38
+                                color: Config.alpha(Config.md3.secondary_container, 0.92)
+                                radius: 12
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    color: Config.md3.on_secondary_container
+                                    font.family: Config.fontName
+                                    font.pixelSize: 18
+                                    font.weight: Font.Black
+                                    text: "6"
+                                }
+                            }
+                            ColumnLayout {
                                 Layout.fillWidth: true
-                                color: Config.md3.on_surface
-                                font.family: Config.fontName
-                                font.pixelSize: 15
-                                font.weight: Font.DemiBold
-                                text: "IPv6"
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                color: Config.alpha(Config.md3.on_surface, 0.45)
-                                font.family: Config.fontName
-                                font.pixelSize: 12
-                                text: root.ipv6Method === "manual" ? "Manual address" : root.ipv6Method === "disabled" ? "Disabled" : "Automatic"
-                            }
-                        }
-                        IconImage {
-                            id: ipv6ExpandIcon
+                                spacing: 2
 
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            height: 18
-                            layer.enabled: true
-                            rotation: root.ipv6Expanded ? 180 : 0
-                            source: Quickshell.iconPath("pan-down-symbolic")
-                            width: 18
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface_variant
+                                Text {
+                                    Layout.fillWidth: true
+                                    color: Config.md3.on_surface
+                                    font.family: Config.fontName
+                                    font.pixelSize: root.titleFontSize
+                                    font.weight: Font.Bold
+                                    text: "IPv6"
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    color: Config.alpha(Config.md3.on_surface, 0.58)
+                                    elide: Text.ElideRight
+                                    font.family: Config.fontName
+                                    font.pixelSize: root.supportingFontSize
+                                    text: root.ipv6Method === "manual" ? "Manual address" : root.ipv6Method === "disabled" ? "Disabled" : "Automatic configuration"
+                                }
                             }
-                            Behavior on rotation {
-                                NumberAnimation {
-                                    duration: 180
+                            Rectangle {
+                                Layout.preferredHeight: 38
+                                Layout.preferredWidth: 38
+                                color: ipv6HeaderMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.045)
+                                radius: 12
+
+                                IconImage {
+                                    id: ipv6ExpandIcon
+
+                                    anchors.centerIn: parent
+                                    height: 20
+                                    layer.enabled: true
+                                    rotation: root.ipv6Expanded ? 180 : 0
+                                    source: Quickshell.iconPath("pan-down-symbolic")
+                                    width: 20
+
+                                    layer.effect: ColorOverlay {
+                                        color: Config.md3.on_surface_variant
+                                    }
+                                    Behavior on rotation {
+                                        NumberAnimation {
+                                            duration: 180
+                                        }
+                                    }
                                 }
                             }
                         }
                         MouseArea {
+                            id: ipv6HeaderMouse
+
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
 
                             onClicked: root.ipv6Expanded = !root.ipv6Expanded
                         }
@@ -714,14 +763,16 @@ Item {
                                 Text {
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 13
+                                    font.pixelSize: 15
                                     font.weight: Font.DemiBold
                                     text: "IP assignment"
                                 }
                                 SettingsSegmentedControl {
                                     Layout.fillWidth: true
-                                    backgroundColor: Config.alpha(Config.md3.on_surface, 0.07)
+                                    Layout.preferredHeight: 44
+                                    backgroundColor: Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.70 : 0.46)
                                     enabled: !root.applying
+                                    fontPixelSize: 15
                                     options: [
                                         {
                                             "label": "Automatic",
@@ -743,19 +794,19 @@ Item {
                             }
                             Rectangle {
                                 Layout.fillWidth: true
-                                border.color: Config.alpha(Config.md3.primary, 0.10)
+                                border.color: Config.alpha(Config.md3.primary, 0.16)
                                 border.width: 1
-                                color: Config.alpha(Config.md3.primary, 0.055)
-                                implicitHeight: root.ipv6Method === "disabled" ? 0 : 60
+                                color: Config.alpha(Config.md3.primary, Config.lightTheme ? 0.09 : 0.075)
+                                implicitHeight: root.ipv6Method === "disabled" ? 0 : 68
                                 opacity: root.ipv6Method === "disabled" ? 0 : 1
-                                radius: 14
+                                radius: 15
                                 visible: root.ipv6Method !== "disabled"
 
                                 RowLayout {
                                     anchors.fill: parent
-                                    anchors.leftMargin: 14
-                                    anchors.rightMargin: 14
-                                    spacing: 14
+                                    anchors.leftMargin: 16
+                                    anchors.rightMargin: 16
+                                    spacing: 16
 
                                     ColumnLayout {
                                         Layout.fillWidth: true
@@ -764,14 +815,14 @@ Item {
                                         Text {
                                             color: Config.md3.on_surface
                                             font.family: Config.fontName
-                                            font.pixelSize: 13
-                                            font.weight: Font.DemiBold
+                                            font.pixelSize: 15
+                                            font.weight: Font.Bold
                                             text: "DNS assignment"
                                         }
                                         Text {
-                                            color: Config.md3.on_surface_variant
+                                            color: Config.alpha(Config.md3.on_surface, 0.58)
                                             font.family: Config.fontName
-                                            font.pixelSize: 11
+                                            font.pixelSize: root.supportingFontSize
                                             text: root.ipv6AutomaticDns ? "Automatic (from the network)" : "Custom servers below"
                                         }
                                     }
@@ -823,18 +874,36 @@ Item {
             }
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.on_surface, 0.09)
+                border.color: root.cardOutlineColor
                 border.width: 1
-                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.58 : 0.22)
-                implicitHeight: 64
-                radius: 16
+                color: root.cardColor
+                implicitHeight: 76
+                radius: 18
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 14
+                    anchors.leftMargin: 16
+                    anchors.rightMargin: 16
                     spacing: 14
 
+                    Rectangle {
+                        Layout.preferredHeight: 42
+                        Layout.preferredWidth: 42
+                        color: Config.alpha(Config.md3.tertiary_container, 0.90)
+                        radius: 13
+
+                        IconImage {
+                            anchors.centerIn: parent
+                            height: 21
+                            layer.enabled: true
+                            source: Quickshell.iconPath("network-wireless-symbolic")
+                            width: 21
+
+                            layer.effect: ColorOverlay {
+                                color: Config.md3.on_tertiary_container
+                            }
+                        }
+                    }
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
@@ -842,14 +911,16 @@ Item {
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
+                            font.pixelSize: 16
+                            font.weight: Font.Bold
                             text: "Connect automatically"
                         }
                         Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.42)
+                            Layout.fillWidth: true
+                            color: Config.alpha(Config.md3.on_surface, 0.58)
+                            elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 11
+                            font.pixelSize: root.supportingFontSize
                             text: root.autoConnect ? "Join this network when it is available" : "Connect only when requested"
                         }
                     }

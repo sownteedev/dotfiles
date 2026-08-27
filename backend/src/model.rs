@@ -56,6 +56,17 @@ pub struct RankedProcess {
     pub value: f64,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct ProcessMemoryDetails {
+    pub pid: u32,
+    pub process_count: u32,
+    pub measured_process_count: u32,
+    pub rss_mib: f64,
+    pub pss_mib: Option<f64>,
+    pub pss_dirty_mib: Option<f64>,
+    pub private_mib: Option<f64>,
+}
+
 #[derive(Clone, Copy, Debug, Default)]
 pub struct GpuStats {
     pub usage: f64,

@@ -25,6 +25,7 @@ Item {
 
     // KDL extra features (VRR, focus-at-startup)
     readonly property var kdlOptions: DisplayService.kdlOptions
+    property bool monitorDragActive: false
     property var popupModel: []
     property bool popupOpen: false
     property bool popupOpenAbove: false
@@ -58,6 +59,16 @@ Item {
         if (transformVal === "90")
             return "Portrait (Flipped)";
         return transformVal;
+    }
+    function getVrrMode(outputName) {
+        return DisplayService.vrrMode(outputName);
+    }
+    function getVrrModeLabel(mode) {
+        if (mode === "on")
+            return qsTr("On");
+        if (mode === "on-demand")
+            return qsTr("On Demand");
+        return qsTr("Off");
     }
     function handleMonitorDrop(draggedIndex, currentVisualX, currentVisualY, visualW, visualH) {
         if (displayPageRoot.allOutputs.length < 2)
@@ -226,6 +237,8 @@ Item {
                 refreshRate = output.modes[output.current_mode].refresh_rate / 1000;
             return Math.abs(refreshRate - parseFloat(item.value)) < 0.05;
         }
+        if (activeDropdown === "vrr")
+            return getVrrMode(targetOutput) === item.value;
         return false;
     }
     function refreshAll() {
@@ -270,6 +283,8 @@ Item {
                 height = output.modes[output.current_mode].height;
             }
             updateConfig(targetOutput, "mode", width + "x" + height + "@" + parseFloat(value).toFixed(3));
+        } else if (activeDropdown === "vrr") {
+            updateVrrMode(targetOutput, value);
         }
         popupOpen = false;
     }
@@ -278,6 +293,9 @@ Item {
     }
     function updateConfig(output, field, value) {
         DisplayService.updateConfig(output, field, value);
+    }
+    function updateVrrMode(output, mode) {
+        DisplayService.setVrrMode(output, mode);
     }
 
     anchors.fill: parent
@@ -317,7 +335,7 @@ Item {
         clip: true
         contentHeight: contentLayout.implicitHeight
         contentWidth: width
-        interactive: !displayPageRoot.popupOpen
+        interactive: !displayPageRoot.popupOpen && !displayPageRoot.monitorDragActive
 
         ColumnLayout {
             id: contentLayout
@@ -759,7 +777,14 @@ Item {
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: monitorRect.isDragging ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                                preventStealing: true
 
+                                onCanceled: {
+                                    displayPageRoot.monitorDragActive = false;
+                                    monitorRect.isDragging = false;
+                                    monitorRect.dragX = 0;
+                                    monitorRect.dragY = 0;
+                                }
                                 onPositionChanged: mouse => {
                                     if (monitorRect.isDragging) {
                                         monitorRect.dragX += mouse.x - monitorRect.startX;
@@ -767,6 +792,7 @@ Item {
                                     }
                                 }
                                 onPressed: mouse => {
+                                    displayPageRoot.monitorDragActive = true;
                                     monitorRect.isDragging = true;
                                     monitorRect.startX = mouse.x;
                                     monitorRect.startY = mouse.y;
@@ -779,6 +805,7 @@ Item {
                                         monitorRect.dragX = 0;
                                         monitorRect.dragY = 0;
                                     }
+                                    displayPageRoot.monitorDragActive = false;
                                 }
                             }
                         }
@@ -867,34 +894,81 @@ Item {
                 spacing: 8
                 visible: displayPageRoot.selectedOutputName !== ""
 
-                ColumnLayout {
-                    spacing: 2
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
 
-                    Text {
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 16
-                        font.weight: Font.Bold
-                        text: "Display Configuration (" + displayPageRoot.selectedOutputName + ")"
-                    }
-                    Text {
-                        color: Config.md3.outline
-                        font.family: Config.fontName
-                        font.pixelSize: 12
-                        font.weight: Font.Medium
-                        text: {
-                            var outData = activeOutputCard.activeOutputData;
-                            if (!outData)
-                                return "";
-                            var make = outData.make || "Generic";
-                            var modelName = outData.model || "";
-                            var sizeStr = "";
-                            if (outData.physical_size && outData.physical_size.length === 2) {
-                                sizeStr = " • " + outData.physical_size[0] + " × " + outData.physical_size[1] + " mm";
+                    Rectangle {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 46
+                        Layout.preferredWidth: 46
+                        color: Config.alpha(Config.md3.primary, 0.14)
+                        radius: 14
+
+                        IconImage {
+                            anchors.centerIn: parent
+                            height: 24
+                            layer.enabled: true
+                            source: Quickshell.iconPath("video-display-symbolic")
+                            width: 24
+
+                            layer.effect: ColorOverlay {
+                                color: Config.md3.primary
                             }
-                            return make + (modelName ? " " + modelName : "") + sizeStr;
                         }
-                        visible: text !== ""
+                    }
+                    ColumnLayout {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.fillWidth: true
+                        spacing: 3
+
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.md3.on_surface
+                            elide: Text.ElideRight
+                            font.family: Config.fontName
+                            font.pixelSize: 17
+                            font.weight: Font.DemiBold
+                            text: qsTr("Display Configuration")
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.alpha(Config.md3.on_surface, 0.52)
+                            elide: Text.ElideRight
+                            font.family: Config.fontName
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            text: {
+                                var outData = activeOutputCard.activeOutputData;
+                                if (!outData)
+                                    return "";
+                                var make = outData.make || qsTr("Generic");
+                                var modelName = outData.model || "";
+                                var sizeStr = "";
+                                if (outData.physical_size && outData.physical_size.length === 2)
+                                    sizeStr = " • " + outData.physical_size[0] + " × " + outData.physical_size[1] + " mm";
+                                return make + (modelName ? " " + modelName : "") + sizeStr;
+                            }
+                            visible: text !== ""
+                        }
+                    }
+                    Rectangle {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 28
+                        Layout.preferredWidth: connectorLabel.implicitWidth + 18
+                        color: Config.alpha(Config.md3.primary, 0.14)
+                        radius: 14
+
+                        Text {
+                            id: connectorLabel
+
+                            anchors.centerIn: parent
+                            color: Config.md3.primary
+                            font.family: Config.fontName
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            text: displayPageRoot.selectedOutputName
+                        }
                     }
                 }
                 Rectangle {
@@ -902,387 +976,450 @@ Item {
                     border.color: controlRightWindow.sectionCardBorderColor
                     border.width: 1
                     color: controlRightWindow.sectionCardColor
-                    height: 330
-                    radius: 12
+                    implicitHeight: configurationLayout.implicitHeight + 24
+                    radius: 18
 
                     ColumnLayout {
+                        id: configurationLayout
+
                         anchors.fill: parent
-                        spacing: 0
+                        anchors.margins: 12
+                        spacing: 10
 
-                        // 4.1 Orientation
-                        MouseArea {
-                            id: orientRow
+                        GridLayout {
+                            id: primarySettingsGrid
 
                             Layout.fillWidth: true
-                            height: 55
-                            hoverEnabled: true
+                            columnSpacing: 10
+                            columns: width >= 390 ? 2 : 1
+                            rowSpacing: 10
 
-                            onClicked: {
-                                displayPageRoot.openPopup(orientRow, "transform", [
-                                    {
-                                        label: "Landscape",
-                                        value: "normal"
-                                    },
-                                    {
-                                        label: "Portrait",
-                                        value: "270"
-                                    },
-                                    {
-                                        label: "Landscape (Flipped)",
-                                        value: "180"
-                                    },
-                                    {
-                                        label: "Portrait (Flipped)",
-                                        value: "90"
-                                    }
-                                ]);
+                            // 4.1 Orientation
+                            DisplaySettingTile {
+                                id: orientRow
+
+                                iconName: "object-rotate-right-symbolic"
+                                label: qsTr("Orientation")
+                                value: displayPageRoot.getTransformLabel(activeOutputCard.activeOutputData && activeOutputCard.activeOutputData.logical ? activeOutputCard.activeOutputData.logical.transform : "Normal")
+
+                                onActivated: sourceItem => displayPageRoot.openPopup(sourceItem, "transform", [
+                                        {
+                                            "label": qsTr("Landscape"),
+                                            "value": "normal"
+                                        },
+                                        {
+                                            "label": qsTr("Portrait"),
+                                            "value": "270"
+                                        },
+                                        {
+                                            "label": qsTr("Landscape (Flipped)"),
+                                            "value": "180"
+                                        },
+                                        {
+                                            "label": qsTr("Portrait (Flipped)"),
+                                            "value": "90"
+                                        }
+                                    ])
                             }
 
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 16
-                                anchors.rightMargin: 16
+                            // 4.2 Resolution
+                            DisplaySettingTile {
+                                id: resRow
 
-                                Text {
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.DemiBold
-                                    text: "Orientation"
+                                iconName: "video-display-symbolic"
+                                label: qsTr("Resolution")
+                                value: {
+                                    var outData = activeOutputCard.activeOutputData;
+                                    var width = 0;
+                                    var height = 0;
+                                    if (outData) {
+                                        var modeIndex = outData.current_mode;
+                                        if (modeIndex >= 0 && modeIndex < outData.modes.length) {
+                                            width = outData.modes[modeIndex].width;
+                                            height = outData.modes[modeIndex].height;
+                                        }
+                                    }
+                                    return width + " × " + height;
                                 }
-                                Item {
-                                    Layout.fillWidth: true
+
+                                onActivated: sourceItem => {
+                                    var outData = activeOutputCard.activeOutputData;
+                                    if (!outData)
+                                        return;
+
+                                    var resList = [];
+                                    var preferredRes = "";
+                                    for (var i = 0; i < outData.modes.length; i++) {
+                                        var m = outData.modes[i];
+                                        if (m.is_preferred)
+                                            preferredRes = m.width + "x" + m.height;
+                                    }
+
+                                    for (var modeIndex = 0; modeIndex < outData.modes.length; modeIndex++) {
+                                        var mode = outData.modes[modeIndex];
+                                        var resolution = mode.width + "x" + mode.height;
+                                        if (resList.indexOf(resolution) === -1)
+                                            resList.push(resolution);
+                                    }
+
+                                    var model = [];
+                                    for (var j = 0; j < resList.length; j++) {
+                                        var labelString = resList[j];
+                                        if (resList[j] === preferredRes)
+                                            labelString += " (" + qsTr("Preferred") + ")";
+                                        model.push({
+                                            "label": labelString,
+                                            "value": resList[j]
+                                        });
+                                    }
+                                    displayPageRoot.openPopup(sourceItem, "resolution", model);
                                 }
-                                Text {
-                                    color: Config.md3.primary
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.Bold
-                                    text: displayPageRoot.getTransformLabel(activeOutputCard.activeOutputData && activeOutputCard.activeOutputData.logical ? activeOutputCard.activeOutputData.logical.transform : "Normal")
+                            }
+
+                            // 4.3 Refresh Rate
+                            DisplaySettingTile {
+                                id: rateRow
+
+                                iconName: "speedometer-symbolic"
+                                label: qsTr("Refresh Rate")
+                                value: {
+                                    var outData = activeOutputCard.activeOutputData;
+                                    var rate = 0.0;
+                                    if (outData) {
+                                        var modeIndex = outData.current_mode;
+                                        if (modeIndex >= 0 && modeIndex < outData.modes.length)
+                                            rate = outData.modes[modeIndex].refresh_rate / 1000;
+                                    }
+                                    return rate.toFixed(2) + " Hz";
                                 }
+
+                                onActivated: sourceItem => {
+                                    var outData = activeOutputCard.activeOutputData;
+                                    if (!outData)
+                                        return;
+
+                                    var currentModeIndex = outData.current_mode;
+                                    var currentWidth = 0;
+                                    var currentHeight = 0;
+                                    if (currentModeIndex >= 0 && currentModeIndex < outData.modes.length) {
+                                        currentWidth = outData.modes[currentModeIndex].width;
+                                        currentHeight = outData.modes[currentModeIndex].height;
+                                    }
+
+                                    var rateList = [];
+                                    var preferredRate = "";
+                                    for (var i = 0; i < outData.modes.length; i++) {
+                                        var mode = outData.modes[i];
+                                        if (mode.width === currentWidth && mode.height === currentHeight) {
+                                            var rateString = (mode.refresh_rate / 1000).toFixed(3) + " Hz";
+                                            if (rateList.indexOf(rateString) === -1)
+                                                rateList.push(rateString);
+                                            if (mode.is_preferred)
+                                                preferredRate = rateString;
+                                        }
+                                    }
+
+                                    var model = [];
+                                    for (var j = 0; j < rateList.length; j++) {
+                                        var labelString = rateList[j];
+                                        if (rateList[j] === preferredRate)
+                                            labelString += " (" + qsTr("Preferred") + ")";
+                                        model.push({
+                                            "label": labelString,
+                                            "value": rateList[j]
+                                        });
+                                    }
+                                    displayPageRoot.openPopup(sourceItem, "refreshRate", model);
+                                }
+                            }
+
+                            // 4.4 Scale
+                            DisplaySettingTile {
+                                id: scaleRow
+
+                                iconName: "zoom-fit-best-symbolic"
+                                label: qsTr("Scale")
+                                value: {
+                                    var outData = activeOutputCard.activeOutputData;
+                                    var scale = outData && outData.logical ? outData.logical.scale : 1.0;
+                                    return Math.round(scale * 100) + " %";
+                                }
+
+                                onActivated: sourceItem => displayPageRoot.openPopup(sourceItem, "scale", [
+                                        {
+                                            "label": "100 %",
+                                            "value": "1.0"
+                                        },
+                                        {
+                                            "label": "125 %",
+                                            "value": "1.25"
+                                        },
+                                        {
+                                            "label": "150 %",
+                                            "value": "1.5"
+                                        },
+                                        {
+                                            "label": "200 %",
+                                            "value": "2.0"
+                                        }
+                                    ])
                             }
                         }
                         Rectangle {
                             Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.05)
-                            height: 1
-                        }
+                            border.color: Config.alpha(Config.md3.on_surface, 0.07)
+                            border.width: 1
+                            color: Config.alpha(Config.md3.on_surface, 0.035)
+                            implicitHeight: displayControlsLayout.implicitHeight
+                            radius: 14
 
-                        // 4.2 Resolution
-                        MouseArea {
-                            id: resRow
+                            ColumnLayout {
+                                id: displayControlsLayout
 
-                            Layout.fillWidth: true
-                            height: 55
-                            hoverEnabled: true
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                spacing: 0
 
-                            onClicked: {
-                                var outData = activeOutputCard.activeOutputData;
-                                if (!outData)
-                                    return;
+                                // 4.5 Focus at Startup Switch
+                                Rectangle {
+                                    id: focusRow
 
-                                var resList = [];
-                                var preferredRes = "";
-                                for (var i = 0; i < outData.modes.length; i++) {
-                                    var m = outData.modes[i];
-                                    if (m.is_preferred) {
-                                        preferredRes = m.width + "x" + m.height;
+                                    readonly property bool checked: displayPageRoot.getKdlOption(displayPageRoot.selectedOutputName, "focus")
+
+                                    function requestToggle() {
+                                        displayPageRoot.toggleKdlOption(displayPageRoot.selectedOutputName, "focus", !checked);
                                     }
-                                }
 
-                                for (var i = 0; i < outData.modes.length; i++) {
-                                    var m = outData.modes[i];
-                                    var resStr = m.width + "x" + m.height;
-                                    if (resList.indexOf(resStr) === -1) {
-                                        resList.push(resStr);
-                                    }
-                                }
-
-                                var model = [];
-                                for (var j = 0; j < resList.length; j++) {
-                                    var labelStr = resList[j];
-                                    if (resList[j] === preferredRes) {
-                                        labelStr += " (Preferred)";
-                                    }
-                                    model.push({
-                                        label: labelStr,
-                                        value: resList[j]
-                                    });
-                                }
-                                displayPageRoot.openPopup(resRow, "resolution", model);
-                            }
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 16
-                                anchors.rightMargin: 16
-
-                                Text {
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.DemiBold
-                                    text: "Resolution"
-                                }
-                                Item {
+                                    Accessible.checked: checked
+                                    Accessible.name: qsTr("Focus at Startup")
+                                    Accessible.role: Accessible.CheckBox
                                     Layout.fillWidth: true
-                                }
-                                Text {
-                                    color: Config.md3.primary
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.Bold
-                                    text: {
-                                        var outData = activeOutputCard.activeOutputData;
-                                        var w = 0, h = 0;
-                                        if (outData) {
-                                            var modeIdx = outData.current_mode;
-                                            if (modeIdx >= 0 && modeIdx < outData.modes.length) {
-                                                w = outData.modes[modeIdx].width;
-                                                h = outData.modes[modeIdx].height;
+                                    activeFocusOnTab: true
+                                    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.56) : "transparent"
+                                    border.width: 1
+                                    color: focusRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : focusRowMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
+                                    implicitHeight: 58
+                                    radius: 13
+
+                                    Behavior on border.color {
+                                        ColorAnimation {
+                                            duration: 130
+                                        }
+                                    }
+                                    Behavior on color {
+                                        ColorAnimation {
+                                            duration: 130
+                                        }
+                                    }
+
+                                    Accessible.onPressAction: requestToggle()
+                                    Keys.onReturnPressed: event => {
+                                        requestToggle();
+                                        event.accepted = true;
+                                    }
+                                    Keys.onSpacePressed: event => {
+                                        requestToggle();
+                                        event.accepted = true;
+                                    }
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 12
+                                        anchors.rightMargin: 12
+                                        spacing: 12
+
+                                        Rectangle {
+                                            Layout.preferredHeight: 36
+                                            Layout.preferredWidth: 36
+                                            color: Config.alpha(Config.md3.secondary, 0.14)
+                                            radius: 11
+
+                                            IconImage {
+                                                anchors.centerIn: parent
+                                                height: 19
+                                                layer.enabled: true
+                                                source: Quickshell.iconPath("go-home-symbolic")
+                                                width: 19
+
+                                                layer.effect: ColorOverlay {
+                                                    color: Config.md3.secondary
+                                                }
                                             }
                                         }
-                                        return w + " × " + h;
-                                    }
-                                }
-                            }
-                        }
-                        Rectangle {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.05)
-                            height: 1
-                        }
-
-                        // 4.3 Refresh Rate
-                        MouseArea {
-                            id: rateRow
-
-                            Layout.fillWidth: true
-                            height: 55
-                            hoverEnabled: true
-
-                            onClicked: {
-                                var outData = activeOutputCard.activeOutputData;
-                                if (!outData)
-                                    return;
-
-                                var curModeIdx = outData.current_mode;
-                                var curW = 0, curH = 0;
-                                if (curModeIdx >= 0 && curModeIdx < outData.modes.length) {
-                                    curW = outData.modes[curModeIdx].width;
-                                    curH = outData.modes[curModeIdx].height;
-                                }
-
-                                var rateList = [];
-                                var preferredRateStr = "";
-                                for (var i = 0; i < outData.modes.length; i++) {
-                                    var m = outData.modes[i];
-                                    if (m.width === curW && m.height === curH) {
-                                        var rVal = m.refresh_rate / 1000;
-                                        var rateStr = rVal.toFixed(3) + " Hz";
-                                        if (rateList.indexOf(rateStr) === -1) {
-                                            rateList.push(rateStr);
+                                        Text {
+                                            Layout.fillWidth: true
+                                            color: Config.md3.on_surface
+                                            elide: Text.ElideRight
+                                            font.family: Config.fontName
+                                            font.pixelSize: 14
+                                            font.weight: Font.DemiBold
+                                            text: qsTr("Focus at Startup")
                                         }
-                                        if (m.is_preferred) {
-                                            preferredRateStr = rateStr;
+                                        ToggleSwitch {
+                                            Accessible.ignored: true
+                                            checked: focusRow.checked
+                                            interactive: false
+                                        }
+                                    }
+                                    MouseArea {
+                                        id: focusRowMouse
+
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        hoverEnabled: true
+
+                                        onClicked: {
+                                            focusRow.forceActiveFocus();
+                                            focusRow.requestToggle();
                                         }
                                     }
                                 }
-
-                                var model = [];
-                                for (var j = 0; j < rateList.length; j++) {
-                                    var labelStr = rateList[j];
-                                    if (rateList[j] === preferredRateStr) {
-                                        labelStr += " (Preferred)";
-                                    }
-                                    model.push({
-                                        label: labelStr,
-                                        value: rateList[j]
-                                    });
-                                }
-                                displayPageRoot.openPopup(rateRow, "refreshRate", model);
-                            }
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 16
-                                anchors.rightMargin: 16
-
-                                Text {
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.DemiBold
-                                    text: "Refresh Rate"
-                                }
-                                Item {
+                                Rectangle {
                                     Layout.fillWidth: true
+                                    Layout.leftMargin: 12
+                                    Layout.rightMargin: 12
+                                    color: Config.alpha(Config.md3.on_surface, 0.07)
+                                    implicitHeight: 1
                                 }
-                                Text {
-                                    color: Config.md3.primary
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.Bold
-                                    text: {
+
+                                // 4.6 Variable Refresh Rate (VRR) mode
+                                Rectangle {
+                                    id: vrrRow
+
+                                    readonly property bool isVrrSupported: {
                                         var outData = activeOutputCard.activeOutputData;
-                                        var r = 0.0;
-                                        if (outData) {
-                                            var modeIdx = outData.current_mode;
-                                            if (modeIdx >= 0 && modeIdx < outData.modes.length) {
-                                                r = outData.modes[modeIdx].refresh_rate / 1000;
+                                        return outData ? !!outData.vrr_supported : false;
+                                    }
+
+                                    function activate() {
+                                        if (!isVrrSupported)
+                                            return;
+                                        forceActiveFocus();
+                                        displayPageRoot.openPopup(vrrRow, "vrr", [
+                                            {
+                                                "label": qsTr("Off"),
+                                                "value": "off"
+                                            },
+                                            {
+                                                "label": qsTr("On"),
+                                                "value": "on"
+                                            },
+                                            {
+                                                "label": qsTr("On Demand"),
+                                                "value": "on-demand"
+                                            }
+                                        ]);
+                                    }
+
+                                    Accessible.name: qsTr("Variable Refresh Rate: %1").arg(displayPageRoot.getVrrModeLabel(displayPageRoot.getVrrMode(displayPageRoot.selectedOutputName)))
+                                    Accessible.role: Accessible.ComboBox
+                                    Layout.fillWidth: true
+                                    activeFocusOnTab: isVrrSupported
+                                    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.56) : "transparent"
+                                    border.width: 1
+                                    color: vrrRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : vrrRowMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
+                                    implicitHeight: 58
+                                    opacity: isVrrSupported ? 1 : 0.48
+                                    radius: 13
+
+                                    Behavior on border.color {
+                                        ColorAnimation {
+                                            duration: 130
+                                        }
+                                    }
+                                    Behavior on color {
+                                        ColorAnimation {
+                                            duration: 130
+                                        }
+                                    }
+                                    Behavior on opacity {
+                                        NumberAnimation {
+                                            duration: 120
+                                        }
+                                    }
+
+                                    Accessible.onPressAction: activate()
+                                    Keys.onPressed: event => {
+                                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space || event.key === Qt.Key_Down) {
+                                            activate();
+                                            event.accepted = true;
+                                        }
+                                    }
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 12
+                                        anchors.rightMargin: 12
+                                        spacing: 12
+
+                                        Rectangle {
+                                            Layout.preferredHeight: 36
+                                            Layout.preferredWidth: 36
+                                            color: Config.alpha(Config.md3.tertiary, 0.14)
+                                            radius: 11
+
+                                            IconImage {
+                                                anchors.centerIn: parent
+                                                height: 19
+                                                layer.enabled: true
+                                                source: Quickshell.iconPath("view-refresh-symbolic")
+                                                width: 19
+
+                                                layer.effect: ColorOverlay {
+                                                    color: Config.md3.tertiary
+                                                }
                                             }
                                         }
-                                        return r.toFixed(2) + " Hz";
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 1
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                color: Config.md3.on_surface
+                                                elide: Text.ElideRight
+                                                font.family: Config.fontName
+                                                font.pixelSize: 14
+                                                font.weight: Font.DemiBold
+                                                text: qsTr("Variable Refresh Rate")
+                                            }
+                                            Text {
+                                                Layout.fillWidth: true
+                                                color: Config.alpha(Config.md3.on_surface, 0.48)
+                                                elide: Text.ElideRight
+                                                font.family: Config.fontName
+                                                font.pixelSize: 11
+                                                text: vrrRow.isVrrSupported ? qsTr("Adaptive refresh behavior") : qsTr("Not supported by this display")
+                                            }
+                                        }
+                                        Text {
+                                            color: vrrRow.isVrrSupported ? Config.md3.primary : Config.md3.outline
+                                            font.family: Config.fontName
+                                            font.pixelSize: 13
+                                            font.weight: Font.DemiBold
+                                            text: displayPageRoot.getVrrModeLabel(displayPageRoot.getVrrMode(displayPageRoot.selectedOutputName))
+                                        }
+                                        IconImage {
+                                            Layout.preferredHeight: 16
+                                            Layout.preferredWidth: 16
+                                            layer.enabled: true
+                                            source: Quickshell.iconPath("pan-down-symbolic")
+                                            visible: vrrRow.isVrrSupported
+
+                                            layer.effect: ColorOverlay {
+                                                color: Config.alpha(Config.md3.on_surface, 0.52)
+                                            }
+                                        }
                                     }
-                                }
-                            }
-                        }
-                        Rectangle {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.05)
-                            height: 1
-                        }
+                                    MouseArea {
+                                        id: vrrRowMouse
 
-                        // 4.4 Scale
-                        MouseArea {
-                            id: scaleRow
+                                        anchors.fill: parent
+                                        cursorShape: vrrRow.isVrrSupported ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                        enabled: vrrRow.isVrrSupported
+                                        hoverEnabled: true
 
-                            Layout.fillWidth: true
-                            height: 55
-                            hoverEnabled: true
-
-                            onClicked: {
-                                displayPageRoot.openPopup(scaleRow, "scale", [
-                                    {
-                                        label: "100 %",
-                                        value: "1.0"
-                                    },
-                                    {
-                                        label: "125 %",
-                                        value: "1.25"
-                                    },
-                                    {
-                                        label: "150 %",
-                                        value: "1.5"
-                                    },
-                                    {
-                                        label: "200 %",
-                                        value: "2.0"
-                                    }
-                                ]);
-                            }
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 16
-                                anchors.rightMargin: 16
-
-                                Text {
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.DemiBold
-                                    text: "Scale"
-                                }
-                                Item {
-                                    Layout.fillWidth: true
-                                }
-                                Text {
-                                    color: Config.md3.primary
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.Bold
-                                    text: {
-                                        var outData = activeOutputCard.activeOutputData;
-                                        var s = outData && outData.logical ? outData.logical.scale : 1.0;
-                                        return Math.round(s * 100) + " %";
-                                    }
-                                }
-                            }
-                        }
-                        Rectangle {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.05)
-                            height: 1
-                        }
-
-                        // 4.5 Focus at Startup Switch
-                        Rectangle {
-                            Layout.fillWidth: true
-                            color: "transparent"
-                            height: 55
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 16
-                                anchors.rightMargin: 16
-
-                                Text {
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.DemiBold
-                                    text: "Focus at Startup"
-                                }
-                                Item {
-                                    Layout.fillWidth: true
-                                }
-                                ToggleSwitch {
-                                    checked: displayPageRoot.getKdlOption(displayPageRoot.selectedOutputName, "focus")
-                                    height: 22
-                                    thumbMargin: 3
-                                    width: 42
-
-                                    onToggled: checked => {
-                                        displayPageRoot.toggleKdlOption(displayPageRoot.selectedOutputName, "focus", checked);
-                                    }
-                                }
-                            }
-                        }
-                        Rectangle {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.05)
-                            height: 1
-                        }
-
-                        // 4.6 Variable Refresh Rate (VRR) Switch
-                        Rectangle {
-                            property bool isVrrSupported: {
-                                var outData = activeOutputCard.activeOutputData;
-                                return outData ? !!outData.vrr_supported : false;
-                            }
-
-                            Layout.fillWidth: true
-                            color: "transparent"
-                            height: 55
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 16
-                                anchors.rightMargin: 16
-
-                                Text {
-                                    color: parent.parent.isVrrSupported ? Config.md3.on_surface : Config.md3.outline
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.DemiBold
-                                    text: parent.parent.isVrrSupported ? "Variable Refresh Rate (VRR)" : "Variable Refresh Rate (VRR) (Not Supported)"
-                                }
-                                Item {
-                                    Layout.fillWidth: true
-                                }
-
-                                // Switch
-                                ToggleSwitch {
-                                    checked: displayPageRoot.getKdlOption(displayPageRoot.selectedOutputName, "vrr")
-                                    enabled: parent.parent.isVrrSupported
-                                    height: 22
-                                    opacity: parent.parent.isVrrSupported ? 1.0 : 0.4
-                                    thumbMargin: 3
-                                    width: 42
-
-                                    onToggled: checked => {
-                                        displayPageRoot.toggleKdlOption(displayPageRoot.selectedOutputName, "vrr", checked);
+                                        onClicked: vrrRow.activate()
                                     }
                                 }
                             }
@@ -1370,7 +1507,9 @@ Item {
         model: displayPageRoot.popupModel
         openAbove: displayPageRoot.popupOpenAbove
         opened: displayPageRoot.popupOpen
+        popupWidth: displayPageRoot.activeDropdown === "vrr" ? 220 : displayPageRoot.popupWidth
         popupY: displayPageRoot.popupY
+        rightMargin: displayPageRoot.activeDropdown === "vrr" ? 12 : Math.max(12, width - displayPageRoot.popupX - popupWidth)
         rowHeight: 40
 
         onDismissed: displayPageRoot.popupOpen = false

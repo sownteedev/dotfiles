@@ -21,13 +21,60 @@ QtObject {
     property string gpuModelName: ""
     property int gpuTemp: 0
     property real maxNetworkSpeed: 1048576
+    property Process memoryDetailsQuery: Process {
+        id: memoryDetailsQuery
+
+        property int requestedPid: -1
+
+        stdout: StdioCollector {
+            id: memoryDetailsOutput
+        }
+
+        onExited: exitCode => {
+            var completedPid = requestedPid;
+            var details = null;
+            if (exitCode === 0) {
+                try {
+                    details = JSON.parse(memoryDetailsOutput.text.trim());
+                } catch (error) {
+                    details = null;
+                }
+            }
+            if (completedPid > 1) {
+                statsRoot.processMemoryDetailsPid = completedPid;
+                statsRoot.processMemoryDetails = details && Number(details.pid) === completedPid ? details : {
+                    "pid": completedPid,
+                    "process_count": 0,
+                    "measured_process_count": 0,
+                    "rss_mib": null,
+                    "pss_mib": null,
+                    "pss_dirty_mib": null,
+                    "private_mib": null
+                };
+                statsRoot.processMemoryDetailsTimestamp = Date.now();
+            }
+            requestedPid = -1;
+
+            var nextPid = statsRoot.pendingMemoryDetailsPid;
+            statsRoot.pendingMemoryDetailsPid = -1;
+            if (nextPid > 1 && nextPid === statsRoot.processMemoryDetailsRequestedPid)
+                Qt.callLater(function () {
+                    statsRoot.startProcessMemoryDetailsQuery(nextPid);
+                });
+        }
+    }
     property string networkInterface: ""
+    property int pendingMemoryDetailsPid: -1
 
     // Stats are only displayed inside ControlRight. Keeping the sampler alive
     // while that panel is closed needlessly wakes Python and nvidia-smi.
     property bool pollingEnabled: false
     property double prevCpuIdle: 0
     property double prevCpuTotal: 0
+    property var processMemoryDetails: null
+    property int processMemoryDetailsPid: -1
+    property int processMemoryDetailsRequestedPid: -1
+    property double processMemoryDetailsTimestamp: 0
     property string processMode: "none"
     property int processRevision: 0
     property var ramHistory: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -165,10 +212,22 @@ QtObject {
         arr.push(newValue);
         return arr;
     }
+    function clearProcessMemoryDetails() {
+        pendingMemoryDetailsPid = -1;
+        processMemoryDetails = null;
+        processMemoryDetailsPid = -1;
+        processMemoryDetailsRequestedPid = -1;
+        processMemoryDetailsTimestamp = 0;
+        if (memoryDetailsQuery.running) {
+            memoryDetailsQuery.requestedPid = -1;
+            memoryDetailsQuery.running = false;
+        }
+    }
     function clearProcessModels() {
         topCpu.clear();
         topRam.clear();
         topGpu.clear();
+        clearProcessMemoryDetails();
         processRevision++;
     }
     function formatSpeed(bytes) {
@@ -206,6 +265,21 @@ QtObject {
         txHistory = arrTx;
         statsInitialized = true;
     }
+    function requestProcessMemoryDetails(pid) {
+        var processId = Math.trunc(Number(pid));
+        if (processId <= 1 || processMode !== "ram")
+            return;
+
+        processMemoryDetailsRequestedPid = processId;
+        if (processMemoryDetailsPid === processId && Date.now() - processMemoryDetailsTimestamp < 2500)
+            return;
+        if (memoryDetailsQuery.running) {
+            if (memoryDetailsQuery.requestedPid !== processId)
+                pendingMemoryDetailsPid = processId;
+            return;
+        }
+        startProcessMemoryDetailsQuery(processId);
+    }
     function resolveLocalPath(relativePath) {
         var path = Qt.resolvedUrl(relativePath).toString();
         if (path.startsWith("file://")) {
@@ -217,6 +291,13 @@ QtObject {
         if (statsStream.running)
             statsStream.write(processMode + "\n");
     }
+    function startProcessMemoryDetailsQuery(pid) {
+        if (pid <= 1 || processMode !== "ram")
+            return;
+        memoryDetailsQuery.requestedPid = pid;
+        memoryDetailsQuery.command = [getStatsLauncherPath(), "--process-memory", String(pid)];
+        memoryDetailsQuery.running = true;
+    }
     function terminateProcess(pid, name) {
         var processId = Math.trunc(Number(pid));
         if (processId <= 1 || terminator.running)
@@ -225,7 +306,7 @@ QtObject {
         terminationError = "";
         terminatingPid = processId;
         terminatingProcessName = String(name || "");
-        terminator.command = ["kill", "-TERM", "--", String(processId)];
+        terminator.command = [getStatsLauncherPath(), "--terminate-tree", String(processId)];
         terminator.running = true;
     }
     function updateProcessModel(target, incoming) {

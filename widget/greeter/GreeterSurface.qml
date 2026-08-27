@@ -16,6 +16,7 @@ Item {
     }
     readonly property bool batteryCharging: batteryDevice && (batteryDevice.state === UPowerDeviceState.Charging || batteryDevice.state === UPowerDeviceState.PendingCharge || (batteryDevice.state === UPowerDeviceState.FullyCharged && !UPower.onBattery))
     readonly property var batteryDevice: UPower.displayDevice
+    readonly property bool batteryExternalPower: batteryDevice && (!UPower.onBattery || batteryCharging || batteryDevice.state === UPowerDeviceState.FullyCharged)
     readonly property int batteryPercentage: batteryDevice ? Math.round(batteryDevice.percentage * 100) : 0
     readonly property var devices: Networking.devices ? Networking.devices.values : []
     readonly property bool hasBattery: batteryDevice && batteryDevice.ready && batteryDevice.isLaptopBattery
@@ -116,8 +117,9 @@ Item {
             scaleFactor: root.scaleFactor
         }
         GreeterBatteryIcon {
-            accentColor: root.batteryCharging ? GreeterTheme.primary : root.batteryPercentage <= 15 ? GreeterTheme.error : GreeterTheme.surfaceVariantText
+            accentColor: root.batteryExternalPower ? GreeterTheme.secondary : root.batteryPercentage <= 33 ? "#e05c5c" : root.batteryPercentage <= 66 ? "#e0a040" : "#91f08b"
             charging: root.batteryCharging
+            externalPower: root.batteryExternalPower
             percentage: root.batteryPercentage
             scaleFactor: root.scaleFactor
             visible: root.hasBattery

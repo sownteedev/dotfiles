@@ -132,12 +132,15 @@ QtObject {
     }
     readonly property string niriOutputConfig: dotfilesDir + "/.config/niri/include/outputs.kdl"
     property alias notificationBlockedApps: runtimeSettings.notificationBlockedApps
+    property alias notificationCriticalTimeout: runtimeSettings.notificationCriticalTimeout
     property alias notificationDndEnd: runtimeSettings.notificationDndEnd
     property alias notificationDndScheduleEnabled: runtimeSettings.notificationDndScheduleEnabled
     property alias notificationDndStart: runtimeSettings.notificationDndStart
     property alias notificationHistoryExcludedApps: runtimeSettings.notificationHistoryExcludedApps
     property alias notificationHistoryLimit: runtimeSettings.notificationHistoryLimit
+    property alias notificationLowTimeout: runtimeSettings.notificationLowTimeout
     property alias notificationMaxVisible: runtimeSettings.notificationMaxVisible
+    property alias notificationNormalTimeout: runtimeSettings.notificationNormalTimeout
     property alias notificationPopupDuration: runtimeSettings.notificationPopupDuration
     property alias notificationPosition: runtimeSettings.notificationPosition
     property alias notificationShowInFullscreen: runtimeSettings.notificationShowInFullscreen
@@ -216,12 +219,15 @@ QtObject {
             property bool matugenEnabled: true
             property int matugenTransitionDuration: 300
             property string notificationBlockedApps: ""
+            property int notificationCriticalTimeout: 0
             property string notificationDndEnd: "07:00"
             property bool notificationDndScheduleEnabled: false
             property string notificationDndStart: "23:00"
             property string notificationHistoryExcludedApps: ""
             property int notificationHistoryLimit: 100
+            property int notificationLowTimeout: notificationPopupDuration
             property int notificationMaxVisible: 3
+            property int notificationNormalTimeout: notificationPopupDuration
             property int notificationPopupDuration: 5000
             property string notificationPosition: "top"
             property bool notificationShowInFullscreen: true

@@ -13,6 +13,7 @@ Item {
 
     readonly property var activeActionPage: activeSection === 3 ? animationsLoader.item : activeSection === 4 ? behaviorLoader.item : activeSection === 5 ? rulesLoader.item : activeSection === 6 ? configFilesLoader.item : null
     property int activeSection: 0
+    readonly property bool compactLayout: width < Responsive.settingsCompactContentWidth
     readonly property bool headerActionEnabled: activeSection === 1 ? !SettingsHubService.busy : Boolean(activeActionPage && activeActionPage.headerActionEnabled !== false)
     readonly property string headerActionIcon: activeActionPage ? activeActionPage.headerActionIcon || "document-save-symbolic" : "document-save-symbolic"
     readonly property string headerActionText: activeSection === 1 ? (SettingsHubService.busy ? "Applying…" : "Apply layout") : activeActionPage ? activeActionPage.headerActionText || "Apply" : ""
@@ -381,15 +382,22 @@ Item {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     clip: true
-                    contentWidth: Math.max(availableWidth, 900)
+                    contentHeight: keybindContent.implicitHeight
+                    contentWidth: availableWidth
 
                     ScrollBar.horizontal: SlimScrollBar {
+                        policy: ScrollBar.AlwaysOff
                     }
                     ScrollBar.vertical: SlimScrollBar {
                     }
 
-                    RowLayout {
-                        spacing: 14
+                    GridLayout {
+                        id: keybindContent
+
+                        columnSpacing: 14
+                        columns: root.compactLayout ? 1 : 2
+                        rowSpacing: 14
+                        uniformCellWidths: true
                         width: keybindScroll.contentWidth
 
                         Repeater {
@@ -401,7 +409,7 @@ Item {
 
                                 Layout.alignment: Qt.AlignTop
                                 Layout.fillWidth: true
-                                Layout.preferredWidth: (keybindScroll.contentWidth - 14) / 2
+                                Layout.minimumWidth: 0
                                 spacing: 14
 
                                 Repeater {
@@ -431,10 +439,11 @@ Item {
                 Layout.fillWidth: true
                 clip: true
                 contentHeight: layoutContent.implicitHeight + 26
-                contentWidth: Math.max(availableWidth, 920)
+                contentWidth: availableWidth
 
                 ScrollBar.horizontal: SlimScrollBar {
                     accentColor: Config.md3.secondary
+                    policy: ScrollBar.AlwaysOff
                 }
                 ScrollBar.vertical: SlimScrollBar {
                     accentColor: Config.md3.secondary
@@ -455,9 +464,12 @@ Item {
                         title: "Window geometry"
                         toggleVisible: false
 
-                        RowLayout {
+                        GridLayout {
                             Layout.fillWidth: true
-                            spacing: 12
+                            columnSpacing: 12
+                            columns: root.compactLayout ? 1 : 2
+                            rowSpacing: 12
+                            uniformCellWidths: true
 
                             SettingsTextField {
                                 id: gapsField
@@ -483,9 +495,12 @@ Item {
                                 placeholder: "transparent"
                             }
                         }
-                        RowLayout {
+                        GridLayout {
                             Layout.fillWidth: true
-                            spacing: 12
+                            columnSpacing: 12
+                            columns: root.compactLayout ? 1 : 2
+                            rowSpacing: 12
+                            uniformCellWidths: true
 
                             SettingsChoiceRow {
                                 id: defaultWidthMode
@@ -526,9 +541,12 @@ Item {
                                 }
                             }
                         }
-                        RowLayout {
+                        GridLayout {
                             Layout.fillWidth: true
-                            spacing: 12
+                            columnSpacing: 12
+                            columns: root.compactLayout ? 1 : 2
+                            rowSpacing: 12
+                            uniformCellWidths: true
 
                             SettingsChoiceRow {
                                 id: centerFocusedChoice
@@ -603,9 +621,12 @@ Item {
                                 }
                             }
                         }
-                        RowLayout {
+                        GridLayout {
                             Layout.fillWidth: true
-                            spacing: 12
+                            columnSpacing: 12
+                            columns: root.compactLayout ? 1 : 2
+                            rowSpacing: 12
+                            uniformCellWidths: true
 
                             SettingsExpandableCard {
                                 id: presetWidthsCard
@@ -672,7 +693,7 @@ Item {
                             GridLayout {
                                 Layout.fillWidth: true
                                 columnSpacing: 10
-                                columns: 4
+                                columns: root.compactLayout ? 2 : 4
                                 rowSpacing: 10
                                 uniformCellWidths: true
 
@@ -714,7 +735,7 @@ Item {
                         GridLayout {
                             Layout.fillWidth: true
                             columnSpacing: 12
-                            columns: 2
+                            columns: root.compactLayout ? 1 : 2
                             rowSpacing: 12
                             uniformCellWidths: true
 
@@ -754,7 +775,7 @@ Item {
                             GridLayout {
                                 Layout.fillWidth: true
                                 columnSpacing: 10
-                                columns: 5
+                                columns: root.compactLayout ? 2 : 5
                                 rowSpacing: 10
                                 uniformCellWidths: true
 
@@ -798,7 +819,7 @@ Item {
                     }
                     Item {
                         Layout.fillWidth: true
-                        implicitHeight: Math.max(blurCard.y + blurCard.height, tabIndicatorCard.y + tabIndicatorCard.height)
+                        implicitHeight: root.compactLayout ? tabIndicatorCard.y + tabIndicatorCard.height : Math.max(blurCard.y + blurCard.height, tabIndicatorCard.y + tabIndicatorCard.height)
 
                         SettingsExpandableCard {
                             id: borderCard
@@ -809,7 +830,7 @@ Item {
                             iconName: "focus-windows-symbolic"
                             note: "Draw a configurable border around windows"
                             title: "Window border"
-                            width: (parent.width - 16) / 2
+                            width: root.compactLayout ? parent.width : (parent.width - 16) / 2
 
                             onToggled: checked => {
                                 return borderCard.checked = checked;
@@ -830,7 +851,7 @@ Item {
                             GridLayout {
                                 Layout.fillWidth: true
                                 columnSpacing: 10
-                                columns: 3
+                                columns: root.compactLayout ? 2 : 3
                                 rowSpacing: 10
                                 uniformCellWidths: true
 
@@ -890,12 +911,14 @@ Item {
                             id: focusRingCard
 
                             accentColor: Config.md3.secondary
-                            anchors.right: parent.right
-                            anchors.top: parent.top
+                            anchors.left: root.compactLayout ? parent.left : undefined
+                            anchors.right: root.compactLayout ? undefined : parent.right
+                            anchors.top: root.compactLayout ? borderCard.bottom : parent.top
+                            anchors.topMargin: root.compactLayout ? 16 : 0
                             iconName: "focus-windows-symbolic"
                             note: "Highlight the currently focused window"
                             title: "Focus ring"
-                            width: (parent.width - 16) / 2
+                            width: root.compactLayout ? parent.width : (parent.width - 16) / 2
 
                             onToggled: checked => {
                                 return focusRingCard.checked = checked;
@@ -915,7 +938,7 @@ Item {
                             GridLayout {
                                 Layout.fillWidth: true
                                 columnSpacing: 10
-                                columns: 3
+                                columns: root.compactLayout ? 2 : 3
                                 rowSpacing: 10
                                 uniformCellWidths: true
 
@@ -976,12 +999,12 @@ Item {
 
                             accentColor: Config.md3.tertiary
                             anchors.left: parent.left
-                            anchors.top: borderCard.bottom
+                            anchors.top: root.compactLayout ? focusRingCard.bottom : borderCard.bottom
                             anchors.topMargin: 16
                             iconName: "insert-object-symbolic"
                             note: "Show where a dragged window will be inserted"
                             title: "Drag insert hint"
-                            width: (parent.width - 16) / 2
+                            width: root.compactLayout ? parent.width : (parent.width - 16) / 2
 
                             onToggled: checked => {
                                 return insertHintCard.checked = checked;
@@ -1025,7 +1048,7 @@ Item {
                             iconName: "weather-fog-symbolic"
                             note: "GPU blur quality and performance controls"
                             title: "Experimental blur"
-                            width: (parent.width - 16) / 2
+                            width: root.compactLayout ? parent.width : (parent.width - 16) / 2
 
                             onToggled: checked => {
                                 return blurCard.checked = checked;
@@ -1034,7 +1057,7 @@ Item {
                             GridLayout {
                                 Layout.fillWidth: true
                                 columnSpacing: 10
-                                columns: 4
+                                columns: root.compactLayout ? 2 : 4
                                 rowSpacing: 10
                                 uniformCellWidths: true
 
@@ -1088,13 +1111,14 @@ Item {
                             id: shadowCard
 
                             accentColor: Config.md3.tertiary
-                            anchors.right: parent.right
-                            anchors.top: focusRingCard.bottom
+                            anchors.left: root.compactLayout ? parent.left : undefined
+                            anchors.right: root.compactLayout ? undefined : parent.right
+                            anchors.top: root.compactLayout ? blurCard.bottom : focusRingCard.bottom
                             anchors.topMargin: 16
                             iconName: "preferences-desktop-effects-symbolic"
                             note: "Draw a configurable shadow behind windows"
                             title: "Window shadow"
-                            width: (parent.width - 16) / 2
+                            width: root.compactLayout ? parent.width : (parent.width - 16) / 2
 
                             onToggled: checked => {
                                 return shadowCard.checked = checked;
@@ -1167,13 +1191,14 @@ Item {
                             id: tabIndicatorCard
 
                             accentColor: Config.md3.primary
-                            anchors.right: parent.right
+                            anchors.left: root.compactLayout ? parent.left : undefined
+                            anchors.right: root.compactLayout ? undefined : parent.right
                             anchors.top: shadowCard.bottom
                             anchors.topMargin: 16
                             iconName: "view-list-symbolic"
                             note: "Marker for tabs in a tabbed column"
                             title: "Tabbed column indicator"
-                            width: (parent.width - 16) / 2
+                            width: root.compactLayout ? parent.width : (parent.width - 16) / 2
 
                             onToggled: checked => {
                                 return tabIndicatorCard.checked = checked;
@@ -1257,7 +1282,7 @@ Item {
                             GridLayout {
                                 Layout.fillWidth: true
                                 columnSpacing: 10
-                                columns: 3
+                                columns: root.compactLayout ? 2 : 3
                                 rowSpacing: 10
                                 uniformCellWidths: true
 
@@ -1358,7 +1383,7 @@ Item {
                             GridLayout {
                                 Layout.fillWidth: true
                                 columnSpacing: 16
-                                columns: 2
+                                columns: root.compactLayout ? 1 : 2
                                 rowSpacing: 12
                                 uniformCellWidths: true
 
@@ -1396,7 +1421,7 @@ Item {
                             GridLayout {
                                 Layout.fillWidth: true
                                 columnSpacing: 16
-                                columns: 4
+                                columns: root.compactLayout ? 2 : 4
                                 rowSpacing: 12
                                 uniformCellWidths: true
 
@@ -1448,7 +1473,7 @@ Item {
                             GridLayout {
                                 Layout.fillWidth: true
                                 columnSpacing: 16
-                                columns: 2
+                                columns: root.compactLayout ? 1 : 2
                                 rowSpacing: 12
                                 uniformCellWidths: true
 
@@ -1556,17 +1581,21 @@ Item {
                 Layout.fillWidth: true
                 clip: true
                 contentHeight: inputContent.implicitHeight + 32
-                contentWidth: Math.max(availableWidth, 800)
+                contentWidth: availableWidth
 
                 ScrollBar.horizontal: SlimScrollBar {
+                    policy: ScrollBar.AlwaysOff
                 }
                 ScrollBar.vertical: SlimScrollBar {
                 }
 
-                RowLayout {
+                GridLayout {
                     id: inputContent
 
-                    spacing: 16
+                    columnSpacing: 16
+                    columns: root.compactLayout ? 1 : 2
+                    rowSpacing: 16
+                    uniformCellWidths: true
                     width: inputScroll.contentWidth
                     y: 8
 
@@ -1579,7 +1608,7 @@ Item {
 
                             Layout.alignment: Qt.AlignTop
                             Layout.fillWidth: true
-                            Layout.preferredWidth: (inputScroll.contentWidth - 16) / 2
+                            Layout.minimumWidth: 0
                             spacing: 16
 
                             Repeater {

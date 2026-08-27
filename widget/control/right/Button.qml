@@ -127,7 +127,6 @@ Item {
             color: buttonRoot.active ? Config.md3.on_primary : Config.md3.on_surface
             font.family: buttonRoot.iconFontFamily
             font.pixelSize: 25
-            renderType: Text.NativeRendering
             scale: buttonRoot.active ? 1.05 : 0.9
             text: buttonRoot.iconGlyph
             visible: buttonRoot.iconGlyph !== ""

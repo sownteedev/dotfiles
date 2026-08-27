@@ -980,7 +980,6 @@ Item {
                         color: WeatherService.locationDetectionError ? Config.md3.error : Config.alpha(Config.md3.on_surface, 0.58)
                         font.family: Config.fontName
                         font.pixelSize: 12
-                        renderType: Text.NativeRendering
                         text: WeatherService.locationDetectionStatus
                         visible: text !== ""
                         wrapMode: Text.Wrap

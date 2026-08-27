@@ -9,6 +9,7 @@ ScrollView {
     id: root
 
     property string baselineState: ""
+    readonly property bool compactLayout: width < Responsive.settingsCompactContentWidth
     readonly property bool headerActionEnabled: !SettingsHubService.busy && slowdownValid
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Applying…" : "Apply animations"
@@ -37,10 +38,11 @@ ScrollView {
 
     clip: true
     contentHeight: content.implicitHeight
-    contentWidth: Math.max(availableWidth, 620)
+    contentWidth: availableWidth
 
     ScrollBar.horizontal: SlimScrollBar {
         accentColor: Config.md3.secondary
+        policy: ScrollBar.AlwaysOff
     }
     ScrollBar.vertical: SlimScrollBar {
         accentColor: Config.md3.secondary
@@ -144,8 +146,9 @@ ScrollView {
         GridLayout {
             Layout.fillWidth: true
             columnSpacing: 12
-            columns: 2
+            columns: root.compactLayout ? 1 : 2
             rowSpacing: 12
+            uniformCellWidths: true
 
             Repeater {
                 model: (SettingsHubService.animationSettings || {
@@ -159,6 +162,7 @@ ScrollView {
                     required property var modelData
 
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     color: Config.alpha(Config.md3.on_surface, 0.04)
                     implicitHeight: 82
                     radius: 15

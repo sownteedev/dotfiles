@@ -201,6 +201,47 @@ fn main() -> io::Result<()> {
             battery::set_charge_mode(&mode)?;
             return Ok(());
         }
+        Some("--set-charge-thresholds") => {
+            let start = arguments
+                .next()
+                .ok_or_else(|| {
+                    io::Error::new(io::ErrorKind::InvalidInput, "missing start threshold")
+                })?
+                .parse::<u8>()
+                .map_err(|_| {
+                    io::Error::new(io::ErrorKind::InvalidInput, "invalid start threshold")
+                })?;
+            let end = arguments
+                .next()
+                .ok_or_else(|| {
+                    io::Error::new(io::ErrorKind::InvalidInput, "missing end threshold")
+                })?
+                .parse::<u8>()
+                .map_err(|_| {
+                    io::Error::new(io::ErrorKind::InvalidInput, "invalid end threshold")
+                })?;
+            battery::set_charge_thresholds(start, end)?;
+            return Ok(());
+        }
+        Some("--process-memory") => {
+            let pid = arguments
+                .next()
+                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "missing process id"))?
+                .parse::<u32>()
+                .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid process id"))?;
+            let details = SystemReader::new().process_memory_details(pid)?;
+            println!("{}", json::encode_process_memory(&details));
+            return Ok(());
+        }
+        Some("--terminate-tree") => {
+            let pid = arguments
+                .next()
+                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "missing process id"))?
+                .parse::<u32>()
+                .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid process id"))?;
+            system::terminate_process_tree(pid)?;
+            return Ok(());
+        }
         Some("--battery-stream") => {
             let reader = battery::BatteryReader::new();
             let stdout = io::stdout();

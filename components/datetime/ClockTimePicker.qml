@@ -11,6 +11,7 @@ Popup {
     property int _minute: 0
     property real _pointerAngle: -90
     property bool _selectingMinute: false
+    property real backdropRadius: 20
     property Item placementParent: null
 
     signal confirmed(string h, string m)
@@ -41,16 +42,14 @@ Popup {
     }
 
     closePolicy: Popup.CloseOnEscape
+    dim: false
     focus: true
     height: placementParent ? Responsive.fitWithMargins(436, placementParent.height, 8, 340) : parent ? Responsive.fitWithMargins(436, parent.height, 8, 340) : 436
-    modal: true
+    modal: false
     padding: 0
     parent: Overlay.overlay
     width: placementParent ? Responsive.fitWithMargins(368, placementParent.width, 8, 310) : parent ? Responsive.fitWithMargins(368, parent.width, 8, 310) : 368
 
-    Overlay.modal: Rectangle {
-        color: Config.alpha(Config.md3.scrim, Config.lightTheme ? 0.22 : 0.38)
-    }
     background: Item {
         ShellShadow {
             cornerRadius: pickerSurface.radius
@@ -87,6 +86,13 @@ Popup {
 
     onAboutToShow: updatePlacement()
 
+    ScopedPopupBackdrop {
+        active: root.visible
+        cornerRadius: root.backdropRadius
+        host: root.placementParent
+
+        onDismissed: root.close()
+    }
     Flickable {
         id: contentViewport
 

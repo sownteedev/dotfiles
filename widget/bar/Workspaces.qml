@@ -51,6 +51,11 @@ RowLayout {
         var entry = DesktopEntries.byId(appId) || DesktopEntries.heuristicLookup(appId);
         return entry ? entry.name : appId;
     }
+    function isQuickshellWindow(windowData) {
+        var appId = String(windowData && windowData.app_id || "").toLowerCase();
+        var shellAppId = String(Quickshell.appId || "org.quickshell").toLowerCase();
+        return appId === shellAppId || appId === "org.quickshell" || appId === "quickshell";
+    }
     function removeWorkspaceModelEntry(workspaceId) {
         for (var index = 0; index < workspaceModel.count; index++) {
             var entry = workspaceModel.get(index);
@@ -104,6 +109,23 @@ RowLayout {
             }
         }
     }
+    function workspaceDisplayWindows(windows) {
+        var source = windows || [];
+        var visibleWindows = [];
+        for (var index = 0; index < source.length; index++) {
+            if (!root.isQuickshellWindow(source[index]))
+                visibleWindows.push(source[index]);
+        }
+        return visibleWindows;
+    }
+    function workspaceWindowPosition(windows, windowId) {
+        var source = windows || [];
+        for (var index = 0; index < source.length; index++) {
+            if (String(source[index].id) === String(windowId))
+                return index + 1;
+        }
+        return 1;
+    }
 
     spacing: 0
 
@@ -134,9 +156,10 @@ RowLayout {
         delegate: Rectangle {
             id: wsButton
 
+            readonly property var displayWindows: root.workspaceDisplayWindows(workspaceData.windows)
             property bool expanded: false
             property real expansionProgress: expanded ? 1 : 0
-            readonly property bool hasWindows: workspaceData.windows.length > 0
+            readonly property bool hasWindows: displayWindows.length > 0
             property bool inLayout: false
             required property bool pendingRemoval
             required property var workspaceData
@@ -272,10 +295,10 @@ RowLayout {
                 // Window list inside workspace (flat, no inner pills)
                 RowLayout {
                     spacing: root.compact ? 6 : 10
-                    visible: wsButton.hasWindows
+                    visible: wsButton.displayWindows.length > 0
 
                     Repeater {
-                        model: wsButton.workspaceData.windows
+                        model: wsButton.displayWindows
 
                         delegate: Item {
                             id: winIconItem
@@ -295,16 +318,16 @@ RowLayout {
                                     var draggedFromWorkspaceId = drop.source.workspaceId;
                                     var draggedFromOutput = drop.source.workspaceOutput;
                                     var targetWinId = modelData.id;
-                                    var targetPos = index + 1;
+                                    var targetPos = root.workspaceWindowPosition(wsButton.workspaceData.windows, targetWinId);
 
                                     if (draggedWinId === targetWinId)
                                         return;
 
                                     if (draggedFromWorkspaceId === wsButton.workspaceId) {
                                         // Moving within the same workspace: re-order column position
-                                        Quickshell.execDetached(["sh", "-c", "niri msg action focus-window --id \"$1\" && niri msg action move-column-to-index \"$2\"", "reorder-window", String(draggedWinId), String(targetPos)]);
+                                        WorkspaceService.moveWindowToColumn(draggedWinId, targetPos, String(draggedWinId) !== root.activeWindowId);
                                     } else {
-                                        WorkspaceService.moveWindowToWorkspace(draggedWinId, draggedFromOutput, wsButton.workspaceData);
+                                        WorkspaceService.moveWindowToWorkspace(draggedWinId, draggedFromOutput, wsButton.workspaceData, targetPos);
                                     }
                                 }
                             }

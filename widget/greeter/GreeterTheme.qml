@@ -21,6 +21,8 @@ QtObject {
     property color primaryText: "#28265b"
     property bool ready: false
     property color scrim: "#000000"
+    property color secondary: "#c5c4d8"
+    property color secondaryText: "#2e2f42"
     property color shadow: "#000000"
     property string source: ""
     property color surface: "#131313"
@@ -70,6 +72,7 @@ QtObject {
             errorContainerText = colorValue(md3.on_error_container, errorContainerText);
             primaryText = colorValue(md3.on_primary, primaryText);
             primaryContainerText = colorValue(md3.on_primary_container, primaryContainerText);
+            secondaryText = colorValue(md3.on_secondary, secondaryText);
             surfaceText = colorValue(md3.on_surface, surfaceText);
             surfaceVariantText = colorValue(md3.on_surface_variant, surfaceVariantText);
             outline = colorValue(md3.outline, outline);
@@ -77,6 +80,7 @@ QtObject {
             primary = colorValue(md3.primary, primary);
             primaryContainer = colorValue(md3.primary_container, primaryContainer);
             scrim = colorValue(md3.scrim, scrim);
+            secondary = colorValue(md3.secondary, secondary);
             shadow = colorValue(md3.shadow, shadow);
             surface = colorValue(md3.surface, surface);
             surfaceBright = colorValue(md3.surface_bright, surfaceBright);

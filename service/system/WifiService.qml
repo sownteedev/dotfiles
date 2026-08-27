@@ -99,6 +99,42 @@ QtObject {
         target: Networking
     }
     readonly property bool noInternet: connected && connectivity === NetworkConnectivity.None
+    property bool qrCodeBusy: false
+    property bool qrCodeCancelled: false
+    property string qrCodeError: ""
+    property string qrCodePath: ""
+    property Process qrCodeProcess: Process {
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (root.qrCodeCancelled || text.trim() === "")
+                    return;
+
+                try {
+                    var response = JSON.parse(text.trim());
+                    if (response.ok && response.path) {
+                        root.qrCodePath = String(response.path);
+                        root.qrCodeError = "";
+                    } else {
+                        root.qrCodeError = String(response.error || qsTr("Could not create the Wi-Fi QR code."));
+                    }
+                } catch (error) {
+                    root.qrCodeError = qsTr("The Wi-Fi QR helper returned an invalid response.");
+                }
+            }
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            root.qrCodeBusy = false;
+            if (root.qrCodeCancelled) {
+                root.qrCodeCancelled = false;
+                root.cleanupQrCodeFiles();
+                return;
+            }
+            if (exitCode !== 0 && root.qrCodeError === "")
+                root.qrCodeError = qsTr("Could not create the Wi-Fi QR code.");
+        }
+    }
+    property string qrCodeSsid: ""
     property Timer scanIndicatorTimer: Timer {
         interval: 1400
         repeat: false
@@ -224,6 +260,22 @@ QtObject {
         refreshDetails();
         settingsSaveSucceeded(ssid);
     }
+    function cleanupQrCodeFiles() {
+        Quickshell.execDetached(["python3", Config.quickshellDir + "/scripts/wifi_qr.py", "cleanup"]);
+    }
+    function clearQrCode() {
+        var previousPath = qrCodePath;
+        if (qrCodeProcess.running) {
+            qrCodeCancelled = true;
+            qrCodeProcess.running = false;
+        }
+        qrCodeBusy = false;
+        qrCodeError = "";
+        qrCodePath = "";
+        qrCodeSsid = "";
+        if (previousPath !== "")
+            Quickshell.execDetached(["python3", Config.quickshellDir + "/scripts/wifi_qr.py", "delete", "--path", previousPath]);
+    }
     function connectNetwork(network) {
         if (network)
             network.connect();
@@ -340,6 +392,45 @@ QtObject {
         detailQuery.command = ["sh", "-c", "if [ \"$1\" = \"ethernet\" ]; then " + "freq=\"\"; rate=\"\"; " + "else " + "freq=$(nmcli -t -f active,freq dev wifi | grep '^yes:' | cut -d: -f2 | tr -d ' MHz'); " + "rate=$(nmcli -t -f active,rate dev wifi | grep '^yes:' | cut -d: -f2 | tr -d ' Mbit/s'); " + "fi; " + "ip=$(ip route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \\([^ ]*\\).*/\\1/p'); " + "printf '%s|%s|%s\\n' \"$freq\" \"$rate\" \"$ip\"", "wifi-details", connectionType];
         detailQuery.running = false;
         detailQuery.running = true;
+    }
+    function requestQrCode(network) {
+        if (!network || !network.connected) {
+            qrCodeError = qsTr("Connect to the Wi-Fi network before sharing it.");
+            return false;
+        }
+        if (qrCodeBusy)
+            return false;
+
+        clearQrCode();
+        var ssid = String(network.name || "");
+        qrCodeSsid = ssid;
+        var command = ["python3", Config.quickshellDir + "/scripts/wifi_qr.py", "generate", "--ssid", ssid];
+        if (network.security === WifiSecurityType.Open) {
+            command.push("--open");
+        } else {
+            var profile = profileForSsid(ssid);
+            if (!profile) {
+                qrCodeError = qsTr("The saved NetworkManager profile could not be found.");
+                return false;
+            }
+
+            var settings = profile.read();
+            var connection = settings.connection || {};
+            var profileKey = String(connection.uuid || profile.id || "");
+            if (profileKey === "") {
+                qrCodeError = qsTr("The saved NetworkManager profile could not be identified.");
+                return false;
+            }
+            command.push("--profile", profileKey);
+        }
+
+        qrCodeCancelled = false;
+        qrCodeBusy = true;
+        qrCodeError = "";
+        qrCodeProcess.command = command;
+        qrCodeProcess.running = false;
+        qrCodeProcess.running = true;
+        return true;
     }
     function resetSettingsSaveState() {
         settingsSaveTimeout.stop();

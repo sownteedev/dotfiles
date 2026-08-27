@@ -45,7 +45,7 @@ MouseArea {
         if (transitioningDevice)
             return transitioningDevice.state === BluetoothDeviceState.Connecting ? "Connecting…" : "Disconnecting…";
         if (connectedDevice)
-            return "Connected";
+            return connectedDevice.name || connectedDevice.deviceName || "Connected";
         return "Disconnected";
     }
     property var targetScreen: null

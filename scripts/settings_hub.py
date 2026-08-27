@@ -939,12 +939,15 @@ def snapshot() -> dict[str, object]:
         "launcherFuzzySearch": True,
         "launcherMaxResults": 20,
         "notificationBlockedApps": "",
+        "notificationCriticalTimeout": 0,
         "notificationDndEnd": "07:00",
         "notificationDndScheduleEnabled": False,
         "notificationDndStart": "23:00",
         "notificationHistoryExcludedApps": "",
         "notificationHistoryLimit": 100,
+        "notificationLowTimeout": 5000,
         "notificationMaxVisible": 3,
+        "notificationNormalTimeout": 5000,
         "notificationPopupDuration": 5000,
         "notificationPosition": "top",
         "notificationShowInFullscreen": True,
@@ -1019,6 +1022,11 @@ def snapshot() -> dict[str, object]:
         try:
             runtime_settings = json.loads(RUNTIME_SETTINGS_PATH.read_text(encoding="utf-8"))
             if isinstance(runtime_settings, dict):
+                legacy_notification_timeout = runtime_settings.get("notificationPopupDuration", 5000)
+                if "notificationLowTimeout" not in runtime_settings:
+                    quickshell_settings["notificationLowTimeout"] = legacy_notification_timeout
+                if "notificationNormalTimeout" not in runtime_settings:
+                    quickshell_settings["notificationNormalTimeout"] = legacy_notification_timeout
                 legacy_blur = bool(runtime_settings.get("shellBlurEnabled", True))
                 for key in (
                     "shellBlurBarEnabled",
@@ -1968,12 +1976,15 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "launcherFuzzySearch": True,
         "launcherMaxResults": 20,
         "notificationBlockedApps": "",
+        "notificationCriticalTimeout": 0,
         "notificationDndEnd": "07:00",
         "notificationDndScheduleEnabled": False,
         "notificationDndStart": "23:00",
         "notificationHistoryExcludedApps": "",
         "notificationHistoryLimit": 100,
+        "notificationLowTimeout": 5000,
         "notificationMaxVisible": 3,
+        "notificationNormalTimeout": 5000,
         "notificationPopupDuration": 5000,
         "notificationPosition": "top",
         "notificationShowInFullscreen": True,
@@ -2053,6 +2064,12 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
                 stored = decoded
         except (OSError, json.JSONDecodeError):
             stored = {}
+
+    legacy_notification_timeout = stored.get("notificationPopupDuration", defaults["notificationPopupDuration"])
+    if "notificationLowTimeout" not in stored:
+        stored["notificationLowTimeout"] = legacy_notification_timeout
+    if "notificationNormalTimeout" not in stored:
+        stored["notificationNormalTimeout"] = legacy_notification_timeout
 
     legacy_blur = bool(stored.get("shellBlurEnabled", True))
     for key in (
@@ -2134,8 +2151,11 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         ("idleLockTimeout", 0, 86400, 600),
         ("idleSuspendTimeout", 0, 86400, 0),
         ("launcherMaxResults", 5, 50, 20),
+        ("notificationCriticalTimeout", 0, 60000, 0),
         ("notificationHistoryLimit", 0, 500, 100),
+        ("notificationLowTimeout", 0, 60000, 5000),
         ("notificationMaxVisible", 1, 6, 3),
+        ("notificationNormalTimeout", 0, 60000, 5000),
         ("notificationPopupDuration", 1000, 30000, 5000),
         ("osdDuration", 500, 10000, 2000),
         ("wallpaperBatteryFps", 5, 60, 20),
@@ -2242,7 +2262,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
     if behavior_updated != behavior_original:
         result = apply_niri_changes(
             {behavior_path: behavior_updated},
-            "Quickshell settings and Niri screenshot path saved",
+            "SownteeShell Settings and Niri screenshot path saved",
         )
         if not result["ok"]:
             return result
@@ -2252,7 +2272,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         json.dumps(settings, ensure_ascii=False, indent=2) + "\n",
     )
     os.chmod(RUNTIME_SETTINGS_PATH, 0o600)
-    return {"ok": True, "message": "Quickshell settings applied"}
+    return {"ok": True, "message": "SownteeShell Settings applied"}
 
 
 def load_payload(path: str) -> dict[str, object]:

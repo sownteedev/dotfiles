@@ -23,6 +23,7 @@ Rectangle {
     signal connectRequested(string password)
     signal expansionToggleRequested
     signal forgetRequested
+    signal qrRequested
     signal settingsRequested
 
     function submitPassword() {
@@ -115,6 +116,58 @@ Rectangle {
             font.weight: root.connected ? Font.Bold : Font.Medium
             renderType: Text.NativeRendering
             text: root.ssid
+        }
+        Rectangle {
+            id: qrButton
+
+            Accessible.name: qsTr("Show Wi-Fi QR code")
+            Accessible.role: Accessible.Button
+            Layout.preferredHeight: 26
+            Layout.preferredWidth: 26
+            activeFocusOnTab: visible
+            color: activeFocus ? Config.alpha(Config.md3.primary, 0.16) : qrPointer.containsMouse ? Config.alpha(Config.md3.on_surface, 0.07) : "transparent"
+            radius: 8
+            visible: root.connected && root.saved
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 120
+                }
+            }
+
+            Accessible.onPressAction: root.qrRequested()
+            Keys.onReturnPressed: event => {
+                root.qrRequested();
+                event.accepted = true;
+            }
+            Keys.onSpacePressed: event => {
+                root.qrRequested();
+                event.accepted = true;
+            }
+
+            IconImage {
+                anchors.centerIn: parent
+                height: 18
+                layer.enabled: true
+                source: Quickshell.iconPath("qrscanner-symbolic")
+                width: 18
+
+                layer.effect: ColorOverlay {
+                    color: qrPointer.containsMouse ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.52)
+                }
+            }
+            MouseArea {
+                id: qrPointer
+
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+
+                onClicked: {
+                    qrButton.forceActiveFocus();
+                    root.qrRequested();
+                }
+            }
         }
         Item {
             height: 20

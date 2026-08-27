@@ -101,6 +101,11 @@ PanelWindow {
         hoveredEntryId = "";
         Quickshell.execDetached(["niri", "msg", "action", "focus-window", "--id", id]);
     }
+    function isQuickshellAppId(appId) {
+        var normalized = normalizedAppId(appId);
+        var shellAppId = normalizedAppId(Quickshell.appId || "org.quickshell");
+        return normalized === shellAppId || normalized === "org.quickshell" || normalized === "quickshell";
+    }
     function modelIndexForId(entryId) {
         var id = String(entryId || "");
         for (var i = 0; i < dockModel.count; ++i) {
@@ -119,6 +124,10 @@ PanelWindow {
     }
     function modelKeyForEntry(entryId) {
         return "app:" + String(entryId || "").toLowerCase();
+    }
+    function normalizedAppId(appId) {
+        var normalized = String(appId || "").trim().toLowerCase();
+        return normalized.endsWith(".desktop") ? normalized.slice(0, -8) : normalized;
     }
     function reorderModel(entryId, targetIndex) {
         var sourceIndex = modelIndexForId(entryId);
@@ -158,7 +167,7 @@ PanelWindow {
             availableById[availableId.toLowerCase()] = availableEntry;
         }
 
-        var pinned = DockService.pinnedEntries || [];
+        var pinned = visiblePinnedEntries();
         var pinnedKeys = [];
         for (var pinnedIndex = 0; pinnedIndex < pinned.length; ++pinnedIndex)
             pinnedKeys.push(NotificationHistory.appKeys(pinned[pinnedIndex].id, pinned[pinnedIndex].name));
@@ -171,7 +180,7 @@ PanelWindow {
             for (var windowIndex = 0; windowIndex < windows.length; ++windowIndex) {
                 var windowData = windows[windowIndex];
                 var appId = String(windowData.app_id || "").trim();
-                if (appId === "")
+                if (appId === "" || isQuickshellAppId(appId))
                     continue;
 
                 var windowKeys = NotificationHistory.windowKeys(windowData);
@@ -216,7 +225,7 @@ PanelWindow {
             return;
         }
         modelSyncPending = false;
-        var pinned = DockService.pinnedEntries || [];
+        var pinned = visiblePinnedEntries();
         var discoveredRunning = runningEntries();
         var runningByKey = {};
         for (var discoveredIndex = 0; discoveredIndex < discoveredRunning.length; ++discoveredIndex)
@@ -306,6 +315,15 @@ PanelWindow {
     }
     function validLayoutPair(value) {
         return value && value.length >= 2 && value[0] !== null && value[0] !== undefined && value[1] !== null && value[1] !== undefined && !isNaN(Number(value[0])) && !isNaN(Number(value[1]));
+    }
+    function visiblePinnedEntries() {
+        var pinned = DockService.pinnedEntries || [];
+        var visibleEntries = [];
+        for (var index = 0; index < pinned.length; ++index) {
+            if (!isQuickshellAppId(pinned[index].id))
+                visibleEntries.push(pinned[index]);
+        }
+        return visibleEntries;
     }
     function windowOverlapsDock(windowData) {
         if (!windowData)
@@ -751,7 +769,6 @@ PanelWindow {
                             font.family: Config.fontName
                             font.pixelSize: 16
                             font.weight: Font.Bold
-                            renderType: Text.NativeRendering
                             text: appButton.pinned ? "−" : "+"
                         }
                         MouseArea {

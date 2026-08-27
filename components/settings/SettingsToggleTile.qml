@@ -30,17 +30,12 @@ Rectangle {
     activeFocusOnTab: enabled
     border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.7) : "transparent"
     border.width: 1
-    color: activeFocus ? Config.alpha(Config.md3.primary, 0.075) : tileMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.055) : "transparent"
+    color: "transparent"
     implicitHeight: note === "" ? 50 : 60
     opacity: enabled ? 1 : 0.45
     radius: 10
 
     Behavior on border.color {
-        ColorAnimation {
-            duration: 130
-        }
-    }
-    Behavior on color {
         ColorAnimation {
             duration: 130
         }
@@ -107,7 +102,7 @@ Rectangle {
         hoverEnabled: true
 
         onClicked: {
-            root.forceActiveFocus();
+            root.focus = false;
             root.requestToggle();
         }
     }

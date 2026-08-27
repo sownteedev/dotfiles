@@ -1,9 +1,12 @@
-use crate::model::{ProcessSample, ProcessSnapshot, RankedProcess};
-use std::collections::HashMap;
+use crate::model::{ProcessMemoryDetails, ProcessSample, ProcessSnapshot, RankedProcess};
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::thread;
+use std::time::{Duration, Instant};
 
 pub struct SystemReader {
     clock_ticks: f64,
@@ -174,11 +177,7 @@ impl SystemReader {
             } else {
                 0
             };
-            let name = if reported_name.to_ascii_lowercase().starts_with("electron") {
-                process_name(pid, &reported_name)
-            } else {
-                reported_name
-            };
+            let name = process_name(pid, &reported_name);
 
             let rss_mib = if include_ram {
                 read_text(entry.path().join("statm"))
@@ -227,6 +226,98 @@ impl SystemReader {
 
         (ranked_groups(cpu_processes), ranked_groups(ram_processes))
     }
+
+    pub fn process_memory_details(&self, root_pid: u32) -> io::Result<ProcessMemoryDetails> {
+        if root_pid <= 1 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "process id must be greater than one",
+            ));
+        }
+
+        let snapshot = self.process_snapshot(false, true);
+        let Some(target) = snapshot.get(&root_pid) else {
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "process no longer exists",
+            ));
+        };
+        let target_name = target.name.clone();
+        let mut process_count = 0_u32;
+        let mut measured_process_count = 0_u32;
+        let mut rss_mib = 0.0;
+        let mut pss_kib = 0_u64;
+        let mut pss_dirty_kib = 0_u64;
+        let mut private_kib = 0_u64;
+
+        for (pid, sample) in &snapshot {
+            if sample.name != target_name || process_group_pid(&snapshot, *pid) != root_pid {
+                continue;
+            }
+            process_count += 1;
+            rss_mib += sample.rss_mib;
+            let Some(memory) = read_smaps_rollup(*pid) else {
+                continue;
+            };
+            measured_process_count += 1;
+            pss_kib = pss_kib.saturating_add(memory.pss_kib);
+            pss_dirty_kib = pss_dirty_kib.saturating_add(memory.pss_dirty_kib);
+            private_kib = private_kib.saturating_add(memory.private_kib);
+        }
+
+        let has_detailed_sample = measured_process_count > 0;
+        Ok(ProcessMemoryDetails {
+            pid: root_pid,
+            process_count,
+            measured_process_count,
+            rss_mib,
+            pss_mib: has_detailed_sample.then_some(pss_kib as f64 / 1024.0),
+            pss_dirty_mib: has_detailed_sample.then_some(pss_dirty_kib as f64 / 1024.0),
+            private_mib: has_detailed_sample.then_some(private_kib as f64 / 1024.0),
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+struct SmapsMemory {
+    pss_kib: u64,
+    pss_dirty_kib: u64,
+    private_kib: u64,
+}
+
+fn read_smaps_rollup(pid: u32) -> Option<SmapsMemory> {
+    let content = fs::read_to_string(format!("/proc/{pid}/smaps_rollup")).ok()?;
+    parse_smaps_rollup(&content)
+}
+
+fn parse_smaps_rollup(content: &str) -> Option<SmapsMemory> {
+    let mut pss_kib = None;
+    let mut pss_dirty_kib = None;
+    let mut private_clean_kib = None;
+    let mut private_dirty_kib = None;
+
+    for line in content.lines() {
+        let Some((name, value)) = line.split_once(':') else {
+            continue;
+        };
+        let value = value
+            .split_whitespace()
+            .next()
+            .and_then(|value| value.parse::<u64>().ok());
+        match name {
+            "Pss" => pss_kib = value,
+            "Pss_Dirty" => pss_dirty_kib = value,
+            "Private_Clean" => private_clean_kib = value,
+            "Private_Dirty" => private_dirty_kib = value,
+            _ => {}
+        }
+    }
+
+    Some(SmapsMemory {
+        pss_kib: pss_kib?,
+        pss_dirty_kib: pss_dirty_kib?,
+        private_kib: private_clean_kib?.saturating_add(private_dirty_kib?),
+    })
 }
 
 fn cpu_model() -> String {
@@ -312,49 +403,56 @@ pub fn read_text(path: impl AsRef<Path>) -> String {
 }
 
 pub fn process_name(pid: u32, reported_name: &str) -> String {
-    if let Ok(environment) = fs::read(format!("/proc/{pid}/environ")) {
-        for entry in environment.split(|byte| *byte == 0) {
-            let Some(desktop) = entry.strip_prefix(b"CHROME_DESKTOP=") else {
-                continue;
-            };
-            let mut desktop = String::from_utf8_lossy(desktop).into_owned();
-            if let Some(value) = desktop.strip_suffix(".desktop") {
-                desktop = value.to_string();
+    let electron_process = reported_name.to_ascii_lowercase().starts_with("electron");
+    if electron_process {
+        if let Ok(environment) = fs::read(format!("/proc/{pid}/environ")) {
+            for entry in environment.split(|byte| *byte == 0) {
+                let Some(desktop) = entry.strip_prefix(b"CHROME_DESKTOP=") else {
+                    continue;
+                };
+                let mut desktop = String::from_utf8_lossy(desktop).into_owned();
+                if let Some(value) = desktop.strip_suffix(".desktop") {
+                    desktop = value.to_string();
+                }
+                if let Some(value) = desktop.strip_suffix("-url-handler") {
+                    desktop = value.to_string();
+                }
+                if !desktop.is_empty() {
+                    return desktop;
+                }
             }
-            if let Some(value) = desktop.strip_suffix("-url-handler") {
-                desktop = value.to_string();
+        }
+    }
+
+    if electron_process {
+        if let Ok(command_line) = fs::read(format!("/proc/{pid}/cmdline")) {
+            if let Some(app_name) = electron_app_name(&command_line) {
+                return app_name;
             }
-            if !desktop.is_empty() {
-                return desktop;
-            }
+        }
+    }
+
+    if let Ok(executable) = fs::read_link(format!("/proc/{pid}/exe")) {
+        let executable = executable.to_string_lossy().into_owned();
+        if !executable.is_empty() {
+            return executable;
         }
     }
 
     if let Ok(command_line) = fs::read(format!("/proc/{pid}/cmdline")) {
-        if let Some(app_name) = electron_app_name(&command_line) {
-            return app_name;
-        }
-
         let executable = command_line
             .split(|byte| *byte == 0)
             .next()
             .unwrap_or_default();
-        let base = Path::new(OsStr::from_bytes(executable))
-            .file_name()
-            .and_then(OsStr::to_str)
-            .unwrap_or_default();
-        if !base.is_empty() && base != "exe" {
-            return base.to_string();
+        let executable = String::from_utf8_lossy(executable).into_owned();
+        let executable = executable.split_whitespace().next().unwrap_or_default();
+        if !executable.is_empty() && executable != "exe" {
+            return executable.to_string();
         }
     }
 
-    let reported_executable = reported_name.split_whitespace().next().unwrap_or_default();
-    let reported_base = Path::new(reported_executable)
-        .file_name()
-        .and_then(OsStr::to_str)
-        .unwrap_or_default();
-    if !reported_base.is_empty() && reported_base != "exe" {
-        return reported_base.to_string();
+    if !reported_name.is_empty() {
+        return reported_name.to_string();
     }
 
     let comm = read_text(format!("/proc/{pid}/comm"));
@@ -363,6 +461,250 @@ pub fn process_name(pid: u32, reported_name: &str) -> String {
     } else {
         comm
     }
+}
+
+pub fn terminate_process_tree(root_pid: u32) -> io::Result<()> {
+    if root_pid <= 1 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "process id must be greater than one",
+        ));
+    }
+    let Some((_, root_start_time)) = process_state_and_start_time(root_pid) else {
+        return Ok(());
+    };
+
+    let initial_tree = collect_process_tree(root_pid);
+    let initial_helpers = linked_crashpad_handlers(&initial_tree);
+    let mut initial_order = initial_tree.clone();
+    initial_order.extend(initial_helpers.iter().copied());
+    let mut tracked = HashMap::new();
+    track_processes(&initial_order, &mut tracked);
+    tracked.entry(root_pid).or_insert(root_start_time);
+
+    // Signal the parent first so Electron/Chromium applications cannot replace
+    // terminated helpers while their main process is still fully running.
+    let mut terminate_order = initial_tree;
+    terminate_order.reverse();
+    terminate_order.extend(initial_helpers);
+    signal_tracked_processes("TERM", &terminate_order, &tracked)?;
+
+    let deadline = Instant::now() + Duration::from_millis(900);
+    while Instant::now() < deadline {
+        if !has_live_tracked_processes(&tracked) {
+            return Ok(());
+        }
+
+        if process_matches(root_pid, root_start_time) {
+            let current_tree = collect_process_tree(root_pid);
+            let current_helpers = linked_crashpad_handlers(&current_tree);
+            let mut current_order = current_tree;
+            current_order.extend(current_helpers);
+            let new_processes = current_order
+                .iter()
+                .filter(|pid| !tracked.contains_key(pid))
+                .copied()
+                .collect::<Vec<_>>();
+            track_processes(&new_processes, &mut tracked);
+            let mut new_terminate_order = new_processes;
+            new_terminate_order.reverse();
+            signal_tracked_processes("TERM", &new_terminate_order, &tracked)?;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+
+    if process_matches(root_pid, root_start_time) {
+        let current_tree = collect_process_tree(root_pid);
+        track_processes(&current_tree, &mut tracked);
+        track_processes(&linked_crashpad_handlers(&current_tree), &mut tracked);
+    }
+    let mut force_order = tracked.keys().copied().collect::<Vec<_>>();
+    force_order.sort_unstable_by_key(|pid| *pid == root_pid);
+    signal_tracked_processes("KILL", &force_order, &tracked)?;
+
+    let force_deadline = Instant::now() + Duration::from_millis(350);
+    while Instant::now() < force_deadline {
+        if !has_live_tracked_processes(&tracked) {
+            return Ok(());
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+
+    let remaining = tracked
+        .iter()
+        .filter(|(pid, start_time)| process_matches(**pid, **start_time))
+        .count();
+    if remaining == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::other(format!(
+            "failed to terminate {remaining} process(es)"
+        )))
+    }
+}
+
+fn collect_process_tree(root_pid: u32) -> Vec<u32> {
+    if !Path::new(&format!("/proc/{root_pid}")).exists() {
+        return Vec::new();
+    }
+
+    let mut children_by_parent: HashMap<u32, Vec<u32>> = HashMap::new();
+    if let Ok(entries) = fs::read_dir("/proc") {
+        for entry in entries.flatten() {
+            let Ok(pid) = entry.file_name().to_string_lossy().parse::<u32>() else {
+                continue;
+            };
+            let stat = read_text(entry.path().join("stat"));
+            let Some(close_paren) = stat.rfind(')') else {
+                continue;
+            };
+            let parent_pid = stat[close_paren + 1..]
+                .split_whitespace()
+                .nth(1)
+                .and_then(|value| value.parse::<u32>().ok())
+                .unwrap_or(0);
+            children_by_parent.entry(parent_pid).or_default().push(pid);
+        }
+    }
+
+    process_tree_order(root_pid, &children_by_parent)
+}
+
+fn linked_crashpad_handlers(process_ids: &[u32]) -> Vec<u32> {
+    let mut result = Vec::new();
+    let mut seen = HashSet::new();
+    for pid in process_ids {
+        let Ok(command_line) = fs::read(format!("/proc/{pid}/cmdline")) else {
+            continue;
+        };
+        for helper_pid in crashpad_handler_pids(&command_line) {
+            if seen.insert(helper_pid) && is_crashpad_handler(helper_pid) {
+                result.push(helper_pid);
+            }
+        }
+    }
+    result
+}
+
+fn crashpad_handler_pids(command_line: &[u8]) -> Vec<u32> {
+    const PREFIX: &[u8] = b"--crashpad-handler-pid=";
+    command_line
+        .split(|byte| *byte == 0)
+        .filter_map(|argument| argument.strip_prefix(PREFIX))
+        .filter_map(|value| std::str::from_utf8(value).ok()?.parse::<u32>().ok())
+        .filter(|pid| *pid > 1)
+        .collect()
+}
+
+fn is_crashpad_handler(pid: u32) -> bool {
+    if let Ok(executable) = fs::read_link(format!("/proc/{pid}/exe"))
+        && executable
+            .file_name()
+            .and_then(OsStr::to_str)
+            .is_some_and(|name| name.contains("crashpad_handler"))
+    {
+        return true;
+    }
+    fs::read(format!("/proc/{pid}/cmdline"))
+        .ok()
+        .is_some_and(|command_line| {
+            command_line
+                .split(|byte| *byte == 0)
+                .next()
+                .is_some_and(|argument| {
+                    String::from_utf8_lossy(argument).contains("crashpad_handler")
+                })
+        })
+}
+
+fn process_state_and_start_time(pid: u32) -> Option<(char, u64)> {
+    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+    let close_paren = stat.rfind(')')?;
+    let fields = stat[close_paren + 1..]
+        .split_whitespace()
+        .collect::<Vec<_>>();
+    let state = fields.first()?.chars().next()?;
+    let start_time = fields.get(19)?.parse::<u64>().ok()?;
+    Some((state, start_time))
+}
+
+fn process_matches(pid: u32, start_time: u64) -> bool {
+    matches!(
+        process_state_and_start_time(pid),
+        Some((state, current_start_time))
+            if !matches!(state, 'Z' | 'X' | 'x') && current_start_time == start_time
+    )
+}
+
+fn track_processes(process_ids: &[u32], tracked: &mut HashMap<u32, u64>) {
+    for pid in process_ids {
+        if tracked.contains_key(pid) {
+            continue;
+        }
+        if let Some((state, start_time)) = process_state_and_start_time(*pid)
+            && !matches!(state, 'Z' | 'X' | 'x')
+        {
+            tracked.insert(*pid, start_time);
+        }
+    }
+}
+
+fn signal_tracked_processes(
+    signal: &str,
+    process_ids: &[u32],
+    tracked: &HashMap<u32, u64>,
+) -> io::Result<()> {
+    let process_ids = process_ids
+        .iter()
+        .filter(|pid| {
+            tracked
+                .get(pid)
+                .is_some_and(|start_time| process_matches(**pid, *start_time))
+        })
+        .map(u32::to_string)
+        .collect::<Vec<_>>();
+    if process_ids.is_empty() {
+        return Ok(());
+    }
+
+    // A process may exit between the identity check and kill(1). Ignore that
+    // expected race; the final live-process verification reports real errors.
+    let _ = Command::new("kill")
+        .arg(format!("-{signal}"))
+        .arg("--")
+        .args(&process_ids)
+        .output()?;
+    Ok(())
+}
+
+fn has_live_tracked_processes(tracked: &HashMap<u32, u64>) -> bool {
+    tracked
+        .iter()
+        .any(|(pid, start_time)| process_matches(*pid, *start_time))
+}
+
+fn process_tree_order(root_pid: u32, children_by_parent: &HashMap<u32, Vec<u32>>) -> Vec<u32> {
+    let mut order = Vec::new();
+    let mut seen = HashSet::new();
+    let mut stack = vec![(root_pid, false)];
+
+    while let Some((pid, visited)) = stack.pop() {
+        if visited {
+            order.push(pid);
+            continue;
+        }
+        if !seen.insert(pid) {
+            continue;
+        }
+        stack.push((pid, true));
+        if let Some(children) = children_by_parent.get(&pid) {
+            for child in children {
+                stack.push((*child, false));
+            }
+        }
+    }
+
+    order
 }
 
 fn electron_app_name(command_line: &[u8]) -> Option<String> {
@@ -389,13 +731,23 @@ fn getconf(name: &str) -> Option<u64> {
 
 #[cfg(test)]
 mod process_name_tests {
-    use super::{SystemReader, electron_app_name, process_group_pid};
+    use super::{
+        SmapsMemory, SystemReader, crashpad_handler_pids, electron_app_name, parse_smaps_rollup,
+        process_group_pid, process_tree_order,
+    };
     use crate::model::{ProcessSample, ProcessSnapshot};
+    use std::collections::HashMap;
 
     #[test]
     fn resolves_electron_app_asar_parent() {
         let command_line = b"/usr/lib/electron40/electron\0/usr/lib/vesktop/app.asar\0";
         assert_eq!(electron_app_name(command_line).as_deref(), Some("vesktop"));
+    }
+
+    #[test]
+    fn resolves_linked_crashpad_handler_pid() {
+        let command_line = b"/usr/share/code/code\0--type=renderer\0--crashpad-handler-pid=456\0";
+        assert_eq!(crashpad_handler_pids(command_line), vec![456]);
     }
 
     #[test]
@@ -435,6 +787,36 @@ mod process_name_tests {
         assert_eq!(ram.len(), 1);
         assert_eq!(ram[0].pid, 100);
         assert_eq!(ram[0].value, 350.0);
+    }
+
+    #[test]
+    fn orders_descendants_before_the_parent_for_termination() {
+        let children = HashMap::from([(100, vec![110, 120]), (110, vec![111])]);
+        let order = process_tree_order(100, &children);
+
+        assert!(
+            order.iter().position(|pid| *pid == 111) < order.iter().position(|pid| *pid == 110)
+        );
+        assert!(
+            order.iter().position(|pid| *pid == 110) < order.iter().position(|pid| *pid == 100)
+        );
+        assert!(
+            order.iter().position(|pid| *pid == 120) < order.iter().position(|pid| *pid == 100)
+        );
+    }
+
+    #[test]
+    fn parses_process_memory_rollup() {
+        let rollup = "Rss:                900 kB\nPss:                600 kB\nPss_Dirty:          450 kB\nPrivate_Clean:       25 kB\nPrivate_Dirty:      400 kB\n";
+
+        assert_eq!(
+            parse_smaps_rollup(rollup),
+            Some(SmapsMemory {
+                pss_kib: 600,
+                pss_dirty_kib: 450,
+                private_kib: 425,
+            })
+        );
     }
 }
 

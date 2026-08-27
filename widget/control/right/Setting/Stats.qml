@@ -90,6 +90,10 @@ Item {
                 modelText: SysStats.ramModelName
                 processList: SysStats.topRam
                 processManagerEnabled: true
+                processMemoryDetails: SysStats.processMemoryDetails
+                processMemoryDetailsEnabled: true
+                processMemoryDetailsPid: SysStats.processMemoryDetailsPid
+                processMemoryDetailsRequestedPid: SysStats.processMemoryDetailsRequestedPid
                 processRevision: SysStats.processRevision
                 processTitle: "Memory Processes"
                 processValueSuffix: " MiB"
@@ -99,6 +103,7 @@ Item {
                 valueText: SysStats.currentRam + "%" + (SysStats.ramUsedText !== "" ? " (" + SysStats.ramUsedText + ")" : "")
 
                 onClicked: root.toggleProcessChart("ram")
+                onProcessMemoryDetailsRequested: pid => SysStats.requestProcessMemoryDetails(pid)
                 onTerminateRequested: (pid, name) => SysStats.terminateProcess(pid, name)
             }
             StatChart {

@@ -26,6 +26,7 @@ Item {
     readonly property bool externalPower: UPower.displayDevice && (!UPower.onBattery || activelyCharging || UPower.displayDevice.state === UPowerDeviceState.FullyCharged)
     readonly property color fillForeground: externalPower ? Config.md3.on_secondary : "#ffffff"
     readonly property color outlineColor: Config.alpha(batteryColor, 0.92)
+    property bool showReadout: true
     readonly property bool waveAnimationActive: visible && boundedPercentage > 0 && boundedPercentage < 100
 
     Accessible.name: activelyCharging ? qsTr("Battery at %1%, charging").arg(boundedPercentage) : externalPower ? qsTr("Battery at %1%, plugged in").arg(boundedPercentage) : qsTr("Battery at %1%").arg(boundedPercentage)
@@ -308,6 +309,7 @@ Item {
     BatteryReadout {
         foreground: Config.md3.on_surface
         height: batteryBody.height
+        visible: root.showReadout
         width: batteryBody.width
         x: batteryBody.x
         y: batteryBody.y
@@ -317,7 +319,7 @@ Item {
 
         clip: true
         height: liquidClip.height
-        visible: width > 0
+        visible: root.showReadout && width > 0
         width: liquidClip.fillWidth
         x: liquidClip.x
         y: liquidClip.y

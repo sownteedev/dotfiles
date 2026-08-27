@@ -25,6 +25,7 @@ import "components"
 ShellRoot {
     id: root
 
+    readonly property bool batteryPolicyReady: BatteryService.policyReady
     property var lazyOpenRequests: ({})
     readonly property bool profileImageSyncBusy: ProfileImageService.busy
 

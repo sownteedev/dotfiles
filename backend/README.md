@@ -10,6 +10,13 @@ The same binary also supplies battery telemetry:
 - `--battery` prints one JSON sample.
 - `--battery-stream` prints a sample every five seconds and is kept alive only
   while the Battery page is open.
+- `--battery-control` reports charging thresholds and CPU policy overrides.
+- `--set-charge-mode MODE` and `--set-charge-thresholds START END` update
+  supported charging limits; the UI invokes these through `pkexec`.
+- `--process-memory PID` prints RSS, PSS, PSS Dirty, and private resident
+  memory for the selected process group. The Stats tooltip invokes it on hover.
+- `--terminate-tree PID` asks a process tree to exit, then force-kills any
+  verified survivors after a short grace period.
 
 Build the optimized binary with:
 

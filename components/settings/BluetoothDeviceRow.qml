@@ -83,12 +83,18 @@ Rectangle {
     border.color: root.connected ? Config.alpha(Config.md3.primary, 0.42) : root.remembered ? Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09) : "transparent"
     border.width: 1
     color: root.connected ? Config.alpha(Config.md3.primary, 0.12) : root.remembered ? Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.64 : 0.30) : Config.alpha(Config.md3.on_surface, 0.055)
-    implicitHeight: root.hasDetailedBattery ? 72 : root.remembered ? 68 : 62
+    implicitHeight: contentRow.implicitHeight + (root.hasDetailedBattery ? 22 : root.remembered ? 26 : 22)
     radius: 16
 
     Behavior on color {
         ColorAnimation {
             duration: 140
+        }
+    }
+    Behavior on implicitHeight {
+        NumberAnimation {
+            duration: 180
+            easing.type: Easing.OutCubic
         }
     }
 
@@ -120,9 +126,13 @@ Rectangle {
         target: BluetoothService
     }
     RowLayout {
-        anchors.fill: parent
+        id: contentRow
+
+        anchors.left: parent.left
         anchors.leftMargin: 12
+        anchors.right: parent.right
         anchors.rightMargin: 10
+        anchors.verticalCenter: parent.verticalCenter
         spacing: 10
 
         Rectangle {
@@ -231,16 +241,19 @@ Rectangle {
                         model: root.hasDetailedBattery ? [
                             {
                                 "label": "L",
+                                "type": "left",
                                 "value": root.detailedBattery.left,
                                 "charging": root.detailedBattery.leftCharging === true
                             },
                             {
                                 "label": "R",
+                                "type": "right",
                                 "value": root.detailedBattery.right,
                                 "charging": root.detailedBattery.rightCharging === true
                             },
                             {
                                 "label": "Case",
+                                "type": "case",
                                 "value": root.detailedBattery.case,
                                 "charging": root.detailedBattery.caseCharging === true
                             }
@@ -253,54 +266,123 @@ Rectangle {
                             required property var modelData
                             readonly property bool valueAvailable: modelData.value !== null && modelData.value !== undefined && modelData.value >= 0 && modelData.value <= 100
 
-                            border.color: Config.alpha(levelColor, 0.28)
+                            border.color: Config.alpha(levelColor, 0.35)
                             border.width: 1
                             clip: true
-                            color: Config.alpha(levelColor, 0.09)
-                            height: 22
+                            color: Config.alpha(levelColor, 0.12)
+                            height: 25
                             radius: 7
-                            width: detailContent.implicitWidth + 12
+                            width: detailContent.implicitWidth + 14
 
                             RowLayout {
                                 id: detailContent
 
                                 anchors.centerIn: parent
-                                anchors.verticalCenterOffset: -1
-                                spacing: 4
+                                spacing: 4.5
 
-                                Text {
-                                    color: Config.alpha(batteryChip.levelColor, 0.88)
-                                    font.family: Config.fontName
-                                    font.pixelSize: 9
-                                    font.weight: Font.DemiBold
-                                    text: modelData.label
+                                Item {
+                                    id: iconHolder
+
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.preferredHeight: 14
+                                    Layout.preferredWidth: modelData.type === "case" ? 12 : 9
+
+                                    // Left Earbud: Head on left, stem on right
+                                    Item {
+                                        anchors.fill: parent
+                                        visible: modelData.type === "left"
+
+                                        Rectangle {
+                                            color: batteryChip.levelColor
+                                            height: 6
+                                            radius: 3
+                                            width: 6
+                                            x: 3
+                                            y: 1
+                                        }
+                                        Rectangle {
+                                            color: batteryChip.levelColor
+                                            height: 8.5
+                                            radius: 1
+                                            width: 2.2
+                                            x: 2.3
+                                            y: 4.5
+                                        }
+                                    }
+
+                                    // Right Earbud: Head on right, stem on left
+                                    Item {
+                                        anchors.fill: parent
+                                        visible: modelData.type === "right"
+
+                                        Rectangle {
+                                            color: batteryChip.levelColor
+                                            height: 6
+                                            radius: 3
+                                            width: 6
+                                            x: 0
+                                            y: 1
+                                        }
+                                        Rectangle {
+                                            color: batteryChip.levelColor
+                                            height: 8.5
+                                            radius: 1
+                                            width: 2.2
+                                            x: 4.5
+                                            y: 4.5
+                                        }
+                                    }
+
+                                    // Case: Rounded container with lid line & LED
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        border.color: batteryChip.levelColor
+                                        border.width: 1.2
+                                        color: "transparent"
+                                        height: 13
+                                        radius: 3.5
+                                        visible: modelData.type === "case"
+                                        width: 11
+
+                                        // Lid seam line
+                                        Rectangle {
+                                            anchors.left: parent.left
+                                            anchors.right: parent.right
+                                            anchors.top: parent.top
+                                            anchors.topMargin: 4
+                                            color: batteryChip.levelColor
+                                            height: 1
+                                        }
+
+                                        // LED dot
+                                        Rectangle {
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            anchors.top: parent.top
+                                            anchors.topMargin: 7
+                                            color: batteryChip.levelColor
+                                            height: 2
+                                            radius: 1
+                                            width: 2
+                                        }
+                                    }
                                 }
                                 Text {
+                                    Layout.alignment: Qt.AlignVCenter
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 10
+                                    font.pixelSize: 11
                                     font.weight: Font.ExtraBold
                                     text: batteryChip.valueAvailable ? modelData.value + "%" : "—"
                                 }
                                 Text {
+                                    Layout.alignment: Qt.AlignVCenter
                                     color: Config.md3.tertiary
                                     font.family: Config.fontName
-                                    font.pixelSize: 10
+                                    font.pixelSize: 11
                                     font.weight: Font.Bold
                                     text: "⚡"
                                     visible: batteryChip.valueAvailable && modelData.charging === true
                                 }
-                            }
-                            Rectangle {
-                                anchors.bottom: parent.bottom
-                                anchors.bottomMargin: 2
-                                anchors.left: parent.left
-                                anchors.leftMargin: 3
-                                color: batteryChip.levelColor
-                                height: 2
-                                opacity: batteryChip.valueAvailable ? 0.72 : 0
-                                radius: 1
-                                width: (batteryChip.width - 6) * Math.max(0, Math.min(100, modelData.value || 0)) / 100
                             }
                         }
                     }

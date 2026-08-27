@@ -2,15 +2,15 @@ import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
-import Quickshell.Io
-import Quickshell.Widgets
 import Quickshell.Services.UPower
+import Quickshell.Widgets
+import "../../../bar" as BarComponents
 import "../../../../"
-import "../../../../service"
 import "../../../../components"
+import "../../../../service"
 
 Item {
-    id: batteryPageRoot
+    id: root
 
     readonly property string activeProfile: {
         switch (PowerProfiles.profile) {
@@ -23,821 +23,906 @@ Item {
         }
     }
     readonly property bool autoCpufreqAvailable: BatteryService.autoCpufreqAvailable
-    readonly property real batPercent: UPower.displayDevice ? Math.round(UPower.displayDevice.percentage * 100) : 0
-    readonly property string batStatusText: {
+    readonly property int batteryPercentage: Math.max(0, BatteryService.batteryPercentage)
+    readonly property string batteryStatusText: {
         if (!UPower.displayDevice)
-            return "Unknown";
-        var state = UPower.displayDevice.state;
+            return qsTr("Unavailable");
 
+        var state = UPower.displayDevice.state;
         if (state === UPowerDeviceState.Charging) {
             var timeToFull = UPower.displayDevice.timeToFull;
-            if (timeToFull > 0) {
-                var fh = Math.floor(timeToFull / 3600);
-                var fm = Math.floor((timeToFull % 3600) / 60);
-                return fh + "h " + fm + "m to full";
-            }
-            return "Charging";
-        } else if (state === UPowerDeviceState.Discharging) {
-            var timeToEmpty = UPower.displayDevice.timeToEmpty;
-            if (timeToEmpty > 0) {
-                var eh = Math.floor(timeToEmpty / 3600);
-                var em = Math.floor((timeToEmpty % 3600) / 60);
-                return eh + "h " + em + "m remaining";
-            }
-            return "Discharging";
-        } else if (state === UPowerDeviceState.FullyCharged) {
-            return "Full";
+            if (timeToFull > 0)
+                return qsTr("%1h %2m to full").arg(Math.floor(timeToFull / 3600)).arg(Math.floor((timeToFull % 3600) / 60));
+
+            return qsTr("Charging");
         }
-        return "Unknown";
+        if (state === UPowerDeviceState.Discharging) {
+            var timeToEmpty = UPower.displayDevice.timeToEmpty;
+            if (timeToEmpty > 0)
+                return qsTr("%1h %2m remaining").arg(Math.floor(timeToEmpty / 3600)).arg(Math.floor((timeToEmpty % 3600) / 60));
+
+            return qsTr("On battery");
+        }
+        if (state === UPowerDeviceState.FullyCharged)
+            return qsTr("Fully charged");
+
+        return UPower.onBattery ? qsTr("On battery") : qsTr("Plugged in");
     }
-    property bool chargeDropOpen: false
-    readonly property string chargeMode: BatteryService.chargeMode
-    readonly property string currentGovernor: BatteryService.currentGovernor
-    readonly property string cycleCountVal: BatteryService.cycleCount
-    readonly property string designEnergyVal: BatteryService.designEnergy
-    readonly property string deviceNameVal: BatteryService.deviceName
-    readonly property string governorOverride: BatteryService.governorOverride
-    readonly property string gpuPower: BatteryService.gpuPower
-    readonly property string healthVal: BatteryService.health
-    readonly property string performanceDegradationText: BatteryService.performanceDegradationText
-    readonly property bool performanceDegraded: BatteryService.performanceDegraded
+    property string criticalThresholdText: String(BatteryService.criticalBatteryThreshold)
+    property bool customApplyPending: false
+    property bool customEditing: false
+    property string customEndText: String(BatteryService.chargeEndThreshold)
+    property string customStartText: String(BatteryService.chargeStartThreshold)
+    readonly property bool customThresholdsValid: /^\d{1,3}$/.test(customStartText) && /^\d{1,3}$/.test(customEndText) && Number(customStartText) >= 0 && Number(customStartText) < Number(customEndText) && Number(customEndText) <= 100
+    property string lowThresholdText: String(BatteryService.lowBatteryThreshold)
+    readonly property bool policyThresholdsValid: /^\d{1,2}$/.test(lowThresholdText) && /^\d{1,2}$/.test(criticalThresholdText) && Number(lowThresholdText) >= 5 && Number(lowThresholdText) <= 50 && Number(criticalThresholdText) >= 1 && Number(criticalThresholdText) < Number(lowThresholdText)
+    readonly property var profilePolicyOptions: [
+        {
+            "label": qsTr("Don't change"),
+            "value": "unchanged"
+        },
+        {
+            "label": qsTr("Power Saver"),
+            "value": "power-saver"
+        },
+        {
+            "label": qsTr("Balanced"),
+            "value": "balanced"
+        },
+        {
+            "label": qsTr("Performance"),
+            "value": "performance"
+        }
+    ]
+    property bool profilePopupOpen: false
+    property bool profilePopupOpenAbove: false
+    property real profilePopupRightMargin: 12
+    property string profilePopupTarget: ""
+    property real profilePopupY: 0
 
-    // Popup properties
-    property var popupModel: []
-    property bool popupOpen: false
-    property bool popupOpenAbove: false
-    property string popupType: "power"
-    property real popupWidth: 0
-    property real popupX: 0
-    property real popupY: 0
-    readonly property string powerDrawVal: BatteryService.powerDraw
-    property bool powerDropOpen: false
-    readonly property bool powerProfilesAvailable: BatteryService.powerProfilesAvailable
-    readonly property string tempVal: BatteryService.temperature
-    readonly property string turboOverride: BatteryService.turboOverride
-    readonly property string voltageVal: BatteryService.voltage
+    function applyCustomThresholds() {
+        if (!customThresholdsValid)
+            return;
 
-    function runCommand(command) {
-        BatteryService.runCommand(command);
+        if (BatteryService.setChargeThresholds(Number(customStartText), Number(customEndText)))
+            customApplyPending = true;
+    }
+    function applyPolicyThresholds() {
+        if (!policyThresholdsValid)
+            return;
+
+        BatteryService.setLowBatteryThreshold(Number(lowThresholdText));
+        BatteryService.setCriticalBatteryThreshold(Number(criticalThresholdText));
+    }
+    function openProfilePopup(sourceItem, target) {
+        if (profilePopupOpen && profilePopupTarget === target) {
+            profilePopupOpen = false;
+            return;
+        }
+
+        var position = sourceItem.mapToItem(root, 0, 0);
+        var popupHeight = profilePolicyOptions.length * 44 + 16;
+        var belowY = position.y + sourceItem.height + 8;
+        profilePopupTarget = target;
+        profilePopupOpenAbove = belowY + popupHeight > height;
+        profilePopupY = profilePopupOpenAbove ? position.y - popupHeight - 8 : belowY;
+        profilePopupRightMargin = Math.max(12, width - position.x - sourceItem.width);
+        profilePopupOpen = true;
+    }
+    function profilePolicyLabel(profile) {
+        switch (profile) {
+        case "power-saver":
+            return qsTr("Power Saver");
+        case "balanced":
+            return qsTr("Balanced");
+        case "performance":
+            return qsTr("Performance");
+        default:
+            return qsTr("Don't change");
+        }
+    }
+    function profilePolicyValue() {
+        return profilePopupTarget === "plugged-in" ? BatteryService.pluggedInPowerProfile : BatteryService.batteryPowerProfile;
+    }
+    function selectProfilePolicy(item) {
+        if (!item)
+            return;
+
+        if (profilePopupTarget === "plugged-in")
+            BatteryService.setPluggedInPowerProfile(String(item.value));
+        else
+            BatteryService.setBatteryPowerProfile(String(item.value));
+
+        profilePopupOpen = false;
+    }
+    function syncCustomThresholds() {
+        if (!customEditing && !customStartField.inputItem.activeFocus && !customEndField.inputItem.activeFocus) {
+            customStartText = String(BatteryService.chargeStartThreshold);
+            customEndText = String(BatteryService.chargeEndThreshold);
+            customStartField.text = customStartText;
+            customEndField.text = customEndText;
+        }
+    }
+    function syncPolicyThresholds() {
+        if (!lowThresholdField.inputItem.activeFocus) {
+            lowThresholdText = String(BatteryService.lowBatteryThreshold);
+            lowThresholdField.text = lowThresholdText;
+        }
+        if (!criticalThresholdField.inputItem.activeFocus) {
+            criticalThresholdText = String(BatteryService.criticalBatteryThreshold);
+            criticalThresholdField.text = criticalThresholdText;
+        }
     }
     function updateServiceActivity() {
-        BatteryService.active = controlRightWindow.active && batteryPageRoot.visible;
+        BatteryService.active = controlRightWindow.active && root.visible;
     }
 
     anchors.fill: parent
 
     Component.onCompleted: updateServiceActivity()
     Component.onDestruction: BatteryService.active = false
-    onVisibleChanged: updateServiceActivity()
+    onVisibleChanged: {
+        updateServiceActivity();
+        if (!visible)
+            profilePopupOpen = false;
+    }
 
     SettingsPageTransition {
         panelActive: controlRightWindow.active
-        targetItem: batteryPageRoot
+        targetItem: root
     }
     Connections {
         function onActiveChanged() {
-            batteryPageRoot.updateServiceActivity();
+            root.updateServiceActivity();
         }
 
         target: controlRightWindow
     }
+    Connections {
+        function onChargeCommandBusyChanged() {
+            if (BatteryService.chargeCommandBusy || !root.customApplyPending)
+                return;
+
+            if (BatteryService.chargeCommandError === "")
+                root.customEditing = false;
+
+            root.customApplyPending = false;
+            root.syncCustomThresholds();
+        }
+        function onChargeEndThresholdChanged() {
+            root.syncCustomThresholds();
+        }
+        function onChargeStartThresholdChanged() {
+            root.syncCustomThresholds();
+        }
+        function onCriticalBatteryThresholdChanged() {
+            root.syncPolicyThresholds();
+        }
+        function onLowBatteryThresholdChanged() {
+            root.syncPolicyThresholds();
+        }
+
+        target: BatteryService
+    }
     Flickable {
         anchors.fill: parent
         clip: true
-        contentHeight: contentLayout.implicitHeight
+        contentHeight: contentLayout.implicitHeight + 24
         contentWidth: width
-        interactive: !batteryPageRoot.popupOpen
+        interactive: !root.profilePopupOpen
 
         ColumnLayout {
             id: contentLayout
 
-            spacing: 20
+            spacing: 24
             width: parent.width
 
-            // Battery Info Card - one large card containing everything
-            Rectangle {
-                Layout.fillWidth: true
+            SettingsSectionCard {
                 border.color: controlRightWindow.sectionCardBorderColor
                 border.width: 1
                 color: controlRightWindow.sectionCardColor
-                implicitHeight: batteryInfoColumn.implicitHeight + 32
-                radius: 12
-
-                ColumnLayout {
-                    id: batteryInfoColumn
-
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 12
-
-                    // Header: "Battery Information" + model name
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 16
-                            font.weight: Font.Bold
-                            text: "Battery Information"
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.5)
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.DemiBold
-                            text: batteryPageRoot.deviceNameVal
-                        }
-                    }
-
-                    // Separator
-                    Rectangle {
-                        Layout.fillWidth: true
-                        color: Config.alpha(Config.md3.on_surface, 0.06)
-                        height: 1
-                    }
-
-                    // Status + Percentage row
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Text {
-                            color: Config.md3.on_surface_variant
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.DemiBold
-                            text: batteryPageRoot.batStatusText
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Bold
-                            text: batteryPageRoot.batPercent + "%"
-                        }
-                    }
-
-                    // Energy bar
-                    Rectangle {
-                        Layout.fillWidth: true
-                        color: Config.alpha(Config.md3.on_surface, 0.08)
-                        height: 8
-                        radius: 15
-
-                        Rectangle {
-                            color: {
-                                var p = batteryPageRoot.batPercent;
-                                if (p >= 100)
-                                    return Config.md3.secondary;
-                                if (p >= 80)
-                                    return Config.md3.primary;
-                                if (p >= 20)
-                                    return Config.md3.tertiary;
-                                return Config.md3.error;
-                            }
-                            height: parent.height
-                            radius: parent.radius
-                            width: parent.width * (Math.min(Math.max(batteryPageRoot.batPercent, 0), 100) / 100)
-                        }
-                    }
-
-                    // Stats rows
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.6)
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: "Energy Rate:"
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: batteryPageRoot.powerDrawVal
-                        }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.6)
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: "Design Energy:"
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: batteryPageRoot.designEnergyVal
-                        }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.6)
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: "Health:"
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: batteryPageRoot.healthVal
-                        }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.6)
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: "Change cycles:"
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: batteryPageRoot.cycleCountVal
-                        }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.6)
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: "Temperature:"
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: batteryPageRoot.tempVal
-                        }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.6)
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: "Voltage:"
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: batteryPageRoot.voltageVal
-                        }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.6)
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: "GPU Power:"
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            text: batteryPageRoot.gpuPower
-                        }
-                    }
-                }
-            }
-            Rectangle {
-                Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.error, 0.3)
-                border.width: 1
-                color: Config.md3.error_container
-                implicitHeight: degradationContent.implicitHeight + 24
-                radius: 12
-                visible: batteryPageRoot.performanceDegraded
+                compact: true
+                radius: 14
+                showHeader: false
 
                 RowLayout {
-                    id: degradationContent
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 72
+                    spacing: 16
 
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 12
+                    Item {
+                        Layout.preferredHeight: 62
+                        Layout.preferredWidth: 86
 
-                    IconImage {
-                        Layout.alignment: Qt.AlignTop
-                        Layout.preferredHeight: 20
-                        Layout.preferredWidth: 20
-                        layer.enabled: true
-                        source: Quickshell.iconPath("dialog-warning-symbolic")
+                        BarComponents.Battery {
+                            id: batteryVisual
 
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_error_container
+                            Accessible.ignored: true
+                            anchors.centerIn: parent
+                            scale: 1.65
+                            showReadout: false
                         }
                     }
                     ColumnLayout {
+                        Layout.alignment: Qt.AlignVCenter
                         Layout.fillWidth: true
                         spacing: 3
 
                         Text {
-                            color: Config.md3.on_error_container
+                            Layout.fillWidth: true
+                            color: Config.alpha(Config.md3.on_surface, 0.55)
+                            elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.Bold
-                            text: "Performance limited"
+                            font.pixelSize: 13
+                            font.weight: Font.Medium
+                            text: BatteryService.deviceName
                         }
                         Text {
                             Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_error_container, 0.78)
+                            color: Config.md3.on_surface
+                            elide: Text.ElideRight
+                            font.family: Config.fontName
+                            font.pixelSize: 14
+                            font.weight: Font.Medium
+                            text: root.batteryStatusText
+                        }
+                    }
+                    ColumnLayout {
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        spacing: 5
+
+                        Text {
+                            Layout.alignment: Qt.AlignRight
+                            color: batteryVisual.batteryColor
+                            font.family: Config.fontName
+                            font.pixelSize: 31
+                            font.weight: Font.Black
+                            horizontalAlignment: Text.AlignRight
+                            text: qsTr("%1%").arg(root.batteryPercentage)
+                        }
+                        Rectangle {
+                            Layout.alignment: Qt.AlignRight
+                            Layout.preferredHeight: 24
+                            Layout.preferredWidth: powerSourceContent.implicitWidth + 18
+                            border.color: Config.alpha(batteryVisual.batteryColor, 0.2)
+                            border.width: 1
+                            color: Config.alpha(batteryVisual.batteryColor, 0.09)
+                            radius: 9
+
+                            Row {
+                                id: powerSourceContent
+
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                Rectangle {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: batteryVisual.batteryColor
+                                    height: 6
+                                    radius: 3
+                                    width: 6
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Config.alpha(Config.md3.on_surface, 0.68)
+                                    font.family: Config.fontName
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                    text: UPower.onBattery ? qsTr("Battery power") : qsTr("External power")
+                                }
+                            }
+                        }
+                    }
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columnSpacing: 10
+                    columns: 2
+                    rowSpacing: 10
+
+                    MetricTile {
+                        accentColor: Config.md3.primary
+                        label: qsTr("Full / design")
+                        valueText: qsTr("%1 / %2").arg(BatteryService.fullEnergy).arg(BatteryService.designEnergy)
+                    }
+                    MetricTile {
+                        accentColor: BatteryService.healthNumeric >= 0 && BatteryService.healthNumeric < 75 ? Config.md3.error : Config.md3.secondary
+                        label: qsTr("Battery health")
+                        valueText: BatteryService.health
+                    }
+                    MetricTile {
+                        accentColor: Config.md3.tertiary
+                        label: qsTr("Power rate")
+                        valueText: BatteryService.powerDraw
+                    }
+                    MetricTile {
+                        accentColor: Config.md3.secondary
+                        label: qsTr("Temperature")
+                        valueText: BatteryService.temperature
+                    }
+                    MetricTile {
+                        label: qsTr("Charge cycles")
+                        valueText: BatteryService.cycleCount
+                    }
+                    MetricTile {
+                        label: qsTr("Voltage")
+                        valueText: BatteryService.voltage
+                    }
+                    MetricTile {
+                        Layout.columnSpan: 2
+                        accentColor: Config.md3.tertiary
+                        label: qsTr("GPU power")
+                        valueText: BatteryService.gpuPower
+                        visible: BatteryService.gpuPower !== "N/A"
+                    }
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: healthWarningContent.implicitHeight + 24
+                    border.color: Config.alpha(Config.md3.error, 0.28)
+                    border.width: 1
+                    color: Config.alpha(Config.md3.error_container, 0.76)
+                    radius: 12
+                    visible: BatteryService.healthNumeric >= 0 && BatteryService.healthNumeric < 75
+
+                    RowLayout {
+                        id: healthWarningContent
+
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 11
+
+                        IconImage {
+                            Layout.preferredHeight: 20
+                            Layout.preferredWidth: 20
+                            layer.enabled: true
+                            source: Quickshell.iconPath("dialog-warning-symbolic")
+
+                            layer.effect: ColorOverlay {
+                                color: Config.md3.on_error_container
+                            }
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            Text {
+                                Layout.fillWidth: true
+                                color: Config.md3.on_error_container
+                                font.family: Config.fontName
+                                font.pixelSize: 14
+                                font.weight: Font.Bold
+                                text: qsTr("Battery health is reduced")
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                color: Config.alpha(Config.md3.on_error_container, 0.76)
+                                font.family: Config.fontName
+                                font.pixelSize: 12
+                                text: qsTr("Usable capacity is %1 of the original design capacity.").arg(BatteryService.health)
+                                wrapMode: Text.Wrap
+                            }
+                        }
+                    }
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: degradationContent.implicitHeight + 24
+                    border.color: Config.alpha(Config.md3.tertiary, 0.3)
+                    border.width: 1
+                    color: Config.alpha(Config.md3.tertiary_container, 0.72)
+                    radius: 12
+                    visible: BatteryService.performanceDegraded
+
+                    RowLayout {
+                        id: degradationContent
+
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 11
+
+                        IconImage {
+                            Layout.preferredHeight: 20
+                            Layout.preferredWidth: 20
+                            layer.enabled: true
+                            source: Quickshell.iconPath("speedometer-symbolic")
+
+                            layer.effect: ColorOverlay {
+                                color: Config.md3.on_tertiary_container
+                            }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.md3.on_tertiary_container
                             font.family: Config.fontName
                             font.pixelSize: 13
-                            text: batteryPageRoot.performanceDegradationText
-                            wrapMode: Text.WordWrap
+                            font.weight: Font.Medium
+                            text: BatteryService.performanceDegradationText
+                            wrapMode: Text.Wrap
                         }
                     }
                 }
             }
+            SettingsSectionCard {
+                accentColor: Config.md3.tertiary
+                border.color: controlRightWindow.sectionCardBorderColor
+                border.width: 1
+                color: controlRightWindow.sectionCardColor
+                compact: true
+                iconName: "power-profile-balanced-symbolic"
+                note: qsTr("Choose how performance changes with the power source")
+                radius: 14
+                title: qsTr("Power profiles & saving")
+                visible: BatteryService.powerProfilesAvailable
 
-            // 3. Power Mode Dropdown Section
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 8
-                visible: batteryPageRoot.powerProfilesAvailable
-
-                Text {
-                    color: Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: 16
-                    font.weight: Font.Bold
-                    text: "Power Mode"
-                }
-
-                // Dropdown Card (the button selector)
-                Rectangle {
-                    id: powerDropCard
-
+                SettingsChoiceRow {
                     Layout.fillWidth: true
-                    border.color: powerDropMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
-                    border.width: 1
-                    color: Config.alpha(Config.md3.on_surface, powerDropMouse.pressed ? 0.18 : (powerDropMouse.containsMouse ? 0.12 : 0.07))
-                    height: 74
-                    radius: 12
-                    scale: powerDropMouse.pressed ? 0.98 : 1.0
+                    label: qsTr("Power mode")
+                    note: qsTr("Choose the current performance and energy profile")
+                    options: [
+                        {
+                            "label": qsTr("Saver"),
+                            "value": "power-saver"
+                        },
+                        {
+                            "label": qsTr("Balanced"),
+                            "value": "balanced"
+                        },
+                        {
+                            "label": qsTr("Performance"),
+                            "value": "performance"
+                        }
+                    ]
+                    value: root.activeProfile
 
-                    Behavior on border.color {
-                        ColorAnimation {
-                            duration: 120
+                    onSelected: value => {
+                        return BatteryService.selectPowerProfile(value);
+                    }
+                }
+                SettingsToggleTile {
+                    checked: BatteryService.autoPowerSaverEnabled
+                    label: qsTr("Automatic Power Saver")
+                    note: qsTr("Use Power Saver when battery reaches %1% or lower").arg(BatteryService.lowBatteryThreshold)
+                    updateCheckedInternally: false
+
+                    onToggled: checked => {
+                        return BatteryService.autoPowerSaverEnabled = checked;
+                    }
+                }
+                SettingsSelectRow {
+                    accentColor: Config.md3.tertiary
+                    label: qsTr("Profile when plugged in")
+                    note: qsTr("Apply after connecting external power")
+                    valueText: root.profilePolicyLabel(BatteryService.pluggedInPowerProfile)
+
+                    onClicked: sourceItem => root.openProfilePopup(sourceItem, "plugged-in")
+                }
+                SettingsSelectRow {
+                    accentColor: Config.md3.tertiary
+                    label: qsTr("Profile on battery")
+                    note: qsTr("Apply after disconnecting external power")
+                    valueText: root.profilePolicyLabel(BatteryService.batteryPowerProfile)
+
+                    onClicked: sourceItem => root.openProfilePopup(sourceItem, "battery")
+                }
+                SettingsToggleTile {
+                    checked: BatteryService.batteryAwareEnabled
+                    enabled: BatteryService.batteryAwareAvailable && !BatteryService.batteryAwareBusy
+                    label: qsTr("Battery-aware performance")
+                    note: qsTr("Let power-profiles-daemon adapt supported actions to battery state")
+                    updateCheckedInternally: false
+
+                    onToggled: checked => {
+                        return BatteryService.setBatteryAwareEnabled(checked);
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    color: Config.md3.error
+                    font.family: Config.fontName
+                    font.pixelSize: 12
+                    text: BatteryService.batteryAwareError
+                    visible: text !== ""
+                    wrapMode: Text.Wrap
+                }
+            }
+            SettingsSectionCard {
+                accentColor: Config.md3.primary
+                border.color: controlRightWindow.sectionCardBorderColor
+                border.width: 1
+                color: controlRightWindow.sectionCardColor
+                compact: true
+                iconName: "battery-good-symbolic"
+                note: BatteryService.chargeThresholdSupported ? qsTr("Current limits: %1% → %2%").arg(BatteryService.chargeStartThreshold).arg(BatteryService.chargeEndThreshold) : qsTr("Charging thresholds are not supported by this battery")
+                radius: 14
+                title: qsTr("Charging limits")
+
+                SettingsChoiceRow {
+                    Layout.fillWidth: true
+                    enabled: BatteryService.chargeThresholdSupported && !BatteryService.chargeCommandBusy
+                    label: qsTr("Charging preset")
+                    note: qsTr("Lower limits reduce time spent at a high state of charge")
+                    options: [
+                        {
+                            "label": qsTr("55→60"),
+                            "value": "conservation"
+                        },
+                        {
+                            "label": qsTr("75→80"),
+                            "value": "preserve"
+                        },
+                        {
+                            "label": qsTr("50→100"),
+                            "value": "maximize"
+                        },
+                        {
+                            "label": qsTr("Custom"),
+                            "value": "custom"
+                        }
+                    ]
+                    value: root.customEditing ? "custom" : BatteryService.chargeMode
+
+                    onSelected: value => {
+                        if (value === "custom") {
+                            root.customEditing = true;
+                            root.customStartText = String(BatteryService.chargeStartThreshold);
+                            root.customEndText = String(BatteryService.chargeEndThreshold);
+                            customStartField.text = root.customStartText;
+                            customEndField.text = root.customEndText;
+                        } else {
+                            root.customEditing = false;
+                            BatteryService.setChargeMode(value);
                         }
                     }
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 120
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+                    visible: root.customEditing || BatteryService.chargeMode === "custom"
+
+                    SettingsTextField {
+                        id: customStartField
+
+                        Layout.fillWidth: true
+                        fieldHeight: 42
+                        inputItem.inputMethodHints: Qt.ImhDigitsOnly
+                        label: qsTr("Start")
+                        placeholder: qsTr("0–99")
+                        text: root.customStartText
+
+                        inputItem.validator: IntValidator {
+                            bottom: 0
+                            top: 99
                         }
+
+                        onTextChanged: root.customStartText = text
                     }
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 80
+                    SettingsTextField {
+                        id: customEndField
+
+                        Layout.fillWidth: true
+                        fieldHeight: 42
+                        inputItem.inputMethodHints: Qt.ImhDigitsOnly
+                        label: qsTr("Stop")
+                        placeholder: qsTr("1–100")
+                        text: root.customEndText
+
+                        inputItem.validator: IntValidator {
+                            bottom: 1
+                            top: 100
                         }
+
+                        onTextChanged: root.customEndText = text
                     }
+                    SettingsActionButton {
+                        Layout.alignment: Qt.AlignBottom
+                        enabled: root.customThresholdsValid && !BatteryService.chargeCommandBusy
+                        iconName: "emblem-ok-symbolic"
+                        iconOnly: true
+                        primary: true
+                        text: qsTr("Apply custom limits")
+
+                        onClicked: root.applyCustomThresholds()
+                    }
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: onceContent.implicitHeight + 22
+                    color: Config.alpha(Config.md3.primary, 0.08)
+                    radius: 12
 
                     RowLayout {
+                        id: onceContent
+
                         anchors.fill: parent
-                        anchors.leftMargin: 20
-                        anchors.rightMargin: 20
-                        spacing: 10
+                        anchors.margins: 11
+                        spacing: 12
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 4
+                            spacing: 3
 
-                            Text {
-                                color: Config.md3.on_surface
-                                font.family: Config.fontName
-                                font.pixelSize: 15
-                                font.weight: Font.Bold
-                                text: {
-                                    var p = batteryPageRoot.activeProfile;
-                                    if (p === "power-saver")
-                                        return "Power Saver";
-                                    if (p === "performance")
-                                        return "Performance";
-                                    return "Balanced";
-                                }
-                            }
                             Text {
                                 Layout.fillWidth: true
-                                color: Config.md3.on_surface_variant
-                                elide: Text.ElideRight
-                                font.family: Config.fontName
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                text: {
-                                    var p = batteryPageRoot.activeProfile;
-                                    if (p === "power-saver")
-                                        return "Lowest power consumption, highest battery life";
-                                    if (p === "performance")
-                                        return "Highest performance, lowest battery life";
-                                    return "Default power consumption, good battery life";
-                                }
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-                        IconImage {
-                            height: 16
-                            layer.enabled: true
-                            rotation: batteryPageRoot.powerDropOpen ? 180 : 0
-                            source: Quickshell.iconPath("pan-down-symbolic")
-                            width: 16
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface_variant
-                            }
-                            Behavior on rotation {
-                                NumberAnimation {
-                                    duration: 150
-                                }
-                            }
-                        }
-                    }
-                    MouseArea {
-                        id: powerDropMouse
-
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-
-                        onClicked: {
-                            if (batteryPageRoot.popupOpen && batteryPageRoot.popupType === "power") {
-                                batteryPageRoot.popupOpen = false;
-                                batteryPageRoot.powerDropOpen = false;
-                            } else {
-                                var globalCoords = powerDropCard.mapToItem(batteryPageRoot, 0, 0);
-                                var popupHeight = 3 * 46 + 16;
-                                var targetY = globalCoords.y + powerDropCard.height + 8;
-                                if (targetY + popupHeight > batteryPageRoot.height) {
-                                    batteryPageRoot.popupY = globalCoords.y - popupHeight - 8;
-                                    batteryPageRoot.popupOpenAbove = true;
-                                } else {
-                                    batteryPageRoot.popupY = targetY;
-                                    batteryPageRoot.popupOpenAbove = false;
-                                }
-                                batteryPageRoot.popupX = globalCoords.x;
-                                batteryPageRoot.popupWidth = powerDropCard.width;
-                                batteryPageRoot.popupModel = [
-                                    {
-                                        label: "Power Saver",
-                                        profile: "power-saver"
-                                    },
-                                    {
-                                        label: "Balanced",
-                                        profile: "balanced"
-                                    },
-                                    {
-                                        label: "Performance",
-                                        profile: "performance"
-                                    }
-                                ];
-                                batteryPageRoot.popupType = "power";
-                                batteryPageRoot.popupOpen = true;
-                                batteryPageRoot.powerDropOpen = true;
-                                batteryPageRoot.chargeDropOpen = false;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 4. Battery Charging Dropdown Section
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 8
-
-                Text {
-                    color: Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: 16
-                    font.weight: Font.Bold
-                    text: "Battery Charging"
-                }
-
-                // Dropdown Card (the button selector)
-                Rectangle {
-                    id: chargeDropCard
-
-                    Layout.fillWidth: true
-                    border.color: chargeDropMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
-                    border.width: 1
-                    color: Config.alpha(Config.md3.on_surface, chargeDropMouse.pressed ? 0.18 : (chargeDropMouse.containsMouse ? 0.12 : 0.07))
-                    height: 74
-                    radius: 12
-                    scale: chargeDropMouse.pressed ? 0.98 : 1.0
-
-                    Behavior on border.color {
-                        ColorAnimation {
-                            duration: 120
-                        }
-                    }
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 120
-                        }
-                    }
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 80
-                        }
-                    }
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 20
-                        anchors.rightMargin: 20
-                        spacing: 10
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-
-                            Text {
                                 color: Config.md3.on_surface
                                 font.family: Config.fontName
-                                font.pixelSize: 15
-                                font.weight: Font.Bold
-                                text: batteryPageRoot.chargeMode === "preserve" ? "Preserve Battery Health" : "Maximize Charge"
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                color: Config.md3.on_surface_variant
-                                elide: Text.ElideRight
-                                font.family: Config.fontName
                                 font.pixelSize: 14
-                                font.weight: Font.Medium
-                                text: batteryPageRoot.chargeMode === "preserve" ? "Increases battery longevity by maintaining lower charge levels" : "Uses full battery capacity. Degrades batteries more quickly"
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-                        IconImage {
-                            height: 16
-                            layer.enabled: true
-                            rotation: batteryPageRoot.chargeDropOpen ? 180 : 0
-                            source: Quickshell.iconPath("pan-down-symbolic")
-                            width: 16
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface_variant
-                            }
-                            Behavior on rotation {
-                                NumberAnimation {
-                                    duration: 150
-                                }
-                            }
-                        }
-                    }
-                    MouseArea {
-                        id: chargeDropMouse
-
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-
-                        onClicked: {
-                            if (batteryPageRoot.popupOpen && batteryPageRoot.popupType === "charge") {
-                                batteryPageRoot.popupOpen = false;
-                                batteryPageRoot.chargeDropOpen = false;
-                            } else {
-                                var globalCoords = chargeDropCard.mapToItem(batteryPageRoot, 0, 0);
-                                var popupHeight = 2 * 46 + 16;
-                                var targetY = globalCoords.y + chargeDropCard.height + 8;
-                                if (targetY + popupHeight > batteryPageRoot.height) {
-                                    batteryPageRoot.popupY = globalCoords.y - popupHeight - 8;
-                                    batteryPageRoot.popupOpenAbove = true;
-                                } else {
-                                    batteryPageRoot.popupY = targetY;
-                                    batteryPageRoot.popupOpenAbove = false;
-                                }
-                                batteryPageRoot.popupX = globalCoords.x;
-                                batteryPageRoot.popupWidth = chargeDropCard.width;
-                                batteryPageRoot.popupModel = [
-                                    {
-                                        label: "Maximize Charge",
-                                        value: "maximize"
-                                    },
-                                    {
-                                        label: "Preserve Battery Health",
-                                        value: "preserve"
-                                    }
-                                ];
-                                batteryPageRoot.popupType = "charge";
-                                batteryPageRoot.popupOpen = true;
-                                batteryPageRoot.chargeDropOpen = true;
-                                batteryPageRoot.powerDropOpen = false;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 5. CPU Optimization (auto-cpufreq)
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 8
-                visible: batteryPageRoot.autoCpufreqAvailable
-
-                Text {
-                    color: Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: 16
-                    font.weight: Font.Bold
-                    text: "CPU Optimization"
-                }
-                Rectangle {
-                    Layout.fillWidth: true
-                    border.color: controlRightWindow.sectionCardBorderColor
-                    border.width: 1
-                    color: controlRightWindow.sectionCardColor
-                    implicitHeight: autoCpufreqColumn.implicitHeight + 24
-                    radius: 12
-
-                    ColumnLayout {
-                        id: autoCpufreqColumn
-
-                        anchors.fill: parent
-                        anchors.margins: 16
-                        spacing: 16
-
-                        // Row 1: Current Governor
-                        RowLayout {
-                            Layout.fillWidth: true
-
-                            Text {
-                                color: Config.md3.on_surface
-                                font.family: Config.fontName
-                                font.pixelSize: 15
                                 font.weight: Font.DemiBold
-                                text: "Current Governor"
-                            }
-                            Item {
-                                Layout.fillWidth: true
+                                text: BatteryService.fullChargeOnceActive ? qsTr("Temporary full charge is active") : qsTr("Need maximum runtime?")
                             }
                             Text {
-                                color: Config.md3.on_surface_variant
+                                Layout.fillWidth: true
+                                color: Config.alpha(Config.md3.on_surface, 0.48)
                                 font.family: Config.fontName
-                                font.pixelSize: 15
-                                font.weight: Font.Medium
-                                text: batteryPageRoot.currentGovernor
+                                font.pixelSize: 12
+                                text: BatteryService.fullChargeOnceActive ? qsTr("Previous limits restore automatically after unplugging") : UPower.onBattery ? qsTr("Connect the charger to enable a one-time full charge") : qsTr("Charge to 100%, then restore the current limits after unplugging")
+                                wrapMode: Text.Wrap
                             }
                         }
+                        SettingsActionButton {
+                            enabled: BatteryService.chargeThresholdSupported && !BatteryService.chargeCommandBusy && (BatteryService.fullChargeOnceActive || !UPower.onBattery)
+                            iconName: BatteryService.fullChargeOnceActive ? "edit-undo-symbolic" : "battery-full-charging-symbolic"
+                            iconOnly: true
+                            text: BatteryService.fullChargeOnceActive ? qsTr("Restore limits now") : qsTr("Charge to 100% once")
 
-                        // Separator
-                        Rectangle {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.06)
-                            height: 1
-                        }
-
-                        // Row 2: Governor Override
-                        SettingsChoiceRow {
-                            Layout.fillWidth: true
-                            label: "Governor Override"
-                            options: [
-                                {
-                                    "label": "Default",
-                                    "value": "default"
-                                },
-                                {
-                                    "label": "Powersave",
-                                    "value": "powersave"
-                                },
-                                {
-                                    "label": "Performance",
-                                    "value": "performance"
-                                }
-                            ]
-                            value: batteryPageRoot.governorOverride
-
-                            onSelected: function (v) {
-                                batteryPageRoot.runCommand("pkexec auto-cpufreq --force " + (v === "default" ? "reset" : v));
-                                BatteryService.governorOverride = v;
+                            onClicked: {
+                                if (BatteryService.fullChargeOnceActive)
+                                    BatteryService.restoreFullChargeOnce();
+                                else
+                                    BatteryService.startFullChargeOnce();
                             }
                         }
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    color: Config.md3.error
+                    font.family: Config.fontName
+                    font.pixelSize: 12
+                    text: BatteryService.chargeCommandError
+                    visible: text !== ""
+                    wrapMode: Text.Wrap
+                }
+            }
+            SettingsSectionCard {
+                accentColor: Config.md3.error
+                border.color: controlRightWindow.sectionCardBorderColor
+                border.width: 1
+                color: controlRightWindow.sectionCardColor
+                compact: true
+                iconName: "battery-caution-symbolic"
+                note: qsTr("Optional actions when the remaining charge becomes low")
+                radius: 14
+                title: qsTr("Low battery automation")
 
-                        // Separator
-                        Rectangle {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.06)
-                            height: 1
+                SettingsToggleTile {
+                    checked: BatteryService.lowBatteryNotificationEnabled
+                    label: qsTr("Low battery notification")
+                    note: qsTr("Show one notification when the low threshold is crossed")
+                    updateCheckedInternally: false
+
+                    onToggled: checked => {
+                        return BatteryService.lowBatteryNotificationEnabled = checked;
+                    }
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    SettingsTextField {
+                        id: lowThresholdField
+
+                        Layout.fillWidth: true
+                        fieldHeight: 42
+                        inputItem.inputMethodHints: Qt.ImhDigitsOnly
+                        label: qsTr("Low at (%)")
+                        placeholder: qsTr("5–50")
+                        text: root.lowThresholdText
+
+                        inputItem.validator: IntValidator {
+                            bottom: 5
+                            top: 50
                         }
 
-                        // Row 3: CPU Turbo Override
-                        SettingsChoiceRow {
-                            Layout.fillWidth: true
-                            label: "CPU Turbo Override"
-                            options: [
-                                {
-                                    "label": "Auto",
-                                    "value": "auto"
-                                },
-                                {
-                                    "label": "Never",
-                                    "value": "never"
-                                },
-                                {
-                                    "label": "Always",
-                                    "value": "always"
-                                }
-                            ]
-                            value: batteryPageRoot.turboOverride
+                        onTextChanged: root.lowThresholdText = text
+                    }
+                    SettingsTextField {
+                        id: criticalThresholdField
 
-                            onSelected: function (v) {
-                                batteryPageRoot.runCommand("pkexec auto-cpufreq --turbo " + v);
-                                BatteryService.turboOverride = v;
-                            }
+                        Layout.fillWidth: true
+                        fieldHeight: 42
+                        inputItem.inputMethodHints: Qt.ImhDigitsOnly
+                        label: qsTr("Critical at (%)")
+                        placeholder: qsTr("1–49")
+                        text: root.criticalThresholdText
+
+                        inputItem.validator: IntValidator {
+                            bottom: 1
+                            top: 49
                         }
+
+                        onTextChanged: root.criticalThresholdText = text
+                    }
+                    SettingsActionButton {
+                        Layout.alignment: Qt.AlignBottom
+                        enabled: root.policyThresholdsValid
+                        iconName: "document-save-symbolic"
+                        iconOnly: true
+                        primary: true
+                        text: qsTr("Save battery thresholds")
+
+                        onClicked: root.applyPolicyThresholds()
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    color: Config.md3.error
+                    font.family: Config.fontName
+                    font.pixelSize: 12
+                    text: root.policyThresholdsValid ? "" : qsTr("Critical level must be lower than the low-battery level")
+                    visible: text !== ""
+                    wrapMode: Text.Wrap
+                }
+                SettingsChoiceRow {
+                    Layout.fillWidth: true
+                    label: qsTr("Critical action")
+                    note: qsTr("No system power action is performed unless you select one")
+                    options: [
+                        {
+                            "label": qsTr("None"),
+                            "value": "none"
+                        },
+                        {
+                            "label": qsTr("Suspend"),
+                            "value": "suspend"
+                        },
+                        {
+                            "label": qsTr("Hibernate"),
+                            "value": "hibernate"
+                        }
+                    ]
+                    value: BatteryService.criticalBatteryAction
+
+                    onSelected: value => {
+                        return BatteryService.setCriticalBatteryAction(value);
+                    }
+                }
+            }
+            SettingsSectionCard {
+                accentColor: Config.md3.secondary
+                border.color: controlRightWindow.sectionCardBorderColor
+                border.width: 1
+                color: controlRightWindow.sectionCardColor
+                compact: true
+                iconName: "am-cpu-symbolic"
+                note: qsTr("Optional auto-cpufreq overrides")
+                radius: 14
+                title: qsTr("CPU optimization")
+                visible: root.autoCpufreqAvailable
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Text {
+                        color: Config.md3.on_surface
+                        font.family: Config.fontName
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        text: qsTr("Current governor")
+                    }
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        color: Config.md3.on_surface_variant
+                        font.family: Config.fontName
+                        font.pixelSize: 14
+                        font.weight: Font.Medium
+                        text: BatteryService.currentGovernor
+                    }
+                }
+                SettingsChoiceRow {
+                    Layout.fillWidth: true
+                    label: qsTr("Governor override")
+                    options: [
+                        {
+                            "label": qsTr("Default"),
+                            "value": "default"
+                        },
+                        {
+                            "label": qsTr("Powersave"),
+                            "value": "powersave"
+                        },
+                        {
+                            "label": qsTr("Performance"),
+                            "value": "performance"
+                        }
+                    ]
+                    value: BatteryService.governorOverride
+
+                    onSelected: value => {
+                        BatteryService.runCommand("pkexec auto-cpufreq --force " + (value === "default" ? "reset" : value));
+                        BatteryService.governorOverride = value;
+                    }
+                }
+                SettingsChoiceRow {
+                    Layout.fillWidth: true
+                    label: qsTr("CPU turbo override")
+                    options: [
+                        {
+                            "label": qsTr("Auto"),
+                            "value": "auto"
+                        },
+                        {
+                            "label": qsTr("Never"),
+                            "value": "never"
+                        },
+                        {
+                            "label": qsTr("Always"),
+                            "value": "always"
+                        }
+                    ]
+                    value: BatteryService.turboOverride
+
+                    onSelected: value => {
+                        BatteryService.runCommand("pkexec auto-cpufreq --turbo " + value);
+                        BatteryService.turboOverride = value;
                     }
                 }
             }
         }
     }
     SelectPopup {
+        accentColor: Config.md3.tertiary
         anchors.fill: parent
-        itemActive: function (item) {
-            return batteryPageRoot.popupType === "power" ? batteryPageRoot.activeProfile === item.profile : batteryPageRoot.chargeMode === item.value;
-        }
-        model: batteryPageRoot.popupModel
-        openAbove: batteryPageRoot.popupOpenAbove
-        opened: batteryPageRoot.popupOpen
-        popupY: batteryPageRoot.popupY
+        itemActive: item => item && String(item.value) === root.profilePolicyValue()
+        model: root.profilePolicyOptions
+        openAbove: root.profilePopupOpenAbove
+        opened: root.profilePopupOpen
+        popupWidth: 224
+        popupY: root.profilePopupY
+        rightMargin: root.profilePopupRightMargin
+        rowHeight: 44
 
-        onDismissed: {
-            batteryPageRoot.popupOpen = false;
-            batteryPageRoot.powerDropOpen = false;
-            batteryPageRoot.chargeDropOpen = false;
-        }
-        onItemSelected: item => {
-            if (batteryPageRoot.popupType === "power") {
-                if (item.profile === "power-saver") {
-                    PowerProfiles.profile = PowerProfile.PowerSaver;
-                } else if (item.profile === "performance") {
-                    PowerProfiles.profile = PowerProfile.Performance;
-                } else {
-                    PowerProfiles.profile = PowerProfile.Balanced;
-                }
-                batteryPageRoot.powerDropOpen = false;
-            } else {
-                BatteryService.setChargeMode(item.value);
-                BatteryService.chargeMode = item.value;
-                batteryPageRoot.chargeDropOpen = false;
+        onDismissed: root.profilePopupOpen = false
+        onItemSelected: item => root.selectProfilePolicy(item)
+    }
+
+    component MetricTile: Rectangle {
+        id: metric
+
+        property color accentColor: Config.md3.primary
+        property string label: ""
+        property string valueText: ""
+
+        Layout.fillWidth: true
+        Layout.preferredHeight: 64
+        color: Config.alpha(Config.md3.on_surface, 0.04)
+        radius: 12
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 11
+            spacing: 3
+
+            Text {
+                Layout.fillWidth: true
+                color: Config.alpha(Config.md3.on_surface, 0.48)
+                elide: Text.ElideRight
+                font.family: Config.fontName
+                font.pixelSize: 12
+                font.weight: Font.Medium
+                text: metric.label
             }
-            batteryPageRoot.popupOpen = false;
+            Text {
+                Layout.fillWidth: true
+                color: metric.accentColor
+                elide: Text.ElideRight
+                font.family: Config.fontName
+                font.pixelSize: 15
+                font.weight: Font.Bold
+                text: metric.valueText
+            }
         }
     }
 }

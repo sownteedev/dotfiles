@@ -603,6 +603,30 @@ QtObject {
         if (nightlightEnabled && !nightlightApplyDelay.running)
             nightlightApplyDelay.start();
     }
+    function setVrrMode(output, mode) {
+        if (output === "")
+            return;
+
+        var normalizedMode = mode === "on" || mode === "on-demand" ? mode : "off";
+        var names = outputsToUpdate(output);
+        var commands = [];
+        for (var i = 0; i < names.length; ++i) {
+            commands.push(ensureOutputCommand(names[i], output));
+            commands.push("python3 " + shellQuote(Config.quickshellDir + "/scripts/display_config_parser.py") + " --set-vrr " + shellQuote(configPath) + " " + shellQuote(names[i]) + " " + shellQuote(normalizedMode));
+        }
+        executeConfigCommand(commands.join("; "));
+
+        var updated = Object.assign({}, kdlOptions);
+        for (var j = 0; j < names.length; ++j) {
+            updated[names[j]] = Object.assign({}, updated[names[j]] || {});
+            updated[names[j]].vrr = normalizedMode !== "off";
+            updated[names[j]].vrrMode = normalizedMode;
+        }
+        kdlOptions = updated;
+    }
+    function shellQuote(value) {
+        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
+    }
     function startPendingConfigUpdate() {
         if (configUpdater.running || pendingConfigCommands.length === 0)
             return;
@@ -625,6 +649,10 @@ QtObject {
     function toggleOption(output, option, enabled) {
         if (output === "")
             return;
+        if (option === "vrr") {
+            setVrrMode(output, enabled ? "on-demand" : "off");
+            return;
+        }
         var names = outputsToUpdate(output);
         var optionName = option === "vrr" ? "variable-refresh-rate" : "focus-at-startup";
         var optionLine = option === "vrr" ? "variable-refresh-rate on-demand=true" : optionName;
@@ -674,6 +702,13 @@ QtObject {
             }
         }
         executeConfigCommand(commands.join("; "));
+    }
+    function vrrMode(output) {
+        var values = kdlOptions[configIdentity(output)];
+        var mode = String(values && values.vrrMode || "");
+        if (mode === "off" || mode === "on" || mode === "on-demand")
+            return mode;
+        return values && values.vrr ? "on-demand" : "off";
     }
     function writeNightlightConfig(temperature) {
         nightlightConfigFile.setText(nightlightConfigText(temperature));

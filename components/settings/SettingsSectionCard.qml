@@ -13,6 +13,7 @@ Rectangle {
     default property alias contentData: body.data
     property string iconName: "preferences-system-symbolic"
     property string note: ""
+    property bool showHeader: true
     property string title: ""
 
     Layout.alignment: Qt.AlignTop
@@ -34,6 +35,7 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             spacing: 15
+            visible: root.showHeader
 
             Rectangle {
                 Layout.alignment: Qt.AlignVCenter

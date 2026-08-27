@@ -193,7 +193,7 @@ PanelWindow {
             else
                 notifModel.append(notifData);
             // Manage auto-dismiss timeout using pre-compiled Timer Component
-            if (shouldAutoExpire(notification, isCritical)) {
+            if (shouldAutoExpire(notification)) {
                 var timeout = notificationTimeout(notification);
                 var timer = notifTimerComponent.createObject(notifWindow, {
                     "interval": timeout,
@@ -212,7 +212,15 @@ PanelWindow {
         return matchingSummary && (CaptureService.screenshotBusy || recentCapture);
     }
     function notificationTimeout(notification) {
-        return notification && notification.expireTimeout > 0 ? notification.expireTimeout : Config.notificationPopupDuration;
+        if (notification && notification.expireTimeout > 0)
+            return notification.expireTimeout;
+
+        var urgency = notification ? Number(notification.urgency) : 1;
+        if (urgency === 0)
+            return Config.notificationLowTimeout;
+        if (urgency === 2)
+            return Config.notificationCriticalTimeout;
+        return Config.notificationNormalTimeout;
     }
     function popupBlurTarget(index) {
         if (!Config.shellBlurNotificationEnabled || index < 0 || index >= notifModel.count)
@@ -247,16 +255,14 @@ PanelWindow {
 
     // Reset notification timer
     function resetNotifTimer(nid) {
-        var isCrit = false;
         var notifObj = null;
         for (var i = 0; i < notifModel.count; i++) {
             if (notifModel.get(i).nid === nid) {
-                isCrit = notifModel.get(i).isCritical;
                 notifObj = notifModel.get(i).rawNotification;
                 break;
             }
         }
-        if (!shouldAutoExpire(notifObj, isCrit)) {
+        if (!shouldAutoExpire(notifObj)) {
             if (timersMap[nid]) {
                 timersMap[nid].destroy();
                 delete timersMap[nid];
@@ -279,7 +285,7 @@ PanelWindow {
     function resumeNotifTimer(nid, remainingProgress, notifObj) {
         if (timersMap[nid]) {
             timersMap[nid].stop();
-            var timeout = (notifObj && notifObj.expireTimeout > 0) ? notifObj.expireTimeout : Config.notificationPopupDuration;
+            var timeout = notificationTimeout(notifObj);
             timersMap[nid].interval = Math.max(50, timeout * remainingProgress);
             timersMap[nid].start();
         }
@@ -299,10 +305,10 @@ PanelWindow {
             notifWindow.syncNotification(notification);
         });
     }
-    function shouldAutoExpire(notification, isCritical) {
+    function shouldAutoExpire(notification) {
         if (!notification || notification.expireTimeout === 0)
             return false;
-        return notification.expireTimeout > 0 || !isCritical;
+        return notificationTimeout(notification) > 0;
     }
 
     // Timer management
@@ -592,7 +598,7 @@ PanelWindow {
                     }
                     onRevisionChanged: {
                         progress = 1;
-                        if (active && shouldAutoExpire(notifObj, isCritical))
+                        if (active && shouldAutoExpire(notifObj))
                             progressAnim.restart();
                         else
                             progressAnim.stop();
@@ -611,20 +617,13 @@ PanelWindow {
                         id: progressAnim
 
                         duration: {
-                            var timeout = (delegateWrapper.notifObj && delegateWrapper.notifObj.expireTimeout > 0) ? delegateWrapper.notifObj.expireTimeout : Config.notificationPopupDuration;
-                            return timeout;
+                            return notificationTimeout(delegateWrapper.notifObj);
                         }
                         from: 1
                         property: "progress"
                         running: {
-                            if (delegateWrapper.isCritical)
-                                return false;
-
-                            if (delegateWrapper.notifObj && delegateWrapper.notifObj.expireTimeout === 0)
-                                return false;
-
                             // Start running immediately when active to prevent any visual delay
-                            return delegateWrapper.active;
+                            return delegateWrapper.active && shouldAutoExpire(delegateWrapper.notifObj);
                         }
                         target: delegateWrapper
                         to: 0

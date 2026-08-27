@@ -105,7 +105,7 @@ Item {
         contentHeight: settingsPanel.opened ? height : Math.max(height, wifiListContent.implicitHeight)
         contentWidth: width
         flickableDirection: Flickable.VerticalFlick
-        interactive: !settingsPanel.opened && contentHeight > height
+        interactive: !settingsPanel.opened && !controlRightWindow.wifiQrPopupOpen && contentHeight > height
         maximumFlickVelocity: 1800
 
         // ── LIST VIEW ──────────────────────────────────────────────────────
@@ -413,6 +413,7 @@ Item {
                         onForgetRequested: {
                             WifiService.forgetNetwork(modelData);
                         }
+                        onQrRequested: controlRightWindow.openWifiQrCode(modelData)
                         onSettingsRequested: wifiPageRoot.openSettings(ssid)
 
                         Connections {

@@ -323,7 +323,6 @@ Rectangle {
                     horizontalAlignment: Text.AlignHCenter
                     maximumLineCount: 1
                     opacity: index === root.activeLineIndex ? 0.0 : (distance === 1 ? 0.58 : 0.24)
-                    renderType: Text.NativeRendering
                     scale: index === root.activeLineIndex ? (18.0 / 14.0) : 1.0
                     text: modelData.text
                     width: parent.width

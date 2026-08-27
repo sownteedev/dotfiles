@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import Qt5Compat.GraphicalEffects
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
@@ -37,6 +38,10 @@ Item {
             maximum = Math.max(maximum, Number(displayedProcesses[index].val) || 0);
         return maximum;
     }
+    property var memoryDetails: null
+    property bool memoryDetailsEnabled: false
+    property int memoryDetailsPid: -1
+    property int memoryDetailsRequestedPid: -1
     property var processList: null
     property int processRevision: 0
     property string searchText: ""
@@ -44,12 +49,23 @@ Item {
     property string terminationError: ""
     property string valueSuffix: "%"
 
+    signal memoryDetailsRequested(int pid)
     signal terminateRequested(int pid, string name)
 
     function armTermination(pid, name) {
         armedPid = pid;
         armedName = name;
         confirmTimer.restart();
+    }
+    function formatMemoryValue(value) {
+        if (value === null || value === undefined || !isFinite(Number(value)))
+            return qsTr("Unavailable");
+        return Number(value).toFixed(1) + qsTr(" MiB");
+    }
+    function memoryDetailValue(sample, name, loading) {
+        if (!sample)
+            return loading ? qsTr("Reading…") : qsTr("Unavailable");
+        return formatMemoryValue(sample[name]);
     }
     function requestTermination(pid, name) {
         if (armedPid !== pid || armedName !== name) {
@@ -221,6 +237,9 @@ Item {
                     delegate: Item {
                         id: processRow
 
+                        required property int index
+                        readonly property var memorySample: root.memoryDetailsEnabled && root.memoryDetailsPid === processPid ? root.memoryDetails : null
+                        readonly property bool memorySampleLoading: root.memoryDetailsEnabled && root.memoryDetailsRequestedPid === processPid && memorySample === null
                         required property var modelData
                         readonly property string processName: String(modelData.name || "")
                         readonly property int processPid: Math.trunc(Number(modelData.pid))
@@ -243,6 +262,23 @@ Item {
 
                             HoverHandler {
                                 id: rowHover
+
+                                onHoveredChanged: {
+                                    if (hovered && root.memoryDetailsEnabled)
+                                        memoryDetailsDelay.restart();
+                                    else
+                                        memoryDetailsDelay.stop();
+                                }
+                            }
+                            Timer {
+                                id: memoryDetailsDelay
+
+                                interval: 260
+
+                                onTriggered: {
+                                    if (rowHover.hovered && root.memoryDetailsEnabled)
+                                        root.memoryDetailsRequested(processRow.processPid);
+                                }
                             }
                             Rectangle {
                                 anchors.bottom: parent.bottom
@@ -256,6 +292,113 @@ Item {
                                     NumberAnimation {
                                         duration: 240
                                         easing.type: Easing.OutCubic
+                                    }
+                                }
+                            }
+                            ToolTip {
+                                id: memoryTooltip
+
+                                readonly property var rows: [
+                                    {
+                                        "label": qsTr("RSS"),
+                                        "value": root.formatMemoryValue(processRow.processValue)
+                                    },
+                                    {
+                                        "label": qsTr("PSS"),
+                                        "value": root.memoryDetailValue(processRow.memorySample, "pss_mib", processRow.memorySampleLoading)
+                                    },
+                                    {
+                                        "label": qsTr("PSS Dirty"),
+                                        "value": root.memoryDetailValue(processRow.memorySample, "pss_dirty_mib", processRow.memorySampleLoading)
+                                    },
+                                    {
+                                        "label": qsTr("Private / USS"),
+                                        "value": root.memoryDetailValue(processRow.memorySample, "private_mib", processRow.memorySampleLoading)
+                                    }
+                                ]
+
+                                bottomPadding: 11
+                                delay: 340
+                                leftPadding: 12
+                                rightPadding: 12
+                                timeout: -1
+                                topPadding: 10
+                                visible: root.memoryDetailsEnabled && rowHover.hovered
+                                width: 224
+                                x: Math.max(4, processRow.width - width - 34)
+                                y: processRow.index >= 3 ? -height + 5 : processRow.height - 1
+
+                                background: Rectangle {
+                                    border.color: Config.alpha(Config.md3.outline, 0.22)
+                                    border.width: 1
+                                    color: Config.md3.surface_container_highest
+                                    radius: 12
+                                }
+                                contentItem: ColumnLayout {
+                                    spacing: 5
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 8
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            color: Config.md3.on_surface
+                                            font.family: Config.fontName
+                                            font.pixelSize: 12
+                                            font.weight: Font.Bold
+                                            text: qsTr("Memory details")
+                                        }
+                                        Text {
+                                            color: Config.md3.on_surface_variant
+                                            font.family: Config.fontName
+                                            font.pixelSize: 10
+                                            font.weight: Font.Medium
+                                            text: processRow.memorySample && Number(processRow.memorySample.process_count) > 1 ? qsTr("%1 processes").arg(processRow.memorySample.process_count) : ""
+                                            visible: text !== ""
+                                        }
+                                    }
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 1
+                                        color: Config.alpha(Config.md3.outline, 0.16)
+                                    }
+                                    Repeater {
+                                        model: memoryTooltip.rows
+
+                                        delegate: RowLayout {
+                                            required property var modelData
+
+                                            Layout.fillWidth: true
+                                            spacing: 12
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                color: Config.md3.on_surface_variant
+                                                font.family: Config.fontName
+                                                font.pixelSize: 11
+                                                font.weight: Font.Medium
+                                                text: modelData.label
+                                            }
+                                            Text {
+                                                color: Config.md3.on_surface
+                                                font.family: Config.fontName
+                                                font.pixelSize: 11
+                                                font.weight: Font.DemiBold
+                                                text: modelData.value
+                                            }
+                                        }
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        Layout.topMargin: 2
+                                        color: Config.alpha(Config.md3.on_surface_variant, 0.78)
+                                        font.family: Config.fontName
+                                        font.pixelSize: 9
+                                        font.weight: Font.Medium
+                                        horizontalAlignment: Text.AlignRight
+                                        text: qsTr("RSS is used for display and sorting")
+                                        wrapMode: Text.Wrap
                                     }
                                 }
                             }

@@ -1,4 +1,4 @@
-use crate::model::{RankedProcess, StatsPayload};
+use crate::model::{ProcessMemoryDetails, RankedProcess, StatsPayload};
 use std::fmt::Write;
 
 pub fn encode(payload: &StatsPayload) -> String {
@@ -57,6 +57,32 @@ pub fn encode(payload: &StatsPayload) -> String {
     output
 }
 
+pub fn encode_process_memory(details: &ProcessMemoryDetails) -> String {
+    let mut output = String::with_capacity(192);
+    write!(
+        output,
+        "{{\"pid\":{},\"process_count\":{},\"measured_process_count\":{},\"rss_mib\":{}",
+        details.pid,
+        details.process_count,
+        details.measured_process_count,
+        finite(details.rss_mib)
+    )
+    .unwrap();
+    append_optional_number("pss_mib", details.pss_mib, &mut output);
+    append_optional_number("pss_dirty_mib", details.pss_dirty_mib, &mut output);
+    append_optional_number("private_mib", details.private_mib, &mut output);
+    output.push('}');
+    output
+}
+
+fn append_optional_number(name: &str, value: Option<f64>, output: &mut String) {
+    write!(output, ",\"{name}\":").unwrap();
+    match value {
+        Some(value) => write!(output, "{}", finite(value)).unwrap(),
+        None => output.push_str("null"),
+    }
+}
+
 fn append_ranked(name: &str, values: Option<&[RankedProcess]>, output: &mut String) {
     let Some(values) = values else {
         return;
@@ -93,12 +119,31 @@ fn finite(value: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::escape_into;
+    use super::{encode_process_memory, escape_into};
+    use crate::model::ProcessMemoryDetails;
 
     #[test]
     fn escapes_process_names_as_valid_json_strings() {
         let mut output = String::new();
         escape_into("app\\name\"\n", &mut output);
         assert_eq!(output, "app\\\\name\\\"\\n");
+    }
+
+    #[test]
+    fn encodes_unavailable_process_memory_as_null() {
+        let details = ProcessMemoryDetails {
+            pid: 42,
+            process_count: 1,
+            measured_process_count: 0,
+            rss_mib: 12.5,
+            pss_mib: None,
+            pss_dirty_mib: None,
+            private_mib: None,
+        };
+
+        assert_eq!(
+            encode_process_memory(&details),
+            "{\"pid\":42,\"process_count\":1,\"measured_process_count\":0,\"rss_mib\":12.5,\"pss_mib\":null,\"pss_dirty_mib\":null,\"private_mib\":null}"
+        );
     }
 }

@@ -10,6 +10,7 @@ import Quickshell.Widgets
 RowLayout {
     id: root
 
+    property string activeItemId: ""
     property real itemSpacing: 32
     required property var parentWindow
 
@@ -21,6 +22,7 @@ RowLayout {
         delegate: MouseArea {
             id: itemArea
 
+            readonly property string entryKey: trayItem ? String(trayItem.id || trayItem.title || index) : String(index)
             readonly property bool hasCompactArtwork: itemIdentity.indexOf("chrome_status_icon") !== -1
             readonly property real iconExtent: hasCompactArtwork ? 30 : 24
             readonly property bool isSpotify: itemIdentity.indexOf("spotify") !== -1
@@ -32,14 +34,16 @@ RowLayout {
                     menuPopupLoader.active = false;
                 else if (menuPopupLoader.loading)
                     menuPopupLoader.loading = false;
+                if (root.activeItemId === itemArea.entryKey)
+                    root.activeItemId = "";
             }
             function toggleMenuPopup() {
-                if (menuPopupLoader.active)
-                    menuPopupLoader.active = false;
-                else if (menuPopupLoader.loading)
-                    menuPopupLoader.loading = false;
-                else
+                if (menuPopupLoader.active || menuPopupLoader.loading) {
+                    itemArea.closeMenuPopup();
+                } else {
+                    root.activeItemId = itemArea.entryKey;
                     menuPopupLoader.loading = true;
+                }
             }
 
             Layout.alignment: Qt.AlignVCenter
@@ -72,6 +76,15 @@ RowLayout {
 
                 itemArea.closeMenuPopup();
                 itemArea.trayItem.activate();
+            }
+
+            Connections {
+                function onActiveItemIdChanged() {
+                    if (root.activeItemId !== itemArea.entryKey && (menuPopupLoader.active || menuPopupLoader.loading))
+                        itemArea.closeMenuPopup();
+                }
+
+                target: root
             }
 
             // PopupWindow is created only when the tray item is clicked.

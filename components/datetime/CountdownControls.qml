@@ -164,7 +164,6 @@ Item {
                     font.family: Config.fontName
                     font.pixelSize: 14
                     font.weight: Font.Bold
-                    renderType: Text.NativeRendering
                     text: root.running ? qsTr("Pause") : root.hasStarted ? qsTr("Resume") : root.completed ? qsTr("Restart") : qsTr("Start")
                 }
             }

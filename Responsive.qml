@@ -6,6 +6,7 @@ QtObject {
 
     readonly property int minimumSidePanelWidth: 360
     readonly property int preferredSidePanelWidth: 650
+    readonly property int settingsCompactContentWidth: 760
     readonly property int spacingL: 16
     readonly property int spacingM: 12
     readonly property int spacingS: 8

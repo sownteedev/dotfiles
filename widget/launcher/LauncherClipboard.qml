@@ -19,11 +19,15 @@ Item {
     property string query: ""
     property var readyPreviewIds: ({})
     property int requestGeneration: 0
+    readonly property string restoreHelperPath: Config.quickshellDir + "/scripts/clipboard_restore.py"
 
-    function classifyContent(content, isImage, characterCount, decodedLineCount) {
+    function classifyContent(content, isImage, characterCount, decodedLineCount, decodedFileCount, decodedFirstFile) {
         var text = String(content || "").trim();
         if (isImage)
             return imageDetails(text);
+
+        if (decodedFileCount > 0 && decodedFirstFile !== "")
+            return fileDetails(decodedFirstFile, decodedFileCount);
 
         var firstLine = firstNonEmptyLine(text);
         var singleLine = text.indexOf("\n") === -1;
@@ -52,18 +56,7 @@ Item {
             };
         }
         if (singleLine && (/^file:\/\//i.test(text) || /^\//.test(text) || /^~\//.test(text))) {
-            var sourcePath = localPath(text);
-            var path = displayPath(sourcePath);
-            var isFolder = /\/$/.test(sourcePath);
-            return {
-                kind: isFolder ? "folder" : "file",
-                title: pathName(path),
-                subtitle: (isFolder ? qsTr("Folder · %1") : qsTr("File · %1")).arg(path),
-                iconName: isFolder ? "folder-symbolic" : fileIcon(sourcePath),
-                isFileImage: !isFolder && isImageFile(sourcePath),
-                isVideo: !isFolder && isVideoFile(sourcePath),
-                sourcePath: sourcePath
-            };
+            return fileDetails(text, 1);
         }
 
         var lineCount = decodedLineCount >= 0 ? decodedLineCount : (text === "" ? 0 : text.split(/\r?\n/).length);
@@ -76,8 +69,11 @@ Item {
         };
     }
     function copySelected(id) {
-        var command = Config.launcherClipboardAutoPaste ? "if cliphist decode \"$1\" | wl-copy; then if command -v wtype >/dev/null 2>&1; then sleep 0.4; wtype -M ctrl -k v -m ctrl; fi; fi" : "cliphist decode \"$1\" | wl-copy";
-        Quickshell.execDetached(["sh", "-c", command, "clip_decode_paste", id]);
+        var key = String(id || "");
+        var command = ["python3", restoreHelperPath, key];
+        if (Config.launcherClipboardAutoPaste)
+            command.push("--auto-paste");
+        Quickshell.execDetached(command);
     }
     function displayPath(value) {
         return localPath(value).replace(Config.homeDir, "~");
@@ -113,6 +109,33 @@ Item {
             startNextPreview();
             return;
         }
+    }
+    function fileDetails(value, itemCount) {
+        var sourcePath = localPath(value);
+        var path = displayPath(sourcePath);
+        if (itemCount > 1) {
+            var directory = parentPath(path);
+            return {
+                kind: "files",
+                title: pathName(path),
+                subtitle: directory !== "" ? qsTr("%1 files · %2").arg(itemCount).arg(directory) : qsTr("%1 files").arg(itemCount),
+                iconName: "edit-copy-symbolic",
+                isFileImage: isImageFile(sourcePath),
+                isVideo: isVideoFile(sourcePath),
+                sourcePath: sourcePath
+            };
+        }
+
+        var isFolder = /\/$/.test(sourcePath);
+        return {
+            kind: isFolder ? "folder" : "file",
+            title: pathName(path),
+            subtitle: (isFolder ? qsTr("Folder · %1") : qsTr("File · %1")).arg(path),
+            iconName: isFolder ? "folder-symbolic" : fileIcon(sourcePath),
+            isFileImage: !isFolder && isImageFile(sourcePath),
+            isVideo: !isFolder && isVideoFile(sourcePath),
+            sourcePath: sourcePath
+        };
     }
     function fileIcon(path) {
         var extension = String(path || "").split(".").pop().toLowerCase();
@@ -207,7 +230,7 @@ Item {
         refreshPinnedResults();
     }
     function localPath(value) {
-        var path = String(value || "").replace(/^file:\/\//i, "");
+        var path = String(value || "").replace(/^file:\/\/localhost(?=\/)/i, "").replace(/^file:\/\//i, "");
         try {
             path = decodeURIComponent(path);
         } catch (error) {}
@@ -224,6 +247,15 @@ Item {
             updated[key] = readyPreviewIds[key];
         updated[id] = path;
         readyPreviewIds = updated;
+    }
+    function parentPath(path) {
+        var normalized = String(path || "").replace(/\/+$/, "");
+        var separator = normalized.lastIndexOf("/");
+        if (separator < 0)
+            return "";
+        if (separator === 0)
+            return "/";
+        return normalized.substring(0, separator);
     }
     function pathName(path) {
         var normalized = String(path || "").replace(/\/+$/, "");
@@ -273,7 +305,7 @@ Item {
 
         var generation = requestGeneration;
         var pinnedIdList = Object.keys(pinnedIds).join(",");
-        var script = "printf '__QS_REQUEST__%s\\n' \"$1\"; cliphist list 2>/dev/null | grep -aFi -- \"$2\" 2>/dev/null | awk -F '\t' -v max=\"$3\" -v pins=\",$4,\" '{ id=$1; if (index(pins, \",\" id \",\") > 0) pinnedRows[++pinnedCount]=$0; else if (recentCount < max) recentRows[++recentCount]=$0 } END { emitted=0; for (i=1; i<=pinnedCount && emitted<max; ++i) { print pinnedRows[i]; ++emitted } for (i=1; i<=recentCount && emitted<max; ++i) { print recentRows[i]; ++emitted } }' | while IFS= read -r entry; do clip_id=${entry%%\t*}; preview=${entry#*\t}; if printf '%s' \"$preview\" | grep -aqE 'binary data|image/'; then printf '%s\\t-1\\t-1\\n' \"$entry\"; else stats=$(cliphist decode \"$clip_id\" 2>/dev/null | awk '{ if (NR > 1) chars++; chars += length($0); lines++ } END { printf \"%d\\t%d\", chars, lines }'); printf '%s\\t%s\\n' \"$entry\" \"$stats\"; fi; done";
+        var script = "printf '__QS_REQUEST__%s\\n' \"$1\"; cliphist list 2>/dev/null | grep -aFi -- \"$2\" 2>/dev/null | awk -F '\t' -v max=\"$3\" -v pins=\",$4,\" '{ id=$1; if (index(pins, \",\" id \",\") > 0) pinnedRows[++pinnedCount]=$0; else if (recentCount < max) recentRows[++recentCount]=$0 } END { emitted=0; for (i=1; i<=pinnedCount && emitted<max; ++i) { print pinnedRows[i]; ++emitted } for (i=1; i<=recentCount && emitted<max; ++i) { print recentRows[i]; ++emitted } }' | while IFS= read -r entry; do clip_id=${entry%%\t*}; preview=${entry#*\t}; if printf '%s' \"$preview\" | grep -aqE 'binary data|image/'; then printf '%s\\t-1\\t-1\\t0\\t-\\n' \"$entry\"; else stats=$(cliphist decode \"$clip_id\" 2>/dev/null | awk 'BEGIN { fileList=1 } { if (NR > 1) chars++; chars += length($0); lines++; value=$0; sub(/\\r$/, \"\", value); lower=tolower(value); if (value == \"\" || value ~ /^#/ || lower == \"copy\" || lower == \"cut\") next; if (value ~ /^file:\\\/\\\// || value ~ /^\\\// || value ~ /^~\\\//) { files++; if (first == \"\") first=value } else fileList=0 } END { if (!fileList || files == 0) { files=0; first=\"-\" } gsub(/\\t/, \" \", first); printf \"%d\\t%d\\t%d\\t%s\", chars, lines, files, first }'); printf '%s\\t%s\\n' \"$entry\" \"$stats\"; fi; done";
         cliphistProcess.command = ["sh", "-c", script, "cliphist_script", String(generation), searchTerm, String(Config.launcherMaxResults), pinnedIdList];
         cliphistProcess.running = true;
     }
@@ -398,20 +430,26 @@ Item {
                         var line = lines[i];
                         if (line.trim() === "")
                             continue;
-                        var lineCountTab = line.lastIndexOf("\t");
+                        var firstFileTab = line.lastIndexOf("\t");
+                        var fileCountTab = line.lastIndexOf("\t", firstFileTab - 1);
+                        var lineCountTab = line.lastIndexOf("\t", fileCountTab - 1);
                         var characterCountTab = line.lastIndexOf("\t", lineCountTab - 1);
-                        if (characterCountTab === -1 || lineCountTab === -1)
+                        if (characterCountTab === -1 || lineCountTab === -1 || fileCountTab === -1 || firstFileTab === -1)
                             continue;
 
                         var decodedCharacterCount = parseInt(line.substring(characterCountTab + 1, lineCountTab));
-                        var decodedLineCount = parseInt(line.substring(lineCountTab + 1));
+                        var decodedLineCount = parseInt(line.substring(lineCountTab + 1, fileCountTab));
+                        var decodedFileCount = parseInt(line.substring(fileCountTab + 1, firstFileTab));
+                        var decodedFirstFile = line.substring(firstFileTab + 1);
+                        if (decodedFirstFile === "-")
+                            decodedFirstFile = "";
                         var clipboardLine = line.substring(0, characterCountTab);
                         var tabIdx = clipboardLine.indexOf("\t");
                         if (tabIdx !== -1) {
                             var id = clipboardLine.substring(0, tabIdx).trim();
                             var content = clipboardLine.substring(tabIdx + 1);
                             var isImg = content.indexOf("binary data") !== -1 || content.indexOf("image/") !== -1;
-                            var classification = classifyContent(content, isImg, decodedCharacterCount, decodedLineCount);
+                            var classification = classifyContent(content, isImg, decodedCharacterCount, decodedLineCount, decodedFileCount, decodedFirstFile);
                             results.push({
                                 id: id,
                                 content: content,

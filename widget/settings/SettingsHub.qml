@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 
-PanelWindow {
+FloatingWindow {
     id: root
 
     property bool active: false
@@ -53,7 +53,7 @@ PanelWindow {
         }
         return items;
     }
-    readonly property bool compactViewport: Responsive.constrained(width, height, 1280, 900)
+    readonly property bool compactViewport: Responsive.constrained(width, height, 980, 700)
     property bool niriExpanded: true
     readonly property var niriSectionColors: [Config.md3.primary, Config.md3.secondary, Config.md3.primary, Config.md3.secondary, Config.md3.tertiary, Config.md3.error, Config.md3.primary]
     readonly property var niriSectionIcons: ["input-keyboard-symbolic", "view-grid-symbolic", "input-mouse-symbolic", "media-playback-start-symbolic", "emblem-system-symbolic", "view-list-symbolic", "text-x-generic-symbolic"]
@@ -200,9 +200,10 @@ PanelWindow {
         if (!active)
             return;
         blurAcquireTimer.stop();
+        blurActive = false;
+        visible = false;
         active = false;
-        blurReleaseTimer.restart();
-        closeTimer.restart();
+        dismissed();
     }
     function legacyQuickshellSection() {
         if (activeQuickshellSection === 4)
@@ -218,8 +219,6 @@ PanelWindow {
         if (targetScreen)
             screen = targetScreen;
         blurAcquireTimer.stop();
-        blurReleaseTimer.stop();
-        closeTimer.stop();
         blurActive = false;
         sectionTransition.stop();
         pageFrame.opacity = 1;
@@ -256,16 +255,11 @@ PanelWindow {
         sectionTransition.restart();
     }
 
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    WlrLayershell.namespace: "quickshell-settings-hub"
-    aboveWindows: true
-    anchors.bottom: true
-    anchors.left: true
-    anchors.right: true
-    anchors.top: true
     color: "transparent"
-    exclusiveZone: 0
-    focusable: true
+    implicitHeight: 860
+    implicitWidth: 1240
+    minimumSize: Qt.size(720, 520)
+    title: "SownteeShell Settings"
     visible: false
 
     BackgroundEffect.blurRegion: Region {
@@ -279,6 +273,17 @@ PanelWindow {
         }
     }
 
+    onClosed: {
+        if (!root.active)
+            return;
+
+        blurAcquireTimer.stop();
+        root.active = false;
+        root.blurActive = false;
+        root.visible = false;
+        root.dismissed();
+    }
+
     Timer {
         id: blurAcquireTimer
 
@@ -288,26 +293,6 @@ PanelWindow {
         onTriggered: {
             if (root.active)
                 root.blurActive = true;
-        }
-    }
-    Timer {
-        id: blurReleaseTimer
-
-        interval: Math.max(1, Config.animationDuration(10))
-        repeat: false
-
-        onTriggered: root.blurActive = false
-    }
-    Timer {
-        id: closeTimer
-
-        interval: Math.max(1, Config.animationDuration(230))
-        repeat: false
-
-        onTriggered: {
-            root.blurActive = false;
-            root.visible = false;
-            root.dismissed();
         }
     }
     SequentialAnimation {
@@ -358,38 +343,122 @@ PanelWindow {
             }
         }
     }
-    MouseArea {
-        anchors.fill: parent
-        enabled: !SettingsHubService.filePickerActive
-
-        onClicked: root.closeSettings()
-    }
     Item {
         id: panelBlurRegion
 
         anchors.fill: panel
     }
-    ShellShadow {
-        active: root.visible
-        cornerRadius: panel.radius
-        opacity: panel.opacity
-        scale: panel.scale
-        target: panel
+    Item {
+        id: resizeHandles
+
+        readonly property int cornerSize: 14
+        readonly property int edgeSize: 7
+
+        anchors.fill: parent
+        enabled: root.active && !root.maximized
+        z: 100
+
+        MouseArea {
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: resizeHandles.cornerSize
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.topMargin: resizeHandles.cornerSize
+            cursorShape: Qt.SizeHorCursor
+            hoverEnabled: true
+            width: resizeHandles.edgeSize
+
+            onPressed: root.startSystemResize(Qt.LeftEdge)
+        }
+        MouseArea {
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: resizeHandles.cornerSize
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.topMargin: resizeHandles.cornerSize
+            cursorShape: Qt.SizeHorCursor
+            hoverEnabled: true
+            width: resizeHandles.edgeSize
+
+            onPressed: root.startSystemResize(Qt.RightEdge)
+        }
+        MouseArea {
+            anchors.left: parent.left
+            anchors.leftMargin: resizeHandles.cornerSize
+            anchors.right: parent.right
+            anchors.rightMargin: resizeHandles.cornerSize
+            anchors.top: parent.top
+            cursorShape: Qt.SizeVerCursor
+            height: resizeHandles.edgeSize
+            hoverEnabled: true
+
+            onPressed: root.startSystemResize(Qt.TopEdge)
+        }
+        MouseArea {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.leftMargin: resizeHandles.cornerSize
+            anchors.right: parent.right
+            anchors.rightMargin: resizeHandles.cornerSize
+            cursorShape: Qt.SizeVerCursor
+            height: resizeHandles.edgeSize
+            hoverEnabled: true
+
+            onPressed: root.startSystemResize(Qt.BottomEdge)
+        }
+        MouseArea {
+            anchors.left: parent.left
+            anchors.top: parent.top
+            cursorShape: Qt.SizeFDiagCursor
+            height: resizeHandles.cornerSize
+            hoverEnabled: true
+            width: resizeHandles.cornerSize
+
+            onPressed: root.startSystemResize(Qt.LeftEdge | Qt.TopEdge)
+        }
+        MouseArea {
+            anchors.right: parent.right
+            anchors.top: parent.top
+            cursorShape: Qt.SizeBDiagCursor
+            height: resizeHandles.cornerSize
+            hoverEnabled: true
+            width: resizeHandles.cornerSize
+
+            onPressed: root.startSystemResize(Qt.RightEdge | Qt.TopEdge)
+        }
+        MouseArea {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            cursorShape: Qt.SizeBDiagCursor
+            height: resizeHandles.cornerSize
+            hoverEnabled: true
+            width: resizeHandles.cornerSize
+
+            onPressed: root.startSystemResize(Qt.LeftEdge | Qt.BottomEdge)
+        }
+        MouseArea {
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            cursorShape: Qt.SizeFDiagCursor
+            height: resizeHandles.cornerSize
+            hoverEnabled: true
+            width: resizeHandles.cornerSize
+
+            onPressed: root.startSystemResize(Qt.RightEdge | Qt.BottomEdge)
+        }
     }
     Rectangle {
         id: panel
 
-        anchors.centerIn: parent
+        anchors.fill: parent
         border.color: Config.alpha(Config.md3.on_surface, 0.08)
         border.width: 1
         clip: true
         color: Config.shellBlurSettingsEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
         focus: true
-        height: Responsive.fitWithMargins(860, root.height, root.compactViewport ? 8 : 18, 480)
         opacity: root.active ? 1 : 0
-        radius: root.compactViewport ? 22 : 26
+        radius: root.maximized ? 0 : root.compactViewport ? 22 : 26
         scale: root.active ? 1 : 0.96
-        width: Responsive.fitWithMargins(1240, root.width, root.compactViewport ? 10 : 20, 640)
 
         Behavior on opacity {
             NumberAnimation {
@@ -731,6 +800,13 @@ PanelWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: root.compactViewport ? 112 : 62
 
+                    MouseArea {
+                        acceptedButtons: Qt.LeftButton
+                        anchors.fill: parent
+
+                        onDoubleClicked: root.maximized = !root.maximized
+                        onPressed: root.startSystemMove()
+                    }
                     ColumnLayout {
                         anchors.left: parent.left
                         anchors.right: root.compactViewport ? parent.right : headerActions.left
@@ -846,6 +922,13 @@ PanelWindow {
                                 if (pageLoader.item && pageLoader.item.triggerHeaderAction)
                                     pageLoader.item.triggerHeaderAction();
                             }
+                        }
+                        SettingsActionButton {
+                            iconName: root.maximized ? "window-restore-symbolic" : "window-maximize-symbolic"
+                            iconOnly: true
+                            text: root.maximized ? "Restore" : "Maximize"
+
+                            onClicked: root.maximized = !root.maximized
                         }
                         SettingsActionButton {
                             iconName: "window-close-symbolic"

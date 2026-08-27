@@ -23,6 +23,10 @@ Item {
     property string modelText: ""
     property var processList: null
     property bool processManagerEnabled: false
+    property var processMemoryDetails: null
+    property bool processMemoryDetailsEnabled: false
+    property int processMemoryDetailsPid: -1
+    property int processMemoryDetailsRequestedPid: -1
     property int processPanelHeight: processManagerEnabled ? Math.ceil(processContent.implicitHeight + 10) : 178
     property int processRevision: 0
     property string processTitle: "Top Processes"
@@ -36,6 +40,7 @@ Item {
     property string valueText: ""
 
     signal clicked
+    signal processMemoryDetailsRequested(int pid)
     signal terminateRequested(int pid, string name)
 
     function requestPaint() {
@@ -324,6 +329,10 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: implicitHeight
                     lineColor: root.lineColor
+                    memoryDetails: root.processMemoryDetails
+                    memoryDetailsEnabled: root.processMemoryDetailsEnabled
+                    memoryDetailsPid: root.processMemoryDetailsPid
+                    memoryDetailsRequestedPid: root.processMemoryDetailsRequestedPid
                     processList: root.processList
                     processRevision: root.processRevision
                     terminatingPid: root.terminatingPid
@@ -331,6 +340,7 @@ Item {
                     valueSuffix: root.processValueSuffix
                     visible: root.processManagerEnabled
 
+                    onMemoryDetailsRequested: pid => root.processMemoryDetailsRequested(pid)
                     onTerminateRequested: (pid, name) => root.terminateRequested(pid, name)
                 }
             }

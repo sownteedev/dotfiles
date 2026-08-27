@@ -3,7 +3,6 @@ import "../../"
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 
 QtObject {
     id: root
@@ -78,13 +77,6 @@ QtObject {
                 args.push("--file-filter=" + selectedFilters[i]);
             command = ["zenity"].concat(args);
 
-            // Temporarily push SettingsHub to the background (Wayland layer shell prevents zenity from being on top)
-            if (StateManager.settingsHubLoader.item) {
-                var hub = StateManager.settingsHubLoader.item;
-                hub.aboveWindows = false;
-                hub.WlrLayershell.keyboardFocus = WlrKeyboardFocus.None;
-            }
-
             running = true;
         }
 
@@ -94,13 +86,6 @@ QtObject {
 
         onExited: (exitCode, exitStatus) => {
             root.filePickerActive = false;
-            // Restore SettingsHub
-            if (StateManager.settingsHubLoader.item) {
-                var hub = StateManager.settingsHubLoader.item;
-                hub.aboveWindows = true;
-                hub.WlrLayershell.keyboardFocus = WlrKeyboardFocus.Exclusive;
-            }
-
             if (exitCode === 0 && root.activeFilePickerTarget) {
                 var path = filePickerDialogStdout.text.trim();
                 if (path !== "")
@@ -247,12 +232,15 @@ QtObject {
             "launcherFuzzySearch": Config.launcherFuzzySearch,
             "launcherMaxResults": Config.launcherMaxResults,
             "notificationBlockedApps": Config.notificationBlockedApps,
+            "notificationCriticalTimeout": Config.notificationCriticalTimeout,
             "notificationDndEnd": Config.notificationDndEnd,
             "notificationDndScheduleEnabled": Config.notificationDndScheduleEnabled,
             "notificationDndStart": Config.notificationDndStart,
             "notificationHistoryExcludedApps": Config.notificationHistoryExcludedApps,
             "notificationHistoryLimit": Config.notificationHistoryLimit,
+            "notificationLowTimeout": Config.notificationLowTimeout,
             "notificationMaxVisible": Config.notificationMaxVisible,
+            "notificationNormalTimeout": Config.notificationNormalTimeout,
             "notificationPopupDuration": Config.notificationPopupDuration,
             "notificationPosition": Config.notificationPosition,
             "notificationShowInFullscreen": Config.notificationShowInFullscreen,

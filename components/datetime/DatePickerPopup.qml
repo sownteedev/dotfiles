@@ -10,6 +10,7 @@ import "../../"
 Popup {
     id: root
 
+    property real backdropRadius: 20
     property int currentMonth: new Date().getMonth()
     property int currentYear: new Date().getFullYear()
     property Item placementParent: null
@@ -36,17 +37,15 @@ Popup {
         y = Math.max(8, Math.min(origin.y + (placementParent.height - height) / 2, parent.height - height - 8));
     }
 
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    closePolicy: Popup.CloseOnEscape
+    dim: false
     focus: true
     height: placementParent ? Responsive.fitWithMargins(430, placementParent.height, 8, 330) : parent ? Responsive.fitWithMargins(430, parent.height, 8, 330) : 430
-    modal: true
+    modal: false
     padding: 16
     parent: Overlay.overlay
     width: placementParent ? Responsive.fitWithMargins(360, placementParent.width, 8, 300) : parent ? Responsive.fitWithMargins(360, parent.width, 8, 300) : 360
 
-    Overlay.modal: Rectangle {
-        color: Config.alpha(Config.md3.scrim, Config.lightTheme ? 0.22 : 0.38)
-    }
     background: Item {
         ShellShadow {
             cornerRadius: pickerSurface.radius
@@ -338,5 +337,13 @@ Popup {
         var today = new Date();
         currentMonth = today.getMonth();
         currentYear = today.getFullYear();
+    }
+
+    ScopedPopupBackdrop {
+        active: root.visible
+        cornerRadius: root.backdropRadius
+        host: root.placementParent
+
+        onDismissed: root.close()
     }
 }

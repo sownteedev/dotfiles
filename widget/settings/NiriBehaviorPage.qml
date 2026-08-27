@@ -10,6 +10,7 @@ ScrollView {
     id: root
 
     property string baselineState: ""
+    readonly property bool compactLayout: width < Responsive.settingsCompactContentWidth
     readonly property bool headerActionEnabled: !SettingsHubService.busy
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Validating…" : "Apply behavior"
@@ -112,10 +113,11 @@ ScrollView {
 
     clip: true
     contentHeight: behaviorContent.implicitHeight + 28
-    contentWidth: Math.max(availableWidth, 760)
+    contentWidth: availableWidth
 
     ScrollBar.horizontal: SlimScrollBar {
         accentColor: Config.md3.tertiary
+        policy: ScrollBar.AlwaysOff
     }
     ScrollBar.vertical: SlimScrollBar {
         accentColor: Config.md3.tertiary
@@ -130,16 +132,20 @@ ScrollView {
 
         target: SettingsHubService
     }
-    RowLayout {
+    GridLayout {
         id: behaviorContent
 
-        spacing: 16
+        columnSpacing: 16
+        columns: root.compactLayout ? 1 : 2
+        rowSpacing: 16
+        uniformCellWidths: true
         width: root.contentWidth
         y: 8
 
         ColumnLayout {
             Layout.alignment: Qt.AlignTop
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             Layout.preferredWidth: 1
             spacing: 16
 
@@ -434,6 +440,7 @@ ScrollView {
         ColumnLayout {
             Layout.alignment: Qt.AlignTop
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             Layout.preferredWidth: 1
             spacing: 16
 

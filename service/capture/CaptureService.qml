@@ -215,7 +215,6 @@ QtObject {
     }
     function closeScreenshotEditor() {
         dismissScreenshotEditor();
-        Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-u", "low", "-h", "boolean:transient:true", "Canceled", "Screenshot editing canceled"]);
     }
     function copyRecording(path) {
         var target = path || latestRecordingPath;

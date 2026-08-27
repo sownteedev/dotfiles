@@ -3,6 +3,8 @@ EditableKeybindPill 1.0 EditableKeybindPill.qml
 SettingsFontPicker 1.0 SettingsFontPicker.qml
 SettingsSegmentedControl 1.0 SettingsSegmentedControl.qml
 SettingsSearch 1.0 SettingsSearch.qml
+SettingsSelectRow 1.0 SettingsSelectRow.qml
 SettingsPageContent 1.0 SettingsPageContent.qml
 SettingsToggleTile 1.0 SettingsToggleTile.qml
 SettingsToggleRow 1.0 SettingsToggleRow.qml
+WifiQrPopup 1.0 WifiQrPopup.qml
