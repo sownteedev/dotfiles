@@ -1195,17 +1195,11 @@ Item {
                                     Accessible.role: Accessible.CheckBox
                                     Layout.fillWidth: true
                                     activeFocusOnTab: true
-                                    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.56) : "transparent"
-                                    border.width: 1
-                                    color: focusRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : focusRowMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
+                                    border.width: 0
+                                    color: focusRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : focusRowMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
                                     implicitHeight: 58
                                     radius: 13
 
-                                    Behavior on border.color {
-                                        ColorAnimation {
-                                            duration: 130
-                                        }
-                                    }
                                     Behavior on color {
                                         ColorAnimation {
                                             duration: 130
@@ -1315,18 +1309,12 @@ Item {
                                     Accessible.role: Accessible.ComboBox
                                     Layout.fillWidth: true
                                     activeFocusOnTab: isVrrSupported
-                                    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.56) : "transparent"
-                                    border.width: 1
-                                    color: vrrRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : vrrRowMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
+                                    border.width: 0
+                                    color: vrrRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : vrrRowMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
                                     implicitHeight: 58
                                     opacity: isVrrSupported ? 1 : 0.48
                                     radius: 13
 
-                                    Behavior on border.color {
-                                        ColorAnimation {
-                                            duration: 130
-                                        }
-                                    }
                                     Behavior on color {
                                         ColorAnimation {
                                             duration: 130

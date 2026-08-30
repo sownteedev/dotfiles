@@ -21,8 +21,15 @@ Item {
     property bool isSwipingOut: false
     property var monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     property int pendingMonthDirection: 0
+    readonly property var pendingTasksByDate: buildPendingTasksIndex(LocalTaskService.tasks, GoogleService.allTasks)
+    readonly property var pendingTasksForSelectedDate: tasksForDate(selectedDay, selectedMonth, selectedYear)
+    readonly property Item popupBackdropHost: controlLeftWindow.topPopupBackdropHost
+    readonly property real popupBackdropRadius: controlLeftWindow.topPopupBackdropRadius
     property int selectedDay: todayDate
+    readonly property int selectedEventCount: eventsForSelectedDate ? eventsForSelectedDate.length : 0
+    readonly property int selectedItemCount: selectedEventCount + selectedTaskCount
     property int selectedMonth: todayMonth
+    readonly property int selectedTaskCount: pendingTasksForSelectedDate ? pendingTasksForSelectedDate.length : 0
     property int selectedYear: todayYear
     property bool showEvents: false
     property real swipeOffset: 0
@@ -31,6 +38,45 @@ Item {
     property int todayYear: new Date().getFullYear()
     property var weekDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
+    function appendPendingTasks(index, tasks, taskSource) {
+        if (!Array.isArray(tasks))
+            return;
+        for (var i = 0; i < tasks.length; ++i) {
+            var task = tasks[i] || {};
+            if (String(task.status || "needsAction") !== "needsAction")
+                continue;
+            var due = String(task.due || "");
+            var dueKey = due.slice(0, 10);
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dueKey))
+                continue;
+            if (!index[dueKey])
+                index[dueKey] = [];
+            index[dueKey].push({
+                "due": due,
+                "id": String(task.id || ""),
+                "notes": String(task.notes || ""),
+                "taskSource": taskSource,
+                "title": String(task.title || "")
+            });
+        }
+    }
+    function buildPendingTasksIndex(localTasks, googleTasks) {
+        var index = ({});
+        appendPendingTasks(index, localTasks, "local");
+        appendPendingTasks(index, googleTasks, "google");
+        return index;
+    }
+    function completeTask(task) {
+        if (!task || !task.id)
+            return;
+        if (task.taskSource === "google")
+            GoogleService.updateTask("@default", task.id, undefined, undefined, undefined, "completed");
+        else
+            LocalTaskService.updateTask(task.id, undefined, undefined, undefined, "completed");
+    }
+    function dateKey(day, month, year) {
+        return year + "-" + String(month + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+    }
     function daysForMonth(month, year) {
         var firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
         var startOffset = firstDay === 0 ? 6 : firstDay - 1; // Make Monday = 0
@@ -92,6 +138,13 @@ Item {
             currentMonth--;
         }
     }
+    function scheduleCountText() {
+        if (selectedEventCount > 0 && selectedTaskCount > 0)
+            return qsTr("%1 · %2").arg(qsTr("%n event(s)", "", selectedEventCount)).arg(qsTr("%n task(s)", "", selectedTaskCount));
+        if (selectedTaskCount > 0)
+            return qsTr("%n task(s)", "", selectedTaskCount);
+        return qsTr("%n event(s)", "", selectedEventCount);
+    }
     function settleMonth(direction) {
         if (monthSlide.running)
             return;
@@ -101,6 +154,9 @@ Item {
         monthSlide.from = swipeOffset;
         monthSlide.to = direction * (calendarViewport.width + 100);
         monthSlide.start();
+    }
+    function tasksForDate(day, month, year) {
+        return pendingTasksByDate[dateKey(day, month, year)] || [];
     }
 
     anchors.fill: parent
@@ -320,8 +376,9 @@ Item {
                                                 height: 5
                                                 radius: 3
                                                 visible: {
-                                                    var dummy = GoogleService.allEvents;
-                                                    return GoogleService.hasEvents(dayInfo.day, dayInfo.month, dayInfo.year);
+                                                    var dummyEvents = GoogleService.allEvents;
+                                                    var dummyTasks = calendarRoot.pendingTasksByDate;
+                                                    return GoogleService.hasEvents(dayInfo.day, dayInfo.month, dayInfo.year) || calendarRoot.tasksForDate(dayInfo.day, dayInfo.month, dayInfo.year).length > 0;
                                                 }
                                                 width: 5
                                             }
@@ -356,7 +413,7 @@ Item {
         id: eventsPanel
 
         anchors.fill: parent
-        color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.56 : 0.22)
+        color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.78 : 0.44)
         opacity: showEvents && !eventEditor.opened ? 1 : 0
         radius: 20
         visible: showEvents && !eventEditor.opened
@@ -392,71 +449,96 @@ Item {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 10
+            anchors.margins: 14
+            spacing: 12
 
             RowLayout {
                 Layout.fillWidth: true
+                Layout.preferredHeight: 56
+                spacing: 12
 
-                // Back button removed, using swipe instead
-                Item {
-                    height: 30
-                    width: 30
-                }
-                Text {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    color: Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: 18
-                    font.weight: Font.DemiBold
-                    horizontalAlignment: Text.AlignHCenter
-                    text: "Events for " + selectedDay + " " + monthNames[selectedMonth] + " " + selectedYear
-                }
+                    spacing: 3
 
-                // Add button
-                Rectangle {
-                    color: Config.alpha(Config.md3.on_surface, addArea.containsMouse ? 0.16 : 0.09)
-                    height: 30
-                    radius: 15
-                    width: 30
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
 
-                    Text {
-                        anchors.centerIn: parent
-                        color: Config.md3.on_surface_variant
-                        font.pixelSize: 16
-                        text: "+"
-                    }
-                    MouseArea {
-                        id: addArea
-
-                        anchors.fill: parent
-                        hoverEnabled: true
-
-                        onClicked: {
-                            if (GoogleService.requireAuthentication("calendar-add"))
-                                eventEditor.openNew();
+                        Text {
+                            Layout.maximumWidth: parent.width - eventCountBadge.width - parent.spacing
+                            color: Config.md3.on_surface
+                            elide: Text.ElideRight
+                            font.family: Config.fontName
+                            font.pixelSize: 22
+                            font.weight: Font.Bold
+                            text: qsTr("%1 %2").arg(calendarRoot.selectedDay).arg(calendarRoot.monthNames[calendarRoot.selectedMonth])
                         }
+                        Rectangle {
+                            id: eventCountBadge
+
+                            Layout.preferredHeight: 26
+                            Layout.preferredWidth: eventCountText.implicitWidth + 18
+                            border.color: Config.alpha(Config.md3.primary, 0.2)
+                            border.width: 1
+                            color: Config.alpha(Config.md3.primary, 0.11)
+                            radius: 9
+
+                            Text {
+                                id: eventCountText
+
+                                anchors.centerIn: parent
+                                color: Config.md3.primary
+                                font.family: Config.fontName
+                                font.pixelSize: 13
+                                font.weight: Font.DemiBold
+                                text: calendarRoot.scheduleCountText()
+                            }
+                        }
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        color: Config.alpha(Config.md3.on_surface, 0.62)
+                        font.family: Config.fontName
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                        text: calendarRoot.selectedYear
+                    }
+                }
+                SettingsActionButton {
+                    Layout.alignment: Qt.AlignVCenter
+                    iconName: "list-add-symbolic"
+                    iconOnly: true
+                    primary: true
+                    text: qsTr("Add event")
+
+                    onClicked: {
+                        if (GoogleService.requireAuthentication("calendar-add"))
+                            eventEditor.openNew();
                     }
                 }
             }
-
-            // Events list
             ListView {
+                id: eventList
+
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                boundsBehavior: Flickable.StopAtBounds
                 clip: true
                 model: eventsForSelectedDate
-                spacing: 8
+                spacing: 12
 
                 delegate: Item {
-                    height: Math.max(76, eventContent.implicitHeight + 40)
+                    readonly property color eventAccent: modelData.calendarColor || Config.md3.primary
+                    required property var modelData
+
+                    height: Math.max(106, eventContent.implicitHeight + 32)
                     width: ListView.view.width
 
-                    // Background for Delete Action
                     Rectangle {
                         anchors.fill: parent
                         color: Config.md3.error
-                        radius: 20
+                        radius: 17
                         visible: cardContent.swipeX < -2
 
                         RowLayout {
@@ -467,10 +549,10 @@ Item {
                             spacing: 8
 
                             IconImage {
-                                height: 18
+                                height: 20
                                 layer.enabled: true
                                 source: Quickshell.iconPath("user-trash-symbolic")
-                                width: 18
+                                width: 20
 
                                 layer.effect: ColorOverlay {
                                     color: Config.md3.on_error
@@ -479,9 +561,9 @@ Item {
                             Text {
                                 color: Config.md3.on_error
                                 font.family: Config.fontName
-                                font.pixelSize: 14
+                                font.pixelSize: 15
                                 font.weight: Font.Bold
-                                text: "Delete"
+                                text: qsTr("Delete")
                             }
                         }
                         MouseArea {
@@ -495,16 +577,16 @@ Item {
                             }
                         }
                     }
-
-                    // Main Foreground Card
                     Rectangle {
                         id: cardContent
 
                         property real swipeX: 0
 
-                        color: Qt.tint(Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22), Config.alpha(Config.md3.error, Math.min(0.8, Math.abs(swipeX) / 100)))
+                        border.color: Config.alpha(eventAccent, editArea.containsMouse ? 0.4 : 0.22)
+                        border.width: 1
+                        color: Qt.tint(editArea.pressed ? Config.alpha(Config.md3.primary, 0.16) : editArea.containsMouse ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.94 : 0.64) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.82 : 0.48), Config.alpha(Config.md3.error, Math.min(0.8, Math.abs(swipeX) / 100)))
                         height: parent.height
-                        radius: 20
+                        radius: 17
                         width: parent.width
                         x: swipeX
 
@@ -519,10 +601,12 @@ Item {
                             id: editArea
 
                             anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
 
                             onClicked: {
                                 if (cardContent.swipeX < 0) {
-                                    cardContent.swipeX = 0; // Snap back if swiped
+                                    cardContent.swipeX = 0;
                                     return;
                                 }
 
@@ -539,7 +623,6 @@ Item {
                             onActiveChanged: {
                                 if (!active) {
                                     if (cardContent.swipeX < -80) {
-                                        // Swipe-to-dismiss: trigger delete immediately
                                         GoogleService.deleteEvent(modelData.calendarId, modelData.id);
                                         cardContent.swipeX = 0;
                                     } else {
@@ -553,103 +636,208 @@ Item {
                                 }
                             }
                         }
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 14
+                            anchors.left: parent.left
+                            anchors.leftMargin: 8
+                            anchors.top: parent.top
+                            anchors.topMargin: 14
+                            color: eventAccent
+                            radius: 3
+                            width: 5
+                        }
                         RowLayout {
                             id: eventContent
 
+                            anchors.bottomMargin: 16
                             anchors.fill: parent
-                            anchors.margins: 20
-                            spacing: 16
+                            anchors.leftMargin: 25
+                            anchors.rightMargin: 16
+                            anchors.topMargin: 16
+                            spacing: 14
 
                             ColumnLayout {
-                                Layout.alignment: Qt.AlignTop
+                                Layout.alignment: Qt.AlignVCenter
                                 Layout.fillWidth: true
-                                spacing: 5
+                                spacing: 7
 
                                 Text {
                                     Layout.fillWidth: true
                                     color: Config.md3.on_surface
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
-                                    font.pixelSize: 14
-                                    font.weight: Font.DemiBold
-                                    text: modelData.title
+                                    font.pixelSize: 18
+                                    font.weight: Font.Bold
+                                    text: modelData.title || qsTr("Untitled event")
                                 }
-                                Text {
+                                RowLayout {
                                     Layout.fillWidth: true
-                                    color: Config.md3.outline
-                                    elide: Text.ElideRight
-                                    font.family: Config.fontName
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    text: "📍 " + (modelData.location || "")
+                                    spacing: 8
+
+                                    IconImage {
+                                        Layout.preferredHeight: 16
+                                        Layout.preferredWidth: 16
+                                        layer.enabled: true
+                                        source: Quickshell.iconPath("x-office-calendar-symbolic")
+
+                                        layer.effect: ColorOverlay {
+                                            color: eventAccent
+                                        }
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: eventAccent
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 14
+                                        font.weight: Font.DemiBold
+                                        text: modelData.calendarName || qsTr("Calendar")
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 8
                                     visible: modelData.location !== undefined && modelData.location !== ""
+
+                                    IconImage {
+                                        Layout.preferredHeight: 16
+                                        Layout.preferredWidth: 16
+                                        layer.enabled: true
+                                        source: Quickshell.iconPath("mark-location-symbolic")
+
+                                        layer.effect: ColorOverlay {
+                                            color: Config.alpha(Config.md3.on_surface, 0.62)
+                                        }
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: Config.alpha(Config.md3.on_surface, 0.68)
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 14
+                                        font.weight: Font.Medium
+                                        text: modelData.location || ""
+                                    }
                                 }
-                                Text {
+                                RowLayout {
                                     Layout.fillWidth: true
-                                    color: Config.md3.outline
-                                    elide: Text.ElideRight
-                                    font.family: Config.fontName
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    maximumLineCount: 2
-                                    text: "📝 " + (modelData.description || "")
+                                    spacing: 8
                                     visible: modelData.description !== undefined && modelData.description !== ""
-                                    wrapMode: Text.Wrap
+
+                                    IconImage {
+                                        Layout.alignment: Qt.AlignTop
+                                        Layout.preferredHeight: 16
+                                        Layout.preferredWidth: 16
+                                        layer.enabled: true
+                                        source: Quickshell.iconPath("document-edit-symbolic")
+
+                                        layer.effect: ColorOverlay {
+                                            color: Config.alpha(Config.md3.on_surface, 0.62)
+                                        }
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: Config.alpha(Config.md3.on_surface, 0.68)
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 14
+                                        font.weight: Font.Medium
+                                        maximumLineCount: 2
+                                        text: modelData.description || ""
+                                        wrapMode: Text.Wrap
+                                    }
                                 }
                             }
-                            ColumnLayout {
+                            Rectangle {
                                 Layout.alignment: Qt.AlignTop | Qt.AlignRight
-                                Layout.preferredWidth: 138
-                                spacing: 7
+                                Layout.preferredHeight: 36
+                                Layout.preferredWidth: timeContent.implicitWidth + 22
+                                border.color: Config.alpha(eventAccent, 0.3)
+                                border.width: 1
+                                color: Config.alpha(eventAccent, 0.14)
+                                radius: 12
 
-                                Rectangle {
-                                    Layout.alignment: Qt.AlignRight
-                                    color: Config.alpha(Config.md3.primary, 0.92)
-                                    implicitHeight: 28
-                                    implicitWidth: timeText.implicitWidth + 18
-                                    radius: 8
+                                Row {
+                                    id: timeContent
 
+                                    anchors.centerIn: parent
+                                    spacing: 6
+
+                                    IconImage {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        height: 16
+                                        layer.enabled: true
+                                        source: Quickshell.iconPath("appointment-soon-symbolic")
+                                        width: 16
+
+                                        layer.effect: ColorOverlay {
+                                            color: eventAccent
+                                        }
+                                    }
                                     Text {
-                                        id: timeText
-
-                                        anchors.centerIn: parent
-                                        color: Config.md3.background
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: eventAccent
                                         font.family: Config.fontName
-                                        font.pixelSize: 12
+                                        font.pixelSize: 14
                                         font.weight: Font.Bold
                                         text: {
                                             if (modelData.allDay)
-                                                return "All Day";
-                                            var s = new Date(modelData.start);
-                                            var e = new Date(modelData.end);
-                                            var fmt = d => String(d.getHours()).padStart(2, '0') + ":" + String(d.getMinutes()).padStart(2, '0');
-                                            return fmt(s) + " - " + fmt(e);
+                                                return qsTr("All day");
+                                            var start = new Date(modelData.start);
+                                            var end = new Date(modelData.end);
+                                            var formatTime = date => String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0");
+                                            return formatTime(start) + " – " + formatTime(end);
                                         }
                                     }
-                                }
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: modelData.calendarColor || Config.md3.secondary
-                                    elide: Text.ElideRight
-                                    font.family: Config.fontName
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    horizontalAlignment: Text.AlignRight
-                                    text: modelData.calendarName || ""
                                 }
                             }
                         }
                     }
                 }
+                footer: Item {
+                    height: visible ? taskFooterColumn.implicitHeight + (eventList.count > 0 ? 12 : 0) : 0
+                    visible: calendarRoot.selectedTaskCount > 0
+                    width: eventList.width
 
-                Text {
+                    Column {
+                        id: taskFooterColumn
+
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.topMargin: eventList.count > 0 ? 12 : 0
+                        spacing: 12
+
+                        Repeater {
+                            model: calendarRoot.pendingTasksForSelectedDate
+
+                            CalendarTaskCard {
+                                required property var modelData
+
+                                task: modelData
+                                width: taskFooterColumn.width
+
+                                onCompletionRequested: task => calendarRoot.completeTask(task)
+                            }
+                        }
+                    }
+                }
+
+                ProductivityEmptyState {
+                    actionText: qsTr("Add event")
+                    actionVisible: true
                     anchors.centerIn: parent
-                    color: Config.md3.outline
-                    font.family: Config.fontName
-                    font.pixelSize: 18
-                    font.weight: Font.Bold
-                    text: "No events"
-                    visible: parent.count === 0
+                    description: qsTr("Your schedule is clear for this date")
+                    iconName: "x-office-calendar-symbolic"
+                    title: qsTr("No events today")
+                    visible: calendarRoot.selectedItemCount === 0
+                    width: Math.min(parent.width - 40, 320)
+
+                    onActionTriggered: {
+                        if (GoogleService.requireAuthentication("calendar-add"))
+                            eventEditor.openNew();
+                    }
                 }
             }
         }
@@ -657,6 +845,8 @@ Item {
     CalendarEventEditor {
         id: eventEditor
 
+        popupBackdropHost: calendarRoot.popupBackdropHost
+        popupBackdropRadius: calendarRoot.popupBackdropRadius
         selectedDay: calendarRoot.selectedDay
         selectedMonth: calendarRoot.selectedMonth
         selectedYear: calendarRoot.selectedYear

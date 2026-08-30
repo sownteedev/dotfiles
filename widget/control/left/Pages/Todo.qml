@@ -42,6 +42,8 @@ Item {
     property string newTaskDue: ""
     property string newTaskNotes: ""
     property string newTaskTitle: ""
+    readonly property Item popupBackdropHost: controlLeftWindow.topPopupBackdropHost
+    readonly property real popupBackdropRadius: controlLeftWindow.topPopupBackdropRadius
     property bool showAddEvent: false
     property string taskSource: "local"
 
@@ -103,207 +105,204 @@ Item {
         visible: !root.showAddEvent
 
         Item {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 50
+            id: toolbar
 
-            // To do / Done toggle
-            Rectangle {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                color: Config.alpha(Config.md3.on_surface, 0.08)
-                height: 36
-                radius: 18
-                width: 120
+            readonly property bool compactToolbar: width < 430
+
+            Layout.fillWidth: true
+            Layout.preferredHeight: 44
+
+            RowLayout {
+                anchors.fill: parent
+                spacing: toolbar.compactToolbar ? 8 : 12
 
                 Rectangle {
-                    color: Config.md3.primary
-                    height: 30
-                    radius: 15
-                    width: (parent.width - 6) / 2
-                    x: 3 + currentTab * width
-                    y: 3
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: toolbar.compactToolbar ? 104 : 120
+                    border.color: Config.alpha(Config.md3.on_surface, 0.08)
+                    border.width: 1
+                    color: Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.72 : 0.38)
+                    radius: 14
 
-                    Behavior on x {
-                        NumberAnimation {
-                            duration: 250
-                            easing.type: Easing.OutCubic
+                    Rectangle {
+                        color: Config.md3.primary_container
+                        height: parent.height - 6
+                        radius: 11
+                        width: (parent.width - 6) / 2
+                        x: 3 + currentTab * width
+                        y: 3
+
+                        Behavior on x {
+                            NumberAnimation {
+                                duration: Config.animationDuration(220)
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
+                        ShellShadow {
+                            componentShadow: true
+                            cornerRadius: parent.radius
+                            target: parent
+                            z: -1
                         }
                     }
+                    Row {
+                        anchors.fill: parent
+                        anchors.margins: 3
 
-                    ShellShadow {
-                        componentShadow: true
-                        cornerRadius: parent.radius
-                        target: parent
-                        z: -1
-                    }
-                }
-                Row {
-                    anchors.fill: parent
-                    anchors.margins: 3
-                    spacing: 0
+                        Repeater {
+                            model: [
+                                {
+                                    label: qsTr("To do"),
+                                    icon: "view-list-symbolic",
+                                    value: 0
+                                },
+                                {
+                                    label: qsTr("Done"),
+                                    icon: "checkbox-checked-symbolic",
+                                    value: 1
+                                }
+                            ]
 
-                    Repeater {
-                        model: [
-                            {
-                                label: "To do",
-                                icon: "view-list-symbolic",
-                                value: 0
-                            },
-                            {
-                                label: "Done",
-                                icon: "checkbox-checked-symbolic",
-                                value: 1
-                            }
-                        ]
+                            delegate: Item {
+                                required property var modelData
 
-                        delegate: Item {
-                            required property var modelData
+                                Accessible.name: modelData.label
+                                Accessible.role: Accessible.Button
+                                height: parent.height
+                                width: parent.width / 2
 
-                            height: parent.height
-                            width: parent.width / 2
+                                IconImage {
+                                    anchors.centerIn: parent
+                                    height: 20
+                                    layer.enabled: true
+                                    source: Quickshell.iconPath(modelData.icon)
+                                    width: 20
 
-                            IconImage {
-                                anchors.centerIn: parent
-                                height: 22
-                                layer.enabled: true
-                                source: Quickshell.iconPath(modelData.icon)
-                                width: 22
+                                    layer.effect: ColorOverlay {
+                                        color: currentTab === modelData.value ? Config.md3.on_primary_container : Config.alpha(Config.md3.on_surface, 0.68)
 
-                                layer.effect: ColorOverlay {
-                                    color: currentTab === modelData.value ? Config.md3.on_primary : Config.alpha(Config.md3.on_surface, 0.75)
-
-                                    Behavior on color {
-                                        ColorAnimation {
-                                            duration: 200
-                                            easing.type: Easing.InOutCubic
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: Config.animationDuration(160)
+                                                easing.type: Easing.InOutCubic
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
 
-                                onClicked: currentTab = modelData.value
+                                    onClicked: currentTab = modelData.value
+                                }
                             }
                         }
                     }
                 }
-            }
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.verticalCenter: parent.verticalCenter
-                color: Config.alpha(Config.md3.on_surface, 0.08)
-                height: 36
-                radius: 18
-                width: 190
-
                 Rectangle {
-                    color: Config.md3.secondary
-                    height: 30
-                    radius: 15
-                    width: (parent.width - 6) / 2
-                    x: 3 + (taskSource === "google" ? width : 0)
-                    y: 3
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: 190
+                    Layout.minimumWidth: 100
+                    border.color: Config.alpha(Config.md3.on_surface, 0.08)
+                    border.width: 1
+                    color: Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.72 : 0.38)
+                    radius: 14
 
-                    Behavior on x {
-                        NumberAnimation {
-                            duration: 220
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                }
-                Row {
-                    anchors.fill: parent
-                    anchors.margins: 3
+                    Rectangle {
+                        color: Config.md3.secondary_container
+                        height: parent.height - 6
+                        radius: 11
+                        width: (parent.width - 6) / 2
+                        x: 3 + (taskSource === "google" ? width : 0)
+                        y: 3
 
-                    Repeater {
-                        model: [
-                            {
-                                label: "Local",
-                                value: "local"
-                            },
-                            {
-                                label: "Google",
-                                value: "google"
-                            }
-                        ]
-
-                        delegate: Item {
-                            required property var modelData
-
-                            height: parent.height
-                            width: parent.width / 2
-
-                            Rectangle {
-                                anchors.fill: parent
-                                color: modelData.value === "google" && root.googleDropHovered ? Config.alpha(Config.md3.primary, 0.22) : "transparent"
-                                radius: 15
-                            }
-                            Text {
-                                anchors.centerIn: parent
-                                color: taskSource === modelData.value ? Config.md3.on_secondary : Config.md3.on_surface_variant
-                                font.family: Config.fontName
-                                font.pixelSize: 13
-                                font.weight: Font.Bold
-                                text: modelData.label
-                            }
-                            DropArea {
-                                anchors.fill: parent
-                                enabled: modelData.value === "google" && GoogleService.authenticated
-                                keys: ["local-task"]
-                                z: 1
-
-                                onDropped: drop => {
-                                    root.googleDropHovered = false;
-                                    if (drop.source && drop.source.localTaskId) {
-                                        root.syncLocalTask(drop.source.localTaskId);
-                                        drop.acceptProposedAction();
-                                    }
-                                }
-                                onEntered: root.googleDropHovered = true
-                                onExited: root.googleDropHovered = false
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                z: 2
-
-                                onClicked: {
-                                    if (modelData.value === "google" && !GoogleService.authenticated) {
-                                        GoogleService.requireAuthentication("todo-google-tab");
-                                        return;
-                                    }
-                                    root.taskSource = modelData.value;
-                                }
+                        Behavior on x {
+                            NumberAnimation {
+                                duration: Config.animationDuration(220)
+                                easing.type: Easing.OutCubic
                             }
                         }
                     }
-                }
-            }
-            Rectangle {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                color: Config.alpha(Config.md3.on_surface, addButtonArea.pressed ? 0.16 : 0.09)
-                height: 40
-                radius: 20
-                width: 40
+                    Row {
+                        anchors.fill: parent
+                        anchors.margins: 3
 
-                IconImage {
-                    anchors.centerIn: parent
-                    height: 20
-                    layer.enabled: true
-                    source: Quickshell.iconPath("list-add-symbolic")
-                    width: 20
+                        Repeater {
+                            model: [
+                                {
+                                    label: qsTr("Local"),
+                                    value: "local"
+                                },
+                                {
+                                    label: qsTr("Google"),
+                                    value: "google"
+                                }
+                            ]
 
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.on_surface
+                            delegate: Item {
+                                required property var modelData
+
+                                Accessible.name: modelData.label
+                                Accessible.role: Accessible.Button
+                                height: parent.height
+                                width: parent.width / 2
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: modelData.value === "google" && root.googleDropHovered ? Config.alpha(Config.md3.primary, 0.18) : "transparent"
+                                    radius: 11
+                                }
+                                Text {
+                                    anchors.centerIn: parent
+                                    color: taskSource === modelData.value ? Config.md3.on_secondary_container : Config.alpha(Config.md3.on_surface, 0.64)
+                                    font.family: Config.fontName
+                                    font.pixelSize: 13
+                                    font.weight: Font.DemiBold
+                                    text: modelData.label
+                                }
+                                DropArea {
+                                    anchors.fill: parent
+                                    enabled: modelData.value === "google" && GoogleService.authenticated
+                                    keys: ["local-task"]
+                                    z: 1
+
+                                    onDropped: drop => {
+                                        root.googleDropHovered = false;
+                                        if (drop.source && drop.source.localTaskId) {
+                                            root.syncLocalTask(drop.source.localTaskId);
+                                            drop.acceptProposedAction();
+                                        }
+                                    }
+                                    onEntered: root.googleDropHovered = true
+                                    onExited: root.googleDropHovered = false
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    z: 2
+
+                                    onClicked: {
+                                        if (modelData.value === "google" && !GoogleService.authenticated) {
+                                            GoogleService.requireAuthentication("todo-google-tab");
+                                            return;
+                                        }
+                                        root.taskSource = modelData.value;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                MouseArea {
-                    id: addButtonArea
-
-                    anchors.fill: parent
+                Item {
+                    Layout.fillWidth: true
+                }
+                SettingsActionButton {
+                    iconName: "list-add-symbolic"
+                    iconOnly: true
+                    primary: true
+                    text: qsTr("Add task")
 
                     onClicked: root.openNewTask()
                 }
@@ -313,47 +312,50 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            ColumnLayout {
+            ProductivityEmptyState {
+                actionText: qsTr("Add task")
+                actionVisible: currentTab === 0
                 anchors.centerIn: parent
-                spacing: 10
-                visible: filteredTasks.length === 0 && !(taskSource === "google" && GoogleService.isLoadingTasks)
-
-                IconImage {
-                    Layout.alignment: Qt.AlignHCenter
-                    height: 48
-                    layer.enabled: true
-                    source: Quickshell.iconPath("view-list-symbolic")
-                    width: 48
-
-                    layer.effect: ColorOverlay {
-                        color: Config.alpha(Config.md3.on_surface_variant, 0.3)
-                    }
+                busy: taskSource === "google" && (GoogleService.taskActionBusy || GoogleService.isLoadingTasks)
+                description: {
+                    if (busy)
+                        return qsTr("Fetching the latest task list");
+                    if (currentTab === 1)
+                        return qsTr("Completed tasks will appear here");
+                    return qsTr("Create a task to start organizing your day");
                 }
-                Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    color: Config.alpha(Config.md3.on_surface, 0.3)
-                    font.family: Config.fontName
-                    font.pixelSize: 18
-                    font.weight: Font.Bold
-                    text: taskSource === "google" ? (GoogleService.taskActionBusy || GoogleService.isLoadingTasks ? "Syncing…" : "No Google tasks") : "No local tasks"
+                iconName: currentTab === 0 ? "view-list-symbolic" : "checkbox-checked-symbolic"
+                title: {
+                    if (busy)
+                        return qsTr("Syncing tasks…");
+                    if (currentTab === 1)
+                        return qsTr("Nothing completed yet");
+                    return taskSource === "google" ? qsTr("No Google tasks") : qsTr("No local tasks");
                 }
+                visible: filteredTasks.length === 0
+                width: Math.min(parent.width - 40, 320)
+
+                onActionTriggered: root.openNewTask()
             }
             ListView {
                 id: taskList
 
                 anchors.fill: parent
+                boundsBehavior: Flickable.StopAtBounds
                 clip: true
                 model: filteredTasks
-                spacing: 15
+                spacing: 10
 
                 delegate: Item {
-                    height: contentCol.implicitHeight + 40
+                    required property var modelData
+
+                    height: Math.max(80, taskContent.implicitHeight + 28)
                     width: taskList.width
 
                     Rectangle {
                         anchors.fill: parent
                         color: Config.md3.error
-                        radius: 20
+                        radius: 17
                         visible: cardContent.swipeX < 0
 
                         RowLayout {
@@ -378,7 +380,7 @@ Item {
                                 font.family: Config.fontName
                                 font.pixelSize: 14
                                 font.weight: Font.Bold
-                                text: "Delete"
+                                text: qsTr("Delete")
                             }
                         }
                     }
@@ -396,10 +398,12 @@ Item {
                         Drag.hotSpot.y: 20
                         Drag.keys: ["local-task"]
                         Drag.supportedActions: Qt.CopyAction
-                        color: Qt.tint(Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.58 : 0.22), Config.alpha(Config.md3.error, Math.min(1.0, Math.abs(swipeX) / 80)))
+                        border.color: taskCardMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.28) : Config.alpha(Config.md3.on_surface, 0.08)
+                        border.width: 1
+                        color: Qt.tint(taskCardMouse.pressed ? Config.alpha(Config.md3.primary, 0.13) : taskCardMouse.containsMouse ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.9 : 0.58) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.76 : 0.4), Config.alpha(Config.md3.error, Math.min(1.0, Math.abs(swipeX) / 80)))
                         height: parent.height
-                        opacity: syncDragging ? 0.78 : taskSyncing ? 0.6 : 1
-                        radius: 20
+                        opacity: syncDragging ? 0.78 : taskSyncing ? 0.6 : modelData.status === "completed" ? 0.72 : 1
+                        radius: 17
                         scale: syncDragging ? 0.97 : 1
                         width: parent.width
                         x: swipeX
@@ -414,8 +418,12 @@ Item {
                         }
 
                         MouseArea {
+                            id: taskCardMouse
+
                             anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
                             enabled: !cardContent.taskSyncing && !googleSyncHandle.syncPressed
+                            hoverEnabled: true
 
                             onClicked: {
                                 if (cardContent.swipeX < 0) {
@@ -452,27 +460,33 @@ Item {
                             }
                         }
                         RowLayout {
-                            id: contentCol
+                            id: taskContent
 
                             anchors.fill: parent
-                            anchors.margins: 20
-                            spacing: 15
+                            anchors.margins: 14
+                            spacing: 12
 
                             Rectangle {
                                 border.color: Config.md3.primary
                                 border.width: 2
                                 color: modelData.status === "completed" ? Config.md3.primary : "transparent"
-                                height: 24
-                                radius: 12
-                                width: 24
+                                height: 28
+                                radius: 14
+                                width: 28
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: Config.animationDuration(140)
+                                    }
+                                }
 
                                 IconImage {
                                     anchors.centerIn: parent
-                                    height: 14
+                                    height: 16
                                     layer.enabled: true
                                     source: Quickshell.iconPath("object-select-symbolic")
                                     visible: modelData.status === "completed"
-                                    width: 14
+                                    width: 16
 
                                     layer.effect: ColorOverlay {
                                         color: Config.md3.background
@@ -494,52 +508,71 @@ Item {
                             ColumnLayout {
                                 Layout.alignment: Qt.AlignVCenter
                                 Layout.fillWidth: true
-                                spacing: 2
+                                spacing: 4
 
                                 Text {
                                     Layout.fillWidth: true
                                     color: Config.md3.on_surface
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
-                                    font.pixelSize: 14
+                                    font.pixelSize: 15
                                     font.strikeout: modelData.status === "completed"
                                     font.weight: Font.Bold
-                                    text: modelData.title || "No Title"
+                                    text: modelData.title || qsTr("Untitled task")
                                 }
                                 Text {
                                     Layout.fillWidth: true
-                                    color: Config.md3.outline
+                                    color: Config.alpha(Config.md3.on_surface, 0.54)
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
                                     font.pixelSize: 12
-                                    font.weight: Font.DemiBold
+                                    font.weight: Font.Medium
+                                    maximumLineCount: 2
                                     text: modelData.notes || ""
-                                    visible: modelData.notes ? true : false
+                                    visible: Boolean(modelData.notes)
+                                    wrapMode: Text.Wrap
                                 }
                             }
                             Rectangle {
                                 Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-                                Layout.preferredHeight: 30
-                                Layout.preferredWidth: 92
-                                border.color: Config.alpha(Config.md3.primary, 0.32)
+                                Layout.preferredHeight: 32
+                                Layout.preferredWidth: dueContent.implicitWidth + 18
+                                border.color: Config.alpha(Config.md3.primary, 0.24)
                                 border.width: 1
-                                color: Config.alpha(Config.md3.primary, 0.14)
-                                radius: 9
-                                visible: modelData.due ? true : false
+                                color: Config.alpha(Config.md3.primary, 0.11)
+                                radius: 10
+                                visible: Boolean(modelData.due)
 
-                                Text {
-                                    id: dueText
+                                Row {
+                                    id: dueContent
 
                                     anchors.centerIn: parent
-                                    color: Config.md3.primary
-                                    font.family: Config.fontName
-                                    font.pixelSize: 12
-                                    font.weight: Font.Bold
-                                    text: {
-                                        if (!modelData.due)
-                                            return "";
-                                        var d = new Date(modelData.due);
-                                        return String(d.getDate()).padStart(2, '0') + "/" + String(d.getMonth() + 1).padStart(2, '0') + "/" + d.getFullYear();
+                                    spacing: 6
+
+                                    IconImage {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        height: 14
+                                        layer.enabled: true
+                                        source: Quickshell.iconPath("x-office-calendar-symbolic")
+                                        width: 14
+
+                                        layer.effect: ColorOverlay {
+                                            color: Config.md3.primary
+                                        }
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: Config.md3.primary
+                                        font.family: Config.fontName
+                                        font.pixelSize: 12
+                                        font.weight: Font.Bold
+                                        text: {
+                                            if (!modelData.due)
+                                                return "";
+                                            var dueDate = new Date(modelData.due);
+                                            var shortDate = String(dueDate.getDate()).padStart(2, "0") + "/" + String(dueDate.getMonth() + 1).padStart(2, "0");
+                                            return taskList.width < 420 ? shortDate : shortDate + "/" + dueDate.getFullYear();
+                                        }
                                     }
                                 }
                             }
@@ -551,16 +584,16 @@ Item {
                                 property bool syncPressed: false
 
                                 Layout.alignment: Qt.AlignVCenter
-                                Layout.preferredHeight: 32
-                                Layout.preferredWidth: 36
+                                Layout.preferredHeight: 36
+                                Layout.preferredWidth: 40
                                 visible: taskSource === "local" && GoogleService.authenticated
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    border.color: Config.alpha(Config.md3.primary, 0.35)
+                                    border.color: Config.alpha(Config.md3.primary, syncMouse.containsMouse ? 0.42 : 0.26)
                                     border.width: 1
-                                    color: Config.alpha(Config.md3.primary, 0.12)
-                                    radius: 10
+                                    color: syncMouse.pressed ? Config.alpha(Config.md3.primary, 0.2) : syncMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.15) : Config.alpha(Config.md3.primary, 0.1)
+                                    radius: 11
 
                                     IconImage {
                                         anchors.centerIn: parent
@@ -576,9 +609,12 @@ Item {
                                     }
                                 }
                                 MouseArea {
+                                    id: syncMouse
+
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     enabled: !cardContent.taskSyncing
+                                    hoverEnabled: true
                                     preventStealing: true
 
                                     onCanceled: {
@@ -774,7 +810,8 @@ Item {
     DatePickerPopup {
         id: datePickerPopup
 
-        placementParent: root
+        backdropRadius: root.popupBackdropRadius
+        placementParent: root.popupBackdropHost || root
         selectedDate: root.newTaskDue
 
         onDateCleared: root.newTaskDue = ""

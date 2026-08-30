@@ -15,6 +15,8 @@ PanelWindow {
     property bool active: false
     readonly property real blurSurfaceOpacity: Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark
     property string body: ""
+    property var deferredAction: null
+    property int deferredDismissId: -1
     readonly property int exitAnimationDuration: 260
     readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
     property var notificationConnections: null
@@ -85,8 +87,8 @@ PanelWindow {
         }
         notificationConnections = null;
     }
-    function finishAction(callback) {
-        if (!screenshotReady)
+    function finishAction(callback, deferUntilClosed) {
+        if (!active || !screenshotReady)
             return;
 
         var id = notificationId;
@@ -96,10 +98,16 @@ PanelWindow {
         disconnectNotificationSignals(notification);
         notificationObject = null;
         notificationId = -1;
-        callback();
         closeToast();
-        if (id >= 0)
-            NotificationHistory.dismiss(id);
+        if (deferUntilClosed) {
+            deferredAction = callback;
+            deferredDismissId = id;
+            deferredActionTimer.restart();
+        } else {
+            callback();
+            if (id >= 0)
+                NotificationHistory.dismiss(id);
+        }
     }
     function isScreenshotNotification(notification) {
         var matchingSummary = String(notification.summary || "").toLowerCase().indexOf("screenshot captured") !== -1;
@@ -216,6 +224,23 @@ PanelWindow {
         repeat: false
 
         onTriggered: root.closeToast()
+    }
+    Timer {
+        id: deferredActionTimer
+
+        interval: root.exitAnimationDuration + 40
+        repeat: false
+
+        onTriggered: {
+            var callback = root.deferredAction;
+            var dismissId = root.deferredDismissId;
+            root.deferredAction = null;
+            root.deferredDismissId = -1;
+            if (dismissId >= 0)
+                NotificationHistory.dismiss(dismissId);
+            if (callback)
+                callback();
+        }
     }
     Timer {
         id: pendingShowTimer
@@ -554,7 +579,7 @@ PanelWindow {
 
                             onTriggered: root.finishAction(function () {
                                 CaptureService.openScreenshotEditor(root.screen ? root.screen.name : "");
-                            })
+                            }, true)
                         }
                         ToastIconAction {
                             Layout.preferredHeight: 40

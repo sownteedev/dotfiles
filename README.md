@@ -2,15 +2,16 @@
 
 # SownteeShell
 
-**A Material You desktop shell for Niri, built with Quickshell and Qt 6.**
+**A wallpaper-driven Material You desktop shell for Niri, built with Quickshell and Qt 6.**
 
-[![Niri](https://img.shields.io/badge/Niri-scrollable_compositor-7C3AED?style=for-the-badge)](https://github.com/YaLTeR/niri)
-[![Quickshell](https://img.shields.io/badge/Quickshell-Qt_6_%2F_QML-41CD52?style=for-the-badge&logo=qt&logoColor=white)](https://quickshell.org/)
+[![Arch Linux](https://img.shields.io/badge/Arch_Linux-personal_setup-1793D1?style=flat-square&logo=archlinux&logoColor=white)](https://archlinux.org/)
+[![Niri](https://img.shields.io/badge/Niri-scrollable_compositor-7C3AED?style=flat-square)](https://github.com/YaLTeR/niri)
+[![Quickshell](https://img.shields.io/badge/Quickshell-Qt_6_%2F_QML-41CD52?style=flat-square&logo=qt&logoColor=white)](https://quickshell.org/)
 
 </div>
 
 > [!IMPORTANT]
-> SownteeShell is a personal shell built around my Arch Linux and Niri environment. It is published as a project showcase and reference, not as a supported drop-in desktop or standalone installer.
+> SownteeShell is my personal Arch Linux and Niri setup. It is tuned around my workflow, hardware, and services, so treat it as a showcase and reference implementation rather than a supported drop-in desktop.
 
 ## Showcase
 
@@ -22,99 +23,96 @@ GitHub-generated video attachment.
 > [!NOTE]
 > Video showcase coming soon.
 
-## Overview
+SownteeShell is the desktop UI and runtime layer of my Niri session: bar, Dock, launcher, control panels, notifications, wallpapers, capture tools, Settings, lock screen, greeter, OSDs, and system integration.
 
-SownteeShell provides the bar, launcher, control panels, notifications, lock screen, wallpaper system, capture tools, OSDs, power menu, settings, and system services for a complete Niri desktop session.
+Every surface shares one Material Design 3 language, wallpaper-derived colors, compositor-backed blur, typography, motion, and state. Large interfaces are loaded only when opened, while system services follow their actual consumers instead of polling permanently.
 
-Its interface follows Material Design 3, with wallpaper-derived colors, real background blur, shared typography and spacing, responsive layouts, and motion that can be reduced for lower-power devices.
+## Highlights
 
-## Features
+### Desktop and navigation
 
-### Bar and workspaces
+- **Niri-native workspace model** with live windows, dynamic workspaces, overview-aware focus, drag reordering, cross-workspace movement without focus stealing, per-workspace tiled/floating state, and multi-monitor support.
+- **Dynamic Dock** for pinned and running applications, with drag ordering, live window previews, focus-aware unread badges, right-click pinning, and overlap-aware auto-hide.
+- **Launcher and All Apps** with fuzzy application search, a full-screen paged grid, horizontal touchpad navigation, keyboard control, and contextual app actions.
+- **Search providers** for files (`f`), clipboard (`c`), calculator (`=`), and emoji (`e`). Clipboard history supports pinned text, URLs, colors, file lists, images, and video thumbnails with optional direct paste.
+- **Configurable bar** with workspaces, active client, media and Cava, weather, battery, Wi-Fi, Bluetooth, microphone privacy, recording, notifications, clock, and StatusNotifier items.
 
-- Live Niri workspace and active-window tracking, including dynamic workspace creation.
-- Drag-and-drop window reordering and movement between workspaces without focus stealing.
-- Per-workspace tiled/floating switching from the bar.
-- Persistent multi-monitor app Dock with drag reordering, overlap-aware auto-hide, and focus-aware unread notification badges.
-- MPRIS media widget with playback controls, seeking, `LIVE` status, animated empty state, and Cava visualization.
-- Configurable weather, battery, Wi-Fi, Bluetooth, microphone privacy, recording, DND, clock, and system tray modules.
+### Panels, productivity, and system control
 
-### Launcher and All Apps
+- **Left panel** with Vietnamese lunar calendar, Google Calendar events, local and Google Tasks, timed task indicators, OpenWeather forecasts with GeoClue location detection, synced lyrics, media controls, and countdown timers.
+- **Right panel** with notification history, Wi-Fi and Bluetooth management, advanced IPv4/IPv6 profiles, Wi-Fi QR sharing, AirPods L/R/Case battery data, and a PipeWire per-application mixer with peak meters and device routing.
+- **Display control** with drag-and-drop arrangement, orientation, mode, resolution, refresh rate, scale, startup focus, VRR (`Off`, `On`, `On Demand`), internal/external display presets, DDC/CI brightness, and Sunshine output selection.
+- **System telemetry** with battery health and supported charge thresholds, power profiles, `auto-cpufreq`, Arch/AUR updates, live CPU/RAM/GPU charts, grouped process management, and RSS/PSS memory details.
+- **Quick controls** for Airplane Mode, Caffeine, DND, night light, power profiles, Tailscale, and Cloudflare WARP, with edge-drag access to both panels.
 
-- Unified fuzzy app search with dedicated modes for files (`f`), clipboard (`c`), calculations (`=`), and emojis (`e`).
-- Full-screen All Apps grid with responsive sizing, animated filtering, and keyboard navigation using arrows, `Home`, `End`, `Page Up/Down`, and `Enter`.
-- Clipboard history for text, files, images, and videos, with thumbnails, pinned entries, and optional direct paste.
-- Emoji search and direct paste into the previously focused application.
-- Right-click app actions for launching and pinning or removing entries from the Dock.
-- Lazy-loaded result providers and adaptive launcher geometry when no results are available.
+### Settings
 
-### Control panels and productivity
+- A searchable, responsive, resizable **SownteeShell Settings** window that behaves like a regular Niri application.
+- GUI editors for Niri keybindings, layout, input, animations, behavior, window and layer rules, and raw configuration files.
+- Shell controls for typography, bar modules, launcher providers, notifications, wallpapers, capture, integrations, audio, OSDs, idle behavior, and performance.
+- Per-surface blur, light/dark surface opacity, separate panel/component shadows, reduced motion, low-power mode, dependency diagnostics, and scoped cache cleanup.
+- A shared profile image for Settings, Polkit, and Greetd, plus Howdy face-model management when supported.
 
-- Calendar with Vietnamese lunar dates, event indicators, date/time pickers, and Google Calendar integration.
-- Local tasks and Google Tasks integration, including create, update, complete, delete, and local-to-Google sync.
-- Current, hourly, and daily weather from OpenWeather, with GeoClue-assisted location detection.
-- Synced music lyrics and a configurable countdown timer with desktop notifications.
-- PipeWire mixer with per-application volume, peak meters, mute controls, and input/output device routing.
-- Wi-Fi and Bluetooth management, advanced IPv4/IPv6 profile editing, and AirPods L/R/Case battery monitoring.
-- Quick toggles for Airplane Mode, Caffeine, DND, Tailscale, Cloudflare WARP, night light, and power profiles.
-- Display modes for internal, external, and extended layouts; internal backlight and external DDC/CI brightness; Sunshine capture-output profiles.
-- Battery health, charge-preservation controls, `auto-cpufreq`, live CPU/RAM/GPU charts, process management, and Arch/AUR update checks.
+### Wallpapers and Material You
 
-### Settings Hub
-
-- Searchable GUI settings for both Niri and the shell.
-- Niri editors for keybindings, layout, input devices, animations, behavior, window/layer rules, and raw configuration files.
-- Shell controls for appearance, font selection, bar modules, launcher providers, notifications, wallpapers, capture, integrations, performance, audio, and OSD behavior.
-- Independent background-blur toggles for the bar, Dock, launcher, Settings, and both control panels, with separate light/dark surface opacity.
-- Shared Material You shadow controls for large panels and compact components, including blur, opacity, spread, and offsets.
-- Face-authentication management, idle and power policy, dependency diagnostics, and cache cleanup.
-- Contextual Apply actions, with Reset shown only when a page has unsaved changes.
-
-### Wallpapers and theming
-
-- Static wallpapers and video/GIF loops use native Qt playback; Steam Workshop video projects use the same renderer, while scene projects use `linux-wallpaperengine`.
-- Integrated Wallhaven and Steam Workshop browsers with responsive preview grids, installed-library management, and source-specific filters for category, purity, resolution, aspect ratio, color, rating, features, genre, and sorting.
-- Per-item actions can download, preview, subscribe, and target the desktop, Greetd, or both; Greetd accepts Wallhaven images and Wallpaper Engine video projects.
-- Greetd keeps an independent Material You palette generated from its selected image or a representative video frame, so desktop wallpaper changes do not recolor the login screen.
-- Playback policy that can pause wallpapers while locked or fullscreen and reduce Wallpaper Engine FPS on battery power.
-- Dual-player video handoff waits for a decoded frame before crossfading, while cached covers, transition rollback, and Matugen stay synchronized.
-- Automatic Material You palette generation through Matugen, with animated shell color transitions and optional propagation through the surrounding dotfiles templates.
-- Cached wallpaper backdrops for consistent blurred desktop surfaces.
+- Static images, GIFs, and local videos, with video playback isolated in a separate Quickshell renderer process so its multimedia memory is reclaimed when playback stops.
+- Wallpaper Engine support routes video projects through the native renderer and scene projects through `linux-wallpaperengine`, with battery-aware FPS and pause-on-lock/fullscreen policies.
+- Integrated Wallhaven and Steam Workshop browsers with search, source-specific filters, favorites, installed-library management, cached previews, and desktop/Greetd/both destinations.
+- Frame-aware video handoff, cached covers, rollback-safe transitions, and synchronized live theme previews while browsing.
+- Matugen-generated Material You colors with animated shell transitions and optional theme propagation through configured system templates.
+- Greetd keeps its own background and palette, generated independently from its selected image or Wallpaper Engine video.
 
 ### Capture and notifications
 
-- Region screenshots with an in-shell editor for crop, freehand drawing, arrows, rectangles, text, blur, pixelation, undo, and color selection.
-- OCR with English/Vietnamese language support and Google Lens reverse image search.
-- GPU screen recording with configurable region, FPS, codec, quality, microphone capture, and CPU-encoding fallback.
-- Grouped notification popups with configurable top, top-right, or bottom-right placement, direction-aware stacking, application actions, swipe-to-dismiss, expandable groups, and persistent history.
-- Lock-screen notification stacks, scheduled DND, critical-notification handling, popup exclusions, history exclusions, and configurable retention limits.
+- A layered screenshot editor with pen, highlighter, lines, arrows, shapes, text, numbered markers, blur, pixelation, crop, eraser, zoom callouts, and a magnifier loupe.
+- Transformable annotations and inserted image layers with move, crop, resize, rotate, opacity, visibility, z-order, edge snapping, automatic stitching, color picking, undo, and redo.
+- English/Vietnamese OCR, Google Lens reverse image search, automatic clipboard export, and screenshot actions directly from the notification popup.
+- GPU screen recording with region selection, configurable FPS/codec/quality, optional microphone capture, and CPU-encoding fallback.
+- Grouped notification popups with application actions, priority-aware timeouts, configurable placement, direction-aware stacking, swipe dismissal, persistent history, scheduled DND, lock-screen delivery, exclusions, and retention controls.
 
-### Security and session
+### Session and runtime
 
-- Standalone Quickshell Greetd interface on Cage, with installed-session discovery, network and battery status, and a clean handoff into the selected Wayland session.
-- Multi-monitor PAM lock screen with password authentication, optional Howdy face recognition, and retry after monitor wake.
-- Idle dimming followed by monitor power-off, with separate unlocked and locked timeouts plus Caffeine inhibition.
-- Native Polkit authentication dialogs and configurable top/bottom volume, brightness, microphone, and media OSDs with matching transitions.
-- Edge-drag gestures for opening the left and right control panels.
-- Animated session menu for Lock, Suspend, Hibernate, Logout, Reboot, and Shutdown.
+- A standalone Quickshell Greetd interface on Cage with installed-session discovery, network status, animated battery state, profile sync, and wallpaper-derived colors.
+- Multi-monitor PAM lock screen with password authentication, optional Howdy face recognition, retry after monitor wake, media, and notifications.
+- Native Polkit dialogs, session and power menus, idle dim/lock/monitor-off policy, Caffeine inhibition, and position-aware volume, brightness, microphone, and media OSDs.
+- On-demand QML surfaces, event-driven Niri/PipeWire/NetworkManager/UPower integration, a native image-cache provider, and a lazy Rust statistics backend with a Python fallback.
 
-## Technical foundation
+## Running the shell
 
-- Qt 6/QML user interface built on Quickshell singletons, loaders, and Wayland layer surfaces.
-- Event-driven integration with Niri, PipeWire, NetworkManager, UPower, MPRIS, and StatusNotifierItem.
-- On-demand polling and subprocess lifecycle control for weather, statistics, Bluetooth scanning, wallpaper discovery, and external integrations.
-- Persistent settings and history use debounced or atomic writes to avoid unnecessary disk activity and partial files.
+After the runtime dependencies are available, launch the project from its root directory:
+
+```bash
+./run-sownteeshell
+```
+
+`run-sownteeshell` prepares the native image-cache plugin, configures the local QML import path and allocator behavior, then launches `shell.qml`.
+
+## Architecture
+
+```text
+shell.qml              Entry point, IPC, screen variants, and lazy surfaces
+Config.qml             Shared theme values and persisted runtime settings
+StateManager.qml       Cross-surface state and open/close coordination
+widget/                Bar, Dock, panels, desktop, capture, session, and Settings
+components/            Reusable MD3 controls, effects, editors, and popups
+service/               System, media, productivity, capture, and wallpaper services
+backend/               On-demand Rust statistics and battery backend
+plugin/                Native QML image-cache provider
+scripts/               Niri, wallpaper, Google, display, capture, and auth helpers
+```
+
+The Niri Settings pages target the include-based configuration used by this setup; they are not intended as a generic editor for every possible Niri file layout. Runtime settings are stored under `$XDG_CACHE_HOME/quickshell` with `~/.cache/quickshell` as the fallback. API keys and account credentials are intentionally absent from source defaults.
+
+## Dependencies
+
+The main stack includes Niri, `quickshell-git`, Qt 6, PipeWire/WirePlumber, NetworkManager, UPower, Matugen, `wl-clipboard`, `cliphist`, FFmpeg, ImageMagick, and the capture utilities.
+
+Optional or hardware-dependent features use Tesseract language data, GeoClue, Cava, `gpu-screen-recorder`, DDC/CI, Steam and `linux-wallpaperengine`, Howdy and V4L2, Tailscale, or Cloudflare WARP. Settings → Advanced → Dependencies reports which integrations are currently available.
+
+Charge thresholds, external brightness, hardware video acceleration, face authentication, and device-specific battery telemetry depend on the machine and its drivers.
 
 ## Inspiration
 
-SownteeShell takes inspiration from these open Linux desktop projects:
+Design and workflow inspiration comes from [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell), [end-4's dots](https://github.com/end-4/dots-hyprland) and [Caelestia Shell](https://github.com/caelestia-dots/shell).
 
-- [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell)
-- [end-4's Hyprland dots](https://github.com/end-4/dots-hyprland)
-- [Caelestia Shell](https://github.com/caelestia-dots/shell)
-
-Its foundation comes from the wider [Niri](https://github.com/YaLTeR/niri), [Quickshell](https://quickshell.org/), and [Matugen](https://github.com/InioX/matugen) communities.
-
-## Disclaimer
-
-Features that integrate with external tools or online services require their corresponding packages, permissions, credentials, and system configuration. Hardware-specific controls such as DDC/CI brightness, charge preservation, GPU encoding, and face authentication depend on compatible devices.
+Built on the work of the [Niri](https://github.com/YaLTeR/niri), [Quickshell](https://quickshell.org/), and [Matugen](https://github.com/InioX/matugen) communities.

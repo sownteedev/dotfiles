@@ -1012,7 +1012,7 @@ def snapshot() -> dict[str, object]:
         "captureRecordingCodec": qml_string(config_source, "captureRecordingCodec", "hevc"),
         "captureRecordingQuality": qml_string(config_source, "captureRecordingQuality", "high"),
         "captureRecordingMicrophone": qml_bool(config_source, "captureRecordingMicrophone", False),
-        "captureEditorTool": qml_string(config_source, "captureEditorTool", "pen"),
+        "captureEditorTool": qml_string(config_source, "captureEditorTool", "select"),
         "captureEditorColor": qml_string(config_source, "captureEditorColor", "#ff3b30"),
         "captureEditorWidth": qml_int(config_source, "captureEditorWidth", 6),
         "wallpaperEngineAssetsDirPath": qml_string(config_source, "wallpaperEngineAssetsDirPath"),
@@ -2049,7 +2049,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "captureRecordingCodec": "hevc",
         "captureRecordingQuality": "high",
         "captureRecordingMicrophone": False,
-        "captureEditorTool": "pen",
+        "captureEditorTool": "select",
         "captureEditorColor": "#ff3b30",
         "captureEditorWidth": 6,
         "wallpaperEngineAssetsDirPath": "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets",
@@ -2138,10 +2138,10 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
     if settings["captureRecordingQuality"] not in ("medium", "high", "very_high"):
         settings["captureRecordingQuality"] = "high"
     if settings["captureEditorTool"] not in (
-        "pen", "line", "rectangle", "ellipse", "arrow", "highlight",
-        "blur", "pixelate", "text", "number", "crop", "ocr", "eraser",
+        "select", "pen", "line", "rectangle", "ellipse", "arrow", "highlight",
+        "blur", "pixelate", "text", "number", "callout", "loupe", "crop", "ocr", "eraser",
     ):
-        settings["captureEditorTool"] = "pen"
+        settings["captureEditorTool"] = "select"
 
     for name, minimum, maximum, fallback in (
         ("barHeight", 40, 72, 50),

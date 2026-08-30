@@ -289,6 +289,12 @@ QtObject {
             return "";
         }
     }
+    function replaceScreenshotForEditing(path) {
+        if (!path)
+            return;
+        screenshotPath = path;
+        screenshotEditorSession++;
+    }
     function screenshot() {
         // Niri does not emit a cancellation event for its screenshot overlay.
         // A second shortcut press therefore replaces any stale one-shot watcher.
@@ -324,6 +330,13 @@ QtObject {
         recordingOutputQuery.running = false;
         recordingOutputQuery.running = true;
         beginRegionSelection();
+    }
+    function stitchedScreenshotPath() {
+        if (!screenshotPath)
+            return "";
+        var dot = screenshotPath.lastIndexOf(".");
+        var base = dot > screenshotPath.lastIndexOf("/") ? screenshotPath.substring(0, dot) : screenshotPath;
+        return base + "-stitched-" + Qt.formatDateTime(new Date(), "HH-mm-ss-zzz") + ".png";
     }
     function stopRecording() {
         if (selectingRegion) {

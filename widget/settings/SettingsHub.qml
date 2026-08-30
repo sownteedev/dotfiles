@@ -17,6 +17,7 @@ FloatingWindow {
     readonly property string activeSubtitle: activePage === 0 ? "Inspect and tune your Niri configuration" : activePage === 1 ? quickshellSectionSubtitles[activeQuickshellSection] : securitySectionSubtitles[activeSecuritySection]
     readonly property string activeTitle: activePage === 0 ? niriSectionNames[activeNiriSection] : activePage === 1 ? quickshellSectionNames[activeQuickshellSection] : securitySectionNames[activeSecuritySection]
     property bool blurActive: false
+    readonly property bool compactHeader: settingsContentWidth < 740
     readonly property var compactNavigationItems: {
         var items = [];
         var index = 0;
@@ -65,6 +66,7 @@ FloatingWindow {
     readonly property var quickshellSectionIcons: ["preferences-desktop-theme-symbolic", "view-grid-symbolic", "system-search-symbolic", "preferences-system-notifications-symbolic", "preferences-desktop-wallpaper-symbolic", "camera-photo-symbolic", "network-workgroup-symbolic", "applications-engineering-symbolic"]
     readonly property var quickshellSectionNames: ["General", "Bar & Panels", "Launcher", "Notifications", "Wallpaper", "Capture", "Integrations", "Advanced"]
     readonly property var quickshellSectionSubtitles: ["Configure shell appearance and localization", "Choose bar density and visible modules", "Tune providers, prefixes, and clipboard behavior", "Control popups, history, rules, and Do Not Disturb", "Configure wallpaper playback and colors", "Configure screenshots and screen recording", "Configure external services and integrations", "Tune performance, OSD, audio, and diagnostics"]
+    property bool resizeActive: false
     readonly property var searchItems: [
         {
             "title": "Keybinds",
@@ -191,16 +193,24 @@ FloatingWindow {
     readonly property var securitySectionIcons: ["avatar-default-symbolic", "preferences-system-power-symbolic"]
     readonly property var securitySectionNames: ["Lock & Face", "Idle & Power"]
     readonly property var securitySectionSubtitles: ["Manage lock screen authentication and face models", "Configure idle, display-off, suspend, and Caffeine behavior"]
+    readonly property real settingsContentWidth: Math.max(0, width - sidebarWidth - 1 - (compactViewport ? 20 : 36))
     property bool sidebarExpanded: false
     property real sidebarWidth: sidebarExpanded ? (compactViewport ? 240 : 264) : (compactViewport ? 78 : 84)
 
     signal dismissed
 
+    function beginSystemResize(edges) {
+        resizeActive = true;
+        resizeIdleTimer.restart();
+        startSystemResize(edges);
+    }
     function closeSettings() {
         if (!active)
             return;
         blurAcquireTimer.stop();
+        resizeIdleTimer.stop();
         blurActive = false;
+        resizeActive = false;
         visible = false;
         active = false;
         dismissed();
@@ -219,7 +229,9 @@ FloatingWindow {
         if (targetScreen)
             screen = targetScreen;
         blurAcquireTimer.stop();
+        resizeIdleTimer.stop();
         blurActive = false;
+        resizeActive = false;
         sectionTransition.stop();
         pageFrame.opacity = 1;
         pageFrame.x = 0;
@@ -278,10 +290,20 @@ FloatingWindow {
             return;
 
         blurAcquireTimer.stop();
+        resizeIdleTimer.stop();
         root.active = false;
         root.blurActive = false;
+        root.resizeActive = false;
         root.visible = false;
         root.dismissed();
+    }
+    onHeightChanged: {
+        if (resizeActive)
+            resizeIdleTimer.restart();
+    }
+    onWidthChanged: {
+        if (resizeActive)
+            resizeIdleTimer.restart();
     }
 
     Timer {
@@ -294,6 +316,14 @@ FloatingWindow {
             if (root.active)
                 root.blurActive = true;
         }
+    }
+    Timer {
+        id: resizeIdleTimer
+
+        interval: 140
+        repeat: false
+
+        onTriggered: root.resizeActive = false
     }
     SequentialAnimation {
         id: sectionTransition
@@ -368,7 +398,7 @@ FloatingWindow {
             hoverEnabled: true
             width: resizeHandles.edgeSize
 
-            onPressed: root.startSystemResize(Qt.LeftEdge)
+            onPressed: root.beginSystemResize(Qt.LeftEdge)
         }
         MouseArea {
             anchors.bottom: parent.bottom
@@ -380,7 +410,7 @@ FloatingWindow {
             hoverEnabled: true
             width: resizeHandles.edgeSize
 
-            onPressed: root.startSystemResize(Qt.RightEdge)
+            onPressed: root.beginSystemResize(Qt.RightEdge)
         }
         MouseArea {
             anchors.left: parent.left
@@ -392,7 +422,7 @@ FloatingWindow {
             height: resizeHandles.edgeSize
             hoverEnabled: true
 
-            onPressed: root.startSystemResize(Qt.TopEdge)
+            onPressed: root.beginSystemResize(Qt.TopEdge)
         }
         MouseArea {
             anchors.bottom: parent.bottom
@@ -404,7 +434,7 @@ FloatingWindow {
             height: resizeHandles.edgeSize
             hoverEnabled: true
 
-            onPressed: root.startSystemResize(Qt.BottomEdge)
+            onPressed: root.beginSystemResize(Qt.BottomEdge)
         }
         MouseArea {
             anchors.left: parent.left
@@ -414,7 +444,7 @@ FloatingWindow {
             hoverEnabled: true
             width: resizeHandles.cornerSize
 
-            onPressed: root.startSystemResize(Qt.LeftEdge | Qt.TopEdge)
+            onPressed: root.beginSystemResize(Qt.LeftEdge | Qt.TopEdge)
         }
         MouseArea {
             anchors.right: parent.right
@@ -424,7 +454,7 @@ FloatingWindow {
             hoverEnabled: true
             width: resizeHandles.cornerSize
 
-            onPressed: root.startSystemResize(Qt.RightEdge | Qt.TopEdge)
+            onPressed: root.beginSystemResize(Qt.RightEdge | Qt.TopEdge)
         }
         MouseArea {
             anchors.bottom: parent.bottom
@@ -434,7 +464,7 @@ FloatingWindow {
             hoverEnabled: true
             width: resizeHandles.cornerSize
 
-            onPressed: root.startSystemResize(Qt.LeftEdge | Qt.BottomEdge)
+            onPressed: root.beginSystemResize(Qt.LeftEdge | Qt.BottomEdge)
         }
         MouseArea {
             anchors.bottom: parent.bottom
@@ -444,7 +474,7 @@ FloatingWindow {
             hoverEnabled: true
             width: resizeHandles.cornerSize
 
-            onPressed: root.startSystemResize(Qt.RightEdge | Qt.BottomEdge)
+            onPressed: root.beginSystemResize(Qt.RightEdge | Qt.BottomEdge)
         }
     }
     Rectangle {
@@ -483,8 +513,9 @@ FloatingWindow {
         AnimatedStars {
             anchors.fill: parent
             color: Config.md3.primary
-            running: root.active && !Config.shellLowPowerMode
+            running: root.active && !root.resizeActive && !Config.shellLowPowerMode
             starCount: root.compactViewport ? 48 : 64
+            visible: !root.resizeActive
         }
         MouseArea {
             anchors.fill: parent
@@ -798,7 +829,7 @@ FloatingWindow {
 
                 Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: root.compactViewport ? 112 : 62
+                    Layout.preferredHeight: 62
 
                     MouseArea {
                         acceptedButtons: Qt.LeftButton
@@ -809,24 +840,29 @@ FloatingWindow {
                     }
                     ColumnLayout {
                         anchors.left: parent.left
-                        anchors.right: root.compactViewport ? parent.right : headerActions.left
-                        anchors.rightMargin: root.compactViewport ? 0 : 18
+                        anchors.right: headerActions.left
+                        anchors.rightMargin: root.compactHeader ? 12 : 18
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.verticalCenterOffset: root.compactViewport ? -25 : 0
                         spacing: 3
 
                         Text {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             color: Config.md3.on_surface
+                            elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: root.compactViewport ? 20 : 22
+                            font.pixelSize: root.compactHeader ? 20 : 22
                             font.weight: Font.DemiBold
+                            maximumLineCount: 1
                             text: root.activeTitle
                         }
                         Text {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             color: Config.alpha(Config.md3.on_surface, 0.5)
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 14
+                            font.pixelSize: root.compactHeader ? 13 : 14
                             maximumLineCount: 1
                             text: root.activeSubtitle
                         }
@@ -836,22 +872,24 @@ FloatingWindow {
 
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.verticalCenterOffset: root.compactViewport ? 32 : 0
-                        spacing: 10
+                        spacing: root.compactHeader ? 8 : 10
 
                         Rectangle {
                             id: statusChip
 
                             readonly property color accentColor: SettingsHubService.statusSuccess ? Config.md3.primary : Config.md3.error
 
+                            Accessible.name: SettingsHubService.statusMessage
+                            Accessible.role: Accessible.StaticText
                             Layout.alignment: Qt.AlignVCenter
                             Layout.preferredHeight: 38
-                            Layout.preferredWidth: root.compactViewport ? 210 : 260
+                            Layout.preferredWidth: root.compactHeader ? 38 : 260
                             border.color: Config.alpha(accentColor, 0.24)
                             border.width: 1
                             color: Config.alpha(accentColor, SettingsHubService.statusSuccess ? 0.09 : 0.12)
                             radius: 13
                             visible: SettingsHubService.statusMessage !== ""
+                            z: statusHover.containsMouse ? 20 : 0
 
                             Behavior on border.color {
                                 ColorAnimation {
@@ -866,8 +904,8 @@ FloatingWindow {
 
                             RowLayout {
                                 anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 11
+                                anchors.leftMargin: root.compactHeader ? 7 : 8
+                                anchors.rightMargin: root.compactHeader ? 7 : 11
                                 spacing: 8
 
                                 Rectangle {
@@ -895,7 +933,40 @@ FloatingWindow {
                                     font.weight: Font.DemiBold
                                     maximumLineCount: 1
                                     text: SettingsHubService.statusMessage
+                                    visible: !root.compactHeader
                                 }
+                            }
+                            Rectangle {
+                                anchors.right: parent.right
+                                anchors.top: parent.bottom
+                                anchors.topMargin: 7
+                                color: Config.md3.surface_container_high
+                                height: 34
+                                radius: 10
+                                visible: root.compactHeader && statusHover.containsMouse
+                                width: Math.min(320, statusTooltipText.implicitWidth + 20)
+                                z: 20
+
+                                Text {
+                                    id: statusTooltipText
+
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    color: Config.md3.on_surface
+                                    elide: Text.ElideRight
+                                    font.family: Config.fontName
+                                    font.pixelSize: 12
+                                    font.weight: Font.Medium
+                                    text: SettingsHubService.statusMessage
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+                            MouseArea {
+                                id: statusHover
+
+                                acceptedButtons: Qt.NoButton
+                                anchors.fill: parent
+                                hoverEnabled: true
                             }
                         }
                         SettingsActionButton {

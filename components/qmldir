@@ -75,18 +75,31 @@ WallpaperDestinationPopup 1.0 wallpaper/WallpaperDestinationPopup.qml
 WallpaperWorkshopFilters 1.0 wallpaper/WallpaperWorkshopFilters.qml
 
 CalendarEventEditor 1.0 productivity/CalendarEventEditor.qml
+CalendarTaskCard 1.0 productivity/CalendarTaskCard.qml
 GoogleAuthPanel 1.0 productivity/GoogleAuthPanel.qml
+ProductivityEmptyState 1.0 productivity/ProductivityEmptyState.qml
 
 MusicArtwork 1.0 media/MusicArtwork.qml
 MusicEmptyState 1.0 media/MusicEmptyState.qml
 MusicLyrics 1.0 media/MusicLyrics.qml
 MusicProgress 1.0 media/MusicProgress.qml
 
+ImageFilePicker 1.0 capture/ImageFilePicker.qml
 PixelateRegion 1.0 capture/PixelateRegion.qml
 ScreenshotColorSlider 1.0 capture/ScreenshotColorSlider.qml
+ScreenshotColorPicker 1.0 capture/ScreenshotColorPicker.qml
 ScreenshotEditorToolbar 1.0 capture/ScreenshotEditorToolbar.qml
+ScreenshotImageLayer 1.0 capture/ScreenshotImageLayer.qml
+ScreenshotImageSelection 1.0 capture/ScreenshotImageSelection.qml
+ScreenshotLayersPanel 1.0 capture/ScreenshotLayersPanel.qml
+ScreenshotMagnifierLoupe 1.0 capture/ScreenshotMagnifierLoupe.qml
+ScreenshotOpacitySlider 1.0 capture/ScreenshotOpacitySlider.qml
 ScreenshotShortcutButton 1.0 capture/ScreenshotShortcutButton.qml
+ScreenshotShapeSelection 1.0 capture/ScreenshotShapeSelection.qml
+ScreenshotStatusPill 1.0 capture/ScreenshotStatusPill.qml
 ScreenshotToolButton 1.0 capture/ScreenshotToolButton.qml
+ScreenshotToolTip 1.0 capture/ScreenshotToolTip.qml
+ScreenshotZoomCallout 1.0 capture/ScreenshotZoomCallout.qml
 
 NotificationActionButton 1.0 notification/NotificationActionButton.qml
 NotificationIcon 1.0 notification/NotificationIcon.qml

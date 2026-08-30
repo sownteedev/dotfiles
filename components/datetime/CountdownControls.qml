@@ -10,44 +10,38 @@ import "../../"
 Item {
     id: root
 
-    readonly property color actionColor: completed ? Config.md3.secondary : running ? Config.md3.tertiary : Config.md3.primary
+    readonly property color actionBackground: preparing ? Config.md3.primary_container : completed ? Config.md3.secondary_container : running ? Config.md3.tertiary_container : hasStarted ? Config.md3.primary_container : Config.md3.primary
+    readonly property color actionForeground: preparing ? Config.md3.on_primary_container : completed ? Config.md3.on_secondary_container : running ? Config.md3.on_tertiary_container : hasStarted ? Config.md3.on_primary_container : Config.md3.on_primary
     property bool completed: false
     property bool hasStarted: false
+    property bool preparing: false
     property bool running: false
 
     signal resetRequested
     signal toggleRequested
 
-    implicitHeight: 52
-    implicitWidth: 232
+    implicitHeight: 50
+    implicitWidth: 244
 
-    Rectangle {
-        anchors.fill: parent
-        border.color: Config.alpha(Config.md3.on_surface, 0.07)
-        border.width: 1
-        color: Config.alpha(Config.md3.surface_container_high, 0.46)
-        radius: height / 2
-    }
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 4
-        spacing: 4
+        spacing: 8
 
         Rectangle {
             id: resetButton
 
-            readonly property bool available: root.hasStarted || root.completed
+            readonly property bool available: root.preparing || root.hasStarted || root.completed
 
             Accessible.name: qsTr("Reset timer")
             Accessible.role: Accessible.Button
             Layout.fillHeight: true
-            Layout.preferredWidth: 44
+            Layout.preferredWidth: 50
             activeFocusOnTab: available
-            border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.65) : Config.alpha(Config.md3.on_surface, resetArea.containsMouse && available ? 0.14 : 0.055)
+            border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
             border.width: 1
-            color: Config.alpha(Config.md3.on_surface, resetArea.pressed && available ? 0.12 : resetArea.containsMouse && available ? 0.075 : 0.025)
+            color: resetArea.pressed && available ? Config.md3.surface_container_highest : resetArea.containsMouse && available ? Config.md3.surface_container_high : Config.md3.surface_container
             enabled: available
-            opacity: available ? 1 : 0.34
+            opacity: available ? 1 : 0.38
             radius: height / 2
             scale: resetArea.pressed && available ? 0.92 : 1
 
@@ -77,13 +71,13 @@ Item {
 
             IconImage {
                 anchors.centerIn: parent
-                height: 18
+                height: 19
                 layer.enabled: true
                 source: Quickshell.iconPath("view-refresh-symbolic")
-                width: 18
+                width: 19
 
                 layer.effect: ColorOverlay {
-                    color: Config.alpha(Config.md3.on_surface, 0.78)
+                    color: Config.md3.on_surface_variant
                 }
             }
             MouseArea {
@@ -101,21 +95,17 @@ Item {
             }
         }
         Rectangle {
-            Layout.preferredHeight: 20
-            Layout.preferredWidth: 1
-            color: Config.alpha(Config.md3.on_surface, 0.075)
-        }
-        Rectangle {
             id: actionButton
 
-            Accessible.name: root.running ? qsTr("Pause timer") : root.hasStarted ? qsTr("Resume timer") : root.completed ? qsTr("Restart timer") : qsTr("Start timer")
+            Accessible.name: root.preparing ? qsTr("Starting timer") : root.running ? qsTr("Pause timer") : root.hasStarted ? qsTr("Resume timer") : root.completed ? qsTr("Restart timer") : qsTr("Start timer")
             Accessible.role: Accessible.Button
             Layout.fillHeight: true
             Layout.fillWidth: true
-            activeFocusOnTab: true
-            border.color: activeFocus ? Config.alpha(root.actionColor, 0.72) : Config.alpha(root.actionColor, actionArea.containsMouse ? 0.38 : 0.24)
+            activeFocusOnTab: !root.preparing
+            border.color: activeFocus ? Config.alpha(root.actionForeground, 0.72) : "transparent"
             border.width: 1
-            color: Config.alpha(root.actionColor, actionArea.pressed ? 0.28 : actionArea.containsMouse ? 0.21 : 0.14)
+            color: root.actionBackground
+            enabled: !root.preparing
             radius: height / 2
             scale: actionArea.pressed ? 0.97 : 1
 
@@ -137,12 +127,23 @@ Item {
             }
 
             Keys.onPressed: event => {
-                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                if (actionButton.enabled && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
                     root.toggleRequested();
                     event.accepted = true;
                 }
             }
 
+            Rectangle {
+                anchors.fill: parent
+                color: actionArea.pressed ? Config.alpha(root.actionForeground, 0.12) : actionArea.containsMouse ? Config.alpha(root.actionForeground, 0.07) : "transparent"
+                radius: parent.radius
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 120
+                    }
+                }
+            }
             Row {
                 anchors.centerIn: parent
                 spacing: 9
@@ -151,27 +152,28 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     height: 17
                     layer.enabled: true
-                    source: Quickshell.iconPath(root.completed ? "view-refresh-symbolic" : root.running ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")
+                    source: Quickshell.iconPath(root.preparing ? "preferences-system-time-symbolic" : root.completed ? "view-refresh-symbolic" : root.running ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")
                     width: 17
 
                     layer.effect: ColorOverlay {
-                        color: root.actionColor
+                        color: root.actionForeground
                     }
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    color: root.actionColor
+                    color: root.actionForeground
                     font.family: Config.fontName
                     font.pixelSize: 14
                     font.weight: Font.Bold
-                    text: root.running ? qsTr("Pause") : root.hasStarted ? qsTr("Resume") : root.completed ? qsTr("Restart") : qsTr("Start")
+                    text: root.preparing ? qsTr("Starting…") : root.running ? qsTr("Pause") : root.hasStarted ? qsTr("Resume") : root.completed ? qsTr("Restart") : qsTr("Start")
                 }
             }
             MouseArea {
                 id: actionArea
 
                 anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
+                cursorShape: actionButton.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                enabled: actionButton.enabled
                 hoverEnabled: true
 
                 onClicked: {

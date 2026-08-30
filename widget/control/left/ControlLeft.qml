@@ -37,6 +37,8 @@ PanelWindow {
     readonly property color sectionColor: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.66 : 0.46)
     readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
     readonly property var topPages: ["Calendar", "Todo", "Timers"]
+    readonly property Item topPopupBackdropHost: topSection
+    readonly property real topPopupBackdropRadius: topSection.radius
     readonly property var topTabIcons: ["x-office-calendar-symbolic", "checkbox-checked-symbolic", "preferences-system-time-symbolic"]
     readonly property var topTabLabels: ["Calendar", "Todo", "Timer"]
 

@@ -8,7 +8,7 @@ Item {
     id: root
 
     readonly property real contentSpacing: 11 + 4 * layoutProgress
-    readonly property real controlsHeight: 52
+    readonly property real controlsHeight: 50
     readonly property point dialCenter: {
         timerFlickable.contentY;
         timerContent.x;
@@ -53,6 +53,8 @@ Item {
                 Layout.preferredWidth: root.dialSize
                 completed: CountdownService.completed
                 hasStarted: CountdownService.hasStarted
+                preparationProgress: CountdownService.preparationProgress
+                preparing: CountdownService.preparing
                 progress: CountdownService.progress
                 remainingMilliseconds: CountdownService.remainingMilliseconds
                 running: CountdownService.running
@@ -61,9 +63,10 @@ Item {
             CountdownControls {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredHeight: root.controlsHeight
-                Layout.preferredWidth: 232
+                Layout.preferredWidth: 244
                 completed: CountdownService.completed
                 hasStarted: CountdownService.hasStarted
+                preparing: CountdownService.preparing
                 running: CountdownService.running
 
                 onResetRequested: CountdownService.reset()
@@ -73,7 +76,7 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredHeight: root.pickerHeight
                 Layout.preferredWidth: Math.min(470, root.width - 36)
-                interactive: !CountdownService.running
+                interactive: !CountdownService.running && !CountdownService.preparing
                 scrollingEnabled: !timerFlickable.interactive || timerFlickable.atYEnd
                 totalSeconds: Math.round(CountdownService.totalMilliseconds / 1000)
 

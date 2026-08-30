@@ -390,7 +390,7 @@ PanelWindow {
             cache: false
             fillMode: Image.PreserveAspectCrop
             opacity: 0
-            playing: wallpaperWindow.displayedImage === animatedImage && !transitionAnimation.running
+            playing: wallpaperWindow.displayedImage === animatedImage && !transitionAnimation.running && !WallpaperPlaybackPolicy.shouldPause
             source: sourceKey
             sourceSize: Qt.size(Math.ceil(wallpaperWindow.width), Math.ceil(wallpaperWindow.height))
 

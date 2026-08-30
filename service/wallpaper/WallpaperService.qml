@@ -757,7 +757,10 @@ QtObject {
         var savedBackend = state.backend === "engine" || state.mode === "engine" ? "engine" : state.backend === "live" || state.mode === "live" ? "live" : "";
         var savedMode = (savedBackend !== "" || state.mode === "video" || LiveWallpaperService.isLivePath(savedPath)) ? "video" : "static";
         var savedRenderer = String(state.renderer || "");
-        if (savedMode === "video" && EngineWallpaperService.isEnginePath(savedPath) && !LiveWallpaperService.isLivePath(savedRenderer)) {
+        // A persisted engine backend is already enough to restore a scene.
+        // Resolving project.json here delays startup and briefly exposes the
+        // default wallpaper before the saved cover can be restored.
+        if (savedMode === "video" && savedBackend !== "engine" && EngineWallpaperService.isEnginePath(savedPath) && !LiveWallpaperService.isLivePath(savedRenderer)) {
             var cachedProject = EngineWallpaperService.projectForPath(savedPath);
             if (!cachedProject) {
                 videoTransitionGeneration += 1;

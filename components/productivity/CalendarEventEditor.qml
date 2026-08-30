@@ -18,6 +18,8 @@ Rectangle {
     property string eventTitle: ""
     property string location: ""
     property bool opened: false
+    property Item popupBackdropHost: null
+    property real popupBackdropRadius: 20
     property int selectedDay: 1
     property int selectedMonth: 0
     property int selectedYear: 1970
@@ -57,10 +59,13 @@ Rectangle {
             startTime = "10:00";
             endTime = "11:00";
         }
+        syncTextFields();
+        formFlickable.contentY = 0;
         opened = true;
     }
     function openNew() {
         reset();
+        formFlickable.contentY = 0;
         opened = true;
     }
     function reset() {
@@ -72,6 +77,7 @@ Rectangle {
         endTime = "11:00";
         location = "";
         description = "";
+        syncTextFields();
     }
     function save() {
         if (eventTitle.trim() === "")
@@ -85,6 +91,11 @@ Rectangle {
             GoogleService.createEvent(calendarId, eventTitle, date, startTime, endTime, allDay, location, description);
         }
         close();
+    }
+    function syncTextFields() {
+        titleField.text = eventTitle;
+        locationField.text = location;
+        descriptionField.text = description;
     }
 
     anchors.fill: parent
@@ -121,6 +132,8 @@ Rectangle {
         }
     }
     Flickable {
+        id: formFlickable
+
         anchors.bottom: saveButton.top
         anchors.left: parent.left
         anchors.margins: 12
@@ -198,6 +211,8 @@ Rectangle {
                 }
             }
             FormTextField {
+                id: titleField
+
                 Layout.fillWidth: true
                 label: "Title"
                 placeholder: "Event title..."
@@ -286,6 +301,8 @@ Rectangle {
                 }
             }
             FormTextField {
+                id: locationField
+
                 Layout.fillWidth: true
                 label: "Location"
                 placeholder: "Location..."
@@ -294,6 +311,8 @@ Rectangle {
                 onTextChanged: root.location = text
             }
             FormTextField {
+                id: descriptionField
+
                 Layout.fillWidth: true
                 label: "Description"
                 multiline: true
@@ -355,7 +374,8 @@ Rectangle {
 
         property string targetField: ""
 
-        placementParent: root
+        backdropRadius: root.popupBackdropRadius
+        placementParent: root.popupBackdropHost || root
 
         onConfirmed: (hours, minutes) => {
             var value = hours + ":" + minutes;

@@ -6,12 +6,18 @@ import QtQuick.Layouts
 Rectangle {
     id: root
 
+    property real availableWidth: 946
+    property bool opacityAvailable: false
     property bool reverseSearchBusy: false
     property color selectedColor: "#ff3b30"
+    property real selectedOpacity: 1
     property string selectedTool: "pen"
     property real selectedWidth: 6
 
     signal colorSelected(color colorValue)
+    signal opacityChangeFinished
+    signal opacityChangeStarted
+    signal opacitySelected(real opacityValue)
     signal reverseSearchRequested
     signal toolSelected(string tool)
     signal widthSelected(real widthValue)
@@ -20,7 +26,7 @@ Rectangle {
     border.width: 1
     color: Config.alpha(Config.md3.background, 0.94)
     implicitHeight: contentLayout.implicitHeight + 24
-    implicitWidth: Math.max(toolRow.implicitWidth, settingsRow.implicitWidth) + 24
+    implicitWidth: Math.min(946, Math.max(884, availableWidth))
     radius: 20
 
     ColumnLayout {
@@ -34,63 +40,129 @@ Rectangle {
             id: toolRow
 
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 7
 
             Repeater {
                 model: [
                     {
                         "tool": "select",
+                        "description": qsTr("Move layers. Drag an image edge to crop, a corner to resize, or the top handle to rotate."),
                         "glyph": "",
-                        "iconName": "screenshot-ui-show-pointer-symbolic"
+                        "iconName": "screenshot-ui-show-pointer-symbolic",
+                        "iconSize": 22,
+                        "label": qsTr("Select and move"),
+                        "shortcut": qsTr("Shift: snap rotation")
                     },
                     {
                         "tool": "pen",
-                        "glyph": "✎"
+                        "description": qsTr("Draw freehand strokes."),
+                        "fontSize": 24,
+                        "fontWeight": Font.Black,
+                        "glyph": "✎",
+                        "iconScale": 1.18,
+                        "label": qsTr("Pen")
                     },
                     {
                         "tool": "highlight",
-                        "glyph": "▰"
+                        "description": qsTr("Draw a translucent highlight."),
+                        "fontSize": 24,
+                        "fontWeight": Font.Black,
+                        "glyph": "▰",
+                        "iconScale": 1.22,
+                        "label": qsTr("Highlighter")
                     },
                     {
                         "tool": "line",
-                        "glyph": "╱"
+                        "customIcon": "straight-line",
+                        "description": qsTr("Draw a straight line."),
+                        "label": qsTr("Line")
                     },
                     {
                         "tool": "arrow",
-                        "glyph": "➜"
+                        "description": qsTr("Draw an arrow."),
+                        "fontSize": 24,
+                        "fontWeight": Font.Black,
+                        "glyph": "➜",
+                        "iconScale": 1.18,
+                        "label": qsTr("Arrow")
                     },
                     {
                         "tool": "rectangle",
-                        "glyph": "□"
+                        "customIcon": "rectangle-outline",
+                        "description": qsTr("Draw a rectangle outline."),
+                        "label": qsTr("Rectangle")
                     },
                     {
                         "tool": "ellipse",
-                        "glyph": "○"
+                        "customIcon": "ellipse-outline",
+                        "description": qsTr("Draw an ellipse outline."),
+                        "label": qsTr("Ellipse")
                     },
                     {
                         "tool": "blur",
-                        "glyph": "◐"
+                        "customIcon": "blur-drop",
+                        "description": qsTr("Blur the selected area."),
+                        "label": qsTr("Blur")
                     },
                     {
                         "tool": "pixelate",
-                        "glyph": "▦"
+                        "customIcon": "pixel-grid",
+                        "description": qsTr("Pixelate the selected area."),
+                        "label": qsTr("Pixelate")
                     },
                     {
                         "tool": "text",
-                        "glyph": "T"
+                        "description": qsTr("Insert text into the screenshot."),
+                        "fontSize": 22,
+                        "fontWeight": Font.Black,
+                        "glyph": "T",
+                        "label": qsTr("Text")
                     },
                     {
                         "tool": "number",
-                        "glyph": "①"
+                        "customIcon": "number-marker",
+                        "description": qsTr("Place numbered markers."),
+                        "label": qsTr("Number marker")
+                    },
+                    {
+                        "tool": "callout",
+                        "customIcon": "zoom-callout",
+                        "description": qsTr("Select an area to create a magnified callout."),
+                        "label": qsTr("Zoom callout")
+                    },
+                    {
+                        "tool": "loupe",
+                        "customIcon": "pixel-loupe",
+                        "description": qsTr("Inspect pixels without changing the image. Hold G temporarily and scroll to change zoom."),
+                        "label": qsTr("Magnifier"),
+                        "shortcut": qsTr("G + wheel")
                     },
                     {
                         "tool": "ocr",
-                        "glyph": "OCR",
-                        "fontSize": 11
+                        "customIcon": "ocr-scan",
+                        "description": qsTr("Drag over text to recognize and copy it."),
+                        "label": qsTr("Copy text with OCR")
                     },
                     {
                         "tool": "crop",
-                        "glyph": "⌗"
+                        "description": qsTr("Drag over the area you want to keep."),
+                        "iconName": "image-crop-symbolic",
+                        "label": qsTr("Crop")
+                    },
+                    {
+                        "tool": "google-lens",
+                        "action": "reverse-search",
+                        "description": qsTr("Search the edited screenshot with Google Lens."),
+                        "googleLens": true,
+                        "label": qsTr("Google Lens")
+                    },
+                    {
+                        "tool": "eraser",
+                        "description": qsTr("Remove annotations or inserted images."),
+                        "glyph": "",
+                        "iconName": "draw-eraser-symbolic",
+                        "label": qsTr("Eraser"),
+                        "tone": "error"
                     }
                 ]
 
@@ -101,11 +173,16 @@ Rectangle {
                     Layout.minimumWidth: 44
                     Layout.preferredHeight: 42
                     Layout.preferredWidth: 48
+                    enabled: modelData.action === "reverse-search" ? !root.reverseSearchBusy : true
+                    opacity: enabled ? 1 : 0.55
                     selectedTool: root.selectedTool
                     toolData: modelData
 
                     onSelected: tool => {
-                        return root.toolSelected(tool);
+                        if (modelData.action === "reverse-search")
+                            root.reverseSearchRequested();
+                        else
+                            root.toolSelected(tool);
                     }
                 }
             }
@@ -114,13 +191,18 @@ Rectangle {
             id: settingsRow
 
             Layout.fillWidth: true
+            Layout.maximumHeight: 32
+            Layout.minimumHeight: 32
+            Layout.preferredHeight: 32
             spacing: 8
 
-            ScreenshotColorSlider {
+            Item {
                 Layout.fillWidth: true
-                Layout.minimumWidth: 300
+            }
+            ScreenshotColorSlider {
+                Layout.minimumWidth: 220
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 360
+                Layout.preferredWidth: 280
                 selectedColor: root.selectedColor
                 visible: root.selectedTool !== "select"
 
@@ -137,10 +219,9 @@ Rectangle {
                 visible: root.selectedTool !== "select"
             }
             RowLayout {
-                Layout.fillWidth: true
-                Layout.minimumWidth: 170
+                Layout.minimumWidth: 120
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 170
+                Layout.preferredWidth: 140
                 spacing: 8
                 visible: root.selectedTool !== "select"
 
@@ -188,6 +269,15 @@ Rectangle {
                             height: parent.height
                             radius: parent.radius
                             width: parent.width * Math.max(0, Math.min(1, (root.selectedWidth - 2) / 22))
+
+                            Behavior on width {
+                                enabled: !sliderMouse.pressed
+
+                                NumberAnimation {
+                                    duration: 100
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
                         }
                     }
                     Rectangle {
@@ -204,6 +294,14 @@ Rectangle {
                         Behavior on scale {
                             NumberAnimation {
                                 duration: 100
+                            }
+                        }
+                        Behavior on x {
+                            enabled: !sliderMouse.pressed
+
+                            NumberAnimation {
+                                duration: 100
+                                easing.type: Easing.OutCubic
                             }
                         }
                     }
@@ -223,125 +321,27 @@ Rectangle {
                     }
                 }
             }
-            ScreenshotToolButton {
-                Layout.preferredHeight: 32
-                Layout.preferredWidth: 48
-                selectedTool: root.selectedTool
-                toolData: {
-                    "tool": "eraser",
-                    "glyph": "",
-                    "iconName": "draw-eraser-symbolic"
-                }
-
-                onSelected: tool => {
-                    return root.toolSelected(tool);
-                }
-            }
             Rectangle {
-                id: reverseSearchButton
-
-                Accessible.name: qsTr("Search image with Google Lens")
-                Accessible.role: Accessible.Button
                 Layout.leftMargin: 4
+                Layout.preferredHeight: 25
+                Layout.preferredWidth: 1
+                Layout.rightMargin: 4
+                color: Config.alpha(Config.md3.on_surface, 0.12)
+                visible: root.opacityAvailable && root.selectedTool !== "select"
+            }
+            ScreenshotOpacitySlider {
+                Layout.minimumWidth: 120
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 48
-                color: reverseSearchPointer.pressed ? Config.md3.primary_container : reverseSearchPointer.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container
-                opacity: root.reverseSearchBusy ? 0.55 : 1
-                radius: 11
-                scale: reverseSearchPointer.pressed ? 0.88 : 1
+                Layout.preferredWidth: 145
+                selectedOpacity: root.selectedOpacity
+                visible: root.opacityAvailable
 
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 120
-                    }
-                }
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: 160
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                Item {
-                    anchors.centerIn: parent
-                    height: 22
-                    width: 22
-
-                    Rectangle {
-                        color: "#4285f4"
-                        height: 3
-                        radius: 1.5
-                        width: 8
-                        x: 1
-                        y: 1
-                    }
-                    Rectangle {
-                        color: "#4285f4"
-                        height: 8
-                        radius: 1.5
-                        width: 3
-                        x: 1
-                        y: 1
-                    }
-                    Rectangle {
-                        color: "#ea4335"
-                        height: 3
-                        radius: 1.5
-                        width: 8
-                        x: 13
-                        y: 1
-                    }
-                    Rectangle {
-                        color: "#ea4335"
-                        height: 8
-                        radius: 1.5
-                        width: 3
-                        x: 18
-                        y: 1
-                    }
-                    Rectangle {
-                        color: "#34a853"
-                        height: 8
-                        radius: 1.5
-                        width: 3
-                        x: 1
-                        y: 13
-                    }
-                    Rectangle {
-                        color: "#34a853"
-                        height: 3
-                        radius: 1.5
-                        width: 8
-                        x: 1
-                        y: 18
-                    }
-                    Rectangle {
-                        color: "#fbbc04"
-                        height: 7
-                        radius: 3.5
-                        width: 7
-                        x: 7.5
-                        y: 7.5
-                    }
-                    Rectangle {
-                        color: "#4285f4"
-                        height: 4
-                        radius: 2
-                        width: 4
-                        x: 16
-                        y: 16
-                    }
-                }
-                MouseArea {
-                    id: reverseSearchPointer
-
-                    anchors.fill: parent
-                    cursorShape: root.reverseSearchBusy ? Qt.BusyCursor : Qt.PointingHandCursor
-                    enabled: !root.reverseSearchBusy
-                    hoverEnabled: true
-
-                    onClicked: root.reverseSearchRequested()
-                }
+                onOpacityChangeFinished: root.opacityChangeFinished()
+                onOpacityChangeStarted: root.opacityChangeStarted()
+                onOpacitySelected: opacityValue => root.opacitySelected(opacityValue)
+            }
+            Item {
+                Layout.fillWidth: true
             }
         }
     }

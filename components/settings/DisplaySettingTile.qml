@@ -29,18 +29,12 @@ Rectangle {
     Accessible.role: Accessible.ComboBox
     Layout.fillWidth: true
     activeFocusOnTab: enabled
-    border.color: activeFocus ? Config.alpha(accentColor, 0.56) : Config.alpha(Config.md3.on_surface, tileMouse.containsMouse ? 0.12 : 0.07)
-    border.width: 1
-    color: tileMouse.pressed ? Config.alpha(accentColor, 0.17) : tileMouse.containsMouse ? Config.alpha(accentColor, 0.10) : Config.alpha(Config.md3.on_surface, 0.035)
-    implicitHeight: 78
+    border.width: 0
+    color: tileMouse.pressed ? Config.alpha(accentColor, 0.17) : activeFocus ? Config.alpha(accentColor, 0.12) : tileMouse.containsMouse ? Config.alpha(accentColor, 0.10) : Config.alpha(Config.md3.on_surface, 0.035)
+    implicitHeight: 58
     opacity: enabled ? 1 : 0.45
     radius: 14
 
-    Behavior on border.color {
-        ColorAnimation {
-            duration: 130
-        }
-    }
     Behavior on color {
         ColorAnimation {
             duration: 130
@@ -62,22 +56,23 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 11
+        anchors.leftMargin: 12
+        anchors.rightMargin: 12
+        spacing: 12
 
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredHeight: 38
-            Layout.preferredWidth: 38
+            Layout.preferredHeight: 36
+            Layout.preferredWidth: 36
             color: Config.alpha(root.accentColor, 0.14)
-            radius: 12
+            radius: 11
 
             IconImage {
                 anchors.centerIn: parent
-                height: 20
+                height: 19
                 layer.enabled: true
                 source: Quickshell.iconPath(root.iconName)
-                width: 20
+                width: 19
 
                 layer.effect: ColorOverlay {
                     color: root.accentColor

@@ -185,7 +185,7 @@ QtObject {
             property bool captureAutoCopyRecording: true
             property bool captureAutoCopyScreenshot: true
             property string captureEditorColor: "#ff3b30"
-            property string captureEditorTool: "pen"
+            property string captureEditorTool: "select"
             property int captureEditorWidth: 6
             property string captureRecordingCodec: "hevc"
             property string captureRecordingDirPath: "~/Videos"
