@@ -57,7 +57,7 @@ QtObject {
     function applyExternalValue() {
         if (internalOutput || outputName === "" || setter.running || externalRequestedValue < 0)
             return;
-        setter.command = ["python3", Config.quickshellDir + "/scripts/display_brightness.py", "set", outputName, String(externalRequestedValue), String(externalBus), String(externalMaximum)];
+        setter.command = ["python3", Config.quickshellDir + "/backend/python/display/ddc_brightness.py", "set", outputName, String(externalRequestedValue), String(externalBus), String(externalMaximum)];
         setter.running = true;
     }
     function applyResponse(text) {
@@ -115,7 +115,7 @@ QtObject {
             pendingProbeOutput = name;
             return;
         }
-        probe.command = ["python3", Config.quickshellDir + "/scripts/display_brightness.py", "get", name];
+        probe.command = ["python3", Config.quickshellDir + "/backend/python/display/ddc_brightness.py", "get", name];
         probe.running = true;
     }
 }

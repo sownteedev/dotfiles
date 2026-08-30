@@ -231,7 +231,7 @@ QtObject {
     property Process previewCachePruner: Process {
         property string requestJson: "{}"
 
-        command: ["python3", "-u", Config.quickshellDir + "/scripts/wallpaper_workshop.py", "prune-preview-cache"]
+        command: ["python3", "-u", Config.quickshellDir + "/backend/python/wallpaper/steam_workshop_client.py", "prune-preview-cache"]
         stdinEnabled: true
 
         onStarted: {
@@ -303,7 +303,7 @@ QtObject {
                 root.markReady(root.startedPath, root.validatedFramePath);
         }
     }
-    readonly property string readyProbeScript: Config.quickshellDir + "/scripts/wallpaper_frame_probe.py"
+    readonly property string readyProbeScript: Config.quickshellDir + "/backend/python/wallpaper/wallpaper_frame_probe.py"
     property Timer readyTimer: Timer {
         interval: 1600
         repeat: false
@@ -350,7 +350,7 @@ QtObject {
             }
         }
     }
-    readonly property string scannerPath: Config.quickshellDir + "/scripts/wallpaper_engine_scan.py"
+    readonly property string scannerPath: Config.quickshellDir + "/backend/python/wallpaper/wallpaper_engine_library.py"
     readonly property bool scanning: scanner.running || scanDebounce.running
     property Connections screenConnections: Connections {
         function onScreensChanged() {

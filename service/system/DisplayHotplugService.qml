@@ -86,7 +86,7 @@ QtObject {
             pendingPersistPayload = payload;
             return;
         }
-        outputPersistor.command = ["python3", Config.quickshellDir + "/scripts/display_output_config.py", configPath, payload];
+        outputPersistor.command = ["python3", Config.quickshellDir + "/backend/python/display/niri_output_persistence.py", configPath, payload];
         outputPersistor.running = true;
     }
     function refreshOutputs() {

@@ -19,7 +19,7 @@ Item {
     property string query: ""
     property var readyPreviewIds: ({})
     property int requestGeneration: 0
-    readonly property string restoreHelperPath: Config.quickshellDir + "/scripts/clipboard_restore.py"
+    readonly property string restoreHelperPath: Config.quickshellDir + "/backend/python/clipboard/clipboard_history_restore.py"
 
     function classifyContent(content, isImage, characterCount, decodedLineCount, decodedFileCount, decodedFirstFile) {
         var text = String(content || "").trim();

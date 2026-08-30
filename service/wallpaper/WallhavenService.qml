@@ -234,7 +234,7 @@ QtObject {
     readonly property bool downloading: downloadingId !== ""
     property string downloadingId: ""
     property string downloadingTitle: ""
-    readonly property string helperPath: Config.quickshellDir + "/scripts/wallhaven.py"
+    readonly property string helperPath: Config.quickshellDir + "/backend/python/wallpaper/wallhaven_client.py"
     property string installedErrorMessage: ""
     property bool installedLoaded: false
     property Process installedProcess: Process {

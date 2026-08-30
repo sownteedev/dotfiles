@@ -223,7 +223,7 @@ QtObject {
         }
 
         var job = activeJob;
-        var matugenRunner = Config.quickshellDir + "/scripts/matugen-auto-scheme.sh";
+        var matugenRunner = Config.quickshellDir + "/scripts/theme/matugen-wallpaper-theme.sh";
         worker.command = ["sh", "-c", "mkdir -p \"$4\"; " + "if [ ! -s \"$2\" ]; then " + "rm -f \"$2.tmp.jpg\"; " + "if command -v magick >/dev/null 2>&1 && magick \"$1\" -auto-orient -thumbnail '256x256>' -strip \"$2.tmp.jpg\"; then :; " + "else rm -f \"$2.tmp.jpg\" && ffmpeg -hide_banner -loglevel error -y -i \"$1\" -frames:v 1 -vf 'scale=256:256:force_original_aspect_ratio=decrease' \"$2.tmp.jpg\"; fi && " + "mv \"$2.tmp.jpg\" \"$2\"; fi; " + "if [ \"$5\" = true ]; then " + "if [ ! -s \"$3\" ]; then \"$6\" --mode \"$7\" --dry-run --json hex --quiet \"$2\" > \"$3.tmp\" && mv \"$3.tmp\" \"$3\"; fi; " + "cat \"$3\"; else printf '{}'; fi", "wallpaper-preview", job.path, job.thumbnail, job.palette, cacheDir, Config.matugenEnabled ? "true" : "false", matugenRunner, job.mode];
         worker.running = true;
     }

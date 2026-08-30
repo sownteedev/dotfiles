@@ -33,7 +33,7 @@ QtObject {
     property var airpodsBattery: null
     readonly property bool airpodsBatteryAvailable: airpodsBattery !== null
     property Process airpodsBatteryProcess: Process {
-        command: [Config.quickshellDir + "/scripts/airpods_battery", root.airpodsAddress]
+        command: [Config.quickshellDir + "/scripts/connectivity/airpods-battery-monitor.sh", root.airpodsAddress]
 
         stderr: SplitParser {
             onRead: line => root.airpodsProcessError = String(line || "").trim()
@@ -347,7 +347,7 @@ QtObject {
     function probeNearbyDevices(devices) {
         if (nearbyProbeProcess.running)
             return;
-        var command = [Config.quickshellDir + "/scripts/bluetooth_nearby"];
+        var command = [Config.quickshellDir + "/scripts/connectivity/bluetooth-proximity-probe.sh"];
         for (var i = 0; i < devices.length; ++i) {
             var device = devices[i];
             if (!device || device.paired || device.bonded || device.trusted)

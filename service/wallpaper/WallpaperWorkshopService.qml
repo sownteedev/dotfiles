@@ -98,7 +98,7 @@ QtObject {
     }
     property var genreFilters: []
     readonly property bool hasMore: results.count < totalResults
-    readonly property string helperPath: Config.quickshellDir + "/scripts/wallpaper_workshop.py"
+    readonly property string helperPath: Config.quickshellDir + "/backend/python/wallpaper/steam_workshop_client.py"
     property string installedLoadErrorMessage: ""
     property bool installedLoaded: false
     property Process installedProcess: Process {

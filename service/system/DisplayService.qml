@@ -183,7 +183,7 @@ QtObject {
     property Process nightlightToggleProcess: Process {
     }
     property Process optionsQuery: Process {
-        command: ["python3", Config.quickshellDir + "/scripts/display_config_parser.py", root.configPath]
+        command: ["python3", Config.quickshellDir + "/backend/python/display/niri_output_config.py", root.configPath]
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -344,7 +344,7 @@ QtObject {
         }
         displayModeError = "";
         displayModeApplying = true;
-        displayModeExecutor.command = ["python3", Config.quickshellDir + "/scripts/niri_display_mode.py", mode, String(preferredExternal || "")];
+        displayModeExecutor.command = ["python3", Config.quickshellDir + "/backend/python/display/niri_display_mode.py", mode, String(preferredExternal || "")];
         displayModeExecutor.running = true;
     }
     function applyNightlightTemperature() {
@@ -420,7 +420,7 @@ QtObject {
         }
         sunshineStatusOutput = connector;
         sunshineStatus = "Restarting Sunshine for " + connector + "…";
-        sunshineProfileProcess.command = ["python3", Config.quickshellDir + "/scripts/sunshine_output_profile.py", sunshineConfigPath, connector, String(displayId)];
+        sunshineProfileProcess.command = ["python3", Config.quickshellDir + "/backend/python/display/sunshine_display_profile.py", sunshineConfigPath, connector, String(displayId)];
         sunshineProfileProcess.running = true;
     }
     function detectDisplayMode() {
@@ -559,7 +559,7 @@ QtObject {
             return;
         }
         sunshineStatusRefreshPending = false;
-        sunshineStatusQuery.command = ["python3", Config.quickshellDir + "/scripts/sunshine_output_profile.py", "--status", sunshineConfigPath];
+        sunshineStatusQuery.command = ["python3", Config.quickshellDir + "/backend/python/display/sunshine_display_profile.py", "--status", sunshineConfigPath];
         sunshineStatusQuery.running = true;
     }
     function reloadOutputConfig() {
@@ -612,7 +612,7 @@ QtObject {
         var commands = [];
         for (var i = 0; i < names.length; ++i) {
             commands.push(ensureOutputCommand(names[i], output));
-            commands.push("python3 " + shellQuote(Config.quickshellDir + "/scripts/display_config_parser.py") + " --set-vrr " + shellQuote(configPath) + " " + shellQuote(names[i]) + " " + shellQuote(normalizedMode));
+            commands.push("python3 " + shellQuote(Config.quickshellDir + "/backend/python/display/niri_output_config.py") + " --set-vrr " + shellQuote(configPath) + " " + shellQuote(names[i]) + " " + shellQuote(normalizedMode));
         }
         executeConfigCommand(commands.join("; "));
 

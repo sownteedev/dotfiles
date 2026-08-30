@@ -640,7 +640,7 @@ QtObject {
 
     // Helper to get script path
     function getScriptPath() {
-        var path = Qt.resolvedUrl("../../scripts/google_api.py").toString();
+        var path = Qt.resolvedUrl("../../backend/python/productivity/google_calendar_tasks.py").toString();
         if (path.startsWith("file://")) {
             path = path.substring(7);
         }

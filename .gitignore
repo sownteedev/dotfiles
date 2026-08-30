@@ -20,7 +20,7 @@ colors.json
 **/.ruff_cache/
 
 # Rust backend artifacts
-backend/target/
+backend/rust/*/target/
 
 # Native image-cache plugin artifacts
 plugin/imagecache/build/

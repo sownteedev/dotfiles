@@ -55,7 +55,7 @@ QtObject {
     readonly property int batteryPercentage: UPower.displayDevice ? Math.round(UPower.displayDevice.percentage * 100) : -1
     property alias batteryPowerProfile: policy.batteryPowerProfile
     property Process batteryQuery: Process {
-        command: [Config.quickshellDir + "/backend/run-qs-stats", "--battery-stream"]
+        command: [Config.quickshellDir + "/backend/rust/system-stats/run-system-stats", "--battery-stream"]
         running: root.active
 
         stdout: SplitParser {
@@ -114,7 +114,7 @@ QtObject {
         onExited: root.refreshDelay.restart()
     }
     property Process controlQuery: Process {
-        command: [Config.quickshellDir + "/backend/run-qs-stats", "--battery-control"]
+        command: [Config.quickshellDir + "/backend/rust/system-stats/run-system-stats", "--battery-control"]
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -354,7 +354,7 @@ QtObject {
         chargeCommandError = "";
         chargeCommandStderr = "";
         chargeCommandBusy = true;
-        chargeCommand.command = ["pkexec", Config.quickshellDir + "/backend/run-qs-stats", "--set-charge-thresholds", String(pendingChargeStart), String(pendingChargeEnd)];
+        chargeCommand.command = ["pkexec", Config.quickshellDir + "/backend/rust/system-stats/run-system-stats", "--set-charge-thresholds", String(pendingChargeStart), String(pendingChargeEnd)];
         chargeCommand.running = false;
         chargeCommand.running = true;
         return true;

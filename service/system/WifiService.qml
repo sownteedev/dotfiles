@@ -261,7 +261,7 @@ QtObject {
         settingsSaveSucceeded(ssid);
     }
     function cleanupQrCodeFiles() {
-        Quickshell.execDetached(["python3", Config.quickshellDir + "/scripts/wifi_qr.py", "cleanup"]);
+        Quickshell.execDetached(["python3", Config.quickshellDir + "/backend/python/connectivity/wifi_qr_generator.py", "cleanup"]);
     }
     function clearQrCode() {
         var previousPath = qrCodePath;
@@ -274,7 +274,7 @@ QtObject {
         qrCodePath = "";
         qrCodeSsid = "";
         if (previousPath !== "")
-            Quickshell.execDetached(["python3", Config.quickshellDir + "/scripts/wifi_qr.py", "delete", "--path", previousPath]);
+            Quickshell.execDetached(["python3", Config.quickshellDir + "/backend/python/connectivity/wifi_qr_generator.py", "delete", "--path", previousPath]);
     }
     function connectNetwork(network) {
         if (network)
@@ -404,7 +404,7 @@ QtObject {
         clearQrCode();
         var ssid = String(network.name || "");
         qrCodeSsid = ssid;
-        var command = ["python3", Config.quickshellDir + "/scripts/wifi_qr.py", "generate", "--ssid", ssid];
+        var command = ["python3", Config.quickshellDir + "/backend/python/connectivity/wifi_qr_generator.py", "generate", "--ssid", ssid];
         if (network.security === WifiSecurityType.Open) {
             command.push("--open");
         } else {

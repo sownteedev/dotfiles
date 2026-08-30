@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# Print BlueZ devices that currently expose an RSSI value.
+set -eu
+
+while [ "$#" -ge 2 ]; do
+    address=$1
+    device_path=$2
+    shift 2
+
+    if [ -n "$address" ] && [ -n "$device_path" ] \
+        && busctl --system get-property org.bluez "$device_path" org.bluez.Device1 RSSI >/dev/null 2>&1; then
+        printf '%s\n' "$address"
+    fi
+done

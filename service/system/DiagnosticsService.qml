@@ -9,7 +9,7 @@ QtObject {
     property bool busy: false
     property var caches: []
     property var dependencies: []
-    readonly property string helperPath: Config.quickshellDir + "/scripts/shell_diagnostics.py"
+    readonly property string helperPath: Config.quickshellDir + "/backend/python/system/shell_diagnostics.py"
     property string message: ""
     property var services: []
     property Process worker: Process {

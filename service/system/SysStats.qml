@@ -240,7 +240,7 @@ QtObject {
         }
     }
     function getStatsLauncherPath() {
-        return resolveLocalPath("../../backend/run-qs-stats");
+        return resolveLocalPath("../../backend/rust/system-stats/run-system-stats");
     }
     function initStatsHistory(cpuVal, ramVal, gpuVal, gpuMemVal) {
         var arrCpu = [];

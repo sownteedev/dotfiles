@@ -60,7 +60,7 @@ QtObject {
             }
         }
     }
-    readonly property string generatorScript: Config.quickshellDir + "/scripts/wallpaper_backdrop_cache.py"
+    readonly property string generatorScript: Config.quickshellDir + "/backend/python/wallpaper/backdrop_cache.py"
     property Connections globalConnections: Connections {
         function onWallpaperLoadedChanged() {
             if (StateManager.wallpaperLoaded)

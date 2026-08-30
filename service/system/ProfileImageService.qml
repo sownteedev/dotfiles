@@ -10,7 +10,7 @@ QtObject {
     readonly property string configuredPath: Config.profileImagePath
     property string errorMessage: ""
     property bool hasPendingSync: false
-    readonly property string helperPath: Config.quickshellDir + "/scripts/sync-profile-image.py"
+    readonly property string helperPath: Config.quickshellDir + "/backend/python/profile/profile_image_sync.py"
     property bool initialized: false
     property string pendingPath: ""
     property string statusMessage: ""

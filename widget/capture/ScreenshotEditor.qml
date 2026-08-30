@@ -2279,7 +2279,7 @@ PanelWindow {
                 var imageFirst = edge === "left" || edge === "top";
                 var paths = imageFirst ? [root.edgeStitchImagePath, sourcePath] : [sourcePath, root.edgeStitchImagePath];
                 root.edgeStitchProcessSession = stitchSession;
-                edgeStitchProcess.command = ["python3", "-u", Config.quickshellDir + "/scripts/screenshot_stitch.py", "merge", "--orientation", orientation, "--output", CaptureService.stitchedScreenshotPath()].concat(paths);
+                edgeStitchProcess.command = ["python3", "-u", Config.quickshellDir + "/backend/python/capture/screenshot_stitcher.py", "merge", "--orientation", orientation, "--output", CaptureService.stitchedScreenshotPath()].concat(paths);
                 edgeStitchProcess.running = true;
             }, Qt.size(targetWidth, targetHeight));
             if (!started) {

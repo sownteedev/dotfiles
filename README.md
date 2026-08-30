@@ -75,7 +75,7 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 - A standalone Quickshell Greetd interface on Cage with installed-session discovery, network status, animated battery state, profile sync, and wallpaper-derived colors.
 - Multi-monitor PAM lock screen with password authentication, optional Howdy face recognition, retry after monitor wake, media, and notifications.
 - Native Polkit dialogs, session and power menus, idle dim/lock/monitor-off policy, Caffeine inhibition, and position-aware volume, brightness, microphone, and media OSDs.
-- On-demand QML surfaces, event-driven Niri/PipeWire/NetworkManager/UPower integration, a native image-cache provider, and a lazy Rust statistics backend with a Python fallback.
+- On-demand QML surfaces, event-driven Niri/PipeWire/NetworkManager/UPower integration, a native image-cache provider, and language-separated Rust, Python, and native backends with consumer-driven lifecycles.
 
 ## Running the shell
 
@@ -96,9 +96,9 @@ StateManager.qml       Cross-surface state and open/close coordination
 widget/                Bar, Dock, panels, desktop, capture, session, and Settings
 components/            Reusable MD3 controls, effects, editors, and popups
 service/               System, media, productivity, capture, and wallpaper services
-backend/               On-demand Rust statistics and battery backend
+backend/               On-demand Rust, Python, and native backends
 plugin/                Native QML image-cache provider
-scripts/               Niri, wallpaper, Google, display, capture, and auth helpers
+scripts/               Shell integrations grouped by capture, connectivity, power, and theme
 ```
 
 The Niri Settings pages target the include-based configuration used by this setup; they are not intended as a generic editor for every possible Niri file layout. Runtime settings are stored under `$XDG_CACHE_HOME/quickshell` with `~/.cache/quickshell` as the fallback. API keys and account credentials are intentionally absent from source defaults.

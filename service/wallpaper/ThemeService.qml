@@ -750,7 +750,7 @@ QtObject {
         pendingGenerationForced = false;
         var matugenConfig = Config.dotfilesDir + "/.config/matugen/config.toml";
         var prepareGtk = Config.dotfilesDir + "/.config/matugen/scripts/prepare-gtk-runtime.sh";
-        var matugenRunner = Config.quickshellDir + "/scripts/matugen-auto-scheme.sh";
+        var matugenRunner = Config.quickshellDir + "/scripts/theme/matugen-wallpaper-theme.sh";
         var metadata = JSON.stringify({
             "theme_source": source
         });

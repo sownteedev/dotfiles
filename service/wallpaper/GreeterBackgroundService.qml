@@ -18,7 +18,7 @@ QtObject {
         }
     }
     property string errorMessage: ""
-    readonly property string helperPath: Config.quickshellDir + "/scripts/sync-greeter-background.py"
+    readonly property string helperPath: Config.quickshellDir + "/backend/python/wallpaper/greeter_background_sync.py"
     property string statusMessage: ""
     property Process syncProcess: Process {
         property bool launchPending: false

@@ -316,7 +316,7 @@ QtObject {
 
         clearReverseImageSearchStatus();
         reverseImageSearchStatus = qsTr("Searching with Google Lens…");
-        reverseImageSearchProcess.command = ["bash", Config.quickshellDir + "/scripts/reverse-image-search.sh", path, String(Math.max(1, Math.round(width))), String(Math.max(1, Math.round(height)))];
+        reverseImageSearchProcess.command = ["bash", Config.quickshellDir + "/scripts/capture/google-lens-search.sh", path, String(Math.max(1, Math.round(width))), String(Math.max(1, Math.round(height)))];
         reverseImageSearchProcess.running = true;
     }
     function startRecording() {

@@ -94,7 +94,7 @@ QtObject {
             root.activeFilePickerTarget = null;
         }
     }
-    readonly property string helperPath: Config.quickshellDir + "/scripts/settings_hub.py"
+    readonly property string helperPath: Config.quickshellDir + "/backend/python/settings/settings_bridge.py"
     property var inputEnabled: ({
             "Touchpad": true,
             "Mouse": true,

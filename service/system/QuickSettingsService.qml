@@ -327,7 +327,7 @@ QtObject {
 
         idlePolicyReady = false;
         caffeineAppliedState = caffeineEnabled;
-        caffeineControlProcess.command = [Config.quickshellDir + "/scripts/caffeine-control.sh", caffeineAppliedState ? "enable" : "disable"];
+        caffeineControlProcess.command = [Config.quickshellDir + "/scripts/power/caffeine-inhibitor.sh", caffeineAppliedState ? "enable" : "disable"];
         caffeineControlProcess.running = true;
     }
     function syncIdlePolicy() {
@@ -337,7 +337,7 @@ QtObject {
             return;
         }
         idlePolicyReady = false;
-        idleControlProcess.command = Config.idleEnabled ? [Config.quickshellDir + "/scripts/idle-control.sh", "apply", String(Config.idleLockTimeout), String(Config.idleDisplayTimeout), String(Config.idleSuspendTimeout), Config.idleLockBeforeSleep ? "true" : "false", String(Config.idleLockedDisplayTimeout), String(root.idleDimDuration)] : [Config.quickshellDir + "/scripts/idle-control.sh", "disable"];
+        idleControlProcess.command = Config.idleEnabled ? [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "apply", String(Config.idleLockTimeout), String(Config.idleDisplayTimeout), String(Config.idleSuspendTimeout), Config.idleLockBeforeSleep ? "true" : "false", String(Config.idleLockedDisplayTimeout), String(root.idleDimDuration)] : [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "disable"];
         idleControlProcess.running = true;
     }
     function timeMinutes(value) {
