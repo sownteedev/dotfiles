@@ -64,6 +64,14 @@ QtObject {
             root.availabilityKnown = false;
             root.checkAvailability();
         }
+        function onWallpaperScalingModeChanged() {
+            if (!root.desiredPath)
+                return;
+
+            root.scalingRestartPending = true;
+            if (!WallpaperPlaybackPolicy.shouldPause)
+                root.rendererRestartDebounce.restart();
+        }
 
         target: Config
     }
@@ -159,7 +167,7 @@ QtObject {
                 root.readyTimer.restart();
                 root.startReadyProbe();
             }
-            if (root.powerRestartPending || root.screenRestartPending)
+            if (root.powerRestartPending || root.scalingRestartPending || root.screenRestartPending)
                 root.rendererRestartDebounce.restart();
         }
         function onTargetFpsChanged() {
@@ -324,6 +332,7 @@ QtObject {
     }
     property bool rendererRestartLaunching: false
     property bool rescanPending: false
+    property bool scalingRestartPending: false
     property Timer scanDebounce: Timer {
         interval: 80
         repeat: false
@@ -486,7 +495,7 @@ QtObject {
         var screenshotDelayFrames = Math.max(24, Math.round(WallpaperPlaybackPolicy.targetFps * 0.8));
         var args = ["linux-wallpaperengine", "--silent", "--fps", String(WallpaperPlaybackPolicy.targetFps), "--layer", "background", "--no-fullscreen-pause", "--screenshot", readyFramePath, "--screenshot-delay", String(screenshotDelayFrames), "--assets-dir", Config.wallpaperEngineAssetsDir];
         for (var i = 0; i < Quickshell.screens.length; ++i) {
-            args.push("--screen-root", Quickshell.screens[i].name, "--bg", startedPath, "--scaling", "fill", "--clamp", "border");
+            args.push("--screen-root", Quickshell.screens[i].name, "--bg", startedPath, "--scaling", root.wallpaperEngineScalingMode(), "--clamp", "border");
         }
         if (Quickshell.screens.length === 0)
             args.push(startedPath);
@@ -598,10 +607,11 @@ QtObject {
         var screensChanged = currentScreenSignature() !== launchedScreenSignature;
         if (!screensChanged)
             screenRestartPending = false;
-        if (!screensChanged && !powerRestartPending)
+        if (!screensChanged && !powerRestartPending && !scalingRestartPending)
             return;
         if (!player.running) {
             powerRestartPending = false;
+            scalingRestartPending = false;
             if (!startAfterCleanup)
                 requestStart();
             return;
@@ -613,6 +623,7 @@ QtObject {
 
         screenRestartPending = false;
         powerRestartPending = false;
+        scalingRestartPending = false;
         restartRenderer();
     }
     function projectForPath(path) {
@@ -792,6 +803,7 @@ QtObject {
         policyRestarting = false;
         rendererRestartLaunching = false;
         powerRestartPending = false;
+        scalingRestartPending = false;
         screenRestartPending = false;
         policyPauseRetry.stop();
         rendererRestartDebounce.stop();
@@ -822,6 +834,10 @@ QtObject {
 
         policyPauseController.command = ["sh", "-c", "pid=$(cat \"$1\" 2>/dev/null || true); [ -n \"$pid\" ] || exit 1; exe=$(readlink \"/proc/$pid/exe\" 2>/dev/null || true); case \"$exe\" in */linux-wallpaperengine) kill -\"$2\" \"$pid\" ;; *) exit 1 ;; esac", "engine-wallpaper-policy", pidPath, WallpaperPlaybackPolicy.shouldPause ? "STOP" : "CONT"];
         policyPauseController.running = true;
+    }
+    function wallpaperEngineScalingMode() {
+        var mode = String(Config.wallpaperScalingMode || "fill").toLowerCase();
+        return mode === "fit" || mode === "stretch" ? mode : "fill";
     }
 
     Component.onDestruction: shutdownForReload()

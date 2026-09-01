@@ -11,7 +11,7 @@ Item {
 
     property bool compact: false
     property bool serviceAcquired: false
-    readonly property string temperatureText: WeatherService.hasData ? WeatherService.temperature + "°" : WeatherService.loading ? "…" : "--°"
+    readonly property string temperatureText: WeatherService.hasData ? WeatherService.formatTemperature(WeatherService.temperature, 0, false) : WeatherService.loading ? "…" : "--°"
 
     function syncService() {
         if (visible && !serviceAcquired) {
@@ -23,7 +23,7 @@ Item {
         }
     }
 
-    Accessible.name: WeatherService.hasData ? qsTr("%1, %2 degrees Celsius").arg(WeatherService.condition).arg(WeatherService.temperature) : qsTr("Weather unavailable")
+    Accessible.name: WeatherService.hasData ? qsTr("%1, %2 degrees %3").arg(WeatherService.condition).arg(WeatherService.toDisplayTemperature(WeatherService.temperature).toFixed(0)).arg(WeatherService.temperatureUnitName) : qsTr("Weather unavailable")
     implicitHeight: Math.max(22, weatherLayout.implicitHeight)
     implicitWidth: weatherLayout.implicitWidth
 

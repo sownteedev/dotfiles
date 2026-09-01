@@ -1,5 +1,6 @@
 pragma Singleton
 import "../../"
+import ".."
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -7,6 +8,7 @@ import Quickshell.Io
 QtObject {
     id: root
 
+    property string activeFilePickerRequestId: ""
     property var activeFilePickerTarget: null
     property var animationSettings: ({
             "enabled": true,
@@ -55,43 +57,29 @@ QtObject {
         })
     property bool busy: false
     property string errorMessage: ""
-    property bool filePickerActive: false
-    property Process filePickerDialog: Process {
+    readonly property bool filePickerActive: activeFilePickerRequestId !== ""
+    property QtObject filePickerDialog: QtObject {
         id: filePickerDialog
 
+        readonly property bool running: root.filePickerActive
+
         function open(targetField, folder, folderOnly, filters) {
-            if (running || root.filePickerActive)
-                return;
+            if (running || PortalFilePickerService.active)
+                return false;
 
             root.activeFilePickerTarget = targetField;
-            root.filePickerActive = true;
-            var args = ["--file-selection", "--title=" + (folderOnly ? "Select folder" : "Select file")];
-            if (folderOnly) {
-                args.push("--directory");
+            root.activeFilePickerRequestId = PortalFilePickerService.nextRequestId("settings");
+            var started = PortalFilePickerService.open(root.activeFilePickerRequestId, {
+                "title": folderOnly ? qsTr("Select folder") : qsTr("Select file"),
+                "currentFolder": folder || "",
+                "directory": folderOnly === true,
+                "filters": filters || []
+            });
+            if (!started) {
+                root.activeFilePickerRequestId = "";
+                root.activeFilePickerTarget = null;
             }
-            if (folder !== "") {
-                args.push("--filename=" + folder.replace("file://", ""));
-            }
-            var selectedFilters = filters || [];
-            for (var i = 0; i < selectedFilters.length; ++i)
-                args.push("--file-filter=" + selectedFilters[i]);
-            command = ["zenity"].concat(args);
-
-            running = true;
-        }
-
-        stdout: StdioCollector {
-            id: filePickerDialogStdout
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            root.filePickerActive = false;
-            if (exitCode === 0 && root.activeFilePickerTarget) {
-                var path = filePickerDialogStdout.text.trim();
-                if (path !== "")
-                    root.activeFilePickerTarget.text = path;
-            }
-            root.activeFilePickerTarget = null;
+            return started;
         }
     }
     readonly property string helperPath: Config.quickshellDir + "/backend/python/settings/settings_bridge.py"
@@ -195,6 +183,32 @@ QtObject {
         })
     property var niriFiles: ({})
     property var pendingPayload: ({})
+    property Connections portalFilePickerConnections: Connections {
+        function onAccepted(requestId, paths, uris) {
+            if (requestId !== root.activeFilePickerRequestId)
+                return;
+            var targetField = root.activeFilePickerTarget;
+            root.activeFilePickerRequestId = "";
+            root.activeFilePickerTarget = null;
+            if (targetField && paths.length > 0)
+                targetField.text = paths[0];
+        }
+        function onCanceled(requestId) {
+            if (requestId !== root.activeFilePickerRequestId)
+                return;
+            root.activeFilePickerRequestId = "";
+            root.activeFilePickerTarget = null;
+        }
+        function onFailed(requestId, message) {
+            if (requestId !== root.activeFilePickerRequestId)
+                return;
+            root.activeFilePickerRequestId = "";
+            root.activeFilePickerTarget = null;
+            root.errorMessage = message;
+        }
+
+        target: PortalFilePickerService
+    }
     property var quickshellSettings: ({
             "fontName": Config.fontName,
             "audioMaxVolume": Config.audioMaxVolume,
@@ -214,12 +228,24 @@ QtObject {
             "barShowWorkspaces": Config.barShowWorkspaces,
             "caffeineAutoDisableMinutes": Config.caffeineAutoDisableMinutes,
             "cavaEnabled": Config.cavaEnabled,
+            "idleBatteryDisplayTimeout": Config.idleBatteryDisplayTimeout,
+            "idleBatteryLockTimeout": Config.idleBatteryLockTimeout,
+            "idleBatterySleepAction": Config.idleBatterySleepAction,
+            "idleBatterySuspendTimeout": Config.idleBatterySuspendTimeout,
+            "idleDimDuration": Config.idleDimDuration,
+            "idleDimOpacity": Config.idleDimOpacity,
             "idleDisplayTimeout": Config.idleDisplayTimeout,
             "idleEnabled": Config.idleEnabled,
             "idleLockBeforeSleep": Config.idleLockBeforeSleep,
             "idleLockedDisplayTimeout": Config.idleLockedDisplayTimeout,
             "idleLockTimeout": Config.idleLockTimeout,
+            "idleRespectInhibitors": Config.idleRespectInhibitors,
+            "idleSeparatePowerProfiles": Config.idleSeparatePowerProfiles,
+            "idleSleepAction": Config.idleSleepAction,
             "idleSuspendTimeout": Config.idleSuspendTimeout,
+            "lockFaceMaxAttempts": Config.lockFaceMaxAttempts,
+            "lockFaceRetryOnWake": Config.lockFaceRetryOnWake,
+            "launcherCalculatorAngleMode": Config.launcherCalculatorAngleMode,
             "launcherCalculatorEnabled": Config.launcherCalculatorEnabled,
             "launcherCalculatorPrefix": Config.launcherCalculatorPrefix,
             "launcherClipboardAutoPaste": Config.launcherClipboardAutoPaste,
@@ -230,7 +256,12 @@ QtObject {
             "launcherFilesEnabled": Config.launcherFilesEnabled,
             "launcherFilesPrefix": Config.launcherFilesPrefix,
             "launcherFuzzySearch": Config.launcherFuzzySearch,
+            "launcherGifEnabled": Config.launcherGifEnabled,
+            "launcherGifPrefix": Config.launcherGifPrefix,
+            "launcherKlipyApiKey": Config.launcherKlipyApiKey,
             "launcherMaxResults": Config.launcherMaxResults,
+            "launcherStickerEnabled": Config.launcherStickerEnabled,
+            "launcherStickerPrefix": Config.launcherStickerPrefix,
             "notificationBlockedApps": Config.notificationBlockedApps,
             "notificationCriticalTimeout": Config.notificationCriticalTimeout,
             "notificationDndEnd": Config.notificationDndEnd,
@@ -239,6 +270,7 @@ QtObject {
             "notificationHistoryExcludedApps": Config.notificationHistoryExcludedApps,
             "notificationHistoryLimit": Config.notificationHistoryLimit,
             "notificationLowTimeout": Config.notificationLowTimeout,
+            "notificationLockscreenPrivacy": Config.notificationLockscreenPrivacy,
             "notificationMaxVisible": Config.notificationMaxVisible,
             "notificationNormalTimeout": Config.notificationNormalTimeout,
             "notificationPopupDuration": Config.notificationPopupDuration,
@@ -252,6 +284,8 @@ QtObject {
             "osdShowMicrophone": Config.osdShowMicrophone,
             "osdShowVolume": Config.osdShowVolume,
             "profileImagePath": Config.profileImagePath,
+            "greeterDefaultSession": Config.greeterDefaultSession,
+            "greeterRememberLastSession": Config.greeterRememberLastSession,
             "shellAnimationScale": Config.shellAnimationScale,
             "shellBlurBarEnabled": Config.shellBlurBarEnabled,
             "shellBlurBarOpacityDark": Config.shellBlurBarOpacityDark,
@@ -293,6 +327,7 @@ QtObject {
             "wallpaperEngineFps": Config.wallpaperEngineFps,
             "wallpaperPauseOnFullscreen": Config.wallpaperPauseOnFullscreen,
             "wallpaperPauseOnLock": Config.wallpaperPauseOnLock,
+            "wallpaperScalingMode": Config.wallpaperScalingMode,
             "wallpaperTransitionDuration": Config.wallpaperTransitionDuration,
             "matugenEnabled": Config.matugenEnabled,
             "matugenAnimateColors": Config.matugenAnimateColors,
@@ -303,14 +338,23 @@ QtObject {
             "captureAutoCopyRecording": Config.captureAutoCopyRecording,
             "captureRecordingFps": Config.captureRecordingFps,
             "captureRecordingCodec": Config.captureRecordingCodec,
+            "captureRecordingCountdown": Config.captureRecordingCountdown,
+            "captureRecordingCursor": Config.captureRecordingCursor,
             "captureRecordingQuality": Config.captureRecordingQuality,
             "captureRecordingMicrophone": Config.captureRecordingMicrophone,
+            "captureRecordingMicrophoneSource": Config.captureRecordingMicrophoneSource,
+            "captureRecordingMode": Config.captureRecordingMode,
+            "captureScreenshotAction": Config.captureScreenshotAction,
+            "captureScreenshotFilenameTemplate": Config.captureScreenshotFilenameTemplate,
+            "captureScreenshotFormat": Config.captureScreenshotFormat,
+            "captureScreenshotQuality": Config.captureScreenshotQuality,
             "captureEditorTool": Config.captureEditorTool,
             "captureEditorColor": Config.captureEditorColor,
             "captureEditorWidth": Config.captureEditorWidth,
             "wallpaperEngineAssetsDirPath": Config.wallpaperEngineAssetsDirPath,
             "wallpaperEngineWorkshopDirPath": Config.wallpaperEngineWorkshopDirPath,
-            "clock24h": Config.clock24h
+            "clock24h": Config.clock24h,
+            "temperatureUnit": Config.temperatureUnit
         })
     property bool ready: false
     property Process saveProcess: Process {

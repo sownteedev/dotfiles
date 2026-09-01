@@ -186,7 +186,7 @@ PanelWindow {
 
     Connections {
         function onNotification(notification) {
-            if (QuickSettingsService.dndActive || !root.isScreenshotNotification(notification))
+            if (QuickSettingsService.dndActive || Config.captureScreenshotAction !== "notification" || !root.isScreenshotNotification(notification))
                 return;
 
             root.showNotification(notification);

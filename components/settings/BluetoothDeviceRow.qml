@@ -20,6 +20,7 @@ Rectangle {
     required property var device
     readonly property string deviceName: device ? (device.name || device.deviceName || "Bluetooth device") : "Bluetooth device"
     readonly property bool disconnecting: device && device.state === BluetoothDeviceState.Disconnecting
+    property bool forgetArmed: false
     readonly property bool hasBattery: device && device.batteryAvailable
     readonly property bool hasDetailedBattery: connected && isAirpods && BluetoothService.airpodsBatteryAvailable && detailedBattery.accurate === true && BluetoothService.normalizeAddress(detailedBattery.address) === BluetoothService.normalizeAddress(device.address)
     readonly property bool isAirpods: deviceName.toLowerCase().indexOf("airpods") !== -1
@@ -27,8 +28,8 @@ Rectangle {
     property bool pairedDevice: false
     readonly property bool remembered: pairedDevice || savedDevice
     property bool savedDevice: false
-    readonly property bool showStatus: !hasDetailedBattery && (remembered || connected || busy || BluetoothService.lastErrorAddress === BluetoothService.normalizeAddress(device.address))
-    readonly property color statusColor: BluetoothService.lastErrorAddress === BluetoothService.normalizeAddress(device.address) ? Config.md3.error : busy ? Config.md3.tertiary : connected ? Config.md3.primary : Config.md3.on_surface_variant
+    readonly property bool showStatus: busy || BluetoothService.lastErrorAddress === BluetoothService.normalizeAddress(device.address) || (!connected && remembered) || (connected && isAirpods && !hasDetailedBattery)
+    readonly property color statusColor: BluetoothService.lastErrorAddress === BluetoothService.normalizeAddress(device.address) ? Config.md3.error : busy ? Config.md3.tertiary : connected ? Config.md3.secondary : Config.md3.on_surface_variant
     readonly property string statusText: {
         if (!device)
             return "Unavailable";
@@ -44,11 +45,11 @@ Rectangle {
             return "Disconnecting…";
         if (connected && isAirpods) {
             if (hasDetailedBattery)
-                return "Connected";
-            return BluetoothService.airpodsBatteryScanning ? "Connected · Reading L/R/Case…" : "Connected · Waiting for L/R/Case";
+                return "";
+            return BluetoothService.airpodsBatteryScanning ? "Reading L/R/Case…" : "Waiting for L/R/Case";
         }
         if (connected)
-            return hasBattery ? "Connected · " + batteryPercent + "%" : "Connected";
+            return "";
         if (savedDevice && !actuallyPaired)
             return "Disconnected";
         return actuallyPaired ? "Disconnected" : "Ready to pair";
@@ -80,12 +81,17 @@ Rectangle {
     }
 
     Layout.fillWidth: true
-    border.color: root.connected ? Config.alpha(Config.md3.primary, 0.42) : root.remembered ? Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09) : "transparent"
+    border.color: root.connected ? Config.alpha(Config.md3.primary, 0.28) : root.remembered ? Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09) : "transparent"
     border.width: 1
-    color: root.connected ? Config.alpha(Config.md3.primary, 0.12) : root.remembered ? Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.64 : 0.30) : Config.alpha(Config.md3.on_surface, 0.055)
-    implicitHeight: contentRow.implicitHeight + (root.hasDetailedBattery ? 22 : root.remembered ? 26 : 22)
-    radius: 16
+    color: root.connected ? Config.alpha(Config.md3.primary, 0.10) : root.remembered ? Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.64 : 0.30) : Config.alpha(Config.md3.on_surface, 0.055)
+    implicitHeight: root.remembered ? 72 : 60
+    radius: 18
 
+    Behavior on border.color {
+        ColorAnimation {
+            duration: 140
+        }
+    }
     Behavior on color {
         ColorAnimation {
             duration: 140
@@ -103,6 +109,13 @@ Rectangle {
             device.trusted = true;
     }
 
+    Timer {
+        id: forgetResetTimer
+
+        interval: 2600
+
+        onTriggered: root.forgetArmed = false
+    }
     Connections {
         function onBondedChanged() {
             if (!root.pairPending || !root.device.bonded)
@@ -190,7 +203,7 @@ Rectangle {
                 color: Config.md3.on_surface
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 14
+                font.pixelSize: 15
                 font.weight: root.connected ? Font.Bold : Font.DemiBold
                 text: root.deviceName
             }
@@ -212,7 +225,7 @@ Rectangle {
                     color: root.statusColor
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     font.weight: Font.Medium
                     text: root.statusText
                 }
@@ -221,7 +234,7 @@ Rectangle {
                 id: batteryDetailViewport
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: visible ? 24 : 0
+                Layout.preferredHeight: visible ? 26 : 0
                 boundsBehavior: Flickable.StopAtBounds
                 clip: contentWidth > width
                 contentHeight: height
@@ -270,22 +283,22 @@ Rectangle {
                             border.width: 1
                             clip: true
                             color: Config.alpha(levelColor, 0.12)
-                            height: 25
-                            radius: 7
+                            height: 26
+                            radius: 8
                             width: detailContent.implicitWidth + 14
 
                             RowLayout {
                                 id: detailContent
 
                                 anchors.centerIn: parent
-                                spacing: 4.5
+                                spacing: 4
 
                                 Item {
                                     id: iconHolder
 
                                     Layout.alignment: Qt.AlignVCenter
-                                    Layout.preferredHeight: 14
-                                    Layout.preferredWidth: modelData.type === "case" ? 12 : 9
+                                    Layout.preferredHeight: 15
+                                    Layout.preferredWidth: modelData.type === "case" ? 13 : 10
 
                                     // Left Earbud: Head on left, stem on right
                                     Item {
@@ -368,6 +381,14 @@ Rectangle {
                                 }
                                 Text {
                                     Layout.alignment: Qt.AlignVCenter
+                                    color: batteryChip.levelColor
+                                    font.family: Config.fontName
+                                    font.pixelSize: 10
+                                    font.weight: Font.Bold
+                                    text: modelData.label
+                                }
+                                Text {
+                                    Layout.alignment: Qt.AlignVCenter
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
                                     font.pixelSize: 11
@@ -394,20 +415,39 @@ Rectangle {
 
             readonly property string label: root.commandPending ? BluetoothService.statusText : root.busy ? (root.device && root.device.pairing ? "Pairing…" : root.connecting ? "Connecting…" : "Disconnecting…") : root.connected ? "Disconnect" : (root.actuallyPaired || root.savedDevice) ? "Connect" : "Pair"
 
+            Accessible.name: primaryAction.label
+            Accessible.role: Accessible.Button
             Layout.maximumWidth: 104
             Layout.preferredHeight: 36
             Layout.preferredWidth: Math.min(Layout.maximumWidth, Math.max(66, primaryLabel.implicitWidth + 20))
-            border.color: root.connected ? Config.alpha(Config.md3.on_surface, 0.15) : "transparent"
+            activeFocusOnTab: true
+            border.color: root.busy ? Config.alpha(Config.md3.tertiary, 0.28) : root.connected ? Config.alpha(Config.md3.on_surface, 0.13) : Config.alpha(Config.md3.primary, 0.26)
             border.width: 1
-            color: root.busy ? Config.alpha(Config.md3.tertiary, 0.16) : root.connected ? Config.alpha(Config.md3.on_surface, primaryMouse.containsMouse ? 0.16 : 0.1) : (primaryMouse.containsMouse ? Config.md3.primary_container : Config.md3.primary)
+            color: root.busy ? Config.alpha(Config.md3.tertiary, 0.16) : root.connected ? Config.alpha(Config.md3.on_surface, primaryMouse.containsMouse ? 0.15 : 0.085) : Config.alpha(Config.md3.primary, primaryMouse.containsMouse ? 0.20 : 0.12)
             opacity: root.busy ? 0.72 : 1
             radius: 12
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 130
+                }
+            }
+
+            Accessible.onPressAction: root.activate()
+            Keys.onReturnPressed: event => {
+                root.activate();
+                event.accepted = true;
+            }
+            Keys.onSpacePressed: event => {
+                root.activate();
+                event.accepted = true;
+            }
 
             Text {
                 id: primaryLabel
 
                 anchors.centerIn: parent
-                color: root.connected ? Config.md3.on_surface : primaryMouse.containsMouse ? Config.md3.on_primary_container : Config.md3.on_primary
+                color: root.connected ? Config.md3.on_surface : Config.md3.primary
                 elide: Text.ElideRight
                 font.family: Config.fontName
                 font.pixelSize: 12
@@ -428,27 +468,83 @@ Rectangle {
             }
         }
         Rectangle {
+            id: forgetAction
+
+            function trigger() {
+                if (root.forgetArmed) {
+                    forgetResetTimer.stop();
+                    root.forgetArmed = false;
+                    BluetoothService.forget(root.device);
+                    return;
+                }
+                root.forgetArmed = true;
+                forgetResetTimer.restart();
+            }
+
+            Accessible.name: root.forgetArmed ? qsTr("Forget device") : qsTr("More device actions")
+            Accessible.role: Accessible.Button
             Layout.preferredHeight: 36
-            Layout.preferredWidth: 36
-            border.color: Config.alpha(Config.md3.error, 0.14)
+            Layout.preferredWidth: root.forgetArmed ? 82 : 36
+            activeFocusOnTab: visible
+            border.color: root.forgetArmed ? Config.alpha(Config.md3.error, 0.28) : Config.alpha(Config.md3.on_surface, 0.10)
             border.width: 1
-            color: forgetMouse.containsMouse ? Config.alpha(Config.md3.error, 0.18) : Config.alpha(Config.md3.error, 0.06)
+            color: root.forgetArmed ? Config.alpha(Config.md3.error, forgetMouse.containsMouse ? 0.20 : 0.12) : Config.alpha(Config.md3.on_surface, forgetMouse.containsMouse ? 0.13 : 0.06)
             radius: 12
             visible: (root.pairedDevice || root.savedDevice) && !root.busy
 
-            IconImage {
-                id: forgetIcon
-
-                anchors.centerIn: parent
-                implicitHeight: 17
-                implicitWidth: 17
-                source: Quickshell.iconPath("user-trash-symbolic")
-                visible: false
+            Behavior on Layout.preferredWidth {
+                NumberAnimation {
+                    duration: 160
+                    easing.type: Easing.OutCubic
+                }
             }
-            ColorOverlay {
-                anchors.fill: forgetIcon
-                color: Config.md3.error
-                source: forgetIcon
+            Behavior on color {
+                ColorAnimation {
+                    duration: 130
+                }
+            }
+
+            Accessible.onPressAction: forgetAction.trigger()
+            Keys.onReturnPressed: event => {
+                forgetAction.trigger();
+                event.accepted = true;
+            }
+            Keys.onSpacePressed: event => {
+                forgetAction.trigger();
+                event.accepted = true;
+            }
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 6
+
+                Item {
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 17
+                    width: 17
+
+                    IconImage {
+                        id: forgetIcon
+
+                        anchors.fill: parent
+                        source: Quickshell.iconPath(root.forgetArmed ? "user-trash-symbolic" : "view-more-horizontal-symbolic")
+                        visible: false
+                    }
+                    ColorOverlay {
+                        anchors.fill: forgetIcon
+                        color: root.forgetArmed ? Config.md3.error : Config.md3.on_surface_variant
+                        source: forgetIcon
+                    }
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Config.md3.error
+                    font.family: Config.fontName
+                    font.pixelSize: 11
+                    font.weight: Font.Bold
+                    text: qsTr("Forget")
+                    visible: root.forgetArmed
+                }
             }
             MouseArea {
                 id: forgetMouse
@@ -457,7 +553,7 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 hoverEnabled: true
 
-                onClicked: BluetoothService.forget(root.device)
+                onClicked: forgetAction.trigger()
             }
         }
     }

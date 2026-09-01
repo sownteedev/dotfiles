@@ -51,7 +51,7 @@ Item {
 
     height: Math.min(visibleStackHeight, Math.max(0, maximumHeight))
     implicitHeight: height
-    visible: Config.notificationShowOnLock && StateManager.sessionLocked && (LockscreenNotificationService.groups.count > 0 || height > 0.5)
+    visible: Config.notificationLockscreenPrivacyMode !== "hidden" && StateManager.sessionLocked && (LockscreenNotificationService.groups.count > 0 || height > 0.5)
 
     Behavior on height {
         NumberAnimation {

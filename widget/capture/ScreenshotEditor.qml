@@ -5,9 +5,8 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 
-PanelWindow {
+FloatingWindow {
     id: root
 
     property bool annotationResizeFromCenter: false
@@ -27,11 +26,13 @@ PanelWindow {
     readonly property var blurShapes: shapes.filter(function (shape) {
         return shape.tool === "blur";
     })
+    readonly property real bottomControlSpacing: height < 720 ? 10 : 16
     readonly property var calloutShapes: shapes.filter(function (shape) {
         return shape.tool === "callout";
     })
     readonly property bool canRedo: redoHistory.length > 0
     readonly property bool canUndo: shapes.length > 0 || (cropActive && cropWasLastAction) || lastMoveUndo !== null || edgeStitchHistory.length > 0
+    readonly property real chromeMargin: Responsive.clamp(width * 0.012, 12, 24)
     property color colorPickerColor: selectedColor
     property bool colorPickerCommitPending: false
     property bool colorPickerHeld: false
@@ -40,6 +41,7 @@ PanelWindow {
     property Item colorPickerSourceItem: null
     property real colorPickerSourceX: 0
     property real colorPickerSourceY: 0
+    readonly property bool compactChrome: width < 900
     readonly property bool cropActive: cropRect.width > 2 && cropRect.height > 2
     property rect cropDraftRect: Qt.rect(0, 0, 0, 0)
     property bool cropDragging: false
@@ -61,8 +63,10 @@ PanelWindow {
     property string edgeStitchSourcePath: ""
     readonly property bool editorChromeBusy: saving || reverseSearchPreparing || edgeStitchPreparing || (renderExportBusy && renderExportOperation !== "ocr")
     property bool editorPresented: false
-    readonly property bool editorReady: sourceImage.status === Image.Error || (sourceImage.status === Image.Ready && !baseImageFitPending && baseImageReady)
+    readonly property bool editorReady: sourceImage.status === Image.Error || (sourceImage.status === Image.Ready && logicalSurfaceReady && !baseImageFitPending && baseImageReady)
     readonly property var effectiveImageLayerOrderIds: normalizedImageLayerOrder(imageLayerOrderIds)
+    readonly property bool imageCompositeLive: imageResizePreview !== null || (currentShape !== null && currentShape.tool === "image")
+    property int imageCompositeRevision: 0
     readonly property bool imageInsertBusy: imageLayerPicker.running || imageProbeProcess.running
     property int imageInsertSessionToken: 0
     property var imageLayerOrderIds: []
@@ -84,8 +88,12 @@ PanelWindow {
         }
         return items;
     }
+    readonly property bool layersPanelInline: layersPanel.visible && width >= chromeMargin * 2 + layersPanel.width + bottomControlSpacing + 320
     property rect liveDirtyRect: Qt.rect(0, 0, 0, 0)
     property int livePaintFrameId: -1
+    property real logicalSurfaceHeight: 1
+    property bool logicalSurfaceReady: false
+    property real logicalSurfaceWidth: 1
     property bool loupeHeld: false
     property bool loupePointerInside: false
     property real loupePointerX: 0
@@ -202,11 +210,10 @@ PanelWindow {
         return ["pen", "highlight", "line", "arrow", "rectangle", "ellipse", "text", "callout"].indexOf(String(shape.tool || "")) >= 0;
     }
     function applySelectionPreview() {
-        if (selectedTool === "crop" && cropDragging) {
+        if (selectedTool === "crop" && cropDragging)
             cropDraftRect = cropTargetOriginal ? normalizeCropRectForLayer(cropTargetOriginal, selectionStartX, selectionStartY, selectionPointerX, selectionPointerY) : normalizeCropRect(selectionStartX, selectionStartY, selectionPointerX, selectionPointerY);
-        } else if (selectedTool === "ocr" && ocrDragging) {
+        else if (selectedTool === "ocr" && ocrDragging)
             ocrDraftRect = normalizeCropRect(selectionStartX, selectionStartY, selectionPointerX, selectionPointerY);
-        }
     }
     function beginAnnotationResize(horizontalSign, verticalSign, pointerX, pointerY, modifiers) {
         beginAnnotationTransform("resize");
@@ -366,16 +373,15 @@ PanelWindow {
         renderExportSessionToken += 1;
         if (renderExportProcess.running)
             renderExportProcess.running = false;
-        clearRenderExportState(true);
 
+        clearRenderExportState(true);
         if (operation === "ocr") {
             ocrPreparing = false;
             ocrRect = Qt.rect(0, 0, 0, 0);
-        } else if (operation === "reverse") {
+        } else if (operation === "reverse")
             reverseSearchPreparing = false;
-        } else if (operation === "save") {
+        else if (operation === "save")
             saving = false;
-        }
     }
     function cancelShapeMove() {
         var canceledIndex = movingShapeIndex;
@@ -661,6 +667,8 @@ PanelWindow {
             "cropWasLastAction": Boolean(snapshot.cropWasLastAction),
             "nextImageLayerId": Number(snapshot.nextImageLayerId || 1),
             "nextMarkerNumber": Number(snapshot.nextMarkerNumber || 1),
+            "logicalSurfaceWidth": Number(snapshot.logicalSurfaceWidth || 0),
+            "logicalSurfaceHeight": Number(snapshot.logicalSurfaceHeight || 0),
             "selectedImageLayerId": String(snapshot.selectedImageLayerId || "")
         };
     }
@@ -903,8 +911,8 @@ PanelWindow {
                 ctx.beginPath();
                 ctx.moveTo(points[0].x, points[0].y);
                 for (var i = 1; i < points.length - 1; ++i) {
-                    var xc = (points[i].x + points[i + 1].x) / 2.0;
-                    var yc = (points[i].y + points[i + 1].y) / 2.0;
+                    var xc = (points[i].x + points[i + 1].x) / 2;
+                    var yc = (points[i].y + points[i + 1].y) / 2;
                     ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
                 }
                 ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
@@ -1021,6 +1029,8 @@ PanelWindow {
             "cropWasLastAction": cropWasLastAction,
             "nextImageLayerId": nextImageLayerId,
             "nextMarkerNumber": nextMarkerNumber,
+            "logicalSurfaceWidth": logicalSurfaceWidth,
+            "logicalSurfaceHeight": logicalSurfaceHeight,
             "selectedImageLayerId": selectedImageLayerId,
             "selectedTool": selectedTool,
             "lastMoveUndo": copyUndoEntry(lastMoveUndo),
@@ -1389,9 +1399,10 @@ PanelWindow {
         var sourcePath = String(CaptureService.screenshotPath);
         var naturalWidth = Math.max(1, sourceImage.imageSourceSize.width);
         var naturalHeight = Math.max(1, sourceImage.imageSourceSize.height);
-        if (!forceReset && !baseImageFitPending && baseImageLayer && baseImageLayer.source === sourcePath && baseImageLayer.naturalWidth > 0 && baseImageLayer.naturalHeight > 0)
+        if (!forceReset && logicalSurfaceReady && !baseImageFitPending && baseImageLayer && baseImageLayer.source === sourcePath && baseImageLayer.naturalWidth > 0 && baseImageLayer.naturalHeight > 0)
             return;
 
+        initializeLogicalSurfaceSize(naturalWidth, naturalHeight);
         baseImageLayer = createBaseImageLayer(sourcePath, naturalWidth, naturalHeight);
         if (imageLayerOrderIds.length === 0)
             imageLayerOrderIds = [baseImageLayerId];
@@ -1406,6 +1417,18 @@ PanelWindow {
             root.baseImageLayer = fittedLayer;
             root.baseImageFitPending = false;
         });
+    }
+    function initializeLogicalSurfaceSize(naturalWidth, naturalHeight) {
+        var sourceWidth = Math.max(1, Number(naturalWidth) || 1);
+        var sourceHeight = Math.max(1, Number(naturalHeight) || 1);
+        var referenceWidth = screen ? screen.width : Math.max(width, 1280);
+        var referenceHeight = screen ? screen.height : Math.max(height, 720);
+        var maximumWidth = Math.min(1600, Math.max(640, referenceWidth - 96));
+        var maximumHeight = Math.min(1000, Math.max(360, referenceHeight - 260));
+        var fitScale = Math.min(maximumWidth / sourceWidth, maximumHeight / sourceHeight);
+        logicalSurfaceWidth = Math.max(1, Math.round(sourceWidth * fitScale));
+        logicalSurfaceHeight = Math.max(1, Math.round(sourceHeight * fitScale));
+        logicalSurfaceReady = logicalSurfaceWidth > 1 && logicalSurfaceHeight > 1;
     }
     function insertImageLayer(path, naturalWidth, naturalHeight) {
         if (!path || naturalWidth <= 0 || naturalHeight <= 0 || captureSurface.width <= 0 || captureSurface.height <= 0) {
@@ -1462,6 +1485,9 @@ PanelWindow {
         cropWasLastAction = false;
         committedCanvas.requestPaint();
         keyScope.forceActiveFocus();
+    }
+    function invalidateImageComposite() {
+        imageCompositeRevision = imageCompositeRevision >= 2.14748e+09 ? 0 : imageCompositeRevision + 1;
     }
     function invalidateRedo() {
         if (redoHistory.length > 0)
@@ -1789,12 +1815,15 @@ PanelWindow {
         cancelEdgeStitch();
         edgeStitchHistory = [];
         edgeStitchPendingSnapshot = null;
-        selectedTool = "pen";
+        selectedTool = Config.captureEditorTool || "pen";
         selectedColor = Config.captureEditorColor || "#ff3b30";
         selectedWidth = Math.max(1, Number(Config.captureEditorWidth) || 6);
         selectedOpacity = 1;
         stopColorPicker();
         loupeZoom = 2.5;
+        logicalSurfaceHeight = 1;
+        logicalSurfaceReady = false;
+        logicalSurfaceWidth = 1;
         baseImageLayer = createBaseImageLayer(CaptureService.screenshotPath, 0, 0);
         baseImageFitPending = true;
         clearAll();
@@ -1876,8 +1905,11 @@ PanelWindow {
         inlineTextEditor.text = "";
         if (sourcePathChanged)
             CaptureService.screenshotPath = restoredScreenshotPath;
-        baseImageLayer = snapshot.baseImageLayer ? copyShape(snapshot.baseImageLayer) : createBaseImageLayer(restoredScreenshotPath, 0, 0);
-        baseImageFitPending = false;
+
+        var restoredBaseLayer = snapshot.baseImageLayer ? copyShape(snapshot.baseImageLayer) : createBaseImageLayer(restoredScreenshotPath, 0, 0);
+        restoreLogicalSurfaceSize(snapshot, restoredBaseLayer);
+        baseImageLayer = restoredBaseLayer;
+        baseImageFitPending = !logicalSurfaceReady;
         var restoredShapes = [];
         var sourceShapes = snapshot.shapes || [];
         for (var i = 0; i < sourceShapes.length; ++i)
@@ -1903,6 +1935,22 @@ PanelWindow {
         if (sourcePathChanged || sourceImage.imageStatus === Image.Error || sourceImage.imageStatus === Image.Null)
             retrySourceImage();
         keyScope.forceActiveFocus();
+    }
+    function restoreLogicalSurfaceSize(snapshot, fallbackLayer) {
+        var restoredWidth = Number(snapshot && snapshot.logicalSurfaceWidth || 0);
+        var restoredHeight = Number(snapshot && snapshot.logicalSurfaceHeight || 0);
+        if ((restoredWidth <= 1 || restoredHeight <= 1) && fallbackLayer) {
+            restoredWidth = Math.abs(Number(fallbackLayer.endX || 0) - Number(fallbackLayer.startX || 0));
+            restoredHeight = Math.abs(Number(fallbackLayer.endY || 0) - Number(fallbackLayer.startY || 0));
+        }
+        if (restoredWidth <= 1 || restoredHeight <= 1) {
+            logicalSurfaceReady = false;
+            return false;
+        }
+        logicalSurfaceWidth = restoredWidth;
+        logicalSurfaceHeight = restoredHeight;
+        logicalSurfaceReady = true;
+        return true;
     }
     function retrySourceImage() {
         if (!CaptureService.screenshotPath)
@@ -1982,13 +2030,6 @@ PanelWindow {
         });
     }
     function scaledAnnotationShape(shape, scaleFactor, targetCenterX, targetCenterY) {
-        var result = copyShape(shape);
-        var bounds = rawShapeBounds(shape);
-        var centerX = (bounds.minX + bounds.maxX) / 2;
-        var centerY = (bounds.minY + bounds.maxY) / 2;
-        var nextCenterX = targetCenterX === undefined ? centerX : Number(targetCenterX);
-        var nextCenterY = targetCenterY === undefined ? centerY : Number(targetCenterY);
-        var scale = Math.max(0.1, Math.min(8, Number(scaleFactor || 1)));
         function scaledX(value) {
             return nextCenterX + (Number(value || 0) - centerX) * scale;
         }
@@ -1996,6 +2037,13 @@ PanelWindow {
             return nextCenterY + (Number(value || 0) - centerY) * scale;
         }
 
+        var result = copyShape(shape);
+        var bounds = rawShapeBounds(shape);
+        var centerX = (bounds.minX + bounds.maxX) / 2;
+        var centerY = (bounds.minY + bounds.maxY) / 2;
+        var nextCenterX = targetCenterX === undefined ? centerX : Number(targetCenterX);
+        var nextCenterY = targetCenterY === undefined ? centerY : Number(targetCenterY);
+        var scale = Math.max(0.1, Math.min(8, Number(scaleFactor || 1)));
         result.startX = scaledX(shape.startX);
         result.startY = scaledY(shape.startY);
         result.endX = scaledX(shape.endX);
@@ -2239,6 +2287,8 @@ PanelWindow {
             "cropWasLastAction": cropWasLastAction,
             "nextImageLayerId": nextImageLayerId,
             "nextMarkerNumber": nextMarkerNumber,
+            "logicalSurfaceWidth": logicalSurfaceWidth,
+            "logicalSurfaceHeight": logicalSurfaceHeight,
             "selectedImageLayerId": String(shape.layerId)
         };
         liveCanvasTranslate.x = 0;
@@ -2353,7 +2403,14 @@ PanelWindow {
         var command = ["nice", "-n", "10", "magick", "-limit", "thread", "2", "-limit", "memory", "256MiB", "-limit", "map", "512MiB", renderExportInputPath + "[0]", "-crop", cropGeometry, "+repage"];
         if (renderExportTargetWidth !== Math.round(crop.width) || renderExportTargetHeight !== Math.round(crop.height))
             command = command.concat(["-filter", "Lanczos", "-resize", renderExportTargetWidth + "x" + renderExportTargetHeight + "!"]);
-        command = command.concat(["-define", "png:compression-level=3", renderExportOutputPath]);
+
+        var format = renderExportOperation === "save" ? String(Config.captureScreenshotFormat || "png").toLowerCase() : "png";
+        if (format === "jpeg")
+            command = command.concat(["-strip", "-quality", String(Math.max(1, Math.min(100, Number(Config.captureScreenshotQuality) || 90))), renderExportOutputPath]);
+        else if (format === "webp")
+            command = command.concat(["-strip", "-quality", String(Math.max(1, Math.min(100, Number(Config.captureScreenshotQuality) || 90))), "-define", "webp:method=4", renderExportOutputPath]);
+        else
+            command = command.concat(["-define", "png:compression-level=3", renderExportOutputPath]);
         renderExportProcess.command = command;
         renderExportProcess.running = true;
         return true;
@@ -2440,8 +2497,10 @@ PanelWindow {
             edgeStitchHistory = historyList;
             if (snapshot) {
                 CaptureService.screenshotPath = snapshot.screenshotPath;
-                baseImageLayer = snapshot.baseImageLayer ? copyShape(snapshot.baseImageLayer) : createBaseImageLayer(snapshot.screenshotPath, 0, 0);
-                baseImageFitPending = false;
+                var restoredBaseLayer = snapshot.baseImageLayer ? copyShape(snapshot.baseImageLayer) : createBaseImageLayer(snapshot.screenshotPath, 0, 0);
+                restoreLogicalSurfaceSize(snapshot, restoredBaseLayer);
+                baseImageLayer = restoredBaseLayer;
+                baseImageFitPending = !logicalSurfaceReady;
                 shapes = snapshot.shapes.map(copyShape);
                 imageLayerOrderIds = normalizedImageLayerOrder(snapshot.imageLayerOrderIds || []);
                 cropRect = snapshot.cropRect;
@@ -2585,17 +2644,12 @@ PanelWindow {
             selectedOpacity = nextOpacity;
     }
 
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "screenshot-editor"
-    aboveWindows: true
-    anchors.bottom: true
-    anchors.left: true
-    anchors.right: true
-    anchors.top: true
     color: editorPresented ? Config.alpha(Config.md3.background, 0.95) : "transparent"
-    exclusiveZone: 0
-    focusable: true
-    visible: !imageLayerPicker.running
+    implicitHeight: screen ? Math.max(1, screen.height - Config.barHeight) : 820
+    implicitWidth: screen ? Math.max(1, screen.width) : 1180
+    minimumSize: Qt.size(screen ? Math.min(560, screen.width) : 560, screen ? Math.min(520, screen.height) : 520)
+    title: qsTr("SownteeShell Screenshot Editor")
+    visible: true
 
     Component.onCompleted: {
         resetEditorDefaults();
@@ -2606,10 +2660,18 @@ PanelWindow {
         cancelOcrSession();
         cancelEdgeStitch();
     }
+    onBaseImageLayerChanged: invalidateImageComposite()
+    onClosed: {
+        if (CaptureService.screenshotEditorVisible)
+            root.cancelEditor();
+    }
     onEditorReadyChanged: {
         if (editorReady)
             editorPresented = true;
     }
+    onImageLayerOrderIdsChanged: invalidateImageComposite()
+    onImageLoadEnabledChanged: invalidateImageComposite()
+    onImageResizePreviewChanged: invalidateImageComposite()
     onSelectedAnnotationShapeChanged: {
         if (selectedAnnotationShape === null)
             selectedAnnotationIndex = -1;
@@ -2621,7 +2683,10 @@ PanelWindow {
             selectedAnnotationShape = null;
         }
     }
-    onShapesChanged: syncInsertedImageRenderIds()
+    onShapesChanged: {
+        syncInsertedImageRenderIds();
+        invalidateImageComposite();
+    }
 
     Connections {
         function onFinished(success, text) {
@@ -2659,6 +2724,8 @@ PanelWindow {
                 return;
             if (path !== "")
                 root.probeImageLayer(path, root.imagePickerSession);
+
+            keyScope.forceActiveFocus();
         }
         onCanceled: keyScope.forceActiveFocus()
         onFailed: message => {
@@ -2757,6 +2824,7 @@ PanelWindow {
                 }
                 root.clearEdgeStitchState();
                 CaptureService.screenshotPath = stitchedPath;
+                root.logicalSurfaceReady = false;
                 root.baseImageLayer = root.createBaseImageLayer(stitchedPath, Number(result.width) || 0, Number(result.height) || 0);
                 root.baseImageFitPending = true;
                 root.shapes = [];
@@ -2818,18 +2886,23 @@ PanelWindow {
     }
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Responsive.clamp(root.width * 0.012, 12, 24)
-        spacing: root.height < 720 ? 10 : 16
+        anchors.margins: root.chromeMargin
+        spacing: root.bottomControlSpacing
         visible: root.editorPresented
 
         Item {
             id: headerContent
 
             Layout.fillWidth: true
-            Layout.preferredHeight: 34
+            Layout.preferredHeight: 40 + (root.compactChrome && root.ocrNoticeVisible ? 36 : 0)
 
             RowLayout {
-                anchors.fill: parent
+                id: headerRow
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: 40
                 spacing: 14
 
                 Text {
@@ -2854,6 +2927,7 @@ PanelWindow {
                         actionText: root.saving ? qsTr("Saving…") : qsTr("Save")
                         enabled: !root.imageInsertBusy && !root.edgeStitchPreparing && !root.saving && !root.reverseSearchPreparing && sourceImage.status === Image.Ready
                         shortcutKeys: ["Enter"]
+                        showShortcutKeys: !root.compactChrome
                         tone: "primary"
 
                         onClicked: root.saveEditedImage()
@@ -2862,6 +2936,7 @@ PanelWindow {
                         actionText: qsTr("Clear")
                         enabled: !root.imageInsertBusy && !root.edgeStitchPreparing && (root.shapes.length > 0 || root.cropActive || root.ocrRect.width > 0 || inlineTextEditor.visible || root.lastMoveUndo !== null)
                         shortcutKeys: ["Backspace"]
+                        showShortcutKeys: !root.compactChrome
 
                         onClicked: root.clearAll()
                     }
@@ -2869,6 +2944,7 @@ PanelWindow {
                         actionText: qsTr("Undo")
                         enabled: !root.imageInsertBusy && !root.edgeStitchPreparing && root.canUndo
                         shortcutKeys: ["Ctrl", "Z"]
+                        showShortcutKeys: !root.compactChrome
 
                         onClicked: root.undo()
                     }
@@ -2876,12 +2952,14 @@ PanelWindow {
                         actionText: qsTr("Redo")
                         enabled: !root.imageInsertBusy && !root.edgeStitchPreparing && root.canRedo
                         shortcutKeys: ["Ctrl", "R"]
+                        showShortcutKeys: !root.compactChrome
 
                         onClicked: root.redo()
                     }
                     ScreenshotShortcutButton {
                         actionText: qsTr("Cancel")
                         shortcutKeys: ["Esc"]
+                        showShortcutKeys: !root.compactChrome
                         tone: "error"
 
                         onClicked: root.cancelEditor()
@@ -2889,27 +2967,36 @@ PanelWindow {
                 }
             }
             ScreenshotStatusPill {
-                anchors.centerIn: parent
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: root.compactChrome ? headerRow.bottom : undefined
+                anchors.topMargin: root.compactChrome ? 6 : 0
+                anchors.verticalCenter: root.compactChrome ? undefined : parent.verticalCenter
                 detailText: root.ocrNoticeText
                 error: root.ocrNoticeError
-                maximumWidth: Math.max(0, headerContent.width - Math.max(headerTitle.implicitWidth, shortcutActions.implicitWidth) * 2 - 32)
+                maximumWidth: root.compactChrome ? Math.max(0, headerContent.width - 16) : Math.max(0, headerContent.width - Math.max(headerTitle.implicitWidth, shortcutActions.implicitWidth) * 2 - 32)
                 shown: root.ocrNoticeVisible
             }
         }
         Item {
             id: editorArea
 
+            Layout.bottomMargin: layersPanel.visible ? layersPanel.height + (root.height < 720 ? 10 : 16) : 0
             Layout.fillHeight: true
             Layout.fillWidth: true
+            clip: true
 
             Rectangle {
                 id: imageFrame
+
+                readonly property real fittedScale: Math.max(0.01, Math.min((editorArea.width - 8) / Math.max(1, width), (editorArea.height - 8) / Math.max(1, height)))
 
                 anchors.centerIn: parent
                 border.color: Config.alpha(Config.md3.on_surface, 0.18)
                 border.width: 1
                 color: Config.md3.surface_container
                 height: captureSurface.height + 2
+                scale: fittedScale
+                transformOrigin: Item.Center
                 width: captureSurface.width + 2
 
                 Item {
@@ -2917,47 +3004,72 @@ PanelWindow {
 
                     anchors.centerIn: parent
                     clip: root.edgeStitchDropEdge === ""
-                    height: {
-                        var sourceWidth = Math.max(1, sourceImage.sourceSize.width);
-                        var sourceHeight = Math.max(1, sourceImage.sourceSize.height);
-                        return width * sourceHeight / sourceWidth;
-                    }
-                    width: {
-                        var sourceWidth = Math.max(1, sourceImage.sourceSize.width);
-                        var sourceHeight = Math.max(1, sourceImage.sourceSize.height);
-                        var aspect = sourceWidth / sourceHeight;
-                        return Math.min(editorArea.width - 8, (editorArea.height - 8) * aspect);
-                    }
+                    height: root.logicalSurfaceHeight
+                    width: root.logicalSurfaceWidth
 
                     Item {
-                        id: baseImageSurface
+                        id: imageCompositeSurface
 
                         anchors.fill: parent
                         z: root.imageLayerStackZ(root.baseImageLayerId)
 
-                        ScreenshotImageLayer {
-                            id: sourceImage
+                        Item {
+                            id: baseImageSurface
 
-                            loadEnabled: root.imageLoadEnabled
-                            offsetX: root.currentShape && root.currentShape.layerId === root.baseImageLayerId ? liveCanvasTranslate.x : 0
-                            offsetY: root.currentShape && root.currentShape.layerId === root.baseImageLayerId ? liveCanvasTranslate.y : 0
-                            shapeData: root.imageResizePreview && root.imageResizePreview.layerId === root.baseImageLayerId ? root.imageResizePreview : root.baseImageLayer || {
-                                "source": CaptureService.screenshotPath,
-                                "startX": 0,
-                                "startY": 0,
-                                "endX": captureSurface.width,
-                                "endY": captureSurface.height,
-                                "cropX": 0,
-                                "cropY": 0,
-                                "cropWidth": 1,
-                                "cropHeight": 1
+                            anchors.fill: parent
+                            z: root.imageLayerStackZ(root.baseImageLayerId)
+
+                            ScreenshotImageLayer {
+                                id: sourceImage
+
+                                loadEnabled: root.imageLoadEnabled
+                                offsetX: root.currentShape && root.currentShape.layerId === root.baseImageLayerId ? liveCanvasTranslate.x : 0
+                                offsetY: root.currentShape && root.currentShape.layerId === root.baseImageLayerId ? liveCanvasTranslate.y : 0
+                                shapeData: root.imageResizePreview && root.imageResizePreview.layerId === root.baseImageLayerId ? root.imageResizePreview : root.baseImageLayer || {
+                                    "source": CaptureService.screenshotPath,
+                                    "startX": 0,
+                                    "startY": 0,
+                                    "endX": captureSurface.width,
+                                    "endY": captureSurface.height,
+                                    "cropX": 0,
+                                    "cropY": 0,
+                                    "cropWidth": 1,
+                                    "cropHeight": 1
+                                }
+
+                                onImageStatusChanged: {
+                                    root.invalidateImageComposite();
+                                    if (imageStatus === Image.Ready)
+                                        Qt.callLater(function () {
+                                            root.initializeBaseImageLayer(false);
+                                        });
+                                }
                             }
+                        }
+                        Repeater {
+                            id: insertedImageRepeater
 
-                            onImageStatusChanged: {
-                                if (imageStatus === Image.Ready)
-                                    Qt.callLater(function () {
-                                        root.initializeBaseImageLayer(false);
-                                    });
+                            model: root.insertedImageRenderIds
+
+                            delegate: ScreenshotImageLayer {
+                                required property int index
+                                readonly property string layerId: String(modelData || "")
+                                readonly property var layerShape: root.imageLayerById(layerId)
+                                required property var modelData
+
+                                hidden: root.edgeStitchPreparing && root.edgeStitchLayerId === layerId
+                                offsetX: root.currentShape && root.currentShape.tool === "image" && root.currentShape.layerId === layerId ? liveCanvasTranslate.x : 0
+                                offsetY: root.currentShape && root.currentShape.tool === "image" && root.currentShape.layerId === layerId ? liveCanvasTranslate.y : 0
+                                shapeData: root.imageResizePreview && root.imageResizePreview.layerId === layerId ? root.imageResizePreview : layerShape || {
+                                    "source": "",
+                                    "startX": 0,
+                                    "startY": 0,
+                                    "endX": 0,
+                                    "endY": 0
+                                }
+                                z: root.imageLayerStackZ(layerId)
+
+                                onImageStatusChanged: root.invalidateImageComposite()
                             }
                         }
                     }
@@ -2968,10 +3080,12 @@ PanelWindow {
                             required property var modelData
 
                             shapeData: modelData
-                            sourceItem: baseImageSurface
+                            sourceItem: imageCompositeSurface
+                            sourceLive: root.imageCompositeLive
+                            sourceRevision: root.imageCompositeRevision
                             surfaceHeight: captureSurface.height
                             surfaceWidth: captureSurface.width
-                            z: root.imageLayerStackZ(root.baseImageLayerId) + 0.25
+                            z: imageCompositeSurface.z + 0.25
                         }
                     }
                     Repeater {
@@ -2981,10 +3095,12 @@ PanelWindow {
                             required property var modelData
 
                             shapeData: modelData
-                            sourceItem: baseImageSurface
+                            sourceItem: imageCompositeSurface
+                            sourceLive: root.imageCompositeLive
+                            sourceRevision: root.imageCompositeRevision
                             surfaceHeight: captureSurface.height
                             surfaceWidth: captureSurface.width
-                            z: root.imageLayerStackZ(root.baseImageLayerId) + 0.25
+                            z: imageCompositeSurface.z + 0.25
                         }
                     }
                     BlurRegion {
@@ -2996,11 +3112,13 @@ PanelWindow {
                             "width": root.selectedWidth
                         }
                         showOutline: true
-                        sourceItem: baseImageSurface
+                        sourceItem: imageCompositeSurface
+                        sourceLive: root.imageCompositeLive
+                        sourceRevision: root.imageCompositeRevision
                         surfaceHeight: captureSurface.height
                         surfaceWidth: captureSurface.width
                         visible: root.currentShape !== null && root.currentShape.tool === "blur"
-                        z: root.imageLayerStackZ(root.baseImageLayerId) + 0.25
+                        z: imageCompositeSurface.z + 0.25
                     }
                     PixelateRegion {
                         shapeData: root.currentShape || {
@@ -3011,35 +3129,13 @@ PanelWindow {
                             "width": root.selectedWidth
                         }
                         showOutline: true
-                        sourceItem: baseImageSurface
+                        sourceItem: imageCompositeSurface
+                        sourceLive: root.imageCompositeLive
+                        sourceRevision: root.imageCompositeRevision
                         surfaceHeight: captureSurface.height
                         surfaceWidth: captureSurface.width
                         visible: root.currentShape !== null && root.currentShape.tool === "pixelate"
-                        z: root.imageLayerStackZ(root.baseImageLayerId) + 0.25
-                    }
-                    Repeater {
-                        id: insertedImageRepeater
-
-                        model: root.insertedImageRenderIds
-
-                        delegate: ScreenshotImageLayer {
-                            required property int index
-                            readonly property string layerId: String(modelData || "")
-                            readonly property var layerShape: root.imageLayerById(layerId)
-                            required property var modelData
-
-                            hidden: root.edgeStitchPreparing && root.edgeStitchLayerId === layerId
-                            offsetX: root.currentShape && root.currentShape.tool === "image" && root.currentShape.layerId === layerId ? liveCanvasTranslate.x : 0
-                            offsetY: root.currentShape && root.currentShape.tool === "image" && root.currentShape.layerId === layerId ? liveCanvasTranslate.y : 0
-                            shapeData: root.imageResizePreview && root.imageResizePreview.layerId === layerId ? root.imageResizePreview : layerShape || {
-                                "source": "",
-                                "startX": 0,
-                                "startY": 0,
-                                "endX": 0,
-                                "endY": 0
-                            }
-                            z: root.imageLayerStackZ(layerId)
-                        }
+                        z: imageCompositeSurface.z + 0.25
                     }
                     Canvas {
                         id: colorSampler
@@ -3092,9 +3188,8 @@ PanelWindow {
                                 root.prepareLiveCanvas();
                                 root.scheduleLivePaint();
                             }
-                            if (root.currentShape && root.currentShape.__waitingForCommit) {
+                            if (root.currentShape && root.currentShape.__waitingForCommit)
                                 root.currentShape.__waitingForCommit = false;
-                            }
                         }
                     }
                     Repeater {
@@ -3509,9 +3604,9 @@ PanelWindow {
                                             root.baseImageLayer = finalShape;
                                         } else {
                                             insertionIndex = root.imageLayerIndexById(finalShape.layerId);
-                                            if (insertionIndex >= 0)
+                                            if (insertionIndex >= 0) {
                                                 nextShapesList[insertionIndex] = finalShape;
-                                            else {
+                                            } else {
                                                 insertionIndex = Math.max(0, Math.min(root.movingShapeIndex, nextShapesList.length));
                                                 nextShapesList.splice(insertionIndex, 0, finalShape);
                                             }
@@ -3519,13 +3614,12 @@ PanelWindow {
                                         }
                                     } else {
                                         insertionIndex = Math.max(0, Math.min(root.movingShapeIndex, nextShapesList.length));
-                                        if (shapeWasDetached) {
+                                        if (shapeWasDetached)
                                             nextShapesList.splice(insertionIndex, 0, finalShape);
-                                        } else if (insertionIndex < nextShapesList.length) {
+                                        else if (insertionIndex < nextShapesList.length)
                                             nextShapesList[insertionIndex] = finalShape;
-                                        } else {
+                                        else
                                             nextShapesList.push(finalShape);
-                                        }
                                         root.shapes = nextShapesList;
                                     }
                                     root.selectedAnnotationShape = finalShape.tool === "image" ? null : root.copyShape(finalShape);
@@ -3656,11 +3750,17 @@ PanelWindow {
 
                         onResizeCanceled: root.cancelAnnotationTransform()
                         onResizeFinished: root.finishAnnotationTransform()
-                        onResizeRequested: (pointerX, pointerY) => root.resizeSelectedAnnotation(pointerX, pointerY)
-                        onResizeStarted: (horizontalSign, verticalSign, pointerX, pointerY, modifiers) => root.beginAnnotationResize(horizontalSign, verticalSign, pointerX, pointerY, modifiers)
+                        onResizeRequested: (pointerX, pointerY) => {
+                            return root.resizeSelectedAnnotation(pointerX, pointerY);
+                        }
+                        onResizeStarted: (horizontalSign, verticalSign, pointerX, pointerY, modifiers) => {
+                            return root.beginAnnotationResize(horizontalSign, verticalSign, pointerX, pointerY, modifiers);
+                        }
                         onRotationCanceled: root.cancelAnnotationTransform()
                         onRotationFinished: root.finishAnnotationTransform()
-                        onRotationRequested: angle => root.rotateSelectedAnnotation(angle)
+                        onRotationRequested: angle => {
+                            return root.rotateSelectedAnnotation(angle);
+                        }
                         onRotationStarted: root.beginAnnotationTransform("rotation")
                     }
                     ScreenshotMagnifierLoupe {
@@ -3735,19 +3835,45 @@ PanelWindow {
                         surfaceWidth: captureSurface.width
                         visible: root.selectedTool === "select" && !root.colorPickerHeld && !root.loupeHeld && root.selectedImageLayer !== null && !Boolean(root.selectedImageLayer.hidden) && (!root.currentShape || root.currentShape.tool !== "image") && !root.renderingOutput && !root.imageInsertBusy
 
-                        onCropCanceled: layerId => root.cancelImageCrop(layerId)
-                        onCropFinished: layerId => root.finishImageCrop(layerId)
-                        onCropRequested: (layerId, localX, localY, width, height) => root.updateImageCrop(layerId, localX, localY, width, height)
-                        onCropStarted: layerId => root.beginImageCrop(layerId)
-                        onRemoveRequested: layerId => root.removeImageLayer(layerId)
-                        onResizeCanceled: layerId => root.cancelImageResize(layerId)
-                        onResizeFinished: layerId => root.finishImageResize(layerId)
-                        onResizeRequested: (layerId, x, y, width, height) => root.updateImageResize(layerId, x, y, width, height)
-                        onResizeStarted: layerId => root.beginImageResize(layerId)
-                        onRotationCanceled: layerId => root.cancelImageRotation(layerId)
-                        onRotationFinished: layerId => root.finishImageRotation(layerId)
-                        onRotationRequested: (layerId, angle) => root.updateImageRotation(layerId, angle)
-                        onRotationStarted: layerId => root.beginImageRotation(layerId)
+                        onCropCanceled: layerId => {
+                            return root.cancelImageCrop(layerId);
+                        }
+                        onCropFinished: layerId => {
+                            return root.finishImageCrop(layerId);
+                        }
+                        onCropRequested: (layerId, localX, localY, width, height) => {
+                            return root.updateImageCrop(layerId, localX, localY, width, height);
+                        }
+                        onCropStarted: layerId => {
+                            return root.beginImageCrop(layerId);
+                        }
+                        onRemoveRequested: layerId => {
+                            return root.removeImageLayer(layerId);
+                        }
+                        onResizeCanceled: layerId => {
+                            return root.cancelImageResize(layerId);
+                        }
+                        onResizeFinished: layerId => {
+                            return root.finishImageResize(layerId);
+                        }
+                        onResizeRequested: (layerId, x, y, width, height) => {
+                            return root.updateImageResize(layerId, x, y, width, height);
+                        }
+                        onResizeStarted: layerId => {
+                            return root.beginImageResize(layerId);
+                        }
+                        onRotationCanceled: layerId => {
+                            return root.cancelImageRotation(layerId);
+                        }
+                        onRotationFinished: layerId => {
+                            return root.finishImageRotation(layerId);
+                        }
+                        onRotationRequested: (layerId, angle) => {
+                            return root.updateImageRotation(layerId, angle);
+                        }
+                        onRotationStarted: layerId => {
+                            return root.beginImageRotation(layerId);
+                        }
                     }
                     Item {
                         id: cropOverlay
@@ -4059,21 +4185,35 @@ PanelWindow {
                     id: toolbar
 
                     anchors.verticalCenter: parent.verticalCenter
-                    availableWidth: toolbarViewport.width
+                    availableWidth: root.layersPanelInline ? Math.max(320, toolbarViewport.width - layersPanel.width - root.bottomControlSpacing) : toolbarViewport.width
+                    height: implicitHeight
                     opacityAvailable: root.toolbarOpacityAvailable
                     reverseSearchBusy: root.imageInsertBusy || root.reverseSearchPreparing || CaptureService.reverseImageSearchBusy
                     selectedColor: root.selectedColor
                     selectedOpacity: root.toolbarOpacity
                     selectedTool: root.selectedTool
                     selectedWidth: root.selectedWidth
-                    x: toolbar.implicitWidth <= toolbarViewport.width ? (toolbarViewport.width - toolbar.implicitWidth) / 2 : 0
+                    width: implicitWidth
+                    x: {
+                        if (toolbar.implicitWidth > toolbarViewport.width)
+                            return 0;
+
+                        var centeredX = (toolbarViewport.width - toolbar.implicitWidth) / 2;
+                        if (!root.layersPanelInline)
+                            return centeredX;
+
+                        var maximumX = toolbarViewport.width - layersPanel.width - root.bottomControlSpacing - toolbar.implicitWidth;
+                        return Math.max(0, Math.min(centeredX, maximumX));
+                    }
 
                     onColorSelected: colorValue => {
                         return root.selectedColor = colorValue;
                     }
                     onOpacityChangeFinished: root.finishOpacityChange()
                     onOpacityChangeStarted: root.beginOpacityChange()
-                    onOpacitySelected: opacityValue => root.updateOpacity(opacityValue)
+                    onOpacitySelected: opacityValue => {
+                        return root.updateOpacity(opacityValue);
+                    }
                     onReverseSearchRequested: root.reverseImageSearch()
                     onToolSelected: tool => {
                         if (inlineTextEditor.visible)
@@ -4089,23 +4229,33 @@ PanelWindow {
         }
     }
     ScreenshotLayersPanel {
+        id: layersPanel
+
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Responsive.clamp(root.width * 0.012, 12, 24)
+        anchors.bottomMargin: root.layersPanelInline ? root.chromeMargin + Math.max(0, (toolbarViewport.height - height) / 2) : root.chromeMargin + toolbarViewport.height + root.bottomControlSpacing
         anchors.right: parent.right
-        anchors.rightMargin: Responsive.clamp(root.width * 0.012, 12, 24)
+        anchors.rightMargin: root.chromeMargin
         height: implicitHeight
         imageInsertEnabled: !root.imageInsertBusy && !root.editorChromeBusy
         layers: root.layerPanelItems
         selectedLayerId: root.selectedImageLayerId
         visible: root.editorPresented && layers.length > 0 && sourceImage.status === Image.Ready && !root.editorChromeBusy
-        width: implicitWidth
+        width: Math.min(implicitWidth, Math.max(0, root.width - root.chromeMargin * 2))
         z: 20
 
         onImageInsertRequested: root.openImageLayerPicker()
-        onLayerOrderRequested: layerIds => root.setImageLayerOrder(layerIds)
-        onLayerRemoveRequested: layerId => root.removeImageLayer(layerId)
-        onLayerSelected: layerId => root.selectImageLayer(layerId)
-        onLayerVisibilityRequested: (layerId, visible) => root.setImageLayerVisibility(layerId, visible)
+        onLayerOrderRequested: layerIds => {
+            return root.setImageLayerOrder(layerIds);
+        }
+        onLayerRemoveRequested: layerId => {
+            return root.removeImageLayer(layerId);
+        }
+        onLayerSelected: layerId => {
+            return root.selectImageLayer(layerId);
+        }
+        onLayerVisibilityRequested: (layerId, visible) => {
+            return root.setImageLayerVisibility(layerId, visible);
+        }
     }
     Rectangle {
         anchors.fill: parent

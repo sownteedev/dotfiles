@@ -18,6 +18,14 @@ QtObject {
     property bool available: true
     property bool browsing: false
     readonly property string cacheDir: Config.cacheRoot + "/live-wallpapers"
+    property Connections configConnections: Connections {
+        function onWallpaperScalingModeChanged() {
+            if (root.desiredPath)
+                root.writeRendererRequest();
+        }
+
+        target: Config
+    }
     readonly property int coverWidth: 2560
     property int desiredGeneration: 0
     property string desiredPath: ""
@@ -463,6 +471,7 @@ QtObject {
             "generation": desiredGeneration,
             "path": desiredPath,
             "paused": WallpaperPlaybackPolicy.shouldPause,
+            "scalingMode": Config.wallpaperScalingMode,
             "serial": requestSerial,
             "session": rendererSessionToken
         }) + "\n");

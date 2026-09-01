@@ -6,6 +6,7 @@ import QtQuick.Layouts
 Item {
     id: root
 
+    property bool capsLockActive: false
     required property string defaultUser
 
     function clearSecret() {
@@ -20,6 +21,14 @@ Item {
         else
             GreeterSession.start(userField.text, secretField.text);
         secretField.clear();
+    }
+    function updateCapsLock(event, keyPressed) {
+        if (event.key === Qt.Key_CapsLock) {
+            if (keyPressed)
+                capsLockActive = !capsLockActive;
+            return;
+        }
+        capsLockActive = (event.modifiers & Qt.CapsLockModifier) !== 0;
     }
 
     implicitHeight: root.defaultUser === "" ? 460 : 392
@@ -146,13 +155,53 @@ Item {
                 Layout.fillWidth: true
                 spacing: 7
 
-                Text {
+                RowLayout {
                     Layout.fillWidth: true
-                    color: GreeterTheme.surfaceVariantText
-                    font.family: "Inter"
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
-                    text: GreeterSession.prompt || qsTr("Password")
+                    spacing: 7
+
+                    Text {
+                        Layout.fillWidth: true
+                        color: GreeterTheme.surfaceVariantText
+                        font.family: "Inter"
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                        text: GreeterSession.prompt || qsTr("Password")
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: 24
+                        Layout.preferredWidth: layoutText.implicitWidth + 16
+                        color: GreeterTheme.withAlpha(GreeterTheme.primary, 0.14)
+                        radius: 8
+
+                        Text {
+                            id: layoutText
+
+                            anchors.centerIn: parent
+                            color: GreeterTheme.primary
+                            font.family: "Inter"
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
+                            text: GreeterSession.keyboardLayoutLabel
+                        }
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: 24
+                        Layout.preferredWidth: capsText.implicitWidth + 16
+                        color: GreeterTheme.withAlpha(GreeterTheme.error, 0.16)
+                        radius: 8
+                        visible: root.capsLockActive
+
+                        Text {
+                            id: capsText
+
+                            anchors.centerIn: parent
+                            color: GreeterTheme.error
+                            font.family: "Inter"
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
+                            text: qsTr("CAPS")
+                        }
+                    }
                 }
                 TextField {
                     id: secretField
@@ -189,6 +238,8 @@ Item {
                         width: 0
                     }
 
+                    Keys.onPressed: event => root.updateCapsLock(event, true)
+                    Keys.onReleased: event => root.updateCapsLock(event, false)
                     onAccepted: root.submit()
 
                     GreeterPasswordDots {

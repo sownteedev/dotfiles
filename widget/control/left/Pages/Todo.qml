@@ -352,36 +352,17 @@ Item {
                     height: Math.max(80, taskContent.implicitHeight + 28)
                     width: taskList.width
 
-                    Rectangle {
+                    SwipeDeleteBackground {
+                        actionText: qsTr("Delete")
                         anchors.fill: parent
-                        color: Config.md3.error
-                        radius: 17
-                        visible: cardContent.swipeX < 0
+                        interactive: !cardContent.taskSyncing
+                        swipeOffset: cardContent.swipeX
 
-                        RowLayout {
-                            anchors.bottom: parent.bottom
-                            anchors.right: parent.right
-                            anchors.rightMargin: 20
-                            anchors.top: parent.top
-                            spacing: 8
-
-                            IconImage {
-                                height: 18
-                                layer.enabled: true
-                                source: Quickshell.iconPath("user-trash-symbolic")
-                                width: 18
-
-                                layer.effect: ColorOverlay {
-                                    color: Config.md3.on_error
-                                }
-                            }
-                            Text {
-                                color: Config.md3.on_error
-                                font.family: Config.fontName
-                                font.pixelSize: 14
-                                font.weight: Font.Bold
-                                text: qsTr("Delete")
-                            }
+                        onTriggered: {
+                            if (taskSource === "local")
+                                LocalTaskService.deleteTask(modelData.id);
+                            else
+                                GoogleService.deleteTask("@default", modelData.id);
                         }
                     }
                     Rectangle {
@@ -400,7 +381,7 @@ Item {
                         Drag.supportedActions: Qt.CopyAction
                         border.color: taskCardMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.28) : Config.alpha(Config.md3.on_surface, 0.08)
                         border.width: 1
-                        color: Qt.tint(taskCardMouse.pressed ? Config.alpha(Config.md3.primary, 0.13) : taskCardMouse.containsMouse ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.9 : 0.58) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.76 : 0.4), Config.alpha(Config.md3.error, Math.min(1.0, Math.abs(swipeX) / 80)))
+                        color: taskCardMouse.pressed ? Config.alpha(Config.md3.primary, 0.13) : taskCardMouse.containsMouse ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.9 : 0.58) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.76 : 0.4)
                         height: parent.height
                         opacity: syncDragging ? 0.78 : taskSyncing ? 0.6 : modelData.status === "completed" ? 0.72 : 1
                         radius: 17
@@ -411,9 +392,13 @@ Item {
                         z: syncDragging ? 20 : 0
 
                         Behavior on swipeX {
-                            NumberAnimation {
-                                duration: 200
-                                easing.type: Easing.OutCubic
+                            enabled: !taskSwipe.active && !Config.shellReducedMotion
+
+                            SpringAnimation {
+                                damping: 0.52
+                                epsilon: 0.25
+                                mass: 0.85
+                                spring: 4.6
                             }
                         }
 
@@ -435,6 +420,8 @@ Item {
                             }
                         }
                         DragHandler {
+                            id: taskSwipe
+
                             enabled: !cardContent.taskSyncing && !googleSyncHandle.syncPressed
                             target: null
                             xAxis.enabled: true
@@ -454,9 +441,7 @@ Item {
                                 }
                             }
                             onTranslationChanged: {
-                                if (translation.x < 0) {
-                                    cardContent.swipeX = translation.x;
-                                }
+                                cardContent.swipeX = Math.min(0, translation.x);
                             }
                         }
                         RowLayout {

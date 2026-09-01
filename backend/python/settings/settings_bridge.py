@@ -904,6 +904,8 @@ def snapshot() -> dict[str, object]:
     insert_gradient = block_raw_setting(insert_hint_block, "gradient", 'from="#ffbb6680" to="#ffc88080" angle=45')
     quickshell_settings: dict[str, object] = {
         "fontName": qml_string(config_source, "fontName", "Inter"),
+        "greeterDefaultSession": qml_string(config_source, "greeterDefaultSession", "niri"),
+        "greeterRememberLastSession": qml_bool(config_source, "greeterRememberLastSession", False),
         "audioMaxVolume": 1.0,
         "barDensity": "comfortable",
         "barHeight": 50,
@@ -921,12 +923,24 @@ def snapshot() -> dict[str, object]:
         "barShowWorkspaces": True,
         "caffeineAutoDisableMinutes": 0,
         "cavaEnabled": True,
+        "idleBatteryDisplayTimeout": 300,
+        "idleBatteryLockTimeout": 300,
+        "idleBatterySleepAction": "suspend",
+        "idleBatterySuspendTimeout": 900,
+        "idleDimDuration": 5,
+        "idleDimOpacity": 0.55,
         "idleDisplayTimeout": 600,
         "idleEnabled": True,
         "idleLockBeforeSleep": True,
         "idleLockedDisplayTimeout": 60,
         "idleLockTimeout": 600,
+        "idleRespectInhibitors": True,
+        "idleSeparatePowerProfiles": False,
+        "idleSleepAction": "suspend",
         "idleSuspendTimeout": 0,
+        "lockFaceMaxAttempts": qml_int(config_source, "lockFaceMaxAttempts", 3),
+        "lockFaceRetryOnWake": qml_bool(config_source, "lockFaceRetryOnWake", True),
+        "launcherCalculatorAngleMode": qml_string(config_source, "launcherCalculatorAngleMode", "rad"),
         "launcherCalculatorEnabled": True,
         "launcherCalculatorPrefix": "=",
         "launcherClipboardAutoPaste": True,
@@ -937,7 +951,12 @@ def snapshot() -> dict[str, object]:
         "launcherFilesEnabled": True,
         "launcherFilesPrefix": "f",
         "launcherFuzzySearch": True,
+        "launcherGifEnabled": True,
+        "launcherGifPrefix": "g",
+        "launcherKlipyApiKey": qml_string(config_source, "launcherKlipyApiKey"),
         "launcherMaxResults": 20,
+        "launcherStickerEnabled": True,
+        "launcherStickerPrefix": "s",
         "notificationBlockedApps": "",
         "notificationCriticalTimeout": 0,
         "notificationDndEnd": "07:00",
@@ -946,6 +965,7 @@ def snapshot() -> dict[str, object]:
         "notificationHistoryExcludedApps": "",
         "notificationHistoryLimit": 100,
         "notificationLowTimeout": 5000,
+        "notificationLockscreenPrivacy": qml_string(config_source, "notificationLockscreenPrivacy", "hidden"),
         "notificationMaxVisible": 3,
         "notificationNormalTimeout": 5000,
         "notificationPopupDuration": 5000,
@@ -1000,6 +1020,7 @@ def snapshot() -> dict[str, object]:
         "wallpaperEngineFps": qml_int(config_source, "wallpaperEngineFps", 30),
         "wallpaperPauseOnFullscreen": qml_bool(config_source, "wallpaperPauseOnFullscreen", True),
         "wallpaperPauseOnLock": qml_bool(config_source, "wallpaperPauseOnLock", True),
+        "wallpaperScalingMode": qml_string(config_source, "wallpaperScalingMode", "fill"),
         "wallpaperTransitionDuration": qml_int(config_source, "wallpaperTransitionDuration", 360),
         "matugenEnabled": qml_bool(config_source, "matugenEnabled", True),
         "matugenAnimateColors": qml_bool(config_source, "matugenAnimateColors", True),
@@ -1010,13 +1031,28 @@ def snapshot() -> dict[str, object]:
         "captureAutoCopyRecording": qml_bool(config_source, "captureAutoCopyRecording", True),
         "captureRecordingFps": qml_int(config_source, "captureRecordingFps", 60),
         "captureRecordingCodec": qml_string(config_source, "captureRecordingCodec", "hevc"),
+        "captureRecordingCountdown": qml_int(config_source, "captureRecordingCountdown", 0),
+        "captureRecordingCursor": qml_bool(config_source, "captureRecordingCursor", True),
         "captureRecordingQuality": qml_string(config_source, "captureRecordingQuality", "high"),
         "captureRecordingMicrophone": qml_bool(config_source, "captureRecordingMicrophone", False),
-        "captureEditorTool": qml_string(config_source, "captureEditorTool", "select"),
+        "captureRecordingMicrophoneSource": qml_string(
+            config_source, "captureRecordingMicrophoneSource", "default_input"
+        ),
+        "captureRecordingMode": qml_string(config_source, "captureRecordingMode", "region"),
+        "captureScreenshotAction": qml_string(
+            config_source, "captureScreenshotAction", "notification"
+        ),
+        "captureScreenshotFilenameTemplate": qml_string(
+            config_source, "captureScreenshotFilenameTemplate", "{date}_{time}-edited"
+        ),
+        "captureScreenshotFormat": qml_string(config_source, "captureScreenshotFormat", "png"),
+        "captureScreenshotQuality": qml_int(config_source, "captureScreenshotQuality", 90),
+        "captureEditorTool": qml_string(config_source, "captureEditorTool", "pen"),
         "captureEditorColor": qml_string(config_source, "captureEditorColor", "#ff3b30"),
         "captureEditorWidth": qml_int(config_source, "captureEditorWidth", 6),
         "wallpaperEngineAssetsDirPath": qml_string(config_source, "wallpaperEngineAssetsDirPath"),
         "wallpaperEngineWorkshopDirPath": qml_string(config_source, "wallpaperEngineWorkshopDirPath"),
+        "temperatureUnit": qml_string(config_source, "temperatureUnit", "celsius"),
     }
     if RUNTIME_SETTINGS_PATH.exists():
         try:
@@ -1049,6 +1085,11 @@ def snapshot() -> dict[str, object]:
                 )
         except (OSError, json.JSONDecodeError):
             pass
+    privacy_mode = str(quickshell_settings.get("notificationLockscreenPrivacy", "")).lower()
+    if privacy_mode not in ("hidden", "icons", "full"):
+        quickshell_settings["notificationLockscreenPrivacy"] = (
+            "full" if bool(quickshell_settings.get("notificationShowOnLock", False)) else "hidden"
+        )
     return {
         "niri": {
             "keybindGroups": parse_binds(read(INCLUDE_DIR / "keybinds.kdl")),
@@ -1941,6 +1982,8 @@ def set_input_entry_enabled(payload: dict[str, object]) -> dict[str, object]:
 def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
     defaults: dict[str, object] = {
         "fontName": "Inter",
+        "greeterDefaultSession": "niri",
+        "greeterRememberLastSession": False,
         "audioMaxVolume": 1.0,
         "barDensity": "comfortable",
         "barHeight": 50,
@@ -1958,12 +2001,24 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "barShowWorkspaces": True,
         "caffeineAutoDisableMinutes": 0,
         "cavaEnabled": True,
+        "idleBatteryDisplayTimeout": 300,
+        "idleBatteryLockTimeout": 300,
+        "idleBatterySleepAction": "suspend",
+        "idleBatterySuspendTimeout": 900,
+        "idleDimDuration": 5,
+        "idleDimOpacity": 0.55,
         "idleDisplayTimeout": 600,
         "idleEnabled": True,
         "idleLockBeforeSleep": True,
         "idleLockedDisplayTimeout": 60,
         "idleLockTimeout": 600,
+        "idleRespectInhibitors": True,
+        "idleSeparatePowerProfiles": False,
+        "idleSleepAction": "suspend",
         "idleSuspendTimeout": 0,
+        "lockFaceMaxAttempts": 3,
+        "lockFaceRetryOnWake": True,
+        "launcherCalculatorAngleMode": "rad",
         "launcherCalculatorEnabled": True,
         "launcherCalculatorPrefix": "=",
         "launcherClipboardAutoPaste": True,
@@ -1974,7 +2029,12 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "launcherFilesEnabled": True,
         "launcherFilesPrefix": "f",
         "launcherFuzzySearch": True,
+        "launcherGifEnabled": True,
+        "launcherGifPrefix": "g",
+        "launcherKlipyApiKey": "",
         "launcherMaxResults": 20,
+        "launcherStickerEnabled": True,
+        "launcherStickerPrefix": "s",
         "notificationBlockedApps": "",
         "notificationCriticalTimeout": 0,
         "notificationDndEnd": "07:00",
@@ -1983,6 +2043,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "notificationHistoryExcludedApps": "",
         "notificationHistoryLimit": 100,
         "notificationLowTimeout": 5000,
+        "notificationLockscreenPrivacy": "hidden",
         "notificationMaxVisible": 3,
         "notificationNormalTimeout": 5000,
         "notificationPopupDuration": 5000,
@@ -2037,6 +2098,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "wallpaperEngineFps": 30,
         "wallpaperPauseOnFullscreen": True,
         "wallpaperPauseOnLock": True,
+        "wallpaperScalingMode": "fill",
         "wallpaperTransitionDuration": 360,
         "matugenEnabled": True,
         "matugenAnimateColors": True,
@@ -2047,14 +2109,23 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "captureAutoCopyRecording": True,
         "captureRecordingFps": 60,
         "captureRecordingCodec": "hevc",
+        "captureRecordingCountdown": 0,
+        "captureRecordingCursor": True,
         "captureRecordingQuality": "high",
         "captureRecordingMicrophone": False,
-        "captureEditorTool": "select",
+        "captureRecordingMicrophoneSource": "default_input",
+        "captureRecordingMode": "region",
+        "captureScreenshotAction": "notification",
+        "captureScreenshotFilenameTemplate": "{date}_{time}-edited",
+        "captureScreenshotFormat": "png",
+        "captureScreenshotQuality": 90,
+        "captureEditorTool": "pen",
         "captureEditorColor": "#ff3b30",
         "captureEditorWidth": 6,
         "wallpaperEngineAssetsDirPath": "~/.local/share/Steam/steamapps/common/wallpaper_engine/assets",
         "wallpaperEngineWorkshopDirPath": "~/.local/share/Steam/steamapps/workshop/content/431960",
         "clock24h": True,
+        "temperatureUnit": "celsius",
     }
     stored: dict[str, object] = {}
     if RUNTIME_SETTINGS_PATH.exists():
@@ -2070,6 +2141,10 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         stored["notificationLowTimeout"] = legacy_notification_timeout
     if "notificationNormalTimeout" not in stored:
         stored["notificationNormalTimeout"] = legacy_notification_timeout
+    if str(stored.get("notificationLockscreenPrivacy", "")).lower() not in ("hidden", "icons", "full"):
+        stored["notificationLockscreenPrivacy"] = "full" if bool(stored.get("notificationShowOnLock", False)) else "hidden"
+    if str(payload.get("notificationLockscreenPrivacy", "")).lower() not in ("hidden", "icons", "full") and "notificationShowOnLock" in payload:
+        payload["notificationLockscreenPrivacy"] = "full" if bool(payload.get("notificationShowOnLock")) else "hidden"
 
     legacy_blur = bool(stored.get("shellBlurEnabled", True))
     for key in (
@@ -2091,21 +2166,29 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
     settings = merged.copy()
 
     for name in (
-        "fontName", "profileImagePath", "latLon", "apiWeather", "steamUsername", "steamWebApiKey",
+        "fontName", "greeterDefaultSession", "profileImagePath", "latLon", "apiWeather", "steamUsername", "steamWebApiKey",
+        "launcherKlipyApiKey",
         "wallhavenUsername", "wallhavenApiKey", "wallFolderPath", "liveWallFolderPath",
+        "wallpaperScalingMode",
         "captureScreenshotDirPath", "captureRecordingDirPath", "captureRecordingCodec",
-        "captureRecordingQuality", "captureEditorTool", "captureEditorColor",
+        "captureRecordingQuality", "captureRecordingMicrophoneSource", "captureRecordingMode",
+        "captureScreenshotAction", "captureScreenshotFilenameTemplate", "captureScreenshotFormat",
+        "captureEditorTool", "captureEditorColor",
         "wallpaperEngineAssetsDirPath", "wallpaperEngineWorkshopDirPath",
-        "notificationBlockedApps", "notificationHistoryExcludedApps",
+        "notificationBlockedApps", "notificationHistoryExcludedApps", "notificationLockscreenPrivacy",
     ):
         settings[name] = str(merged.get(name, defaults[name])).strip()
     settings["fontName"] = settings["fontName"] or "Inter"
+    greeter_session = re.sub(r"[^A-Za-z0-9._+-]", "", settings["greeterDefaultSession"][:80])
+    settings["greeterDefaultSession"] = greeter_session or "niri"
 
     prefix_defaults = (
         ("launcherClipboardPrefix", "c"),
         ("launcherFilesPrefix", "f"),
         ("launcherCalculatorPrefix", "="),
         ("launcherEmojiPrefix", "e"),
+        ("launcherGifPrefix", "g"),
+        ("launcherStickerPrefix", "s"),
     )
     used_prefixes: set[str] = set()
     available_fallbacks = [fallback for _, fallback in prefix_defaults]
@@ -2127,9 +2210,28 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
     settings["barDensity"] = str(merged.get("barDensity", "comfortable"))
     if settings["barDensity"] not in ("compact", "comfortable", "spacious"):
         settings["barDensity"] = "comfortable"
+    settings["launcherCalculatorAngleMode"] = str(
+        merged.get("launcherCalculatorAngleMode", "rad")
+    ).lower()
+    if settings["launcherCalculatorAngleMode"] not in ("deg", "rad"):
+        settings["launcherCalculatorAngleMode"] = "rad"
+    settings["temperatureUnit"] = str(merged.get("temperatureUnit", "celsius")).lower()
+    if settings["temperatureUnit"] not in ("celsius", "fahrenheit"):
+        settings["temperatureUnit"] = "celsius"
+    settings["wallpaperScalingMode"] = str(merged.get("wallpaperScalingMode", "fill")).lower()
+    if settings["wallpaperScalingMode"] not in ("fill", "fit", "stretch"):
+        settings["wallpaperScalingMode"] = "fill"
+    for name in ("idleSleepAction", "idleBatterySleepAction"):
+        settings[name] = str(merged.get(name, "suspend")).lower()
+        if settings[name] not in ("none", "suspend", "suspend-then-hibernate", "hibernate"):
+            settings[name] = "suspend"
     settings["notificationPosition"] = str(merged.get("notificationPosition", "top"))
     if settings["notificationPosition"] not in ("top", "top-right", "bottom-right"):
         settings["notificationPosition"] = "top"
+    settings["notificationLockscreenPrivacy"] = str(merged.get("notificationLockscreenPrivacy", "hidden")).lower()
+    if settings["notificationLockscreenPrivacy"] not in ("hidden", "icons", "full"):
+        settings["notificationLockscreenPrivacy"] = "hidden"
+    settings["notificationShowOnLock"] = settings["notificationLockscreenPrivacy"] != "hidden"
     settings["osdPosition"] = str(merged.get("osdPosition", "bottom"))
     if settings["osdPosition"] not in ("top", "bottom"):
         settings["osdPosition"] = "bottom"
@@ -2137,19 +2239,41 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         settings["captureRecordingCodec"] = "hevc"
     if settings["captureRecordingQuality"] not in ("medium", "high", "very_high"):
         settings["captureRecordingQuality"] = "high"
+    if settings["captureRecordingMode"] not in ("region", "screen"):
+        settings["captureRecordingMode"] = "region"
+    if settings["captureScreenshotAction"] not in ("notification", "editor", "copy", "save"):
+        settings["captureScreenshotAction"] = "notification"
+    if settings["captureScreenshotFormat"] not in ("png", "jpeg", "webp"):
+        settings["captureScreenshotFormat"] = "png"
+    microphone_source = settings["captureRecordingMicrophoneSource"].replace("\x00", "").strip()
+    settings["captureRecordingMicrophoneSource"] = microphone_source[:512] or "default_input"
+    filename_template = settings["captureScreenshotFilenameTemplate"].replace("\x00", "").strip()
+    filename_template = filename_template.replace("/", "-").replace("\\", "-")
+    settings["captureScreenshotFilenameTemplate"] = filename_template[:128] or "{date}_{time}-edited"
     if settings["captureEditorTool"] not in (
         "select", "pen", "line", "rectangle", "ellipse", "arrow", "highlight",
         "blur", "pixelate", "text", "number", "callout", "loupe", "crop", "ocr", "eraser",
     ):
-        settings["captureEditorTool"] = "select"
+        settings["captureEditorTool"] = "pen"
+
+    try:
+        recording_countdown = int(merged.get("captureRecordingCountdown", 0))
+    except (TypeError, ValueError):
+        recording_countdown = 0
+    settings["captureRecordingCountdown"] = recording_countdown if recording_countdown in (0, 3, 5, 10) else 0
 
     for name, minimum, maximum, fallback in (
         ("barHeight", 40, 72, 50),
         ("caffeineAutoDisableMinutes", 0, 720, 0),
+        ("idleBatteryDisplayTimeout", 0, 86400, 300),
+        ("idleBatteryLockTimeout", 0, 86400, 300),
+        ("idleBatterySuspendTimeout", 0, 86400, 900),
+        ("idleDimDuration", 0, 30, 5),
         ("idleDisplayTimeout", 0, 86400, 600),
         ("idleLockedDisplayTimeout", 0, 86400, 60),
         ("idleLockTimeout", 0, 86400, 600),
         ("idleSuspendTimeout", 0, 86400, 0),
+        ("lockFaceMaxAttempts", 1, 3, 3),
         ("launcherMaxResults", 5, 50, 20),
         ("notificationCriticalTimeout", 0, 60000, 0),
         ("notificationHistoryLimit", 0, 500, 100),
@@ -2163,6 +2287,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         ("wallpaperTransitionDuration", 0, 2000, 360),
         ("matugenTransitionDuration", 0, 2000, 300),
         ("captureRecordingFps", 5, 165, 60),
+        ("captureScreenshotQuality", 1, 100, 90),
         ("captureEditorWidth", 1, 96, 6),
     ):
         try:
@@ -2173,6 +2298,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
 
     for name, minimum, maximum, fallback in (
         ("audioMaxVolume", 0.5, 1.5, 1.0),
+        ("idleDimOpacity", 0.2, 0.9, 0.55),
         ("shellAnimationScale", 0.0, 2.0, 1.0),
         ("shellBlurBarOpacityDark", 0.0, 1.0, 0.24),
         ("shellBlurBarOpacityLight", 0.0, 1.0, 0.86),
@@ -2211,15 +2337,19 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         ("cavaEnabled", True),
         ("idleEnabled", True),
         ("idleLockBeforeSleep", True),
+        ("idleRespectInhibitors", True),
+        ("idleSeparatePowerProfiles", False),
+        ("lockFaceRetryOnWake", True),
         ("launcherCalculatorEnabled", True),
         ("launcherClipboardAutoPaste", True),
         ("launcherClipboardEnabled", True),
         ("launcherEmojiEnabled", True),
         ("launcherFilesEnabled", True),
         ("launcherFuzzySearch", True),
+        ("launcherGifEnabled", True),
+        ("launcherStickerEnabled", True),
         ("notificationDndScheduleEnabled", False),
         ("notificationShowInFullscreen", True),
-        ("notificationShowOnLock", False),
         ("osdEnabled", True),
         ("osdShowBrightness", True),
         ("osdShowMicrophone", True),
@@ -2243,11 +2373,15 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         ("captureAutoCopyScreenshot", True),
         ("captureAutoCopyRecording", True),
         ("captureRecordingMicrophone", False),
+        ("captureRecordingCursor", True),
         ("clock24h", True),
         ("wallhavenShowNsfw", False),
         ("wallpaperWorkshopShowNsfw", False),
+        ("greeterRememberLastSession", False),
     ):
         settings[name] = bool(merged.get(name, fallback))
+
+    settings["notificationShowOnLock"] = settings["notificationLockscreenPrivacy"] != "hidden"
 
     behavior_path = INCLUDE_DIR / "behavior.kdl"
     behavior_original = read(behavior_path)

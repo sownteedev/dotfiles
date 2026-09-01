@@ -7,6 +7,7 @@ import configparser
 import json
 import os
 import pwd
+import re
 import shutil
 import subprocess
 import sys
@@ -20,6 +21,7 @@ HOWDY_COMPARE = Path("/usr/lib/howdy/compare.py")
 HOWDY_MODULE = Path("/usr/lib/security/pam_howdy.so")
 HOWDY_CONFIG = Path("/etc/howdy/config.ini")
 HOWDY_MODELS = Path("/etc/howdy/models")
+V4L2_CTL = Path("/usr/bin/v4l2-ctl")
 PAM_TARGET = Path("/etc/pam.d/quickshell")
 PAM_BACKUP = Path("/etc/pam.d/quickshell.before-face-manager")
 PAM_CONTENT = """#%PAM-1.0
@@ -90,6 +92,7 @@ def read_camera_path() -> str:
 def status() -> None:
     account = requesting_account()
     installed = HOWDY.exists() and HOWDY_MODULE.exists() and HOWDY_COMPARE.exists()
+    cameras = list_cameras()
     managed_pam = False
     if PAM_TARGET.exists():
         try:
@@ -104,6 +107,7 @@ def status() -> None:
         enabled=managed_pam,
         models=models,
         camera=read_camera_path() if installed else "",
+        cameras=cameras,
         user=account.pw_name,
     )
 
@@ -122,41 +126,100 @@ def run_howdy(*arguments: str) -> subprocess.CompletedProcess[str]:
 
 
 def is_capture_device(path: Path) -> bool:
-    if not path.exists():
+    if not V4L2_CTL.exists() or not path.exists():
         return False
-    probe = subprocess.run(
-        ["/usr/bin/v4l2-ctl", "-d", str(path), "--all"],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        probe = subprocess.run(
+            [str(V4L2_CTL), "-d", str(path), "--all"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return False
     return probe.returncode == 0 and "Video Capture" in probe.stdout
 
 
-def detect_camera() -> Path:
-    configured = Path(read_camera_path())
-    if str(configured) not in ("", ".") and is_capture_device(configured):
-        return configured
-
+def camera_candidates() -> list[Path]:
     candidates = sorted(Path("/dev/v4l/by-id").glob("*-video-index0"))
     candidates.extend(sorted(Path("/dev/v4l/by-path").glob("*-video-index0")))
     candidates.extend(sorted(Path("/dev").glob("video*")))
-    for candidate in candidates:
-        if is_capture_device(candidate):
-            return candidate
+    return candidates
+
+
+def camera_label(path: Path) -> str:
+    try:
+        probe = subprocess.run(
+            [str(V4L2_CTL), "-d", str(path), "--info"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        probe = None
+    if probe and probe.returncode == 0:
+        match = re.search(r"(?mi)^\s*Card type\s*:\s*(.+?)\s*$", probe.stdout)
+        if match:
+            return match.group(1).strip().replace("_", " ")
+    return path.resolve().name.replace("_", " ").replace("-", " ").title()
+
+
+def list_cameras() -> list[dict[str, str]]:
+    cameras: list[dict[str, str]] = []
+    seen_devices: set[str] = set()
+    for candidate in camera_candidates():
+        if not is_capture_device(candidate):
+            continue
+        try:
+            device = str(candidate.resolve(strict=True))
+        except OSError:
+            continue
+        if device in seen_devices:
+            continue
+        seen_devices.add(device)
+        cameras.append({"path": str(candidate), "device": device, "label": camera_label(candidate)})
+    return cameras
+
+
+def detect_camera() -> Path:
+    configured = read_camera_path()
+    cameras = list_cameras()
+    for camera in cameras:
+        if configured in (camera["path"], camera["device"]):
+            return Path(camera["path"])
+    if configured:
+        configured_path = Path(configured)
+        if is_capture_device(configured_path):
+            return configured_path
+    if cameras:
+        return Path(cameras[0]["path"])
     raise ManagerError("No usable capture camera was found")
 
 
-def configure_howdy() -> Path:
+def configure_howdy(camera: Path | None = None) -> Path:
     if not HOWDY.exists() or not HOWDY_MODULE.exists():
         raise ManagerError("Howdy is not installed. Run the dotfiles installer first")
-    camera = detect_camera()
+    camera = camera or detect_camera()
     run_howdy("set", "device_path", str(camera))
     run_howdy("set", "detection_notice", "true")
     run_howdy("set", "force_mjpeg", "true")
     run_howdy("set", "save_failed", "false")
     run_howdy("set", "save_successful", "false")
     return camera
+
+
+def set_camera(camera_path: str) -> None:
+    require_root()
+    requested = camera_path.strip()
+    selected: Path | None = None
+    for camera in list_cameras():
+        if requested in (camera["path"], camera["device"]):
+            selected = Path(camera["path"])
+            break
+    if selected is None:
+        raise ManagerError("The selected camera is no longer available")
+    configured = configure_howdy(selected)
+    emit(True, f"Camera changed to {camera_label(configured)}", camera=str(configured))
 
 
 def normalize_model_permissions(account: pwd.struct_passwd) -> None:
@@ -275,6 +338,8 @@ def main() -> int:
             disable()
         elif command == "remove":
             remove_model(sys.argv[2] if len(sys.argv) > 2 else "")
+        elif command == "set-camera":
+            set_camera(sys.argv[2] if len(sys.argv) > 2 else "")
         else:
             raise ManagerError(f"Unknown command: {command}")
         return 0

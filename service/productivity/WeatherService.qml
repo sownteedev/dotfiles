@@ -29,7 +29,7 @@ QtObject {
     property bool detectingLocation: false
     property real dewPoint: 0
     property string errorMessage: ""
-    property int feelsLike: 0
+    property real feelsLike: 0
     property Process forecastProcess: Process {
         id: forecastProcess
 
@@ -155,9 +155,12 @@ QtObject {
 
         onTriggered: root.fetchWeather()
     }
-    property int tempMax: 0
-    property int tempMin: 0
-    property int temperature: 0
+    property real tempMax: 0
+    property real tempMin: 0
+    property real temperature: 0
+    readonly property string temperatureUnitName: useFahrenheit ? qsTr("Fahrenheit") : qsTr("Celsius")
+    readonly property string temperatureUnitSymbol: useFahrenheit ? "°F" : "°C"
+    readonly property bool useFahrenheit: Config.temperatureUnit === "fahrenheit"
     property real uvIndex: 0
     property int visibility: 0
     property int windDegree: 0
@@ -194,8 +197,8 @@ QtObject {
         var currentWeather = current.weather && current.weather.length > 0 ? current.weather[0] : {};
         var today = result.daily && result.daily.length > 0 ? result.daily[0] : null;
 
-        temperature = Math.round(current.temp || 0);
-        feelsLike = Math.round(current.feels_like || 0);
+        temperature = Number(current.temp || 0);
+        feelsLike = Number(current.feels_like || 0);
         humidity = Math.round(current.humidity || 0);
         windSpeed = Number(current.wind_speed || 0);
         windDegree = Math.round(current.wind_deg || 0);
@@ -205,8 +208,8 @@ QtObject {
         cloudiness = Math.round(current.clouds || 0);
         dewPoint = Number(current.dew_point || 0);
         precipitationLastHour = current.rain && current.rain["1h"] !== undefined ? Number(current.rain["1h"]) : (current.snow && current.snow["1h"] !== undefined ? Number(current.snow["1h"]) : 0);
-        tempMax = today && today.temp ? Math.round(today.temp.max) : temperature;
-        tempMin = today && today.temp ? Math.round(today.temp.min) : temperature;
+        tempMax = today && today.temp ? Number(today.temp.max) : temperature;
+        tempMin = today && today.temp ? Number(today.temp.min) : temperature;
         condition = titleCase(currentWeather.description || "Unknown");
         icon = weatherIcon(currentWeather.icon || "02d");
 
@@ -265,7 +268,7 @@ QtObject {
                 hourly.push({
                     time: hourText(hour.dt, firstHour),
                     icon: weatherIcon(hourWeather.icon || "02d"),
-                    temperature: Math.round(hour.temp) + "°",
+                    temperature: Number(hour.temp || 0),
                     precipitationProbability: Math.round(Number(hour.pop || 0) * 100),
                     precipitationAmount: hour.rain && hour.rain["1h"] !== undefined ? Number(hour.rain["1h"]) : (hour.snow && hour.snow["1h"] !== undefined ? Number(hour.snow["1h"]) : 0),
                     humidity: Math.round(hour.humidity || 0),
@@ -285,8 +288,8 @@ QtObject {
                 daily.push({
                     day: dayName(forecast.dt),
                     icon: weatherIcon(forecastWeather.icon || "02d"),
-                    tempMax: Math.round(forecast.temp.max),
-                    tempMin: Math.round(forecast.temp.min),
+                    tempMax: Number(forecast.temp.max || 0),
+                    tempMin: Number(forecast.temp.min || 0),
                     precipitationProbability: Math.round(Number(forecast.pop || 0) * 100),
                     precipitationAmount: forecast.rain !== undefined ? Number(forecast.rain) : (forecast.snow !== undefined ? Number(forecast.snow) : 0),
                     summary: forecast.summary || "",
@@ -370,6 +373,11 @@ QtObject {
             return "";
         return String.fromCharCode(0xD83C, 0xDDE6 + first, 0xD83C, 0xDDE6 + second);
     }
+    function formatTemperature(celsius, decimals, includeUnit) {
+        var precision = decimals === undefined ? 0 : Math.max(0, Math.round(decimals));
+        var suffix = includeUnit === false ? "°" : temperatureUnitSymbol;
+        return toDisplayTemperature(celsius).toFixed(precision) + suffix;
+    }
     function hourText(timestamp, firstHour) {
         if (firstHour)
             return "Now";
@@ -419,6 +427,12 @@ QtObject {
         return value.split(" ").map(function (word) {
             return word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word;
         }).join(" ");
+    }
+    function toDisplayTemperature(celsius) {
+        var value = Number(celsius);
+        if (!isFinite(value))
+            value = 0;
+        return useFahrenheit ? value * 9 / 5 + 32 : value;
     }
     function validSunTime(todayTime, tomorrowTime, now, limit) {
         if (todayTime > now && todayTime <= limit)

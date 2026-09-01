@@ -47,6 +47,8 @@ QtObject {
         target: root.controlPanelLoader
     }
     property bool keyboardFocusRequested: false
+    property var launcherCalculatorHistory: []
+    property var launcherCalculatorLastAnswer: null
     property bool leftEdgeCompletionOpen: false
     property bool leftEdgeCompletionPending: false
     property bool leftEdgeGestureActive: false
@@ -120,6 +122,27 @@ QtObject {
         rightEdgeGestureProgress = 0;
         controlPanelLoader.active = true;
         syncControlRightLoader();
+    }
+    function commitLauncherCalculation(expression, value, display) {
+        var cleanExpression = String(expression || "").trim();
+        var numericValue = Number(value);
+        if (cleanExpression === "" || !isFinite(numericValue))
+            return;
+
+        var entry = {
+            "display": String(display || numericValue),
+            "expression": cleanExpression,
+            "value": numericValue
+        };
+        var nextHistory = [entry];
+        for (var index = 0; index < launcherCalculatorHistory.length && nextHistory.length < 8; ++index) {
+            var previous = launcherCalculatorHistory[index];
+            if (!previous || String(previous.expression) === cleanExpression)
+                continue;
+            nextHistory.push(previous);
+        }
+        launcherCalculatorHistory = nextHistory;
+        launcherCalculatorLastAnswer = numericValue;
     }
     function finishControlLeftEdgeDrag(shouldOpen) {
         if (!leftEdgeGestureActive)

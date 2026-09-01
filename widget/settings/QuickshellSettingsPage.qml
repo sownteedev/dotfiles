@@ -11,6 +11,78 @@ Item {
 
     property int activeSection: 0
     property string baselineState: ""
+    property bool capturePopupOpen: false
+    property bool capturePopupOpenAbove: false
+    property real capturePopupRightMargin: 12
+    property string capturePopupTarget: ""
+    property real capturePopupY: 0
+    property string editorDefaultTool: "pen"
+    readonly property var editorToolOptions: [
+        {
+            "label": qsTr("Select and move"),
+            "value": "select"
+        },
+        {
+            "label": qsTr("Pen"),
+            "value": "pen"
+        },
+        {
+            "label": qsTr("Highlighter"),
+            "value": "highlight"
+        },
+        {
+            "label": qsTr("Line"),
+            "value": "line"
+        },
+        {
+            "label": qsTr("Arrow"),
+            "value": "arrow"
+        },
+        {
+            "label": qsTr("Rectangle"),
+            "value": "rectangle"
+        },
+        {
+            "label": qsTr("Ellipse"),
+            "value": "ellipse"
+        },
+        {
+            "label": qsTr("Blur"),
+            "value": "blur"
+        },
+        {
+            "label": qsTr("Pixelate"),
+            "value": "pixelate"
+        },
+        {
+            "label": qsTr("Text"),
+            "value": "text"
+        },
+        {
+            "label": qsTr("Number marker"),
+            "value": "number"
+        },
+        {
+            "label": qsTr("Zoom callout"),
+            "value": "callout"
+        },
+        {
+            "label": qsTr("Magnifier"),
+            "value": "loupe"
+        },
+        {
+            "label": qsTr("Crop"),
+            "value": "crop"
+        },
+        {
+            "label": qsTr("OCR"),
+            "value": "ocr"
+        },
+        {
+            "label": qsTr("Eraser"),
+            "value": "eraser"
+        }
+    ]
     readonly property bool headerActionEnabled: !SettingsHubService.busy
     readonly property string headerActionIcon: "document-save-symbolic"
     readonly property string headerActionText: SettingsHubService.busy ? "Saving…" : "Apply & save"
@@ -19,11 +91,40 @@ Item {
     property QtObject profileImageField: QtObject {
         property string text: ""
     }
+    readonly property var recordingMicrophoneOptions: {
+        var options = (CaptureService.recordingMicrophoneOptions || []).slice();
+        var current = String(recordingMicrophoneSource || "default_input");
+        var present = false;
+        for (var i = 0; i < options.length; ++i) {
+            if (String(options[i].value) === current) {
+                present = true;
+                break;
+            }
+        }
+        if (!present) {
+            options.push({
+                "label": qsTr("Unavailable device"),
+                "value": current
+            });
+        }
+        return options;
+    }
+    property string recordingMicrophoneSource: "default_input"
     property bool revealApiKey: false
     property bool revealGoogleToken: false
+    property bool revealKlipyApiKey: false
     property bool revealSteamApiKey: false
     property bool revealWallhavenApiKey: false
 
+    function capturePopupOptions() {
+        return capturePopupTarget === "editor-tool" ? editorToolOptions : recordingMicrophoneOptions;
+    }
+    function capturePopupValue() {
+        return capturePopupTarget === "editor-tool" ? editorDefaultTool : recordingMicrophoneSource;
+    }
+    function closeCapturePopup() {
+        capturePopupOpen = false;
+    }
     function currentState() {
         var settings = SettingsHubService.quickshellSettings || ({});
         return {
@@ -54,8 +155,10 @@ Item {
             "shellShadowOpacity": Number(shadowOpacityField.text),
             "shellShadowSpread": Number(shadowSpreadField.text),
             "clock24h": clockToggle.checked,
+            "temperatureUnit": temperatureUnitChoice.value,
             "latLon": locationField.text,
             "apiWeather": apiField.text,
+            "launcherKlipyApiKey": klipyApiKeyField.text,
             "steamUsername": steamUsernameField.text,
             "steamWebApiKey": steamApiKeyField.text,
             "wallhavenUsername": wallhavenUsernameField.text,
@@ -68,6 +171,7 @@ Item {
             "wallpaperEngineFps": Number(engineFpsField.text),
             "wallpaperPauseOnFullscreen": pauseFullscreenToggle.checked,
             "wallpaperPauseOnLock": pauseLockToggle.checked,
+            "wallpaperScalingMode": wallpaperScalingChoice.value,
             "wallpaperTransitionDuration": Number(wallpaperTransitionField.text),
             "matugenEnabled": matugenToggle.checked,
             "matugenAnimateColors": matugenAnimationToggle.checked,
@@ -78,14 +182,48 @@ Item {
             "captureAutoCopyRecording": copyRecordingToggle.checked,
             "captureRecordingFps": Number(recordingFpsField.text),
             "captureRecordingCodec": recordingCodecChoice.value,
+            "captureRecordingCountdown": Number(recordingCountdownChoice.value),
+            "captureRecordingCursor": recordingCursorToggle.checked,
             "captureRecordingQuality": recordingQualityChoice.value,
             "captureRecordingMicrophone": recordingMicrophoneToggle.checked,
-            "captureEditorTool": settings.captureEditorTool ?? Config.captureEditorTool,
+            "captureRecordingMicrophoneSource": recordingMicrophoneSource,
+            "captureRecordingMode": recordingModeChoice.value,
+            "captureScreenshotAction": screenshotActionChoice.value,
+            "captureScreenshotFilenameTemplate": screenshotFilenameField.text,
+            "captureScreenshotFormat": screenshotFormatChoice.value,
+            "captureScreenshotQuality": Number(screenshotQualityField.text),
+            "captureEditorTool": editorDefaultTool,
             "captureEditorColor": settings.captureEditorColor ?? Config.captureEditorColor,
             "captureEditorWidth": settings.captureEditorWidth ?? Config.captureEditorWidth,
             "wallpaperEngineAssetsDirPath": engineAssetsField.text,
             "wallpaperEngineWorkshopDirPath": engineWorkshopField.text
         };
+    }
+    function openCapturePopup(sourceItem, target) {
+        if (!sourceItem)
+            return;
+        if (capturePopupOpen && capturePopupTarget === target) {
+            closeCapturePopup();
+            return;
+        }
+
+        if (target === "microphone")
+            CaptureService.refreshRecordingMicrophones();
+        capturePopupTarget = target;
+        var position = sourceItem.mapToItem(root, 0, 0);
+        var popupHeight = Math.min(height - 24, capturePopupOptions().length * 44 + 16);
+        var belowY = position.y + sourceItem.height + 8;
+        capturePopupOpenAbove = belowY + popupHeight > height;
+        capturePopupY = capturePopupOpenAbove ? position.y - popupHeight - 8 : belowY;
+        capturePopupRightMargin = Math.max(12, width - position.x - sourceItem.width);
+        capturePopupOpen = true;
+    }
+    function optionLabel(options, value, fallback) {
+        for (var i = 0; i < options.length; ++i) {
+            if (String(options[i].value) === String(value))
+                return String(options[i].label);
+        }
+        return fallback;
     }
     function refreshIntegrations() {
         GoogleService.checkAuthentication();
@@ -95,7 +233,17 @@ Item {
     function resetPage() {
         syncFields();
     }
+    function selectCapturePopupItem(item) {
+        if (!item)
+            return;
+        if (capturePopupTarget === "editor-tool")
+            editorDefaultTool = String(item.value);
+        else
+            recordingMicrophoneSource = String(item.value);
+        closeCapturePopup();
+    }
     function syncFields() {
+        closeCapturePopup();
         var settings = SettingsHubService.quickshellSettings || ({});
         fontField.text = settings.fontName || Config.fontName;
         profileImageField.text = settings.profileImagePath || Config.profileImagePath;
@@ -124,8 +272,10 @@ Item {
         shadowOpacityField.text = String(settings.shellShadowOpacity ?? Config.shellShadowOpacity);
         shadowSpreadField.text = String(settings.shellShadowSpread ?? Config.shellShadowSpread);
         clockToggle.checked = settings.clock24h ?? Config.clock24h;
+        temperatureUnitChoice.value = settings.temperatureUnit || Config.temperatureUnit;
         locationField.text = settings.latLon || Config.latLon;
         apiField.text = settings.apiWeather || Config.apiWeather;
+        klipyApiKeyField.text = settings.launcherKlipyApiKey || Config.launcherKlipyApiKey;
         steamUsernameField.text = settings.steamUsername || Config.steamUsername;
         steamApiKeyField.text = settings.steamWebApiKey || Config.steamWebApiKey;
         wallhavenUsernameField.text = settings.wallhavenUsername || Config.wallhavenUsername;
@@ -136,6 +286,7 @@ Item {
         engineFpsField.text = String(settings.wallpaperEngineFps ?? Config.wallpaperEngineFps);
         pauseFullscreenToggle.checked = settings.wallpaperPauseOnFullscreen ?? Config.wallpaperPauseOnFullscreen;
         pauseLockToggle.checked = settings.wallpaperPauseOnLock ?? Config.wallpaperPauseOnLock;
+        wallpaperScalingChoice.value = settings.wallpaperScalingMode || Config.wallpaperScalingMode;
         wallpaperTransitionField.text = String(settings.wallpaperTransitionDuration ?? Config.wallpaperTransitionDuration);
         matugenToggle.checked = settings.matugenEnabled ?? Config.matugenEnabled;
         matugenAnimationToggle.checked = settings.matugenAnimateColors ?? Config.matugenAnimateColors;
@@ -146,20 +297,33 @@ Item {
         copyRecordingToggle.checked = settings.captureAutoCopyRecording ?? Config.captureAutoCopyRecording;
         recordingFpsField.text = String(settings.captureRecordingFps ?? Config.captureRecordingFps);
         recordingCodecChoice.value = settings.captureRecordingCodec || Config.captureRecordingCodec;
+        recordingCountdownChoice.value = String(settings.captureRecordingCountdown ?? Config.captureRecordingCountdown);
+        recordingCursorToggle.checked = settings.captureRecordingCursor ?? Config.captureRecordingCursor;
         recordingQualityChoice.value = settings.captureRecordingQuality || Config.captureRecordingQuality;
         recordingMicrophoneToggle.checked = settings.captureRecordingMicrophone ?? Config.captureRecordingMicrophone;
+        recordingMicrophoneSource = settings.captureRecordingMicrophoneSource || Config.captureRecordingMicrophoneSource;
+        recordingModeChoice.value = settings.captureRecordingMode || Config.captureRecordingMode;
+        screenshotActionChoice.value = settings.captureScreenshotAction || Config.captureScreenshotAction;
+        screenshotFilenameField.text = settings.captureScreenshotFilenameTemplate || Config.captureScreenshotFilenameTemplate;
+        screenshotFormatChoice.value = settings.captureScreenshotFormat || Config.captureScreenshotFormat;
+        screenshotQualityField.text = String(settings.captureScreenshotQuality ?? Config.captureScreenshotQuality);
+        editorDefaultTool = settings.captureEditorTool || Config.captureEditorTool;
         engineAssetsField.text = settings.wallpaperEngineAssetsDirPath || Config.wallpaperEngineAssetsDirPath;
         engineWorkshopField.text = settings.wallpaperEngineWorkshopDirPath || Config.wallpaperEngineWorkshopDirPath;
         baselineState = JSON.stringify(currentState());
     }
     function triggerHeaderAction() {
+        closeCapturePopup();
         SettingsHubService.saveQuickshell(currentState());
     }
 
     Component.onCompleted: syncFields()
     onActiveSectionChanged: {
+        closeCapturePopup();
         scroll.contentItem.contentX = 0;
         scroll.contentItem.contentY = 0;
+        if (activeSection === 2)
+            CaptureService.refreshRecordingMicrophones();
         if (activeSection === 3)
             refreshIntegrations();
     }
@@ -632,7 +796,7 @@ Item {
                 accentColor: Config.md3.primary
                 compact: true
                 iconName: "preferences-system-time-symbolic"
-                note: "Regional date and time presentation"
+                note: qsTr("Regional date, time and temperature presentation")
                 title: "Date & time"
                 visible: root.activeSection === 0
 
@@ -643,6 +807,23 @@ Item {
                     note: "Turn off to use 12-hour AM/PM format"
 
                     onToggled: value => checked = value
+                }
+                SettingsChoiceRow {
+                    id: temperatureUnitChoice
+
+                    Layout.fillWidth: true
+                    label: qsTr("Temperature unit")
+                    note: qsTr("Used by weather on the bar, lock screen and Control Left")
+                    options: [
+                        {
+                            "label": qsTr("Celsius (°C)"),
+                            "value": "celsius"
+                        },
+                        {
+                            "label": qsTr("Fahrenheit (°F)"),
+                            "value": "fahrenheit"
+                        }
+                    ]
                 }
             }
             SettingsSectionCard {
@@ -692,6 +873,27 @@ Item {
                 title: "Playback"
                 visible: root.activeSection === 1
 
+                SettingsChoiceRow {
+                    id: wallpaperScalingChoice
+
+                    Layout.fillWidth: true
+                    label: qsTr("Scaling mode")
+                    note: qsTr("Choose whether wallpapers crop, preserve their full aspect ratio, or stretch to the screen")
+                    options: [
+                        {
+                            "label": qsTr("Fill"),
+                            "value": "fill"
+                        },
+                        {
+                            "label": qsTr("Fit"),
+                            "value": "fit"
+                        },
+                        {
+                            "label": qsTr("Stretch"),
+                            "value": "stretch"
+                        }
+                    ]
+                }
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 14
@@ -833,77 +1035,96 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
-                iconName: "media-record-symbolic"
-                note: "Defaults passed directly to gpu-screen-recorder"
-                title: "Recording"
+                iconName: "camera-photo-symbolic"
+                note: qsTr("Choose what happens after capture and how images are exported")
+                title: qsTr("Screenshot")
                 visible: root.activeSection === 2
 
-                RowLayout {
+                SettingsSelectRow {
+                    label: qsTr("Default editor tool")
+                    note: qsTr("Selected automatically whenever Screenshot Editor opens")
+                    valueText: root.optionLabel(root.editorToolOptions, root.editorDefaultTool, qsTr("Pen"))
+
+                    onClicked: sourceItem => root.openCapturePopup(sourceItem, "editor-tool")
+                }
+                SettingsChoiceRow {
+                    id: screenshotActionChoice
+
                     Layout.fillWidth: true
-                    spacing: 14
+                    label: qsTr("After capture")
+                    options: [
+                        {
+                            "label": qsTr("Notification"),
+                            "value": "notification"
+                        },
+                        {
+                            "label": qsTr("Open editor"),
+                            "value": "editor"
+                        },
+                        {
+                            "label": qsTr("Copy directly"),
+                            "value": "copy"
+                        },
+                        {
+                            "label": qsTr("Save only"),
+                            "value": "save"
+                        }
+                    ]
+                }
+                SettingsChoiceRow {
+                    id: screenshotFormatChoice
+
+                    Layout.fillWidth: true
+                    label: qsTr("Image format")
+                    note: qsTr("JPEG and WebP use the quality value below")
+                    options: [
+                        {
+                            "label": "PNG",
+                            "value": "png"
+                        },
+                        {
+                            "label": "JPEG",
+                            "value": "jpeg"
+                        },
+                        {
+                            "label": "WebP",
+                            "value": "webp"
+                        }
+                    ]
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columnSpacing: 12
+                    columns: screenshotQualityField.visible && width >= 620 ? 2 : 1
+                    rowSpacing: 10
+                    uniformCellWidths: true
 
                     SettingsTextField {
-                        id: recordingFpsField
+                        id: screenshotFilenameField
 
                         Layout.fillWidth: true
-                        label: "FPS"
-                        placeholder: "60"
+                        label: qsTr("Edited filename · {date} and {time}")
+                        placeholder: "{date}_{time}-edited"
+                    }
+                    SettingsTextField {
+                        id: screenshotQualityField
+
+                        Layout.fillWidth: true
+                        label: qsTr("Image quality (1–100)")
+                        placeholder: "90"
+                        visible: screenshotFormatChoice.value !== "png"
 
                         inputItem.validator: IntValidator {
-                            bottom: 5
-                            top: 165
+                            bottom: 1
+                            top: 100
                         }
                     }
-                    SettingsChoiceRow {
-                        id: recordingCodecChoice
-
-                        Layout.fillWidth: true
-                        label: "Codec"
-                        options: [
-                            {
-                                "label": "H.264",
-                                "value": "h264"
-                            },
-                            {
-                                "label": "HEVC",
-                                "value": "hevc"
-                            },
-                        ]
-                    }
-                    SettingsChoiceRow {
-                        id: recordingQualityChoice
-
-                        Layout.fillWidth: true
-                        label: "Quality"
-                        options: [
-                            {
-                                "label": "Medium",
-                                "value": "medium"
-                            },
-                            {
-                                "label": "High",
-                                "value": "high"
-                            },
-                            {
-                                "label": "Very high",
-                                "value": "very_high"
-                            }
-                        ]
-                    }
                 }
                 SettingsToggleRow {
-                    id: recordingMicrophoneToggle
+                    id: copyScreenshotToggle
 
-                    label: "Record microphone"
-                    note: "Mixes the default microphone with system audio directly"
-
-                    onToggled: value => checked = value
-                }
-                SettingsToggleRow {
-                    id: copyRecordingToggle
-
-                    label: "Copy recording after stop"
-                    note: "Copies a file URI without buffering the whole video in memory"
+                    label: qsTr("Copy edited screenshot")
+                    note: qsTr("Places the final exported image on the clipboard")
 
                     onToggled: value => checked = value
                 }
@@ -911,18 +1132,310 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
-                iconName: "camera-photo-symbolic"
-                note: "Clipboard behavior after editing a screenshot"
-                title: "Screenshot"
+                compact: true
+                iconName: "media-record-symbolic"
+                note: qsTr("Capture area, encoding and recording behavior")
+                title: qsTr("Recording")
                 visible: root.activeSection === 2
 
-                SettingsToggleRow {
-                    id: copyScreenshotToggle
+                GridLayout {
+                    id: recordingGroupGrid
 
-                    label: "Copy edited screenshot"
-                    note: "Automatically places the saved PNG on the clipboard"
+                    Layout.fillWidth: true
+                    columnSpacing: 12
+                    columns: width >= 900 ? 3 : width >= 620 ? 2 : 1
+                    rowSpacing: 12
+                    uniformCellWidths: true
 
-                    onToggled: value => checked = value
+                    Rectangle {
+                        id: recordingCapturePanel
+
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        border.color: Config.alpha(Config.md3.on_surface, 0.065)
+                        border.width: 1
+                        color: Config.alpha(Config.md3.on_surface, 0.035)
+                        implicitHeight: recordingCaptureContent.implicitHeight + 28
+                        radius: 14
+
+                        ColumnLayout {
+                            id: recordingCaptureContent
+
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 12
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                Rectangle {
+                                    Layout.preferredHeight: 30
+                                    Layout.preferredWidth: 4
+                                    color: Config.md3.primary
+                                    radius: 2
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: Config.md3.on_surface
+                                        font.family: Config.fontName
+                                        font.pixelSize: 14
+                                        font.weight: Font.DemiBold
+                                        text: qsTr("Capture")
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: Config.alpha(Config.md3.on_surface, 0.46)
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 11
+                                        text: qsTr("Area and start delay")
+                                    }
+                                }
+                            }
+                            SettingsChoiceRow {
+                                id: recordingModeChoice
+
+                                Layout.fillWidth: true
+                                label: qsTr("Capture area")
+                                options: [
+                                    {
+                                        "label": qsTr("Region"),
+                                        "value": "region"
+                                    },
+                                    {
+                                        "label": qsTr("Full screen"),
+                                        "value": "screen"
+                                    }
+                                ]
+                            }
+                            SettingsChoiceRow {
+                                id: recordingCountdownChoice
+
+                                Layout.fillWidth: true
+                                label: qsTr("Start delay")
+                                options: [
+                                    {
+                                        "label": qsTr("Off"),
+                                        "value": "0"
+                                    },
+                                    {
+                                        "label": qsTr("3 s"),
+                                        "value": "3"
+                                    },
+                                    {
+                                        "label": qsTr("5 s"),
+                                        "value": "5"
+                                    },
+                                    {
+                                        "label": qsTr("10 s"),
+                                        "value": "10"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                    Rectangle {
+                        id: recordingEncodingPanel
+
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        border.color: Config.alpha(Config.md3.on_surface, 0.065)
+                        border.width: 1
+                        color: Config.alpha(Config.md3.on_surface, 0.035)
+                        implicitHeight: recordingEncodingContent.implicitHeight + 28
+                        radius: 14
+
+                        ColumnLayout {
+                            id: recordingEncodingContent
+
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 12
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                Rectangle {
+                                    Layout.preferredHeight: 30
+                                    Layout.preferredWidth: 4
+                                    color: Config.md3.secondary
+                                    radius: 2
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: Config.md3.on_surface
+                                        font.family: Config.fontName
+                                        font.pixelSize: 14
+                                        font.weight: Font.DemiBold
+                                        text: qsTr("Encoding")
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: Config.alpha(Config.md3.on_surface, 0.46)
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 11
+                                        text: qsTr("Frame rate, codec and quality")
+                                    }
+                                }
+                            }
+                            SettingsTextField {
+                                id: recordingFpsField
+
+                                Layout.fillWidth: true
+                                label: qsTr("Frame rate (FPS)")
+                                placeholder: "60"
+
+                                inputItem.validator: IntValidator {
+                                    bottom: 5
+                                    top: 165
+                                }
+                            }
+                            SettingsChoiceRow {
+                                id: recordingCodecChoice
+
+                                Layout.fillWidth: true
+                                label: qsTr("Codec")
+                                options: [
+                                    {
+                                        "label": "H.264",
+                                        "value": "h264"
+                                    },
+                                    {
+                                        "label": "HEVC",
+                                        "value": "hevc"
+                                    },
+                                ]
+                            }
+                            SettingsChoiceRow {
+                                id: recordingQualityChoice
+
+                                Layout.fillWidth: true
+                                label: qsTr("Quality")
+                                options: [
+                                    {
+                                        "label": qsTr("Medium"),
+                                        "value": "medium"
+                                    },
+                                    {
+                                        "label": qsTr("High"),
+                                        "value": "high"
+                                    },
+                                    {
+                                        "label": qsTr("Very high"),
+                                        "value": "very_high"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                    Rectangle {
+                        id: recordingBehaviorPanel
+
+                        Layout.columnSpan: recordingGroupGrid.columns === 2 ? 2 : 1
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        border.color: Config.alpha(Config.md3.on_surface, 0.065)
+                        border.width: 1
+                        color: Config.alpha(Config.md3.on_surface, 0.035)
+                        implicitHeight: recordingBehaviorContent.implicitHeight + 28
+                        radius: 14
+
+                        ColumnLayout {
+                            id: recordingBehaviorContent
+
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 8
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                Rectangle {
+                                    Layout.preferredHeight: 30
+                                    Layout.preferredWidth: 4
+                                    color: Config.md3.tertiary
+                                    radius: 2
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: Config.md3.on_surface
+                                        font.family: Config.fontName
+                                        font.pixelSize: 14
+                                        font.weight: Font.DemiBold
+                                        text: qsTr("Behavior")
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        color: Config.alpha(Config.md3.on_surface, 0.46)
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 11
+                                        text: qsTr("Cursor, microphone and clipboard")
+                                    }
+                                }
+                            }
+                            GridLayout {
+                                id: recordingBehaviorGrid
+
+                                Layout.fillWidth: true
+                                columnSpacing: 12
+                                columns: recordingBehaviorPanel.width >= 760 ? 3 : recordingBehaviorPanel.width >= 500 ? 2 : 1
+                                rowSpacing: 4
+                                uniformCellWidths: true
+
+                                SettingsToggleRow {
+                                    id: recordingCursorToggle
+
+                                    label: qsTr("Capture cursor")
+                                    note: qsTr("Show the pointer in the video")
+
+                                    onToggled: value => checked = value
+                                }
+                                SettingsToggleRow {
+                                    id: recordingMicrophoneToggle
+
+                                    label: qsTr("Record microphone")
+                                    note: qsTr("Mix voice with system audio")
+
+                                    onToggled: value => checked = value
+                                }
+                                SettingsToggleRow {
+                                    id: copyRecordingToggle
+
+                                    label: qsTr("Copy after stop")
+                                    note: qsTr("Copy the recording as a file")
+
+                                    onToggled: value => checked = value
+                                }
+                                SettingsSelectRow {
+                                    Layout.columnSpan: recordingBehaviorGrid.columns
+                                    enabled: recordingMicrophoneToggle.checked
+                                    label: qsTr("Microphone source")
+                                    note: CaptureService.recordingMicrophoneQueryBusy ? qsTr("Refreshing available devices…") : qsTr("Select the input device used for your voice")
+                                    valueText: root.optionLabel(root.recordingMicrophoneOptions, root.recordingMicrophoneSource, qsTr("Default microphone"))
+                                    visible: recordingMicrophoneToggle.checked
+
+                                    onClicked: sourceItem => root.openCapturePopup(sourceItem, "microphone")
+                                }
+                            }
+                        }
+                    }
                 }
             }
             SettingsIntegrationCard {
@@ -1050,6 +1563,35 @@ Item {
                 }
             }
             SettingsIntegrationCard {
+                id: klipyIntegration
+
+                accentColor: Config.md3.primary
+                actionIcon: "external-link-symbolic"
+                actionText: qsTr("Get KLIPY API key")
+                actionVisible: true
+                iconName: "applications-internet-symbolic"
+                note: qsTr("GIF and sticker provider for Launcher; the key is stored in private runtime settings")
+                statusColor: klipyApiKeyField.text !== "" ? Config.md3.secondary : Config.md3.tertiary
+                statusIcon: klipyApiKeyField.text !== "" ? "emblem-ok-symbolic" : "dialog-information-symbolic"
+                statusText: klipyApiKeyField.text !== "" ? qsTr("Configured") : qsTr("Setup required")
+                title: qsTr("KLIPY")
+                visible: root.activeSection === 3
+
+                onActionClicked: Qt.openUrlExternally("https://partner.klipy.com")
+
+                SettingsTextField {
+                    id: klipyApiKeyField
+
+                    Layout.fillWidth: true
+                    actionIcon: root.revealKlipyApiKey ? "view-conceal-symbolic" : "view-reveal-symbolic"
+                    echoMode: root.revealKlipyApiKey ? TextInput.Normal : TextInput.Password
+                    label: qsTr("API key")
+                    placeholder: qsTr("Enter KLIPY API key")
+
+                    onActionClicked: root.revealKlipyApiKey = !root.revealKlipyApiKey
+                }
+            }
+            SettingsIntegrationCard {
                 id: engineIntegration
 
                 accentColor: Config.md3.error
@@ -1157,5 +1699,28 @@ Item {
                 }
             }
         }
+    }
+    SelectPopup {
+        accentColor: Config.md3.primary
+        anchors.fill: parent
+        itemActive: item => item && String(item.value) === root.capturePopupValue()
+        model: root.capturePopupOptions()
+        openAbove: root.capturePopupOpenAbove
+        opened: root.capturePopupOpen
+        popupWidth: root.capturePopupTarget === "microphone" ? 360 : 260
+        popupY: root.capturePopupY
+        rightMargin: root.capturePopupRightMargin
+        rowHeight: 44
+        z: 30
+
+        onDismissed: root.closeCapturePopup()
+        onItemSelected: item => root.selectCapturePopupItem(item)
+    }
+    Connections {
+        function onMovementStarted() {
+            root.closeCapturePopup();
+        }
+
+        target: scroll.contentItem
     }
 }

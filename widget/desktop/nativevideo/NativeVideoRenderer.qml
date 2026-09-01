@@ -14,6 +14,7 @@ ShellRoot {
             "generation": 0,
             "path": "",
             "paused": false,
+            "scalingMode": "fill",
             "serial": 0,
             "session": ""
         })
@@ -32,11 +33,15 @@ ShellRoot {
         var serial = Number(next.serial || 0);
         var session = String(next.session || "");
         var paused = Boolean(next.paused);
+        var scalingMode = String(next.scalingMode || "fill").toLowerCase();
+        if (scalingMode !== "fit" && scalingMode !== "stretch")
+            scalingMode = "fill";
         var current = requestData || {};
         if (session === String(current.session || "") && path === String(current.path || "") && generation === Number(current.generation || 0) && serial === Number(current.serial || 0)) {
-            if (paused !== Boolean(current.paused))
+            if (paused !== Boolean(current.paused) || scalingMode !== String(current.scalingMode || "fill"))
                 requestData = Object.assign({}, current, {
-                    "paused": paused
+                    "paused": paused,
+                    "scalingMode": scalingMode
                 });
             return;
         }
@@ -47,6 +52,7 @@ ShellRoot {
             "generation": generation,
             "path": path,
             "paused": paused,
+            "scalingMode": scalingMode,
             "serial": serial,
             "session": session
         };

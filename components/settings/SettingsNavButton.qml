@@ -17,6 +17,7 @@ Rectangle {
     property color iconColor: Config.md3.primary
     property string iconName: ""
     readonly property real iconSize: indented ? 18 : 22
+    readonly property real iconViewportSize: iconSize + 4
     property bool indented: false
     property real selectionProgress: active ? 1 : 0
     property string text: ""
@@ -56,7 +57,7 @@ Rectangle {
     }
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: root.compact ? (root.width - root.iconSize) / 2 : (root.indented ? 28 : 16)
+        anchors.leftMargin: root.compact ? (root.width - root.iconViewportSize) / 2 : (root.indented ? 26 : 14)
         anchors.rightMargin: root.compact ? 0 : 14
         spacing: root.indented ? 11 : 13
 
@@ -64,17 +65,21 @@ Rectangle {
             x: root.compact ? 0 : root.selectionProgress * 3
         }
 
-        IconImage {
-            Layout.preferredHeight: root.iconSize
-            Layout.preferredWidth: root.iconSize
-            height: root.iconSize
-            layer.enabled: true
-            source: Quickshell.iconPath(root.iconName)
+        Item {
+            Layout.preferredHeight: root.iconViewportSize
+            Layout.preferredWidth: root.iconViewportSize
+            layer.enabled: visible
             visible: root.iconName !== ""
-            width: root.iconSize
 
             layer.effect: ColorOverlay {
                 color: root.active ? root.iconColor : Config.alpha(root.iconColor, root.indented ? 0.66 : 0.82)
+            }
+
+            IconImage {
+                anchors.centerIn: parent
+                height: root.iconSize
+                source: Quickshell.iconPath(root.iconName)
+                width: root.iconSize
             }
         }
         Text {

@@ -1,5 +1,6 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
@@ -10,6 +11,7 @@ import "../../service"
 Item {
     id: appsGrid
 
+    property bool appDragActive: false
     readonly property int cellHeight: Math.max(1, Math.floor(pageContentHeight / rows))
     readonly property int cellWidth: Math.max(1, Math.floor(width / columns))
     readonly property int columns: Responsive.columnsFor(width, 210, 8, width < 300 ? 1 : 2, 0)
@@ -26,22 +28,79 @@ Item {
             return !entry.noDisplay && !entry.runInTerminal && entry.name && entry.name !== "";
         });
 
-        if (query.trim() !== "") {
-            var q = query.toLowerCase().trim();
+        var normalizedQuery = query.toLowerCase().trim();
+        if (normalizedQuery !== "") {
             apps = apps.filter(function (entry) {
-                var nameMatch = entry.name && entry.name.toLowerCase().indexOf(q) !== -1;
-                var commentMatch = entry.comment && entry.comment.toLowerCase().indexOf(q) !== -1;
-                var idMatch = entry.id && entry.id.toLowerCase().indexOf(q) !== -1;
+                var nameMatch = entry.name && entry.name.toLowerCase().indexOf(normalizedQuery) !== -1;
+                var commentMatch = entry.comment && entry.comment.toLowerCase().indexOf(normalizedQuery) !== -1;
+                var idMatch = entry.id && entry.id.toLowerCase().indexOf(normalizedQuery) !== -1;
                 return nameMatch || commentMatch || idMatch;
+            });
+
+            var searchItems = apps.map(function (entry) {
+                return {
+                    "entries": [],
+                    "entry": entry,
+                    "groupId": "",
+                    "kind": "app",
+                    "name": entry.name
+                };
+            });
+            searchItems.sort(function (a, b) {
+                return a.name.localeCompare(b.name, undefined, {
+                    sensitivity: "base",
+                    numeric: true
+                });
+            });
+            return searchItems;
+        }
+
+        var availableById = {};
+        for (var availableIndex = 0; availableIndex < apps.length; ++availableIndex)
+            availableById[apps[availableIndex].id] = apps[availableIndex];
+
+        var groupedAppIds = {};
+        var finalItems = [];
+        var groups = LauncherGroupService.groups || [];
+        for (var groupIndex = 0; groupIndex < groups.length; ++groupIndex) {
+            var group = groups[groupIndex];
+            var groupEntries = [];
+            var resolvedIds = {};
+            for (var appIndex = 0; appIndex < group.appIds.length; ++appIndex) {
+                var appId = group.appIds[appIndex];
+                var entry = availableById[appId] || DesktopEntries.byId(appId);
+                if (!entry || entry.noDisplay || entry.runInTerminal || !entry.name || entry.name === "" || resolvedIds[entry.id])
+                    continue;
+                resolvedIds[entry.id] = true;
+                groupEntries.push(entry);
+            }
+
+            if (groupEntries.length < 2)
+                continue;
+
+            for (var groupedIndex = 0; groupedIndex < groupEntries.length; ++groupedIndex)
+                groupedAppIds[groupEntries[groupedIndex].id] = true;
+            finalItems.push({
+                "entries": groupEntries,
+                "entry": null,
+                "groupId": group.id,
+                "kind": "group",
+                "name": group.name
             });
         }
 
-        var finalItems = apps.map(function (entry) {
-            return {
-                "name": entry.name,
-                "entry": entry
-            };
-        });
+        for (var entryIndex = 0; entryIndex < apps.length; ++entryIndex) {
+            var appEntry = apps[entryIndex];
+            if (groupedAppIds[appEntry.id])
+                continue;
+            finalItems.push({
+                "entries": [],
+                "entry": appEntry,
+                "groupId": "",
+                "kind": "app",
+                "name": appEntry.name
+            });
+        }
 
         finalItems.sort(function (a, b) {
             return a.name.localeCompare(b.name, undefined, {
@@ -52,6 +111,7 @@ Item {
 
         return finalItems;
     }
+    property bool groupPopupOpened: false
     readonly property real iconSize: Responsive.clamp(cellWidth * 0.38, 72, 96)
     readonly property int indicatorAreaHeight: 38
     readonly property int itemsPerPage: Math.max(1, columns * rows)
@@ -67,6 +127,7 @@ Item {
     readonly property int visiblePage: pageCount === 0 || pager.width <= 0 ? 0 : Math.max(0, Math.min(Math.round(pager.contentX / pager.width), pageCount - 1))
 
     signal appLaunched
+    signal groupOpenRequested(string groupId, bool editName)
 
     function beginTouchpadGesture() {
         if (pageCount <= 1 || pager.width <= 0)
@@ -104,10 +165,13 @@ Item {
         for (var index = startIndex; index < endIndex; ++index) {
             var sourceItem = gridItems[index];
             pageItems.push({
-                "name": sourceItem.name,
+                "entries": sourceItem.entries,
                 "entry": sourceItem.entry,
                 "globalIndex": index,
-                "localIndex": index - startIndex
+                "groupId": sourceItem.groupId,
+                "kind": sourceItem.kind,
+                "localIndex": index - startIndex,
+                "name": sourceItem.name
             });
         }
         return pageItems;
@@ -115,7 +179,13 @@ Item {
     function launchSelected() {
         if (currentIndex < 0 || currentIndex >= gridItems.length)
             return;
-        gridItems[currentIndex].entry.execute();
+        var selectedItem = gridItems[currentIndex];
+        if (selectedItem.kind === "group") {
+            appActionPopup.close();
+            groupOpenRequested(selectedItem.groupId, false);
+            return;
+        }
+        selectedItem.entry.execute();
         appLaunched();
     }
     function moveToPage(targetPage, animated) {
@@ -281,10 +351,24 @@ Item {
                     delegate: Item {
                         id: delegateRoot
 
+                        property real dragHotX: 0
+                        property real dragHotY: 0
+                        property bool draggedDuringPress: false
                         readonly property bool entranceReady: appsGrid.entranceReady
+                        readonly property bool isGroup: modelData.kind === "group"
                         readonly property bool isSelected: modelData.globalIndex === appsGrid.currentIndex
                         required property var modelData
 
+                        function activateItem() {
+                            appsGrid.currentIndex = modelData.globalIndex;
+                            if (isGroup) {
+                                appActionPopup.close();
+                                appsGrid.groupOpenRequested(modelData.groupId, false);
+                            } else {
+                                modelData.entry.execute();
+                                appsGrid.appLaunched();
+                            }
+                        }
                         function resetEntrance() {
                             entryTimer.stop();
                             entryAnim.stop();
@@ -311,6 +395,7 @@ Item {
                         opacity: 0
                         scale: 0.8
                         width: appsGrid.cellWidth
+                        z: gridMouse.drag.active ? 50 : 0
 
                         transform: Translate {
                             id: entryTranslate
@@ -367,18 +452,41 @@ Item {
                                 to: 0
                             }
                         }
+                        Item {
+                            id: dragProxy
+
+                            Drag.active: gridMouse.drag.active
+                            Drag.hotSpot.x: delegateRoot.dragHotX
+                            Drag.hotSpot.y: delegateRoot.dragHotY
+                            Drag.keys: ["launcher-app"]
+                            Drag.supportedActions: Qt.MoveAction
+                            height: Math.max(1, delegateRoot.height - 20)
+                            objectName: delegateRoot.isGroup || !delegateRoot.modelData.entry ? "" : delegateRoot.modelData.entry.id
+                            opacity: 0
+                            width: Math.max(1, delegateRoot.width - 20)
+                            x: 10
+                            y: 10
+                        }
                         Rectangle {
                             id: appCell
 
+                            Accessible.name: delegateRoot.modelData.name
+                            Accessible.role: Accessible.Button
                             anchors.fill: parent
                             anchors.margins: 10
-                            color: delegateRoot.isSelected ? Config.alpha(Config.md3.on_surface, gridMouse.pressed ? 0.2 : 0.13) : (gridMouse.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : (gridMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : "transparent"))
+                            color: dropTarget.containsDrag ? Config.alpha(Config.md3.primary_container, Config.lightTheme ? 0.86 : 0.72) : (delegateRoot.isSelected ? Config.alpha(Config.md3.on_surface, gridMouse.pressed ? 0.2 : 0.13) : (gridMouse.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : (gridMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : "transparent")))
+                            opacity: gridMouse.drag.active ? 0.94 : 1
                             radius: 18
-                            scale: gridMouse.pressed ? 0.95 : (gridMouse.containsMouse ? 1.02 : 1)
+                            scale: gridMouse.drag.active ? 1.08 : (dropTarget.containsDrag ? 1.04 : (gridMouse.pressed ? 0.95 : (gridMouse.containsMouse ? 1.02 : 1)))
 
                             Behavior on color {
                                 ColorAnimation {
                                     duration: Config.animationDuration(120)
+                                }
+                            }
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: Config.animationDuration(100)
                                 }
                             }
                             Behavior on scale {
@@ -387,7 +495,41 @@ Item {
                                     easing.type: Easing.OutQuad
                                 }
                             }
+                            transform: Translate {
+                                x: gridMouse.drag.active ? dragProxy.x - 10 : 0
+                                y: gridMouse.drag.active ? dragProxy.y - 10 : 0
+                            }
 
+                            Accessible.onPressAction: delegateRoot.activateItem()
+
+                            DropArea {
+                                id: dropTarget
+
+                                anchors.fill: parent
+                                enabled: appsGrid.query.trim() === ""
+                                keys: ["launcher-app"]
+
+                                onDropped: drop => {
+                                    var sourceAppId = String(drop.source ? drop.source.objectName || "" : "");
+                                    if (sourceAppId === "")
+                                        return;
+
+                                    if (delegateRoot.isGroup) {
+                                        if (!LauncherGroupService.addApp(delegateRoot.modelData.groupId, sourceAppId))
+                                            return;
+                                    } else {
+                                        var createdGroupId = LauncherGroupService.createGroup(sourceAppId, delegateRoot.modelData.entry.id);
+                                        if (createdGroupId === "")
+                                            return;
+                                    }
+                                    drop.acceptProposedAction();
+                                }
+                                onEntered: drag => {
+                                    var sourceAppId = String(drag.source ? drag.source.objectName || "" : "");
+                                    if (sourceAppId === "" || (!delegateRoot.isGroup && sourceAppId === delegateRoot.modelData.entry.id))
+                                        drag.accepted = false;
+                                }
+                            }
                             ColumnLayout {
                                 anchors.centerIn: parent
                                 spacing: 14
@@ -402,12 +544,19 @@ Item {
                                         anchors.fill: parent
                                         mipmap: true
                                         smooth: true
-                                        source: Quickshell.iconPath(delegateRoot.modelData.entry.icon || "application-x-executable")
+                                        source: visible ? Quickshell.iconPath(delegateRoot.modelData.entry.icon || "application-x-executable") : ""
+                                        visible: !delegateRoot.isGroup
+                                    }
+                                    LauncherGroupIcon {
+                                        anchors.fill: parent
+                                        dropActive: dropTarget.containsDrag
+                                        entries: delegateRoot.modelData.entries
+                                        visible: delegateRoot.isGroup
                                     }
                                 }
                                 Text {
                                     Layout.fillWidth: true
-                                    color: delegateRoot.isSelected || gridMouse.containsMouse ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.85)
+                                    color: dropTarget.containsDrag ? Config.md3.on_primary_container : (delegateRoot.isSelected || gridMouse.containsMouse ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.85))
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
                                     font.pixelSize: 15
@@ -424,25 +573,62 @@ Item {
                                     }
                                 }
                             }
-                            MouseArea {
-                                id: gridMouse
+                        }
+                        MouseArea {
+                            id: gridMouse
 
-                                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                hoverEnabled: true
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                            drag.axis: Drag.XAndYAxis
+                            drag.smoothed: false
+                            drag.target: !delegateRoot.isGroup && appsGrid.query.trim() === "" && (pressedButtons & Qt.LeftButton) ? dragProxy : null
+                            hoverEnabled: true
+                            preventStealing: !delegateRoot.isGroup && appsGrid.query.trim() === ""
 
-                                onClicked: mouse => {
-                                    appsGrid.currentIndex = delegateRoot.modelData.globalIndex;
-                                    if (mouse.button === Qt.RightButton) {
-                                        appActionPopup.openFor(delegateRoot.modelData.entry, delegateRoot.modelData.name, appCell, mouse.x, mouse.y);
-                                    } else {
-                                        delegateRoot.modelData.entry.execute();
-                                        appsGrid.appLaunched();
-                                    }
+                            drag.onActiveChanged: {
+                                if (drag.active) {
+                                    delegateRoot.draggedDuringPress = true;
+                                    appsGrid.appDragActive = true;
+                                    pageAnimation.stop();
+                                    appActionPopup.close();
+                                } else {
+                                    appsGrid.appDragActive = false;
+                                    dragProxy.x = 10;
+                                    dragProxy.y = 10;
                                 }
-                                onEntered: appsGrid.currentIndex = delegateRoot.modelData.globalIndex
-                                onPressed: appsGrid.currentIndex = delegateRoot.modelData.globalIndex
+                            }
+                            onCanceled: {
+                                appsGrid.appDragActive = false;
+                                if (dragProxy.Drag.active)
+                                    dragProxy.Drag.cancel();
+                            }
+                            onClicked: mouse => {
+                                if (delegateRoot.draggedDuringPress)
+                                    return;
+                                appsGrid.currentIndex = delegateRoot.modelData.globalIndex;
+                                if (mouse.button === Qt.RightButton) {
+                                    if (!delegateRoot.isGroup)
+                                        appActionPopup.openFor(delegateRoot.modelData.entry, delegateRoot.modelData.name, appCell, mouse.x, mouse.y);
+                                } else {
+                                    delegateRoot.activateItem();
+                                }
+                            }
+                            onEntered: appsGrid.currentIndex = delegateRoot.modelData.globalIndex
+                            onPressed: mouse => {
+                                appsGrid.currentIndex = delegateRoot.modelData.globalIndex;
+                                if (mouse.button === Qt.LeftButton) {
+                                    delegateRoot.draggedDuringPress = false;
+                                    delegateRoot.dragHotX = mouse.x;
+                                    delegateRoot.dragHotY = mouse.y;
+                                }
+                            }
+                            onReleased: mouse => {
+                                if (mouse.button === Qt.LeftButton && dragProxy.Drag.active) {
+                                    appsGrid.appDragActive = false;
+                                    dragProxy.Drag.drop();
+                                }
                             }
                         }
                     }
@@ -462,7 +648,7 @@ Item {
     DragHandler {
         id: pageDrag
 
-        enabled: appsGrid.pageCount > 1
+        enabled: appsGrid.pageCount > 1 && !appsGrid.appDragActive && !appsGrid.groupPopupOpened
         target: null
         xAxis.enabled: true
         yAxis.enabled: false
@@ -486,6 +672,7 @@ Item {
 
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         blocking: true
+        enabled: !appsGrid.appDragActive && !appsGrid.groupPopupOpened
         orientation: Qt.Horizontal
         target: null
 

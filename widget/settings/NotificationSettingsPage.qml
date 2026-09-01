@@ -60,7 +60,8 @@ Item {
             "notificationNormalTimeout": notificationNormalTimeout,
             "notificationPopupDuration": notificationNormalTimeout,
             "notificationPosition": positionChoice.value,
-            "notificationShowOnLock": lockToggle.checked,
+            "notificationLockscreenPrivacy": lockPrivacyChoice.value,
+            "notificationShowOnLock": lockPrivacyChoice.value !== "hidden",
             "notificationShowInFullscreen": fullscreenToggle.checked,
             "notificationHistoryLimit": Number(historyLimitField.text),
             "notificationHistoryExcludedApps": historyExcludedField.text,
@@ -123,7 +124,10 @@ Item {
         notificationNormalTimeout = normalizeTimeout(settings.notificationNormalTimeout ?? legacyTimeout, legacyTimeout);
         maxVisibleField.text = String(settings.notificationMaxVisible ?? Config.notificationMaxVisible);
         positionChoice.value = settings.notificationPosition || Config.notificationPosition;
-        lockToggle.checked = settings.notificationShowOnLock ?? Config.notificationShowOnLock;
+        var privacy = String(settings.notificationLockscreenPrivacy || Config.notificationLockscreenPrivacy || "");
+        if (["hidden", "icons", "full"].indexOf(privacy) < 0)
+            privacy = (settings.notificationShowOnLock ?? Config.notificationShowOnLock) ? "full" : "hidden";
+        lockPrivacyChoice.value = privacy;
         fullscreenToggle.checked = settings.notificationShowInFullscreen ?? Config.notificationShowInFullscreen;
         historyLimitField.text = String(settings.notificationHistoryLimit ?? Config.notificationHistoryLimit);
         historyExcludedField.text = settings.notificationHistoryExcludedApps ?? Config.notificationHistoryExcludedApps;
@@ -221,13 +225,27 @@ Item {
 
                     onToggled: value => checked = value
                 }
-                SettingsToggleTile {
-                    id: lockToggle
+                SettingsChoiceRow {
+                    id: lockPrivacyChoice
 
-                    label: "Show on lock screen"
-                    note: "Disable to keep content private"
+                    label: qsTr("Lock screen privacy")
+                    note: qsTr("Choose how much notification content is visible before authentication")
+                    options: [
+                        {
+                            "label": qsTr("Hidden"),
+                            "value": "hidden"
+                        },
+                        {
+                            "label": qsTr("Icons only"),
+                            "value": "icons"
+                        },
+                        {
+                            "label": qsTr("Full content"),
+                            "value": "full"
+                        }
+                    ]
 
-                    onToggled: value => checked = value
+                    onSelected: value => lockPrivacyChoice.value = value
                 }
             }
         }

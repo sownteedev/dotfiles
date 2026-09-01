@@ -162,26 +162,83 @@ Item {
                     spacing: 10
 
                     Rectangle {
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 96
-                        Layout.preferredHeight: 42
-                        Layout.preferredWidth: 180
-                        color: cloudMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container
-                        radius: 12
+                        id: cloudButton
 
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.right: parent.right
-                            anchors.rightMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: Config.md3.on_surface_variant
-                            elide: Text.ElideRight
-                            font.family: Config.fontName
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                            horizontalAlignment: Text.AlignHCenter
-                            text: "Google Cloud Console"
+                        Accessible.name: qsTr("Open Google Cloud Console")
+                        Accessible.role: Accessible.Button
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 150
+                        Layout.preferredHeight: 44
+                        Layout.preferredWidth: 210
+                        activeFocusOnTab: true
+                        border.color: activeFocus ? Config.md3.primary : Config.alpha(Config.md3.outline_variant, 0.46)
+                        border.width: 1
+                        color: cloudMouse.pressed ? Config.alpha(Config.md3.primary, 0.16) : cloudMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container
+                        radius: 14
+
+                        Behavior on border.color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(130)
+                            }
+                        }
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(130)
+                            }
+                        }
+
+                        Accessible.onPressAction: cloudMouse.clicked(null)
+                        Keys.onReturnPressed: event => {
+                            cloudMouse.clicked(null);
+                            event.accepted = true;
+                        }
+                        Keys.onSpacePressed: event => {
+                            cloudMouse.clicked(null);
+                            event.accepted = true;
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 7
+                            spacing: 9
+
+                            Rectangle {
+                                Layout.preferredHeight: 30
+                                Layout.preferredWidth: 30
+                                color: Config.alpha(Config.md3.primary, 0.14)
+                                radius: 10
+
+                                IconImage {
+                                    anchors.centerIn: parent
+                                    height: 19
+                                    layer.enabled: true
+                                    source: Quickshell.iconPath("goa-account-google-symbolic", "internet-services-symbolic")
+                                    width: 19
+
+                                    layer.effect: ColorOverlay {
+                                        color: Config.md3.primary
+                                    }
+                                }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                color: Config.md3.on_surface
+                                elide: Text.ElideRight
+                                font.family: Config.fontName
+                                font.pixelSize: 14
+                                font.weight: Font.DemiBold
+                                text: qsTr("Google Cloud Console")
+                            }
+                            IconImage {
+                                Layout.preferredHeight: 16
+                                Layout.preferredWidth: 16
+                                layer.enabled: true
+                                source: Quickshell.iconPath("external-link-symbolic")
+
+                                layer.effect: ColorOverlay {
+                                    color: Config.md3.on_surface_variant
+                                }
+                            }
                         }
                         MouseArea {
                             id: cloudMouse
@@ -190,15 +247,46 @@ Item {
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
 
-                            onClicked: Quickshell.execDetached(["xdg-open", "https://console.cloud.google.com/apis/credentials"])
+                            onClicked: {
+                                cloudButton.forceActiveFocus();
+                                Quickshell.execDetached(["xdg-open", "https://console.cloud.google.com/apis/credentials"]);
+                            }
                         }
                     }
                     Rectangle {
+                        id: cancelButton
+
+                        Accessible.name: qsTr("Cancel")
+                        Accessible.role: Accessible.Button
                         Layout.minimumWidth: 68
-                        Layout.preferredHeight: 42
+                        Layout.preferredHeight: 44
                         Layout.preferredWidth: 82
-                        color: cancelMouse.containsMouse ? Config.md3.surface_container_high : "transparent"
-                        radius: 12
+                        activeFocusOnTab: true
+                        border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
+                        border.width: 1
+                        color: cancelMouse.pressed ? Config.alpha(Config.md3.on_surface, 0.12) : cancelMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : "transparent"
+                        radius: 14
+
+                        Behavior on border.color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(130)
+                            }
+                        }
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(130)
+                            }
+                        }
+
+                        Accessible.onPressAction: cancelMouse.clicked(null)
+                        Keys.onReturnPressed: event => {
+                            cancelMouse.clicked(null);
+                            event.accepted = true;
+                        }
+                        Keys.onSpacePressed: event => {
+                            cancelMouse.clicked(null);
+                            event.accepted = true;
+                        }
 
                         Text {
                             anchors.centerIn: parent
@@ -206,7 +294,7 @@ Item {
                             font.family: Config.fontName
                             font.pixelSize: 14
                             font.weight: Font.DemiBold
-                            text: "Cancel"
+                            text: qsTr("Cancel")
                         }
                         MouseArea {
                             id: cancelMouse
@@ -215,7 +303,10 @@ Item {
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
 
-                            onClicked: GoogleService.cancelAuthentication()
+                            onClicked: {
+                                cancelButton.forceActiveFocus();
+                                GoogleService.cancelAuthentication();
+                            }
                         }
                     }
                     Rectangle {
@@ -231,28 +322,58 @@ Item {
                             clientSecret.text = "";
                         }
 
+                        Accessible.name: GoogleService.authenticating ? qsTr("Waiting for Google authentication") : qsTr("Connect")
+                        Accessible.role: Accessible.Button
                         Layout.minimumWidth: 96
-                        Layout.preferredHeight: 42
+                        Layout.preferredHeight: 44
                         Layout.preferredWidth: 112
-                        color: ready ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.10)
-                        opacity: ready ? 1 : 0.65
-                        radius: 12
+                        activeFocusOnTab: ready
+                        border.color: activeFocus ? Config.alpha(Config.md3.on_primary, 0.78) : "transparent"
+                        border.width: 1
+                        color: ready ? (connectMouse.pressed ? Qt.darker(Config.md3.primary, 1.12) : connectMouse.containsMouse ? Qt.lighter(Config.md3.primary, 1.08) : Config.md3.primary) : Config.alpha(Config.md3.on_surface, 0.10)
+                        radius: 14
+
+                        Behavior on border.color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(130)
+                            }
+                        }
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(130)
+                            }
+                        }
+
+                        Accessible.onPressAction: trigger()
+                        Keys.onReturnPressed: event => {
+                            trigger();
+                            event.accepted = true;
+                        }
+                        Keys.onSpacePressed: event => {
+                            trigger();
+                            event.accepted = true;
+                        }
 
                         Text {
                             anchors.centerIn: parent
-                            color: connectButton.ready ? Config.md3.background : Config.md3.outline
+                            color: connectButton.ready ? Config.md3.on_primary : Config.md3.outline
                             font.family: Config.fontName
                             font.pixelSize: 14
                             font.weight: Font.Bold
-                            text: GoogleService.authenticating ? "Waiting…" : "Connect"
+                            text: GoogleService.authenticating ? qsTr("Waiting…") : qsTr("Connect")
                         }
                         MouseArea {
+                            id: connectMouse
+
                             anchors.fill: parent
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                             enabled: connectButton.ready
                             hoverEnabled: true
 
-                            onClicked: connectButton.trigger()
+                            onClicked: {
+                                connectButton.forceActiveFocus();
+                                connectButton.trigger();
+                            }
                         }
                     }
                 }

@@ -13,12 +13,26 @@ QtObject {
     }
     property bool active: false
     readonly property bool airplaneEnabled: !Networking.wifiEnabled && (Bluetooth.defaultAdapter ? !Bluetooth.defaultAdapter.enabled : true)
+    property Connections batteryConnections: Connections {
+        function onOnBatteryChanged() {
+            if (Config.idleSeparatePowerProfiles)
+                root.idleSyncTimer.restart();
+        }
+
+        target: BatteryService
+    }
     readonly property bool bluetoothEnabled: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled : false
     property bool caffeineAppliedState: false
     property Timer caffeineAutoDisableTimer: Timer {
-        repeat: false
+        interval: 1000
+        repeat: true
+        running: root.caffeineEnabled && root.caffeineExpiresAt > 0
 
-        onTriggered: root.setCaffeineEnabled(false)
+        onTriggered: {
+            root.caffeineNow = Date.now();
+            if (root.caffeineNow >= root.caffeineExpiresAt)
+                root.setCaffeineEnabled(false);
+        }
     }
     property Process caffeineControlProcess: Process {
         onExited: (exitCode, exitStatus) => {
@@ -33,11 +47,29 @@ QtObject {
         }
     }
     property alias caffeineEnabled: persistedToggles.caffeineEnabled
+    property alias caffeineExpiresAt: persistedToggles.caffeineExpiresAt
+    property real caffeineNow: Date.now()
+    readonly property int caffeineRemainingSeconds: caffeineEnabled && caffeineExpiresAt > 0 ? Math.max(0, Math.ceil((caffeineExpiresAt - caffeineNow) / 1000)) : 0
     property bool caffeineSyncPending: false
     property Connections configConnections: Connections {
         function onCaffeineAutoDisableMinutesChanged() {
             if (root.caffeineEnabled)
                 root.setCaffeineEnabled(true);
+        }
+        function onIdleBatteryDisplayTimeoutChanged() {
+            root.idleSyncTimer.restart();
+        }
+        function onIdleBatteryLockTimeoutChanged() {
+            root.idleSyncTimer.restart();
+        }
+        function onIdleBatterySleepActionChanged() {
+            root.idleSyncTimer.restart();
+        }
+        function onIdleBatterySuspendTimeoutChanged() {
+            root.idleSyncTimer.restart();
+        }
+        function onIdleDimDurationChanged() {
+            root.idleSyncTimer.restart();
         }
         function onIdleDisplayTimeoutChanged() {
             root.idleSyncTimer.restart();
@@ -52,6 +84,15 @@ QtObject {
             root.idleSyncTimer.restart();
         }
         function onIdleLockedDisplayTimeoutChanged() {
+            root.idleSyncTimer.restart();
+        }
+        function onIdleRespectInhibitorsChanged() {
+            root.idleSyncTimer.restart();
+        }
+        function onIdleSeparatePowerProfilesChanged() {
+            root.idleSyncTimer.restart();
+        }
+        function onIdleSleepActionChanged() {
             root.idleSyncTimer.restart();
         }
         function onIdleSuspendTimeoutChanged() {
@@ -80,20 +121,31 @@ QtObject {
     }
     property bool dndScheduledActive: false
     readonly property bool effectiveDndActive: dndActive || (dndScheduledActive && !dndScheduleSuppressed)
+    readonly property int effectiveIdleDisplayTimeout: usingBatteryIdleProfile ? Config.idleBatteryDisplayTimeout : Config.idleDisplayTimeout
+    readonly property int effectiveIdleLockTimeout: usingBatteryIdleProfile ? Config.idleBatteryLockTimeout : Config.idleLockTimeout
+    readonly property string effectiveIdleSleepAction: resolvedSleepAction(usingBatteryIdleProfile ? Config.idleBatterySleepAction : Config.idleSleepAction)
+    readonly property int effectiveIdleSuspendTimeout: usingBatteryIdleProfile ? Config.idleBatterySuspendTimeout : Config.idleSuspendTimeout
     property Process idleControlProcess: Process {
         onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
+            if (exitCode !== 0) {
                 console.warn("[QuickSettingsService] Failed to update idle policy:", exitCode);
+                root.idlePolicyError = qsTr("Could not apply the idle policy (exit %1)").arg(exitCode);
+            }
             if (root.idleSyncPending) {
                 root.idleSyncPending = false;
                 root.idleSyncTimer.restart();
             } else {
                 root.idlePolicyReady = exitCode === 0;
+                if (exitCode === 0)
+                    root.idlePolicyError = "";
             }
         }
     }
-    readonly property int idleDimDuration: 5
+    readonly property int idleDimDuration: Math.max(0, Config.idleDimDuration)
+    readonly property bool idlePolicyApplying: idleControlProcess.running || idleSyncPending
+    property string idlePolicyError: ""
     property bool idlePolicyReady: false
+    readonly property string idleProfileName: Config.idleSeparatePowerProfiles ? (usingBatteryIdleProfile ? qsTr("Battery") : qsTr("Plugged in")) : qsTr("Shared")
     property bool idleSyncPending: false
     property Timer idleSyncTimer: Timer {
         interval: 250
@@ -111,12 +163,43 @@ QtObject {
             id: persistedToggles
 
             property bool caffeineEnabled: false
+            property real caffeineExpiresAt: 0
             property bool dndActive: false
         }
 
         onAdapterUpdated: writeAdapter()
     }
     readonly property string persistedStatePath: Config.homeDir + "/.cache/quickshell/quick-settings.json"
+    property bool sleepCapabilitiesReady: false
+    property string sleepCapabilityHibernate: "unknown"
+    property Process sleepCapabilityProcess: Process {
+        command: [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "capabilities"]
+
+        stdout: StdioCollector {
+            id: sleepCapabilityOutput
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0) {
+                root.sleepCapabilitiesReady = false;
+                console.warn("[QuickSettingsService] Failed to query sleep capabilities:", exitCode);
+                return;
+            }
+            try {
+                var capabilities = JSON.parse(sleepCapabilityOutput.text.trim());
+                root.sleepCapabilitySuspend = String(capabilities.suspend || "unknown");
+                root.sleepCapabilityHibernate = String(capabilities.hibernate || "unknown");
+                root.sleepCapabilitySuspendThenHibernate = String(capabilities["suspend-then-hibernate"] || "unknown");
+                root.sleepCapabilitiesReady = true;
+                root.idleSyncTimer.restart();
+            } catch (error) {
+                root.sleepCapabilitiesReady = false;
+                console.warn("[QuickSettingsService] Invalid sleep capability response:", error);
+            }
+        }
+    }
+    property string sleepCapabilitySuspend: "unknown"
+    property string sleepCapabilitySuspendThenHibernate: "unknown"
     property Process stateQuery: Process {
         command: ["sh", "-c", "warp_state=$(warp-cli status 2>/dev/null " + "| grep -q 'Status update: Connected' && echo on || echo off); " + "printf '%s\\n__TAILSCALE__\\n' \"$warp_state\"; " + "tailscale status --json 2>/dev/null || printf '{}\\n'"]
 
@@ -149,8 +232,17 @@ QtObject {
                 }
                 try {
                     var status = JSON.parse(cleaned.substring(markerIndex + marker.length));
-                    root.applyTailscaleQuery(status.BackendState === "Running");
+                    var queriedTailscaleEnabled = status.BackendState === "Running";
+                    var peers = status.Peer || {};
+                    var onlinePeerCount = 0;
+                    for (var peerId in peers) {
+                        if (Object.prototype.hasOwnProperty.call(peers, peerId) && peers[peerId] && peers[peerId].Online === true)
+                            onlinePeerCount += 1;
+                    }
+                    root.tailscaleOnlinePeerCount = queriedTailscaleEnabled ? onlinePeerCount : 0;
+                    root.applyTailscaleQuery(queriedTailscaleEnabled);
                 } catch (error) {
+                    root.tailscaleOnlinePeerCount = 0;
                     if (root.tailscaleTransitionPending)
                         root.scheduleTailscaleRefresh();
                     else
@@ -176,7 +268,7 @@ QtObject {
     property Timer stateRefresher: Timer {
         interval: 15000
         repeat: true
-        running: root.active
+        running: root.active || root.tailscaleStatusConsumerCount > 0
 
         onTriggered: root.refreshStates()
     }
@@ -202,6 +294,7 @@ QtObject {
     }
     property bool tailscaleApplyingEnabled: false
     property bool tailscaleEnabled: false
+    property int tailscaleOnlinePeerCount: 0
     property int tailscaleRefreshAttempts: 0
     property Timer tailscaleRefreshTimer: Timer {
         interval: 350
@@ -209,8 +302,10 @@ QtObject {
 
         onTriggered: root.refreshStates()
     }
+    property int tailscaleStatusConsumerCount: 0
     property bool tailscaleTargetEnabled: false
     property bool tailscaleTransitionPending: false
+    readonly property bool usingBatteryIdleProfile: Config.idleSeparatePowerProfiles && BatteryService.onBattery
     property Process warpAction: Process {
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0) {
@@ -248,12 +343,29 @@ QtObject {
 
         scheduleTailscaleRefresh();
     }
+    function refreshSleepCapabilities() {
+        if (!sleepCapabilityProcess.running)
+            sleepCapabilityProcess.running = true;
+    }
     function refreshStates() {
         if (stateQuery.running) {
             stateRefreshQueued = true;
             return;
         }
         stateQuery.running = true;
+    }
+    function registerTailscaleStatusConsumer() {
+        tailscaleStatusConsumerCount += 1;
+        if (tailscaleStatusConsumerCount === 1)
+            refreshStates();
+    }
+    function resolvedSleepAction(action) {
+        var requested = String(action || "none");
+        if (!sleepCapabilitiesReady || supportsSleepAction(requested))
+            return requested;
+        if (requested !== "none" && supportsSleepAction("suspend"))
+            return "suspend";
+        return "none";
     }
     function runAction(command) {
         actionExecutor.command = ["sh", "-c", command];
@@ -283,10 +395,11 @@ QtObject {
     }
     function setCaffeineEnabled(enabled) {
         caffeineEnabled = enabled;
-        caffeineAutoDisableTimer.stop();
+        caffeineNow = Date.now();
         if (enabled && Config.caffeineAutoDisableMinutes > 0) {
-            caffeineAutoDisableTimer.interval = Config.caffeineAutoDisableMinutes * 60000;
-            caffeineAutoDisableTimer.restart();
+            caffeineExpiresAt = caffeineNow + Config.caffeineAutoDisableMinutes * 60000;
+        } else {
+            caffeineExpiresAt = 0;
         }
     }
     function setTailscaleEnabled(enabled) {
@@ -311,6 +424,20 @@ QtObject {
     function setWifiEnabled(enabled) {
         Networking.wifiEnabled = enabled;
     }
+    function sleepCapability(action) {
+        switch (String(action || "none")) {
+        case "suspend":
+            return sleepCapabilitySuspend;
+        case "hibernate":
+            return sleepCapabilityHibernate;
+        case "suspend-then-hibernate":
+            return sleepCapabilitySuspendThenHibernate;
+        case "none":
+            return "yes";
+        default:
+            return "no";
+        }
+    }
     function startPendingTailscaleAction() {
         if (tailscaleAction.running || !tailscaleTransitionPending)
             return;
@@ -318,6 +445,10 @@ QtObject {
         tailscaleApplyingEnabled = tailscaleTargetEnabled;
         tailscaleAction.command = ["tailscale", tailscaleApplyingEnabled ? "up" : "down"];
         tailscaleAction.running = true;
+    }
+    function supportsSleepAction(action) {
+        var capability = sleepCapability(action);
+        return capability === "yes" || capability === "challenge";
     }
     function syncCaffeineInhibitor() {
         if (caffeineControlProcess.running) {
@@ -337,7 +468,7 @@ QtObject {
             return;
         }
         idlePolicyReady = false;
-        idleControlProcess.command = Config.idleEnabled ? [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "apply", String(Config.idleLockTimeout), String(Config.idleDisplayTimeout), String(Config.idleSuspendTimeout), Config.idleLockBeforeSleep ? "true" : "false", String(Config.idleLockedDisplayTimeout), String(root.idleDimDuration)] : [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "disable"];
+        idleControlProcess.command = Config.idleEnabled ? [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "apply", String(effectiveIdleLockTimeout), String(effectiveIdleDisplayTimeout), String(effectiveIdleSuspendTimeout), Config.idleLockBeforeSleep ? "true" : "false", String(Config.idleLockedDisplayTimeout), String(root.idleDimDuration), effectiveIdleSleepAction, Config.idleRespectInhibitors ? "true" : "false"] : [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "disable"];
         idleControlProcess.running = true;
     }
     function timeMinutes(value) {
@@ -357,6 +488,9 @@ QtObject {
             dndScheduleSuppressed = false;
         else
             dndActive = true;
+    }
+    function unregisterTailscaleStatusConsumer() {
+        tailscaleStatusConsumerCount = Math.max(0, tailscaleStatusConsumerCount - 1);
     }
     function updateDndSchedule() {
         if (!Config.notificationDndScheduleEnabled) {
@@ -381,7 +515,17 @@ QtObject {
 
     Component.onCompleted: {
         Quickshell.execDetached(["mkdir", "-p", Config.homeDir + "/.cache/quickshell"]);
+        caffeineNow = Date.now();
+        if (caffeineEnabled && Config.caffeineAutoDisableMinutes > 0) {
+            if (caffeineExpiresAt <= 0)
+                caffeineExpiresAt = caffeineNow + Config.caffeineAutoDisableMinutes * 60000;
+            else if (caffeineExpiresAt <= caffeineNow)
+                setCaffeineEnabled(false);
+        } else if (!caffeineEnabled || Config.caffeineAutoDisableMinutes <= 0) {
+            caffeineExpiresAt = 0;
+        }
         Qt.callLater(root.syncCaffeineInhibitor);
+        Qt.callLater(root.refreshSleepCapabilities);
         root.updateDndSchedule();
     }
     onActiveChanged: {

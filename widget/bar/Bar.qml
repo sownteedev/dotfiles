@@ -175,6 +175,8 @@ PanelWindow {
                             parentWindow: bar
                             visible: Config.barShowMicrophone && AudioService.microphoneInUse
                         }
+                        TailscaleStatus {
+                        }
                         MouseArea {
                             cursorShape: Qt.PointingHandCursor
                             implicitHeight: 22

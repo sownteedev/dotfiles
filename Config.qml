@@ -37,13 +37,21 @@ QtObject {
     property alias captureEditorTool: runtimeSettings.captureEditorTool
     property alias captureEditorWidth: runtimeSettings.captureEditorWidth
     property alias captureRecordingCodec: runtimeSettings.captureRecordingCodec
+    property alias captureRecordingCountdown: runtimeSettings.captureRecordingCountdown
+    property alias captureRecordingCursor: runtimeSettings.captureRecordingCursor
     readonly property string captureRecordingDir: expandHomePath(captureRecordingDirPath)
     property alias captureRecordingDirPath: runtimeSettings.captureRecordingDirPath
     property alias captureRecordingFps: runtimeSettings.captureRecordingFps
     property alias captureRecordingMicrophone: runtimeSettings.captureRecordingMicrophone
+    property alias captureRecordingMicrophoneSource: runtimeSettings.captureRecordingMicrophoneSource
+    property alias captureRecordingMode: runtimeSettings.captureRecordingMode
     property alias captureRecordingQuality: runtimeSettings.captureRecordingQuality
+    property alias captureScreenshotAction: runtimeSettings.captureScreenshotAction
     readonly property string captureScreenshotDir: expandHomePath(captureScreenshotDirPath)
     property alias captureScreenshotDirPath: runtimeSettings.captureScreenshotDirPath
+    property alias captureScreenshotFilenameTemplate: runtimeSettings.captureScreenshotFilenameTemplate
+    property alias captureScreenshotFormat: runtimeSettings.captureScreenshotFormat
+    property alias captureScreenshotQuality: runtimeSettings.captureScreenshotQuality
     property alias cavaEnabled: runtimeSettings.cavaEnabled
     property alias clock24h: runtimeSettings.clock24h
     // Keep the recovery wallpaper independent from a user-selected wallpaper
@@ -53,15 +61,27 @@ QtObject {
     readonly property string dotfilesRoot: homeDir + "/Dotfiles"
     // Font
     property alias fontName: runtimeSettings.fontName
+    property alias greeterDefaultSession: runtimeSettings.greeterDefaultSession
+    property alias greeterRememberLastSession: runtimeSettings.greeterRememberLastSession
     // Paths
     readonly property string homeDir: Quickshell.env("HOME")
+    property alias idleBatteryDisplayTimeout: runtimeSettings.idleBatteryDisplayTimeout
+    property alias idleBatteryLockTimeout: runtimeSettings.idleBatteryLockTimeout
+    property alias idleBatterySleepAction: runtimeSettings.idleBatterySleepAction
+    property alias idleBatterySuspendTimeout: runtimeSettings.idleBatterySuspendTimeout
+    property alias idleDimDuration: runtimeSettings.idleDimDuration
+    property alias idleDimOpacity: runtimeSettings.idleDimOpacity
     property alias idleDisplayTimeout: runtimeSettings.idleDisplayTimeout
     property alias idleEnabled: runtimeSettings.idleEnabled
     property alias idleLockBeforeSleep: runtimeSettings.idleLockBeforeSleep
     property alias idleLockTimeout: runtimeSettings.idleLockTimeout
     property alias idleLockedDisplayTimeout: runtimeSettings.idleLockedDisplayTimeout
+    property alias idleRespectInhibitors: runtimeSettings.idleRespectInhibitors
+    property alias idleSeparatePowerProfiles: runtimeSettings.idleSeparatePowerProfiles
+    property alias idleSleepAction: runtimeSettings.idleSleepAction
     property alias idleSuspendTimeout: runtimeSettings.idleSuspendTimeout
     property alias latLon: runtimeSettings.latLon
+    property alias launcherCalculatorAngleMode: runtimeSettings.launcherCalculatorAngleMode
     property alias launcherCalculatorEnabled: runtimeSettings.launcherCalculatorEnabled
     property alias launcherCalculatorPrefix: runtimeSettings.launcherCalculatorPrefix
     property alias launcherClipboardAutoPaste: runtimeSettings.launcherClipboardAutoPaste
@@ -72,11 +92,18 @@ QtObject {
     property alias launcherFilesEnabled: runtimeSettings.launcherFilesEnabled
     property alias launcherFilesPrefix: runtimeSettings.launcherFilesPrefix
     property alias launcherFuzzySearch: runtimeSettings.launcherFuzzySearch
+    property alias launcherGifEnabled: runtimeSettings.launcherGifEnabled
+    property alias launcherGifPrefix: runtimeSettings.launcherGifPrefix
+    property alias launcherKlipyApiKey: runtimeSettings.launcherKlipyApiKey
     property alias launcherMaxResults: runtimeSettings.launcherMaxResults
+    property alias launcherStickerEnabled: runtimeSettings.launcherStickerEnabled
+    property alias launcherStickerPrefix: runtimeSettings.launcherStickerPrefix
     readonly property string legacyWallpaperEngineWorkshopDir: homeDir + "/.steam/steam/steamapps/workshop/content/431960"
     readonly property bool lightTheme: themeLuminance > 0.58
     readonly property string liveWallFolder: expandHomePath(liveWallFolderPath)
     property alias liveWallFolderPath: runtimeSettings.liveWallFolderPath
+    property alias lockFaceMaxAttempts: runtimeSettings.lockFaceMaxAttempts
+    property alias lockFaceRetryOnWake: runtimeSettings.lockFaceRetryOnWake
     property alias matugenAnimateColors: runtimeSettings.matugenAnimateColors
     property alias matugenEnabled: runtimeSettings.matugenEnabled
     property alias matugenTransitionDuration: runtimeSettings.matugenTransitionDuration
@@ -138,6 +165,8 @@ QtObject {
     property alias notificationDndStart: runtimeSettings.notificationDndStart
     property alias notificationHistoryExcludedApps: runtimeSettings.notificationHistoryExcludedApps
     property alias notificationHistoryLimit: runtimeSettings.notificationHistoryLimit
+    property alias notificationLockscreenPrivacy: runtimeSettings.notificationLockscreenPrivacy
+    readonly property string notificationLockscreenPrivacyMode: ["hidden", "icons", "full"].indexOf(notificationLockscreenPrivacy) >= 0 ? notificationLockscreenPrivacy : (notificationShowOnLock ? "full" : "hidden")
     property alias notificationLowTimeout: runtimeSettings.notificationLowTimeout
     property alias notificationMaxVisible: runtimeSettings.notificationMaxVisible
     property alias notificationNormalTimeout: runtimeSettings.notificationNormalTimeout
@@ -185,24 +214,44 @@ QtObject {
             property bool captureAutoCopyRecording: true
             property bool captureAutoCopyScreenshot: true
             property string captureEditorColor: "#ff3b30"
-            property string captureEditorTool: "select"
+            property string captureEditorTool: "pen"
             property int captureEditorWidth: 6
             property string captureRecordingCodec: "hevc"
+            property int captureRecordingCountdown: 0
+            property bool captureRecordingCursor: true
             property string captureRecordingDirPath: "~/Videos"
             property int captureRecordingFps: 60
             property bool captureRecordingMicrophone: false
+            property string captureRecordingMicrophoneSource: "default_input"
+            property string captureRecordingMode: "region"
             property string captureRecordingQuality: "high"
+            property string captureScreenshotAction: "notification"
             property string captureScreenshotDirPath: "~/Pictures/Screenshots"
+            property string captureScreenshotFilenameTemplate: "{date}_{time}-edited"
+            property string captureScreenshotFormat: "png"
+            property int captureScreenshotQuality: 90
             property bool cavaEnabled: true
             property bool clock24h: true
             property string fontName: "Inter"
+            property string greeterDefaultSession: "niri"
+            property bool greeterRememberLastSession: false
+            property int idleBatteryDisplayTimeout: 300
+            property int idleBatteryLockTimeout: 300
+            property string idleBatterySleepAction: "suspend"
+            property int idleBatterySuspendTimeout: 900
+            property int idleDimDuration: 5
+            property real idleDimOpacity: 0.55
             property int idleDisplayTimeout: 600
             property bool idleEnabled: true
             property bool idleLockBeforeSleep: true
             property int idleLockTimeout: 600
             property int idleLockedDisplayTimeout: 60
+            property bool idleRespectInhibitors: true
+            property bool idleSeparatePowerProfiles: false
+            property string idleSleepAction: "suspend"
             property int idleSuspendTimeout: 0
             property string latLon: ""
+            property string launcherCalculatorAngleMode: "rad"
             property bool launcherCalculatorEnabled: true
             property string launcherCalculatorPrefix: "="
             property bool launcherClipboardAutoPaste: true
@@ -213,8 +262,15 @@ QtObject {
             property bool launcherFilesEnabled: true
             property string launcherFilesPrefix: "f"
             property bool launcherFuzzySearch: true
+            property bool launcherGifEnabled: true
+            property string launcherGifPrefix: "g"
+            property string launcherKlipyApiKey: ""
             property int launcherMaxResults: 20
+            property bool launcherStickerEnabled: true
+            property string launcherStickerPrefix: "s"
             property string liveWallFolderPath: "~/Dotfiles/dotf/.walls/live"
+            property int lockFaceMaxAttempts: 3
+            property bool lockFaceRetryOnWake: true
             property bool matugenAnimateColors: true
             property bool matugenEnabled: true
             property int matugenTransitionDuration: 300
@@ -225,6 +281,7 @@ QtObject {
             property string notificationDndStart: "23:00"
             property string notificationHistoryExcludedApps: ""
             property int notificationHistoryLimit: 100
+            property string notificationLockscreenPrivacy: "legacy"
             property int notificationLowTimeout: notificationPopupDuration
             property int notificationMaxVisible: 3
             property int notificationNormalTimeout: notificationPopupDuration
@@ -268,6 +325,7 @@ QtObject {
             property real shellShadowSpread: 1
             property string steamUsername: ""
             property string steamWebApiKey: ""
+            property string temperatureUnit: "celsius"
             property string wallFolderPath: "~/Dotfiles/dotf/.walls"
             property string wallhavenApiKey: ""
             property bool wallhavenShowNsfw: false
@@ -278,6 +336,7 @@ QtObject {
             property string wallpaperEngineWorkshopDirPath: "~/.local/share/Steam/steamapps/workshop/content/431960"
             property bool wallpaperPauseOnFullscreen: true
             property bool wallpaperPauseOnLock: true
+            property string wallpaperScalingMode: "fill"
             property int wallpaperTransitionDuration: 360
             property bool wallpaperWorkshopShowNsfw: false
         }
@@ -316,6 +375,7 @@ QtObject {
     readonly property string steamDir: homeDir + "/.local/share/Steam"
     property alias steamUsername: runtimeSettings.steamUsername
     property alias steamWebApiKey: runtimeSettings.steamWebApiKey
+    property alias temperatureUnit: runtimeSettings.temperatureUnit
     readonly property real themeLuminance: md3.background.r * 0.299 + md3.background.g * 0.587 + md3.background.b * 0.114
     readonly property string wallFolder: expandHomePath(wallFolderPath)
     property alias wallFolderPath: runtimeSettings.wallFolderPath
@@ -332,6 +392,7 @@ QtObject {
     property alias wallpaperEngineWorkshopDirPath: runtimeSettings.wallpaperEngineWorkshopDirPath
     property alias wallpaperPauseOnFullscreen: runtimeSettings.wallpaperPauseOnFullscreen
     property alias wallpaperPauseOnLock: runtimeSettings.wallpaperPauseOnLock
+    property alias wallpaperScalingMode: runtimeSettings.wallpaperScalingMode
     property alias wallpaperTransitionDuration: runtimeSettings.wallpaperTransitionDuration
     property alias wallpaperWorkshopShowNsfw: runtimeSettings.wallpaperWorkshopShowNsfw
 

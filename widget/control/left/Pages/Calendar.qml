@@ -535,47 +535,12 @@ Item {
                     height: Math.max(106, eventContent.implicitHeight + 32)
                     width: ListView.view.width
 
-                    Rectangle {
+                    SwipeDeleteBackground {
+                        actionText: qsTr("Delete")
                         anchors.fill: parent
-                        color: Config.md3.error
-                        radius: 17
-                        visible: cardContent.swipeX < -2
+                        swipeOffset: cardContent.swipeX
 
-                        RowLayout {
-                            anchors.bottom: parent.bottom
-                            anchors.right: parent.right
-                            anchors.rightMargin: 20
-                            anchors.top: parent.top
-                            spacing: 8
-
-                            IconImage {
-                                height: 20
-                                layer.enabled: true
-                                source: Quickshell.iconPath("user-trash-symbolic")
-                                width: 20
-
-                                layer.effect: ColorOverlay {
-                                    color: Config.md3.on_error
-                                }
-                            }
-                            Text {
-                                color: Config.md3.on_error
-                                font.family: Config.fontName
-                                font.pixelSize: 15
-                                font.weight: Font.Bold
-                                text: qsTr("Delete")
-                            }
-                        }
-                        MouseArea {
-                            anchors.bottom: parent.bottom
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            width: 100
-
-                            onClicked: {
-                                GoogleService.deleteEvent(modelData.calendarId, modelData.id);
-                            }
-                        }
+                        onTriggered: GoogleService.deleteEvent(modelData.calendarId, modelData.id)
                     }
                     Rectangle {
                         id: cardContent
@@ -584,16 +549,20 @@ Item {
 
                         border.color: Config.alpha(eventAccent, editArea.containsMouse ? 0.4 : 0.22)
                         border.width: 1
-                        color: Qt.tint(editArea.pressed ? Config.alpha(Config.md3.primary, 0.16) : editArea.containsMouse ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.94 : 0.64) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.82 : 0.48), Config.alpha(Config.md3.error, Math.min(0.8, Math.abs(swipeX) / 100)))
+                        color: editArea.pressed ? Config.alpha(Config.md3.primary, 0.16) : editArea.containsMouse ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.94 : 0.64) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.82 : 0.48)
                         height: parent.height
                         radius: 17
                         width: parent.width
                         x: swipeX
 
                         Behavior on swipeX {
-                            NumberAnimation {
-                                duration: 200
-                                easing.type: Easing.OutCubic
+                            enabled: !itemDrag.active && !Config.shellReducedMotion
+
+                            SpringAnimation {
+                                damping: 0.52
+                                epsilon: 0.25
+                                mass: 0.85
+                                spring: 4.6
                             }
                         }
 
@@ -631,9 +600,7 @@ Item {
                                 }
                             }
                             onTranslationChanged: {
-                                if (translation.x < 0) {
-                                    cardContent.swipeX = translation.x;
-                                }
+                                cardContent.swipeX = Math.min(0, translation.x);
                             }
                         }
                         Rectangle {

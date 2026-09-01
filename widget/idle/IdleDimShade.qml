@@ -1,9 +1,10 @@
 import QtQuick
+import "../.."
 import "../../service"
 
 Rectangle {
     color: "black"
-    opacity: IdleDimService.active ? 0.55 : 0
+    opacity: IdleDimService.active ? IdleDimService.dimOpacity : 0
 
     Behavior on opacity {
         OpacityAnimator {

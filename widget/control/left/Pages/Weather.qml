@@ -117,7 +117,7 @@ Item {
                         font.weight: Font.ExtraBold
                         horizontalAlignment: Text.AlignRight
                         renderType: Text.NativeRendering
-                        text: WeatherService.temperature + "°C"
+                        text: WeatherService.formatTemperature(WeatherService.temperature)
                     }
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -131,7 +131,7 @@ Item {
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignRight
                             renderType: Text.NativeRendering
-                            text: WeatherService.tempMax + "° / " + WeatherService.tempMin + "°"
+                            text: WeatherService.formatTemperature(WeatherService.tempMax, 0, false) + " / " + WeatherService.formatTemperature(WeatherService.tempMin, 0, false)
                         }
                         Text {
                             Layout.fillWidth: true
@@ -141,7 +141,7 @@ Item {
                             font.weight: Font.Medium
                             horizontalAlignment: Text.AlignRight
                             renderType: Text.NativeRendering
-                            text: "Feels Like " + WeatherService.feelsLike + "°C"
+                            text: qsTr("Feels Like %1").arg(WeatherService.formatTemperature(WeatherService.feelsLike))
                         }
                         Text {
                             Layout.fillWidth: true
@@ -226,7 +226,7 @@ Item {
                                 font.weight: Font.Bold
                                 horizontalAlignment: Text.AlignHCenter
                                 renderType: Text.NativeRendering
-                                text: modelData.temperature
+                                text: modelData.sunEvent ? modelData.temperature : WeatherService.formatTemperature(modelData.temperature, 0, false)
                                 width: modelData.sunEvent ? 76 : 64
                             }
                         }
@@ -309,7 +309,7 @@ Item {
                                     font.weight: Font.DemiBold
                                     horizontalAlignment: Text.AlignHCenter
                                     renderType: Text.NativeRendering
-                                    text: modelData.tempMax + "° / " + modelData.tempMin + "°"
+                                    text: WeatherService.formatTemperature(modelData.tempMax, 0, false) + " / " + WeatherService.formatTemperature(modelData.tempMin, 0, false)
                                     width: dayItem.width - 8
                                 }
 
@@ -410,7 +410,7 @@ Item {
                             {
                                 label: "Dew point",
                                 icon: "weather-fog-symbolic",
-                                value: WeatherService.dewPoint.toFixed(1) + "°C"
+                                value: WeatherService.formatTemperature(WeatherService.dewPoint, 1)
                             }
                         ]
 

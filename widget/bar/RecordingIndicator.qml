@@ -16,8 +16,8 @@ MouseArea {
     property bool dismissing: false
     property bool dragConsumed: false
     required property var parentWindow
-    readonly property bool showing: activeOnThisScreen && (CaptureService.recording || CaptureService.recordingSavedVisible)
-    readonly property color stateColor: CaptureService.recording ? Config.md3.error : Config.md3.secondary
+    readonly property bool showing: activeOnThisScreen && (CaptureService.recordingStarting || CaptureService.recording || CaptureService.recordingSavedVisible)
+    readonly property color stateColor: CaptureService.recording ? Config.md3.error : CaptureService.recordingStarting ? Config.md3.tertiary : Config.md3.secondary
     property real swipeOffset: 0
 
     clip: true
@@ -45,7 +45,7 @@ MouseArea {
     onClicked: {
         if (dragConsumed || Math.abs(swipeOffset) > 3 || dismissing)
             return;
-        if (CaptureService.recording)
+        if (CaptureService.recording || CaptureService.recordingStarting)
             CaptureService.stopRecording();
         else
             CaptureService.openRecording();
@@ -62,7 +62,7 @@ MouseArea {
         anchors.fill: parent
         color: Config.alpha(Config.md3.error, 0.18)
         radius: 10
-        visible: !CaptureService.recording && root.swipeOffset < 0
+        visible: CaptureService.recordingSavedVisible && !CaptureService.recording && root.swipeOffset < 0
 
         IconImage {
             anchors.centerIn: parent
@@ -159,7 +159,7 @@ MouseArea {
                 font.family: Config.fontName
                 font.pixelSize: 12
                 font.weight: Font.ExtraBold
-                text: CaptureService.recording ? "REC" : "Saved"
+                text: CaptureService.recording ? "REC" : CaptureService.recordingStarting ? (CaptureService.recordingCountdownRemaining > 0 ? qsTr("REC in %1").arg(CaptureService.recordingCountdownRemaining) : qsTr("Starting")) : qsTr("Saved")
             }
             Text {
                 color: Config.md3.on_surface
@@ -177,7 +177,7 @@ MouseArea {
                 Layout.preferredWidth: 15
                 color: Config.alpha(root.stateColor, 0.20)
                 radius: 5
-                visible: CaptureService.recording
+                visible: CaptureService.recording || CaptureService.recordingStarting
 
                 Rectangle {
                     anchors.centerIn: parent

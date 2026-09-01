@@ -509,7 +509,7 @@ ShellRoot {
             return true;
         }
         function retryFace(): bool {
-            IdleDimService.retryFaceAuthentication();
+            IdleDimService.retryFaceAfterWake();
             return true;
         }
         function show(): bool {

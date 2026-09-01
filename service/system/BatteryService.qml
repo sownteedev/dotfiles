@@ -52,7 +52,7 @@ QtObject {
     property bool batteryAwareEnabled: false
     property string batteryAwareError: ""
     property bool batteryAwareTarget: false
-    readonly property int batteryPercentage: UPower.displayDevice ? Math.round(UPower.displayDevice.percentage * 100) : -1
+    readonly property int batteryPercentage: batteryReadingReady ? Math.round(UPower.displayDevice.percentage * 100) : -1
     property alias batteryPowerProfile: policy.batteryPowerProfile
     property Process batteryQuery: Process {
         command: [Config.quickshellDir + "/backend/rust/system-stats/run-system-stats", "--battery-stream"]
@@ -80,6 +80,7 @@ QtObject {
 
         Component.onDestruction: running = false
     }
+    readonly property bool batteryReadingReady: UPower.displayDevice && UPower.displayDevice.ready
     property Process chargeCommand: Process {
         stderr: StdioCollector {
             onStreamFinished: root.chargeCommandStderr = text.trim()
@@ -245,7 +246,7 @@ QtObject {
         restoreFullChargeOnce();
     }
     function evaluatePolicy() {
-        if (!policyReady || batteryPercentage < 0)
+        if (!policyReady || !batteryReadingReady || batteryPercentage < 0)
             return;
 
         var low = Math.max(1, Math.min(99, lowBatteryThreshold));

@@ -247,13 +247,39 @@ Item {
                             text: qsTr("Available devices")
                         }
                         Rectangle {
+                            id: scanButton
+
+                            function trigger() {
+                                if (!root.manualScanActive)
+                                    root.startScan();
+                            }
+
+                            Accessible.name: root.manualScanActive ? qsTr("Scanning for Bluetooth devices") : qsTr("Scan for Bluetooth devices")
+                            Accessible.role: Accessible.Button
                             Layout.preferredHeight: 36
                             Layout.preferredWidth: 36
-                            border.color: Config.alpha(Config.md3.on_surface, 0.10)
+                            activeFocusOnTab: true
+                            border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.48) : "transparent"
                             border.width: 1
-                            color: Config.alpha(Config.md3.on_surface, scanMouse.containsMouse ? 0.16 : 0.09)
+                            color: scanMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.13) : "transparent"
                             opacity: root.adapter && root.adapter.enabled ? 1 : 0.4
-                            radius: 12
+                            radius: 18
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 130
+                                }
+                            }
+
+                            Accessible.onPressAction: scanButton.trigger()
+                            Keys.onReturnPressed: event => {
+                                scanButton.trigger();
+                                event.accepted = true;
+                            }
+                            Keys.onSpacePressed: event => {
+                                scanButton.trigger();
+                                event.accepted = true;
+                            }
 
                             AnimatedSpinner {
                                 anchors.centerIn: parent
@@ -261,7 +287,23 @@ Item {
                                 height: 22
                                 lineWidth: 2.2
                                 running: root.manualScanActive
+                                visible: root.manualScanActive
                                 width: 22
+                            }
+                            IconImage {
+                                id: refreshIcon
+
+                                anchors.centerIn: parent
+                                implicitHeight: 19
+                                implicitWidth: 19
+                                source: Quickshell.iconPath("view-refresh-symbolic")
+                                visible: false
+                            }
+                            ColorOverlay {
+                                anchors.fill: refreshIcon
+                                color: Config.md3.on_surface_variant
+                                source: refreshIcon
+                                visible: !root.manualScanActive
                             }
                             MouseArea {
                                 id: scanMouse
@@ -271,10 +313,7 @@ Item {
                                 enabled: root.adapter && root.adapter.enabled
                                 hoverEnabled: true
 
-                                onClicked: {
-                                    if (!root.manualScanActive)
-                                        root.startScan();
-                                }
+                                onClicked: scanButton.trigger()
                             }
                         }
                     }

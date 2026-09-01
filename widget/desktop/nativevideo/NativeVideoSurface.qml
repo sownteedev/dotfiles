@@ -7,6 +7,7 @@ PanelWindow {
     id: root
 
     property bool frameReadyState: false
+    readonly property int imageFillMode: scalingMode === "fit" ? Image.PreserveAspectFit : (scalingMode === "stretch" ? Image.Stretch : Image.PreserveAspectCrop)
     property int loadedGeneration: 0
     property bool loadedIsGif: false
     property string loadedPath: ""
@@ -14,7 +15,12 @@ PanelWindow {
     property string loadedSession: ""
     readonly property bool paused: Boolean(requestData && requestData.paused)
     required property var requestData
+    readonly property string scalingMode: {
+        var mode = String(requestData && requestData.scalingMode || "fill").toLowerCase();
+        return mode === "fit" || mode === "stretch" ? mode : "fill";
+    }
     readonly property string screenName: screen ? String(screen.name || "") : windowNamespace
+    readonly property int videoFillMode: scalingMode === "fit" ? VideoOutput.PreserveAspectFit : (scalingMode === "stretch" ? VideoOutput.Stretch : VideoOutput.PreserveAspectCrop)
     property string windowNamespace: "native-video-wallpaper"
 
     signal frameReady(string screenName, string session, string path, int generation, int serial)
@@ -152,14 +158,14 @@ PanelWindow {
 
         anchors.fill: parent
         endOfStreamPolicy: VideoOutput.KeepLastFrame
-        fillMode: VideoOutput.PreserveAspectCrop
+        fillMode: root.videoFillMode
         visible: root.loadedPath !== "" && !root.loadedIsGif
     }
     AnimatedImage {
         anchors.fill: parent
         asynchronous: true
         cache: false
-        fillMode: Image.PreserveAspectCrop
+        fillMode: root.imageFillMode
         playing: root.loadedPath !== "" && root.loadedIsGif && !root.paused
         source: root.loadedIsGif ? root.fileUrl(root.loadedPath) : ""
         sourceSize: Qt.size(Math.ceil(root.width), Math.ceil(root.height))

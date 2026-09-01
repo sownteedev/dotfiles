@@ -6,8 +6,12 @@ QtObject {
     id: root
 
     property Connections configConnections: Connections {
+        function onNotificationLockscreenPrivacyChanged() {
+            if (Config.notificationLockscreenPrivacyMode === "hidden")
+                root.clear();
+        }
         function onNotificationShowOnLockChanged() {
-            if (!Config.notificationShowOnLock)
+            if (Config.notificationLockscreenPrivacyMode === "hidden")
                 root.clear();
         }
 
@@ -173,7 +177,7 @@ QtObject {
         groupsRevision = nextRevision;
     }
     function show(notification) {
-        if (!notification || !StateManager.sessionLocked || !Config.notificationShowOnLock)
+        if (!notification || !StateManager.sessionLocked || Config.notificationLockscreenPrivacyMode === "hidden")
             return;
         if (appMatchesList(notification.appName, Config.notificationBlockedApps))
             return;

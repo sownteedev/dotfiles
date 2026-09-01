@@ -12,6 +12,7 @@ Item {
     readonly property string descriptionText: body !== "" ? body : (summary !== "" ? appName : "")
     property bool dismissing: false
     property int groupCount: 1
+    readonly property bool iconsOnly: Config.notificationLockscreenPrivacyMode === "icons"
     required property string image
     required property bool isCritical
     required property int nid
@@ -42,6 +43,9 @@ Item {
         swipeAnimation.to = targetOffset;
         swipeAnimation.restart();
     }
+
+    Accessible.name: root.iconsOnly ? root.appName : root.titleText
+    Accessible.role: Accessible.Notification
 
     ParallelAnimation {
         id: revealAnimation
@@ -87,7 +91,7 @@ Item {
 
         Row {
             anchors.left: parent.left
-            anchors.leftMargin: 8 * root.scaleFactor
+            anchors.leftMargin: root.iconsOnly ? (parent.width - iconContainer.width) / 2 : 8 * root.scaleFactor
             anchors.right: parent.right
             anchors.rightMargin: 9 * root.scaleFactor
             anchors.verticalCenter: parent.verticalCenter
@@ -157,6 +161,7 @@ Item {
             Column {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 0
+                visible: !root.iconsOnly
                 width: parent.width - parent.spacing - compactIcon.width
 
                 Text {

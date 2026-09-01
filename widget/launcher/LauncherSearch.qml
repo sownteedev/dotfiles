@@ -1,4 +1,6 @@
 import "../../"
+import "../../components"
+import "../../components/animate" as Animate
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Controls
@@ -22,6 +24,9 @@ Item {
 
         if (isEmojiMode)
             return emojiLoader.results;
+
+        if (isGifMode || isStickerMode)
+            return [];
 
         if (isFileMode) {
             var fileList = [];
@@ -86,6 +91,11 @@ Item {
     readonly property bool isClipboardMode: Config.launcherClipboardEnabled && query.toLowerCase().startsWith(Config.launcherClipboardPrefix.toLowerCase() + " ")
     readonly property bool isEmojiMode: Config.launcherEmojiEnabled && query.toLowerCase().startsWith(Config.launcherEmojiPrefix.toLowerCase() + " ")
     readonly property bool isFileMode: Config.launcherFilesEnabled && query.toLowerCase().startsWith(Config.launcherFilesPrefix.toLowerCase() + " ")
+    readonly property bool isGifMode: Config.launcherGifEnabled && query.toLowerCase().startsWith(Config.launcherGifPrefix.toLowerCase() + " ")
+    readonly property bool isStickerMode: Config.launcherStickerEnabled && query.toLowerCase().startsWith(Config.launcherStickerPrefix.toLowerCase() + " ")
+    readonly property color providerAccent: isClipboardMode ? Config.md3.secondary : isEmojiMode ? Config.md3.tertiary : Config.md3.primary
+    readonly property bool providerEmpty: (isFileMode || isClipboardMode || isEmojiMode) && !providerLoading && combinedResults.length === 0
+    readonly property bool providerLoading: isFileMode ? filesSearch.loading : isClipboardMode ? clipboardSearch.loading : isEmojiMode ? emojiLoader.loading : false
     property string query: ""
     // List of apps matching query
     readonly property var searchResults: {
@@ -94,7 +104,7 @@ Item {
             return [];
 
         var q = query.trim().toLowerCase();
-        if (q === "" || isCalculatorMode || isClipboardMode || isEmojiMode || isFileMode)
+        if (q === "" || isCalculatorMode || isClipboardMode || isEmojiMode || isFileMode || isGifMode || isStickerMode)
             return [];
 
         var matches = [];
@@ -206,6 +216,7 @@ Item {
         id: filesSearch
 
         readonly property var fileResults: item ? item["fileResults"] : []
+        readonly property bool loading: active && (status === Loader.Null || status === Loader.Loading || status === Loader.Ready && item && item["loading"])
 
         function ensureVideoPreview(path) {
             if (item)
@@ -235,6 +246,7 @@ Item {
         id: clipboardSearch
 
         readonly property var clipboardResults: item ? item["clipboardResults"] : []
+        readonly property bool loading: active && (status === Loader.Null || status === Loader.Loading || status === Loader.Ready && item && item["loading"])
         readonly property var readyPreviewIds: item ? item["readyPreviewIds"] : ({})
 
         function copySelected(id) {
@@ -267,8 +279,9 @@ Item {
     Loader {
         id: emojiLoader
 
-        // LauncherEmoji contains the large local emoji catalogue. Loading it by
-        // URL keeps that QML unit out of the launcher's normal startup path.
+        // The Emoji and Unicode catalogues stay outside the launcher's normal
+        // startup path and are instantiated only while this provider is open.
+        readonly property bool loading: active && (status === Loader.Null || status === Loader.Loading || status === Loader.Ready && item && item["loading"])
         readonly property var results: item ? item["results"] : []
 
         function copyEntry(entry) {
@@ -277,6 +290,7 @@ Item {
         }
 
         active: searchRoot.isEmojiMode
+        asynchronous: true
         source: Qt.resolvedUrl("LauncherEmoji.qml")
 
         onLoaded: {
@@ -318,7 +332,7 @@ Item {
         delegate: Rectangle {
             id: delegateRoot
 
-            readonly property color accentColor: isClipboard ? Config.md3.secondary : (isFolder ? Config.md3.primary : (isApp ? Config.md3.primary : (isEmoji ? Config.md3.error : Config.md3.tertiary)))
+            readonly property color accentColor: isClipboard ? Config.md3.secondary : (isFolder ? Config.md3.primary : (isApp ? Config.md3.primary : (isEmoji ? (isUnicode ? Config.md3.tertiary : Config.md3.error) : Config.md3.tertiary)))
             readonly property var clipData: modelData
             readonly property bool isApp: !isClipboard && modelData.type === "app"
             readonly property bool isClipboard: searchRoot.isClipboardMode
@@ -327,8 +341,19 @@ Item {
             readonly property bool isFile: !isClipboard && modelData.type === "file"
             readonly property bool isFolder: !isClipboard && modelData.type === "folder"
             readonly property bool isSelected: index === searchRoot.selectedIndex
+            readonly property bool isUnicode: isEmoji && modelData.characterKind === "unicode"
             readonly property var itemData: !isClipboard ? modelData.data : null
 
+            function characterSubtitle() {
+                if (!isEmoji || !itemData)
+                    return "";
+                var label = isUnicode ? (itemData.category || qsTr("Unicode")) : qsTr("Emoji");
+                if (isUnicode && itemData.codepoint)
+                    label += " · " + itemData.codepoint;
+                if (itemData.keywords)
+                    label += " · " + itemData.keywords;
+                return label;
+            }
             function requestClipboardPreview() {
                 if (isClipboard && clipData && (clipData.isImage || clipData.isVideo) && !clipboardSearch.isPreviewReady(clipData.id))
                     clipboardSearch.ensurePreview(clipData.id);
@@ -390,58 +415,15 @@ Item {
                     filesSearch.removeFile(itemData.path);
                 }
             }
-
-            // Red Delete / Trash background
-            Rectangle {
-                id: deleteBg
-
+            SwipeDeleteBackground {
+                actionText: qsTr("Trash")
                 anchors.fill: parent
-                color: Config.md3.error
-                opacity: Math.min(1, Math.abs(swipeContent.x) / 80)
-                radius: 28
-                visible: isFile
+                cornerRadius: 28
+                leading: true
+                swipeOffset: swipeContent.x
+                visible: isFile && revealProgress > 0.005
 
-                Row {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 20
-                    anchors.verticalCenter: parent.verticalCenter
-                    opacity: Math.min(1, Math.abs(swipeContent.x) / 60)
-                    scale: swipeContent.x > 120 ? 1.2 : 1
-                    spacing: 8
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 100
-                        }
-                    }
-
-                    IconImage {
-                        anchors.verticalCenter: parent.verticalCenter
-                        height: 24
-                        layer.enabled: true
-                        source: Quickshell.iconPath("user-trash-symbolic")
-                        width: 24
-
-                        layer.effect: ColorOverlay {
-                            color: "#ffffff"
-                        }
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: "#ffffff"
-                        font.family: Config.fontName
-                        font.pixelSize: 14
-                        font.weight: Font.Bold
-                        text: "Trash"
-                    }
-                }
-                MouseArea {
-                    anchors.fill: parent
-
-                    onClicked: {
-                        delegateRoot.triggerDelete();
-                    }
-                }
+                onTriggered: delegateRoot.triggerDelete()
             }
 
             // Sliding panel containing actual item UI
@@ -459,13 +441,13 @@ Item {
                     }
                 }
                 Behavior on x {
-                    id: xBehavior
+                    enabled: !listMouse.drag.active && !Config.shellReducedMotion
 
-                    enabled: !listMouse.drag.active
-
-                    NumberAnimation {
-                        duration: 200
-                        easing.type: Easing.OutCubic
+                    SpringAnimation {
+                        damping: 0.52
+                        epsilon: 0.25
+                        mass: 0.85
+                        spring: 4.6
                     }
                 }
 
@@ -549,9 +531,9 @@ Item {
                         }
                         Text {
                             anchors.centerIn: parent
-                            font.family: "Noto Color Emoji"
-                            font.pixelSize: 34
-                            text: isEmoji ? itemData.glyph : ""
+                            font.family: isUnicode ? "Noto Sans Symbols" : "Noto Color Emoji"
+                            font.pixelSize: isUnicode ? 32 : 34
+                            text: isEmoji && itemData ? itemData.glyph : ""
                             visible: isEmoji
                         }
 
@@ -585,20 +567,32 @@ Item {
 
                         Text {
                             Layout.fillWidth: true
-                            color: Config.md3.on_surface
+                            color: isFile && swipeContent.x > 0.4 ? Config.md3.on_error : Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
                             font.pixelSize: 16
                             font.weight: Font.DemiBold
                             text: isClipboard ? clipData.title : itemData.name
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: Config.animationDuration(100)
+                                }
+                            }
                         }
                         Text {
                             Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.6)
+                            color: Config.alpha(isFile && swipeContent.x > 0.4 ? Config.md3.on_error : Config.md3.on_surface, 0.68)
                             elide: isApp ? Text.ElideRight : Text.ElideMiddle
                             font.family: Config.fontName
                             font.pixelSize: 15
-                            text: isClipboard ? clipData.subtitle : (isEmoji ? "Emoji & Symbol · " + itemData.keywords : (isApp ? (itemData.comment || itemData.genericName || "") : itemData.path.replace(Config.homeDir, "~")))
+                            text: isClipboard ? clipData.subtitle : (isEmoji ? characterSubtitle() : (isApp ? (itemData.comment || itemData.genericName || "") : itemData.path.replace(Config.homeDir, "~")))
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: Config.animationDuration(100)
+                                }
+                            }
                         }
                     }
                 }
@@ -615,6 +609,8 @@ Item {
                 drag.threshold: 10
                 hoverEnabled: true
 
+                // Keep pointer hover visual-only. Updating selectedIndex here
+                // changes ListView.currentIndex and scrolls the last visible row.
                 onClicked: {
                     if (isFile && swipeContent.x > 10) {
                         delegateRoot.snapBack();
@@ -632,13 +628,6 @@ Item {
                     else
                         Quickshell.execDetached(["gio", "open", itemData.path]);
                     searchRoot.resultLaunched();
-                }
-                onEntered: {
-                    if (!wheelScrollAnimation.running && (!isFile || swipeContent.x === 0))
-                        searchRoot.selectedIndex = index;
-                }
-                onPressed: {
-                    searchRoot.selectedIndex = index;
                 }
                 onReleased: {
                     if (isFile) {
@@ -765,5 +754,47 @@ Item {
                 }
             }
         }
+    }
+    Column {
+        anchors.centerIn: parent
+        spacing: 8
+        visible: searchRoot.providerEmpty
+        z: 2
+
+        IconImage {
+            anchors.horizontalCenter: parent.horizontalCenter
+            height: 42
+            layer.enabled: true
+            source: Quickshell.iconPath(searchRoot.isClipboardMode ? "edit-paste-symbolic" : searchRoot.isEmojiMode ? "emojichooser-symbolic" : "folder-symbolic")
+            width: 42
+
+            layer.effect: ColorOverlay {
+                color: searchRoot.providerAccent
+            }
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: Config.md3.on_surface
+            font.family: Config.fontName
+            font.pixelSize: 17
+            font.weight: Font.DemiBold
+            text: searchRoot.isClipboardMode ? qsTr("No clipboard items found") : searchRoot.isEmojiMode ? qsTr("No emoji or Unicode found") : qsTr("No files found")
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: Config.md3.on_surface_variant
+            font.family: Config.fontName
+            font.pixelSize: 12
+            text: searchRoot.isClipboardMode ? qsTr("Try another search or copy something new") : searchRoot.isEmojiMode ? qsTr("Try another name, keyword or symbol") : qsTr("Try another file name or path")
+        }
+    }
+    Animate.LoadingIndicator {
+        anchors.centerIn: parent
+        animated: searchRoot.providerLoading
+        color: searchRoot.providerAccent
+        height: 64
+        visible: animated
+        width: 64
+        z: 3
     }
 }

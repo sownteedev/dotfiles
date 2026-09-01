@@ -134,7 +134,7 @@ FloatingWindow {
         {
             "title": "Launcher",
             "group": "Quickshell",
-            "keywords": "apps files clipboard emoji calculator prefix fuzzy paste",
+            "keywords": "apps files clipboard emoji unicode symbol math character calculator gif sticker prefix fuzzy paste",
             "page": 1,
             "section": 2
         },
@@ -162,7 +162,7 @@ FloatingWindow {
         {
             "title": "Integrations",
             "group": "Quickshell",
-            "keywords": "weather google steam wallhaven api",
+            "keywords": "weather google steam wallhaven klipy gif sticker launcher media api key",
             "page": 1,
             "section": 6
         },

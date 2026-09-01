@@ -1,7 +1,12 @@
 LauncherApps 1.0 LauncherApps.qml
+LauncherAppIcon 1.0 LauncherAppIcon.qml
 LauncherCalc 1.0 LauncherCalc.qml
 LauncherClipboard 1.0 LauncherClipboard.qml
 LauncherEmoji 1.0 LauncherEmoji.qml
 LauncherFiles 1.0 LauncherFiles.qml
+LauncherGroupIcon 1.0 LauncherGroupIcon.qml
+LauncherGroupPopup 1.0 LauncherGroupPopup.qml
+LauncherKlipyProvider 1.0 LauncherKlipyProvider.qml
+LauncherMediaSearch 1.0 LauncherMediaSearch.qml
 Launcher 1.0 Launcher.qml
 LauncherSearch 1.0 LauncherSearch.qml

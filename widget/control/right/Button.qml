@@ -90,8 +90,6 @@ Item {
             anchors.centerIn: parent
             height: 24
             layer.enabled: true
-            // Bounce scale when active
-            scale: buttonRoot.active ? 1.05 : 0.9
             source: {
                 var n = buttonRoot.iconName;
                 if (!n)
@@ -115,31 +113,19 @@ Item {
                     }
                 }
             }
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 250
-                    easing.type: Easing.OutBack
-                }
-            }
         }
         Text {
             anchors.centerIn: parent
             color: buttonRoot.active ? Config.md3.on_primary : Config.md3.on_surface
             font.family: buttonRoot.iconFontFamily
             font.pixelSize: 25
-            scale: buttonRoot.active ? 1.05 : 0.9
+            renderType: Text.NativeRendering
             text: buttonRoot.iconGlyph
             visible: buttonRoot.iconGlyph !== ""
 
             Behavior on color {
                 ColorAnimation {
                     duration: 150
-                }
-            }
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 250
-                    easing.type: Easing.OutBack
                 }
             }
         }

@@ -12,6 +12,7 @@ Item {
     property string activePreviewPath: ""
     property var clipboardResults: []
     property var generatedPreviewPaths: []
+    readonly property bool loading: searchDebounceTimer.running || cliphistProcess.running
     property var pinnedIds: ({})
     readonly property string pinnedStatePath: Config.cacheRoot + "/launcher_clipboard_pins.json"
     property var previewQueue: []

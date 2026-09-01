@@ -21,10 +21,12 @@ ScopedPopupBackdrop 1.0 common/ScopedPopupBackdrop.qml
 SelectPopup 1.0 common/SelectPopup.qml
 ShellShadow 1.0 common/ShellShadow.qml
 SlimScrollBar 1.0 common/SlimScrollBar.qml
+SwipeDeleteBackground 1.0 common/SwipeDeleteBackground.qml
 WifiSignalIcon 1.0 common/WifiSignalIcon.qml
 SettingsPageTransition 1.0 common/SettingsPageTransition.qml
 SettingsTextField 1.0 common/SettingsTextField.qml
 SettingsFontPicker 1.0 settings/SettingsFontPicker.qml
+IdlePolicyTimeline 1.0 settings/IdlePolicyTimeline.qml
 SettingsIntegrationCard 1.0 settings/SettingsIntegrationCard.qml
 StatChart 1.0 common/StatChart.qml
 ToggleSwitch 1.0 common/ToggleSwitch.qml
@@ -51,7 +53,9 @@ SettingsNavButton 1.0 settings/SettingsNavButton.qml
 SettingsPageContent 1.0 settings/SettingsPageContent.qml
 SettingsSearch 1.0 settings/SettingsSearch.qml
 SettingsSelectRow 1.0 settings/SettingsSelectRow.qml
+SettingsDurationPopup 1.0 settings/SettingsDurationPopup.qml
 SettingsSegmentedControl 1.0 settings/SettingsSegmentedControl.qml
+SettingsSliderRow 1.0 settings/SettingsSliderRow.qml
 SettingsToggleTile 1.0 settings/SettingsToggleTile.qml
 SettingsToggleRow 1.0 settings/SettingsToggleRow.qml
 WallpaperModeSwitch 1.0 settings/WallpaperModeSwitch.qml

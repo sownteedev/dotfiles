@@ -33,8 +33,8 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 
 - **Niri-native workspace model** with live windows, dynamic workspaces, overview-aware focus, drag reordering, cross-workspace movement without focus stealing, per-workspace tiled/floating state, and multi-monitor support.
 - **Dynamic Dock** for pinned and running applications, with drag ordering, live window previews, focus-aware unread badges, right-click pinning, and overlap-aware auto-hide.
-- **Launcher and All Apps** with fuzzy application search, a full-screen paged grid, horizontal touchpad navigation, keyboard control, and contextual app actions.
-- **Search providers** for files (`f`), clipboard (`c`), calculator (`=`), and emoji (`e`). Clipboard history supports pinned text, URLs, colors, file lists, images, and video thumbnails with optional direct paste.
+- **Launcher and All Apps** with fuzzy application search, a full-screen paged grid, horizontal touchpad navigation, keyboard control, contextual app actions, and persistent drag-and-drop folders with rename and drag-out ungrouping.
+- **Search providers** for files (`f`), clipboard (`c`), calculator (`=`), a unified emoji/Unicode catalog (`e`), and lazy KLIPY GIF (`g`) or sticker (`s`) grids when an API key is configured. Clipboard history supports pinned text, URLs, colors, file lists, images, and video thumbnails with optional direct paste.
 - **Configurable bar** with workspaces, active client, media and Cava, weather, battery, Wi-Fi, Bluetooth, microphone privacy, recording, notifications, clock, and StatusNotifier items.
 
 ### Panels, productivity, and system control

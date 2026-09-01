@@ -77,6 +77,7 @@ PanelWindow {
         if (targetScreen)
             screen = targetScreen;
         closeTimer.stop();
+        contentRoot.animateSelectionMove = false;
         contentRoot.activeIndex = 0;
         actionsViewport.contentX = 0;
         visible = true;
@@ -139,6 +140,16 @@ PanelWindow {
         id: contentRoot
 
         property int activeIndex: 0
+        property bool animateSelectionMove: false
+
+        function selectAction(index) {
+            const nextIndex = Math.max(0, Math.min(powerWindow.actions.length - 1, index));
+            if (nextIndex === activeIndex)
+                return;
+
+            animateSelectionMove = Math.abs(nextIndex - activeIndex) === 1;
+            activeIndex = nextIndex;
+        }
 
         anchors.fill: parent
         focus: true
@@ -152,11 +163,11 @@ PanelWindow {
         }
 
         Keys.onEscapePressed: powerWindow.closeMenu()
-        Keys.onLeftPressed: activeIndex = (activeIndex - 1 + powerWindow.actions.length) % powerWindow.actions.length
+        Keys.onLeftPressed: selectAction((activeIndex - 1 + powerWindow.actions.length) % powerWindow.actions.length)
         Keys.onReturnPressed: powerWindow.executeAction(activeIndex)
-        Keys.onRightPressed: activeIndex = (activeIndex + 1) % powerWindow.actions.length
+        Keys.onRightPressed: selectAction((activeIndex + 1) % powerWindow.actions.length)
         Keys.onSpacePressed: powerWindow.executeAction(activeIndex)
-        Keys.onTabPressed: activeIndex = (activeIndex + 1) % powerWindow.actions.length
+        Keys.onTabPressed: selectAction((activeIndex + 1) % powerWindow.actions.length)
         onActiveIndexChanged: {
             powerWindow.revealActiveAction();
             revealActiveActionTimer.restart();
@@ -215,9 +226,9 @@ PanelWindow {
                 border.color: Config.alpha(Config.md3.outline_variant, 0.48)
                 border.width: 1
                 color: Config.alpha(Config.md3.background, 0.97)
-                height: 104
+                height: 116
                 radius: height / 2
-                width: Responsive.fitWithMargins(572, powerWindow.width, 16, 340)
+                width: Responsive.fitWithMargins(516, powerWindow.width, 16, 340)
 
                 Rectangle {
                     anchors.fill: parent
@@ -239,6 +250,46 @@ PanelWindow {
                     flickableDirection: Flickable.HorizontalFlick
                     interactive: contentWidth > width
 
+                    ShellShadow {
+                        active: powerWindow.menuOpen
+                        componentShadow: true
+                        cornerRadius: selectionIndicator.radius
+                        target: selectionIndicator
+                    }
+                    Rectangle {
+                        id: selectionIndicator
+
+                        readonly property Item activeButton: actionsRepeater.itemAt(contentRoot.activeIndex)
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        border.color: Config.alpha(powerWindow.selectedAction.accent, 0.62)
+                        border.width: 1
+                        color: Config.alpha(powerWindow.selectedAction.accent, 0.24)
+                        height: 70
+                        radius: height / 2
+                        width: height
+                        x: actionsRow.x + (activeButton ? activeButton.x : 0)
+
+                        Behavior on border.color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(180)
+                            }
+                        }
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(180)
+                            }
+                        }
+                        Behavior on x {
+                            enabled: powerWindow.menuOpen && contentRoot.animateSelectionMove && !Config.shellReducedMotion
+
+                            SmoothedAnimation {
+                                maximumEasingTime: Config.animationDuration(90)
+                                reversingMode: SmoothedAnimation.Sync
+                                velocity: 760
+                            }
+                        }
+                    }
                     Row {
                         id: actionsRow
 
@@ -263,7 +314,7 @@ PanelWindow {
 
                                 onContainsMouseChanged: {
                                     if (containsMouse)
-                                        contentRoot.activeIndex = modelData.actionIndex;
+                                        contentRoot.selectAction(modelData.actionIndex);
                                 }
                                 onTriggered: powerWindow.executeAction(modelData.actionIndex)
                             }

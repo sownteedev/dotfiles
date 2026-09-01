@@ -7,6 +7,8 @@ Rectangle {
     id: root
 
     property real availableWidth: 946
+    readonly property bool compact: availableWidth < 760
+    readonly property bool narrow: availableWidth < 620
     property bool opacityAvailable: false
     property bool reverseSearchBusy: false
     property color selectedColor: "#ff3b30"
@@ -26,7 +28,7 @@ Rectangle {
     border.width: 1
     color: Config.alpha(Config.md3.background, 0.94)
     implicitHeight: contentLayout.implicitHeight + 24
-    implicitWidth: Math.min(946, Math.max(884, availableWidth))
+    implicitWidth: Math.max(320, Math.min(946, availableWidth))
     radius: 20
 
     ColumnLayout {
@@ -36,153 +38,171 @@ Rectangle {
         anchors.margins: 12
         spacing: 10
 
-        RowLayout {
-            id: toolRow
+        Item {
+            id: toolViewport
 
             Layout.fillWidth: true
-            spacing: 7
+            Layout.preferredHeight: 42
+            clip: true
 
-            Repeater {
-                model: [
-                    {
-                        "tool": "select",
-                        "description": qsTr("Move layers. Drag an image edge to crop, a corner to resize, or the top handle to rotate."),
-                        "glyph": "",
-                        "iconName": "screenshot-ui-show-pointer-symbolic",
-                        "iconSize": 22,
-                        "label": qsTr("Select and move"),
-                        "shortcut": qsTr("Shift: snap rotation")
-                    },
-                    {
-                        "tool": "pen",
-                        "description": qsTr("Draw freehand strokes."),
-                        "fontSize": 24,
-                        "fontWeight": Font.Black,
-                        "glyph": "✎",
-                        "iconScale": 1.18,
-                        "label": qsTr("Pen")
-                    },
-                    {
-                        "tool": "highlight",
-                        "description": qsTr("Draw a translucent highlight."),
-                        "fontSize": 24,
-                        "fontWeight": Font.Black,
-                        "glyph": "▰",
-                        "iconScale": 1.22,
-                        "label": qsTr("Highlighter")
-                    },
-                    {
-                        "tool": "line",
-                        "customIcon": "straight-line",
-                        "description": qsTr("Draw a straight line."),
-                        "label": qsTr("Line")
-                    },
-                    {
-                        "tool": "arrow",
-                        "description": qsTr("Draw an arrow."),
-                        "fontSize": 24,
-                        "fontWeight": Font.Black,
-                        "glyph": "➜",
-                        "iconScale": 1.18,
-                        "label": qsTr("Arrow")
-                    },
-                    {
-                        "tool": "rectangle",
-                        "customIcon": "rectangle-outline",
-                        "description": qsTr("Draw a rectangle outline."),
-                        "label": qsTr("Rectangle")
-                    },
-                    {
-                        "tool": "ellipse",
-                        "customIcon": "ellipse-outline",
-                        "description": qsTr("Draw an ellipse outline."),
-                        "label": qsTr("Ellipse")
-                    },
-                    {
-                        "tool": "blur",
-                        "customIcon": "blur-drop",
-                        "description": qsTr("Blur the selected area."),
-                        "label": qsTr("Blur")
-                    },
-                    {
-                        "tool": "pixelate",
-                        "customIcon": "pixel-grid",
-                        "description": qsTr("Pixelate the selected area."),
-                        "label": qsTr("Pixelate")
-                    },
-                    {
-                        "tool": "text",
-                        "description": qsTr("Insert text into the screenshot."),
-                        "fontSize": 22,
-                        "fontWeight": Font.Black,
-                        "glyph": "T",
-                        "label": qsTr("Text")
-                    },
-                    {
-                        "tool": "number",
-                        "customIcon": "number-marker",
-                        "description": qsTr("Place numbered markers."),
-                        "label": qsTr("Number marker")
-                    },
-                    {
-                        "tool": "callout",
-                        "customIcon": "zoom-callout",
-                        "description": qsTr("Select an area to create a magnified callout."),
-                        "label": qsTr("Zoom callout")
-                    },
-                    {
-                        "tool": "loupe",
-                        "customIcon": "pixel-loupe",
-                        "description": qsTr("Inspect pixels without changing the image. Hold G temporarily and scroll to change zoom."),
-                        "label": qsTr("Magnifier"),
-                        "shortcut": qsTr("G + wheel")
-                    },
-                    {
-                        "tool": "ocr",
-                        "customIcon": "ocr-scan",
-                        "description": qsTr("Drag over text to recognize and copy it."),
-                        "label": qsTr("Copy text with OCR")
-                    },
-                    {
-                        "tool": "crop",
-                        "description": qsTr("Drag over the area you want to keep."),
-                        "iconName": "image-crop-symbolic",
-                        "label": qsTr("Crop")
-                    },
-                    {
-                        "tool": "google-lens",
-                        "action": "reverse-search",
-                        "description": qsTr("Search the edited screenshot with Google Lens."),
-                        "googleLens": true,
-                        "label": qsTr("Google Lens")
-                    },
-                    {
-                        "tool": "eraser",
-                        "description": qsTr("Remove annotations or inserted images."),
-                        "glyph": "",
-                        "iconName": "draw-eraser-symbolic",
-                        "label": qsTr("Eraser"),
-                        "tone": "error"
-                    }
-                ]
+            Flickable {
+                id: toolFlickable
 
-                delegate: ScreenshotToolButton {
-                    required property var modelData
+                anchors.fill: parent
+                boundsBehavior: Flickable.StopAtBounds
+                contentHeight: height
+                contentWidth: Math.max(width, toolRow.implicitWidth)
+                flickableDirection: Flickable.HorizontalFlick
+                interactive: contentWidth > width
 
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 44
-                    Layout.preferredHeight: 42
-                    Layout.preferredWidth: 48
-                    enabled: modelData.action === "reverse-search" ? !root.reverseSearchBusy : true
-                    opacity: enabled ? 1 : 0.55
-                    selectedTool: root.selectedTool
-                    toolData: modelData
+                Row {
+                    id: toolRow
 
-                    onSelected: tool => {
-                        if (modelData.action === "reverse-search")
-                            root.reverseSearchRequested();
-                        else
-                            root.toolSelected(tool);
+                    height: parent.height
+                    spacing: 7
+                    x: implicitWidth <= toolFlickable.width ? (toolFlickable.width - implicitWidth) / 2 : 0
+
+                    Repeater {
+                        model: [
+                            {
+                                "tool": "select",
+                                "description": qsTr("Move layers. Drag an image edge to crop, a corner to resize, or the top handle to rotate."),
+                                "glyph": "",
+                                "iconName": "screenshot-ui-show-pointer-symbolic",
+                                "iconSize": 22,
+                                "label": qsTr("Select and move"),
+                                "shortcut": qsTr("Shift: snap rotation")
+                            },
+                            {
+                                "tool": "pen",
+                                "description": qsTr("Draw freehand strokes."),
+                                "fontSize": 24,
+                                "fontWeight": Font.Black,
+                                "glyph": "✎",
+                                "iconScale": 1.18,
+                                "label": qsTr("Pen")
+                            },
+                            {
+                                "tool": "highlight",
+                                "description": qsTr("Draw a translucent highlight."),
+                                "fontSize": 24,
+                                "fontWeight": Font.Black,
+                                "glyph": "▰",
+                                "iconScale": 1.22,
+                                "label": qsTr("Highlighter")
+                            },
+                            {
+                                "tool": "line",
+                                "customIcon": "straight-line",
+                                "description": qsTr("Draw a straight line."),
+                                "label": qsTr("Line")
+                            },
+                            {
+                                "tool": "arrow",
+                                "description": qsTr("Draw an arrow."),
+                                "fontSize": 24,
+                                "fontWeight": Font.Black,
+                                "glyph": "➜",
+                                "iconScale": 1.18,
+                                "label": qsTr("Arrow")
+                            },
+                            {
+                                "tool": "rectangle",
+                                "customIcon": "rectangle-outline",
+                                "description": qsTr("Draw a rectangle outline."),
+                                "label": qsTr("Rectangle")
+                            },
+                            {
+                                "tool": "ellipse",
+                                "customIcon": "ellipse-outline",
+                                "description": qsTr("Draw an ellipse outline."),
+                                "label": qsTr("Ellipse")
+                            },
+                            {
+                                "tool": "blur",
+                                "customIcon": "blur-drop",
+                                "description": qsTr("Blur the selected area."),
+                                "label": qsTr("Blur")
+                            },
+                            {
+                                "tool": "pixelate",
+                                "customIcon": "pixel-grid",
+                                "description": qsTr("Pixelate the selected area."),
+                                "label": qsTr("Pixelate")
+                            },
+                            {
+                                "tool": "text",
+                                "description": qsTr("Insert text into the screenshot."),
+                                "fontSize": 22,
+                                "fontWeight": Font.Black,
+                                "glyph": "T",
+                                "label": qsTr("Text")
+                            },
+                            {
+                                "tool": "number",
+                                "customIcon": "number-marker",
+                                "description": qsTr("Place numbered markers."),
+                                "label": qsTr("Number marker")
+                            },
+                            {
+                                "tool": "callout",
+                                "customIcon": "zoom-callout",
+                                "description": qsTr("Select an area to create a magnified callout."),
+                                "label": qsTr("Zoom callout")
+                            },
+                            {
+                                "tool": "loupe",
+                                "customIcon": "pixel-loupe",
+                                "description": qsTr("Inspect pixels without changing the image. Hold G temporarily and scroll to change zoom."),
+                                "label": qsTr("Magnifier"),
+                                "shortcut": qsTr("G + wheel")
+                            },
+                            {
+                                "tool": "ocr",
+                                "customIcon": "ocr-scan",
+                                "description": qsTr("Drag over text to recognize and copy it."),
+                                "label": qsTr("Copy text with OCR")
+                            },
+                            {
+                                "tool": "crop",
+                                "description": qsTr("Drag over the area you want to keep."),
+                                "iconName": "image-crop-symbolic",
+                                "label": qsTr("Crop")
+                            },
+                            {
+                                "tool": "google-lens",
+                                "action": "reverse-search",
+                                "description": qsTr("Search the edited screenshot with Google Lens."),
+                                "googleLens": true,
+                                "label": qsTr("Google Lens")
+                            },
+                            {
+                                "tool": "eraser",
+                                "description": qsTr("Remove annotations or inserted images."),
+                                "glyph": "",
+                                "iconName": "draw-eraser-symbolic",
+                                "label": qsTr("Eraser"),
+                                "tone": "error"
+                            }
+                        ]
+
+                        delegate: ScreenshotToolButton {
+                            required property var modelData
+
+                            enabled: modelData.action === "reverse-search" ? !root.reverseSearchBusy : true
+                            height: 42
+                            opacity: enabled ? 1 : 0.55
+                            selectedTool: root.selectedTool
+                            toolData: modelData
+                            width: root.compact ? 44 : 48
+
+                            onSelected: tool => {
+                                if (modelData.action === "reverse-search")
+                                    root.reverseSearchRequested();
+                                else
+                                    root.toolSelected(tool);
+                            }
+                        }
                     }
                 }
             }
@@ -194,15 +214,16 @@ Rectangle {
             Layout.maximumHeight: 32
             Layout.minimumHeight: 32
             Layout.preferredHeight: 32
-            spacing: 8
+            spacing: root.compact ? 5 : 8
 
             Item {
                 Layout.fillWidth: true
             }
             ScreenshotColorSlider {
-                Layout.minimumWidth: 220
+                Layout.fillWidth: root.compact
+                Layout.minimumWidth: root.narrow ? 120 : root.compact ? 160 : 220
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 280
+                Layout.preferredWidth: root.narrow ? 160 : root.compact ? 210 : 280
                 selectedColor: root.selectedColor
                 visible: root.selectedTool !== "select"
 
@@ -211,22 +232,22 @@ Rectangle {
                 }
             }
             Rectangle {
-                Layout.leftMargin: 4
+                Layout.leftMargin: root.compact ? 1 : 4
                 Layout.preferredHeight: 25
                 Layout.preferredWidth: 1
-                Layout.rightMargin: 4
+                Layout.rightMargin: root.compact ? 1 : 4
                 color: Config.alpha(Config.md3.on_surface, 0.12)
                 visible: root.selectedTool !== "select"
             }
             RowLayout {
-                Layout.minimumWidth: 120
+                Layout.minimumWidth: root.narrow ? 80 : root.compact ? 100 : 120
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 140
-                spacing: 8
+                Layout.preferredWidth: root.narrow ? 100 : root.compact ? 120 : 140
+                spacing: root.narrow ? 4 : 8
                 visible: root.selectedTool !== "select"
 
                 Text {
-                    Layout.preferredWidth: 38
+                    Layout.preferredWidth: visible ? 38 : 0
                     color: Config.md3.on_surface_variant
                     font.family: Config.fontName
                     font.pixelSize: 12
@@ -244,6 +265,7 @@ Rectangle {
 
                         return Math.round(root.selectedWidth) + " px";
                     }
+                    visible: !root.narrow
                 }
                 Item {
                     id: widthSlider
@@ -322,23 +344,25 @@ Rectangle {
                 }
             }
             Rectangle {
-                Layout.leftMargin: 4
+                Layout.leftMargin: root.compact ? 1 : 4
                 Layout.preferredHeight: 25
                 Layout.preferredWidth: 1
-                Layout.rightMargin: 4
+                Layout.rightMargin: root.compact ? 1 : 4
                 color: Config.alpha(Config.md3.on_surface, 0.12)
                 visible: root.opacityAvailable && root.selectedTool !== "select"
             }
             ScreenshotOpacitySlider {
-                Layout.minimumWidth: 120
+                Layout.minimumWidth: root.narrow ? 90 : root.compact ? 105 : 120
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: 145
+                Layout.preferredWidth: root.narrow ? 105 : root.compact ? 125 : 145
                 selectedOpacity: root.selectedOpacity
                 visible: root.opacityAvailable
 
                 onOpacityChangeFinished: root.opacityChangeFinished()
                 onOpacityChangeStarted: root.opacityChangeStarted()
-                onOpacitySelected: opacityValue => root.opacitySelected(opacityValue)
+                onOpacitySelected: opacityValue => {
+                    return root.opacitySelected(opacityValue);
+                }
             }
             Item {
                 Layout.fillWidth: true

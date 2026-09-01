@@ -9,6 +9,7 @@ Rectangle {
     property string actionText: ""
     readonly property color foregroundColor: tone === "primary" ? Config.md3.on_primary : tone === "error" ? Config.md3.on_error_container : Config.md3.on_surface
     property var shortcutKeys: []
+    property bool showShortcutKeys: true
     property string tone: "neutral"
 
     signal clicked
@@ -79,6 +80,7 @@ Rectangle {
         Row {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 4
+            visible: root.showShortcutKeys
 
             Repeater {
                 model: root.shortcutKeys
@@ -132,6 +134,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             color: Config.alpha(root.foregroundColor, 0.2)
             height: 18
+            visible: root.showShortcutKeys && root.shortcutKeys.length > 0
             width: 1
         }
         Text {

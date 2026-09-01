@@ -341,7 +341,7 @@ PanelWindow {
                         Button {
                             active: tailscaleEnabled
                             activeColor: Config.md3.primary
-                            iconName: tailscaleEnabled ? "network-vpn-symbolic" : "network-vpn-disconnected-symbolic"
+                            iconName: "file://" + Config.quickshellDir + "/assets/icons/tailscale.svg"
 
                             onClicked: QuickSettingsService.setTailscaleEnabled(!tailscaleEnabled)
                         }

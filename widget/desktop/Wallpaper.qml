@@ -16,6 +16,7 @@ PanelWindow {
     readonly property real commitRippleTargetScale: Math.max(1, Math.sqrt(width * width + height * height) * 1.08 / commitRippleDiameter)
     property string currentWall: ""
     property Item displayedImage: null
+    readonly property int imageFillMode: Config.wallpaperScalingMode === "fit" ? Image.PreserveAspectFit : (Config.wallpaperScalingMode === "stretch" ? Image.Stretch : Image.PreserveAspectCrop)
     property bool isTransitionPending: WallpaperService.isTransitionPending
     property bool isVideoWallpaper: allowVideoFade && WallpaperService.currentMode === "video"
     property Item outgoingImage: null
@@ -342,7 +343,7 @@ PanelWindow {
 
             anchors.fill: parent
             cache: false
-            fillMode: Image.PreserveAspectCrop
+            fillMode: wallpaperWindow.imageFillMode
             layer.enabled: false
             opacity: 0
             path: sourceKey
@@ -365,7 +366,7 @@ PanelWindow {
             anchors.fill: parent
             asynchronous: true
             cache: false
-            fillMode: Image.PreserveAspectCrop
+            fillMode: wallpaperWindow.imageFillMode
             layer.enabled: false
             opacity: 0
             source: sourceKey
@@ -388,7 +389,7 @@ PanelWindow {
             anchors.fill: parent
             asynchronous: true
             cache: false
-            fillMode: Image.PreserveAspectCrop
+            fillMode: wallpaperWindow.imageFillMode
             opacity: 0
             playing: wallpaperWindow.displayedImage === animatedImage && !transitionAnimation.running && !WallpaperPlaybackPolicy.shouldPause
             source: sourceKey

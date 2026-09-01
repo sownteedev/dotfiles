@@ -9,6 +9,8 @@ Item {
     required property var shapeData
     property bool showOutline: false
     required property var sourceItem
+    property bool sourceLive: false
+    property int sourceRevision: 0
     required property real surfaceHeight
     required property real surfaceWidth
     readonly property real topEdge: Math.min(shapeData.startY, shapeData.endY)
@@ -20,11 +22,20 @@ Item {
     x: leftEdge
     y: topEdge
 
+    onSourceLiveChanged: {
+        if (!sourceLive)
+            regionSource.scheduleUpdate();
+    }
+    onSourceRevisionChanged: {
+        if (!regionSource.live)
+            regionSource.scheduleUpdate();
+    }
+
     ShaderEffectSource {
         id: regionSource
 
         anchors.fill: parent
-        live: root.showOutline
+        live: root.showOutline || root.sourceLive
         mipmap: false
         smooth: true
         sourceItem: root.sourceItem

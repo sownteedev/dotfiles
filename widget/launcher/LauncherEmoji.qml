@@ -1,10 +1,17 @@
 import "../../"
 import QtQuick
 import Quickshell
+import "LauncherUnicodeCatalog.js" as UnicodeCatalog
 
 Item {
     id: root
 
+    readonly property var emojiGlyphs: {
+        var glyphs = {};
+        for (var index = 0; index < entries.length; ++index)
+            glyphs[String(entries[index].glyph || "")] = true;
+        return glyphs;
+    }
     readonly property var entries: [
         {
             "glyph": "😀",
@@ -9357,24 +9364,10 @@ Item {
             "keywords": "wales"
         }
     ]
+    property bool loading: false
+    property string pendingSearchTerm: ""
     property string query: ""
-    readonly property var results: {
-        var term = searchTerm;
-        var matches = [];
-        for (var i = 0; i < entries.length; ++i) {
-            var entry = entries[i];
-            var haystack = (entry.name + " " + entry.keywords).toLowerCase();
-            if (term === "" || haystack.indexOf(term) !== -1 || entry.glyph === term)
-                matches.push({
-                    "type": "emoji",
-                    "data": entry
-                });
-
-            if (matches.length >= Config.launcherMaxResults)
-                break;
-        }
-        return matches;
-    }
+    property var results: []
     readonly property string searchTerm: {
         var prefix = Config.launcherEmojiPrefix.toLowerCase();
         if (!query.toLowerCase().startsWith(prefix + " "))
@@ -9382,11 +9375,140 @@ Item {
 
         return query.substring(prefix.length + 1).trim().toLowerCase();
     }
+    readonly property var unicodeEntries: UnicodeCatalog.getEntries()
 
+    function buildResults(term) {
+        var limit = Math.max(1, Config.launcherMaxResults);
+        var output = [];
+        if (term === "") {
+            for (var emptyIndex = 0; emptyIndex < entries.length && output.length < limit; ++emptyIndex) {
+                output.push({
+                    "type": "emoji",
+                    "characterKind": "emoji",
+                    "data": entries[emptyIndex]
+                });
+            }
+            return output;
+        }
+
+        var tokens = term.split(/\s+/).filter(function (token) {
+            return token.length > 0;
+        });
+        var matches = [];
+        var order = 0;
+        for (var emojiIndex = 0; emojiIndex < entries.length; ++emojiIndex) {
+            var emojiEntry = entries[emojiIndex];
+            var emojiScore = scoreEntry(emojiEntry, term, tokens);
+            if (emojiScore >= 0) {
+                matches.push({
+                    "type": "emoji",
+                    "characterKind": "emoji",
+                    "data": emojiEntry,
+                    "score": emojiScore,
+                    "order": order
+                });
+            }
+            ++order;
+        }
+        for (var unicodeIndex = 0; unicodeIndex < unicodeEntries.length; ++unicodeIndex) {
+            var unicodeEntry = unicodeEntries[unicodeIndex];
+            if (emojiGlyphs[String(unicodeEntry.glyph || "")])
+                continue;
+
+            var unicodeScore = scoreEntry(unicodeEntry, term, tokens);
+            if (unicodeScore >= 0) {
+                matches.push({
+                    "type": "emoji",
+                    "characterKind": "unicode",
+                    "data": unicodeEntry,
+                    "score": unicodeScore,
+                    "order": order
+                });
+            }
+            ++order;
+        }
+        matches.sort(function (left, right) {
+            if (left.score !== right.score)
+                return left.score - right.score;
+            return left.order - right.order;
+        });
+        for (var resultIndex = 0; resultIndex < matches.length && output.length < limit; ++resultIndex)
+            output.push(matches[resultIndex]);
+        return output;
+    }
+    function containsWord(words, token) {
+        return words.indexOf(token) !== -1;
+    }
     function copy(entry) {
         if (entry && entry.glyph) {
             var command = Config.launcherClipboardAutoPaste ? "if wl-copy \"$1\"; then if command -v wtype >/dev/null 2>&1; then sleep 0.35; wtype -M ctrl -k v -m ctrl; fi; fi" : "wl-copy \"$1\"";
             Quickshell.execDetached(["sh", "-c", command, "emoji_paste", entry.glyph]);
+        }
+    }
+    function scheduleSearch() {
+        pendingSearchTerm = searchTerm;
+        loading = true;
+        results = [];
+        searchTimer.restart();
+    }
+    function scoreEntry(entry, term, tokens) {
+        var glyph = String(entry.glyph || "").toLowerCase();
+        var name = String(entry.name || "").toLowerCase();
+        var keywords = String(entry.keywords || "").toLowerCase();
+        var category = String(entry.category || "").toLowerCase();
+        var nameWords = name.split(/[^a-z0-9+]+/).filter(function (word) {
+            return word.length > 0;
+        });
+        var keywordWords = keywords.split(/\s+/).filter(function (word) {
+            return word.length > 0;
+        });
+
+        if (glyph === term)
+            return 0;
+        if (name === term)
+            return 1;
+        if (category === term)
+            return 2;
+        if (containsWord(keywordWords, term))
+            return 3;
+        if (term.length > 1 && name.startsWith(term))
+            return 4;
+        if (term.length > 1 && (name.indexOf(term) !== -1 || keywords.indexOf(term) !== -1 || category.indexOf(term) !== -1))
+            return 8;
+
+        var score = 20;
+        for (var tokenIndex = 0; tokenIndex < tokens.length; ++tokenIndex) {
+            var token = tokens[tokenIndex];
+            if (glyph === token)
+                continue;
+            if (containsWord(nameWords, token))
+                score += 1;
+            else if (containsWord(keywordWords, token))
+                score += 2;
+            else if (category === token)
+                score += 2;
+            else if (token.length > 1 && name.indexOf(token) !== -1)
+                score += 4;
+            else if (token.length > 1 && (keywords.indexOf(token) !== -1 || category.indexOf(token) !== -1))
+                score += 5;
+            else
+                return -1;
+        }
+        return score;
+    }
+
+    Component.onCompleted: scheduleSearch()
+    onSearchTermChanged: scheduleSearch()
+
+    Timer {
+        id: searchTimer
+
+        interval: 120
+        repeat: false
+
+        onTriggered: {
+            root.results = root.buildResults(root.pendingSearchTerm);
+            root.loading = false;
         }
     }
 }

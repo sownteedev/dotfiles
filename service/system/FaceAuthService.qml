@@ -30,6 +30,7 @@ QtObject {
     property string activeAction: ""
     property bool busy: false
     property string camera: ""
+    property var cameras: []
     property bool enabled: false
     property bool installed: false
     readonly property string managerPath: "/usr/lib/quickshell/howdy-face-manager"
@@ -59,6 +60,7 @@ QtObject {
                 root.installed = false;
                 root.enabled = false;
                 root.models = [];
+                root.cameras = [];
                 root.statusSuccess = false;
                 root.statusMessage = response.message || "Face manager is not installed";
             }
@@ -78,6 +80,7 @@ QtObject {
         enabled = response.enabled === true;
         models = response.models || [];
         camera = response.camera || "";
+        cameras = response.cameras || [];
         user = response.user || "";
     }
     function parseResponse(text, fallback) {
@@ -103,7 +106,7 @@ QtObject {
         if (busy || actionProcess.running)
             return;
         activeAction = action;
-        statusMessage = action === "add" ? "Authorize, then look straight into the camera…" : action === "test" ? "Authorize, then look straight into the camera…" : "Waiting for administrator authorization…";
+        statusMessage = action === "add" || action === "test" ? "Authorize, then look straight into the camera…" : action === "set-camera" ? "Authorize to change the face camera…" : "Waiting for administrator authorization…";
         statusSuccess = true;
         busy = true;
         var args = ["pkexec", managerPath, action];
@@ -111,6 +114,9 @@ QtObject {
             args.push(String(argument));
         actionProcess.command = args;
         actionProcess.running = true;
+    }
+    function setCamera(path) {
+        runAction("set-camera", path);
     }
     function setEnabled(value) {
         runAction(value ? "enable" : "disable");

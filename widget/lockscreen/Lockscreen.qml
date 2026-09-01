@@ -591,7 +591,7 @@ Scope {
                                         font.letterSpacing: 1 * container.s
                                         font.pixelSize: 16 * container.s
                                         font.weight: Font.Bold
-                                        text: WeatherService.temperature + "°C"
+                                        text: WeatherService.formatTemperature(WeatherService.temperature)
                                     }
                                 }
                             }
@@ -1370,7 +1370,7 @@ Scope {
         property string faceState: "idle"
         property string faceStatus: ""
         property bool hasError: false
-        readonly property int maxFaceAttempts: 3
+        readonly property int maxFaceAttempts: Math.max(1, Math.min(3, Number(root.settingValue("lockFaceMaxAttempts", 3))))
         property bool passwordAttempt: false
         property string passwordToSubmit: ""
         property string verifiedMethod: ""

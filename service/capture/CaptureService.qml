@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../../"
+import ".."
 
 QtObject {
     id: root
@@ -17,8 +18,14 @@ QtObject {
         onExited: (exitCode, exitStatus) => {
             console.log("[Capture] Screen recording stopped with code:", exitCode);
             recordingTicker.stop();
-            if (root.recordingStartedAt <= 0)
+            if (root.recordingStartedAt <= 0) {
+                root.recordingTarget = "";
+                root.recordingTargetMode = "";
+                root.recordingCountdownRemaining = 0;
+                if (exitCode !== 0)
+                    root.failRecordingStart(recorderError.text.trim() || qsTr("Could not start screen recording"));
                 return;
+            }
             root.recordingElapsedSeconds = Math.max(0, Math.floor((Date.now() - root.recordingStartedAt) / 1000));
             root.recordingStartedAt = 0;
             var completedPath = root.recordingPath;
@@ -41,6 +48,11 @@ QtObject {
         }
         onStarted: {
             console.log("[Capture] Screen recording started:", root.recordingPath);
+            root.recordingCountdownTimer.stop();
+            root.recordingCountdownRemaining = 0;
+            root.recordingOutputPending = false;
+            root.recordingTarget = "";
+            root.recordingTargetMode = "";
             root.recordingStopRequested = false;
             root.recordingStartedAt = Date.now();
             root.recordingElapsedSeconds = 0;
@@ -48,15 +60,64 @@ QtObject {
         }
     }
     readonly property bool recording: recorder.running
+    property int recordingCountdownRemaining: 0
+    property Timer recordingCountdownTimer: Timer {
+        interval: 1000
+        repeat: true
+
+        onTriggered: {
+            root.recordingCountdownRemaining = Math.max(0, root.recordingCountdownRemaining - 1);
+            if (root.recordingCountdownRemaining === 0) {
+                stop();
+                root.startPreparedRecording();
+            }
+        }
+    }
     readonly property string recordingDir: Config.captureRecordingDir
     property int recordingElapsedSeconds: 0
     readonly property string recordingElapsedText: formatDuration(recordingElapsedSeconds)
+    property var recordingMicrophoneOptions: [
+        {
+            "label": qsTr("Default microphone"),
+            "value": "default_input"
+        }
+    ]
+    property Process recordingMicrophoneQuery: Process {
+        command: ["gpu-screen-recorder", "--list-audio-devices"]
+
+        stdout: StdioCollector {
+            id: recordingMicrophoneOutput
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0)
+                return;
+            root.recordingMicrophoneOptions = root.parseRecordingMicrophones(recordingMicrophoneOutput.text);
+        }
+    }
+    readonly property bool recordingMicrophoneQueryBusy: recordingMicrophoneQuery.running
+    property bool recordingOutputPending: false
     property Process recordingOutputQuery: Process {
         command: ["niri", "msg", "-j", "focused-output"]
 
         stdout: StdioCollector {
             onStreamFinished: {
                 root.recordingScreenName = root.parseOutputName(text);
+                if (!root.recordingOutputPending)
+                    return;
+
+                root.recordingOutputPending = false;
+                if (root.recordingScreenName !== "")
+                    root.prepareRecording("screen", root.recordingScreenName);
+                else
+                    root.failRecordingStart(qsTr("Could not detect the focused display"));
+            }
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0 && root.recordingOutputPending) {
+                root.recordingOutputPending = false;
+                root.failRecordingStart(qsTr("Could not detect the focused display"));
             }
         }
     }
@@ -70,7 +131,10 @@ QtObject {
     property bool recordingSavedVisible: false
     property string recordingScreenName: ""
     property double recordingStartedAt: 0
+    readonly property bool recordingStarting: !recording && (recordingOutputPending || recordingTarget !== "")
     property bool recordingStopRequested: false
+    property string recordingTarget: ""
+    property string recordingTargetMode: ""
     property Timer recordingTicker: Timer {
         interval: 1000
         repeat: true
@@ -101,15 +165,7 @@ QtObject {
                 }
 
                 console.log("[Capture] Region selected:", region);
-
-                var stamp = Qt.formatDateTime(new Date(), "dd-MM-yyyy_HH-mm-ss");
-                root.recordingPath = root.recordingDir + "/recording_" + stamp + ".mp4";
-                var audioSource = Config.captureRecordingMicrophone ? "default_output|default_input" : "default_output";
-                // GPU Screen Recorder automatically uses the GPU driving the
-                // selected region. Fall back to H.264 CPU encoding only when
-                // that GPU has no usable hardware encoder/VA-API backend.
-                recorder.command = ["gpu-screen-recorder", "-w", region, "-f", String(Config.captureRecordingFps), "-a", audioSource, "-ac", "opus", "-ab", "160", "-k", Config.captureRecordingCodec, "-q", Config.captureRecordingQuality, "-bm", "qp", "-encoder", "gpu", "-fallback-cpu-encoding", "yes", "-tune", "performance", "-cr", "limited", "-fm", "vfr", "-keyint", "2", "-cursor", "yes", "-o", root.recordingPath];
-                recorder.running = true;
+                root.prepareRecording("region", region);
             }
         }
 
@@ -145,6 +201,7 @@ QtObject {
     property string reverseImageSearchStatus: ""
     property bool reverseImageSearchStatusIsError: false
     property bool screenshotBusy: false
+    property string screenshotCaptureScreenName: ""
     property int screenshotCaptureSession: 0
     property double screenshotCapturedAt: 0
     readonly property string screenshotDir: Config.captureScreenshotDir
@@ -158,6 +215,40 @@ QtObject {
         onTriggered: Quickshell.execDetached(["niri", "msg", "action", "screenshot"])
     }
     property string screenshotPath: ""
+    property Process screenshotPrepareProcess: Process {
+        stderr: StdioCollector {
+            id: screenshotPrepareError
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            var session = root.screenshotPrepareSession;
+            var sourcePath = root.screenshotPrepareSourcePath;
+            var targetPath = root.screenshotPrepareTargetPath;
+            root.screenshotPrepareSession = -1;
+            root.screenshotPrepareSourcePath = "";
+            root.screenshotPrepareTargetPath = "";
+            if (session !== root.screenshotCaptureSession) {
+                if (targetPath !== "")
+                    Quickshell.execDetached(["rm", "-f", "--", targetPath]);
+                return;
+            }
+
+            if (exitCode === 0 && targetPath !== "") {
+                if (sourcePath !== targetPath)
+                    Quickshell.execDetached(["rm", "-f", "--", sourcePath]);
+                root.finalizeScreenshotCapture(targetPath);
+                return;
+            }
+
+            if (targetPath !== "")
+                Quickshell.execDetached(["rm", "-f", "--", targetPath]);
+            console.warn("[Capture] Screenshot conversion failed:", screenshotPrepareError.text.trim() || "exit code " + exitCode);
+            root.finalizeScreenshotCapture(sourcePath);
+        }
+    }
+    property int screenshotPrepareSession: -1
+    property string screenshotPrepareSourcePath: ""
+    property string screenshotPrepareTargetPath: ""
     property double screenshotStartedAt: 0
     property Timer screenshotWatchdog: Timer {
         interval: 61500
@@ -185,11 +276,11 @@ QtObject {
 
                 var path = result.substring(separator + 1).trim();
                 root.screenshotWatchdog.stop();
-                root.screenshotBusy = false;
-                if (!path || path === "__NO_MATCH__")
+                if (!path || path === "__NO_MATCH__") {
+                    root.screenshotBusy = false;
                     return;
-                root.screenshotPath = path;
-                root.screenshotCapturedAt = Date.now();
+                }
+                root.prepareScreenshotCapture(path);
             }
         }
     }
@@ -209,12 +300,23 @@ QtObject {
         screenshotWatchdog.restart();
         screenshotLaunchDelay.restart();
     }
+    function cancelRecordingStart() {
+        recordingCountdownTimer.stop();
+        recordingCountdownRemaining = 0;
+        recordingOutputPending = false;
+        recordingTarget = "";
+        recordingTargetMode = "";
+    }
     function clearReverseImageSearchStatus() {
         reverseImageSearchStatus = "";
         reverseImageSearchStatusIsError = false;
     }
     function closeScreenshotEditor() {
         dismissScreenshotEditor();
+    }
+    function configuredScreenshotFormat() {
+        var format = String(Config.captureScreenshotFormat || "png").toLowerCase();
+        return format === "jpeg" || format === "webp" ? format : "png";
     }
     function copyRecording(path) {
         var target = path || latestRecordingPath;
@@ -225,15 +327,56 @@ QtObject {
         // File-aware Wayland applications can paste it as an MP4 file.
         Quickshell.execDetached(["sh", "-c", "printf 'file://%s\\r\\n' \"$1\" | wl-copy --type text/uri-list", "copy-recording", target]);
     }
+    function copyScreenshot(path) {
+        var target = path || screenshotPath;
+        if (!target)
+            return;
+
+        Quickshell.execDetached(["sh", "-c", "wl-copy --type \"$2\" < \"$1\"", "copy-screenshot", target, screenshotMimeType(target)]);
+    }
     function dismissScreenshotEditor() {
         screenshotEditorVisible = false;
     }
     function editedScreenshotPath() {
         if (!screenshotPath)
             return "";
-        var dot = screenshotPath.lastIndexOf(".");
-        var base = dot > screenshotPath.lastIndexOf("/") ? screenshotPath.substring(0, dot) : screenshotPath;
-        return base + "-edited.png";
+
+        var capturedAt = screenshotCapturedAt > 0 ? new Date(screenshotCapturedAt) : new Date();
+        var template = String(Config.captureScreenshotFilenameTemplate || "{date}_{time}-edited");
+        var name = template.split("{date}").join(Qt.formatDateTime(capturedAt, "yyyy-MM-dd"));
+        name = name.split("{time}").join(Qt.formatDateTime(capturedAt, "HH-mm-ss"));
+        name = name.replace(/[\/\\]/g, "-").replace(/\s+/g, " ").trim();
+        name = name.replace(/\.(png|jpe?g|webp)$/i, "").replace(/^\.+/, "");
+        if (name === "")
+            name = Qt.formatDateTime(capturedAt, "yyyy-MM-dd_HH-mm-ss") + "-edited";
+
+        var format = configuredScreenshotFormat();
+        var extension = format === "jpeg" ? "jpg" : format;
+        var outputPath = screenshotDir + "/" + name + "." + extension;
+        if (outputPath === screenshotPath)
+            outputPath = screenshotDir + "/" + name + "-edited." + extension;
+        return outputPath;
+    }
+    function failRecordingStart(message) {
+        cancelRecordingStart();
+        recordingPath = "";
+        recordingSavedVisible = false;
+        var detail = message || qsTr("Could not start screen recording");
+        console.warn("[Capture]", detail);
+        Quickshell.execDetached(["notify-send", "-a", "Screen Recording", "-u", "normal", "-h", "boolean:transient:true", qsTr("Recording failed"), detail]);
+    }
+    function finalizeScreenshotCapture(path) {
+        screenshotBusy = false;
+        if (!path)
+            return;
+
+        screenshotPath = path;
+        screenshotCapturedAt = Date.now();
+        var action = String(Config.captureScreenshotAction || "notification");
+        if (action === "editor")
+            openScreenshotEditor(screenshotCaptureScreenName);
+        else if (action === "copy")
+            copyScreenshot(path);
     }
     function finishScreenshotEditing(path) {
         if (!path)
@@ -241,7 +384,7 @@ QtObject {
         screenshotPath = path;
         screenshotEditorVisible = false;
         if (Config.captureAutoCopyScreenshot) {
-            Quickshell.execDetached(["sh", "-c", "wl-copy --type image/png < \"$1\"", "copy-edited-screenshot", path]);
+            copyScreenshot(path);
             Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-i", path, "-h", "boolean:transient:true", "Copied to Clipboard", "The edited screenshot has been saved to your clipboard"]);
         } else {
             Quickshell.execDetached(["notify-send", "-a", "Screenshot", "-i", path, "-h", "boolean:transient:true", "Screenshot saved", path]);
@@ -274,7 +417,10 @@ QtObject {
         if (!screenshotPath)
             return;
         clearReverseImageSearchStatus();
-        screenshotEditorScreenName = screenName || "";
+        var targetScreen = screenName || WorkspaceService.focusedOutputName || "";
+        if (targetScreen === "" && Quickshell.screens.length > 0)
+            targetScreen = Quickshell.screens[0].name;
+        screenshotEditorScreenName = targetScreen;
         screenshotEditorSession++;
         screenshotEditorVisible = true;
     }
@@ -289,6 +435,74 @@ QtObject {
             return "";
         }
     }
+    function parseRecordingMicrophones(output) {
+        var options = [
+            {
+                "label": qsTr("Default microphone"),
+                "value": "default_input"
+            }
+        ];
+        var seen = {
+            "default_input": true
+        };
+        var lines = String(output || "").split("\n");
+        for (var i = 0; i < lines.length; ++i) {
+            var separator = lines[i].indexOf("|");
+            if (separator <= 0)
+                continue;
+            var value = lines[i].substring(0, separator).trim();
+            var label = lines[i].substring(separator + 1).trim();
+            if (value === "" || value === "default_output" || value.endsWith(".monitor") || seen[value])
+                continue;
+            seen[value] = true;
+            options.push({
+                "label": label || value,
+                "value": value
+            });
+        }
+        return options;
+    }
+    function prepareRecording(mode, target) {
+        if (!target) {
+            failRecordingStart(qsTr("No recording target was selected"));
+            return;
+        }
+
+        recordingTargetMode = mode === "screen" ? "screen" : "region";
+        recordingTarget = String(target);
+        var countdown = Math.round(Number(Config.captureRecordingCountdown) || 0);
+        recordingCountdownRemaining = countdown === 3 || countdown === 5 || countdown === 10 ? countdown : 0;
+        if (recordingCountdownRemaining > 0)
+            recordingCountdownTimer.restart();
+        else
+            startPreparedRecording();
+    }
+    function prepareScreenshotCapture(path) {
+        var format = configuredScreenshotFormat();
+        if (format === "png") {
+            finalizeScreenshotCapture(path);
+            return;
+        }
+
+        var dot = path.lastIndexOf(".");
+        var slash = path.lastIndexOf("/");
+        var base = dot > slash ? path.substring(0, dot) : path;
+        var target = base + (format === "jpeg" ? ".jpg" : ".webp");
+        var quality = Math.max(1, Math.min(100, Math.round(Number(Config.captureScreenshotQuality) || 90)));
+        var command = ["nice", "-n", "10", "magick", "-limit", "thread", "2", "-limit", "memory", "256MiB", "-limit", "map", "512MiB", path + "[0]", "-strip", "-quality", String(quality)];
+        if (format === "webp")
+            command = command.concat(["-define", "webp:method=4"]);
+        command.push(target);
+        screenshotPrepareSourcePath = path;
+        screenshotPrepareTargetPath = target;
+        screenshotPrepareSession = screenshotCaptureSession;
+        screenshotPrepareProcess.command = command;
+        screenshotPrepareProcess.running = true;
+    }
+    function refreshRecordingMicrophones() {
+        if (!recordingMicrophoneQuery.running)
+            recordingMicrophoneQuery.running = true;
+    }
     function replaceScreenshotForEditing(path) {
         if (!path)
             return;
@@ -298,17 +512,28 @@ QtObject {
     function screenshot() {
         // Niri does not emit a cancellation event for its screenshot overlay.
         // A second shortcut press therefore replaces any stale one-shot watcher.
+        screenshotCaptureSession += 1;
         if (screenshotBusy) {
             screenshotLaunchDelay.stop();
             screenshotWatcher.running = false;
         }
+        if (screenshotPrepareProcess.running)
+            screenshotPrepareProcess.running = false;
 
         screenshotBusy = true;
-        screenshotCaptureSession += 1;
+        screenshotCaptureScreenName = WorkspaceService.focusedOutputName || "";
         screenshotStartedAt = Date.now();
         screenshotPath = "";
         screenshotCapturedAt = 0;
         beginScreenshotCapture();
+    }
+    function screenshotMimeType(path) {
+        var lowerPath = String(path || "").toLowerCase();
+        if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg"))
+            return "image/jpeg";
+        if (lowerPath.endsWith(".webp"))
+            return "image/webp";
+        return "image/png";
     }
     function searchScreenshotWithLens(path, width, height) {
         if (!path || reverseImageSearchProcess.running)
@@ -319,14 +544,49 @@ QtObject {
         reverseImageSearchProcess.command = ["bash", Config.quickshellDir + "/scripts/capture/google-lens-search.sh", path, String(Math.max(1, Math.round(width))), String(Math.max(1, Math.round(height)))];
         reverseImageSearchProcess.running = true;
     }
-    function startRecording() {
-        if (recording || selectingRegion)
+    function startPreparedRecording() {
+        if (recording || recordingTarget === "")
             return;
 
-        console.log("[Capture] Starting region selector");
+        var stamp = Qt.formatDateTime(new Date(), "dd-MM-yyyy_HH-mm-ss");
+        recordingPath = recordingDir + "/recording_" + stamp + ".mp4";
+        var microphoneSource = String(Config.captureRecordingMicrophoneSource || "default_input").trim() || "default_input";
+        var audioSource = Config.captureRecordingMicrophone ? "default_output|" + microphoneSource : "default_output";
+        var command = ["gpu-screen-recorder"];
+        if (recordingTargetMode === "screen")
+            command = command.concat(["-w", recordingTarget]);
+        else
+            command = command.concat(["-w", "region", "-region", recordingTarget]);
+        command = command.concat(["-f", String(Config.captureRecordingFps), "-a", audioSource, "-ac", "opus", "-ab", "160", "-k", Config.captureRecordingCodec, "-q", Config.captureRecordingQuality, "-bm", "qp", "-encoder", "gpu", "-fallback-cpu-encoding", "yes", "-tune", "performance", "-cr", "limited", "-fm", "vfr", "-keyint", "2", "-cursor", Config.captureRecordingCursor ? "yes" : "no", "-o", recordingPath]);
+        recorder.command = command;
+        recorder.running = true;
+    }
+    function startRecording() {
+        if (recording || selectingRegion || recordingStarting)
+            return;
+
         recordingSavedVisible = false;
+        recordingScreenName = WorkspaceService.focusedOutputName || "";
+        if (String(Config.captureRecordingMode || "region") === "screen") {
+            console.log("[Capture] Starting focused display recording");
+            if (recordingScreenName !== "") {
+                prepareRecording("screen", recordingScreenName);
+                return;
+            }
+
+            recordingOutputPending = true;
+            recordingOutputQuery.running = false;
+            recordingOutputQuery.running = true;
+            return;
+        }
+
+        console.log("[Capture] Starting region selector");
         selectingRegion = true;
-        recordingScreenName = "";
+        if (recordingScreenName !== "") {
+            beginRegionSelection();
+            return;
+        }
+
         recordingOutputQuery.running = false;
         recordingOutputQuery.running = true;
         beginRegionSelection();
@@ -345,6 +605,10 @@ QtObject {
                 regionSelector.running = false;
             return;
         }
+        if (recordingStarting) {
+            cancelRecordingStart();
+            return;
+        }
 
         if (recorder.running) {
             recordingStopRequested = true;
@@ -358,7 +622,7 @@ QtObject {
             return;
         }
         lastRecordingToggleAt = now;
-        console.log("[Capture] Recording toggle received; recording:", recording, "selecting:", selectingRegion);
+        console.log("[Capture] Recording toggle received; recording:", recording, "selecting:", selectingRegion, "starting:", recordingStarting);
 
         // Repeated hotkey events must never close slurp. Escape remains the
         // natural way to cancel the region selection.
@@ -367,7 +631,7 @@ QtObject {
             return;
         }
 
-        if (recording)
+        if (recording || recordingStarting)
             stopRecording();
         else
             startRecording();
@@ -390,6 +654,9 @@ QtObject {
         Quickshell.execDetached(["mkdir", "-p", screenshotDir, recordingDir]);
     }
     Component.onDestruction: {
+        recordingCountdownTimer.stop();
+        if (screenshotPrepareProcess.running)
+            screenshotPrepareProcess.running = false;
         if (recorder.running)
             recorder.signal(2);
     }

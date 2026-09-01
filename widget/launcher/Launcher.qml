@@ -13,14 +13,20 @@ PanelWindow {
     id: launcherWindow
 
     property bool active: false
-    readonly property color activeModeColor: searchMode === "clipboard" ? Config.md3.secondary : searchMode === "files" ? Config.md3.primary : searchMode === "calculator" ? Config.md3.tertiary : Config.md3.tertiary
-    readonly property string activeModeIcon: searchMode === "clipboard" ? "edit-paste-symbolic" : searchMode === "files" ? "system-file-manager-symbolic" : searchMode === "calculator" ? "accessories-calculator-symbolic" : "emojichooser-symbolic"
-    readonly property string activeModeLabel: searchMode === "clipboard" ? "Clipboard" : searchMode === "files" ? "Files" : searchMode === "calculator" ? "Calculator" : searchMode === "emoji" ? "Emoji" : ""
-    readonly property string activeModePlaceholder: searchMode === "clipboard" ? "Search clipboard" : searchMode === "files" ? "Find files" : searchMode === "calculator" ? "Enter expression" : searchMode === "emoji" ? "Search emoji" : "Search"
+    readonly property color activeModeColor: searchMode === "clipboard" ? Config.md3.secondary : searchMode === "files" ? Config.md3.primary : searchMode === "gif" ? Config.md3.primary : searchMode === "sticker" ? Config.md3.secondary : Config.md3.tertiary
+    readonly property string activeModeIcon: searchMode === "clipboard" ? "edit-paste-symbolic" : searchMode === "files" ? "system-file-manager-symbolic" : searchMode === "calculator" ? "accessories-calculator-symbolic" : searchMode === "gif" ? "applications-multimedia-symbolic" : searchMode === "sticker" ? "face-smile-symbolic" : "emojichooser-symbolic"
+    readonly property string activeModeLabel: searchMode === "clipboard" ? "Clipboard" : searchMode === "files" ? "Files" : searchMode === "calculator" ? "Calculator" : searchMode === "emoji" ? qsTr("Emoji & Unicode") : searchMode === "gif" ? qsTr("GIF Search") : searchMode === "sticker" ? qsTr("Sticker Search") : ""
+    readonly property string activeModePlaceholder: searchMode === "clipboard" ? "Search clipboard" : searchMode === "files" ? "Find files" : searchMode === "calculator" ? "Enter expression" : searchMode === "emoji" ? qsTr("Search emoji or Unicode") : searchMode === "gif" ? qsTr("Search KLIPY GIFs") : searchMode === "sticker" ? qsTr("Search KLIPY stickers") : "Search"
     property bool allAppsLoaderActive: false
     property bool allAppsReady: false
     property bool blurActive: false
+    property string calculatorDraft: ""
+    property int calculatorHistoryIndex: -1
+    readonly property bool calculatorMode: searchMode === "calculator"
     readonly property bool compact: Responsive.constrained(width, height, 720, 600)
+    readonly property bool fixedProviderMode: mediaSearchMode || searchMode === "files" || searchMode === "clipboard" || searchMode === "emoji"
+    readonly property string mediaSearchKind: searchMode === "sticker" ? "sticker" : "gif"
+    readonly property bool mediaSearchMode: searchMode === "gif" || searchMode === "sticker"
     property string searchMode: ""
     property string searchQuery: ""
     property bool showAllApps: false
@@ -29,18 +35,23 @@ PanelWindow {
 
     function clearSearchMode() {
         searchMode = "";
+        resetCalculatorHistoryNavigation();
         syncSearchQuery();
         searchEntry.forceActiveFocus();
     }
     function closeLauncher() {
         if (!active)
             return;
+        if (groupPopup.opened || groupPopup.dragActive)
+            groupPopup.closeGroup();
         active = false;
         blurReleaseTimer.restart();
         closeTimer.restart();
     }
     function handleAllAppsKey(event) {
         if (!showAllApps || allAppsLoader.status !== Loader.Ready || !allAppsLoader.item)
+            return false;
+        if (groupPopup.opened || groupPopup.dragActive)
             return false;
 
         if (event.key === Qt.Key_Left)
@@ -65,6 +76,66 @@ PanelWindow {
             return false;
         return true;
     }
+    function handleCalculatorKey(event) {
+        if (!calculatorMode || showAllApps)
+            return false;
+
+        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            calcView.copyResult();
+            return true;
+        }
+        if (event.key !== Qt.Key_Up && event.key !== Qt.Key_Down)
+            return false;
+
+        var history = StateManager.launcherCalculatorHistory || [];
+        if (history.length === 0)
+            return true;
+
+        if (event.key === Qt.Key_Up) {
+            if (calculatorHistoryIndex < 0) {
+                calculatorDraft = searchEntry.text;
+                calculatorHistoryIndex = 0;
+            } else {
+                calculatorHistoryIndex = Math.min(history.length - 1, calculatorHistoryIndex + 1);
+            }
+        } else if (calculatorHistoryIndex > 0) {
+            calculatorHistoryIndex -= 1;
+        } else {
+            calculatorHistoryIndex = -1;
+        }
+
+        var expression = calculatorHistoryIndex < 0 ? calculatorDraft : String(history[calculatorHistoryIndex].expression || "");
+        searchEntry.text = expression;
+        searchEntry.cursorPosition = expression.length;
+        syncSearchQuery();
+        return true;
+    }
+    function handleMediaKey(event) {
+        if (!mediaSearchMode || mediaLoader.status !== Loader.Ready || !mediaLoader.item)
+            return false;
+
+        if (event.key === Qt.Key_Left || (event.key === Qt.Key_Tab && (event.modifiers & Qt.ShiftModifier)))
+            mediaLoader.item["selectLeft"]();
+        else if (event.key === Qt.Key_Right || event.key === Qt.Key_Tab)
+            mediaLoader.item["selectRight"]();
+        else if (event.key === Qt.Key_Up)
+            mediaLoader.item["selectUp"]();
+        else if (event.key === Qt.Key_Down)
+            mediaLoader.item["selectDown"]();
+        else if (event.key === Qt.Key_Home)
+            mediaLoader.item["selectFirst"]();
+        else if (event.key === Qt.Key_End)
+            mediaLoader.item["selectLast"]();
+        else if (event.key === Qt.Key_PageUp)
+            mediaLoader.item["selectPreviousPage"]();
+        else if (event.key === Qt.Key_PageDown)
+            mediaLoader.item["selectNextPage"]();
+        else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+            mediaLoader.item["launchSelected"]();
+        else
+            return false;
+        return true;
+    }
     function modePrefix(mode) {
         if (mode === "clipboard")
             return Config.launcherClipboardPrefix + " ";
@@ -74,6 +145,10 @@ PanelWindow {
             return Config.launcherCalculatorPrefix + " ";
         if (mode === "emoji")
             return Config.launcherEmojiPrefix + " ";
+        if (mode === "gif")
+            return Config.launcherGifPrefix + " ";
+        if (mode === "sticker")
+            return Config.launcherStickerPrefix + " ";
         return "";
     }
     function openAllApps() {
@@ -102,10 +177,15 @@ PanelWindow {
         active = true;
         searchEntry.forceActiveFocus();
     }
+    function resetCalculatorHistoryNavigation() {
+        calculatorDraft = "";
+        calculatorHistoryIndex = -1;
+    }
     function resetSearch() {
         searchMode = "";
         searchEntry.text = "";
         searchQuery = "";
+        resetCalculatorHistoryNavigation();
     }
     function syncSearchQuery() {
         searchQuery = modePrefix(searchMode) + searchEntry.text;
@@ -123,6 +203,10 @@ PanelWindow {
             mode = "files";
         else if (Config.launcherEmojiEnabled && lower.startsWith(Config.launcherEmojiPrefix.toLowerCase() + " "))
             mode = "emoji";
+        else if (Config.launcherGifEnabled && lower.startsWith(Config.launcherGifPrefix.toLowerCase() + " "))
+            mode = "gif";
+        else if (Config.launcherStickerEnabled && lower.startsWith(Config.launcherStickerPrefix.toLowerCase() + " "))
+            mode = "sticker";
         else if (Config.launcherCalculatorEnabled && lower.startsWith(Config.launcherCalculatorPrefix.toLowerCase() + " "))
             mode = "calculator";
         if (mode === "")
@@ -131,6 +215,10 @@ PanelWindow {
         searchMode = mode;
         searchEntry.text = input.substring(modePrefix(mode).length);
         searchEntry.cursorPosition = searchEntry.text.length;
+        if (mode === "calculator") {
+            calculatorDraft = searchEntry.text;
+            calculatorHistoryIndex = -1;
+        }
         syncSearchQuery();
         return true;
     }
@@ -155,6 +243,10 @@ PanelWindow {
         radius: mainLayout.radius
     }
 
+    onSearchQueryChanged: {
+        if (searchQuery.trim() !== "" && groupPopup.opened)
+            groupPopup.closeGroup();
+    }
     onShowAllAppsChanged: {
         allAppsRevealTimer.stop();
         allAppsLoaderTimer.stop();
@@ -163,6 +255,7 @@ PanelWindow {
             allAppsLoaderTimer.start();
             allAppsRevealTimer.start();
         } else {
+            groupPopup.closeGroup();
             allAppsLoaderActive = false;
         }
     }
@@ -241,9 +334,9 @@ PanelWindow {
     Rectangle {
         id: mainLayout
 
-        readonly property real desiredHeight: searchQuery.trim() !== "" && hasContent ? (97 + (calcView.hasResult ? 92 : 0) + searchView.implicitHeight) : (launcherWindow.compact ? 76 : 82)
-        readonly property real desiredWidth: searchQuery.trim() !== "" && hasContent ? 500 : (searchQuery.trim() !== "" ? 440 : 380)
-        readonly property bool hasContent: calcView.hasResult || searchView.combinedResults.length > 0
+        readonly property real desiredHeight: launcherWindow.calculatorMode ? 229 : launcherWindow.fixedProviderMode ? 545 : searchQuery.trim() !== "" && hasContent ? (97 + searchView.implicitHeight) : (launcherWindow.compact ? 76 : 82)
+        readonly property real desiredWidth: launcherWindow.calculatorMode || launcherWindow.fixedProviderMode || searchQuery.trim() !== "" && hasContent ? 500 : (searchQuery.trim() !== "" ? 440 : 380)
+        readonly property bool hasContent: launcherWindow.calculatorMode || launcherWindow.fixedProviderMode || searchView.combinedResults.length > 0
         readonly property real targetHeight: showAllApps ? launcherWindow.height : Responsive.fitWithMargins(desiredHeight, launcherWindow.height, launcherWindow.compact ? 10 : 20, 82)
         readonly property real targetWidth: showAllApps ? launcherWindow.width : Responsive.fitWithMargins(desiredWidth, launcherWindow.width, launcherWindow.compact ? 10 : 20, 300)
 
@@ -294,17 +387,20 @@ PanelWindow {
         // PanelWindow is not an Item, so keyboard handlers belong on the popup.
         // Unhandled events from the focused search field propagate here.
         Keys.onPressed: event => {
-            if (event.key === Qt.Key_Escape) {
+            if (groupPopup.opened || groupPopup.dragActive) {
+                return;
+            } else if (event.key === Qt.Key_Escape) {
                 closeLauncher();
                 event.accepted = true;
             } else if (launcherWindow.handleAllAppsKey(event)) {
                 event.accepted = true;
+            } else if (launcherWindow.handleCalculatorKey(event)) {
+                event.accepted = true;
+            } else if (launcherWindow.handleMediaKey(event)) {
+                event.accepted = true;
             } else if (searchQuery.trim() !== "" && !showAllApps) {
                 if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                    if (calcView.hasResult && searchView.combinedResults.length === 0)
-                        calcView.copyResult();
-                    else
-                        searchView.launchSelected();
+                    searchView.launchSelected();
                     event.accepted = true;
                 } else if (event.key === Qt.Key_Down) {
                     searchView.selectNext();
@@ -389,13 +485,13 @@ PanelWindow {
                                 event.accepted = true;
                             } else if (launcherWindow.handleAllAppsKey(event)) {
                                 event.accepted = true;
+                            } else if (launcherWindow.handleCalculatorKey(event)) {
+                                event.accepted = true;
+                            } else if (launcherWindow.handleMediaKey(event)) {
+                                event.accepted = true;
                             } else if (searchQuery.trim() !== "" && !showAllApps) {
                                 if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                    if (calcView.hasResult && searchView.combinedResults.length === 0) {
-                                        calcView.copyResult();
-                                    } else {
-                                        searchView.launchSelected();
-                                    }
+                                    searchView.launchSelected();
                                     event.accepted = true;
                                 } else if (event.key === Qt.Key_Up || (event.key === Qt.Key_Tab && (event.modifiers & Qt.ShiftModifier))) {
                                     searchView.selectPrev();
@@ -409,6 +505,12 @@ PanelWindow {
                         onTextChanged: {
                             if (!launcherWindow.tryActivateSearchMode())
                                 launcherWindow.syncSearchQuery();
+                        }
+                        onTextEdited: {
+                            if (launcherWindow.calculatorMode) {
+                                launcherWindow.calculatorDraft = text;
+                                launcherWindow.calculatorHistoryIndex = -1;
+                            }
                         }
 
                         Text {
@@ -496,7 +598,7 @@ PanelWindow {
 
                         Layout.fillWidth: true
                         query: searchQuery
-                        visible: Config.launcherCalculatorEnabled && hasResult
+                        visible: launcherWindow.calculatorMode
 
                         onResultCopied: closeLauncher()
                     }
@@ -509,8 +611,36 @@ PanelWindow {
                         Layout.fillWidth: true
                         Layout.minimumHeight: 0
                         query: searchQuery
+                        visible: !launcherWindow.mediaSearchMode && !launcherWindow.calculatorMode
 
                         onResultLaunched: closeLauncher()
+                    }
+                    Loader {
+                        id: mediaLoader
+
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        Layout.minimumHeight: 0
+                        active: launcherWindow.mediaSearchMode
+                        asynchronous: true
+                        source: Qt.resolvedUrl("LauncherMediaSearch.qml")
+                        visible: active
+
+                        onLoaded: {
+                            item["mediaKind"] = Qt.binding(function () {
+                                return launcherWindow.mediaSearchKind;
+                            });
+                            item["query"] = Qt.binding(function () {
+                                return searchEntry.text;
+                            });
+                        }
+                    }
+                    Connections {
+                        function onResultLaunched() {
+                            launcherWindow.closeLauncher();
+                        }
+
+                        target: mediaLoader.status === Loader.Ready ? mediaLoader.item : null
                     }
                 }
 
@@ -524,11 +654,24 @@ PanelWindow {
 
                     sourceComponent: LauncherApps {
                         entranceReady: launcherWindow.allAppsReady
+                        groupPopupOpened: groupPopup.opened || groupPopup.dragActive
                         query: searchQuery
 
                         onAppLaunched: closeLauncher()
+                        onGroupOpenRequested: (groupId, editName) => groupPopup.openGroup(groupId, editName)
                     }
                 }
+            }
+        }
+        LauncherGroupPopup {
+            id: groupPopup
+
+            anchors.fill: parent
+
+            onAppLaunched: closeLauncher()
+            onFocusSearchRequested: {
+                if (launcherWindow.active && launcherWindow.showAllApps)
+                    searchEntry.forceActiveFocus();
             }
         }
     }

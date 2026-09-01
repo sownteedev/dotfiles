@@ -21,12 +21,17 @@ Item {
             "launcherMaxResults": Number(maxResultsField.text),
             "launcherClipboardEnabled": clipboardToggle.checked,
             "launcherFilesEnabled": filesToggle.checked,
+            "launcherCalculatorAngleMode": calculatorAngleChoice.value,
             "launcherCalculatorEnabled": calculatorToggle.checked,
             "launcherEmojiEnabled": emojiToggle.checked,
+            "launcherGifEnabled": gifToggle.checked,
+            "launcherStickerEnabled": stickerToggle.checked,
             "launcherClipboardPrefix": clipboardPrefixField.text,
             "launcherFilesPrefix": filesPrefixField.text,
             "launcherCalculatorPrefix": calculatorPrefixField.text,
-            "launcherEmojiPrefix": emojiPrefixField.text
+            "launcherEmojiPrefix": emojiPrefixField.text,
+            "launcherGifPrefix": gifPrefixField.text,
+            "launcherStickerPrefix": stickerPrefixField.text
         };
     }
     function resetPage() {
@@ -39,12 +44,17 @@ Item {
         maxResultsField.text = String(settings.launcherMaxResults ?? Config.launcherMaxResults);
         clipboardToggle.checked = settings.launcherClipboardEnabled ?? Config.launcherClipboardEnabled;
         filesToggle.checked = settings.launcherFilesEnabled ?? Config.launcherFilesEnabled;
+        calculatorAngleChoice.value = settings.launcherCalculatorAngleMode || Config.launcherCalculatorAngleMode;
         calculatorToggle.checked = settings.launcherCalculatorEnabled ?? Config.launcherCalculatorEnabled;
         emojiToggle.checked = settings.launcherEmojiEnabled ?? Config.launcherEmojiEnabled;
+        gifToggle.checked = settings.launcherGifEnabled ?? Config.launcherGifEnabled;
+        stickerToggle.checked = settings.launcherStickerEnabled ?? Config.launcherStickerEnabled;
         clipboardPrefixField.text = settings.launcherClipboardPrefix || Config.launcherClipboardPrefix;
         filesPrefixField.text = settings.launcherFilesPrefix || Config.launcherFilesPrefix;
         calculatorPrefixField.text = settings.launcherCalculatorPrefix || Config.launcherCalculatorPrefix;
         emojiPrefixField.text = settings.launcherEmojiPrefix || Config.launcherEmojiPrefix;
+        gifPrefixField.text = settings.launcherGifPrefix || Config.launcherGifPrefix;
+        stickerPrefixField.text = settings.launcherStickerPrefix || Config.launcherStickerPrefix;
         baselineState = JSON.stringify(currentState());
     }
     function triggerHeaderAction() {
@@ -147,10 +157,46 @@ Item {
 
                     onToggled: value => checked = value
                 }
+                SettingsChoiceRow {
+                    id: calculatorAngleChoice
+
+                    Layout.fillWidth: true
+                    enabled: calculatorToggle.checked
+                    label: qsTr("Trigonometry")
+                    note: qsTr("Angle unit used by sin, cos, tan and inverse functions")
+                    options: [
+                        {
+                            "label": "DEG",
+                            "value": "deg"
+                        },
+                        {
+                            "label": "RAD",
+                            "value": "rad"
+                        }
+                    ]
+
+                    onSelected: value => calculatorAngleChoice.value = value
+                }
                 SettingsToggleTile {
                     id: emojiToggle
 
-                    label: "Emoji"
+                    label: qsTr("Emoji & Unicode")
+
+                    onToggled: value => checked = value
+                }
+                SettingsToggleTile {
+                    id: gifToggle
+
+                    label: qsTr("GIF Search")
+                    note: qsTr("Online results powered by KLIPY")
+
+                    onToggled: value => checked = value
+                }
+                SettingsToggleTile {
+                    id: stickerToggle
+
+                    label: qsTr("Sticker Search")
+                    note: qsTr("Online results powered by KLIPY")
 
                     onToggled: value => checked = value
                 }
@@ -200,8 +246,24 @@ Item {
 
                     Layout.fillWidth: true
                     inputItem.maximumLength: 3
-                    label: "Emoji"
+                    label: qsTr("Emoji & Unicode")
                     placeholder: "e"
+                }
+                SettingsTextField {
+                    id: gifPrefixField
+
+                    Layout.fillWidth: true
+                    inputItem.maximumLength: 3
+                    label: qsTr("GIF Search")
+                    placeholder: "g"
+                }
+                SettingsTextField {
+                    id: stickerPrefixField
+
+                    Layout.fillWidth: true
+                    inputItem.maximumLength: 3
+                    label: qsTr("Sticker Search")
+                    placeholder: "s"
                 }
             }
         }

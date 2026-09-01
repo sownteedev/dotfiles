@@ -10,6 +10,7 @@ Item {
     property string activePreviewPath: ""
     property string activePreviewTarget: ""
     property var fileResults: []
+    readonly property bool loading: searchDebounceTimer.running || fileSearchProcess.running
     property var previewQueue: []
     property string query: ""
     property var readyPreviewPaths: ({})

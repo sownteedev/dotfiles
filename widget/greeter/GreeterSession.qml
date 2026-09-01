@@ -9,6 +9,7 @@ QtObject {
 
     property string activeUser: configuredUser
     readonly property string configuredUser: Quickshell.env("GREETD_DEFAULT_USER") || ""
+    readonly property string defaultSessionId: String(greeterSettings.defaultSession || "niri")
     readonly property var fallbackSession: ({
             "id": "niri",
             "name": "Niri",
@@ -58,11 +59,58 @@ QtObject {
             root.message = qsTr("Opening %1…").arg(root.sessionLabel);
             root.working = true;
             root.launching = true;
+            if (root.rememberLastSession)
+                lastSessionState.sessionId = String(root.selectedSession.id || "");
             root.launchTimer.restart();
         }
 
         target: Greetd
     }
+    property FileView greeterSettingsFile: FileView {
+        blockLoading: true
+        path: Quickshell.env("GREETD_SETTINGS_PATH") || "/var/lib/quickshell-greeter/settings.json"
+        printErrors: false
+        watchChanges: true
+
+        adapter: JsonAdapter {
+            id: greeterSettings
+
+            property string defaultSession: "niri"
+            property bool rememberLastSession: false
+        }
+
+        onFileChanged: reload()
+    }
+    property string keyboardLayoutLabel: "US"
+    property Process keyboardLayoutScanner: Process {
+        command: ["python3", Quickshell.shellPath("scripts/keyboard_layout.py")]
+        running: true
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    var result = JSON.parse(String(text || "{}"));
+                    root.keyboardLayoutLabel = String(result.label || "US");
+                } catch (error) {
+                    root.keyboardLayoutLabel = "US";
+                }
+            }
+        }
+    }
+    property FileView lastSessionFile: FileView {
+        atomicWrites: true
+        path: (Quickshell.env("XDG_CACHE_HOME") || "/tmp") + "/last-session.json"
+        printErrors: false
+
+        adapter: JsonAdapter {
+            id: lastSessionState
+
+            property string sessionId: ""
+        }
+
+        onAdapterUpdated: writeAdapter()
+    }
+    readonly property string lastSessionId: String(lastSessionState.sessionId || "")
     property Timer launchTimer: Timer {
         interval: 280
 
@@ -76,6 +124,7 @@ QtObject {
     property string message: ""
     property string pendingResponse: ""
     property string prompt: qsTr("Password")
+    readonly property bool rememberLastSession: greeterSettings.rememberLastSession
     readonly property var selectedSession: sessions.length > 0 ? sessions[Math.max(0, Math.min(selectedSessionIndex, sessions.length - 1))] : fallbackSession
     property int selectedSessionIndex: 0
     readonly property var sessionCommand: ["systemd-cat", "--identifier=greetd-session", "--"].concat(selectedSession.command)
@@ -94,6 +143,33 @@ QtObject {
 
     signal inputResetRequested
 
+    function applyPreferredSession() {
+        if (sessions.length === 0 || working)
+            return;
+        var preferred = "";
+        if (rememberLastSession && lastSessionId !== "")
+            preferred = lastSessionId;
+        else if (defaultSessionId.toLowerCase() !== "auto")
+            preferred = defaultSessionId;
+        else
+            preferred = String(Quickshell.env("GREETD_SESSION_NAME") || "");
+        preferred = preferred.toLowerCase();
+
+        var nextIndex = 0;
+        var niriIndex = -1;
+        for (var index = 0; index < sessions.length; ++index) {
+            var session = sessions[index];
+            var sessionId = String(session.id || "").toLowerCase();
+            var sessionName = String(session.name || "").toLowerCase();
+            if (sessionId === "niri")
+                niriIndex = index;
+            if (preferred !== "" && (sessionId === preferred || sessionName === preferred)) {
+                selectedSessionIndex = index;
+                return;
+            }
+        }
+        selectedSessionIndex = niriIndex >= 0 ? niriIndex : nextIndex;
+    }
     function cancel() {
         if (Greetd.available && Greetd.state !== GreetdState.Inactive)
             Greetd.cancelSession();
@@ -115,18 +191,7 @@ QtObject {
             return;
 
         sessions = discovered;
-        var preferred = String(Quickshell.env("GREETD_SESSION_NAME") || "").toLowerCase();
-        var nextIndex = 0;
-        for (var i = 0; i < sessions.length; ++i) {
-            var session = sessions[i];
-            if (preferred !== "" && (String(session.name).toLowerCase() === preferred || String(session.id).toLowerCase() === preferred)) {
-                nextIndex = i;
-                break;
-            }
-            if (preferred === "" && String(session.id).toLowerCase() === "niri")
-                nextIndex = i;
-        }
-        selectedSessionIndex = nextIndex;
+        applyPreferredSession();
     }
     function powerOff() {
         if (!greetdAvailable) {
@@ -179,4 +244,8 @@ QtObject {
         working = true;
         Greetd.createSession(loginName);
     }
+
+    onDefaultSessionIdChanged: applyPreferredSession()
+    onLastSessionIdChanged: applyPreferredSession()
+    onRememberLastSessionChanged: applyPreferredSession()
 }
