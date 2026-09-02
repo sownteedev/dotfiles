@@ -405,7 +405,7 @@ QtObject {
                 root.lastPage = Number(response.last_page || 1);
                 root.totalResults = Number(response.total || root.results.count);
                 root.seed = root.sorting === "random" ? String(response.seed || root.seed || "") : "";
-                root.statusMessage = root.results.count > 0 ? qsTr("Showing %1 wallpapers").arg(root.results.count) : "";
+                root.statusMessage = "";
             }
             root.runPendingSearch();
         }
@@ -802,7 +802,7 @@ QtObject {
             return true;
         }
         searchErrorMessage = "";
-        statusMessage = qsTr("Searching Wallhaven…");
+        statusMessage = "";
         searchProcess.requestJson = JSON.stringify({
             "api_key": Config.wallhavenApiKey.trim(),
             "atleast": resolutionMode === "atleast" ? atleast : "",

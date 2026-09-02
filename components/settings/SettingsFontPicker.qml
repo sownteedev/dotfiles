@@ -24,14 +24,27 @@ ColumnLayout {
         return matches;
     }
     property var fontFamilies: []
+    property bool fontFamiliesLoaded: false
     property string label: ""
     property string placeholder: ""
     property string text: ""
 
+    function ensureFontFamilies() {
+        if (fontFamiliesLoaded)
+            return;
+
+        var families = Qt.fontFamilies().slice();
+        families.sort(function (left, right) {
+            return String(left).localeCompare(String(right));
+        });
+        fontFamilies = families;
+        fontFamiliesLoaded = true;
+    }
     function openPicker() {
         if (!enabled)
             return;
 
+        ensureFontFamilies();
         searchInput.text = "";
         pickerPopup.open();
     }
@@ -54,14 +67,6 @@ ColumnLayout {
     }
 
     spacing: 8
-
-    Component.onCompleted: {
-        var families = Qt.fontFamilies().slice();
-        families.sort(function (left, right) {
-            return String(left).localeCompare(String(right));
-        });
-        fontFamilies = families;
-    }
 
     Text {
         color: Config.alpha(Config.md3.on_surface, 0.85)

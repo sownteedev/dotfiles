@@ -16,6 +16,7 @@ Rectangle {
     readonly property bool collectionsMode: activeTab === "collections"
     property int contentTransitionDirection: 1
     property string deleteArmedId: ""
+    readonly property string footerStatus: actionError || resultError || GreeterBackgroundService.statusMessage || (installedMode ? WallhavenService.installedStatusMessage : WallhavenService.statusMessage)
     readonly property int gridColumns: Math.max(1, Math.min(4, Math.floor((browser.width - 48) / 270)))
     readonly property bool installedMode: activeTab === "installed"
     readonly property bool nsfwVisible: Config.wallhavenApiKey.trim() !== "" && Config.wallhavenShowNsfw
@@ -426,6 +427,95 @@ Rectangle {
                         root.performSearch(1, false);
                     }
                 }
+                RowLayout {
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 6
+                    visible: !root.installedMode && !root.resultLoading && root.resultModel.count > 0
+
+                    Rectangle {
+                        Accessible.name: qsTr("Previous page")
+                        Accessible.role: Accessible.Button
+                        Layout.preferredHeight: 36
+                        Layout.preferredWidth: 36
+                        activeFocusOnTab: visible && enabled
+                        border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
+                        border.width: 1
+                        color: previousMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
+                        enabled: root.collectionsMode ? WallhavenService.collectionPage > 1 : WallhavenService.page > 1
+                        opacity: enabled ? 1 : 0.35
+                        radius: 12
+
+                        Keys.onReturnPressed: root.goToPreviousPage()
+                        Keys.onSpacePressed: root.goToPreviousPage()
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: Config.md3.on_surface
+                            font.pixelSize: 18
+                            text: "‹"
+                        }
+                        MouseArea {
+                            id: previousMouse
+
+                            anchors.fill: parent
+                            cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            enabled: parent.enabled
+                            hoverEnabled: true
+
+                            onClicked: root.goToPreviousPage()
+                        }
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: 36
+                        Layout.preferredWidth: pageLabel.implicitWidth + 20
+                        color: Config.alpha(Config.md3.on_surface, 0.045)
+                        radius: 12
+
+                        Text {
+                            id: pageLabel
+
+                            anchors.centerIn: parent
+                            color: Config.md3.on_surface_variant
+                            font.family: Config.fontName
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            text: root.collectionsMode ? qsTr("%1 / %2").arg(WallhavenService.collectionPage).arg(WallhavenService.collectionLastPage) : qsTr("%1 / %2").arg(WallhavenService.page).arg(WallhavenService.lastPage)
+                        }
+                    }
+                    Rectangle {
+                        Accessible.name: qsTr("Next page")
+                        Accessible.role: Accessible.Button
+                        Layout.preferredHeight: 36
+                        Layout.preferredWidth: 36
+                        activeFocusOnTab: visible && enabled
+                        border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
+                        border.width: 1
+                        color: nextMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
+                        enabled: root.collectionsMode ? WallhavenService.collectionPage < WallhavenService.collectionLastPage : WallhavenService.page < WallhavenService.lastPage
+                        opacity: enabled ? 1 : 0.35
+                        radius: 12
+
+                        Keys.onReturnPressed: root.goToNextPage()
+                        Keys.onSpacePressed: root.goToNextPage()
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: Config.md3.on_surface
+                            font.pixelSize: 18
+                            text: "›"
+                        }
+                        MouseArea {
+                            id: nextMouse
+
+                            anchors.fill: parent
+                            cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            enabled: parent.enabled
+                            hoverEnabled: true
+
+                            onClicked: root.goToNextPage()
+                        }
+                    }
+                }
                 Item {
                     Layout.fillWidth: true
                     visible: root.activeTab !== "browse"
@@ -729,6 +819,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
                 spacing: 6
+                visible: root.footerStatus !== ""
 
                 Text {
                     Layout.fillWidth: true
@@ -736,93 +827,7 @@ Rectangle {
                     elide: Text.ElideRight
                     font.family: Config.fontName
                     font.pixelSize: 12
-                    text: root.actionError || root.resultError || GreeterBackgroundService.statusMessage || (root.installedMode ? WallhavenService.installedStatusMessage : WallhavenService.statusMessage)
-                }
-                Rectangle {
-                    Accessible.name: qsTr("Previous page")
-                    Accessible.role: Accessible.Button
-                    activeFocusOnTab: visible && enabled
-                    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
-                    border.width: 1
-                    color: previousMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
-                    enabled: root.collectionsMode ? WallhavenService.collectionPage > 1 : WallhavenService.page > 1
-                    height: 36
-                    opacity: enabled ? 1 : 0.35
-                    radius: 12
-                    visible: !root.installedMode && !root.resultLoading && root.resultModel.count > 0
-                    width: 36
-
-                    Keys.onReturnPressed: root.goToPreviousPage()
-                    Keys.onSpacePressed: root.goToPreviousPage()
-
-                    Text {
-                        anchors.centerIn: parent
-                        color: Config.md3.on_surface
-                        font.pixelSize: 18
-                        text: "‹"
-                    }
-                    MouseArea {
-                        id: previousMouse
-
-                        anchors.fill: parent
-                        cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: parent.enabled
-                        hoverEnabled: true
-
-                        onClicked: root.goToPreviousPage()
-                    }
-                }
-                Rectangle {
-                    color: Config.alpha(Config.md3.on_surface, 0.045)
-                    height: 36
-                    radius: 12
-                    visible: !root.installedMode && !root.resultLoading && root.resultModel.count > 0
-                    width: pageLabel.implicitWidth + 20
-
-                    Text {
-                        id: pageLabel
-
-                        anchors.centerIn: parent
-                        color: Config.md3.on_surface_variant
-                        font.family: Config.fontName
-                        font.pixelSize: 12
-                        font.weight: Font.DemiBold
-                        text: root.collectionsMode ? qsTr("%1 / %2").arg(WallhavenService.collectionPage).arg(WallhavenService.collectionLastPage) : qsTr("%1 / %2").arg(WallhavenService.page).arg(WallhavenService.lastPage)
-                    }
-                }
-                Rectangle {
-                    Accessible.name: qsTr("Next page")
-                    Accessible.role: Accessible.Button
-                    activeFocusOnTab: visible && enabled
-                    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
-                    border.width: 1
-                    color: nextMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
-                    enabled: root.collectionsMode ? WallhavenService.collectionPage < WallhavenService.collectionLastPage : WallhavenService.page < WallhavenService.lastPage
-                    height: 36
-                    opacity: enabled ? 1 : 0.35
-                    radius: 12
-                    visible: !root.installedMode && !root.resultLoading && root.resultModel.count > 0
-                    width: 36
-
-                    Keys.onReturnPressed: root.goToNextPage()
-                    Keys.onSpacePressed: root.goToNextPage()
-
-                    Text {
-                        anchors.centerIn: parent
-                        color: Config.md3.on_surface
-                        font.pixelSize: 18
-                        text: "›"
-                    }
-                    MouseArea {
-                        id: nextMouse
-
-                        anchors.fill: parent
-                        cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: parent.enabled
-                        hoverEnabled: true
-
-                        onClicked: root.goToNextPage()
-                    }
+                    text: root.footerStatus
                 }
             }
             ParallelAnimation {

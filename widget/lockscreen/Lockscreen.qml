@@ -33,7 +33,7 @@ Scope {
     readonly property bool faceUnlockAvailable: pamConfigHasHowdy(pamConfigFile.text())
     readonly property string fallbackWallpaper: wallpaperState.frame || wallpaperState.thumbnail || (wallpaperState.mode === "static" ? wallpaperState.path : "")
     // Fonts
-    readonly property string fontName: settingValue("fontName", "Inter")
+    readonly property string fontName: settingValue("fontName", "Inter Variable")
     property bool isWindup: false
     readonly property real localTimeMS: (curH * 3.6e+06) + (curM * 60000) + (curS * 1000) + curMS
     readonly property QtObject lockscreenColors: QtObject {

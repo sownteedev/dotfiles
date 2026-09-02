@@ -105,7 +105,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         color: GreeterTheme.surfaceVariantText
-                        font.family: "Inter"
+                        font.family: "Inter Variable"
                         font.pixelSize: 13
                         font.weight: Font.Medium
                         text: qsTr("Welcome back")
@@ -114,7 +114,7 @@ Item {
                         Layout.fillWidth: true
                         color: GreeterTheme.surfaceText
                         elide: Text.ElideRight
-                        font.family: "Inter"
+                        font.family: "Inter Variable"
                         font.pixelSize: 25
                         font.weight: Font.DemiBold
                         text: userField.text || qsTr("Sign in")
@@ -127,7 +127,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? 54 : 0
                 color: GreeterTheme.surfaceText
-                font.family: "Inter"
+                font.family: "Inter Variable"
                 font.pixelSize: 16
                 leftPadding: 18
                 placeholderText: qsTr("User name")
@@ -162,7 +162,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         color: GreeterTheme.surfaceVariantText
-                        font.family: "Inter"
+                        font.family: "Inter Variable"
                         font.pixelSize: 13
                         font.weight: Font.Medium
                         text: GreeterSession.prompt || qsTr("Password")
@@ -178,7 +178,7 @@ Item {
 
                             anchors.centerIn: parent
                             color: GreeterTheme.primary
-                            font.family: "Inter"
+                            font.family: "Inter Variable"
                             font.pixelSize: 11
                             font.weight: Font.Bold
                             text: GreeterSession.keyboardLayoutLabel
@@ -196,7 +196,7 @@ Item {
 
                             anchors.centerIn: parent
                             color: GreeterTheme.error
-                            font.family: "Inter"
+                            font.family: "Inter Variable"
                             font.pixelSize: 11
                             font.weight: Font.Bold
                             text: qsTr("CAPS")
@@ -211,7 +211,7 @@ Item {
                     color: "transparent"
                     echoMode: TextInput.Password
                     enabled: !GreeterSession.working
-                    font.family: "Inter"
+                    font.family: "Inter Variable"
                     font.pixelSize: 17
                     leftPadding: 50
                     placeholderText: activeFocus ? "" : qsTr("Enter your password")
@@ -269,7 +269,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 color: GreeterSession.message.toLowerCase().indexOf("fail") >= 0 ? GreeterTheme.error : GreeterTheme.surfaceVariantText
-                font.family: "Inter"
+                font.family: "Inter Variable"
                 font.pixelSize: 13
                 text: GreeterSession.message
                 visible: text !== ""
@@ -302,7 +302,7 @@ Item {
                     }
                     Text {
                         color: GreeterTheme.primaryText
-                        font.family: "Inter"
+                        font.family: "Inter Variable"
                         font.pixelSize: 15
                         font.weight: Font.DemiBold
                         text: GreeterSession.working ? qsTr("Signing in…") : qsTr("Sign in")
@@ -360,7 +360,7 @@ Item {
                         Layout.fillWidth: true
                         color: GreeterTheme.surfaceText
                         elide: Text.ElideRight
-                        font.family: "Inter"
+                        font.family: "Inter Variable"
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         text: sessionPicker.displayText
@@ -383,7 +383,7 @@ Item {
                     contentItem: Text {
                         color: GreeterTheme.surfaceText
                         elide: Text.ElideRight
-                        font.family: "Inter"
+                        font.family: "Inter Variable"
                         font.pixelSize: 13
                         text: sessionDelegate.modelData.name
                         verticalAlignment: Text.AlignVCenter

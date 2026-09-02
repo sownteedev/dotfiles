@@ -235,10 +235,29 @@ ShellRoot {
         model: Quickshell.screens
 
         delegate: Component {
-            OSD {
-                required property var modelData
+            LazyLoader {
+                id: osdSurfaceLoader
 
-                screen: modelData
+                required property var modelData
+                readonly property bool requested: PopupSurfaceService.osdSurfaceRequested && PopupSurfaceService.osdScreenName === modelData.name
+
+                function syncRequestedState() {
+                    if (requested) {
+                        if (!active && !loading)
+                            loading = true;
+                    } else if (active) {
+                        active = false;
+                    } else if (loading) {
+                        loading = false;
+                    }
+                }
+
+                Component.onCompleted: syncRequestedState()
+                onRequestedChanged: syncRequestedState()
+
+                OSD {
+                    screen: osdSurfaceLoader.modelData
+                }
             }
         }
     }
@@ -246,10 +265,61 @@ ShellRoot {
         model: Quickshell.screens
 
         delegate: Component {
-            NotificationPopups {
-                required property var modelData
+            LazyLoader {
+                id: notificationSurfaceLoader
 
-                screen: modelData
+                property Connections itemConnections: Connections {
+                    function onIdle() {
+                        PopupSurfaceService.notificationSurfaceIdle(notificationSurfaceLoader.modelData.name);
+                    }
+
+                    target: notificationSurfaceLoader.active ? notificationSurfaceLoader.item : null
+                }
+                required property var modelData
+                property Connections queueConnections: Connections {
+                    function onNotificationQueued(screenName) {
+                        if (screenName !== notificationSurfaceLoader.modelData.name)
+                            return;
+                        notificationSurfaceLoader.syncRequestedState();
+                        if (notificationSurfaceLoader.active)
+                            Qt.callLater(notificationSurfaceLoader.deliverPending);
+                    }
+
+                    target: PopupSurfaceService
+                }
+                readonly property bool requested: PopupSurfaceService.notificationSurfaceRequested(modelData.name)
+
+                function deliverPending() {
+                    if (!active || !item)
+                        return;
+
+                    var queued = PopupSurfaceService.takeNotifications(modelData.name);
+                    for (var index = 0; index < queued.length; ++index)
+                        item["enqueueNotification"](queued[index], true);
+                    if (item["empty"])
+                        PopupSurfaceService.notificationSurfaceIdle(modelData.name);
+                }
+                function syncRequestedState() {
+                    if (requested) {
+                        if (!active && !loading)
+                            loading = true;
+                    } else if (active) {
+                        active = false;
+                    } else if (loading) {
+                        loading = false;
+                    }
+                }
+
+                Component.onCompleted: syncRequestedState()
+                onActiveChanged: {
+                    if (active)
+                        Qt.callLater(deliverPending);
+                }
+                onRequestedChanged: syncRequestedState()
+
+                NotificationPopups {
+                    screen: notificationSurfaceLoader.modelData
+                }
             }
         }
     }
@@ -257,10 +327,61 @@ ShellRoot {
         model: Quickshell.screens
 
         delegate: Component {
-            ScreenshotNotificationPopup {
-                required property var modelData
+            LazyLoader {
+                id: screenshotNotificationSurfaceLoader
 
-                screen: modelData
+                property Connections itemConnections: Connections {
+                    function onIdle() {
+                        PopupSurfaceService.screenshotNotificationSurfaceIdle(screenshotNotificationSurfaceLoader.modelData.name);
+                    }
+
+                    target: screenshotNotificationSurfaceLoader.active ? screenshotNotificationSurfaceLoader.item : null
+                }
+                required property var modelData
+                property Connections queueConnections: Connections {
+                    function onScreenshotNotificationQueued(screenName) {
+                        if (screenName !== screenshotNotificationSurfaceLoader.modelData.name)
+                            return;
+                        screenshotNotificationSurfaceLoader.syncRequestedState();
+                        if (screenshotNotificationSurfaceLoader.active)
+                            Qt.callLater(screenshotNotificationSurfaceLoader.deliverPending);
+                    }
+
+                    target: PopupSurfaceService
+                }
+                readonly property bool requested: PopupSurfaceService.screenshotNotificationSurfaceRequested(modelData.name)
+
+                function deliverPending() {
+                    if (!active || !item)
+                        return;
+
+                    var queued = PopupSurfaceService.takeScreenshotNotifications(modelData.name);
+                    for (var index = 0; index < queued.length; ++index)
+                        item["enqueueNotification"](queued[index], true);
+                    if (item["empty"])
+                        PopupSurfaceService.screenshotNotificationSurfaceIdle(modelData.name);
+                }
+                function syncRequestedState() {
+                    if (requested) {
+                        if (!active && !loading)
+                            loading = true;
+                    } else if (active) {
+                        active = false;
+                    } else if (loading) {
+                        loading = false;
+                    }
+                }
+
+                Component.onCompleted: syncRequestedState()
+                onActiveChanged: {
+                    if (active)
+                        Qt.callLater(deliverPending);
+                }
+                onRequestedChanged: syncRequestedState()
+
+                ScreenshotNotificationPopup {
+                    screen: screenshotNotificationSurfaceLoader.modelData
+                }
             }
         }
     }
@@ -557,6 +678,7 @@ ShellRoot {
         onNotification: n => {
             n.tracked = true;
             NotificationHistory.add(n);
+            PopupSurfaceService.routeNotification(n);
             if (!QuickSettingsService.effectiveDndActive)
                 LockscreenNotificationService.show(n);
             if (n.transient && QuickSettingsService.effectiveDndActive) {

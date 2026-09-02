@@ -19,6 +19,8 @@ Rectangle {
     property bool instrumental: false
     property bool loading: false
     property var lyricsCache: ({})
+    readonly property int lyricsCacheLimit: 24
+    property var lyricsCacheOrder: []
     property string lyricsSource: ""
     property var pendingCommand: []
     property string pendingRequestKey: ""
@@ -51,6 +53,18 @@ Rectangle {
             }
         }
         return best;
+    }
+    function cachedLyrics(key) {
+        var entry = lyricsCache[key];
+        if (entry === undefined)
+            return null;
+
+        var order = lyricsCacheOrder.filter(function (cachedKey) {
+            return cachedKey !== key;
+        });
+        order.unshift(key);
+        lyricsCacheOrder = order;
+        return entry;
     }
     function currentKey() {
         if (!player)
@@ -102,9 +116,7 @@ Rectangle {
             "instrumental": false,
             "source": ""
         };
-        var updatedCache = Object.assign({}, lyricsCache);
-        updatedCache[completedKey] = cacheEntry;
-        lyricsCache = updatedCache;
+        storeCachedLyrics(completedKey, cacheEntry);
         if (completedKey === currentKey())
             applyLyrics(cacheEntry.plainLyrics, cacheEntry.syncedLyrics, cacheEntry.instrumental, cacheEntry.source);
     }
@@ -128,8 +140,8 @@ Rectangle {
             applyLyrics(embedded, embedded, false, "MPRIS");
             return;
         }
-        var cached = lyricsCache[requestKey];
-        if (cached !== undefined) {
+        var cached = cachedLyrics(requestKey);
+        if (cached !== null) {
             applyLyrics(cached.plainLyrics, cached.syncedLyrics, cached.instrumental, cached.source);
             return;
         }
@@ -207,6 +219,20 @@ Rectangle {
         lyricsProcess.command = pendingCommand;
         pendingCommand = [];
         lyricsProcess.running = true;
+    }
+    function storeCachedLyrics(key, entry) {
+        var updatedCache = Object.assign({}, lyricsCache);
+        var order = lyricsCacheOrder.filter(function (cachedKey) {
+            return cachedKey !== key;
+        });
+        updatedCache[key] = entry;
+        order.unshift(key);
+        while (order.length > lyricsCacheLimit) {
+            var evictedKey = order.pop();
+            delete updatedCache[evictedKey];
+        }
+        lyricsCache = updatedCache;
+        lyricsCacheOrder = order;
     }
     function stripSyncedLyrics(value) {
         return String(value || "").split(/\r?\n/).map(function (line) {

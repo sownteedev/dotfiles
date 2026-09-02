@@ -335,7 +335,7 @@ Item {
 
         Accessible.ignored: true
         color: foreground
-        font.family: "Inter"
+        font.family: "Inter Variable"
         font.pixelSize: 9
         font.weight: Font.ExtraBold
         horizontalAlignment: Text.AlignHCenter

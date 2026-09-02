@@ -252,7 +252,7 @@ PanelWindow {
                                         color: Config.md3.on_surface
                                         font.family: Config.fontName
                                         font.pixelSize: bar.compact ? 14 : 16
-                                        font.weight: Font.ExtraBold
+                                        font.weight: Font.Bold
                                         text: systemClock.date ? Qt.formatDateTime(systemClock.date, Config.clock24h ? "HH : mm" : "hh : mm A") : ""
                                     }
                                     Text {

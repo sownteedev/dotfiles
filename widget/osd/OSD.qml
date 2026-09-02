@@ -4,7 +4,6 @@ import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland
-import Quickshell.Services.Pipewire
 import "../../"
 import "../../components"
 import "../../service"
@@ -12,12 +11,10 @@ import "../../service"
 PanelWindow {
     id: osdWindow
 
-    // State active flag
     property bool active: false
-    property bool activeBrightnessInit: false
     readonly property string activeIcon: {
         if (activeIndicator === "volume")
-            return getVolumeIcon(volumeVal, volumeMuted);
+            return getVolumeIcon(PopupSurfaceService.speakerValue, PopupSurfaceService.speakerMuted);
         if (activeIndicator === "volume-mute")
             return "audio-volume-muted-symbolic";
         if (activeIndicator === "mic")
@@ -28,34 +25,25 @@ PanelWindow {
             return "display-brightness-symbolic";
         return "";
     }
-
-    // State values
-    property string activeIndicator: "" // "volume", "volume-mute", "mic", "mic-mute", "brightness"
-
+    readonly property string activeIndicator: PopupSurfaceService.osdIndicator
     readonly property string activeLabel: {
         if (activeIndicator === "volume")
-            return "Volume";
+            return qsTr("Volume");
         if (activeIndicator === "mic")
-            return "Microphone";
+            return qsTr("Microphone");
         if (activeIndicator === "brightness")
-            return "Brightness";
+            return qsTr("Brightness");
         return "";
     }
-    property bool activeMicInit: false
-
-    // Event flags to ignore the initial values
-    property bool activeSpeakerInit: false
     readonly property real activeValue: {
         if (activeIndicator === "volume")
-            return volumeVal;
+            return PopupSurfaceService.speakerValue;
         if (activeIndicator === "mic")
-            return micVal;
+            return PopupSurfaceService.micValue;
         if (activeIndicator === "brightness")
-            return brightnessVal;
+            return PopupSurfaceService.brightnessValue;
         return 0.0;
     }
-    readonly property bool brightnessReady: BrightnessService.initialized && BrightnessService.available
-    readonly property real brightnessVal: BrightnessService.value
     readonly property color highlightColor: {
         if (activeIndicator === "volume" || activeIndicator === "volume-mute")
             return Config.md3.primary;
@@ -65,17 +53,8 @@ PanelWindow {
             return Config.md3.secondary;
         return Config.md3.on_surface;
     }
-
-    // Helper to get active properties
     readonly property bool isMute: activeIndicator === "volume-mute" || activeIndicator === "mic-mute"
-    readonly property bool isOsdScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
-    readonly property bool micMuted: (Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio) ? Pipewire.defaultAudioSource.audio.muted : false
-    readonly property bool micReady: Pipewire.ready && !!(Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio)
-    readonly property real micVal: maximumAudioVolume(Pipewire.defaultAudioSource ? Pipewire.defaultAudioSource.audio : null)
     readonly property string muteIconName: activeIndicator.indexOf("mic") === 0 ? "microphone-sensitivity-muted-symbolic" : "audio-volume-muted-symbolic"
-    readonly property bool speakerReady: Pipewire.ready && !!(Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.audio)
-    readonly property bool volumeMuted: (Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.audio) ? Pipewire.defaultAudioSink.audio.muted : false
-    readonly property real volumeVal: maximumAudioVolume(Pipewire.defaultAudioSink ? Pipewire.defaultAudioSink.audio : null)
 
     function getVolumeIcon(val, muted) {
         if (muted)
@@ -87,38 +66,6 @@ PanelWindow {
         if (val > 0)
             return "audio-volume-low-symbolic";
         return "audio-volume-muted-symbolic";
-    }
-    function maximumAudioVolume(audio) {
-        if (!audio)
-            return 0.0;
-        var volumes = audio.volumes;
-        if (!volumes || volumes.length === 0)
-            return Math.max(0.0, audio.volume || 0.0);
-
-        var maximum = 0.0;
-        for (var i = 0; i < volumes.length; ++i) {
-            var channelVolume = Number(volumes[i]);
-            if (!isNaN(channelVolume))
-                maximum = Math.max(maximum, channelVolume);
-        }
-        return maximum;
-    }
-
-    // Core OSD display logic
-    function showOSD(type) {
-        if (!Config.osdEnabled)
-            return;
-        if ((type === "volume" || type === "volume-mute") && !Config.osdShowVolume)
-            return;
-        if ((type === "mic" || type === "mic-mute") && !Config.osdShowMicrophone)
-            return;
-        if (type === "brightness" && !Config.osdShowBrightness)
-            return;
-        activeIndicator = type;
-        active = true;
-
-        hideTimer.stop();
-        hideTimer.start();
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -139,100 +86,28 @@ PanelWindow {
     implicitWidth: screen ? Math.min(320, screen.width) : 320
     margins.bottom: anchors.bottom ? 10 : 0
     margins.top: anchors.top ? 10 : 0
-
-    // Keep the window alive only while the popup is visible so it does not block clicks when hidden
-    visible: isOsdScreen && (active || popup.opacity > 0.0)
+    visible: active || popup.opacity > 0.0
 
     BackgroundEffect.blurRegion: Region {
         item: Config.shellBlurOsdEnabled ? popup : null
         radius: popup.radius
     }
 
-    Component.onCompleted: {
-        if (brightnessReady)
-            brightnessInitTimer.start();
-        if (micReady)
-            micInitTimer.start();
-        if (speakerReady)
-            speakerInitTimer.start();
-    }
-    onBrightnessReadyChanged: {
-        brightnessInitTimer.stop();
-        activeBrightnessInit = false;
-        if (brightnessReady)
-            brightnessInitTimer.start();
-    }
-    onBrightnessValChanged: {
-        if (activeBrightnessInit)
-            showOSD("brightness");
-    }
-    onMicMutedChanged: {
-        if (activeMicInit)
-            showOSD(micMuted ? "mic-mute" : "mic");
-    }
-    onMicReadyChanged: {
-        micInitTimer.stop();
-        activeMicInit = false;
-        if (micReady)
-            micInitTimer.start();
-    }
-    onMicValChanged: {
-        if (activeMicInit)
-            showOSD("mic");
-    }
-    onSpeakerReadyChanged: {
-        speakerInitTimer.stop();
-        activeSpeakerInit = false;
-        if (speakerReady)
-            speakerInitTimer.start();
-    }
-    onVolumeMutedChanged: {
-        if (activeSpeakerInit)
-            showOSD(volumeMuted ? "volume-mute" : "volume");
-    }
-    onVolumeValChanged: {
-        if (activeSpeakerInit)
-            showOSD("volume");
-    }
+    Component.onCompleted: Qt.callLater(function () {
+        osdWindow.active = PopupSurfaceService.osdActive && screen && screen.name === PopupSurfaceService.osdScreenName;
+    })
 
-    Timer {
-        id: hideTimer
-
-        interval: Config.osdDuration
-        repeat: false
-
-        onTriggered: {
-            active = false;
+    Connections {
+        function onOsdActiveChanged() {
+            if (!PopupSurfaceService.osdActive)
+                osdWindow.active = false;
         }
-    }
-    PwObjectTracker {
-        id: audioTracker
+        function onOsdRevisionChanged() {
+            if (screen && screen.name === PopupSurfaceService.osdScreenName)
+                osdWindow.active = true;
+        }
 
-        objects: [Pipewire.defaultAudioSink, Pipewire.defaultAudioSource]
-    }
-    Timer {
-        id: brightnessInitTimer
-
-        interval: 50
-        repeat: false
-
-        onTriggered: activeBrightnessInit = brightnessReady
-    }
-    Timer {
-        id: micInitTimer
-
-        interval: 50
-        repeat: false
-
-        onTriggered: activeMicInit = micReady
-    }
-    Timer {
-        id: speakerInitTimer
-
-        interval: 50
-        repeat: false
-
-        onTriggered: activeSpeakerInit = speakerReady
+        target: PopupSurfaceService
     }
 
     // Window root content holder to contain drop shadow bounds

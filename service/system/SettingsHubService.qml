@@ -56,6 +56,7 @@ QtObject {
             "tabletModeOffAction": ""
         })
     property bool busy: false
+    property bool editorSessionActive: false
     property string errorMessage: ""
     readonly property bool filePickerActive: activeFilePickerRequestId !== ""
     property QtObject filePickerDialog: QtObject {
@@ -357,6 +358,20 @@ QtObject {
             "temperatureUnit": Config.temperatureUnit
         })
     property bool ready: false
+    property Timer releaseEditorDataTimer: Timer {
+        interval: 5000
+        repeat: false
+
+        onTriggered: {
+            if (root.editorSessionActive)
+                return;
+            if (root.busy || root.snapshotProcess.running || root.saveProcess.running) {
+                restart();
+                return;
+            }
+            root.releaseEditorData();
+        }
+    }
     property Process saveProcess: Process {
         id: saveProcess
 
@@ -471,6 +486,16 @@ QtObject {
         niriFiles = niri.files || {};
         quickshellSettings = data.quickshell || quickshellSettings;
     }
+    function beginEditorSession() {
+        editorSessionActive = true;
+        releaseEditorDataTimer.stop();
+    }
+    function endEditorSession() {
+        if (!editorSessionActive && releaseEditorDataTimer.running)
+            return;
+        editorSessionActive = false;
+        releaseEditorDataTimer.restart();
+    }
     function openFile(path) {
         Quickshell.execDetached(["xdg-open", path]);
     }
@@ -480,6 +505,22 @@ QtObject {
 
         busy = true;
         snapshotProcess.running = true;
+    }
+    function releaseEditorData() {
+        if (editorSessionActive)
+            return;
+
+        keybindGroups = [];
+        inputSettings = {};
+        niriFiles = {};
+        animationSettings = {
+            "enabled": animationSettings.enabled !== false,
+            "slowdown": Number(animationSettings.slowdown || 1),
+            "entries": []
+        };
+        ready = false;
+        statusMessage = "";
+        errorMessage = "";
     }
     function save(operation, payload) {
         if (busy)

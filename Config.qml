@@ -232,7 +232,7 @@ QtObject {
             property int captureScreenshotQuality: 90
             property bool cavaEnabled: true
             property bool clock24h: true
-            property string fontName: "Inter"
+            property string fontName: "Inter Variable"
             property string greeterDefaultSession: "niri"
             property bool greeterRememberLastSession: false
             property int idleBatteryDisplayTimeout: 300

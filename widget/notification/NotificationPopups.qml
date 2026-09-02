@@ -13,7 +13,7 @@ PanelWindow {
 
     id: notifWindow
 
-    readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
+    readonly property bool empty: notifModel.count === 0
     readonly property int maxVisiblePopups: screen && screen.height < 800 ? Math.min(2, Config.notificationMaxVisible) : Config.notificationMaxVisible
     property var pendingUpdates: ({})
     readonly property bool popupAtBottom: Config.notificationPosition === "bottom-right"
@@ -27,6 +27,8 @@ PanelWindow {
 
     // Track active timer objects by notification ID
     property var timersMap: ({})
+
+    signal idle
 
     function appMatchesList(appName, rawList) {
         var expected = String(appName || "").trim().toLowerCase();
@@ -134,6 +136,18 @@ PanelWindow {
             pendingUpdates = remainingUpdates;
         }
     }
+    function enqueueNotification(notification, alreadyRetained) {
+        if (!notification)
+            return false;
+        if (popupsSuppressed || isManagedScreenshotNotification(notification) || appMatchesList(notification.appName, Config.notificationBlockedApps)) {
+            if (alreadyRetained)
+                NotificationHistory.releasePopup(notification.id, notification);
+            return false;
+        }
+
+        handleNotify(notification, alreadyRetained);
+        return true;
+    }
 
     // Step 2: Remove from model immediately after animation finishes
     function handleCloseImmediate(nid) {
@@ -147,9 +161,12 @@ PanelWindow {
     }
 
     // Handle incoming notifications
-    function handleNotify(notification) {
-        if (appMatchesList(notification.appName, Config.notificationBlockedApps))
+    function handleNotify(notification, alreadyRetained) {
+        if (appMatchesList(notification.appName, Config.notificationBlockedApps)) {
+            if (alreadyRetained)
+                NotificationHistory.releasePopup(notification.id, notification);
             return;
+        }
         var index = -1;
         for (var i = 0; i < notifModel.count; i++) {
             if (notifModel.get(i).nid === notification.id) {
@@ -177,16 +194,19 @@ PanelWindow {
             if (previousNotification !== notification) {
                 disconnectNotificationUpdates(notification.id, previousNotification);
                 NotificationHistory.releasePopup(notification.id, previousNotification);
-                NotificationHistory.retainPopup(notification);
+                if (!alreadyRetained)
+                    NotificationHistory.retainPopup(notification);
                 connectNotificationUpdates(notification);
-            }
+            } else if (alreadyRetained)
+                NotificationHistory.releasePopup(notification.id, notification);
             // Preserving the active state during updates
             notifData.active = notifModel.get(index).active;
             notifModel.set(index, notifData);
             resetNotifTimer(notification.id);
         } else {
             console.log("[Notification] Adding notification ID:", notification.id);
-            NotificationHistory.retainPopup(notification);
+            if (!alreadyRetained)
+                NotificationHistory.retainPopup(notification);
             connectNotificationUpdates(notification);
             if (notifWindow.popupAtBottom)
                 notifModel.insert(0, notifData);
@@ -441,24 +461,6 @@ PanelWindow {
             closeAllPopups();
     }
 
-    // Connect to global NotificationManager
-    Connections {
-        function onNotification(notification) {
-            if (notifWindow.popupsSuppressed)
-                return;
-
-            // Screenshot notifications have their own Windows-style toast
-            // anchored to the bottom-right corner.
-            if (isManagedScreenshotNotification(notification))
-                return;
-
-            // Do not show popups in DND mode
-            handleNotify(notification);
-        }
-
-        enabled: notifWindow.isNotificationScreen
-        target: globalNotificationManager
-    }
     Connections {
         function onEffectiveDndActiveChanged() {
             if (QuickSettingsService.effectiveDndActive)
@@ -504,6 +506,15 @@ PanelWindow {
     // Notification list model
     ListModel {
         id: notifModel
+
+        onCountChanged: {
+            if (count === 0) {
+                Qt.callLater(function () {
+                    if (notifModel.count === 0)
+                        notifWindow.idle();
+                });
+            }
+        }
     }
     Timer {
         id: stackHeightReleaseTimer

@@ -23,6 +23,7 @@ singleton LockscreenNotificationService 1.0 system/LockscreenNotificationService
 singleton LauncherGroupService 1.0 system/LauncherGroupService.qml
 singleton NotificationHistory 1.0 system/NotificationHistory.qml
 singleton PolkitService 1.0 system/PolkitService.qml
+singleton PopupSurfaceService 1.0 system/PopupSurfaceService.qml
 singleton PortalFilePickerService 1.0 system/PortalFilePickerService.qml
 singleton ProfileImageService 1.0 system/ProfileImageService.qml
 singleton QuickSettingsService 1.0 system/QuickSettingsService.qml

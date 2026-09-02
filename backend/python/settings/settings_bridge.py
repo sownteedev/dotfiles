@@ -903,7 +903,7 @@ def snapshot() -> dict[str, object]:
     tab_urgent_gradient = block_raw_setting(tab_indicator_block, "urgent-gradient", 'from="#800" to="#a33" angle=45')
     insert_gradient = block_raw_setting(insert_hint_block, "gradient", 'from="#ffbb6680" to="#ffc88080" angle=45')
     quickshell_settings: dict[str, object] = {
-        "fontName": qml_string(config_source, "fontName", "Inter"),
+        "fontName": qml_string(config_source, "fontName", "Inter Variable"),
         "greeterDefaultSession": qml_string(config_source, "greeterDefaultSession", "niri"),
         "greeterRememberLastSession": qml_bool(config_source, "greeterRememberLastSession", False),
         "audioMaxVolume": 1.0,
@@ -1981,7 +1981,7 @@ def set_input_entry_enabled(payload: dict[str, object]) -> dict[str, object]:
 
 def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
     defaults: dict[str, object] = {
-        "fontName": "Inter",
+        "fontName": "Inter Variable",
         "greeterDefaultSession": "niri",
         "greeterRememberLastSession": False,
         "audioMaxVolume": 1.0,
@@ -2178,7 +2178,7 @@ def set_quickshell(payload: dict[str, object]) -> dict[str, object]:
         "notificationBlockedApps", "notificationHistoryExcludedApps", "notificationLockscreenPrivacy",
     ):
         settings[name] = str(merged.get(name, defaults[name])).strip()
-    settings["fontName"] = settings["fontName"] or "Inter"
+    settings["fontName"] = settings["fontName"] or "Inter Variable"
     greeter_session = re.sub(r"[^A-Za-z0-9._+-]", "", settings["greeterDefaultSession"][:80])
     settings["greeterDefaultSession"] = greeter_session or "niri"
 

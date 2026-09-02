@@ -17,8 +17,8 @@ PanelWindow {
     property string body: ""
     property var deferredAction: null
     property int deferredDismissId: -1
+    readonly property bool empty: !active && !visible && !notificationObject && !pendingNotification
     readonly property int exitAnimationDuration: 260
-    readonly property bool isNotificationScreen: Quickshell.screens.length > 0 && (WorkspaceService.focusedOutputName !== "" ? screen && screen.name === WorkspaceService.focusedOutputName : screen === Quickshell.screens[0])
     property var notificationConnections: null
     property int notificationId: -1
     property var notificationObject: null
@@ -29,6 +29,8 @@ PanelWindow {
     readonly property bool screenshotReady: screenshotPathReady && screenshotPreview.status === Image.Ready
     readonly property bool screenshotSettled: screenshotReady || screenshotPreviewFailed
     property string summary: ""
+
+    signal idle
 
     function closeToast() {
         autoCloseTimer.stop();
@@ -87,6 +89,18 @@ PanelWindow {
         }
         notificationConnections = null;
     }
+    function enqueueNotification(notification, alreadyRetained) {
+        if (!notification)
+            return false;
+        if (QuickSettingsService.dndActive || Config.captureScreenshotAction !== "notification" || !isScreenshotNotification(notification)) {
+            if (alreadyRetained)
+                NotificationHistory.releasePopup(notification.id, notification);
+            return false;
+        }
+
+        showNotification(notification, alreadyRetained);
+        return true;
+    }
     function finishAction(callback, deferUntilClosed) {
         if (!active || !screenshotReady)
             return;
@@ -124,7 +138,7 @@ PanelWindow {
             root.active = true;
         });
     }
-    function showNotification(notification) {
+    function showNotification(notification, alreadyRetained) {
         if (notificationObject && notificationObject !== notification) {
             var replacedNotification = notificationObject;
             var replacedId = notificationId;
@@ -137,9 +151,11 @@ PanelWindow {
         toast.swipeOffset = 0;
         previewPath = CaptureService.screenshotPath;
         if (notificationObject !== notification) {
-            NotificationHistory.retainPopup(notification);
+            if (!alreadyRetained)
+                NotificationHistory.retainPopup(notification);
             connectNotificationSignals(notification);
-        }
+        } else if (alreadyRetained)
+            NotificationHistory.releasePopup(notification.id, notification);
         notificationId = notification.id;
         notificationObject = notification;
         summary = notification.summary || qsTr("Screenshot captured");
@@ -184,17 +200,6 @@ PanelWindow {
             NotificationHistory.releasePopup(notificationId, notification);
     }
 
-    Connections {
-        function onNotification(notification) {
-            if (QuickSettingsService.dndActive || Config.captureScreenshotAction !== "notification" || !root.isScreenshotNotification(notification))
-                return;
-
-            root.showNotification(notification);
-        }
-
-        enabled: root.isNotificationScreen
-        target: globalNotificationManager
-    }
     Connections {
         function onDndActiveChanged() {
             if (QuickSettingsService.dndActive)
@@ -269,6 +274,7 @@ PanelWindow {
                 root.previewPath = "";
                 if (notification)
                     NotificationHistory.releasePopup(notificationId, notification);
+                root.idle();
             }
         }
     }

@@ -6,7 +6,7 @@ root="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 "$root/plugin/imagecache/build-imagecache"
 
 import_path="$root/plugin/imagecache/qml"
-quickshell_jemalloc_conf="background_thread:true,dirty_decay_ms:1000,muzzy_decay_ms:1000"
+quickshell_jemalloc_conf="thp:never,narenas:4,dirty_decay_ms:3000"
 export QML_IMPORT_PATH="$import_path${QML_IMPORT_PATH:+:$QML_IMPORT_PATH}"
 export QML2_IMPORT_PATH="$import_path${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
 export MALLOC_CONF="${MALLOC_CONF:+$MALLOC_CONF,}$quickshell_jemalloc_conf"

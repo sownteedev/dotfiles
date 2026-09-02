@@ -437,7 +437,7 @@ Item {
 
                     Layout.fillWidth: true
                     label: "Font family"
-                    placeholder: "Inter"
+                    placeholder: Config.fontName
                 }
             }
             SettingsSectionCard {

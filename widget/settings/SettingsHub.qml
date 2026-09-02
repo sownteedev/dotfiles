@@ -213,6 +213,7 @@ FloatingWindow {
         resizeActive = false;
         visible = false;
         active = false;
+        SettingsHubService.endEditorSession();
         dismissed();
     }
     function legacyQuickshellSection() {
@@ -237,6 +238,7 @@ FloatingWindow {
         pageFrame.x = 0;
         visible = true;
         active = true;
+        SettingsHubService.beginEditorSession();
         blurAcquireTimer.restart();
         panel.forceActiveFocus();
         SettingsHubService.refresh();
@@ -285,6 +287,7 @@ FloatingWindow {
         }
     }
 
+    Component.onDestruction: SettingsHubService.endEditorSession()
     onClosed: {
         if (!root.active)
             return;

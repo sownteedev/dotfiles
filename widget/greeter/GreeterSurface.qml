@@ -136,7 +136,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             color: GreeterTheme.backgroundText
-            font.family: "Inter"
+            font.family: "Inter Variable"
             font.pixelSize: 120 * root.scaleFactor
             font.weight: Font.Black
             style: Text.Raised
@@ -147,7 +147,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             color: GreeterTheme.surfaceVariantText
             font.capitalization: Font.Capitalize
-            font.family: "Inter"
+            font.family: "Inter Variable"
             font.pixelSize: 25 * root.scaleFactor
             font.weight: Font.Bold
             style: Text.Raised
