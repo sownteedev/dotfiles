@@ -8,6 +8,8 @@ RowLayout {
     readonly property real clampedOpacity: Math.max(0.1, Math.min(1, Number(selectedOpacity) || 1))
     readonly property real normalizedOpacity: (clampedOpacity - 0.1) / 0.9
     property real selectedOpacity: 1
+    property bool showValueLabel: true
+    property real visualProgress: normalizedOpacity
 
     signal opacityChangeFinished
     signal opacityChangeStarted
@@ -24,17 +26,27 @@ RowLayout {
     }
 
     implicitHeight: 32
-    implicitWidth: 170
-    spacing: 8
+    implicitWidth: showValueLabel ? 170 : 120
+    spacing: showValueLabel ? 8 : 0
+
+    Behavior on visualProgress {
+        enabled: !opacityPointer.pressed
+
+        NumberAnimation {
+            duration: 100
+            easing.type: Easing.OutCubic
+        }
+    }
 
     Text {
-        Layout.preferredWidth: 42
+        Layout.preferredWidth: visible ? 42 : 0
         color: Config.md3.on_surface_variant
         font.family: Config.fontName
         font.pixelSize: 12
         font.weight: Font.DemiBold
         horizontalAlignment: Text.AlignRight
         text: Math.round(root.clampedOpacity * 100) + "%"
+        visible: root.showValueLabel
     }
     Item {
         id: opacityTrack
@@ -73,19 +85,11 @@ RowLayout {
             radius: 8
             scale: opacityPointer.pressed ? 1.18 : 1
             width: 16
-            x: Math.max(0, Math.min(parent.width - width, parent.width * root.normalizedOpacity - width / 2))
+            x: Math.max(0, Math.min(parent.width - width, parent.width * root.visualProgress - width / 2))
 
             Behavior on scale {
                 NumberAnimation {
                     duration: 100
-                }
-            }
-            Behavior on x {
-                enabled: !opacityPointer.pressed
-
-                NumberAnimation {
-                    duration: 100
-                    easing.type: Easing.OutCubic
                 }
             }
         }

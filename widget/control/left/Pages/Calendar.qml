@@ -1,26 +1,30 @@
-import QtQuick
-import QtQuick.Layouts
-import QtQuick.Controls
+import "../../../../" // for Config
+import "../../../../components"
+import "../../../../service"
+import "../../../../widget/calendar" as CalendarWidgets
 import Qt5Compat.GraphicalEffects
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
-import "../../../../" // for Config
 import "lunar.js" as Lunar
-import "../../../../service"
-import "../../../../components"
 
 Item {
+    // onCurrentMonthChanged is no longer needed since we fetch a 3-year window on startup
+
     id: calendarRoot
 
     property int currentMonth: new Date().getMonth()
     property int currentYear: new Date().getFullYear()
     property var eventsForSelectedDate: {
-        var dummy = GoogleService.allEvents;
-        return GoogleService.getEventsForDate(selectedDay, selectedMonth, selectedYear);
+        var dummy = CalendarService.allEvents;
+        return CalendarService.getEventsForDate(selectedDay, selectedMonth, selectedYear);
     }
     property bool isSwipingOut: false
     property var monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     property int pendingMonthDirection: 0
+    property bool pendingNewEventAfterConnect: false
     readonly property var pendingTasksByDate: buildPendingTasksIndex(LocalTaskService.tasks, GoogleService.allTasks)
     readonly property var pendingTasksForSelectedDate: tasksForDate(selectedDay, selectedMonth, selectedYear)
     readonly property Item popupBackdropHost: controlLeftWindow.topPopupBackdropHost
@@ -41,16 +45,20 @@ Item {
     function appendPendingTasks(index, tasks, taskSource) {
         if (!Array.isArray(tasks))
             return;
+
         for (var i = 0; i < tasks.length; ++i) {
             var task = tasks[i] || {};
             if (String(task.status || "needsAction") !== "needsAction")
                 continue;
+
             var due = String(task.due || "");
             var dueKey = due.slice(0, 10);
             if (!/^\d{4}-\d{2}-\d{2}$/.test(dueKey))
                 continue;
+
             if (!index[dueKey])
                 index[dueKey] = [];
+
             index[dueKey].push({
                 "due": due,
                 "id": String(task.id || ""),
@@ -69,6 +77,7 @@ Item {
     function completeTask(task) {
         if (!task || !task.id)
             return;
+
         if (task.taskSource === "google")
             GoogleService.updateTask("@default", task.id, undefined, undefined, undefined, "completed");
         else
@@ -82,7 +91,6 @@ Item {
         var startOffset = firstDay === 0 ? 6 : firstDay - 1; // Make Monday = 0
         var daysInMonth = new Date(year, month + 1, 0).getDate();
         var daysInPrevMonth = new Date(year, month, 0).getDate();
-
         var arr = [];
         // Previous month days
         for (var i = startOffset - 1; i >= 0; i--) {
@@ -90,19 +98,19 @@ Item {
             var prevM = month === 0 ? 11 : month - 1;
             var prevY = month === 0 ? year - 1 : year;
             arr.push({
-                day: prevD,
-                month: prevM,
-                year: prevY,
-                isCurrent: false
+                "day": prevD,
+                "month": prevM,
+                "year": prevY,
+                "isCurrent": false
             });
         }
         // Current month days
         for (var j = 1; j <= daysInMonth; j++) {
             arr.push({
-                day: j,
-                month: month,
-                year: year,
-                isCurrent: true
+                "day": j,
+                "month": month,
+                "year": year,
+                "isCurrent": true
             });
         }
         // Next month days
@@ -111,17 +119,22 @@ Item {
             var nextM = month === 11 ? 0 : month + 1;
             var nextY = month === 11 ? year + 1 : year;
             arr.push({
-                day: k,
-                month: nextM,
-                year: nextY,
-                isCurrent: false
+                "day": k,
+                "month": nextM,
+                "year": nextY,
+                "isCurrent": false
             });
         }
         return arr;
     }
-
-    // onCurrentMonthChanged is no longer needed since we fetch a 3-year window on startup
-
+    function hasWritableCalendar() {
+        var calendars = CalendarService.calendars || [];
+        for (var index = 0; index < calendars.length; ++index) {
+            if (calendars[index] && calendars[index].readOnly !== true)
+                return true;
+        }
+        return false;
+    }
     function nextMonth() {
         if (currentMonth === 11) {
             currentMonth = 0;
@@ -138,11 +151,21 @@ Item {
             currentMonth--;
         }
     }
+    function requestNewEvent() {
+        if (CalendarService.authenticated && hasWritableCalendar()) {
+            eventEditor.openNew();
+        } else {
+            pendingNewEventAfterConnect = true;
+            calendarAccountDialog.open();
+        }
+    }
     function scheduleCountText() {
         if (selectedEventCount > 0 && selectedTaskCount > 0)
             return qsTr("%1 · %2").arg(qsTr("%n event(s)", "", selectedEventCount)).arg(qsTr("%n task(s)", "", selectedTaskCount));
+
         if (selectedTaskCount > 0)
             return qsTr("%n task(s)", "", selectedTaskCount);
+
         return qsTr("%n event(s)", "", selectedEventCount);
     }
     function settleMonth(direction) {
@@ -162,12 +185,14 @@ Item {
     anchors.fill: parent
 
     Component.onCompleted: {
+        CalendarService.acquire();
         if (typeof GoogleService.acquire === "function")
             GoogleService.acquire();
         else if (GoogleService.authenticated)
             GoogleService.fetchAll();
     }
     Component.onDestruction: {
+        CalendarService.release();
         if (typeof GoogleService.release === "function")
             GoogleService.release();
     }
@@ -185,7 +210,6 @@ Item {
                 nextMonth();
             else if (pendingMonthDirection > 0)
                 prevMonth();
-
             swipeOffset = 0;
             pendingMonthDirection = 0;
             isSwipingOut = false;
@@ -205,13 +229,12 @@ Item {
                     monthSlide.stop();
             } else if (!monthSlide.running) {
                 var threshold = Math.min(calendarViewport.width * 0.18, 90);
-                if (swipeOffset < -threshold) {
+                if (swipeOffset < -threshold)
                     settleMonth(-1);
-                } else if (swipeOffset > threshold) {
+                else if (swipeOffset > threshold)
                     settleMonth(1);
-                } else {
+                else
                     settleMonth(0);
-                }
             }
         }
         onTranslationChanged: {
@@ -291,14 +314,33 @@ Item {
                                 anchors.margins: 12
                                 spacing: 40
 
-                                Text {
+                                Item {
                                     Layout.fillWidth: true
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 26
-                                    font.weight: Font.ExtraBold
-                                    horizontalAlignment: Text.AlignHCenter
-                                    text: calendarRoot.monthNames[monthPage.viewMonth] + " " + monthPage.viewYear
+                                    Layout.preferredHeight: 44
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        color: Config.md3.on_surface
+                                        font.family: Config.fontName
+                                        font.pixelSize: 26
+                                        font.weight: Font.DemiBold
+                                        text: calendarRoot.monthNames[monthPage.viewMonth] + " " + monthPage.viewYear
+                                    }
+                                    SettingsActionButton {
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        height: 44
+                                        iconName: "window-new-symbolic"
+                                        iconOnly: true
+                                        radius: 14
+                                        text: qsTr("Open full calendar")
+                                        width: 44
+
+                                        onClicked: {
+                                            StateManager.showCalendarApp();
+                                            controlLeftWindow.hideControl();
+                                        }
+                                    }
                                 }
                                 GridLayout {
                                     Layout.fillHeight: true
@@ -376,9 +418,9 @@ Item {
                                                 height: 5
                                                 radius: 3
                                                 visible: {
-                                                    var dummyEvents = GoogleService.allEvents;
+                                                    var dummyEvents = CalendarService.allEvents;
                                                     var dummyTasks = calendarRoot.pendingTasksByDate;
-                                                    return GoogleService.hasEvents(dayInfo.day, dayInfo.month, dayInfo.year) || calendarRoot.tasksForDate(dayInfo.day, dayInfo.month, dayInfo.year).length > 0;
+                                                    return CalendarService.hasEvents(dayInfo.day, dayInfo.month, dayInfo.year) || calendarRoot.tasksForDate(dayInfo.day, dayInfo.month, dayInfo.year).length > 0;
                                                 }
                                                 width: 5
                                             }
@@ -391,6 +433,7 @@ Item {
                                                 onClicked: {
                                                     if (calendarRoot.isSwipingOut || Math.abs(calendarRoot.swipeOffset) > 4)
                                                         return;
+
                                                     calendarRoot.selectedDay = dayInfo.day;
                                                     calendarRoot.selectedMonth = dayInfo.month;
                                                     calendarRoot.selectedYear = dayInfo.year;
@@ -407,8 +450,8 @@ Item {
             }
         }
     }
-
     // Events Panel Overlay
+
     Rectangle {
         id: eventsPanel
 
@@ -442,9 +485,8 @@ Item {
             yAxis.enabled: false
 
             onTranslationChanged: {
-                if (translation.x > 150) {
+                if (translation.x > 150)
                     showEvents = false;
-                }
             }
         }
         ColumnLayout {
@@ -513,8 +555,7 @@ Item {
                     text: qsTr("Add event")
 
                     onClicked: {
-                        if (GoogleService.requireAuthentication("calendar-add"))
-                            eventEditor.openNew();
+                        calendarRoot.requestNewEvent();
                     }
                 }
             }
@@ -540,7 +581,7 @@ Item {
                         anchors.fill: parent
                         swipeOffset: cardContent.swipeX
 
-                        onTriggered: GoogleService.deleteEvent(modelData.calendarId, modelData.id)
+                        onTriggered: CalendarService.deleteEvent(modelData.calendarId, modelData.id)
                     }
                     Rectangle {
                         id: cardContent
@@ -578,7 +619,6 @@ Item {
                                     cardContent.swipeX = 0;
                                     return;
                                 }
-
                                 eventEditor.openEvent(modelData);
                             }
                         }
@@ -592,7 +632,7 @@ Item {
                             onActiveChanged: {
                                 if (!active) {
                                     if (cardContent.swipeX < -80) {
-                                        GoogleService.deleteEvent(modelData.calendarId, modelData.id);
+                                        CalendarService.deleteEvent(modelData.calendarId, modelData.id);
                                         cardContent.swipeX = 0;
                                     } else {
                                         cardContent.swipeX = 0;
@@ -751,9 +791,12 @@ Item {
                                         text: {
                                             if (modelData.allDay)
                                                 return qsTr("All day");
+
                                             var start = new Date(modelData.start);
                                             var end = new Date(modelData.end);
-                                            var formatTime = date => String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0");
+                                            var formatTime = date => {
+                                                return String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0");
+                                            };
                                             return formatTime(start) + " – " + formatTime(end);
                                         }
                                     }
@@ -785,7 +828,9 @@ Item {
                                 task: modelData
                                 width: taskFooterColumn.width
 
-                                onCompletionRequested: task => calendarRoot.completeTask(task)
+                                onCompletionRequested: task => {
+                                    return calendarRoot.completeTask(task);
+                                }
                             }
                         }
                     }
@@ -802,8 +847,7 @@ Item {
                     width: Math.min(parent.width - 40, 320)
 
                     onActionTriggered: {
-                        if (GoogleService.requireAuthentication("calendar-add"))
-                            eventEditor.openNew();
+                        calendarRoot.requestNewEvent();
                     }
                 }
             }
@@ -819,12 +863,21 @@ Item {
         selectedYear: calendarRoot.selectedYear
     }
     Connections {
-        function onAuthenticationSucceeded(context) {
-            if (context === "calendar-add")
+        function onAccountAdded(accountId) {
+            if (calendarRoot.pendingNewEventAfterConnect) {
+                calendarRoot.pendingNewEventAfterConnect = false;
                 eventEditor.openNew();
+            }
         }
 
-        target: GoogleService
+        target: CalendarService
+    }
+    CalendarWidgets.CalendarAccountDialog {
+        id: calendarAccountDialog
+
+        anchors.fill: parent
+
+        onClosed: calendarRoot.pendingNewEventAfterConnect = false
     }
     GoogleAuthPanel {
         anchors.fill: parent

@@ -1,0 +1,8 @@
+CalendarApp 1.0 CalendarApp.qml
+CalendarAccountCard 1.0 CalendarAccountCard.qml
+CalendarAccountDialog 1.0 CalendarAccountDialog.qml
+CalendarEventEditor 1.0 CalendarEventEditor.qml
+CalendarMonthView 1.0 CalendarMonthView.qml
+CalendarProviderIcon 1.0 CalendarProviderIcon.qml
+CalendarSidebar 1.0 CalendarSidebar.qml
+CalendarWeekView 1.0 CalendarWeekView.qml

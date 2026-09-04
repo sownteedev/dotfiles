@@ -16,10 +16,13 @@ Item {
         }
     }
 
+    onColorChanged: liquidCanvas.requestPaint()
+    onFillProgressChanged: liquidCanvas.requestPaint()
+
     Timer {
         interval: 33
         repeat: true
-        running: root.visible && root.width > 0 && root.height > 0 && (root.active || (root.fillProgress > -0.1 && root.fillProgress < 1.1))
+        running: root.visible && root.width > 0 && root.height > 0 && root.fillProgress > -0.05 && root.fillProgress < 1.05
 
         onTriggered: {
             root.wavePhase += 0.15;

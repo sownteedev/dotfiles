@@ -10,12 +10,17 @@ Item {
 
     // Keep the last frame alive briefly after playback stops so consumers can
     // draw a natural release instead of disappearing in a single frame.
+    property int activeConsumers: 0
     property bool available: false
     property var bars: []
     property int frameRevision: 0
     property real levelScale: 0
+    readonly property bool requested: Config.cavaEnabled && !Config.shellLowPowerMode && activeConsumers > 0 && MediaService.playing
     property bool waitingForSignal: false
 
+    function acquire() {
+        activeConsumers++;
+    }
     function animateLevel(targetLevel, duration) {
         levelAnimation.stop();
         levelAnimation.from = levelScale;
@@ -29,6 +34,9 @@ Item {
             emptyBars.push(0);
         bars = emptyBars;
         frameRevision++;
+    }
+    function release() {
+        activeConsumers = Math.max(0, activeConsumers - 1);
     }
     function setPlaying(playing) {
         if (playing) {
@@ -60,23 +68,11 @@ Item {
         releaseDelay.restart();
     }
 
-    Component.onCompleted: {
-        available = false;
-        levelScale = 0;
-        waitingForSignal = MediaService.playing;
-        if (!MediaService.playing)
-            clearBars();
-    }
+    Component.onCompleted: setPlaying(requested)
     Component.onDestruction: cavaProcess.running = false
     onLevelScaleChanged: frameRevision++
+    onRequestedChanged: setPlaying(requested)
 
-    Connections {
-        function onPlayingChanged() {
-            root.setPlaying(MediaService.playing);
-        }
-
-        target: MediaService
-    }
     NumberAnimation {
         id: levelAnimation
 
@@ -91,7 +87,7 @@ Item {
         repeat: false
 
         onTriggered: {
-            if (MediaService.playing)
+            if (root.requested)
                 return;
             root.available = false;
             root.clearBars();
@@ -101,10 +97,13 @@ Item {
         id: cavaProcess
 
         command: ["cava", "-p", Config.quickshellDir + "/cava.conf"]
-        running: Config.cavaEnabled && !Config.shellLowPowerMode && MediaService.playing
+        running: root.requested
 
         stdout: SplitParser {
             onRead: line => {
+                if (!root.requested)
+                    return;
+
                 var newBars = root.bars ? root.bars.slice(0) : [];
                 if (newBars.length !== 48) {
                     newBars = [];

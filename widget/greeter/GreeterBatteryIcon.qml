@@ -337,7 +337,7 @@ Item {
         color: foreground
         font.family: "Inter Variable"
         font.pixelSize: 9
-        font.weight: Font.ExtraBold
+        font.weight: Font.DemiBold
         horizontalAlignment: Text.AlignHCenter
         renderType: Text.NativeRendering
         text: (root.charging ? "⚡" : "") + root.boundedPercentage.toString()

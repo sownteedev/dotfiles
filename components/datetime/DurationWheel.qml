@@ -99,7 +99,7 @@ Item {
                     "tnum": 1
                 }
                 font.pixelSize: delegateItem.selected ? Math.max(20, Math.round(23 * root.visualScale)) : Math.max(13, Math.round(15 * root.visualScale))
-                font.weight: delegateItem.selected ? Font.ExtraBold : Font.Medium
+                font.weight: delegateItem.selected ? Font.DemiBold : Font.Medium
                 text: String(delegateItem.realIndex).padStart(2, "0")
 
                 Behavior on anchors.verticalCenterOffset {

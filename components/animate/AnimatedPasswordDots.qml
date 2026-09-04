@@ -80,7 +80,7 @@ Item {
 
             SequentialAnimation on opacity {
                 loops: Animation.Infinite
-                running: root.active && Config.animationDuration(500) > 0
+                running: root.active && root.visible && Config.animationDuration(500) > 0
 
                 NumberAnimation {
                     duration: Config.animationDuration(500)

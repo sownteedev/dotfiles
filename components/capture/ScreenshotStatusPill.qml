@@ -5,7 +5,7 @@ import QtQuick.Layouts
 Rectangle {
     id: root
 
-    readonly property real desiredWidth: statusContent.implicitWidth + 20
+    readonly property real desiredWidth: 7 + 10 + 18 + 1 + statusContent.spacing * 3 + statusTitle.implicitWidth + statusDetail.implicitWidth
     property string detailText: ""
     property bool error: false
     property real maximumWidth: 560
@@ -16,7 +16,7 @@ Rectangle {
     Accessible.role: Accessible.StaticText
     border.color: Config.alpha(error ? Config.md3.error : Config.md3.primary, 0.3)
     border.width: 1
-    color: Config.alpha(error ? Config.md3.error_container : Config.md3.primary_container, 0.96)
+    color: Config.alpha(error ? Config.md3.error_container : Config.md3.surface_container_high, 0.98)
     height: 30
     opacity: shown && maximumWidth >= 120 ? 1 : 0
     radius: height / 2
@@ -61,7 +61,9 @@ Rectangle {
             }
         }
         Text {
-            color: root.error ? Config.md3.on_error_container : Config.md3.on_primary_container
+            id: statusTitle
+
+            color: root.error ? Config.md3.on_error_container : Config.md3.on_surface
             font.family: Config.fontName
             font.pixelSize: 13
             font.weight: Font.DemiBold
@@ -70,12 +72,14 @@ Rectangle {
         Rectangle {
             Layout.preferredHeight: 14
             Layout.preferredWidth: 1
-            color: Config.alpha(root.error ? Config.md3.on_error_container : Config.md3.on_primary_container, 0.24)
+            color: Config.alpha(root.error ? Config.md3.on_error_container : Config.md3.on_surface_variant, 0.24)
         }
         Text {
+            id: statusDetail
+
             Layout.fillWidth: true
             Layout.minimumWidth: 0
-            color: Config.alpha(root.error ? Config.md3.on_error_container : Config.md3.on_primary_container, 0.82)
+            color: Config.alpha(root.error ? Config.md3.on_error_container : Config.md3.on_surface_variant, 0.82)
             elide: Text.ElideRight
             font.family: Config.fontName
             font.pixelSize: 13

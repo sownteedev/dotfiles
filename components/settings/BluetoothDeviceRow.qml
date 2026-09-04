@@ -188,7 +188,7 @@ Rectangle {
                     color: Config.md3.background
                     font.family: Config.fontName
                     font.pixelSize: 9
-                    font.weight: Font.ExtraBold
+                    font.weight: Font.DemiBold
                     text: root.batteryPercent + "%"
                 }
             }
@@ -392,7 +392,7 @@ Rectangle {
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
                                     font.pixelSize: 11
-                                    font.weight: Font.ExtraBold
+                                    font.weight: Font.DemiBold
                                     text: batteryChip.valueAvailable ? modelData.value + "%" : "—"
                                 }
                                 Text {

@@ -423,7 +423,7 @@ Item {
                                 color: Config.md3.background
                                 font.family: Config.fontName
                                 font.pixelSize: 7
-                                font.weight: Font.ExtraBold
+                                font.weight: Font.DemiBold
                                 text: "1"
                             }
                         }

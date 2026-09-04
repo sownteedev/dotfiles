@@ -33,16 +33,18 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 
 - **Niri-native workspace model** with live windows, dynamic workspaces, overview-aware focus, drag reordering, cross-workspace movement without focus stealing, per-workspace tiled/floating state, and multi-monitor support.
 - **Dynamic Dock** for pinned and running applications, with drag ordering, live window previews, focus-aware unread badges, right-click pinning, and overlap-aware auto-hide.
-- **Launcher and All Apps** with fuzzy application search, a full-screen paged grid, horizontal touchpad navigation, keyboard control, contextual app actions, and persistent drag-and-drop folders with rename and drag-out ungrouping.
+- **Launcher and All Apps** with fuzzy application search, a full-screen paged grid, horizontal touchpad navigation, keyboard control, contextual app actions, package-aware Pacman/Flatpak uninstall, and persistent drag-and-drop folders with rename and drag-out ungrouping.
 - **Search providers** for files (`f`), clipboard (`c`), calculator (`=`), a unified emoji/Unicode catalog (`e`), and lazy KLIPY GIF (`g`) or sticker (`s`) grids when an API key is configured. Clipboard history supports pinned text, URLs, colors, file lists, images, and video thumbnails with optional direct paste.
 - **Configurable bar** with workspaces, active client, media and Cava, weather, battery, Wi-Fi, Bluetooth, microphone privacy, recording, notifications, clock, and StatusNotifier items.
 
 ### Panels, productivity, and system control
 
 - **Left panel** with Vietnamese lunar calendar, Google Calendar events, local and Google Tasks, timed task indicators, OpenWeather forecasts with GeoClue location detection, synced lyrics, media controls, and countdown timers.
+- A standalone, responsive **SownteeShell Calendar** with week and month views, drag-to-create time ranges, all-day events, event editing, and unified account/calendar filtering.
+- Calendar sync for **Google, Microsoft, and iCloud**, backed by a dedicated Rust daemon with a local SQLite cache, background and manual sync, Secret Service credentials, and critical notifications 30 minutes before events.
 - **Right panel** with notification history, Wi-Fi and Bluetooth management, advanced IPv4/IPv6 profiles, Wi-Fi QR sharing, AirPods L/R/Case battery data, and a PipeWire per-application mixer with peak meters and device routing.
 - **Display control** with drag-and-drop arrangement, orientation, mode, resolution, refresh rate, scale, startup focus, VRR (`Off`, `On`, `On Demand`), internal/external display presets, DDC/CI brightness, and Sunshine output selection.
-- **System telemetry** with battery health and supported charge thresholds, power profiles, `auto-cpufreq`, Arch/AUR updates, live CPU/RAM/GPU charts, grouped process management, and RSS/PSS memory details.
+- **System telemetry** with battery health and supported charge thresholds, power profiles, `auto-cpufreq`, Arch/AUR/Flatpak updates, live CPU/RAM/GPU charts, grouped process management, and RSS/PSS memory details.
 - **Quick controls** for Airplane Mode, Caffeine, DND, night light, power profiles, Tailscale, and Cloudflare WARP, with edge-drag access to both panels.
 
 ### Settings
@@ -86,6 +88,7 @@ After the runtime dependencies are available, launch the project from its root d
 ```
 
 `run-sownteeshell` prepares the native image-cache plugin, configures the local QML import path and allocator behavior, then launches `shell.qml`.
+The Calendar daemon is built when needed and managed by Quickshell rather than enabled as a separate system service.
 
 ## Architecture
 
@@ -96,7 +99,7 @@ StateManager.qml       Cross-surface state and open/close coordination
 widget/                Bar, Dock, panels, desktop, capture, session, and Settings
 components/            Reusable MD3 controls, effects, editors, and popups
 service/               System, media, productivity, capture, and wallpaper services
-backend/               On-demand Rust, Python, and native backends
+backend/               Rust services and on-demand Python/native helpers
 plugin/                Native QML image-cache provider
 scripts/               Shell integrations grouped by capture, connectivity, power, and theme
 ```
@@ -105,7 +108,7 @@ The Niri Settings pages target the include-based configuration used by this setu
 
 ## Dependencies
 
-The main stack includes Niri, `quickshell-git`, Qt 6, PipeWire/WirePlumber, NetworkManager, UPower, Matugen, `wl-clipboard`, `cliphist`, FFmpeg, ImageMagick, and the capture utilities.
+The main stack includes Niri, `quickshell-git`, Qt 6, Rust/Cargo, PipeWire/WirePlumber, NetworkManager, UPower, Matugen, `wl-clipboard`, `cliphist`, FFmpeg, ImageMagick, and the capture utilities.
 
 Optional or hardware-dependent features use Tesseract language data, GeoClue, Cava, `gpu-screen-recorder`, DDC/CI, Steam and `linux-wallpaperengine`, Howdy and V4L2, Tailscale, or Cloudflare WARP. Settings → Advanced → Dependencies reports which integrations are currently available.
 

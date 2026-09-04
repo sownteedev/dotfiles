@@ -15,6 +15,7 @@ Rectangle {
     property string description: ""
     property string endTime: "11:00"
     property string eventId: ""
+    property bool eventReadOnly: false
     property string eventTitle: ""
     property string location: ""
     property bool opened: false
@@ -25,15 +26,25 @@ Rectangle {
     property int selectedYear: 1970
     property string startTime: "10:00"
     readonly property bool timePickerOpen: timePicker.opened
+    readonly property var writableCalendars: buildWritableCalendars()
 
     signal closed
 
-    function calendarName() {
-        for (var i = 0; i < GoogleService.calendars.length; ++i) {
-            if (GoogleService.calendars[i].id === calendarId)
-                return GoogleService.calendars[i].name;
+    function buildWritableCalendars() {
+        var source = CalendarService.calendars || [];
+        var result = [];
+        for (var index = 0; index < source.length; ++index) {
+            if (source[index] && source[index].readOnly !== true)
+                result.push(source[index]);
         }
-        return GoogleService.calendars.length > 0 ? GoogleService.calendars[0].name : "Calendar";
+        return result;
+    }
+    function calendarName() {
+        for (var i = 0; i < CalendarService.calendars.length; ++i) {
+            if (CalendarService.calendars[i].id === calendarId)
+                return CalendarService.calendars[i].name;
+        }
+        return writableCalendars.length > 0 ? writableCalendars[0].name : qsTr("Calendar");
     }
     function close() {
         calendarPopupOpen = false;
@@ -45,6 +56,7 @@ Rectangle {
     }
     function openEvent(event) {
         eventId = event.id || "";
+        eventReadOnly = event.readOnly === true;
         calendarId = event.calendarId || "";
         eventTitle = event.title || "";
         description = event.description || "";
@@ -70,7 +82,8 @@ Rectangle {
     }
     function reset() {
         eventId = "";
-        calendarId = GoogleService.calendars.length > 0 ? GoogleService.calendars[0].id : "";
+        eventReadOnly = false;
+        calendarId = writableCalendars.length > 0 ? writableCalendars[0].id : "";
         eventTitle = "";
         allDay = false;
         startTime = "10:00";
@@ -80,15 +93,15 @@ Rectangle {
         syncTextFields();
     }
     function save() {
-        if (eventTitle.trim() === "")
+        if (eventReadOnly || eventTitle.trim() === "")
             return;
-        if (calendarId === "" && GoogleService.calendars.length > 0)
-            calendarId = GoogleService.calendars[0].id;
+        if (calendarId === "" && writableCalendars.length > 0)
+            calendarId = writableCalendars[0].id;
         var date = selectedYear + "-" + String(selectedMonth + 1).padStart(2, "0") + "-" + String(selectedDay).padStart(2, "0");
         if (eventId !== "") {
-            GoogleService.updateEvent(calendarId, eventId, eventTitle, date, startTime, endTime, allDay, location, description);
+            CalendarService.updateEvent(calendarId, eventId, eventTitle, date, startTime, endTime, allDay, location, description);
         } else {
-            GoogleService.createEvent(calendarId, eventTitle, date, startTime, endTime, allDay, location, description);
+            CalendarService.createEvent(calendarId, eventTitle, date, startTime, endTime, allDay, location, description);
         }
         close();
     }
@@ -326,7 +339,7 @@ Rectangle {
     Rectangle {
         id: saveButton
 
-        readonly property bool ready: root.eventTitle.trim() !== ""
+        readonly property bool ready: !root.eventReadOnly && root.eventTitle.trim() !== "" && root.calendarId !== "" && !CalendarService.eventActionBusy
 
         anchors.bottom: parent.bottom
         anchors.left: parent.left
@@ -359,7 +372,7 @@ Rectangle {
         anchors.fill: parent
         itemActive: calendar => calendar && calendar.id === root.calendarId
         itemLabel: calendar => calendar ? calendar.name : ""
-        model: GoogleService.calendars
+        model: root.writableCalendars
         opened: root.calendarPopupOpen
         popupY: root.calendarPopupY
 

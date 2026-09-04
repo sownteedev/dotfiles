@@ -2894,20 +2894,26 @@ FloatingWindow {
             id: headerContent
 
             Layout.fillWidth: true
-            Layout.preferredHeight: 40 + (root.compactChrome && root.ocrNoticeVisible ? 36 : 0)
+            Layout.preferredHeight: Math.max(40, headerLayout.implicitHeight)
 
-            RowLayout {
-                id: headerRow
+            GridLayout {
+                id: headerLayout
 
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                height: 40
-                spacing: 14
+                columnSpacing: 14
+                columns: root.compactChrome ? 2 : 3
+                rowSpacing: 6
 
                 Text {
                     id: headerTitle
 
+                    Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                    Layout.column: 0
+                    Layout.fillWidth: root.compactChrome
+                    Layout.minimumWidth: 0
+                    Layout.row: 0
                     color: Config.md3.on_surface
                     elide: Text.ElideRight
                     font.family: Config.fontName
@@ -2916,11 +2922,31 @@ FloatingWindow {
                     text: qsTr("Edit screenshot")
                 }
                 Item {
+                    id: headerStatusSlot
+
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.column: root.compactChrome ? 0 : 1
+                    Layout.columnSpan: root.compactChrome ? 2 : 1
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredHeight: root.compactChrome ? 30 : 40
+                    Layout.row: root.compactChrome ? 1 : 0
+                    visible: !root.compactChrome || root.ocrNoticeVisible
+
+                    ScreenshotStatusPill {
+                        anchors.centerIn: parent
+                        detailText: root.ocrNoticeText
+                        error: root.ocrNoticeError
+                        maximumWidth: Math.max(0, parent.width)
+                        shown: root.ocrNoticeVisible
+                    }
                 }
                 RowLayout {
                     id: shortcutActions
 
+                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                    Layout.column: root.compactChrome ? 1 : 2
+                    Layout.row: 0
                     spacing: 7
 
                     ScreenshotShortcutButton {
@@ -2966,21 +2992,11 @@ FloatingWindow {
                     }
                 }
             }
-            ScreenshotStatusPill {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: root.compactChrome ? headerRow.bottom : undefined
-                anchors.topMargin: root.compactChrome ? 6 : 0
-                anchors.verticalCenter: root.compactChrome ? undefined : parent.verticalCenter
-                detailText: root.ocrNoticeText
-                error: root.ocrNoticeError
-                maximumWidth: root.compactChrome ? Math.max(0, headerContent.width - 16) : Math.max(0, headerContent.width - Math.max(headerTitle.implicitWidth, shortcutActions.implicitWidth) * 2 - 32)
-                shown: root.ocrNoticeVisible
-            }
         }
         Item {
             id: editorArea
 
-            Layout.bottomMargin: layersPanel.visible ? layersPanel.height + (root.height < 720 ? 10 : 16) : 0
+            Layout.bottomMargin: layersPanel.visible && !root.layersPanelInline ? layersPanel.height + root.bottomControlSpacing : 0
             Layout.fillHeight: true
             Layout.fillWidth: true
             clip: true

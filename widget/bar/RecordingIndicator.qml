@@ -158,7 +158,7 @@ MouseArea {
                 color: root.stateColor
                 font.family: Config.fontName
                 font.pixelSize: 12
-                font.weight: Font.ExtraBold
+                font.weight: Font.Bold
                 text: CaptureService.recording ? "REC" : CaptureService.recordingStarting ? (CaptureService.recordingCountdownRemaining > 0 ? qsTr("REC in %1").arg(CaptureService.recordingCountdownRemaining) : qsTr("Starting")) : qsTr("Saved")
             }
             Text {

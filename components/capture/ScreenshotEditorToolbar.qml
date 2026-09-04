@@ -270,6 +270,9 @@ Rectangle {
                 Item {
                     id: widthSlider
 
+                    readonly property real targetProgress: Math.max(0, Math.min(1, (root.selectedWidth - 2) / 22))
+                    property real visualProgress: targetProgress
+
                     function updateWidth(mouseX) {
                         var ratio = Math.max(0, Math.min(1, mouseX / width));
                         root.widthSelected(2 + ratio * 22);
@@ -277,6 +280,15 @@ Rectangle {
 
                     Layout.fillWidth: true
                     Layout.preferredHeight: 30
+
+                    Behavior on visualProgress {
+                        enabled: !sliderMouse.pressed
+
+                        NumberAnimation {
+                            duration: 100
+                            easing.type: Easing.OutCubic
+                        }
+                    }
 
                     Rectangle {
                         anchors.left: parent.left
@@ -290,16 +302,7 @@ Rectangle {
                             color: Config.md3.tertiary
                             height: parent.height
                             radius: parent.radius
-                            width: parent.width * Math.max(0, Math.min(1, (root.selectedWidth - 2) / 22))
-
-                            Behavior on width {
-                                enabled: !sliderMouse.pressed
-
-                                NumberAnimation {
-                                    duration: 100
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
+                            width: parent.width * widthSlider.visualProgress
                         }
                     }
                     Rectangle {
@@ -311,19 +314,11 @@ Rectangle {
                         radius: 8
                         scale: sliderMouse.pressed ? 1.18 : 1
                         width: 16
-                        x: Math.max(0, Math.min(parent.width - width, parent.width * (root.selectedWidth - 2) / 22 - width / 2))
+                        x: Math.max(0, Math.min(parent.width - width, parent.width * widthSlider.visualProgress - width / 2))
 
                         Behavior on scale {
                             NumberAnimation {
                                 duration: 100
-                            }
-                        }
-                        Behavior on x {
-                            enabled: !sliderMouse.pressed
-
-                            NumberAnimation {
-                                duration: 100
-                                easing.type: Easing.OutCubic
                             }
                         }
                     }
@@ -352,10 +347,11 @@ Rectangle {
                 visible: root.opacityAvailable && root.selectedTool !== "select"
             }
             ScreenshotOpacitySlider {
-                Layout.minimumWidth: root.narrow ? 90 : root.compact ? 105 : 120
+                Layout.minimumWidth: root.narrow ? 72 : root.compact ? 105 : 120
                 Layout.preferredHeight: 32
-                Layout.preferredWidth: root.narrow ? 105 : root.compact ? 125 : 145
+                Layout.preferredWidth: root.narrow ? 90 : root.compact ? 125 : 145
                 selectedOpacity: root.selectedOpacity
+                showValueLabel: !root.narrow
                 visible: root.opacityAvailable
 
                 onOpacityChangeFinished: root.opacityChangeFinished()

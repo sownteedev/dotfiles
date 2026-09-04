@@ -187,7 +187,7 @@ Item {
             }
             font.letterSpacing: 1.1 * root.visualScale
             font.pixelSize: root.totalMilliseconds >= 3600000 ? 46 : 58
-            font.weight: Font.ExtraBold
+            font.weight: Font.DemiBold
             fontSizeMode: Text.Fit
             height: Math.max(46, Math.round(68 * root.visualScale))
             horizontalAlignment: Text.AlignHCenter

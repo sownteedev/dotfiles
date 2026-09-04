@@ -1,0 +1,82 @@
+#!/bin/sh
+
+set -eu
+
+backend_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+target_dir="$backend_dir/target"
+binary="$target_dir/release/sownteeshell-calendar-daemon"
+manifest="$backend_dir/Cargo.toml"
+lockfile="$backend_dir/Cargo.lock"
+serve_mode=0
+
+if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = "serve" ]; }; then
+    serve_mode=1
+fi
+
+daemon_is_running() {
+    [ "$serve_mode" -eq 1 ] || return 1
+    [ -x "$binary" ] || return 1
+    timeout 1 "$binary" request ping >/dev/null 2>&1
+}
+
+daemon_pid() {
+    [ "$serve_mode" -eq 1 ] || return 1
+    [ -x "$binary" ] || return 1
+    timeout 1 "$binary" request system.info 2>/dev/null \
+        | awk '/"pid"/ { gsub(/[^0-9]/, "", $0); print; exit }'
+}
+
+daemon_uses_current_binary() {
+    pid=$(daemon_pid) || return 1
+    [ -n "$pid" ] || return 1
+    [ -e "/proc/$pid/exe" ] || return 1
+    [ "$binary" -ef "/proc/$pid/exe" ]
+}
+
+stop_stale_daemon() {
+    pid=$(daemon_pid) || return 1
+    [ -n "$pid" ] || return 1
+    kill -TERM "$pid" 2>/dev/null || return 1
+
+    attempts=0
+    while kill -0 "$pid" 2>/dev/null && [ "$attempts" -lt 50 ]; do
+        sleep 0.1
+        attempts=$((attempts + 1))
+    done
+
+    if kill -0 "$pid" 2>/dev/null; then
+        printf '%s\n' "calendar daemon did not stop after its binary was updated" >&2
+        return 1
+    fi
+}
+
+needs_build() {
+    [ ! -x "$binary" ] && return 0
+    [ "$manifest" -nt "$binary" ] && return 0
+    [ "$lockfile" -nt "$binary" ] && return 0
+    find "$backend_dir/src" "$backend_dir/migrations" -type f -newer "$binary" -print -quit | grep -q .
+}
+
+if needs_build; then
+    if ! command -v cargo >/dev/null 2>&1; then
+        printf '%s\n' "calendar daemon needs rebuilding, but cargo is not installed" >&2
+        exit 1
+    fi
+
+    mkdir -p "$target_dir"
+    exec 9>"$target_dir/calendar-daemon-build.lock"
+    flock 9
+    if needs_build; then
+        CARGO_TARGET_DIR="$target_dir" cargo build --release --quiet --manifest-path "$manifest"
+    fi
+    exec 9>&-
+fi
+
+if daemon_is_running; then
+    if daemon_uses_current_binary; then
+        exit 0
+    fi
+    stop_stale_daemon
+fi
+
+exec "$binary" "$@"

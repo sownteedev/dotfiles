@@ -20,6 +20,7 @@ Scope {
     property bool authenticationGranted: false
     readonly property string backdropPath: BackdropService.ready ? BackdropService.activeBackdrop : ""
     readonly property string cacheRoot: Config.cacheRoot
+    property bool cavaConsumerAcquired: false
     readonly property bool clock24h: settingValue("clock24h", true)
     // Time
     property int curH: new Date().getHours()
@@ -55,6 +56,12 @@ Scope {
 
     signal dismissed
 
+    function acquireLockscreenCava() {
+        if (cavaConsumerAcquired)
+            return;
+        CavaService.acquire();
+        cavaConsumerAcquired = true;
+    }
     function clockLabelColor(spotlight) {
         var c1 = root.lockscreenColors.secondaryText;
         var c2 = root.lockscreenColors.primary;
@@ -119,6 +126,12 @@ Scope {
         if (WeatherService.needsRefresh() && !WeatherService.loading)
             WeatherService.fetchWeather();
     }
+    function releaseLockscreenCava() {
+        if (!cavaConsumerAcquired)
+            return;
+        CavaService.release();
+        cavaConsumerAcquired = false;
+    }
     function releaseLockscreenWeather() {
         if (!weatherConsumerAcquired)
             return;
@@ -136,9 +149,11 @@ Scope {
 
     Component.onCompleted: {
         StateManager.sessionLocked = true;
+        acquireLockscreenCava();
         refreshLockscreenWeather();
     }
     Component.onDestruction: {
+        releaseLockscreenCava();
         releaseLockscreenWeather();
         StateManager.sessionLocked = false;
     }
@@ -470,7 +485,7 @@ Scope {
                                     color: root.clockLabelColor(spotlight)
                                     font.family: root.fontName
                                     font.pixelSize: 22 * container.s
-                                    font.weight: Font.ExtraBold
+                                    font.weight: Font.DemiBold
                                     rotation: disp * 180 / Math.PI
                                     scale: 1 + 0.25 * spotlight
                                     text: String(index).padStart(2, '0')
@@ -520,7 +535,7 @@ Scope {
                                     color: root.clockLabelColor(spotlight)
                                     font.family: root.fontName
                                     font.pixelSize: 18 * container.s
-                                    font.weight: Font.ExtraBold
+                                    font.weight: Font.DemiBold
                                     rotation: disp * 180 / Math.PI
                                     scale: 1 + 0.25 * spotlight
                                     text: String(index).padStart(2, '0')
@@ -557,7 +572,7 @@ Scope {
                                     font.family: root.fontName
                                     font.letterSpacing: 2 * container.s
                                     font.pixelSize: 20 * container.s
-                                    font.weight: Font.ExtraBold
+                                    font.weight: Font.DemiBold
                                     text: Qt.formatDate(new Date(), "dd MMMM yyyy").toUpperCase()
                                 }
                                 Rectangle {
@@ -636,7 +651,6 @@ Scope {
                                 id: lockMedia
 
                                 readonly property bool shouldShow: MediaService.playing
-                                property var spectrum: CavaService.bars
 
                                 anchors.verticalCenter: parent.verticalCenter
                                 height: 36 * container.s
@@ -665,7 +679,7 @@ Scope {
                                         ctx.clearRect(0, 0, width, height);
 
                                         var centerY = height * 0.5;
-                                        var bars = lockMedia.spectrum || [];
+                                        var bars = CavaService.bars || [];
                                         var count = bars.length > 0 ? bars.length : 48;
                                         var gap = width / count;
                                         var baseline = Config.alpha(root.lockscreenColors.secondaryText, 0.16);
@@ -702,6 +716,7 @@ Scope {
                                             lockMediaCanvas.requestPaint();
                                         }
 
+                                        enabled: root.cavaConsumerAcquired && lockMedia.visible
                                         target: CavaService
                                     }
                                 }
@@ -1270,7 +1285,7 @@ Scope {
                                 font.family: root.fontName
                                 font.letterSpacing: 5 * container.s
                                 font.pixelSize: 14 * container.s
-                                font.weight: Font.ExtraBold
+                                font.weight: Font.DemiBold
                                 text: root.username.toUpperCase()
                             }
                         }

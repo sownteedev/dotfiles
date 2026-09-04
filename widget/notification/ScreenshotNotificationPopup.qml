@@ -17,7 +17,7 @@ PanelWindow {
     property string body: ""
     property var deferredAction: null
     property int deferredDismissId: -1
-    readonly property bool empty: !active && !visible && !notificationObject && !pendingNotification
+    readonly property bool empty: !active && !visible && !notificationObject && !pendingNotification && deferredAction === null && deferredDismissId < 0
     readonly property int exitAnimationDuration: 260
     property var notificationConnections: null
     property int notificationId: -1
@@ -127,6 +127,10 @@ PanelWindow {
         var matchingSummary = String(notification.summary || "").toLowerCase().indexOf("screenshot captured") !== -1;
         var recentCapture = CaptureService.screenshotCapturedAt > 0 && Date.now() - CaptureService.screenshotCapturedAt < 10000;
         return matchingSummary && (CaptureService.screenshotBusy || recentCapture);
+    }
+    function notifyIdleIfReady() {
+        if (empty)
+            idle();
     }
     function revealToast() {
         pendingShowTimer.stop();
@@ -245,6 +249,7 @@ PanelWindow {
                 NotificationHistory.dismiss(dismissId);
             if (callback)
                 callback();
+            root.notifyIdleIfReady();
         }
     }
     Timer {
@@ -274,7 +279,7 @@ PanelWindow {
                 root.previewPath = "";
                 if (notification)
                     NotificationHistory.releasePopup(notificationId, notification);
-                root.idle();
+                root.notifyIdleIfReady();
             }
         }
     }

@@ -106,6 +106,10 @@ PanelWindow {
         var shellAppId = normalizedAppId(Quickshell.appId || "org.quickshell");
         return normalized === shellAppId || normalized === "org.quickshell" || normalized === "quickshell";
     }
+    function isShellWindowEntryId(entryId) {
+        var normalized = normalizedAppId(entryId);
+        return normalized === "sownteeshell-settings" || normalized === "sownteeshell-calendar";
+    }
     function modelIndexForId(entryId) {
         var id = String(entryId || "");
         for (var i = 0; i < dockModel.count; ++i) {
@@ -180,7 +184,8 @@ PanelWindow {
             for (var windowIndex = 0; windowIndex < windows.length; ++windowIndex) {
                 var windowData = windows[windowIndex];
                 var appId = String(windowData.app_id || "").trim();
-                if (appId === "" || isQuickshellAppId(appId))
+                var shellEntryId = WorkspaceService.shellWindowEntryId(windowData);
+                if ((appId === "" && shellEntryId === "") || !WorkspaceService.showInWorkspaceAndDock(windowData))
                     continue;
 
                 var windowKeys = NotificationHistory.windowKeys(windowData);
@@ -194,24 +199,27 @@ PanelWindow {
                 if (pinnedMatch)
                     continue;
 
-                var entry = desktopEntryForWindow(windowData, availableById);
-                var entryId = String(entry ? entry.id : appId);
+                var entry = shellEntryId === "" ? desktopEntryForWindow(windowData, availableById) : null;
+                var entryId = shellEntryId !== "" ? shellEntryId : String(entry ? entry.id : appId);
                 var modelKey = modelKeyForEntry(entryId);
                 if (seen[modelKey])
                     continue;
                 seen[modelKey] = true;
 
-                var iconName = String(entry && entry.icon || "");
+                var iconName = WorkspaceService.shellWindowIconName(windowData);
+                if (iconName === "")
+                    iconName = String(entry && entry.icon || "");
                 if (iconName === "" && Quickshell.iconPath(appId, true) !== "")
                     iconName = appId;
                 if (iconName === "" && Quickshell.iconPath(appId.toLowerCase(), true) !== "")
                     iconName = appId.toLowerCase();
+                var shellName = WorkspaceService.shellWindowDisplayName(windowData);
                 entries.push({
-                    "appName": String(entry && entry.name || appId || windowData.title || qsTr("Application")),
+                    "appName": shellName !== "" ? shellName : String(entry && entry.name || appId || windowData.title || qsTr("Application")),
                     "entryId": entryId,
                     "iconName": iconName !== "" ? iconName : "application-x-executable",
                     "kind": "app",
-                    "launchable": !!entry,
+                    "launchable": shellEntryId === "" && !!entry,
                     "modelKey": modelKey,
                     "pinned": false
                 });
@@ -353,7 +361,9 @@ PanelWindow {
     }
     function windowsForEntry(entryId, appName) {
         var entryKeys = NotificationHistory.appKeys(entryId, appName);
-        if (entryKeys.length === 0)
+        var shellEntry = normalizedAppId(entryId);
+        var matchShellWindow = isShellWindowEntryId(shellEntry);
+        if (!matchShellWindow && entryKeys.length === 0)
             return [];
 
         var result = [];
@@ -363,7 +373,8 @@ PanelWindow {
             var windows = workspace.windows || [];
             for (var windowIndex = 0; windowIndex < windows.length; ++windowIndex) {
                 var windowData = windows[windowIndex];
-                if (!NotificationHistory.keysIntersect(entryKeys, NotificationHistory.windowKeys(windowData)))
+                var matchesWindow = matchShellWindow ? normalizedAppId(WorkspaceService.shellWindowEntryId(windowData)) === shellEntry : NotificationHistory.keysIntersect(entryKeys, NotificationHistory.windowKeys(windowData));
+                if (!matchesWindow)
                     continue;
                 result.push({
                     "id": String(windowData.id || ""),
@@ -562,6 +573,8 @@ PanelWindow {
                     required property bool launchable
                     required property string modelKey
                     required property bool pinned
+                    readonly property bool settingsWindowEntry: dockWindow.normalizedAppId(entryId) === "sownteeshell-settings"
+                    readonly property bool shellWindowEntry: dockWindow.isShellWindowEntryId(entryId)
                     readonly property int unreadCount: isSeparator ? 0 : NotificationHistory.unreadCountForEntry(entryId, appName)
                     readonly property int windowCount: appWindows.length
 
@@ -637,11 +650,16 @@ PanelWindow {
 
                         IconImage {
                             anchors.centerIn: parent
-                            height: 40
+                            height: appButton.settingsWindowEntry ? 35 : 40
+                            layer.enabled: appButton.shellWindowEntry
                             mipmap: true
                             smooth: true
                             source: Quickshell.iconPath(appButton.iconName || "application-x-executable")
-                            width: 40
+                            width: height
+
+                            layer.effect: ColorOverlay {
+                                color: Config.md3.on_surface
+                            }
                         }
                     }
                     Row {

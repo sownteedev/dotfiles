@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../../"
 
 QtObject {
     id: root
@@ -10,7 +11,7 @@ QtObject {
     property bool available: true
     readonly property bool busy: checking || upgrading
     property Process checkProcess: Process {
-        command: ["sh", "-c", "if ! command -v yay >/dev/null 2>&1; then printf '__YAY_MISSING__\\n'; exit 0; fi\n" + "if command -v checkupdates >/dev/null 2>&1; then\n" + "    repo_updates=$(checkupdates 2>&1); repo_status=$?\n" + "    if [ \"$repo_status\" -eq 2 ]; then repo_updates=''; repo_status=0; fi\n" + "else\n" + "    repo_updates=$(yay -Qu --repo --color never 2>&1); repo_status=$?\n" + "    if [ \"$repo_status\" -eq 1 ] && [ -z \"$repo_updates\" ]; then repo_status=0; fi\n" + "fi\n" + "aur_updates=$(yay -Qua --color never 2>&1); aur_status=$?\n" + "if [ \"$aur_status\" -eq 1 ] && [ -z \"$aur_updates\" ]; then aur_status=0; fi\n" + "if [ \"$repo_status\" -ne 0 ] || [ \"$aur_status\" -ne 0 ]; then printf '__CHECK_FAILED__\\n'; exit 0; fi\n" + "{ printf '%s\\n' \"$repo_updates\"; printf '%s\\n' \"$aur_updates\"; } | awk 'NF && !seen[$1]++'"]
+        command: [Config.quickshellDir + "/scripts/system/package-updates.sh", "check"]
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -34,10 +35,24 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            root.checkTimeout.stop();
             root.checking = false;
             root.lastCheckedAt = Date.now();
-            if (!root.receivedResult && exitCode !== 0)
+            if (!root.receivedResult && exitCode !== 0 && root.error === "")
                 root.error = "Could not check for updates";
+        }
+    }
+    property Timer checkTimeout: Timer {
+        interval: 45 * 1000
+        repeat: false
+
+        onTriggered: {
+            if (!root.checking)
+                return;
+            root.checkProcess.running = false;
+            root.checking = false;
+            root.lastCheckedAt = Date.now();
+            root.error = "Update check timed out";
         }
     }
     property bool checking: false
@@ -154,6 +169,7 @@ QtObject {
         receivedResult = false;
         error = "";
         checkProcess.running = false;
+        checkTimeout.restart();
         checkProcess.running = true;
     }
     function shellQuote(value) {
@@ -170,7 +186,7 @@ QtObject {
         upgradeTerminalExited = false;
         upgrading = true;
         error = "";
-        var upgradeCommand = "result_file=" + shellQuote(activeUpgradeResultPath) + "; printf 'started\\n' > \"$result_file\"; " + "print -r -- 'Authenticate once to update repository and AUR packages…'; print; " + "/usr/bin/sudo -v; result=$?; " + "if [ $result -eq 0 ]; then " + "/usr/bin/yay --sudo /usr/bin/sudo --sudoloop -Syu --noconfirm " + "--answerclean None --answerdiff None --answeredit None; result=$?; fi; " + "printf '%s\\n' \"$result\" > \"$result_file\"; " + "print; " + "if [ $result -eq 0 ]; then print -r -- 'Upgrade complete.'; " + "else print -r -- \"Upgrade failed (exit $result).\"; fi; " + "print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
+        var upgradeCommand = "exec " + shellQuote(Config.quickshellDir + "/scripts/system/package-updates.sh") + " upgrade " + shellQuote(activeUpgradeResultPath);
         var terminalCommand = "exec /usr/bin/zsh -c " + shellQuote(upgradeCommand);
         upgradeTerminal.command = ["blackbox-terminal", "--command", terminalCommand];
         upgradeTerminal.running = true;

@@ -26,6 +26,7 @@ ShellRoot {
     id: root
 
     readonly property bool batteryPolicyReady: BatteryService.policyReady
+    readonly property bool calendarDaemonReady: CalendarService.ready
     property var lazyOpenRequests: ({})
     readonly property bool profileImageSyncBusy: ProfileImageService.busy
 
@@ -118,6 +119,7 @@ ShellRoot {
         DisplayHotplugService.start();
         StateManager.controlPanelLoader = controlRightLoader;
         StateManager.controlLeftPanelLoader = controlLeftLoader;
+        StateManager.calendarAppLoader = calendarAppLoader;
         StateManager.lockscreenLoader = lockscreenLoader;
         StateManager.settingsHubLoader = settingsHubLoader;
     }
@@ -126,6 +128,8 @@ ShellRoot {
             StateManager.controlPanelLoader = null;
         if (StateManager.controlLeftPanelLoader === controlLeftLoader)
             StateManager.controlLeftPanelLoader = null;
+        if (StateManager.calendarAppLoader === calendarAppLoader)
+            StateManager.calendarAppLoader = null;
         if (StateManager.lockscreenLoader === lockscreenLoader)
             StateManager.lockscreenLoader = null;
         if (StateManager.settingsHubLoader === settingsHubLoader)
@@ -421,6 +425,13 @@ ShellRoot {
         source: Qt.resolvedUrl("widget/control/right/ControlRight.qml")
     }
     LazyLoader {
+        id: calendarAppLoader
+
+        active: false
+        objectName: "calendarAppLoader"
+        source: Qt.resolvedUrl("widget/calendar/CalendarApp.qml")
+    }
+    LazyLoader {
         id: settingsHubLoader
 
         active: false
@@ -477,6 +488,13 @@ ShellRoot {
         }
 
         target: controlRightLoader.item
+    }
+    Connections {
+        function onDismissed() {
+            root.scheduleLazyUnload(calendarAppLoader, target);
+        }
+
+        target: calendarAppLoader.item
     }
     Connections {
         function onDismissed() {
@@ -599,6 +617,30 @@ ShellRoot {
         }
 
         target: "launcher"
+    }
+    IpcHandler {
+        function hide() {
+            root.hideLazyWindow(calendarAppLoader, "closeCalendar");
+        }
+        function show() {
+            root.showLazyWindow(calendarAppLoader, "openCalendar");
+        }
+        function status(): string {
+            return JSON.stringify({
+                "active": calendarAppLoader.active,
+                "loading": calendarAppLoader.loading,
+                "hasItem": calendarAppLoader.item !== null,
+                "visible": calendarAppLoader.item ? calendarAppLoader.item.visible : false,
+                "open": calendarAppLoader.item ? calendarAppLoader.item.active : false
+            });
+        }
+        function toggle() {
+            root.toggleLazyWindow(calendarAppLoader, "openCalendar", "closeCalendar", item => {
+                return item.visible && item.active;
+            });
+        }
+
+        target: "calendar"
     }
     IpcHandler {
         function hide() {

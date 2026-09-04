@@ -7,7 +7,7 @@ domain:
 backend/
 ├── native/                 # Small C++ helpers using Qt/native APIs
 ├── python/                 # On-demand system, API, and file-processing jobs
-└── rust/                   # Long-running or performance-sensitive workers
+└── rust/                   # Long-running or performance-sensitive workers, Calendar
 ```
 
 Python backends use `snake_case.py` names that describe the capability they

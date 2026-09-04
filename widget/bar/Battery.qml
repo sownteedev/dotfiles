@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Shapes
+import QtQuick.Window
 import Quickshell.Services.UPower
 import Quickshell.Widgets
 import "../../"
@@ -17,7 +18,7 @@ Item {
         // UPower reports a full battery as FullyCharged while AC remains connected.
         return state === UPowerDeviceState.Charging || state === UPowerDeviceState.PendingCharge || (state === UPowerDeviceState.FullyCharged && !UPower.onBattery);
     }
-    readonly property bool animationActive: visible && externalPower
+    readonly property bool animationActive: onScreen && externalPower && !Config.shellLowPowerMode
     property int animationElapsed: 0
     readonly property color batteryColor: externalPower ? Config.md3.secondary : boundedPercentage <= 33 ? "#e05c5c" : boundedPercentage <= 66 ? "#e0a040" : '#91f08b'
     readonly property int batteryPercentage: UPower.displayDevice ? Math.round(UPower.displayDevice.percentage * 100) : 0
@@ -25,9 +26,10 @@ Item {
     readonly property color bubbleColor: Qt.lighter(batteryColor, 1.38)
     readonly property bool externalPower: UPower.displayDevice && (!UPower.onBattery || activelyCharging || UPower.displayDevice.state === UPowerDeviceState.FullyCharged)
     readonly property color fillForeground: externalPower ? Config.md3.on_secondary : "#ffffff"
+    readonly property bool onScreen: visible && (Window.window?.visible ?? false)
     readonly property color outlineColor: Config.alpha(batteryColor, 0.92)
     property bool showReadout: true
-    readonly property bool waveAnimationActive: visible && boundedPercentage > 0 && boundedPercentage < 100
+    readonly property bool waveAnimationActive: onScreen && boundedPercentage > 0 && boundedPercentage < 100 && !Config.shellLowPowerMode
 
     Accessible.name: activelyCharging ? qsTr("Battery at %1%, charging").arg(boundedPercentage) : externalPower ? qsTr("Battery at %1%, plugged in").arg(boundedPercentage) : qsTr("Battery at %1%").arg(boundedPercentage)
     Accessible.role: Accessible.StaticText
@@ -340,7 +342,7 @@ Item {
         color: foreground
         font.family: Config.fontName
         font.pixelSize: 9
-        font.weight: Font.ExtraBold
+        font.weight: Font.DemiBold
         horizontalAlignment: Text.AlignHCenter
         renderType: Text.NativeRendering
         text: (root.activelyCharging ? "⚡" : "") + root.boundedPercentage.toString()

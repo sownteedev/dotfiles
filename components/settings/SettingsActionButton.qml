@@ -1,8 +1,9 @@
 import "../../"
+import Qt5Compat.GraphicalEffects
 import QtQuick
+import QtQuick.Controls.Basic
 import Quickshell
 import Quickshell.Widgets
-import Qt5Compat.GraphicalEffects
 
 Rectangle {
     id: root
@@ -78,28 +79,6 @@ Rectangle {
             visible: !root.iconOnly && text !== ""
         }
     }
-    Rectangle {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.bottom
-        anchors.topMargin: 7
-        color: Config.md3.surface_container_high
-        height: 30
-        radius: 9
-        visible: root.iconOnly && mouse.containsMouse && root.text !== ""
-        width: tooltipText.implicitWidth + 18
-        z: 20
-
-        Text {
-            id: tooltipText
-
-            anchors.centerIn: parent
-            color: Config.md3.on_surface
-            font.family: Config.fontName
-            font.pixelSize: 12
-            font.weight: Font.Medium
-            text: root.text
-        }
-    }
     MouseArea {
         id: mouse
 
@@ -111,6 +90,34 @@ Rectangle {
         onClicked: {
             root.forceActiveFocus();
             root.clicked();
+        }
+    }
+    ToolTip {
+        id: actionToolTip
+
+        bottomPadding: 8
+        delay: 320
+        leftPadding: 11
+        margins: 8
+        popupType: Popup.Item
+        rightPadding: 11
+        text: root.text
+        timeout: 3200
+        topPadding: 8
+        visible: root.iconOnly && mouse.containsMouse && root.text !== ""
+        x: Math.round((root.width - width) / 2)
+        y: root.height + 7
+
+        background: Rectangle {
+            color: Config.md3.surface_container_highest
+            radius: 10
+        }
+        contentItem: Text {
+            color: Config.md3.on_surface
+            font.family: Config.fontName
+            font.pixelSize: 12
+            font.weight: Font.Medium
+            text: actionToolTip.text
         }
     }
 }

@@ -139,7 +139,7 @@ Popup {
                         color: !root._selectingMinute ? Config.md3.on_primary_container : Config.alpha(Config.md3.on_surface, 0.66)
                         font.family: Config.fontName
                         font.pixelSize: 28
-                        font.weight: Font.ExtraBold
+                        font.weight: Font.DemiBold
                         text: String(root._hour).padStart(2, "0")
 
                         Behavior on color {
@@ -160,7 +160,7 @@ Popup {
                     color: Config.alpha(Config.md3.on_surface, 0.62)
                     font.family: Config.fontName
                     font.pixelSize: 26
-                    font.weight: Font.ExtraBold
+                    font.weight: Font.DemiBold
                     text: ":"
                 }
                 Rectangle {
@@ -182,7 +182,7 @@ Popup {
                         color: root._selectingMinute ? Config.md3.on_primary_container : Config.alpha(Config.md3.on_surface, 0.66)
                         font.family: Config.fontName
                         font.pixelSize: 28
-                        font.weight: Font.ExtraBold
+                        font.weight: Font.DemiBold
                         text: String(root._minute).padStart(2, "0")
 
                         Behavior on color {
@@ -314,7 +314,7 @@ Popup {
                             color: isSelected ? Config.md3.on_primary : (isInner ? Config.alpha(Config.md3.on_surface, 0.46) : Config.alpha(Config.md3.on_surface, 0.86))
                             font.family: Config.fontName
                             font.pixelSize: isInner ? 12 : 14
-                            font.weight: isSelected ? Font.ExtraBold : Font.DemiBold
+                            font.weight: isSelected ? Font.DemiBold : Font.DemiBold
                             text: displayVal === 0 ? "00" : String(displayVal)
 
                             Behavior on color {

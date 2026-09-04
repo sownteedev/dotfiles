@@ -147,6 +147,11 @@ QtObject {
                 root.selectOverviewWindow(movedWindowMatch[1]);
         }
     }
+    function isQuickshellWindow(windowData) {
+        var appId = String(windowData && windowData.app_id || "").trim().toLowerCase();
+        var shellAppId = String(Quickshell.appId || "org.quickshell").trim().toLowerCase();
+        return appId === shellAppId || appId === "org.quickshell" || appId === "quickshell";
+    }
     function layoutPositionIsValid(position) {
         if (!position || position.length < 2 || position[0] === null || position[0] === undefined || position[1] === null || position[1] === undefined)
             return false;
@@ -423,6 +428,37 @@ QtObject {
                 return;
             }
         }
+    }
+    function shellWindowDisplayName(windowData) {
+        var kind = shellWindowKind(windowData);
+        if (kind === "settings")
+            return qsTr("SownteeShell Settings");
+        if (kind === "calendar")
+            return qsTr("SownteeShell Calendar");
+        return "";
+    }
+    function shellWindowEntryId(windowData) {
+        var kind = shellWindowKind(windowData);
+        return kind === "" ? "" : "sownteeshell-" + kind;
+    }
+    function shellWindowIconName(windowData) {
+        var kind = shellWindowKind(windowData);
+        if (kind === "settings")
+            return "preferences-system-symbolic";
+        if (kind === "calendar")
+            return "x-office-calendar-symbolic";
+        return "";
+    }
+    function shellWindowKind(windowData) {
+        var title = String(windowData && windowData.title || "").trim().toLowerCase();
+        if (title === "sownteeshell settings")
+            return "settings";
+        if (title === "sownteeshell calendar")
+            return "calendar";
+        return "";
+    }
+    function showInWorkspaceAndDock(windowData) {
+        return !isQuickshellWindow(windowData) || shellWindowKind(windowData) !== "";
     }
     function windowLayoutCoordinate(window, field, index) {
         var layout = window && window.layout;

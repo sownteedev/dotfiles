@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
@@ -10,12 +11,30 @@ Item {
     id: root
 
     readonly property var activePlayer: MediaService.activePlayer
+    property bool cavaConsumerAcquired: false
+    readonly property bool cavaConsumerActive: hasMedia && onScreen
+    property bool componentReady: false
     readonly property string description: MediaService.artist
     readonly property bool hasMedia: activePlayer !== null && activePlayer.trackTitle && activePlayer.trackTitle !== ""
-    readonly property bool idleAnimating: !hasMedia && visible && !Config.shellReducedMotion
+    readonly property bool idleAnimating: !hasMedia && onScreen && !Config.shellReducedMotion && !Config.shellLowPowerMode
     property real maximumWidth: 350
+    readonly property bool onScreen: visible && (Window.window?.visible ?? false)
     readonly property bool playing: MediaService.playing
     readonly property string title: MediaService.title
+
+    function syncCavaConsumer() {
+        if (!componentReady || cavaConsumerActive === cavaConsumerAcquired)
+            return;
+
+        if (cavaConsumerActive)
+            CavaService.acquire();
+        else
+            CavaService.release();
+        cavaConsumerAcquired = cavaConsumerActive;
+
+        if (cavaConsumerActive)
+            visualizerCanvas.requestPaint();
+    }
 
     implicitHeight: 46
     implicitWidth: hasMedia ? Math.max(90, Math.min(350, maximumWidth)) : Math.max(90, Math.min(220, maximumWidth))
@@ -29,6 +48,19 @@ Item {
             easing.type: Easing.OutCubic
         }
     }
+
+    Component.onCompleted: {
+        componentReady = true;
+        syncCavaConsumer();
+    }
+    Component.onDestruction: {
+        componentReady = false;
+        if (cavaConsumerAcquired) {
+            CavaService.release();
+            cavaConsumerAcquired = false;
+        }
+    }
+    onCavaConsumerActiveChanged: syncCavaConsumer()
 
     RowLayout {
         id: playerContent
@@ -59,8 +91,6 @@ Item {
         Item {
             id: artwork
 
-            property var spectrum: CavaService.bars
-
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: 46
             Layout.preferredWidth: 46
@@ -87,7 +117,7 @@ Item {
                     var ctx = getContext("2d");
                     ctx.clearRect(0, 0, width, height);
 
-                    var bars = artwork.spectrum;
+                    var bars = CavaService.bars;
                     var numBars = bars.length;
                     if (!bars || numBars === 0)
                         return;
@@ -157,6 +187,7 @@ Item {
                         visualizerCanvas.requestPaint();
                     }
 
+                    enabled: root.cavaConsumerActive
                     target: CavaService
                 }
             }
@@ -241,7 +272,7 @@ Item {
                         color: Config.md3.on_surface
                         font.family: Config.fontName
                         font.pixelSize: 14
-                        font.weight: Font.ExtraBold
+                        font.weight: Font.DemiBold
                         text: "▶"
                         visible: !playbackIcon.playing
                     }
@@ -355,7 +386,7 @@ Item {
                             color: Config.md3.on_error
                             font.family: Config.fontName
                             font.pixelSize: 8
-                            font.weight: Font.ExtraBold
+                            font.weight: Font.DemiBold
                             text: "LIVE"
                         }
                     }

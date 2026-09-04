@@ -6,6 +6,22 @@ import "service"
 QtObject {
     id: root
 
+    property var calendarAppLoader: null
+    property Connections calendarAppLoaderConnections: Connections {
+        function onActiveChanged() {
+            root.syncCalendarAppLoader();
+        }
+        function onItemChanged() {
+            root.syncCalendarAppLoader();
+        }
+        function onLoadingChanged() {
+            if (target && !target.loading && !target.active)
+                root.calendarAppOpenPending = false;
+        }
+
+        target: root.calendarAppLoader
+    }
+    property bool calendarAppOpenPending: false
     property Connections controlLeftLoaderConnections: Connections {
         function onActiveChanged() {
             root.syncControlLeftLoader();
@@ -168,6 +184,10 @@ QtObject {
             rightEdgeCompletionPending = true;
         }
     }
+    function hideCalendarApp() {
+        if (calendarAppLoader && calendarAppLoader.active && calendarAppLoader.item)
+            calendarAppLoader.item.closeCalendar();
+    }
     function hideSettingsHub() {
         if (settingsHubLoader && settingsHubLoader.active && settingsHubLoader.item)
             settingsHubLoader.item.closeSettings();
@@ -206,6 +226,16 @@ QtObject {
         }
         return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
     }
+    function showCalendarApp() {
+        if (!calendarAppLoader)
+            return;
+        if (calendarAppLoader.active && calendarAppLoader.item) {
+            calendarAppLoader.item.openCalendar();
+            return;
+        }
+        calendarAppOpenPending = true;
+        calendarAppLoader.loading = true;
+    }
     function showControlPanel(tab, screen) {
         if (!controlPanelLoader)
             return;
@@ -228,6 +258,13 @@ QtObject {
         }
         settingsHubOpenPending = true;
         settingsHubLoader.loading = true;
+    }
+    function syncCalendarAppLoader() {
+        if (!calendarAppLoader || !calendarAppLoader.active || !calendarAppOpenPending || !calendarAppLoader.item)
+            return;
+
+        calendarAppOpenPending = false;
+        calendarAppLoader.item.openCalendar();
     }
     function syncControlLeftLoader() {
         if (!controlLeftPanelLoader || !controlLeftPanelLoader.active || !controlLeftPanelLoader.item)
@@ -284,6 +321,13 @@ QtObject {
 
         settingsHubOpenPending = false;
         settingsHubLoader.item.openSettings();
+    }
+    function toggleCalendarApp() {
+        if (calendarAppLoader && calendarAppLoader.active && calendarAppLoader.item && calendarAppLoader.item.active) {
+            calendarAppLoader.item.closeCalendar();
+            return;
+        }
+        showCalendarApp();
     }
     function toggleControlLeftPanel(screen) {
         if (!controlLeftPanelLoader)

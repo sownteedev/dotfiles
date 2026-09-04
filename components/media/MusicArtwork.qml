@@ -1,6 +1,7 @@
 import "../../"
 import "../../service"
 import QtQuick
+import QtQuick.Window
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Io
@@ -8,12 +9,30 @@ import Quickshell.Io
 Item {
     id: root
 
+    property bool cavaConsumerAcquired: false
+    readonly property bool cavaConsumerActive: player !== null && onScreen
+    property bool componentReady: false
+    readonly property bool onScreen: visible && (Window.window?.visible ?? false)
     property var player: null
     readonly property bool playing: MediaService.playing
     property real vinylSize: Math.max(10, Math.min(root.width, root.height) - (CavaService.available ? visualizerPadding : 0))
 
     // Calculate sizes to leave room for visualizer
     readonly property real visualizerPadding: 80
+
+    function syncCavaConsumer() {
+        if (!componentReady || cavaConsumerActive === cavaConsumerAcquired)
+            return;
+
+        if (cavaConsumerActive)
+            CavaService.acquire();
+        else
+            CavaService.release();
+        cavaConsumerAcquired = cavaConsumerActive;
+
+        if (cavaConsumerActive)
+            visualizerCanvas.requestPaint();
+    }
 
     implicitHeight: 190
     implicitWidth: 250
@@ -24,6 +43,19 @@ Item {
             easing.type: Easing.OutCubic
         }
     }
+
+    Component.onCompleted: {
+        componentReady = true;
+        syncCavaConsumer();
+    }
+    Component.onDestruction: {
+        componentReady = false;
+        if (cavaConsumerAcquired) {
+            CavaService.release();
+            cavaConsumerAcquired = false;
+        }
+    }
+    onCavaConsumerActiveChanged: syncCavaConsumer()
 
     // Visualizer Ring — reads from shared CavaService (no local cava process)
     Item {
@@ -117,6 +149,7 @@ Item {
                     visualizerCanvas.requestPaint();
                 }
 
+                enabled: root.cavaConsumerActive
                 target: CavaService
             }
         }
@@ -139,7 +172,7 @@ Item {
             duration: 8000
             from: 0
             loops: Animation.Infinite
-            running: root.playing
+            running: root.playing && root.onScreen && !Config.shellLowPowerMode && !Config.shellReducedMotion
             to: 360
         }
 

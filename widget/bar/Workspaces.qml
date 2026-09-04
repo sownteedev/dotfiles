@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
@@ -51,10 +52,13 @@ RowLayout {
         var entry = DesktopEntries.byId(appId) || DesktopEntries.heuristicLookup(appId);
         return entry ? entry.name : appId;
     }
-    function isQuickshellWindow(windowData) {
-        var appId = String(windowData && windowData.app_id || "").toLowerCase();
-        var shellAppId = String(Quickshell.appId || "org.quickshell").toLowerCase();
-        return appId === shellAppId || appId === "org.quickshell" || appId === "quickshell";
+    function getWindowIcon(windowData) {
+        var shellIcon = WorkspaceService.shellWindowIconName(windowData);
+        return shellIcon !== "" ? Quickshell.iconPath(shellIcon) : getAppIcon(windowData && windowData.app_id);
+    }
+    function getWindowName(windowData) {
+        var shellName = WorkspaceService.shellWindowDisplayName(windowData);
+        return shellName !== "" ? shellName : getAppName(windowData && windowData.app_id);
     }
     function removeWorkspaceModelEntry(workspaceId) {
         for (var index = 0; index < workspaceModel.count; index++) {
@@ -113,7 +117,7 @@ RowLayout {
         var source = windows || [];
         var visibleWindows = [];
         for (var index = 0; index < source.length; index++) {
-            if (!root.isQuickshellWindow(source[index]))
+            if (WorkspaceService.showInWorkspaceAndDock(source[index]))
                 visibleWindows.push(source[index]);
         }
         return visibleWindows;
@@ -303,6 +307,9 @@ RowLayout {
                         delegate: Item {
                             id: winIconItem
 
+                            readonly property bool shellWindow: shellWindowKind !== ""
+                            readonly property string shellWindowKind: WorkspaceService.shellWindowKind(modelData)
+
                             implicitHeight: 22
                             implicitWidth: winIconLayout.implicitWidth
                             z: winIconMouseArea.drag.active ? 9999 : 1
@@ -417,14 +424,18 @@ RowLayout {
                                 }
 
                                 IconImage {
-                                    height: root.compact ? 22 : 25
+                                    height: winIconItem.shellWindowKind === "settings" ? (root.compact ? 19 : 21) : (root.compact ? 22 : 25)
+                                    layer.enabled: winIconItem.shellWindow
                                     scale: (winIconMouseArea.containsMouse && !winIconMouseArea.drag.active) ? 1.15 : 1.0
                                     source: {
                                         root.desktopEntriesRevision;
-                                        return root.getAppIcon(modelData.app_id);
+                                        return root.getWindowIcon(modelData);
                                     }
-                                    width: root.compact ? 22 : 25
+                                    width: height
 
+                                    layer.effect: ColorOverlay {
+                                        color: Config.md3.on_surface
+                                    }
                                     Behavior on scale {
                                         NumberAnimation {
                                             duration: 150
@@ -463,7 +474,7 @@ RowLayout {
                                         font.weight: Font.Medium
                                         text: {
                                             root.desktopEntriesRevision;
-                                            return modelData.app_id ? root.getAppName(modelData.app_id) : "";
+                                            return root.getWindowName(modelData);
                                         }
                                         width: Math.min(implicitWidth, root.compact ? 86 : 150)
                                     }
