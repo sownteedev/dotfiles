@@ -1,6 +1,8 @@
 layout {
     gaps 10.0
 	background-color "transparent"
+	// Color values below are fallbacks. Matugen overrides them through
+	// ~/.cache/matugen/niri-colors.kdl when a shell theme is generated.
 
     center-focused-column "never"
 	always-center-single-column

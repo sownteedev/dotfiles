@@ -13,6 +13,10 @@ cyan = "#44ffff"
 input_path = '~/Dotfiles/dotf/.config/matugen/templates/quickshell/color.json'
 output_path = '~/Dotfiles/sownteeshell/colors.json'
 
+[templates.niri]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/niri/colors.kdl'
+output_path = '~/.cache/matugen/niri-colors.kdl'
+
 [templates.gtk4]
 input_path = "~/Dotfiles/dotf/.config/matugen/templates/gtk-4.0/colors.css"
 output_path = "~/.config/gtk-4.0/colors.css"

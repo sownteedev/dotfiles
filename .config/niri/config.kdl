@@ -1,6 +1,7 @@
 include "include/outputs.kdl" optional=true
 include "include/input.kdl" optional=true
 include "include/layout.kdl" optional=true
+include "~/.cache/matugen/niri-colors.kdl" optional=true
 include "include/animations.kdl" optional=true
 include "include/keybinds.kdl" optional=true
 include "include/autostart.kdl" optional=true
