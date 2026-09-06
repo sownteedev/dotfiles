@@ -3,7 +3,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 readonly DOTFILES_DIR="$HOME/Dotfiles/dotf"
-readonly QUICKSHELL_DIR="$HOME/Dotfiles/sownteeshell"
+readonly SOWNTEESHELL_DIR="$HOME/Dotfiles/sownteeshell"
 readonly INSTALLER_DRY_RUN="${INSTALLER_DRY_RUN:-0}"
 
 # Output helpers
@@ -108,7 +108,7 @@ has_display_gpu_vendor() {
     return 1
 }
 
-# Quickshell runtime and optional features
+# SownteeShell runtime and optional features
 install_shell_runtime() {
     local -a packages=(
         niri xwayland-satellite quickshell-git qt6-connectivity qt6-multimedia qt6-positioning
@@ -117,7 +117,7 @@ install_shell_runtime() {
         python-gobject xdg-desktop-portal xdg-desktop-portal-gtk
         slurp wl-clipboard wtype hyprpicker gpu-screen-recorder ffmpeg imagemagick
         mesa libva-utils
-        jq pciutils ddcutil matugen-bin
+        jq pciutils ddcutil matugen-bin rustup
     )
     if has_display_gpu_vendor "0x8086"; then
         packages+=(intel-media-driver libva-intel-driver)
@@ -125,9 +125,64 @@ install_shell_runtime() {
     else
         blue_echo "[*] No Intel GPU detected; skipping Intel-only media drivers."
     fi
-    red_echo "[*] Installing required Quickshell runtime packages ..."
+    red_echo "[*] Installing required SownteeShell runtime packages ..."
     run_yay "${packages[@]}"
     configure_ddc_brightness
+}
+
+install_shell_daemons() {
+    local backend_root="$SOWNTEESHELL_DIR/backend"
+    local core_manifest="$backend_root/rust/core-daemon/Cargo.toml"
+    local core_target="$backend_root/rust/core-daemon/target"
+    local core_binary="$core_target/release/sownteeshell-core"
+    local calendar_manifest="$backend_root/rust/calendar-daemon/Cargo.toml"
+    local calendar_target="$backend_root/rust/calendar-daemon/target"
+    local calendar_binary="$calendar_target/release/sownteeshell-calendar-daemon"
+    local binary_dir="$HOME/.local/lib/sownteeshell"
+    local source=""
+    local unit_source="$backend_root/systemd/user"
+    local unit_dir="$HOME/.config/systemd/user"
+    local -a units=(sownteeshell-core.service sownteeshell-calendar.service)
+
+    for source in "$core_manifest" "$calendar_manifest" \
+        "$unit_source/${units[0]}" "$unit_source/${units[1]}"; do
+        if [ ! -f "$source" ]; then
+            red_echo "[!] SownteeShell daemon source is missing: $source"
+            return 1
+        fi
+    done
+
+    if [ "$INSTALLER_DRY_RUN" = "1" ]; then
+        printf '[dry-run] build SownteeShell core and calendar daemons with Cargo\n'
+        printf '[dry-run] install daemon binaries under %q\n' "$binary_dir"
+        printf '[dry-run] install and enable user units under %q\n' "$unit_dir"
+        return 0
+    fi
+
+    if command -v rustup >/dev/null 2>&1; then
+        rustup default stable
+    fi
+    if ! command -v cargo >/dev/null 2>&1; then
+        red_echo "[!] Cargo is required to build the SownteeShell daemons."
+        return 1
+    fi
+
+    CARGO_TARGET_DIR="$core_target" cargo build --release --locked --manifest-path "$core_manifest"
+    CARGO_TARGET_DIR="$calendar_target" cargo build --release --locked --manifest-path "$calendar_manifest"
+    install -Dm755 "$core_binary" "$binary_dir/sownteeshell-core"
+    install -Dm755 "$calendar_binary" "$binary_dir/sownteeshell-calendar-daemon"
+    safe_copy "$unit_source/${units[0]}" "$unit_dir/${units[0]}"
+    safe_copy "$unit_source/${units[1]}" "$unit_dir/${units[1]}"
+
+    systemctl --user enable "${units[@]}"
+    if systemctl --user show-environment >/dev/null 2>&1; then
+        systemctl --user daemon-reload
+        systemctl --user reset-failed "${units[@]}"
+        systemctl --user restart "${units[@]}"
+        green_echo "[*] SownteeShell user daemons are enabled and running."
+    else
+        blue_echo "[*] SownteeShell user daemons are enabled and will start with the next graphical session."
+    fi
 }
 
 configure_ddc_brightness() {
@@ -164,7 +219,7 @@ prepare_wallpaper_engine_stack() {
         green_echo "[*] Wallpaper Engine assets detected."
     else
         blue_echo "[*] Wallpaper Engine packages are ready. Open Steam, sign in, then install Wallpaper Engine once to download its assets and subscribed wallpapers."
-        blue_echo "[*] Quickshell expects assets at: $assets_root"
+        blue_echo "[*] SownteeShell expects assets at: $assets_root"
     fi
 }
 
@@ -175,16 +230,21 @@ install_shell_features() {
         tailscale cloudflare-warp-bin
         howdy-git v4l-utils
     )
-    red_echo "[*] Installing optional Quickshell features ..."
+    red_echo "[*] Installing optional SownteeShell features ..."
     run_yay "${packages[@]}"
     prepare_wallpaper_engine_stack
 
     if [ "$INSTALLER_DRY_RUN" = "1" ]; then
-        printf '[dry-run] install howdy-face-manager -> /usr/lib/quickshell/howdy-face-manager\n'
+        printf '[dry-run] install howdy-face-manager -> /usr/lib/sownteeshell/howdy-face-manager\n'
         return 0
     fi
     if command -v howdy >/dev/null 2>&1; then
-        sudo install -Dm755 "$QUICKSHELL_DIR/backend/python/auth/howdy_face_manager.py" /usr/lib/quickshell/howdy-face-manager
+        sudo install -Dm755 "$SOWNTEESHELL_DIR/backend/python/auth/howdy_face_manager.py" /usr/lib/sownteeshell/howdy-face-manager
+        if [ -f /etc/pam.d/quickshell ]; then
+            if ! sudo /usr/lib/sownteeshell/howdy-face-manager migrate-pam; then
+                red_echo "[!] Could not migrate the legacy Quickshell PAM service; face unlock will keep using its compatibility fallback."
+            fi
+        fi
     else
         red_echo "[!] Howdy is not installed; skipping the Settings bridge."
     fi
@@ -323,15 +383,16 @@ install_shell_environment() {
     safe_link "$DOTFILES_DIR/.config/niri" "$HOME/.config/niri"
     clear
 
-    red_echo "[*] Installing Quickshell ..."
-    if [ -d "$QUICKSHELL_DIR/.git" ]; then
-        git -C "$QUICKSHELL_DIR" pull --ff-only
-    elif [ -e "$QUICKSHELL_DIR" ]; then
-        red_echo "[!] $QUICKSHELL_DIR exists but is not a Git checkout; refusing to replace it."
+    red_echo "[*] Installing SownteeShell ..."
+    if [ -d "$SOWNTEESHELL_DIR/.git" ]; then
+        git -C "$SOWNTEESHELL_DIR" pull --ff-only
+    elif [ -e "$SOWNTEESHELL_DIR" ]; then
+        red_echo "[!] $SOWNTEESHELL_DIR exists but is not a Git checkout; refusing to replace it."
         return 1
     else
-        git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=sownteeshell "$QUICKSHELL_DIR"
+        git clone https://github.com/sownteedev/dotfiles.git --depth=1 --branch=sownteeshell "$SOWNTEESHELL_DIR"
     fi
+    install_shell_daemons
     green_echo "[*] Done."
 
     sleep 3 && clear
@@ -415,17 +476,18 @@ enable_greetd_display_manager() {
 
 install_greetd() {
     local greetd_pam_source="$DOTFILES_DIR/.root/greetd/pam/greetd"
-    local greeter_source="$QUICKSHELL_DIR/widget/greeter"
-    local greeter_install_dir="/usr/share/quickshell-greeter"
-    local greeter_theme_dir="/var/lib/quickshell-greeter"
+    local greeter_source="$SOWNTEESHELL_DIR/widget/greeter"
+    local greeter_install_dir="/usr/share/sownteeshell/greeter"
+    local greeter_theme_dir="/var/lib/sownteeshell/greeter"
+    local legacy_greeter_theme_dir="/var/lib/quickshell-greeter"
     local greeter_theme_file="$greeter_theme_dir/colors.json"
     local greeter_background_file="$greeter_theme_dir/background.json"
     local greeter_profile_file="$greeter_theme_dir/profile.json"
     local greeter_settings_file="$greeter_theme_dir/settings.json"
     local greeter_runtime_dir="$greeter_theme_dir/runtime"
-    local greeter_core_binary="/usr/lib/quickshell-greeter/sownteeshell-core"
-    local core_manifest="$QUICKSHELL_DIR/backend/rust/core-daemon/Cargo.toml"
-    local core_target_dir="$QUICKSHELL_DIR/backend/rust/core-daemon/target"
+    local greeter_core_binary="/usr/lib/sownteeshell/sownteeshell-core"
+    local core_manifest="$SOWNTEESHELL_DIR/backend/rust/core-daemon/Cargo.toml"
+    local core_target_dir="$SOWNTEESHELL_DIR/backend/rust/core-daemon/target"
     local core_binary="$core_target_dir/release/sownteeshell-core"
     local config_temp=""
     local settings_temp=""
@@ -445,11 +507,11 @@ install_greetd() {
         return 1
     fi
     if [ ! -f "$greeter_source/shell.qml" ]; then
-        red_echo "[!] Quickshell greeter source not found: $greeter_source"
+        red_echo "[!] SownteeShell greeter source not found: $greeter_source"
         return 1
     fi
     if [ ! -f "$greeter_source/qmldir" ] || [ ! -f "$core_manifest" ]; then
-        red_echo "[!] Quickshell greeter source is incomplete: $greeter_source"
+        red_echo "[!] SownteeShell greeter source is incomplete: $greeter_source"
         return 1
     fi
     if [ ! -f "$greetd_pam_source" ]; then
@@ -506,6 +568,12 @@ install_greetd() {
     fi
     sudo install -D -m 0755 "$core_binary" "$greeter_core_binary"
 
+    if [ ! -e "$greeter_theme_dir" ] && [ -d "$legacy_greeter_theme_dir" ]; then
+        sudo install -d -m 0755 "$(dirname "$greeter_theme_dir")"
+        sudo cp -a -- "$legacy_greeter_theme_dir" "$greeter_theme_dir"
+        blue_echo "[*] Copied legacy greeter state to $greeter_theme_dir."
+    fi
+
     sudo install -d -m 0755 "$greeter_install_dir" /etc/greetd /etc/pam.d
     sudo install -d -o "$USER" -g greeter -m 2750 "$greeter_theme_dir"
     sudo chown "$USER:greeter" "$greeter_theme_dir"
@@ -513,7 +581,7 @@ install_greetd() {
     sudo find "$greeter_theme_dir" -maxdepth 1 -type f -exec chown "$USER:greeter" {} +
     sudo find "$greeter_theme_dir" -maxdepth 1 -type f -exec chmod 0640 {} +
     if [ ! -f "$greeter_settings_file" ]; then
-        settings_temp=$(mktemp /tmp/quickshell-greeter-settings.XXXXXX)
+        settings_temp=$(mktemp /tmp/sownteeshell-greeter-settings.XXXXXX)
         printf '%s\n' '{"defaultSession":"niri","rememberLastSession":false}' > "$settings_temp"
         sudo install -o "$USER" -g greeter -m 0640 "$settings_temp" "$greeter_settings_file"
         rm -f -- "$settings_temp"
@@ -531,13 +599,13 @@ install_greetd() {
     sudo find "$greeter_install_dir" -type d -exec chmod 0755 {} +
     sudo find "$greeter_install_dir" -type f -exec chmod 0644 {} +
     sudo install -m 0644 "$greetd_pam_source" /etc/pam.d/greetd
-    config_temp=$(mktemp /tmp/quickshell-greetd-config.XXXXXX)
+    config_temp=$(mktemp /tmp/sownteeshell-greetd-config.XXXXXX)
     cat > "$config_temp" << EOF
 [terminal]
 vt = 1
 
 [default_session]
-command = "env HOME=$greeter_runtime_dir XDG_CACHE_HOME=$greeter_runtime_dir/cache XDG_CONFIG_HOME=$greeter_runtime_dir/config XDG_DATA_HOME=$greeter_runtime_dir/data GREETD_DEFAULT_USER=$USER GREETD_SESSION_NAME=Niri GREETD_THEME_PATH=$greeter_theme_file GREETD_BACKGROUND_PATH=$greeter_background_file GREETD_PROFILE_PATH=$greeter_profile_file GREETD_SETTINGS_PATH=$greeter_settings_file SOWNTEE_CORE_BINARY=$greeter_core_binary systemd-cat --identifier=quickshell-greeter cage -d -s -m extend -- quickshell --no-color --path $greeter_install_dir"
+command = "env HOME=$greeter_runtime_dir XDG_CACHE_HOME=$greeter_runtime_dir/cache XDG_CONFIG_HOME=$greeter_runtime_dir/config XDG_DATA_HOME=$greeter_runtime_dir/data GREETD_DEFAULT_USER=$USER GREETD_SESSION_NAME=Niri GREETD_THEME_PATH=$greeter_theme_file GREETD_BACKGROUND_PATH=$greeter_background_file GREETD_PROFILE_PATH=$greeter_profile_file GREETD_SETTINGS_PATH=$greeter_settings_file SOWNTEE_CORE_BINARY=$greeter_core_binary systemd-cat --identifier=sownteeshell-greeter cage -d -s -m extend -- quickshell --no-color --path $greeter_install_dir"
 user = "greeter"
 EOF
     if ! python3 -c 'import pathlib, sys, tomllib; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' "$config_temp"; then
@@ -664,7 +732,7 @@ install_workspace() {
     green_echo "[*] Grub Theme setup done."
     sleep 3 && clear
 
-    red_echo "[*] Installing Display Manager (greetd + Quickshell)"
+    red_echo "[*] Installing Display Manager (greetd + SownteeShell)"
     install_greetd
     green_echo "[*] Display Manager setup done."
     sleep 3 && clear
