@@ -128,6 +128,8 @@ if [ "$mode" = "auto" ]; then
     esac
 fi
 
+export SOWNTEESHELL_THEME_MODE="$mode"
+
 set -- matugen
 [ -z "$config_path" ] || set -- "$@" --config "$config_path"
 set -- "$@" image "$image_path" --type "$scheme" --mode "$mode" --source-color-index 0 --continue-on-error

@@ -9,9 +9,9 @@ Item {
 
     readonly property string iconSource: {
         if (provider === "microsoft")
-            return "file://" + Config.quickshellDir + "/assets/icons/calendar-microsoft.svg";
+            return "file://" + Config.sownteeshellDir + "/assets/icons/calendar-microsoft.svg";
         if (provider === "icloud" || provider === "caldav")
-            return "file://" + Config.quickshellDir + "/assets/icons/calendar-icloud.svg";
+            return "file://" + Config.sownteeshellDir + "/assets/icons/calendar-icloud.svg";
         return Quickshell.iconPath("goa-account-google-symbolic", "x-office-calendar-symbolic");
     }
     property string provider: "google"

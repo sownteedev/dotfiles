@@ -18,10 +18,14 @@ QtObject {
         }
     }
     property string errorMessage: ""
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/wallpaper/greeter_background_sync.py"
+    readonly property string helperPath: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property string statusMessage: ""
     property Process syncProcess: Process {
         property bool launchPending: false
+        property string requestJson: "{}"
+
+        command: [root.helperPath, "request-stdin", "greeter.background.sync"]
+        stdinEnabled: true
 
         stderr: StdioCollector {
             id: syncError
@@ -44,12 +48,17 @@ QtObject {
         onRunningChanged: {
             if (!running && launchPending) {
                 launchPending = false;
-                root.errorMessage = qsTr("Could not start the greetd background helper");
+                requestJson = "{}";
+                root.errorMessage = qsTr("Could not start the greetd background backend");
                 root.statusMessage = "";
                 clearMessageTimer.restart();
             }
         }
-        onStarted: launchPending = false
+        onStarted: {
+            launchPending = false;
+            write(requestJson + "\n");
+            requestJson = "{}";
+        }
     }
     property Connections wallhavenConnections: Connections {
         function onDownloadCompleted(wallpaperId, path, modified, purpose) {
@@ -108,7 +117,10 @@ QtObject {
         errorMessage = "";
         statusMessage = kind === "image" ? qsTr("Setting Wallhaven image as login background…") : qsTr("Setting Wallpaper Engine video as login background…");
         clearMessageTimer.stop();
-        syncProcess.command = ["python3", "-u", helperPath, kind, path];
+        syncProcess.requestJson = JSON.stringify({
+            "kind": kind,
+            "source": path
+        });
         syncProcess.launchPending = true;
         syncProcess.running = true;
         return true;

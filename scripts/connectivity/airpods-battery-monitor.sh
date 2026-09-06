@@ -3,7 +3,7 @@
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-cache_root=${XDG_CACHE_HOME:-"$HOME/.cache"}/quickshell
+cache_root=${XDG_CACHE_HOME:-"$HOME/.cache"}/sownteeshell
 source_file=$script_dir/../../backend/native/bluetooth/airpods_battery_monitor.cpp
 binary_file=$cache_root/sownteeshell-airpods-battery
 

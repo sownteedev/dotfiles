@@ -16,13 +16,14 @@ use std::fs;
 use std::io::ErrorKind;
 use std::os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
-use tokio::io::{AsyncBufReadExt, AsyncWrite, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWrite, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::{broadcast, watch};
 use tokio::task::JoinSet;
 use uuid::Uuid;
 
 const MAX_REQUEST_BYTES: usize = 1024 * 1024;
+const MAX_RESPONSE_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Clone)]
 pub struct IpcServer {
@@ -96,24 +97,38 @@ impl IpcServer {
     ) -> Result<()> {
         let (read_half, mut write_half) = stream.into_split();
         let mut reader = BufReader::new(read_half);
-        let mut line = String::new();
 
         loop {
-            line.clear();
-            let read = reader.read_line(&mut line).await?;
-            if read == 0 {
-                return Ok(());
-            }
-            if line.len() > MAX_REQUEST_BYTES {
-                write_json(
-                    &mut write_half,
-                    &RpcResponse::error(Value::Null, "request_too_large", "request exceeds 1 MiB"),
-                )
-                .await?;
-                return Ok(());
-            }
+            let line = match read_bounded_line(&mut reader, MAX_REQUEST_BYTES).await? {
+                BoundedLine::Line(line) => line,
+                BoundedLine::Eof => return Ok(()),
+                BoundedLine::TooLarge => {
+                    write_json(
+                        &mut write_half,
+                        &RpcResponse::error(
+                            Value::Null,
+                            "request_too_large",
+                            "request exceeds 1 MiB",
+                        ),
+                    )
+                    .await?;
+                    continue;
+                }
+                BoundedLine::InvalidUtf8 => {
+                    write_json(
+                        &mut write_half,
+                        &RpcResponse::error(
+                            Value::Null,
+                            "invalid_request",
+                            "request must be valid UTF-8",
+                        ),
+                    )
+                    .await?;
+                    continue;
+                }
+            };
 
-            let request = match serde_json::from_str::<RpcRequest>(line.trim_end()) {
+            let request = match serde_json::from_str::<RpcRequest>(&line) {
                 Ok(request) if !request.method.trim().is_empty() => request,
                 Ok(request) => {
                     write_json(
@@ -177,7 +192,6 @@ impl IpcServer {
         )
         .await?;
 
-        let mut client_input = String::new();
         loop {
             tokio::select! {
                 changed = shutdown.changed() => {
@@ -208,10 +222,10 @@ impl IpcServer {
                         Err(broadcast::error::RecvError::Closed) => return Ok(()),
                     }
                 }
-                read = reader.read_line(&mut client_input) => {
-                    match read {
-                        Ok(0) => return Ok(()),
-                        Ok(_) => {
+                read = read_bounded_line(&mut reader, MAX_REQUEST_BYTES) => {
+                    match read? {
+                        BoundedLine::Eof => return Ok(()),
+                        BoundedLine::Line(_) | BoundedLine::TooLarge | BoundedLine::InvalidUtf8 => {
                             write_json(
                                 &mut writer,
                                 &RpcResponse::error(
@@ -222,7 +236,6 @@ impl IpcServer {
                             ).await?;
                             return Ok(());
                         }
-                        Err(error) => return Err(error.into()),
                     }
                 }
             }
@@ -238,7 +251,8 @@ impl IpcServer {
             "system.info" => self.system_info().await,
             "accounts.list" => Ok(json!(
                 self.database
-                    .list_accounts(false)
+                    .run_blocking(|database| database.list_accounts(false))
+                    .await
                     .map_err(RpcError::backend)?
             )),
             "accounts.google.add" => self.add_google(parse_params(request.params)?).await,
@@ -247,9 +261,13 @@ impl IpcServer {
             "accounts.remove" => self.remove_account(parse_params(request.params)?).await,
             "accounts.setEnabled" => {
                 let parameters: SetAccountEnabledParams = parse_params(request.params)?;
+                let account_id = parameters.account_id.clone();
                 let changed = self
                     .database
-                    .set_account_enabled(&parameters.account_id, parameters.enabled)
+                    .run_blocking(move |database| {
+                        database.set_account_enabled(&account_id, parameters.enabled)
+                    })
+                    .await
                     .map_err(RpcError::backend)?;
                 if !changed {
                     return Err(RpcError::not_found("calendar account was not found"));
@@ -263,23 +281,31 @@ impl IpcServer {
             }
             "calendars.list" => {
                 let parameters: ListCalendarsParams = parse_params(request.params)?;
+                let account_id = parameters.account_id;
                 Ok(json!(
                     self.database
-                        .list_calendars(parameters.account_id.as_deref())
+                        .run_blocking(move |database| {
+                            database.list_calendars(account_id.as_deref())
+                        })
+                        .await
                         .map_err(RpcError::backend)?
                 ))
             }
             "calendars.setVisible" => {
                 let parameters: SetCalendarVisibleParams = parse_params(request.params)?;
-                let calendar = self
+                let calendar_id = parameters.calendar_id.clone();
+                let (calendar, changed) = self
                     .database
-                    .get_calendar(&parameters.calendar_id)
-                    .map_err(RpcError::backend)?
-                    .ok_or_else(|| RpcError::not_found("calendar was not found"))?;
-                let changed = self
-                    .database
-                    .set_calendar_visible(&parameters.calendar_id, parameters.visible)
+                    .run_blocking(move |database| {
+                        let calendar = database.get_calendar(&calendar_id)?;
+                        let changed =
+                            database.set_calendar_visible(&calendar_id, parameters.visible)?;
+                        Ok((calendar, changed))
+                    })
+                    .await
                     .map_err(RpcError::backend)?;
+                let calendar =
+                    calendar.ok_or_else(|| RpcError::not_found("calendar was not found"))?;
                 if !changed {
                     return Err(RpcError::not_found("calendar was not found"));
                 }
@@ -290,7 +316,7 @@ impl IpcServer {
                 ));
                 Ok(json!({"changed": true}))
             }
-            "events.list" => self.list_events(parse_params(request.params)?),
+            "events.list" => self.list_events(parse_params(request.params)?).await,
             "events.create" => self.create_event(parse_params(request.params)?).await,
             "events.update" => self.update_event(parse_params(request.params)?).await,
             "events.delete" => self.delete_event(parse_params(request.params)?).await,
@@ -300,7 +326,11 @@ impl IpcServer {
     }
 
     async fn system_info(&self) -> RpcResult<Value> {
-        let (accounts, calendars, events) = self.database.counts().map_err(RpcError::backend)?;
+        let (accounts, calendars, events) = self
+            .database
+            .run_blocking(Database::counts)
+            .await
+            .map_err(RpcError::backend)?;
         Ok(json!({
             "name": "SownteeShell Calendar Daemon",
             "version": env!("CARGO_PKG_VERSION"),
@@ -332,13 +362,15 @@ impl IpcServer {
                 .await
                 .map_err(RpcError::backend)?;
         let account_id = format!("google:{}", authorized.remote_id);
-        let account = self.account_for_upsert(
-            &account_id,
-            ProviderKind::Google,
-            authorized.display_name,
-            authorized.email,
-            json!({"clientId": client_id, "remoteId": authorized.remote_id}),
-        )?;
+        let account = self
+            .account_for_upsert(
+                &account_id,
+                ProviderKind::Google,
+                authorized.display_name,
+                authorized.email,
+                json!({"clientId": client_id, "remoteId": authorized.remote_id}),
+            )
+            .await?;
 
         self.store_oauth_account(&account, &authorized.token, client_secret.as_deref())
             .await?;
@@ -359,17 +391,19 @@ impl IpcServer {
             .await
             .map_err(RpcError::backend)?;
         let account_id = format!("microsoft:{}", authorized.remote_id);
-        let account = self.account_for_upsert(
-            &account_id,
-            ProviderKind::Microsoft,
-            authorized.display_name,
-            authorized.email,
-            json!({
-                "clientId": client_id,
-                "tenant": tenant,
-                "remoteId": authorized.remote_id,
-            }),
-        )?;
+        let account = self
+            .account_for_upsert(
+                &account_id,
+                ProviderKind::Microsoft,
+                authorized.display_name,
+                authorized.email,
+                json!({
+                    "clientId": client_id,
+                    "tenant": tenant,
+                    "remoteId": authorized.remote_id,
+                }),
+            )
+            .await?;
 
         self.store_oauth_account(&account, &authorized.token, None)
             .await?;
@@ -390,15 +424,19 @@ impl IpcServer {
         url::Url::parse(&server)
             .map_err(|error| RpcError::invalid_params(format!("invalid CalDAV server: {error}")))?;
 
+        let existing_email = email.clone();
+        let existing_server = server.clone();
         let existing = self
             .database
-            .list_accounts(false)
+            .run_blocking(move |database| database.list_accounts(false))
+            .await
             .map_err(RpcError::backend)?
             .into_iter()
             .find(|account| {
                 account.provider == ProviderKind::CalDav
-                    && account.email.eq_ignore_ascii_case(&email)
-                    && account.config.get("server").and_then(Value::as_str) == Some(server.as_str())
+                    && account.email.eq_ignore_ascii_case(&existing_email)
+                    && account.config.get("server").and_then(Value::as_str)
+                        == Some(existing_server.as_str())
             });
         let account_id = existing
             .as_ref()
@@ -408,13 +446,15 @@ impl IpcServer {
             .display_name
             .filter(|value| !value.trim().is_empty())
             .unwrap_or_else(|| "iCloud".to_string());
-        let account = self.account_for_upsert(
-            &account_id,
-            ProviderKind::CalDav,
-            display_name,
-            email,
-            json!({"username": username, "server": server, "service": "icloud"}),
-        )?;
+        let account = self
+            .account_for_upsert(
+                &account_id,
+                ProviderKind::CalDav,
+                display_name,
+                email,
+                json!({"username": username, "server": server, "service": "icloud"}),
+            )
+            .await?;
 
         let previous_password = self
             .keyring
@@ -441,7 +481,36 @@ impl IpcServer {
             }
         };
 
-        if let Err(error) = self.database.upsert_account(&account) {
+        let stored_account = account.clone();
+        let rollback_account = existing;
+        let account_id = account.id.clone();
+        let database_result = self
+            .database
+            .run_blocking(move |database| {
+                database.upsert_account(&stored_account)?;
+                if let Err(error) = database.reconcile_calendars(&account_id, &calendars) {
+                    match rollback_account {
+                        Some(previous_account) => {
+                            if let Err(rollback_error) = database.upsert_account(&previous_account) {
+                                eprintln!(
+                                    "failed to restore CalDAV account {account_id}: {rollback_error:#}"
+                                );
+                            }
+                        }
+                        None => {
+                            if let Err(rollback_error) = database.delete_account(&account_id) {
+                                eprintln!(
+                                    "failed to remove incomplete CalDAV account {account_id}: {rollback_error:#}"
+                                );
+                            }
+                        }
+                    }
+                    return Err(error);
+                }
+                Ok(())
+            })
+            .await;
+        if let Err(error) = database_result {
             restore_secret(
                 &self.keyring,
                 &account.id,
@@ -449,34 +518,6 @@ impl IpcServer {
                 previous_password,
             )
             .await;
-            return Err(RpcError::backend(error));
-        }
-        if let Err(error) = self.database.reconcile_calendars(&account.id, &calendars) {
-            restore_secret(
-                &self.keyring,
-                &account.id,
-                CALDAV_PASSWORD_KEY,
-                previous_password,
-            )
-            .await;
-            match existing {
-                Some(previous_account) => {
-                    if let Err(rollback_error) = self.database.upsert_account(&previous_account) {
-                        eprintln!(
-                            "failed to restore CalDAV account {}: {rollback_error:#}",
-                            account.id
-                        );
-                    }
-                }
-                None => {
-                    if let Err(rollback_error) = self.database.delete_account(&account.id) {
-                        eprintln!(
-                            "failed to remove incomplete CalDAV account {}: {rollback_error:#}",
-                            account.id
-                        );
-                    }
-                }
-            }
             return Err(RpcError::backend(error));
         }
         self.finish_account_add(account).await
@@ -516,7 +557,12 @@ impl IpcServer {
             return Err(RpcError::backend(error));
         }
 
-        if let Err(error) = self.database.upsert_account(account) {
+        let stored_account = account.clone();
+        if let Err(error) = self
+            .database
+            .run_blocking(move |database| database.upsert_account(&stored_account))
+            .await
+        {
             restore_secret(&self.keyring, &account.id, OAUTH_TOKEN_KEY, previous_token).await;
             restore_secret(
                 &self.keyring,
@@ -537,15 +583,19 @@ impl IpcServer {
             .sync_account(&account.id)
             .await
             .map_err(RpcError::backend)?;
-        let calendars = self
+        let account_id = account.id.clone();
+        let (calendars, account) = self
             .database
-            .list_calendars(Some(&account.id))
+            .run_blocking(move |database| {
+                Ok((
+                    database.list_calendars(Some(&account_id))?,
+                    database.get_account(&account_id)?,
+                ))
+            })
+            .await
             .map_err(RpcError::backend)?;
-        let account = self
-            .database
-            .get_account(&account.id)
-            .map_err(RpcError::backend)?
-            .ok_or_else(|| RpcError::not_found("new calendar account disappeared"))?;
+        let account =
+            account.ok_or_else(|| RpcError::not_found("new calendar account disappeared"))?;
         Ok(json!({
             "account": account,
             "calendars": calendars,
@@ -554,9 +604,11 @@ impl IpcServer {
     }
 
     async fn remove_account(&self, parameters: AccountIdParams) -> RpcResult<Value> {
+        let lookup_id = parameters.account_id.clone();
         if self
             .database
-            .get_account(&parameters.account_id)
+            .run_blocking(move |database| database.get_account(&lookup_id))
+            .await
             .map_err(RpcError::backend)?
             .is_none()
         {
@@ -566,44 +618,48 @@ impl IpcServer {
             .delete_account(&parameters.account_id)
             .await
             .map_err(RpcError::backend)?;
+        let account_id = parameters.account_id.clone();
         let removed = self
             .database
-            .delete_account(&parameters.account_id)
+            .run_blocking(move |database| database.delete_account(&account_id))
+            .await
             .map_err(RpcError::backend)?;
         self.publish(DaemonEvent::changed("accounts", None, None));
         Ok(json!({"removed": removed}))
     }
 
-    fn list_events(&self, parameters: ListEventsParams) -> RpcResult<Value> {
+    async fn list_events(&self, parameters: ListEventsParams) -> RpcResult<Value> {
         let now = Utc::now();
         let from = parse_optional_time(parameters.from, now - Duration::days(30), "from")?;
         let to = parse_optional_time(parameters.to, now + Duration::days(365), "to")?;
         if from > to {
             return Err(RpcError::invalid_params("events.list requires from <= to"));
         }
+        let calendar_id = parameters.calendar_id;
+        let visible_only = parameters.visible_only;
         Ok(json!(
             self.database
-                .list_events(
-                    from,
-                    to,
-                    parameters.calendar_id.as_deref(),
-                    parameters.visible_only,
-                )
+                .run_blocking(move |database| {
+                    database.list_events(from, to, calendar_id.as_deref(), visible_only)
+                })
+                .await
                 .map_err(RpcError::backend)?
         ))
     }
 
     async fn create_event(&self, parameters: CreateEventParams) -> RpcResult<Value> {
         let draft = validate_event_draft(parameters.event)?;
-        let (account, calendar) = self.writable_calendar(&parameters.calendar_id)?;
+        let (account, calendar) = self.writable_calendar(&parameters.calendar_id).await?;
         let provider = self.providers.get(account.provider);
-        let event = provider
-            .create_event(&account, &calendar, &draft)
-            .await
-            .map_err(|error| self.provider_error(&account, error))?;
+        let event = match provider.create_event(&account, &calendar, &draft).await {
+            Ok(event) => event,
+            Err(error) => return Err(self.provider_error(&account, error).await),
+        };
+        let stored_event = event.clone();
         let stored = self
             .database
-            .upsert_event(&event)
+            .run_blocking(move |database| database.upsert_event(&stored_event))
+            .await
             .map_err(RpcError::backend)?;
         self.publish(DaemonEvent::changed(
             "events",
@@ -615,20 +671,27 @@ impl IpcServer {
 
     async fn update_event(&self, parameters: UpdateEventParams) -> RpcResult<Value> {
         let draft = validate_event_draft(parameters.event)?;
+        let event_id = parameters.event_id.clone();
         let existing = self
             .database
-            .get_event(&parameters.event_id)
+            .run_blocking(move |database| database.get_event(&event_id))
+            .await
             .map_err(RpcError::backend)?
             .ok_or_else(|| RpcError::not_found("calendar event was not found"))?;
-        let (account, calendar) = self.writable_calendar(&existing.calendar_id)?;
+        let (account, calendar) = self.writable_calendar(&existing.calendar_id).await?;
         let provider = self.providers.get(account.provider);
-        let event = provider
+        let event = match provider
             .update_event(&account, &calendar, &existing, &draft)
             .await
-            .map_err(|error| self.provider_error(&account, error))?;
+        {
+            Ok(event) => event,
+            Err(error) => return Err(self.provider_error(&account, error).await),
+        };
+        let stored_event = event.clone();
         let stored = self
             .database
-            .upsert_event(&event)
+            .run_blocking(move |database| database.upsert_event(&stored_event))
+            .await
             .map_err(RpcError::backend)?;
         self.publish(DaemonEvent::changed(
             "events",
@@ -639,19 +702,22 @@ impl IpcServer {
     }
 
     async fn delete_event(&self, parameters: DeleteEventParams) -> RpcResult<Value> {
+        let event_id = parameters.event_id.clone();
         let event = self
             .database
-            .get_event(&parameters.event_id)
+            .run_blocking(move |database| database.get_event(&event_id))
+            .await
             .map_err(RpcError::backend)?
             .ok_or_else(|| RpcError::not_found("calendar event was not found"))?;
-        let (account, calendar) = self.writable_calendar(&event.calendar_id)?;
+        let (account, calendar) = self.writable_calendar(&event.calendar_id).await?;
         let provider = self.providers.get(account.provider);
-        provider
-            .delete_event(&account, &calendar, &event)
-            .await
-            .map_err(|error| self.provider_error(&account, error))?;
+        if let Err(error) = provider.delete_event(&account, &calendar, &event).await {
+            return Err(self.provider_error(&account, error).await);
+        }
+        let deleted_event_id = event.id.clone();
         self.database
-            .delete_event(&event.id)
+            .run_blocking(move |database| database.delete_event(&deleted_event_id))
+            .await
             .map_err(RpcError::backend)?;
         self.publish(DaemonEvent::changed(
             "events",
@@ -661,32 +727,44 @@ impl IpcServer {
         Ok(json!({"deleted": true}))
     }
 
-    fn writable_calendar(&self, calendar_id: &str) -> RpcResult<(Account, Calendar)> {
-        let calendar = self
+    async fn writable_calendar(&self, calendar_id: &str) -> RpcResult<(Account, Calendar)> {
+        let calendar_id = calendar_id.to_string();
+        let (calendar, account) = self
             .database
-            .get_calendar(calendar_id)
-            .map_err(RpcError::backend)?
-            .ok_or_else(|| RpcError::not_found("calendar was not found"))?;
+            .run_blocking(move |database| {
+                let calendar = database.get_calendar(&calendar_id)?;
+                let account = calendar
+                    .as_ref()
+                    .map(|calendar| database.get_account(&calendar.account_id))
+                    .transpose()?
+                    .flatten();
+                Ok((calendar, account))
+            })
+            .await
+            .map_err(RpcError::backend)?;
+        let calendar = calendar.ok_or_else(|| RpcError::not_found("calendar was not found"))?;
         if calendar.read_only {
             return Err(RpcError::invalid_params("calendar is read-only"));
         }
-        let account = self
-            .database
-            .get_account(&calendar.account_id)
-            .map_err(RpcError::backend)?
-            .ok_or_else(|| RpcError::not_found("calendar account was not found"))?;
+        let account =
+            account.ok_or_else(|| RpcError::not_found("calendar account was not found"))?;
         if !account.enabled {
             return Err(RpcError::invalid_params("calendar account is disabled"));
         }
         Ok((account, calendar))
     }
 
-    fn provider_error(&self, account: &Account, error: ProviderError) -> RpcError {
+    async fn provider_error(&self, account: &Account, error: ProviderError) -> RpcError {
         let needs_reauth = matches!(error, ProviderError::Reauth(_));
         if needs_reauth {
+            let account_id = account.id.clone();
+            let message = error.to_string();
             let _ = self
                 .database
-                .set_account_sync_error(&account.id, &error.to_string(), true);
+                .run_blocking(move |database| {
+                    database.set_account_sync_error(&account_id, &message, true)
+                })
+                .await;
             self.publish(DaemonEvent::changed("accounts", Some(&account.id), None));
         }
         RpcError::backend(error)
@@ -715,7 +793,7 @@ impl IpcServer {
         }))
     }
 
-    fn account_for_upsert(
+    async fn account_for_upsert(
         &self,
         id: &str,
         provider: ProviderKind,
@@ -723,7 +801,12 @@ impl IpcServer {
         email: String,
         config: Value,
     ) -> RpcResult<Account> {
-        let existing = self.database.get_account(id).map_err(RpcError::backend)?;
+        let account_id = id.to_string();
+        let existing = self
+            .database
+            .run_blocking(move |database| database.get_account(&account_id))
+            .await
+            .map_err(RpcError::backend)?;
         let now = Utc::now();
         Ok(Account {
             id: id.to_string(),
@@ -791,23 +874,26 @@ pub async fn send_request(socket_path: &Path, method: String, params: Value) -> 
         .await
         .with_context(|| format!("connect to calendar daemon at {}", socket_path.display()))?;
     let id = Value::String(Uuid::new_v4().to_string());
-    write_json(
+    write_json_with_limit(
         &mut stream,
         &RpcRequest {
             id: id.clone(),
             method,
             params,
         },
+        MAX_REQUEST_BYTES,
+        "request",
     )
     .await?;
 
     let mut reader = BufReader::new(stream);
-    let mut line = String::new();
-    reader.read_line(&mut line).await?;
-    if line.is_empty() {
-        bail!("calendar daemon closed the connection without a response");
-    }
-    let response: RpcResponse = serde_json::from_str(line.trim_end())?;
+    let line = match read_bounded_line(&mut reader, MAX_RESPONSE_BYTES).await? {
+        BoundedLine::Line(line) => line,
+        BoundedLine::Eof => bail!("calendar daemon closed the connection without a response"),
+        BoundedLine::InvalidUtf8 => bail!("calendar daemon returned invalid UTF-8"),
+        BoundedLine::TooLarge => bail!("calendar daemon response exceeds 16 MiB"),
+    };
+    let response: RpcResponse = serde_json::from_str(&line)?;
     if response.id != id {
         bail!("calendar daemon returned a response with the wrong id");
     }
@@ -995,12 +1081,76 @@ async fn restore_secret(keyring: &Keyring, account_id: &str, key: &str, previous
     }
 }
 
-async fn write_json<W: AsyncWrite + Unpin, T: Serialize>(writer: &mut W, value: &T) -> Result<()> {
+enum BoundedLine {
+    Eof,
+    InvalidUtf8,
+    Line(String),
+    TooLarge,
+}
+
+async fn read_bounded_line<R: AsyncBufRead + Unpin>(
+    reader: &mut R,
+    limit: usize,
+) -> Result<BoundedLine> {
+    let mut bytes = Vec::with_capacity(limit.min(8192));
+    let mut oversized = false;
+
+    loop {
+        let available = reader.fill_buf().await?;
+        if available.is_empty() {
+            if bytes.is_empty() && !oversized {
+                return Ok(BoundedLine::Eof);
+            }
+            break;
+        }
+
+        let newline = available.iter().position(|byte| *byte == b'\n');
+        let consumed = newline.map_or(available.len(), |index| index + 1);
+        let payload = newline.map_or(available, |index| &available[..index]);
+        if !oversized {
+            if bytes.len().saturating_add(payload.len()) > limit {
+                oversized = true;
+                bytes.clear();
+            } else {
+                bytes.extend_from_slice(payload);
+            }
+        }
+        reader.consume(consumed);
+        if newline.is_some() {
+            break;
+        }
+    }
+
+    if oversized {
+        return Ok(BoundedLine::TooLarge);
+    }
+    if bytes.last() == Some(&b'\r') {
+        bytes.pop();
+    }
+    match String::from_utf8(bytes) {
+        Ok(line) => Ok(BoundedLine::Line(line)),
+        Err(_) => Ok(BoundedLine::InvalidUtf8),
+    }
+}
+
+async fn write_json_with_limit<W: AsyncWrite + Unpin, T: Serialize>(
+    writer: &mut W,
+    value: &T,
+    limit: usize,
+    label: &str,
+) -> Result<()> {
     let mut bytes = serde_json::to_vec(value)?;
+    if bytes.len() > limit {
+        bail!("{label} exceeds {limit} bytes");
+    }
     bytes.push(b'\n');
     writer.write_all(&bytes).await?;
     writer.flush().await?;
     Ok(())
+}
+
+async fn write_json<W: AsyncWrite + Unpin, T: Serialize>(writer: &mut W, value: &T) -> Result<()> {
+    write_json_with_limit(writer, value, MAX_RESPONSE_BYTES, "response").await
 }
 
 #[derive(Default, Deserialize)]

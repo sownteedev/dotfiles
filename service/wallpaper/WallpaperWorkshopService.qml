@@ -24,7 +24,7 @@ QtObject {
         property bool launchPending: false
         property string requestJson: "{}"
 
-        command: ["python3", "-u", root.helperPath, "download"]
+        command: [root.helperPath, "request-stdin", "wallpaper.workshop.download"]
         stdinEnabled: true
 
         stderr: StdioCollector {
@@ -98,7 +98,7 @@ QtObject {
     }
     property var genreFilters: []
     readonly property bool hasMore: results.count < totalResults
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/wallpaper/steam_workshop_client.py"
+    readonly property string helperPath: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property string installedLoadErrorMessage: ""
     property bool installedLoaded: false
     property Process installedProcess: Process {
@@ -106,7 +106,7 @@ QtObject {
         property int requestGeneration: -1
         property string requestJson: "{}"
 
-        command: ["python3", "-u", root.helperPath, "list"]
+        command: [root.helperPath, "request-stdin", "wallpaper.workshop.list"]
         stdinEnabled: true
 
         stderr: StdioCollector {
@@ -204,7 +204,7 @@ QtObject {
         property bool launchPending: false
         property string requestJson: "{}"
 
-        command: ["python3", "-u", root.helperPath, "remove"]
+        command: [root.helperPath, "request-stdin", "wallpaper.workshop.remove"]
         stdinEnabled: true
 
         stderr: StdioCollector {
@@ -258,32 +258,41 @@ QtObject {
         dynamicRoles: true
     }
     property string searchErrorMessage: ""
-    property Process searchProcess: Process {
-        property bool launchPending: false
-        property int requestGeneration: -1
-        property string requestJson: "{}"
+    property CoreRequest searchRequest: CoreRequest {
+        property int panelGeneration: -1
 
-        command: ["python3", "-u", root.helperPath, "search"]
-        stdinEnabled: true
+        timeoutMs: 40000
 
-        stderr: StdioCollector {
-            id: searchError
-        }
-        stdout: StdioCollector {
-            id: searchOutput
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            if (!root.requestIsCurrent(searchProcess)) {
+        onFailed: message => {
+            if (!root.generationIsCurrent(panelGeneration)) {
                 root.restartSearchIfPending();
                 return;
             }
-            var response = root.parseResponse(searchOutput.text, searchError.text, qsTr("Could not search Steam Workshop"));
-            if (exitCode !== 0 || !response.ok) {
+            if (root.pendingSearchRequest) {
+                root.restartSearchIfPending();
+                return;
+            }
+            root.results.clear();
+            root.rebuildFilteredResults();
+            root.totalResults = 0;
+            root.searchErrorMessage = String(message || qsTr("Could not search Steam Workshop"));
+            root.searchStatusMessage = "";
+            root.restartSearchIfPending();
+        }
+        onSucceeded: response => {
+            if (!root.generationIsCurrent(panelGeneration)) {
+                root.restartSearchIfPending();
+                return;
+            }
+            if (root.pendingSearchRequest) {
+                root.restartSearchIfPending();
+                return;
+            }
+            if (!response || !response.ok) {
                 root.results.clear();
                 root.rebuildFilteredResults();
                 root.totalResults = 0;
-                root.searchErrorMessage = response.message || qsTr("Could not search Steam Workshop");
+                root.searchErrorMessage = response && response.message ? String(response.message) : qsTr("Could not search Steam Workshop");
                 root.searchStatusMessage = "";
             } else {
                 root.searchErrorMessage = "";
@@ -294,34 +303,9 @@ QtObject {
             }
             root.restartSearchIfPending();
         }
-        onRunningChanged: {
-            if (!running && launchPending) {
-                launchPending = false;
-                if (!root.requestIsCurrent(searchProcess)) {
-                    root.restartSearchIfPending();
-                    return;
-                }
-                root.results.clear();
-                root.rebuildFilteredResults();
-                root.totalResults = 0;
-                root.searchErrorMessage = qsTr("Could not start the Workshop search helper");
-                root.searchStatusMessage = "";
-                root.restartSearchIfPending();
-            }
-        }
-        onStarted: {
-            launchPending = false;
-            if (!root.requestIsCurrent(searchProcess)) {
-                requestJson = "{}";
-                running = false;
-                return;
-            }
-            write(requestJson + "\n");
-            requestJson = "{}";
-        }
     }
     property string searchStatusMessage: ""
-    readonly property bool searching: searchProcess.running
+    readonly property bool searching: searchRequest.active || pendingSearchRequest !== null
     property string sortMode: "trending"
     property string steamItemId: ""
     property bool steamItemSubscribed: false
@@ -349,7 +333,7 @@ QtObject {
         property int requestGeneration: -1
         property string requestJson: "{}"
 
-        command: ["python3", "-u", root.helperPath, "subscriptions"]
+        command: [root.helperPath, "request-stdin", "wallpaper.workshop.subscriptions"]
         stdinEnabled: true
 
         stderr: StdioCollector {
@@ -521,6 +505,9 @@ QtObject {
         downloadProcess.running = true;
         return true;
     }
+    function generationIsCurrent(generation) {
+        return panelConsumers > 0 && generation === requestGeneration;
+    }
     function itemHasTag(item, expectedTag) {
         var tags = item && item.tags ? item.tags : [];
         return containsFilter(tags, expectedTag);
@@ -585,7 +572,7 @@ QtObject {
         loginErrorCode = "";
         loginErrorMessage = "";
         actionStatusMessage = qsTr("Opening SteamCMD login in Black Box…");
-        var loginCommand = "python3 " + shellQuote(helperPath) + " login " + shellQuote(username) + "; result=$?; print; if [ $result -eq 0 ]; then print -r -- 'SteamCMD login complete.'; else print -r -- \"SteamCMD login failed (exit $result).\"; fi; print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
+        var loginCommand = shellQuote(helperPath) + " wallpaper-workshop-login " + shellQuote(username) + "; result=$?; print; if [ $result -eq 0 ]; then print -r -- 'SteamCMD login complete.'; else print -r -- \"SteamCMD login failed (exit $result).\"; fi; print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
         var terminalCommand = "exec /usr/bin/zsh -c " + shellQuote(loginCommand);
         loginTerminal.command = ["blackbox-terminal", "--command", terminalCommand];
         loginTerminal.launchPending = true;
@@ -710,7 +697,7 @@ QtObject {
         installedReloadPending = false;
         subscriptionRefreshPending = false;
         subscriptionRefreshDebounce.stop();
-        cancelBrowseProcess(searchProcess);
+        searchRequest.cancel();
         cancelBrowseProcess(installedProcess);
         cancelBrowseProcess(subscriptionProcess);
         clearPanelModels();
@@ -842,7 +829,7 @@ QtObject {
             "query": String(searchText || "").trim(),
             "sort": String(requestedSort || "trending")
         };
-        if (searchProcess.running) {
+        if (searchRequest.active) {
             pendingSearchRequest = request;
             return true;
         }
@@ -852,7 +839,8 @@ QtObject {
         browseFiltersDirty = false;
         searchErrorMessage = "";
         searchStatusMessage = qsTr("Searching Steam Workshop…");
-        searchProcess.requestJson = JSON.stringify({
+        searchRequest.panelGeneration = requestGeneration;
+        searchRequest.start("wallpaper.workshop.search", {
             "api_key": Config.steamWebApiKey.trim(),
             "excluded_tags": ["Application", "Web"],
             "legacy_workshop_root": Config.legacyWallpaperEngineWorkshopDir,
@@ -864,9 +852,6 @@ QtObject {
             "steam_root": Config.steamDir,
             "workshop_root": Config.wallpaperEngineWorkshopDir
         });
-        searchProcess.launchPending = true;
-        searchProcess.requestGeneration = requestGeneration;
-        searchProcess.running = true;
         return true;
     }
     function setAgeRatingFilter(filter) {

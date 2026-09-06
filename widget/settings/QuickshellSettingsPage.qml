@@ -1515,11 +1515,11 @@ Item {
                 actionText: GoogleService.disconnecting ? qsTr("Removing account") : confirmingRemoval ? qsTr("Confirm account removal") : qsTr("Remove account")
                 actionVisible: GoogleService.authenticated || GoogleService.disconnecting
                 iconName: "x-office-calendar-symbolic"
-                note: GoogleService.authenticated ? (GoogleService.connectedAccount !== "" ? qsTr("Connected as %1").arg(GoogleService.connectedAccount) : qsTr("Connected Google account")) : GoogleService.authStatus || qsTr("Connect your account from Calendar or Todo")
+                note: GoogleService.authenticated ? (GoogleService.connectedAccount !== "" ? qsTr("Connected as %1").arg(GoogleService.connectedAccount) : qsTr("Connected Google Tasks account")) : GoogleService.authStatus || qsTr("Connect your account from Todo")
                 statusColor: GoogleService.authenticated ? Config.md3.secondary : Config.md3.tertiary
                 statusIcon: GoogleService.disconnecting ? "process-working-symbolic" : GoogleService.authenticated ? "emblem-ok-symbolic" : "dialog-information-symbolic"
                 statusText: GoogleService.disconnecting ? qsTr("Disconnecting") : GoogleService.authenticated ? qsTr("Connected") : qsTr("Not connected")
-                title: qsTr("Google Calendar & Tasks")
+                title: qsTr("Google Tasks")
                 visible: root.activeSection === 3
 
                 onActionClicked: {

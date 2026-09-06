@@ -13,8 +13,9 @@ readonly LOCKED_DISPLAY_TIMEOUT="${6:-60}"
 readonly DIM_DURATION="${7:-5}"
 readonly REQUESTED_SLEEP_ACTION="${8:-suspend}"
 readonly RESPECT_INHIBITORS="${9:-true}"
-readonly UNIT="quickshell-idle.service"
-readonly SHELL_CONFIG="${HOME}/Dotfiles/quickshell/shell.qml"
+readonly UNIT="sownteeshell-idle.service"
+readonly LEGACY_UNIT="quickshell-idle.service"
+readonly SHELL_CONFIG="${HOME}/Dotfiles/sownteeshell/shell.qml"
 
 sleep_capability() {
     local method="$1"
@@ -37,6 +38,8 @@ hide_dim() {
 stop_unit() {
     systemctl --user stop "$UNIT" 2>/dev/null || true
     systemctl --user reset-failed "$UNIT" 2>/dev/null || true
+    systemctl --user stop "$LEGACY_UNIT" 2>/dev/null || true
+    systemctl --user reset-failed "$LEGACY_UNIT" 2>/dev/null || true
 }
 
 case "$ACTION" in
@@ -106,7 +109,7 @@ case "$ACTION" in
             --unit="$UNIT" \
             --collect \
             --property=KillMode=control-group \
-            --description="Quickshell idle policy" \
+            --description="SownteeShell idle policy" \
             "${swayidle_args[@]}"
         ;;
     disable)

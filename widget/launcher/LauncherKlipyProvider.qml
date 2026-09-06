@@ -1,20 +1,17 @@
 import "../../"
+import "../../service"
 import QtQuick
-import Quickshell
-import Quickshell.Io
 
 QtObject {
     id: root
 
     property string apiKey: Config.launcherKlipyApiKey
     property string errorCode: ""
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/launcher/klipy_client.py"
     property string kind: "gif"
     property bool loading: false
     property string query: ""
-    property string queuedRequest: ""
+    property var queuedRequest: null
     property int requestGeneration: 0
-    property bool restartPending: false
     property var results: []
     property Timer searchDebounce: Timer {
         interval: 350
@@ -22,83 +19,48 @@ QtObject {
 
         onTriggered: root.runSearch()
     }
-    property Process searchProcess: Process {
-        property int generation: -1
-        property bool launchPending: false
-        property string requestJson: ""
+    property CoreRequest searchRequest: CoreRequest {
+        timeoutMs: 20000
 
-        command: ["python3", "-u", root.helperPath, "query", "-"]
-        stdinEnabled: true
-
-        stderr: StdioCollector {
-            id: searchError
+        onFailed: message => {
+            var generation = Number(params.requestId || -1);
+            if (generation !== root.requestGeneration)
+                return;
+            root.loading = false;
+            root.errorCode = "process_error";
+            root.results = [];
+            console.warn("[LauncherKlipyProvider]", message);
         }
-        stdout: StdioCollector {
-            id: searchOutput
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            root.handleResponse(generation, exitCode, searchOutput.text, searchError.text);
-            if (root.restartPending) {
-                root.restartPending = false;
-                Qt.callLater(root.startQueuedRequest);
-            }
-        }
-        onRunningChanged: {
-            if (!running && launchPending) {
-                launchPending = false;
-                if (generation === root.requestGeneration) {
-                    root.loading = false;
-                    root.errorCode = "process_error";
-                }
-                if (root.restartPending) {
-                    root.restartPending = false;
-                    Qt.callLater(root.startQueuedRequest);
-                }
-            }
-        }
-        onStarted: {
-            launchPending = false;
-            write(requestJson + "\n");
-            requestJson = "";
-        }
+        onSucceeded: response => root.handleResponse(Number(params.requestId || -1), response)
     }
 
     function cancel() {
         requestGeneration += 1;
         searchDebounce.stop();
-        queuedRequest = "";
-        restartPending = false;
+        queuedRequest = null;
         loading = false;
-        if (searchProcess.running)
-            searchProcess.running = false;
+        if (searchRequest.active)
+            searchRequest.cancel();
     }
-    function handleResponse(generation, exitCode, output, errorOutput) {
+    function handleResponse(generation, response) {
         if (generation !== requestGeneration)
             return;
 
         loading = false;
-        var raw = String(output || "").trim();
-        if (raw === "") {
-            errorCode = exitCode === 0 ? "invalid_response" : "process_error";
+        if (!response || typeof response !== "object") {
+            errorCode = "invalid_response";
             results = [];
             return;
         }
-        try {
-            var response = JSON.parse(raw);
-            if (Number(response.requestId || 0) !== generation)
-                return;
-            if (!response.ok) {
-                errorCode = String(response.error || "request_failed");
-                results = [];
-                return;
-            }
-            errorCode = "";
-            results = Array.isArray(response.items) ? response.items : [];
-        } catch (error) {
-            errorCode = "invalid_response";
+        if (Number(response.requestId || 0) !== generation)
+            return;
+        if (!response.ok) {
+            errorCode = String(response.error || "request_failed");
             results = [];
+            return;
         }
+        errorCode = "";
+        results = Array.isArray(response.items) ? response.items : [];
     }
     function runSearch() {
         if (apiKey.trim() === "") {
@@ -112,22 +74,21 @@ QtObject {
         errorCode = "";
         loading = true;
         results = [];
-        queuedRequest = JSON.stringify({
+        queuedRequest = {
             "apiKey": apiKey.trim(),
             "kind": kind,
             "perPage": 24,
             "query": query.trim(),
             "requestId": requestGeneration
-        });
+        };
         startQueuedRequest();
     }
     function scheduleSearch() {
         searchDebounce.stop();
         requestGeneration += 1;
-        queuedRequest = "";
-        restartPending = false;
-        if (searchProcess.running)
-            searchProcess.running = false;
+        queuedRequest = null;
+        if (searchRequest.active)
+            searchRequest.cancel();
         if (apiKey.trim() === "") {
             loading = false;
             errorCode = "missing_api_key";
@@ -140,19 +101,11 @@ QtObject {
         searchDebounce.start();
     }
     function startQueuedRequest() {
-        if (queuedRequest === "")
+        if (!queuedRequest)
             return;
-        if (searchProcess.running) {
-            restartPending = true;
-            searchProcess.running = false;
-            return;
-        }
-
-        searchProcess.generation = requestGeneration;
-        searchProcess.requestJson = queuedRequest;
-        searchProcess.launchPending = true;
-        queuedRequest = "";
-        searchProcess.running = true;
+        var request = queuedRequest;
+        queuedRequest = null;
+        searchRequest.start("launcher.klipy.search", request);
     }
 
     Component.onCompleted: scheduleSearch()

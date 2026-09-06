@@ -31,7 +31,7 @@ QtObject {
     property Process daemonProcess: Process {
         id: daemonProcess
 
-        command: [Config.quickshellDir + "/backend/rust/calendar-daemon/run-calendar-daemon", "serve"]
+        command: [Config.sownteeshellDir + "/backend/rust/calendar-daemon/run-calendar-daemon", "serve"]
         running: false
 
         stderr: SplitParser {
@@ -42,17 +42,17 @@ QtObject {
             }
         }
 
-        onExited: (exitCode, exitStatus) => {
+        onExited: exitCode => {
             root.daemonStarted = false;
             if (!requestSocket.connected) {
                 root.daemonStatus = "stopped";
-                daemonRestart.restart();
+                root.daemonRestart.restart();
             }
         }
         onStarted: {
             root.daemonStarted = true;
             root.daemonStatus = "starting";
-            connectionRetry.restart();
+            root.connectionRetry.restart();
         }
     }
     property Timer daemonRestart: Timer {
@@ -62,18 +62,14 @@ QtObject {
         onTriggered: root.ensureRunning()
     }
     property Timer daemonStartDelay: Timer {
-        interval: 700
+        interval: 5000
         repeat: false
 
-        onTriggered: {
-            if (requestSocket.connected || daemonProcess.running)
-                return;
-            root.daemonStatus = "starting";
-            daemonProcess.running = true;
-        }
+        onTriggered: root.startFallbackDaemon()
     }
     property bool daemonStarted: false
     property string daemonStatus: "starting"
+    readonly property string daemonUnit: "sownteeshell-calendar.service"
     property bool eventActionBusy: false
     property int fetchInFlight: 0
     property bool initialLoaded: false
@@ -107,7 +103,8 @@ QtObject {
         onError: error => root.requestReconnect()
     }
     readonly property string runtimeBase: Quickshell.env("XDG_RUNTIME_DIR") || ""
-    readonly property string socketPath: runtimeBase !== "" ? runtimeBase + "/sownteeshell/calendar/calendar.sock" : (Quickshell.env("XDG_DATA_HOME") || Config.homeDir + "/.local/share") + "/sownteeshell/calendar/runtime/calendar.sock"
+    readonly property string socketOverride: Quickshell.env("SOWNTEE_CALENDAR_SOCKET") || ""
+    readonly property string socketPath: socketOverride !== "" ? socketOverride : (runtimeBase !== "" ? runtimeBase + "/sownteeshell/calendar/calendar.sock" : (Quickshell.env("XDG_DATA_HOME") || Config.homeDir + "/.local/share") + "/sownteeshell/calendar/runtime/calendar.sock")
     property bool subscribed: false
     property Timer subscriptionRetry: Timer {
         interval: 800
@@ -149,11 +146,34 @@ QtObject {
             root.subscribed = false;
             if (connected)
                 connected = false;
-            subscriptionRetry.restart();
+            root.subscriptionRetry.restart();
         }
     }
     property bool syncBusy: false
     property var syncingAccounts: ({})
+    property bool systemdAttempted: false
+    property Process systemdStarter: Process {
+        id: systemdStarter
+
+        command: ["systemctl", "--user", "start", "--no-block", root.daemonUnit]
+        running: false
+
+        stderr: StdioCollector {
+        }
+        stdout: StdioCollector {
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            if (requestSocket.connected)
+                return;
+            if (exitCode !== 0)
+                root.startFallbackDaemon();
+        }
+        onStarted: {
+            root.daemonStatus = "starting";
+            root.daemonStartDelay.restart();
+        }
+    }
 
     signal accountAdded(string accountId)
     signal accountRemoved(string accountId)
@@ -329,8 +349,14 @@ QtObject {
         }
         if (!connectionRetry.running)
             connectionRetry.start();
-        if (!daemonProcess.running && !daemonStartDelay.running)
-            daemonStartDelay.start();
+        if (daemonProcess.running || systemdStarter.running || daemonStartDelay.running)
+            return;
+        if (!systemdAttempted && socketOverride === "") {
+            systemdAttempted = true;
+            systemdStarter.running = true;
+            return;
+        }
+        startFallbackDaemon();
     }
     function failPendingRequests(message) {
         var pending = pendingRequests;
@@ -449,6 +475,7 @@ QtObject {
         connectionRetry.stop();
         daemonStartDelay.stop();
         daemonRestart.stop();
+        systemdAttempted = false;
         daemonStatus = "connected";
         lastError = "";
         if (!subscriptionSocket.connected)
@@ -624,6 +651,13 @@ QtObject {
             "visible": visible === true
         }, null, message => refreshDebounce.restart());
     }
+    function startFallbackDaemon() {
+        daemonStartDelay.stop();
+        if (requestSocket.connected || daemonProcess.running)
+            return;
+        daemonStatus = "starting";
+        daemonProcess.running = true;
+    }
     function syncNow(accountId) {
         if (syncBusy)
             return;
@@ -653,15 +687,13 @@ QtObject {
     }
 
     Component.onCompleted: {
-        // Always run the lightweight launcher once. It exits immediately when
-        // the connected daemon already uses the current binary, and replaces a
-        // daemon that survived a Quickshell reload after the backend changed.
-        daemonProcess.running = true;
         ensureRunning();
+        requestSocket.connected = true;
     }
     Component.onDestruction: {
         requestSocket.connected = false;
         subscriptionSocket.connected = false;
+        systemdStarter.running = false;
         daemonProcess.running = false;
     }
 }

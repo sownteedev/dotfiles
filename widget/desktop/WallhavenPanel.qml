@@ -22,6 +22,8 @@ Rectangle {
     readonly property bool nsfwVisible: Config.wallhavenApiKey.trim() !== "" && Config.wallhavenShowNsfw
     property bool open: false
     readonly property string resultError: installedMode ? WallhavenService.installedErrorMessage : (collectionsMode ? WallhavenService.collectionErrorMessage : WallhavenService.searchErrorMessage)
+    readonly property bool resultHasItems: resultModel.count > 0
+    readonly property bool resultInitialLoading: resultLoading && !resultHasItems
     readonly property bool resultLoading: installedMode ? WallhavenService.listingInstalled : (collectionsMode ? WallhavenService.loadingCollection || WallhavenService.loadingCollections : WallhavenService.searching)
     readonly property var resultModel: installedMode ? WallhavenService.installedResults : (collectionsMode ? WallhavenService.collectionResults : WallhavenService.results)
 
@@ -97,7 +99,7 @@ Rectangle {
             return root.resetResultView();
         });
         if (collectionsMode) {
-            WallhavenService.loadCollections(true);
+            WallhavenService.loadCollections(false);
         } else if (installedMode) {
             WallhavenService.loadInstalled(true);
         } else {
@@ -106,6 +108,11 @@ Rectangle {
                 performSearch(1);
         }
         contentTransition.restart();
+    }
+    function setNsfwVisible(enabled) {
+        if (Config.wallhavenShowNsfw === enabled)
+            return;
+        Config.wallhavenShowNsfw = enabled;
     }
 
     anchors.fill: parent
@@ -138,7 +145,7 @@ Rectangle {
             return;
 
         if (collectionsMode) {
-            WallhavenService.loadCollections(true);
+            WallhavenService.loadCollections(false);
         } else if (installedMode) {
             WallhavenService.loadInstalled(true);
         } else {
@@ -427,10 +434,68 @@ Rectangle {
                         root.performSearch(1, false);
                     }
                 }
+                Rectangle {
+                    readonly property bool nsfwAvailable: wallhavenFilters.bitEnabled(WallhavenService.purity, 2)
+
+                    Accessible.name: Config.wallhavenShowNsfw ? qsTr("Blur NSFW Wallhaven previews") : qsTr("Show NSFW Wallhaven previews")
+                    Accessible.role: Accessible.Button
+                    Layout.preferredHeight: 40
+                    Layout.preferredWidth: 40
+                    activeFocusOnTab: visible && enabled
+                    border.color: Config.alpha(Config.wallhavenShowNsfw ? Config.md3.error : Config.md3.outline, 0.22)
+                    border.width: 1
+                    color: Config.wallhavenShowNsfw ? Config.md3.error_container : (nsfwMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.035))
+                    enabled: nsfwAvailable
+                    opacity: enabled ? 1 : 0.38
+                    radius: 13
+                    visible: root.activeTab === "browse" && Config.wallhavenApiKey.trim() !== ""
+
+                    Behavior on border.color {
+                        ColorAnimation {
+                            duration: 140
+                        }
+                    }
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 140
+                        }
+                    }
+
+                    Keys.onReturnPressed: root.setNsfwVisible(!Config.wallhavenShowNsfw)
+                    Keys.onSpacePressed: root.setNsfwVisible(!Config.wallhavenShowNsfw)
+
+                    IconImage {
+                        anchors.centerIn: parent
+                        height: 17
+                        layer.enabled: true
+                        source: Quickshell.iconPath(Config.wallhavenShowNsfw ? "view-reveal-symbolic" : "view-conceal-symbolic")
+                        width: 17
+
+                        layer.effect: ColorOverlay {
+                            color: Config.wallhavenShowNsfw ? Config.md3.on_error_container : Config.md3.on_surface_variant
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 140
+                                }
+                            }
+                        }
+                    }
+                    MouseArea {
+                        id: nsfwMouse
+
+                        anchors.fill: parent
+                        cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        enabled: parent.enabled
+                        hoverEnabled: true
+
+                        onClicked: root.setNsfwVisible(!Config.wallhavenShowNsfw)
+                    }
+                }
                 RowLayout {
                     Layout.alignment: Qt.AlignVCenter
                     spacing: 6
-                    visible: !root.installedMode && !root.resultLoading && root.resultModel.count > 0
+                    visible: !root.installedMode && root.resultHasItems
 
                     Rectangle {
                         Accessible.name: qsTr("Previous page")
@@ -441,7 +506,7 @@ Rectangle {
                         border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
                         border.width: 1
                         color: previousMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
-                        enabled: root.collectionsMode ? WallhavenService.collectionPage > 1 : WallhavenService.page > 1
+                        enabled: !root.resultLoading && (root.collectionsMode ? WallhavenService.collectionPage > 1 : WallhavenService.page > 1)
                         opacity: enabled ? 1 : 0.35
                         radius: 12
 
@@ -491,7 +556,7 @@ Rectangle {
                         border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
                         border.width: 1
                         color: nextMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
-                        enabled: root.collectionsMode ? WallhavenService.collectionPage < WallhavenService.collectionLastPage : WallhavenService.page < WallhavenService.lastPage
+                        enabled: !root.resultLoading && (root.collectionsMode ? WallhavenService.collectionPage < WallhavenService.collectionLastPage : WallhavenService.page < WallhavenService.lastPage)
                         opacity: enabled ? 1 : 0.35
                         radius: 12
 
@@ -712,7 +777,7 @@ Rectangle {
                 }
                 LoadingIndicator {
                     anchors.centerIn: parent
-                    animated: root.resultLoading
+                    animated: root.resultInitialLoading
                     height: 80
                     visible: animated
                     width: 80
@@ -720,7 +785,7 @@ Rectangle {
                 Column {
                     anchors.centerIn: parent
                     spacing: 8
-                    visible: !root.resultLoading && root.resultError !== "" && !(root.collectionsMode && !WallhavenService.accountConfigured)
+                    visible: !root.resultInitialLoading && !root.resultHasItems && root.resultError !== "" && !(root.collectionsMode && !WallhavenService.accountConfigured)
                     width: Math.min(parent.width - 40, 620)
 
                     Text {
@@ -738,7 +803,7 @@ Rectangle {
                 Column {
                     anchors.centerIn: parent
                     spacing: 6
-                    visible: !root.resultLoading && root.resultError === "" && root.resultModel.count === 0 && !(root.collectionsMode && !WallhavenService.accountConfigured)
+                    visible: !root.resultInitialLoading && !root.resultHasItems && root.resultError === "" && !(root.collectionsMode && !WallhavenService.accountConfigured)
 
                     IconImage {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -777,7 +842,7 @@ Rectangle {
                     clip: true
                     model: root.resultModel
                     reuseItems: false
-                    visible: !root.resultLoading && root.resultError === "" && count > 0
+                    visible: root.resultHasItems
 
                     delegate: WallhavenCard {
                         required property var model

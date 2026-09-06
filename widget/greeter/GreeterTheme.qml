@@ -51,7 +51,7 @@ QtObject {
                 root.applyTheme(text());
         }
     }
-    readonly property string themePath: Quickshell.env("GREETD_THEME_PATH") || "/var/lib/quickshell-greeter/colors.json"
+    readonly property string themePath: Quickshell.env("GREETD_THEME_PATH") || "/var/lib/sownteeshell/greeter/colors.json"
 
     function applyTheme(rawText) {
         var text = String(rawText || "").trim();

@@ -174,7 +174,7 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "quickshell-notification-screenshot"
+    WlrLayershell.namespace: "sownteeshell-notification-screenshot"
     anchors.bottom: true
     anchors.right: true
     color: "transparent"

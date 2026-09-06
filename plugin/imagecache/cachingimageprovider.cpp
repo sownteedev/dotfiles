@@ -31,8 +31,8 @@ bool initialCachePruneDone = false;
 std::atomic<int> cacheWritesSincePrune{0};
 
 QString cacheDirectory() {
-    return QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
-        + QStringLiteral("/image-cache");
+    return QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation)
+        + QStringLiteral("/sownteeshell/image-cache");
 }
 
 void markCacheEntryUsed(const QString& path) {

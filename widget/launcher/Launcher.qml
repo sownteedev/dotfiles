@@ -223,7 +223,7 @@ PanelWindow {
         return true;
     }
 
-    WlrLayershell.namespace: "quickshell-launcher"
+    WlrLayershell.namespace: "sownteeshell-launcher"
     aboveWindows: true
     anchors.bottom: true
     anchors.left: true

@@ -8,6 +8,7 @@ QtObject {
     id: root
 
     readonly property string configPath: Config.niriOutputConfig
+    readonly property string coreRunner: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property Process outputPersistor: Process {
         stdout: StdioCollector {
             id: outputPersistResult
@@ -86,7 +87,7 @@ QtObject {
             pendingPersistPayload = payload;
             return;
         }
-        outputPersistor.command = ["python3", Config.quickshellDir + "/backend/python/display/niri_output_persistence.py", configPath, payload];
+        outputPersistor.command = [coreRunner, "display-niri-persist", configPath, payload];
         outputPersistor.running = true;
     }
     function refreshOutputs() {

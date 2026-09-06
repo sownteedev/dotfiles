@@ -51,7 +51,7 @@ MouseArea {
                 anchors.centerIn: parent
                 implicitHeight: 22
                 implicitWidth: 22
-                source: "file://" + Config.quickshellDir + "/assets/icons/tailscale.svg"
+                source: "file://" + Config.sownteeshellDir + "/assets/icons/tailscale.svg"
                 visible: false
             }
             ColorOverlay {

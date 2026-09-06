@@ -16,7 +16,6 @@ QtObject {
     property int commitToken: 0
     property string currentKey: ""
     readonly property int maxPaletteCacheEntries: 16
-    property var originalColors: null
     property var paletteCache: ({})
     property var paletteCacheOrder: []
     property var pendingJob: null
@@ -35,13 +34,14 @@ QtObject {
                     var palette = null;
                     if (Config.matugenEnabled && job.mode === ThemeService.colorMode) {
                         palette = root.paletteFromMatugen(JSON.parse(workerOutput.text.trim()));
+                        palette.mode = job.mode;
                         root.storePalette(job.key, palette);
                     }
 
                     // A slow, stale job must never recolor the wallpaper which
                     // is currently focused in the selector.
                     if (palette && root.active && job.key === root.currentKey)
-                        ThemeService.applyColors(palette, true);
+                        ThemeService.applyPreviewColors(palette, true);
 
                     if (root.commitKey === job.key)
                         root.finishCommit(job, palette);
@@ -72,7 +72,6 @@ QtObject {
 
         var key = cacheKey(path, modified);
         active = false;
-        originalColors = null;
         currentKey = "";
         commitKey = key;
         commitToken = Number(requestToken || 0);
@@ -92,7 +91,6 @@ QtObject {
         commitKey = "";
         commitToken = 0;
         commitApplyColors = false;
-        originalColors = cloneColors(ThemeService.activeColors);
     }
     function cacheKey(path, modified) {
         return WallpaperService.stableHash(thumbnailKey(path, modified) + "|" + ThemeService.colorMode);
@@ -103,26 +101,15 @@ QtObject {
         commitToken = 0;
         commitApplyColors = false;
 
-        if (active && originalColors)
-            ThemeService.applyColors(originalColors, true);
+        ThemeService.restoreActiveColors(true);
 
         active = false;
-        originalColors = null;
         pendingJob = null;
         preloadQueue = [];
     }
-    function cloneColors(colors) {
-        if (!colors)
-            return null;
-        try {
-            return JSON.parse(JSON.stringify(colors));
-        } catch (error) {
-            return colors;
-        }
-    }
     function finishCommit(job, palette, fallbackPath) {
         if (palette && commitApplyColors)
-            ThemeService.applyColors(palette, true);
+            ThemeService.applyPreviewColors(palette, true);
         commitApplyColors = false;
         commitKey = "";
         themeSourceReady(job.path, fallbackPath || job.thumbnail, Number(job.requestToken || 0));
@@ -200,7 +187,7 @@ QtObject {
         var cached = paletteCache[key];
         if (cached !== undefined) {
             touchPalette(key);
-            ThemeService.applyColors(cached, true);
+            ThemeService.applyPreviewColors(cached, true);
             return;
         }
 
@@ -223,7 +210,7 @@ QtObject {
         }
 
         var job = activeJob;
-        var matugenRunner = Config.quickshellDir + "/scripts/theme/matugen-wallpaper-theme.sh";
+        var matugenRunner = Config.sownteeshellDir + "/scripts/theme/matugen-wallpaper-theme.sh";
         worker.command = ["sh", "-c", "mkdir -p \"$4\"; " + "if [ ! -s \"$2\" ]; then " + "rm -f \"$2.tmp.jpg\"; " + "if command -v magick >/dev/null 2>&1 && magick \"$1\" -auto-orient -thumbnail '256x256>' -strip \"$2.tmp.jpg\"; then :; " + "else rm -f \"$2.tmp.jpg\" && ffmpeg -hide_banner -loglevel error -y -i \"$1\" -frames:v 1 -vf 'scale=256:256:force_original_aspect_ratio=decrease' \"$2.tmp.jpg\"; fi && " + "mv \"$2.tmp.jpg\" \"$2\"; fi; " + "if [ \"$5\" = true ]; then " + "if [ ! -s \"$3\" ]; then \"$6\" --mode \"$7\" --dry-run --json hex --quiet \"$2\" > \"$3.tmp\" && mv \"$3.tmp\" \"$3\"; fi; " + "cat \"$3\"; else printf '{}'; fi", "wallpaper-preview", job.path, job.thumbnail, job.palette, cacheDir, Config.matugenEnabled ? "true" : "false", matugenRunner, job.mode];
         worker.running = true;
     }

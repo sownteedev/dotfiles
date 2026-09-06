@@ -5,7 +5,8 @@
 set -eu
 
 readonly ACTION="${1:-}"
-readonly UNIT="quickshell-caffeine-inhibitor.service"
+readonly UNIT="sownteeshell-caffeine-inhibitor.service"
+readonly LEGACY_UNIT="quickshell-caffeine-inhibitor.service"
 readonly LEGACY_PATTERN='^/usr/bin/systemd-inhibit --what=idle --mode=block --who=Quickshell --why=Caffeine mode is active sleep infinity$'
 
 cleanup_legacy_inhibitors() {
@@ -22,6 +23,8 @@ cleanup_legacy_inhibitors() {
 
 case "$ACTION" in
     enable)
+        systemctl --user stop "$LEGACY_UNIT" 2>/dev/null || true
+        systemctl --user reset-failed "$LEGACY_UNIT" 2>/dev/null || true
         if systemctl --user start "$UNIT" 2>/dev/null; then
             exit 0
         fi
@@ -33,16 +36,18 @@ case "$ACTION" in
             --unit="$UNIT" \
             --collect \
             --property=KillMode=control-group \
-            --description="Quickshell Caffeine inhibitor" \
+            --description="SownteeShell Caffeine inhibitor" \
             /usr/bin/systemd-inhibit \
             --what=idle \
             --mode=block \
-            --who=Quickshell \
+            --who=SownteeShell \
             "--why=Caffeine mode is active" \
             /usr/bin/sleep infinity
         ;;
     disable)
         systemctl --user stop "$UNIT" 2>/dev/null || true
+        systemctl --user stop "$LEGACY_UNIT" 2>/dev/null || true
+        systemctl --user reset-failed "$LEGACY_UNIT" 2>/dev/null || true
         cleanup_legacy_inhibitors
         ;;
     *)

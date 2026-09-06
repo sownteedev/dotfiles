@@ -155,7 +155,7 @@ PanelWindow {
         SysStats.pollingEnabled = active && (activeBottomTab === 0 || activeTab === 1);
     }
 
-    WlrLayershell.namespace: "quickshell-control-right"
+    WlrLayershell.namespace: "sownteeshell-control-right"
     anchors.bottom: true
     anchors.left: true
     anchors.right: true
@@ -341,13 +341,13 @@ PanelWindow {
                         Button {
                             active: tailscaleEnabled
                             activeColor: Config.md3.primary
-                            iconName: "file://" + Config.quickshellDir + "/assets/icons/tailscale.svg"
+                            iconName: "file://" + Config.sownteeshellDir + "/assets/icons/tailscale.svg"
 
                             onClicked: QuickSettingsService.setTailscaleEnabled(!tailscaleEnabled)
                         }
                         Button {
                             active: warpEnabled
-                            iconName: warpEnabled ? "file://" + Config.quickshellDir + "/assets/icons/cloudflare-active.svg" : "file://" + Config.quickshellDir + "/assets/icons/cloudflare.svg"
+                            iconName: warpEnabled ? "file://" + Config.sownteeshellDir + "/assets/icons/cloudflare-active.svg" : "file://" + Config.sownteeshellDir + "/assets/icons/cloudflare.svg"
 
                             onClicked: QuickSettingsService.setWarpEnabled(!warpEnabled)
                         }

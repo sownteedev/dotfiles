@@ -40,7 +40,8 @@ impl SyncService {
         let _guard = self.lock.lock().await;
         let accounts = self
             .database
-            .list_accounts(true)
+            .run_blocking(|database| database.list_accounts(true))
+            .await
             .context("list enabled calendar accounts")?;
         let mut report = SyncReport::default();
         for account in accounts {
@@ -60,9 +61,14 @@ impl SyncService {
 
     pub async fn sync_account(&self, account_id: &str) -> Result<AccountSyncReport> {
         let _guard = self.lock.lock().await;
+        let account_id = account_id.to_string();
         let account = self
             .database
-            .get_account(account_id)?
+            .run_blocking({
+                let account_id = account_id.clone();
+                move |database| database.get_account(&account_id)
+            })
+            .await?
             .ok_or_else(|| anyhow!("calendar account not found: {account_id}"))?;
         Ok(self.sync_one(&account).await)
     }
@@ -71,8 +77,13 @@ impl SyncService {
         self.publish(DaemonEvent::sync("started", &account.id, None));
         match self.sync_one_inner(account).await {
             Ok(calendars_synced) => {
-                if let Err(error) = self.database.set_account_sync_success(&account.id) {
-                    return self.failed_report(account, error.into(), false);
+                let account_id = account.id.clone();
+                if let Err(error) = self
+                    .database
+                    .run_blocking(move |database| database.set_account_sync_success(&account_id))
+                    .await
+                {
+                    return self.failed_report(account, error.into(), false).await;
                 }
                 self.publish(DaemonEvent::sync("completed", &account.id, None));
                 AccountSyncReport {
@@ -84,7 +95,7 @@ impl SyncService {
             }
             Err(error) => {
                 let needs_reauth = matches!(error, ProviderError::Reauth(_));
-                self.failed_report(account, error, needs_reauth)
+                self.failed_report(account, error, needs_reauth).await
             }
         }
     }
@@ -94,9 +105,14 @@ impl SyncService {
         debug_assert_eq!(provider.kind(), account.provider);
 
         let remote_calendars = provider.list_calendars(account).await?;
+        let account_id = account.id.clone();
         let calendars = self
             .database
-            .reconcile_calendars(&account.id, &remote_calendars)?;
+            .run_blocking(move |database| {
+                database.reconcile_calendars(&account_id, &remote_calendars)
+            })
+            .await
+            .map_err(ProviderError::from)?;
         let today = Utc::now().date_naive();
         let midnight = Utc.from_utc_datetime(
             &today
@@ -116,25 +132,47 @@ impl SyncService {
         for mut calendar in calendars {
             let supports_cursor = account.provider == ProviderKind::Google
                 || (account.provider == ProviderKind::Microsoft && calendar.primary);
-            let window = if supports_cursor
-                && (calendar.sync_token.is_empty()
-                    || !self.database.sync_window_covers(
-                        &calendar.id,
-                        desired_window.start,
-                        desired_window.end,
-                    )?) {
-                if !calendar.sync_token.is_empty() {
-                    self.database.clear_calendar_sync_token(&calendar.id)?;
-                    calendar.sync_token.clear();
-                }
-                full_window
+            let window_is_covered = if supports_cursor && !calendar.sync_token.is_empty() {
+                let calendar_id = calendar.id.clone();
+                self.database
+                    .run_blocking(move |database| {
+                        database.sync_window_covers(
+                            &calendar_id,
+                            desired_window.start,
+                            desired_window.end,
+                        )
+                    })
+                    .await
+                    .map_err(ProviderError::from)?
             } else {
-                desired_window
+                false
             };
+            let window =
+                if supports_cursor && (calendar.sync_token.is_empty() || !window_is_covered) {
+                    if !calendar.sync_token.is_empty() {
+                        let calendar_id = calendar.id.clone();
+                        self.database
+                            .run_blocking(move |database| {
+                                database.clear_calendar_sync_token(&calendar_id)
+                            })
+                            .await
+                            .map_err(ProviderError::from)?;
+                        calendar.sync_token.clear();
+                    }
+                    full_window
+                } else {
+                    desired_window
+                };
 
             let batch = match provider.sync_calendar(account, &calendar, window).await {
                 Err(ProviderError::CursorExpired(_)) => {
-                    self.database.clear_calendar_sync_token(&calendar.id)?;
+                    let calendar_id = calendar.id.clone();
+                    self.database
+                        .run_blocking(move |database| {
+                            database.clear_calendar_sync_token(&calendar_id)
+                        })
+                        .await
+                        .map_err(ProviderError::from)?;
                     let mut fresh_calendar = calendar.clone();
                     fresh_calendar.sync_token.clear();
                     provider
@@ -148,15 +186,26 @@ impl SyncService {
             } else {
                 window
             };
-            self.database.apply_sync_batch(
-                &calendar,
-                &batch,
-                applied_window.start,
-                applied_window.end,
-            )?;
+            let stored_calendar = calendar.clone();
+            self.database
+                .run_blocking(move |database| {
+                    database.apply_sync_batch(
+                        &stored_calendar,
+                        &batch,
+                        applied_window.start,
+                        applied_window.end,
+                    )
+                })
+                .await
+                .map_err(ProviderError::from)?;
             if account.provider != ProviderKind::CalDav {
+                let calendar_id = calendar.id.clone();
                 self.database
-                    .prune_events_before(&calendar.id, desired_window.start)?;
+                    .run_blocking(move |database| {
+                        database.prune_events_before(&calendar_id, desired_window.start)
+                    })
+                    .await
+                    .map_err(ProviderError::from)?;
             }
             synced += 1;
             self.publish(DaemonEvent::changed(
@@ -169,16 +218,21 @@ impl SyncService {
         Ok(synced)
     }
 
-    fn failed_report(
+    async fn failed_report(
         &self,
         account: &Account,
         error: ProviderError,
         needs_reauth: bool,
     ) -> AccountSyncReport {
         let message = error.to_string();
-        if let Err(database_error) =
-            self.database
-                .set_account_sync_error(&account.id, &message, needs_reauth)
+        let account_id = account.id.clone();
+        let stored_message = message.clone();
+        if let Err(database_error) = self
+            .database
+            .run_blocking(move |database| {
+                database.set_account_sync_error(&account_id, &stored_message, needs_reauth)
+            })
+            .await
         {
             eprintln!(
                 "failed to store sync error for account {}: {database_error:#}",

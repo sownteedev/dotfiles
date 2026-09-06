@@ -104,6 +104,8 @@ impl ProviderRegistry {
                 env!("CARGO_PKG_VERSION")
             ))
             .connect_timeout(std::time::Duration::from_secs(15))
+            .pool_idle_timeout(std::time::Duration::from_secs(45))
+            .pool_max_idle_per_host(2)
             .timeout(std::time::Duration::from_secs(45))
             .build()?;
         Ok(Self {

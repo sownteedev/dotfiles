@@ -387,7 +387,7 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "quickshell-notification-popup"
+    WlrLayershell.namespace: "sownteeshell-notification-popup"
     anchors.bottom: popupAtBottom
     anchors.left: false
     anchors.right: popupAtRight

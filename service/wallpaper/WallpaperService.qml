@@ -96,26 +96,6 @@ QtObject {
             "frame": ""
         })
     property string lastVideoFrame: ""
-    property bool legacyStateAttempted: false
-    property Process legacyStateLoader: Process {
-        command: ["cat", root.legacyStatePath]
-
-        stdout: StdioCollector {
-            id: legacyStateOutput
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0 && legacyStateOutput.text.trim() !== "") {
-                root.loadSavedWallpaper(legacyStateOutput.text);
-                if (!root.pendingProjectResolution)
-                    root.stateReader.setText(JSON.stringify(root.lastStableState) + "\n");
-            } else {
-                root.loadDefaultWallpaper();
-            }
-            root.ensureInitialTheme();
-        }
-    }
-    readonly property string legacyStatePath: Config.homeDir + "/.cache/quickshell/quickshell_wallpaper.txt"
     property Connections liveConnections: Connections {
         function onPlaybackFailed(sourcePath, message, generation) {
             if (generation === root.videoTransitionGeneration && sourcePath === root.selectedRendererPath)
@@ -232,7 +212,7 @@ QtObject {
     property string selectedPath: Config.wallpaper
     property string selectedRendererPath: selectedMode === "video" ? selectedPath : ""
     property bool startupVideoRestore: true
-    readonly property string statePath: Config.cacheRoot + "/quickshell_wallpaper.txt"
+    readonly property string statePath: Config.cacheRoot + "/wallpaper.json"
     property FileView stateReader: FileView {
         atomicWrites: true
         blockLoading: true
@@ -244,11 +224,6 @@ QtObject {
         watchChanges: false
 
         onLoadFailed: {
-            if (root.statePath !== root.legacyStatePath && !root.legacyStateAttempted) {
-                root.legacyStateAttempted = true;
-                root.legacyStateLoader.running = true;
-                return;
-            }
             root.loadDefaultWallpaper();
             root.ensureInitialTheme();
         }
@@ -948,7 +923,7 @@ QtObject {
             if (savedThumbnail && !EngineWallpaperService.previewNeedsConversion(savedThumbnail))
                 fallbackVideoThumbnail = savedThumbnail;
             // Prefer the last renderer frame at startup. Engine frames reach
-            // this state only after wallpaper_frame_probe has validated them,
+            // this state only after the core frame probe has validated them,
             // and EngineWallpaperService writes the next launch into the
             // opposite slot, so this full-screen cover remains intact until
             // the new renderer is ready. Fall back to the smaller Workshop

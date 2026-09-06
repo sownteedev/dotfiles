@@ -22,7 +22,7 @@ QtObject {
                 root.applyManifest(text());
         }
     }
-    readonly property string manifestPath: Quickshell.env("GREETD_PROFILE_PATH") || "/var/lib/quickshell-greeter/profile.json"
+    readonly property string manifestPath: Quickshell.env("GREETD_PROFILE_PATH") || "/var/lib/sownteeshell/greeter/profile.json"
     property string sourcePath: ""
 
     function applyManifest(rawText) {

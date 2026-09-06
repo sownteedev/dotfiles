@@ -18,7 +18,7 @@ PanelWindow {
     readonly property real statusIconSpacing: Responsive.clamp(width * 0.014, 18, 26) * densityScale
     readonly property bool themeReady: ThemeService.hasAppliedTheme || (ThemeService.themeFileResolved && !Config.matugenEnabled)
 
-    WlrLayershell.namespace: Config.shellBlurBarEnabled ? "blur-bar" : "quickshell-bar"
+    WlrLayershell.namespace: Config.shellBlurBarEnabled ? "blur-bar" : "sownteeshell-bar"
     anchors.left: true
     anchors.right: true
     anchors.top: true
@@ -237,9 +237,14 @@ PanelWindow {
                             MouseArea {
                                 id: clockArea
 
+                                Accessible.name: qsTr("Open calendar")
+                                Accessible.role: Accessible.Button
+                                cursorShape: Qt.PointingHandCursor
                                 hoverEnabled: true
                                 implicitHeight: 30
                                 implicitWidth: clockLayout.implicitWidth
+
+                                onClicked: StateManager.showCalendarApp()
 
                                 ColumnLayout {
                                     id: clockLayout

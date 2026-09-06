@@ -56,6 +56,7 @@ QtObject {
             "tabletModeOffAction": ""
         })
     property bool busy: false
+    readonly property string coreRunner: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property bool editorSessionActive: false
     property string errorMessage: ""
     readonly property bool filePickerActive: activeFilePickerRequestId !== ""
@@ -83,7 +84,6 @@ QtObject {
             return started;
         }
     }
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/settings/settings_bridge.py"
     property var inputEnabled: ({
             "Touchpad": true,
             "Mouse": true,
@@ -379,7 +379,7 @@ QtObject {
         property string payloadJson: "{}"
         property bool timedOut: false
 
-        command: ["python3", root.helperPath, operation, "-"]
+        command: [root.coreRunner, "request-stdin", root.methodForOperation(operation)]
         stdinEnabled: true
 
         stderr: StdioCollector {
@@ -419,8 +419,6 @@ QtObject {
         onStarted: {
             timedOut = false;
             saveWatchdog.restart();
-            // settings_hub.py reads one JSON line. Without the newline it waits
-            // for EOF, which only happened when Quickshell was reloaded.
             write(payloadJson + "\n");
             payloadJson = "{}";
         }
@@ -439,7 +437,8 @@ QtObject {
     property Process snapshotProcess: Process {
         id: snapshotProcess
 
-        command: ["python3", root.helperPath, "snapshot"]
+        command: [root.coreRunner, "request-stdin", "settings.snapshot"]
+        stdinEnabled: true
 
         stderr: StdioCollector {
             id: snapshotError
@@ -463,6 +462,9 @@ QtObject {
                 root.setStatus(false, "Invalid settings response: " + error);
             }
         }
+        onStarted: write(JSON.stringify({
+            "quickshellDir": Config.sownteeshellDir
+        }) + "\n")
     }
     property string statusMessage: ""
     property bool statusSuccess: true
@@ -496,6 +498,32 @@ QtObject {
         editorSessionActive = false;
         releaseEditorDataTimer.restart();
     }
+    function methodForOperation(operation) {
+        switch (operation) {
+        case "set-layout":
+            return "settings.layout.apply";
+        case "set-keybind":
+            return "settings.keybind.apply";
+        case "set-input":
+            return "settings.input.apply";
+        case "set-input-enabled":
+            return "settings.input.enabled";
+        case "set-input-entry-enabled":
+            return "settings.input.entryEnabled";
+        case "set-animation-global":
+            return "settings.animations.apply";
+        case "set-animation-entry":
+            return "settings.animation.apply";
+        case "set-behavior":
+            return "settings.behavior.apply";
+        case "set-niri-file":
+            return "settings.niriFile.apply";
+        case "set-quickshell":
+            return "settings.quickshell.apply";
+        default:
+            return "";
+        }
+    }
     function openFile(path) {
         Quickshell.execDetached(["xdg-open", path]);
     }
@@ -527,7 +555,9 @@ QtObject {
             return;
 
         pendingPayload = payload;
-        saveProcess.payloadJson = JSON.stringify(payload);
+        saveProcess.payloadJson = JSON.stringify(Object.assign({}, payload, {
+            "quickshellDir": Config.sownteeshellDir
+        }));
         saveProcess.operation = operation;
         busy = true;
         Qt.callLater(function () {

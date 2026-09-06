@@ -27,6 +27,7 @@ ShellRoot {
 
     readonly property bool batteryPolicyReady: BatteryService.policyReady
     readonly property bool calendarDaemonReady: CalendarService.ready
+    readonly property bool coreDaemonReady: CoreService.ready
     property var lazyOpenRequests: ({})
     readonly property bool profileImageSyncBusy: ProfileImageService.busy
 
@@ -511,6 +512,26 @@ ShellRoot {
         target: lockscreenLoader.item
     }
     IpcHandler {
+        function status(): string {
+            return JSON.stringify({
+                "ready": CoreService.ready,
+                "daemonStatus": CoreService.daemonStatus,
+                "socketPath": CoreService.socketPath,
+                "statsEnabled": CoreService.statsEnabled,
+                "statsSubscribed": CoreService.statsSubscribed,
+                "lastStatsUpdate": CoreService.lastStatsUpdate,
+                "batteryEnabled": CoreService.batteryEnabled,
+                "batterySubscribed": CoreService.batterySubscribed,
+                "lastBatteryUpdate": CoreService.lastBatteryUpdate,
+                "updatesEnabled": CoreService.updatesEnabled,
+                "updatesSubscribed": CoreService.updatesSubscribed,
+                "lastUpdatesUpdate": CoreService.lastUpdatesUpdate
+            });
+        }
+
+        target: "core"
+    }
+    IpcHandler {
         function hide(): bool {
             IdleDimService.hide();
             return true;
@@ -559,9 +580,18 @@ ShellRoot {
                 "mode": WallpaperService.currentMode,
                 "themeMode": ThemeService.colorMode,
                 "activeThemeMode": ThemeService.activeMode,
+                "themeModeResolved": ThemeService.modeResolved,
+                "themePreviewActive": ThemeService.previewColorsActive,
                 "themeSource": ThemeService.activeSource,
                 "expectedThemeSource": ThemeService.expectedSource,
                 "themeSynchronized": ThemeService.themeAvailable,
+                "lightTheme": Config.lightTheme,
+                "runtimeBackground": String(Config.md3.background),
+                "runtimeOnSurface": String(Config.md3.on_surface),
+                "committedBackground": ThemeService.activeColors && ThemeService.activeColors.md3 ? String(ThemeService.activeColors.md3.background || "") : "",
+                "committedOnSurface": ThemeService.activeColors && ThemeService.activeColors.md3 ? String(ThemeService.activeColors.md3.on_surface || "") : "",
+                "colorTransitionRunning": ThemeService.colorTransition.running,
+                "qtColorScheme": Qt.styleHints.colorScheme === Qt.Dark ? "dark" : Qt.styleHints.colorScheme === Qt.Light ? "light" : "unknown",
                 "selectedBackend": selectedBackend,
                 "runningBackend": runningBackend,
                 "transitionPending": WallpaperService.isTransitionPending,

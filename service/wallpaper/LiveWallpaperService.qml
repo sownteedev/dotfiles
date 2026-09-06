@@ -100,7 +100,7 @@ QtObject {
             Qt.callLater(root.launchRendererNow);
         }
     }
-    readonly property string rendererEntryPath: Config.quickshellDir + "/widget/desktop/nativevideo/NativeVideoRenderer.qml"
+    readonly property string rendererEntryPath: Config.sownteeshellDir + "/widget/desktop/nativevideo/NativeVideoRenderer.qml"
     property bool rendererLaunchPending: false
     property FileView rendererPidFile: FileView {
         atomicWrites: true

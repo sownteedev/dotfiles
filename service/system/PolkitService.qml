@@ -10,7 +10,7 @@ QtObject {
     property PolkitAgent nativeAgent: PolkitAgent {
         id: nativeAgent
 
-        path: "/org/quickshell/PolkitAgent"
+        path: "/org/sownteeshell/PolkitAgent"
 
         onIsRegisteredChanged: {
             console.info("[PolkitService] Agent registered:", isRegistered);

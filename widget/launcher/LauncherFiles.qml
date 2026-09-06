@@ -15,7 +15,7 @@ Item {
     property string query: ""
     property var readyPreviewPaths: ({})
     property int requestGeneration: 0
-    readonly property string videoPreviewCacheDir: "/tmp/quickshell-launcher-video-previews"
+    readonly property string videoPreviewCacheDir: "/tmp/sownteeshell-launcher-video-previews"
 
     function ensureVideoPreview(path) {
         var sourcePath = String(path || "");

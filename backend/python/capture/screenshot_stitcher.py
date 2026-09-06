@@ -92,7 +92,7 @@ def stitch_images(paths: list[str], output: str, orientation: str) -> dict[str, 
     output_path = Path(output).expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with tempfile.TemporaryDirectory(prefix="quickshell-stitch-work-") as work_dir_text:
+    with tempfile.TemporaryDirectory(prefix="sownteeshell-stitch-work-") as work_dir_text:
         work_dir = Path(work_dir_text)
         normalized: list[Path] = []
         for index, source in enumerate(sources):

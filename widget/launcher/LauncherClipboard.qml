@@ -1,4 +1,5 @@
 import "../../"
+import "../../service"
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -20,7 +21,6 @@ Item {
     property string query: ""
     property var readyPreviewIds: ({})
     property int requestGeneration: 0
-    readonly property string restoreHelperPath: Config.quickshellDir + "/backend/python/clipboard/clipboard_history_restore.py"
 
     function classifyContent(content, isImage, characterCount, decodedLineCount, decodedFileCount, decodedFirstFile) {
         var text = String(content || "").trim();
@@ -71,10 +71,14 @@ Item {
     }
     function copySelected(id) {
         var key = String(id || "");
-        var command = ["python3", restoreHelperPath, key];
-        if (Config.launcherClipboardAutoPaste)
-            command.push("--auto-paste");
-        Quickshell.execDetached(command);
+        if (key === "")
+            return;
+        CoreService.sendRequest("clipboard.restore", {
+            "entryId": key,
+            "autoPaste": Config.launcherClipboardAutoPaste
+        }, null, function (message) {
+            console.warn("[LauncherClipboard]", message);
+        });
     }
     function displayPath(value) {
         return localPath(value).replace(Config.homeDir, "~");
@@ -273,7 +277,7 @@ Item {
     }
     function previewPathForId(id, extension) {
         var safeId = String(id).replace(/[^A-Za-z0-9_-]/g, "_");
-        return "/tmp/quickshell-launcher-cliphist-" + previewSessionId + "-" + safeId + "." + extension;
+        return "/tmp/sownteeshell-launcher-cliphist-" + previewSessionId + "-" + safeId + "." + extension;
     }
     function refreshPinnedResults() {
         var updated = [];

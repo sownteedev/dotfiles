@@ -1,7 +1,6 @@
 pragma Singleton
 
 import QtQuick
-import Quickshell.Io
 import "../.."
 import ".."
 
@@ -9,42 +8,13 @@ QtObject {
     id: root
 
     property string activeInspectAppId: ""
+    property string activeInspectRequestId: ""
+    property string activeUninstallRequestId: ""
     property bool available: false
     property string backend: ""
     property var blockers: []
     property var cache: ({})
     property string errorMessage: ""
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/system/application_package.py"
-    property Process inspectProcess: Process {
-        id: inspectProcess
-
-        command: []
-
-        stderr: StdioCollector {
-            id: inspectError
-        }
-        stdout: StdioCollector {
-            id: inspectOutput
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            var completedAppId = root.activeInspectAppId;
-            var response = root.parseResponse(inspectOutput.text, completedAppId, inspectError.text);
-            if (exitCode === 0 && response.ok === true) {
-                var nextCache = Object.assign({}, root.cache);
-                nextCache[completedAppId] = response;
-                root.cache = nextCache;
-            }
-            if (root.inspectedAppId === completedAppId)
-                root.applyInspection(response, exitCode === 0 && response.ok === true);
-
-            root.activeInspectAppId = "";
-            var nextAppId = root.queuedInspectAppId;
-            root.queuedInspectAppId = "";
-            if (nextAppId !== "")
-                Qt.callLater(() => root.inspect(nextAppId));
-        }
-    }
     property string inspectedAppId: ""
     property bool inspecting: false
     property string packageName: ""
@@ -52,46 +22,6 @@ QtObject {
     property bool removable: false
     property string scope: ""
     property string uninstallAppId: ""
-    property Process uninstallProcess: Process {
-        id: uninstallProcess
-
-        command: []
-
-        stderr: StdioCollector {
-            id: uninstallError
-        }
-        stdout: StdioCollector {
-            id: uninstallOutput
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            var completedAppId = root.uninstallAppId;
-            var response = root.parseResponse(uninstallOutput.text, completedAppId, uninstallError.text);
-            var success = exitCode === 0 && response.ok === true;
-            root.errorMessage = success ? "" : response.message;
-            root.uninstalling = false;
-            root.uninstallAppId = "";
-
-            if (success) {
-                var nextCache = Object.assign({}, root.cache);
-                var relatedAppIds = Array.isArray(response.desktop_ids) ? response.desktop_ids : [completedAppId];
-                for (var appIndex = 0; appIndex < relatedAppIds.length; ++appIndex) {
-                    var relatedAppId = String(relatedAppIds[appIndex] || "");
-                    if (relatedAppId === "")
-                        continue;
-                    delete nextCache[relatedAppId];
-                    DockService.unpin(relatedAppId);
-                    var group = LauncherGroupService.groupForApp(relatedAppId);
-                    if (group)
-                        LauncherGroupService.removeApp(group.id, relatedAppId);
-                }
-                root.cache = nextCache;
-                if (root.inspectedAppId === completedAppId)
-                    root.clearInspection();
-            }
-            root.uninstallFinished(completedAppId, success, response.message);
-        }
-    }
     property bool uninstalling: false
 
     signal uninstallFinished(string appId, bool success, string message)
@@ -114,6 +44,55 @@ QtObject {
         removable = false;
         scope = "";
     }
+    function finishInspection(completedAppId, response, success) {
+        activeInspectRequestId = "";
+        if (!response)
+            response = {};
+        if (!response.app_id)
+            response.app_id = completedAppId;
+        if (success && response.ok === true) {
+            var nextCache = Object.assign({}, cache);
+            nextCache[completedAppId] = response;
+            cache = nextCache;
+        }
+        if (inspectedAppId === completedAppId)
+            applyInspection(response, success && response.ok === true);
+
+        activeInspectAppId = "";
+        var nextAppId = queuedInspectAppId;
+        queuedInspectAppId = "";
+        if (nextAppId !== "")
+            Qt.callLater(() => root.inspect(nextAppId));
+    }
+    function finishUninstall(completedAppId, response, success) {
+        activeUninstallRequestId = "";
+        if (!response)
+            response = {};
+        var completedSuccessfully = success && response.ok === true;
+        var message = String(response.message || (completedSuccessfully ? "" : qsTr("Package operation failed")));
+        errorMessage = completedSuccessfully ? "" : message;
+        uninstalling = false;
+        uninstallAppId = "";
+
+        if (completedSuccessfully) {
+            var nextCache = Object.assign({}, cache);
+            var relatedAppIds = Array.isArray(response.desktop_ids) ? response.desktop_ids : [completedAppId];
+            for (var appIndex = 0; appIndex < relatedAppIds.length; ++appIndex) {
+                var relatedAppId = String(relatedAppIds[appIndex] || "");
+                if (relatedAppId === "")
+                    continue;
+                delete nextCache[relatedAppId];
+                DockService.unpin(relatedAppId);
+                var group = LauncherGroupService.groupForApp(relatedAppId);
+                if (group)
+                    LauncherGroupService.removeApp(group.id, relatedAppId);
+            }
+            cache = nextCache;
+            if (inspectedAppId === completedAppId)
+                clearInspection();
+        }
+        uninstallFinished(completedAppId, completedSuccessfully, message);
+    }
     function inspect(appId) {
         var normalizedAppId = String(appId || "");
         inspectedAppId = normalizedAppId;
@@ -130,31 +109,22 @@ QtObject {
             return;
         }
         inspecting = true;
-        if (inspectProcess.running) {
+        if (activeInspectRequestId !== "") {
             queuedInspectAppId = normalizedAppId;
             return;
         }
         startInspection(normalizedAppId);
     }
-    function parseResponse(text, appId, fallback) {
-        try {
-            var response = JSON.parse(String(text || "").trim());
-            if (!response.app_id)
-                response.app_id = appId;
-            return response;
-        } catch (error) {
-            return {
-                "app_id": appId,
-                "managed": false,
-                "message": String(fallback || qsTr("Package operation failed")).trim(),
-                "ok": false
-            };
-        }
-    }
     function startInspection(appId) {
         activeInspectAppId = appId;
-        inspectProcess.command = ["python3", helperPath, "inspect", appId];
-        inspectProcess.running = true;
+        activeInspectRequestId = CoreService.sendRequest("application.inspect", {
+            "appId": appId
+        }, response => root.finishInspection(appId, response, true), message => root.finishInspection(appId, {
+                "app_id": appId,
+                "managed": false,
+                "message": message,
+                "ok": false
+            }, false), 20000);
     }
     function uninstall(appId) {
         var normalizedAppId = String(appId || "");
@@ -163,8 +133,12 @@ QtObject {
         uninstallAppId = normalizedAppId;
         uninstalling = true;
         errorMessage = "";
-        uninstallProcess.command = ["python3", helperPath, "uninstall", normalizedAppId];
-        uninstallProcess.running = true;
+        activeUninstallRequestId = CoreService.sendRequest("application.uninstall", {
+            "appId": normalizedAppId
+        }, response => root.finishUninstall(normalizedAppId, response, true), message => root.finishUninstall(normalizedAppId, {
+                "message": message,
+                "ok": false
+            }, false), 10 * 60 * 1000);
         return true;
     }
 }

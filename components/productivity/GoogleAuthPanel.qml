@@ -79,14 +79,14 @@ Item {
                             font.family: Config.fontName
                             font.pixelSize: 17
                             font.weight: Font.Bold
-                            text: "Connect Google"
+                            text: qsTr("Connect Google Tasks")
                         }
                         Text {
                             Layout.fillWidth: true
                             color: Config.md3.on_surface_variant
                             font.family: Config.fontName
                             font.pixelSize: 15
-                            text: "Authorize Calendar and Tasks"
+                            text: qsTr("Authorize Todo synchronization")
                         }
                     }
                 }
@@ -96,7 +96,7 @@ Item {
                     font.family: Config.fontName
                     font.pixelSize: 14
                     font.weight: Font.Medium
-                    text: "Create an OAuth Desktop client in Google Cloud, enable the Calendar and Tasks APIs, then enter its credentials below. Authentication opens in your browser and returns through localhost."
+                    text: qsTr("Create an OAuth Desktop client in Google Cloud, enable the Google Tasks API, then enter its credentials below. Authentication opens in your browser and returns through localhost.")
                     wrapMode: Text.Wrap
                 }
                 FormTextField {

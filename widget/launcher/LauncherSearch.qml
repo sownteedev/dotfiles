@@ -302,6 +302,8 @@ Item {
     ListView {
         id: searchList
 
+        readonly property real cardInset: 2
+
         function smoothWheelScroll(delta) {
             var minimumY = searchList.originY;
             var maximumY = minimumY + Math.max(0, searchList.contentHeight - searchList.height);
@@ -381,9 +383,10 @@ Item {
             clip: true
             color: "transparent"
             height: isDeleting ? 0 : 80
+            layer.enabled: isFile && swipeContent.x > 0.4
             opacity: isDeleting ? 0 : 1
             radius: 28
-            width: searchList.width
+            width: searchList.width - searchList.cardInset * 2
 
             Behavior on height {
                 NumberAnimation {
@@ -391,10 +394,20 @@ Item {
                     easing.type: Easing.InOutQuad
                 }
             }
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    height: delegateRoot.height
+                    radius: delegateRoot.radius
+                    width: delegateRoot.width
+                }
+            }
             Behavior on opacity {
                 NumberAnimation {
                     duration: 200
                 }
+            }
+            transform: Translate {
+                x: searchList.cardInset
             }
 
             Component.onCompleted: {
@@ -727,7 +740,8 @@ Item {
             parent: searchList.contentItem
             radius: 28
             visible: searchList.currentItem !== null && searchRoot.combinedResults.length > 0
-            width: searchList.width
+            width: searchList.width - searchList.cardInset * 2
+            x: searchList.cardInset
             y: searchList.currentItem ? searchList.currentItem.y : 0
             z: -1
 

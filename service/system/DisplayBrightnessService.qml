@@ -9,6 +9,7 @@ QtObject {
 
     readonly property bool available: internalOutput ? BrightnessService.available : externalAvailable
     readonly property string backendLabel: internalOutput ? "Laptop backlight" : externalAvailable ? "DDC/CI • " + outputName : externalError
+    readonly property string coreRunner: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property bool externalAvailable: false
     property int externalBus: -1
     property string externalError: "Select a display"
@@ -18,23 +19,20 @@ QtObject {
     readonly property bool internalOutput: DisplayService.isInternalOutput(outputName)
     property string outputName: ""
     property string pendingProbeOutput: ""
-    property Process probe: Process {
-        stdout: StdioCollector {
-            id: probeOutput
-        }
+    property CoreRequest probe: CoreRequest {
+        timeoutMs: 12000
 
-        onExited: (exitCode, exitStatus) => {
-            root.applyResponse(probeOutput.text);
-            if (root.pendingProbeOutput !== "") {
-                var nextOutput = root.pendingProbeOutput;
-                root.pendingProbeOutput = "";
-                Qt.callLater(function () {
-                    root.startProbe(nextOutput);
-                });
-            }
+        onFailed: message => {
+            root.externalAvailable = false;
+            root.externalError = String(message || qsTr("Could not read external display brightness"));
+            root.finishProbe();
+        }
+        onSucceeded: response => {
+            root.applyResponse(response);
+            root.finishProbe();
         }
     }
-    readonly property bool probing: probe.running
+    readonly property bool probing: probe.active
     property Timer setDelay: Timer {
         interval: 140
         repeat: false
@@ -57,12 +55,12 @@ QtObject {
     function applyExternalValue() {
         if (internalOutput || outputName === "" || setter.running || externalRequestedValue < 0)
             return;
-        setter.command = ["python3", Config.quickshellDir + "/backend/python/display/ddc_brightness.py", "set", outputName, String(externalRequestedValue), String(externalBus), String(externalMaximum)];
+        setter.command = [coreRunner, "display-ddc-set", outputName, String(externalRequestedValue), String(externalBus), String(externalMaximum)];
         setter.running = true;
     }
-    function applyResponse(text) {
+    function applyResponse(payload) {
         try {
-            var result = JSON.parse(String(text || "").trim() || "{}");
+            var result = typeof payload === "string" ? JSON.parse(String(payload || "").trim() || "{}") : (payload || {});
             if (String(result.output || "") !== outputName)
                 return;
             externalAvailable = result.available === true;
@@ -78,6 +76,15 @@ QtObject {
             externalAvailable = false;
             externalError = "Could not read external display brightness";
         }
+    }
+    function finishProbe() {
+        if (pendingProbeOutput === "")
+            return;
+        var nextOutput = pendingProbeOutput;
+        pendingProbeOutput = "";
+        Qt.callLater(function () {
+            root.startProbe(nextOutput);
+        });
     }
     function refresh() {
         if (outputName === "") {
@@ -111,11 +118,12 @@ QtObject {
         setDelay.restart();
     }
     function startProbe(name) {
-        if (probe.running) {
+        if (probe.active) {
             pendingProbeOutput = name;
             return;
         }
-        probe.command = ["python3", Config.quickshellDir + "/backend/python/display/ddc_brightness.py", "get", name];
-        probe.running = true;
+        probe.start("display.ddc.get", {
+            "output": name
+        });
     }
 }

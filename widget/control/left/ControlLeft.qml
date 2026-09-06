@@ -117,7 +117,7 @@ PanelWindow {
         popup.closedProgress = 1 - edgeDragProgress;
     }
 
-    WlrLayershell.namespace: "quickshell-control-left"
+    WlrLayershell.namespace: "sownteeshell-control-left"
     anchors.bottom: true
     anchors.left: true
     anchors.right: true

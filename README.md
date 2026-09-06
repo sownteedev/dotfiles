@@ -77,7 +77,7 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 - A standalone Quickshell Greetd interface on Cage with installed-session discovery, network status, animated battery state, profile sync, and wallpaper-derived colors.
 - Multi-monitor PAM lock screen with password authentication, optional Howdy face recognition, retry after monitor wake, media, and notifications.
 - Native Polkit dialogs, session and power menus, idle dim/lock/monitor-off policy, Caffeine inhibition, and position-aware volume, brightness, microphone, and media OSDs.
-- On-demand QML surfaces, event-driven Niri/PipeWire/NetworkManager/UPower integration, a native image-cache provider, and language-separated Rust, Python, and native backends with consumer-driven lifecycles.
+- On-demand QML surfaces, event-driven Niri/PipeWire/NetworkManager/UPower integration, a native image-cache provider, and persistent Rust Core and Calendar services with direct IPC, bounded jobs, and systemd-managed lifecycles.
 
 ## Running the shell
 
@@ -88,7 +88,7 @@ After the runtime dependencies are available, launch the project from its root d
 ```
 
 `run-sownteeshell` prepares the native image-cache plugin, configures the local QML import path and allocator behavior, then launches `shell.qml`.
-The Calendar daemon is built when needed and managed by Quickshell rather than enabled as a separate system service.
+The Core and Calendar daemons run as systemd user services and remain available across Quickshell reloads. See [`backend/README.md`](backend/README.md) for backend details and health-check commands.
 
 ## Architecture
 
@@ -99,12 +99,12 @@ StateManager.qml       Cross-surface state and open/close coordination
 widget/                Bar, Dock, panels, desktop, capture, session, and Settings
 components/            Reusable MD3 controls, effects, editors, and popups
 service/               System, media, productivity, capture, and wallpaper services
-backend/               Rust services and on-demand Python/native helpers
+backend/               Rust Core/Calendar services and on-demand Python/native helpers
 plugin/                Native QML image-cache provider
 scripts/               Shell integrations grouped by capture, connectivity, power, and theme
 ```
 
-The Niri Settings pages target the include-based configuration used by this setup; they are not intended as a generic editor for every possible Niri file layout. Runtime settings are stored under `$XDG_CACHE_HOME/quickshell` with `~/.cache/quickshell` as the fallback. API keys and account credentials are intentionally absent from source defaults.
+The Niri Settings pages target the include-based configuration used by this setup; they are not intended as a generic editor for every possible Niri file layout. Runtime settings and shell-owned caches are stored under `$XDG_CACHE_HOME/sownteeshell` with `~/.cache/sownteeshell` as the fallback; Quickshell's own QML, shader, pipeline, and crash caches remain under its native cache directory. API keys and account credentials are intentionally absent from source defaults.
 
 ## Dependencies
 

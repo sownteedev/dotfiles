@@ -68,7 +68,7 @@ QtObject {
     }
     property FileView greeterSettingsFile: FileView {
         blockLoading: true
-        path: Quickshell.env("GREETD_SETTINGS_PATH") || "/var/lib/quickshell-greeter/settings.json"
+        path: Quickshell.env("GREETD_SETTINGS_PATH") || "/var/lib/sownteeshell/greeter/settings.json"
         printErrors: false
         watchChanges: true
 
@@ -83,7 +83,7 @@ QtObject {
     }
     property string keyboardLayoutLabel: "US"
     property Process keyboardLayoutScanner: Process {
-        command: ["python3", Quickshell.shellPath("scripts/keyboard_layout.py")]
+        command: [root.sessionHelper, "greeter-keyboard-layout"]
         running: true
 
         stdout: StdioCollector {
@@ -128,9 +128,10 @@ QtObject {
     readonly property var selectedSession: sessions.length > 0 ? sessions[Math.max(0, Math.min(selectedSessionIndex, sessions.length - 1))] : fallbackSession
     property int selectedSessionIndex: 0
     readonly property var sessionCommand: ["systemd-cat", "--identifier=greetd-session", "--"].concat(selectedSession.command)
+    readonly property string sessionHelper: Quickshell.env("SOWNTEE_CORE_BINARY") || Quickshell.shellPath("../../backend/rust/core-daemon/run-core-daemon")
     readonly property string sessionLabel: selectedSession.name
     property Process sessionScanner: Process {
-        command: ["python3", Quickshell.shellPath("scripts/list_sessions.py")]
+        command: [root.sessionHelper, "greeter-sessions"]
         running: true
 
         stdout: StdioCollector {

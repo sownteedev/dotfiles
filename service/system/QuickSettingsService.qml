@@ -5,6 +5,7 @@ import Quickshell.Bluetooth
 import Quickshell.Io
 import Quickshell.Networking
 import "../../"
+import ".."
 
 QtObject {
     id: root
@@ -169,11 +170,11 @@ QtObject {
 
         onAdapterUpdated: writeAdapter()
     }
-    readonly property string persistedStatePath: Config.homeDir + "/.cache/quickshell/quick-settings.json"
+    readonly property string persistedStatePath: Config.cacheRoot + "/quick-settings.json"
     property bool sleepCapabilitiesReady: false
     property string sleepCapabilityHibernate: "unknown"
     property Process sleepCapabilityProcess: Process {
-        command: [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "capabilities"]
+        command: [Config.sownteeshellDir + "/scripts/power/idle-session-manager.sh", "capabilities"]
 
         stdout: StdioCollector {
             id: sleepCapabilityOutput
@@ -458,7 +459,7 @@ QtObject {
 
         idlePolicyReady = false;
         caffeineAppliedState = caffeineEnabled;
-        caffeineControlProcess.command = [Config.quickshellDir + "/scripts/power/caffeine-inhibitor.sh", caffeineAppliedState ? "enable" : "disable"];
+        caffeineControlProcess.command = [Config.sownteeshellDir + "/scripts/power/caffeine-inhibitor.sh", caffeineAppliedState ? "enable" : "disable"];
         caffeineControlProcess.running = true;
     }
     function syncIdlePolicy() {
@@ -468,7 +469,7 @@ QtObject {
             return;
         }
         idlePolicyReady = false;
-        idleControlProcess.command = Config.idleEnabled ? [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "apply", String(effectiveIdleLockTimeout), String(effectiveIdleDisplayTimeout), String(effectiveIdleSuspendTimeout), Config.idleLockBeforeSleep ? "true" : "false", String(Config.idleLockedDisplayTimeout), String(root.idleDimDuration), effectiveIdleSleepAction, Config.idleRespectInhibitors ? "true" : "false"] : [Config.quickshellDir + "/scripts/power/idle-session-manager.sh", "disable"];
+        idleControlProcess.command = Config.idleEnabled ? [Config.sownteeshellDir + "/scripts/power/idle-session-manager.sh", "apply", String(effectiveIdleLockTimeout), String(effectiveIdleDisplayTimeout), String(effectiveIdleSuspendTimeout), Config.idleLockBeforeSleep ? "true" : "false", String(Config.idleLockedDisplayTimeout), String(root.idleDimDuration), effectiveIdleSleepAction, Config.idleRespectInhibitors ? "true" : "false"] : [Config.sownteeshellDir + "/scripts/power/idle-session-manager.sh", "disable"];
         idleControlProcess.running = true;
     }
     function timeMinutes(value) {
@@ -514,7 +515,7 @@ QtObject {
     }
 
     Component.onCompleted: {
-        Quickshell.execDetached(["mkdir", "-p", Config.homeDir + "/.cache/quickshell"]);
+        Quickshell.execDetached(["mkdir", "-p", Config.cacheRoot]);
         caffeineNow = Date.now();
         if (caffeineEnabled && Config.caffeineAutoDisableMinutes > 0) {
             if (caffeineExpiresAt <= 0)

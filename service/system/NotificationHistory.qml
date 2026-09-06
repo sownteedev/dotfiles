@@ -82,7 +82,7 @@ QtObject {
             }
         }
     }
-    readonly property string historyPath: Config.homeDir + "/.cache/quickshell/notifications.json"
+    readonly property string historyPath: Config.cacheRoot + "/notifications.json"
     property var nativeConnections: ({})
     property var nativeRetainedAt: ({})
     readonly property int nativeRetentionLimit: Math.max(0, Math.min(24, Config.notificationHistoryLimit))
@@ -781,7 +781,7 @@ QtObject {
         return appKeys(appId, appId === "" ? windowData.title : "");
     }
 
-    Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", Config.homeDir + "/.cache/quickshell"])
+    Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", Config.cacheRoot])
     Component.onDestruction: {
         var connectionIds = Object.keys(nativeConnections);
         for (var i = 0; i < connectionIds.length; ++i)

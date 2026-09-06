@@ -17,8 +17,7 @@ QtObject {
                 Qt.callLater(root.reloadOutputConfig);
                 return;
             }
-            root.optionsQuery.running = false;
-            root.optionsQuery.running = true;
+            root.refreshOptions();
             root.delayedRefresh.restart();
         }
     }
@@ -43,6 +42,7 @@ QtObject {
                 delayedRefresh.restart();
         }
     }
+    readonly property string coreRunner: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property Process darkmodeApply: Process {
         onExited: (exitCode, exitStatus) => {
             var completedMode = root.applyingDarkmodeMode;
@@ -132,7 +132,7 @@ QtObject {
         printErrors: false
         watchChanges: false
     }
-    readonly property string nightlightConfigPath: (Quickshell.env("XDG_CACHE_HOME") || Config.homeDir + "/.cache") + "/quickshell/nightlight.conf"
+    readonly property string nightlightConfigPath: Config.cacheRoot + "/nightlight.conf"
     property bool nightlightControllerReady: false
     property bool nightlightControllerStarting: false
 
@@ -182,21 +182,12 @@ QtObject {
     property int nightlightTemperature: 4000
     property Process nightlightToggleProcess: Process {
     }
-    property Process optionsQuery: Process {
-        command: ["python3", Config.quickshellDir + "/backend/python/display/niri_output_config.py", root.configPath]
+    property CoreRequest optionsQuery: CoreRequest {
+        cancellable: false
+        timeoutMs: 10000
 
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var cleaned = text.trim();
-                if (cleaned === "")
-                    return;
-                try {
-                    root.kdlOptions = JSON.parse(cleaned);
-                } catch (error) {
-                    console.warn("[DisplayService] Failed to parse KDL options:", error);
-                }
-            }
-        }
+        onFailed: message => console.warn("[DisplayService] Failed to read KDL options:", message)
+        onSucceeded: response => root.kdlOptions = response || ({})
     }
     property var outputHardwareIds: ({})
     property Connections outputHotplugConnections: Connections {
@@ -289,33 +280,27 @@ QtObject {
     }
     property string sunshineStatus: "Select a display to configure Sunshine"
     property string sunshineStatusOutput: ""
-    property Process sunshineStatusQuery: Process {
-        stdout: StdioCollector {
-            id: sunshineStatusQueryOutput
-        }
+    property CoreRequest sunshineStatusQuery: CoreRequest {
+        timeoutMs: 20000
 
-        onExited: (exitCode, exitStatus) => {
-            try {
-                var result = JSON.parse(sunshineStatusQueryOutput.text.trim() || "{}");
-                if (exitCode === 0 && result.configured === true) {
-                    var output = String(result.output || "");
-                    root.sunshineStatusOutput = output;
-                    root.sunshineStatus = String(result.label || "Sunshine") + " • Display " + result.display_id + (output !== "" ? " • " + output : "");
-                } else if (exitCode === 0) {
-                    root.sunshineStatusOutput = "";
-                    root.sunshineStatus = "Select a display to configure Sunshine";
-                } else {
-                    root.sunshineStatusOutput = "";
-                    root.sunshineStatus = String(result.error || "Could not read Sunshine configuration");
-                }
-            } catch (error) {
+        onFailed: message => {
+            root.sunshineStatusOutput = "";
+            root.sunshineStatus = String(message || "Could not read Sunshine configuration");
+            root.finishSunshineStatusRefresh();
+        }
+        onSucceeded: result => {
+            if (result && result.ok !== false && result.configured === true) {
+                var output = String(result.output || "");
+                root.sunshineStatusOutput = output;
+                root.sunshineStatus = String(result.label || "Sunshine") + " • Display " + result.display_id + (output !== "" ? " • " + output : "");
+            } else if (result && result.ok !== false) {
                 root.sunshineStatusOutput = "";
-                root.sunshineStatus = "Invalid Sunshine status response";
+                root.sunshineStatus = "Select a display to configure Sunshine";
+            } else {
+                root.sunshineStatusOutput = "";
+                root.sunshineStatus = String(result && (result.error || result.message) || "Could not read Sunshine configuration");
             }
-            if (root.sunshineStatusRefreshPending) {
-                root.sunshineStatusRefreshPending = false;
-                Qt.callLater(root.refreshSunshineStatus);
-            }
+            root.finishSunshineStatusRefresh();
         }
     }
     property bool sunshineStatusRefreshPending: false
@@ -344,7 +329,7 @@ QtObject {
         }
         displayModeError = "";
         displayModeApplying = true;
-        displayModeExecutor.command = ["python3", Config.quickshellDir + "/backend/python/display/niri_display_mode.py", mode, String(preferredExternal || "")];
+        displayModeExecutor.command = [coreRunner, "display-niri-mode", mode, String(preferredExternal || "")];
         displayModeExecutor.running = true;
     }
     function applyNightlightTemperature() {
@@ -420,7 +405,7 @@ QtObject {
         }
         sunshineStatusOutput = connector;
         sunshineStatus = "Restarting Sunshine for " + connector + "…";
-        sunshineProfileProcess.command = ["python3", Config.quickshellDir + "/backend/python/display/sunshine_display_profile.py", sunshineConfigPath, connector, String(displayId)];
+        sunshineProfileProcess.command = [coreRunner, "display-sunshine-apply", sunshineConfigPath, connector, String(displayId)];
         sunshineProfileProcess.running = true;
     }
     function detectDisplayMode() {
@@ -465,6 +450,12 @@ QtObject {
                 result.push(name);
         }
         return result;
+    }
+    function finishSunshineStatusRefresh() {
+        if (!sunshineStatusRefreshPending)
+            return;
+        sunshineStatusRefreshPending = false;
+        Qt.callLater(root.refreshSunshineStatus);
     }
     function hardwareIdentity(output) {
         if (!output)
@@ -538,12 +529,16 @@ QtObject {
     function refresh() {
         refreshOutputs();
         refreshSunshineStatus();
-        optionsQuery.running = false;
-        optionsQuery.running = true;
+        refreshOptions();
         darkmodeQuery.running = false;
         darkmodeQuery.running = true;
         nightlightQuery.running = false;
         nightlightQuery.running = true;
+    }
+    function refreshOptions() {
+        optionsQuery.start("display.niri.options", {
+            "configPath": configPath
+        });
     }
     function refreshOutputs() {
         if (outputsQuery.running) {
@@ -554,13 +549,14 @@ QtObject {
         outputsQuery.running = true;
     }
     function refreshSunshineStatus() {
-        if (sunshineProfileProcess.running || sunshineStatusQuery.running) {
+        if (sunshineProfileProcess.running || sunshineStatusQuery.active) {
             sunshineStatusRefreshPending = true;
             return;
         }
         sunshineStatusRefreshPending = false;
-        sunshineStatusQuery.command = ["python3", Config.quickshellDir + "/backend/python/display/sunshine_display_profile.py", "--status", sunshineConfigPath];
-        sunshineStatusQuery.running = true;
+        sunshineStatusQuery.start("display.sunshine.status", {
+            "configPath": sunshineConfigPath
+        });
     }
     function reloadOutputConfig() {
         if (actionExecutor.running) {
@@ -612,7 +608,7 @@ QtObject {
         var commands = [];
         for (var i = 0; i < names.length; ++i) {
             commands.push(ensureOutputCommand(names[i], output));
-            commands.push("python3 " + shellQuote(Config.quickshellDir + "/backend/python/display/niri_output_config.py") + " --set-vrr " + shellQuote(configPath) + " " + shellQuote(names[i]) + " " + shellQuote(normalizedMode));
+            commands.push(shellQuote(coreRunner) + " display-niri-set-vrr " + shellQuote(configPath) + " " + shellQuote(names[i]) + " " + shellQuote(normalizedMode));
         }
         executeConfigCommand(commands.join("; "));
 

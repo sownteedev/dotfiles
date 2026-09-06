@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
 import "../../"
+import ".."
 
 QtObject {
     id: root
@@ -100,38 +101,24 @@ QtObject {
     }
     readonly property bool noInternet: connected && connectivity === NetworkConnectivity.None
     property bool qrCodeBusy: false
-    property bool qrCodeCancelled: false
     property string qrCodeError: ""
     property string qrCodePath: ""
-    property Process qrCodeProcess: Process {
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (root.qrCodeCancelled || text.trim() === "")
-                    return;
+    property CoreRequest qrCodeRequest: CoreRequest {
+        timeoutMs: 15000
 
-                try {
-                    var response = JSON.parse(text.trim());
-                    if (response.ok && response.path) {
-                        root.qrCodePath = String(response.path);
-                        root.qrCodeError = "";
-                    } else {
-                        root.qrCodeError = String(response.error || qsTr("Could not create the Wi-Fi QR code."));
-                    }
-                } catch (error) {
-                    root.qrCodeError = qsTr("The Wi-Fi QR helper returned an invalid response.");
-                }
-            }
-        }
-
-        onExited: (exitCode, exitStatus) => {
+        onCancelled: root.qrCodeBusy = false
+        onFailed: message => {
             root.qrCodeBusy = false;
-            if (root.qrCodeCancelled) {
-                root.qrCodeCancelled = false;
-                root.cleanupQrCodeFiles();
-                return;
+            root.qrCodeError = String(message || qsTr("Could not create the Wi-Fi QR code."));
+        }
+        onSucceeded: response => {
+            root.qrCodeBusy = false;
+            if (response && response.ok && response.path) {
+                root.qrCodePath = String(response.path);
+                root.qrCodeError = "";
+            } else {
+                root.qrCodeError = String(response && (response.error || response.message) || qsTr("Could not create the Wi-Fi QR code."));
             }
-            if (exitCode !== 0 && root.qrCodeError === "")
-                root.qrCodeError = qsTr("Could not create the Wi-Fi QR code.");
         }
     }
     property string qrCodeSsid: ""
@@ -261,20 +248,26 @@ QtObject {
         settingsSaveSucceeded(ssid);
     }
     function cleanupQrCodeFiles() {
-        Quickshell.execDetached(["python3", Config.quickshellDir + "/backend/python/connectivity/wifi_qr_generator.py", "cleanup"]);
+        CoreService.sendRequest("wifi.qr.cleanup", {}, null, function (message) {
+            console.warn("[WifiService] Wi-Fi QR cleanup failed:", message);
+        }, 10000);
     }
     function clearQrCode() {
         var previousPath = qrCodePath;
-        if (qrCodeProcess.running) {
-            qrCodeCancelled = true;
-            qrCodeProcess.running = false;
+        if (qrCodeRequest.active) {
+            qrCodeRequest.cancel();
+            cleanupQrCodeFiles();
         }
         qrCodeBusy = false;
         qrCodeError = "";
         qrCodePath = "";
         qrCodeSsid = "";
         if (previousPath !== "")
-            Quickshell.execDetached(["python3", Config.quickshellDir + "/backend/python/connectivity/wifi_qr_generator.py", "delete", "--path", previousPath]);
+            CoreService.sendRequest("wifi.qr.delete", {
+                "path": previousPath
+            }, null, function (message) {
+                console.warn("[WifiService] Wi-Fi QR delete failed:", message);
+            }, 10000);
     }
     function connectNetwork(network) {
         if (network)
@@ -404,10 +397,9 @@ QtObject {
         clearQrCode();
         var ssid = String(network.name || "");
         qrCodeSsid = ssid;
-        var command = ["python3", Config.quickshellDir + "/backend/python/connectivity/wifi_qr_generator.py", "generate", "--ssid", ssid];
-        if (network.security === WifiSecurityType.Open) {
-            command.push("--open");
-        } else {
+        var isOpen = network.security === WifiSecurityType.Open;
+        var profileKey = "";
+        if (!isOpen) {
             var profile = profileForSsid(ssid);
             if (!profile) {
                 qrCodeError = qsTr("The saved NetworkManager profile could not be found.");
@@ -416,20 +408,20 @@ QtObject {
 
             var settings = profile.read();
             var connection = settings.connection || {};
-            var profileKey = String(connection.uuid || profile.id || "");
+            profileKey = String(connection.uuid || profile.id || "");
             if (profileKey === "") {
                 qrCodeError = qsTr("The saved NetworkManager profile could not be identified.");
                 return false;
             }
-            command.push("--profile", profileKey);
         }
 
-        qrCodeCancelled = false;
         qrCodeBusy = true;
         qrCodeError = "";
-        qrCodeProcess.command = command;
-        qrCodeProcess.running = false;
-        qrCodeProcess.running = true;
+        qrCodeRequest.start("wifi.qr.generate", {
+            "ssid": ssid,
+            "profile": profileKey,
+            "openNetwork": isOpen
+        });
         return true;
     }
     function resetSettingsSaveState() {

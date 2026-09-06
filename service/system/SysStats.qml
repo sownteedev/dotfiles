@@ -1,12 +1,18 @@
 pragma Singleton
 import QtQuick
-import Quickshell
-import Quickshell.Io
 import "../../"
+import ".."
 
 QtObject {
     id: statsRoot
 
+    property Connections coreConnections: Connections {
+        function onStatsUpdated(data) {
+            statsRoot.handleStatsData(data);
+        }
+
+        target: CoreService
+    }
     property var cpuHistory: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     property string cpuModelName: ""
     property int cpuTemp: 0
@@ -21,53 +27,14 @@ QtObject {
     property string gpuModelName: ""
     property int gpuTemp: 0
     property real maxNetworkSpeed: 1048576
-    property Process memoryDetailsQuery: Process {
-        id: memoryDetailsQuery
-
-        property int requestedPid: -1
-
-        stdout: StdioCollector {
-            id: memoryDetailsOutput
-        }
-
-        onExited: exitCode => {
-            var completedPid = requestedPid;
-            var details = null;
-            if (exitCode === 0) {
-                try {
-                    details = JSON.parse(memoryDetailsOutput.text.trim());
-                } catch (error) {
-                    details = null;
-                }
-            }
-            if (completedPid > 1) {
-                statsRoot.processMemoryDetailsPid = completedPid;
-                statsRoot.processMemoryDetails = details && Number(details.pid) === completedPid ? details : {
-                    "pid": completedPid,
-                    "process_count": 0,
-                    "measured_process_count": 0,
-                    "rss_mib": null,
-                    "pss_mib": null,
-                    "pss_dirty_mib": null,
-                    "private_mib": null
-                };
-                statsRoot.processMemoryDetailsTimestamp = Date.now();
-            }
-            requestedPid = -1;
-
-            var nextPid = statsRoot.pendingMemoryDetailsPid;
-            statsRoot.pendingMemoryDetailsPid = -1;
-            if (nextPid > 1 && nextPid === statsRoot.processMemoryDetailsRequestedPid)
-                Qt.callLater(function () {
-                    statsRoot.startProcessMemoryDetailsQuery(nextPid);
-                });
-        }
-    }
+    property int memoryDetailsActivePid: -1
+    property bool memoryDetailsBusy: false
+    property int memoryDetailsQuerySerial: 0
     property string networkInterface: ""
     property int pendingMemoryDetailsPid: -1
 
-    // Stats are only displayed inside ControlRight. Keeping the sampler alive
-    // while that panel is closed needlessly wakes Python and nvidia-smi.
+    // Stats are only displayed inside ControlRight. The core daemon keeps no
+    // sampler while this panel is closed.
     property bool pollingEnabled: false
     property double prevCpuIdle: 0
     property double prevCpuTotal: 0
@@ -82,98 +49,6 @@ QtObject {
     property string ramUsedText: ""
     property var rxHistory: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     property bool statsInitialized: false
-    property Process statsStream: Process {
-        id: statsStream
-
-        // The launcher builds the Rust sampler only when missing or stale and
-        // falls back to Python when Cargo is unavailable.
-        command: [statsRoot.getStatsLauncherPath()]
-        running: statsRoot.pollingEnabled
-        stdinEnabled: true
-
-        stdout: SplitParser {
-            onRead: line => {
-                try {
-                    var data = JSON.parse(line);
-
-                    if (data.cpu_model !== undefined)
-                        statsRoot.cpuModelName = data.cpu_model;
-                    if (data.gpu_model !== undefined)
-                        statsRoot.gpuModelName = data.gpu_model;
-                    if (data.uptime_seconds !== undefined)
-                        statsRoot.updateUptime(data.uptime_seconds);
-
-                    var cpuVal = 0;
-                    if (statsRoot.prevCpuTotal > 0) {
-                        var totald = data.cpu_total - statsRoot.prevCpuTotal;
-                        var idled = data.cpu_idle - statsRoot.prevCpuIdle;
-                        cpuVal = totald > 0 ? (totald - idled) * 100 / totald : 0;
-                    }
-                    statsRoot.prevCpuTotal = data.cpu_total;
-                    statsRoot.prevCpuIdle = data.cpu_idle;
-
-                    var gpuMemPct = data.gpu_mem_total > 0 ? Math.round(data.gpu_mem_used * 100 / data.gpu_mem_total) : 0;
-
-                    var rxRate = Math.max(0, Number(data.rx_rate) || 0);
-                    var txRate = Math.max(0, Number(data.tx_rate) || 0);
-                    statsRoot.networkInterface = data.network_interface || "";
-                    statsRoot.downloadSpeed = statsRoot.formatSpeed(rxRate);
-                    statsRoot.uploadSpeed = statsRoot.formatSpeed(txRate);
-
-                    if (data.top_cpu !== undefined)
-                        statsRoot.updateProcessModel(statsRoot.topCpu, data.top_cpu);
-                    if (data.top_ram !== undefined)
-                        statsRoot.updateProcessModel(statsRoot.topRam, data.top_ram);
-                    if (data.top_gpu !== undefined)
-                        statsRoot.updateProcessModel(statsRoot.topGpu, data.top_gpu);
-
-                    if (!statsRoot.statsInitialized) {
-                        statsRoot.initStatsHistory(cpuVal, data.ram_usage, data.gpu_usage, gpuMemPct);
-                    } else {
-                        statsRoot.cpuHistory = statsRoot.addStatsSample(statsRoot.cpuHistory, cpuVal);
-                        statsRoot.ramHistory = statsRoot.addStatsSample(statsRoot.ramHistory, data.ram_usage);
-                        statsRoot.gpuHistory = statsRoot.addStatsSample(statsRoot.gpuHistory, data.gpu_usage);
-                        statsRoot.gpuMemHistory = statsRoot.addStatsSample(statsRoot.gpuMemHistory, gpuMemPct);
-                        statsRoot.rxHistory = statsRoot.addStatsSample(statsRoot.rxHistory, rxRate);
-                        statsRoot.txHistory = statsRoot.addStatsSample(statsRoot.txHistory, txRate);
-
-                        var currentMax = 1024; // min 1KB/s
-                        for (var i = 0; i < statsRoot.rxHistory.length; i++) {
-                            if (statsRoot.rxHistory[i] > currentMax)
-                                currentMax = statsRoot.rxHistory[i];
-                            if (statsRoot.txHistory[i] > currentMax)
-                                currentMax = statsRoot.txHistory[i];
-                        }
-                        statsRoot.maxNetworkSpeed = currentMax;
-                    }
-
-                    statsRoot.currentCpu = Math.round(cpuVal);
-                    statsRoot.currentRam = Math.round(data.ram_usage);
-                    statsRoot.currentGpu = Math.round(data.gpu_usage);
-                    statsRoot.currentGpuMemPct = gpuMemPct;
-
-                    statsRoot.cpuTemp = data.cpu_temp === "N/A" ? 0 : data.cpu_temp;
-
-                    var ramUsedFixed = data.ram_used_gb.toFixed(1);
-                    var ramTotalFixed = data.ram_total_gb.toFixed(1);
-                    statsRoot.ramUsedText = ramUsedFixed + " GiB / " + ramTotalFixed + " GiB";
-                    statsRoot.ramModelName = ramTotalFixed + " GiB RAM";
-                    statsRoot.gpuTemp = data.gpu_temp;
-
-                    var gpuUsedGb = (data.gpu_mem_used / 1024).toFixed(1);
-                    var gpuTotalGb = (data.gpu_mem_total / 1024).toFixed(1);
-                    statsRoot.gpuMemText = gpuUsedGb + " GiB / " + gpuTotalGb + " GiB";
-
-                    statsRoot.statsUpdated();
-                } catch (e) {
-                    console.error("SysStats JSON parse error:", e);
-                }
-            }
-        }
-
-        Component.onDestruction: running = false
-        onStarted: statsRoot.sendProcessMode()
-    }
     property int terminatingPid: -1
     property string terminatingProcessName: ""
     property string terminationError: ""
@@ -181,18 +56,6 @@ QtObject {
         interval: 3200
 
         onTriggered: statsRoot.terminationError = ""
-    }
-    property Process terminator: Process {
-        id: terminator
-
-        onExited: exitCode => {
-            if (exitCode !== 0) {
-                statsRoot.terminationError = qsTr("Could not end %1").arg(statsRoot.terminatingProcessName || qsTr("process"));
-                statsRoot.terminationErrorTimer.restart();
-            }
-            statsRoot.terminatingPid = -1;
-            statsRoot.terminatingProcessName = "";
-        }
     }
     property ListModel topCpu: ListModel {
     }
@@ -213,15 +76,14 @@ QtObject {
         return arr;
     }
     function clearProcessMemoryDetails() {
+        memoryDetailsQuerySerial++;
+        memoryDetailsActivePid = -1;
+        memoryDetailsBusy = false;
         pendingMemoryDetailsPid = -1;
         processMemoryDetails = null;
         processMemoryDetailsPid = -1;
         processMemoryDetailsRequestedPid = -1;
         processMemoryDetailsTimestamp = 0;
-        if (memoryDetailsQuery.running) {
-            memoryDetailsQuery.requestedPid = -1;
-            memoryDetailsQuery.running = false;
-        }
     }
     function clearProcessModels() {
         topCpu.clear();
@@ -229,6 +91,40 @@ QtObject {
         topGpu.clear();
         clearProcessMemoryDetails();
         processRevision++;
+    }
+    function finishProcessMemoryDetailsQuery(serial, completedPid, details) {
+        if (serial !== memoryDetailsQuerySerial)
+            return;
+        memoryDetailsActivePid = -1;
+        memoryDetailsBusy = false;
+        if (completedPid > 1) {
+            processMemoryDetailsPid = completedPid;
+            processMemoryDetails = details && Number(details.pid) === completedPid ? details : {
+                "pid": completedPid,
+                "process_count": 0,
+                "measured_process_count": 0,
+                "rss_mib": null,
+                "pss_mib": null,
+                "pss_dirty_mib": null,
+                "private_mib": null
+            };
+            processMemoryDetailsTimestamp = Date.now();
+        }
+
+        var nextPid = pendingMemoryDetailsPid;
+        pendingMemoryDetailsPid = -1;
+        if (nextPid > 1 && nextPid === processMemoryDetailsRequestedPid)
+            Qt.callLater(function () {
+                statsRoot.startProcessMemoryDetailsQuery(nextPid);
+            });
+    }
+    function finishTermination(success) {
+        if (!success) {
+            terminationError = qsTr("Could not end %1").arg(terminatingProcessName || qsTr("process"));
+            terminationErrorTimer.restart();
+        }
+        terminatingPid = -1;
+        terminatingProcessName = "";
     }
     function formatSpeed(bytes) {
         if (bytes < 1024) {
@@ -239,8 +135,79 @@ QtObject {
             return (bytes / 1048576).toFixed(1) + " MB/s";
         }
     }
-    function getStatsLauncherPath() {
-        return resolveLocalPath("../../backend/rust/system-stats/run-system-stats");
+    function handleStatsData(data) {
+        if (!data)
+            return;
+        try {
+            if (data.cpu_model !== undefined)
+                cpuModelName = data.cpu_model;
+            if (data.gpu_model !== undefined)
+                gpuModelName = data.gpu_model;
+            if (data.uptime_seconds !== undefined)
+                updateUptime(data.uptime_seconds);
+
+            var cpuVal = 0;
+            if (prevCpuTotal > 0) {
+                var totald = data.cpu_total - prevCpuTotal;
+                var idled = data.cpu_idle - prevCpuIdle;
+                cpuVal = totald > 0 ? (totald - idled) * 100 / totald : 0;
+            }
+            prevCpuTotal = data.cpu_total;
+            prevCpuIdle = data.cpu_idle;
+
+            var gpuMemPct = data.gpu_mem_total > 0 ? Math.round(data.gpu_mem_used * 100 / data.gpu_mem_total) : 0;
+            var rxRate = Math.max(0, Number(data.rx_rate) || 0);
+            var txRate = Math.max(0, Number(data.tx_rate) || 0);
+            networkInterface = data.network_interface || "";
+            downloadSpeed = formatSpeed(rxRate);
+            uploadSpeed = formatSpeed(txRate);
+
+            if (data.top_cpu !== undefined)
+                updateProcessModel(topCpu, data.top_cpu);
+            if (data.top_ram !== undefined)
+                updateProcessModel(topRam, data.top_ram);
+            if (data.top_gpu !== undefined)
+                updateProcessModel(topGpu, data.top_gpu);
+
+            if (!statsInitialized) {
+                initStatsHistory(cpuVal, data.ram_usage, data.gpu_usage, gpuMemPct);
+            } else {
+                cpuHistory = addStatsSample(cpuHistory, cpuVal);
+                ramHistory = addStatsSample(ramHistory, data.ram_usage);
+                gpuHistory = addStatsSample(gpuHistory, data.gpu_usage);
+                gpuMemHistory = addStatsSample(gpuMemHistory, gpuMemPct);
+                rxHistory = addStatsSample(rxHistory, rxRate);
+                txHistory = addStatsSample(txHistory, txRate);
+
+                var currentMax = 1024;
+                for (var index = 0; index < rxHistory.length; index++) {
+                    if (rxHistory[index] > currentMax)
+                        currentMax = rxHistory[index];
+                    if (txHistory[index] > currentMax)
+                        currentMax = txHistory[index];
+                }
+                maxNetworkSpeed = currentMax;
+            }
+
+            currentCpu = Math.round(cpuVal);
+            currentRam = Math.round(data.ram_usage);
+            currentGpu = Math.round(data.gpu_usage);
+            currentGpuMemPct = gpuMemPct;
+            cpuTemp = data.cpu_temp === "N/A" ? 0 : data.cpu_temp;
+
+            var ramUsedFixed = data.ram_used_gb.toFixed(1);
+            var ramTotalFixed = data.ram_total_gb.toFixed(1);
+            ramUsedText = ramUsedFixed + " GiB / " + ramTotalFixed + " GiB";
+            ramModelName = ramTotalFixed + " GiB RAM";
+            gpuTemp = data.gpu_temp;
+
+            var gpuUsedGb = (data.gpu_mem_used / 1024).toFixed(1);
+            var gpuTotalGb = (data.gpu_mem_total / 1024).toFixed(1);
+            gpuMemText = gpuUsedGb + " GiB / " + gpuTotalGb + " GiB";
+            statsUpdated();
+        } catch (error) {
+            console.error("SysStats data error:", error);
+        }
     }
     function initStatsHistory(cpuVal, ramVal, gpuVal, gpuMemVal) {
         var arrCpu = [];
@@ -273,41 +240,37 @@ QtObject {
         processMemoryDetailsRequestedPid = processId;
         if (processMemoryDetailsPid === processId && Date.now() - processMemoryDetailsTimestamp < 2500)
             return;
-        if (memoryDetailsQuery.running) {
-            if (memoryDetailsQuery.requestedPid !== processId)
+        if (memoryDetailsBusy) {
+            if (memoryDetailsActivePid !== processId)
                 pendingMemoryDetailsPid = processId;
             return;
         }
         startProcessMemoryDetailsQuery(processId);
     }
-    function resolveLocalPath(relativePath) {
-        var path = Qt.resolvedUrl(relativePath).toString();
-        if (path.startsWith("file://")) {
-            path = path.substring(7);
-        }
-        return path;
-    }
     function sendProcessMode() {
-        if (statsStream.running)
-            statsStream.write(processMode + "\n");
+        CoreService.setStatsMode(processMode);
     }
     function startProcessMemoryDetailsQuery(pid) {
         if (pid <= 1 || processMode !== "ram")
             return;
-        memoryDetailsQuery.requestedPid = pid;
-        memoryDetailsQuery.command = [getStatsLauncherPath(), "--process-memory", String(pid)];
-        memoryDetailsQuery.running = true;
+        memoryDetailsActivePid = pid;
+        memoryDetailsBusy = true;
+        var serial = ++memoryDetailsQuerySerial;
+        CoreService.sendRequest("process.memory", {
+            "pid": pid
+        }, result => statsRoot.finishProcessMemoryDetailsQuery(serial, pid, result), message => statsRoot.finishProcessMemoryDetailsQuery(serial, pid, null));
     }
     function terminateProcess(pid, name) {
         var processId = Math.trunc(Number(pid));
-        if (processId <= 1 || terminator.running)
+        if (processId <= 1 || terminatingPid > 1)
             return;
 
         terminationError = "";
         terminatingPid = processId;
         terminatingProcessName = String(name || "");
-        terminator.command = [getStatsLauncherPath(), "--terminate-tree", String(processId)];
-        terminator.running = true;
+        CoreService.sendRequest("process.terminate", {
+            "pid": processId
+        }, result => statsRoot.finishTermination(true), message => statsRoot.finishTermination(false));
     }
     function updateProcessModel(target, incoming) {
         if (!incoming)
@@ -355,13 +318,17 @@ QtObject {
         uptimeText = "Uptime " + hours + "h, " + minutes + "m";
     }
 
+    Component.onDestruction: CoreService.setStatsEnabled(false)
     onPollingEnabledChanged: {
         if (pollingEnabled) {
             prevCpuTotal = 0;
             prevCpuIdle = 0;
             downloadSpeed = "0 B/s";
             uploadSpeed = "0 B/s";
+            CoreService.setStatsMode(processMode);
+            CoreService.setStatsEnabled(true);
         } else {
+            CoreService.setStatsEnabled(false);
             processMode = "none";
         }
     }

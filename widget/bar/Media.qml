@@ -386,7 +386,7 @@ Item {
                             color: Config.md3.on_error
                             font.family: Config.fontName
                             font.pixelSize: 8
-                            font.weight: Font.DemiBold
+                            font.weight: Font.Bold
                             text: "LIVE"
                         }
                     }

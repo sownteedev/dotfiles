@@ -340,6 +340,8 @@ Item {
             ListView {
                 id: taskList
 
+                readonly property real cardInset: 2
+
                 anchors.fill: parent
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
@@ -347,10 +349,24 @@ Item {
                 spacing: 10
 
                 delegate: Item {
+                    id: taskDelegateRoot
+
                     required property var modelData
 
                     height: Math.max(80, taskContent.implicitHeight + 28)
-                    width: taskList.width
+                    layer.enabled: cardContent.swipeX < -0.4
+                    width: taskList.width - taskList.cardInset * 2
+
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            height: taskDelegateRoot.height
+                            radius: 17
+                            width: taskDelegateRoot.width
+                        }
+                    }
+                    transform: Translate {
+                        x: taskList.cardInset
+                    }
 
                     SwipeDeleteBackground {
                         actionText: qsTr("Delete")
@@ -502,7 +518,7 @@ Item {
                                     font.family: Config.fontName
                                     font.pixelSize: 15
                                     font.strikeout: modelData.status === "completed"
-                                    font.weight: Font.Bold
+                                    font.weight: Font.Medium
                                     text: modelData.title || qsTr("Untitled task")
                                 }
                                 Text {
@@ -550,7 +566,7 @@ Item {
                                         color: Config.md3.primary
                                         font.family: Config.fontName
                                         font.pixelSize: 12
-                                        font.weight: Font.Bold
+                                        font.weight: Font.Medium
                                         text: {
                                             if (!modelData.due)
                                                 return "";
@@ -585,7 +601,7 @@ Item {
                                         height: 19
                                         layer.enabled: true
                                         opacity: cardContent.taskSyncing ? 0.5 : 1
-                                        source: "file://" + Config.quickshellDir + "/assets/icons/cloud-upload.svg"
+                                        source: "file://" + Config.sownteeshellDir + "/assets/icons/cloud-upload.svg"
                                         width: 19
 
                                         layer.effect: ColorOverlay {

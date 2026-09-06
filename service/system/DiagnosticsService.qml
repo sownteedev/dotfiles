@@ -1,54 +1,22 @@
 pragma Singleton
 import "../../"
 import QtQuick
-import Quickshell.Io
+import ".."
 
 QtObject {
     id: root
 
+    property string activeRequestId: ""
     property bool busy: false
     property var caches: []
     property var dependencies: []
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/system/shell_diagnostics.py"
     property string message: ""
     property var services: []
-    property Process worker: Process {
-        id: worker
-
-        property string action: "snapshot"
-        property string scope: ""
-
-        command: action === "clear" ? ["python3", root.helperPath, "clear", scope] : ["python3", root.helperPath, "snapshot"]
-
-        stdout: StdioCollector {
-            id: output
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            root.busy = false;
-            try {
-                var result = JSON.parse(output.text.trim() || "{}");
-                root.message = result.message || (exitCode === 0 ? "Diagnostics refreshed" : "Diagnostics failed");
-                if (exitCode === 0 && worker.action === "snapshot") {
-                    root.dependencies = result.dependencies || [];
-                    root.caches = result.caches || [];
-                    root.services = result.services || [];
-                }
-            } catch (error) {
-                root.message = "Invalid diagnostics response";
-            }
-            if (exitCode === 0 && worker.action === "clear")
-                Qt.callLater(root.refresh);
-        }
-    }
 
     function clearCache(scope) {
         if (busy)
             return;
-        worker.action = "clear";
-        worker.scope = String(scope || "");
-        busy = true;
-        worker.running = true;
+        runRequest("clear", String(scope || ""));
     }
     function formatBytes(bytes) {
         var value = Number(bytes || 0);
@@ -63,9 +31,29 @@ QtObject {
     function refresh() {
         if (busy)
             return;
-        worker.action = "snapshot";
-        worker.scope = "";
+        runRequest("snapshot", "");
+    }
+    function runRequest(action, scope) {
         busy = true;
-        worker.running = true;
+        var method = action === "clear" ? "diagnostics.clear" : "diagnostics.snapshot";
+        activeRequestId = CoreService.sendRequest(method, {
+            "scope": scope
+        }, function (result) {
+            root.activeRequestId = "";
+            root.busy = false;
+            var succeeded = result && result.ok === true;
+            root.message = String(result && result.message || (succeeded ? qsTr("Diagnostics refreshed") : qsTr("Diagnostics failed")));
+            if (succeeded && action === "snapshot") {
+                root.dependencies = result.dependencies || [];
+                root.caches = result.caches || [];
+                root.services = result.services || [];
+            } else if (succeeded && action === "clear") {
+                Qt.callLater(root.refresh);
+            }
+        }, function (errorMessage) {
+            root.activeRequestId = "";
+            root.busy = false;
+            root.message = String(errorMessage || qsTr("Diagnostics failed"));
+        }, 60000);
     }
 }

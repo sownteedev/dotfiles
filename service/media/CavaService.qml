@@ -96,7 +96,7 @@ Item {
     Process {
         id: cavaProcess
 
-        command: ["cava", "-p", Config.quickshellDir + "/cava.conf"]
+        command: ["cava", "-p", Config.sownteeshellDir + "/cava.conf"]
         running: root.requested
 
         stdout: SplitParser {

@@ -54,7 +54,7 @@ PanelWindow {
 
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "quickshell-polkit"
+    WlrLayershell.namespace: "sownteeshell-polkit"
     anchors.bottom: true
     anchors.left: true
     anchors.right: true

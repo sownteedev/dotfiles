@@ -9,7 +9,16 @@ QtObject {
     readonly property bool active: pickerProcess.running || activeRequestId !== ""
     property string activeRequestId: ""
     property string errorMessage: ""
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/portal/file_picker.py"
+    readonly property string helperPath: Config.sownteeshellDir + "/backend/python/portal/file_picker.py"
+    property Timer pickerKillTimeout: Timer {
+        interval: 1500
+        repeat: false
+
+        onTriggered: {
+            if (pickerProcess.running)
+                pickerProcess.signal(9);
+        }
+    }
     property Process pickerProcess: Process {
         id: pickerProcess
 
@@ -23,8 +32,17 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            pickerTimeout.stop();
+            pickerKillTimeout.stop();
             var requestId = root.activeRequestId;
             root.activeRequestId = "";
+
+            if (root.pickerTimedOut) {
+                root.pickerTimedOut = false;
+                root.errorMessage = qsTr("The file picker timed out");
+                root.failed(requestId, root.errorMessage);
+                return;
+            }
 
             var response = null;
             try {
@@ -54,6 +72,19 @@ QtObject {
             root.failed(requestId, root.errorMessage);
         }
     }
+    property bool pickerTimedOut: false
+    property Timer pickerTimeout: Timer {
+        interval: 10 * 60 * 1000
+        repeat: false
+
+        onTriggered: {
+            if (!pickerProcess.running)
+                return;
+            root.pickerTimedOut = true;
+            pickerProcess.signal(15);
+            pickerKillTimeout.restart();
+        }
+    }
     property int requestSerial: 0
 
     signal accepted(string requestId, var paths, var uris)
@@ -63,7 +94,9 @@ QtObject {
     function cancel(requestId) {
         if (requestId !== activeRequestId || !pickerProcess.running)
             return false;
+        pickerTimeout.stop();
         pickerProcess.signal(15);
+        pickerKillTimeout.restart();
         return true;
     }
     function nextRequestId(prefix) {
@@ -93,9 +126,11 @@ QtObject {
             args.push("--filters-json", JSON.stringify(filters));
 
         errorMessage = "";
+        pickerTimedOut = false;
         activeRequestId = normalizedRequestId;
         pickerProcess.command = args;
         pickerProcess.running = true;
+        pickerTimeout.restart();
         return true;
     }
 }

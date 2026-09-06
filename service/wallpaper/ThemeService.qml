@@ -451,14 +451,6 @@ QtObject {
             themeServiceRoot.validateGeneration(completedPath, completedMode, completedSource, completedForced);
         }
     }
-    property Process gtkThemeSetter: Process {
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0)
-                console.warn("[ThemeService] Could not synchronize the GTK theme:", exitCode);
-            if (themeServiceRoot.pendingGtkThemeMode !== "")
-                themeServiceRoot.startGtkThemeSync();
-        }
-    }
     property bool hasAppliedTheme: false
     property string lastFileText: ""
     property Process modeQuery: Process {
@@ -493,7 +485,14 @@ QtObject {
     property string pendingGenerationMode: "dark"
     property string pendingGenerationPath: ""
     property string pendingGenerationSource: ""
-    property string pendingGtkThemeMode: ""
+    property Connections platformThemeConnections: Connections {
+        function onColorSchemeChanged() {
+            themeServiceRoot.modeQueryDebounce.restart();
+        }
+
+        target: Qt.styleHints
+    }
+    property bool previewColorsActive: false
     property bool runningGenerationForced: false
     property string runningGenerationMode: ""
     property string runningGenerationPath: ""
@@ -501,7 +500,7 @@ QtObject {
     readonly property bool themeAvailable: themeFileValid && expectedSource !== "" && activeMode === colorMode && activeSource === expectedSource
     property FileView themeFile: FileView {
         blockLoading: true
-        path: Config.quickshellDir + "/colors.json"
+        path: Config.sownteeshellDir + "/colors.json"
         watchChanges: true
 
         onFileChanged: reload()
@@ -529,11 +528,9 @@ QtObject {
 
     signal systemModeChanged(string mode)
 
-    function applyColors(colors, animated) {
+    function applyColorValues(colors, animated) {
         if (!colors)
             return;
-
-        activeColors = colors;
 
         // Always update palette and base16 instantly as they are not animated
         if (colors.palette) {
@@ -651,6 +648,21 @@ QtObject {
             colorTransition.start();
         }
     }
+    function applyColors(colors, animated) {
+        if (!colors)
+            return;
+
+        activeColors = colors;
+        previewColorsActive = false;
+        applyColorValues(colors, animated);
+    }
+    function applyPreviewColors(colors, animated) {
+        if (!colors || (colors.mode && colors.mode !== colorMode))
+            return;
+
+        previewColorsActive = true;
+        applyColorValues(colors, animated);
+    }
     function applyTheme() {
         if (!themeFile.loaded)
             return;
@@ -665,8 +677,10 @@ QtObject {
         if (output === lastFileText) {
             // A temporary partial write may have marked the file invalid. If
             // the last known-good snapshot is restored byte-for-byte, restore
-            // its validity without replaying the same color animation.
+            // its validity. A wallpaper preview may still have replaced the
+            // visible palette, so restore the committed colors when needed.
             themeFileValid = activeColors !== null;
+            restoreActiveColors(hasAppliedTheme);
             return;
         }
         try {
@@ -715,11 +729,6 @@ QtObject {
     function reloadTheme() {
         themeFile.reload();
     }
-    function requestGtkThemeSync(mode) {
-        pendingGtkThemeMode = normalizeMode(mode);
-        if (!gtkThemeSetter.running)
-            startGtkThemeSync();
-    }
     function requestModeQuery() {
         if (modeQuery.running) {
             modeQueryPending = true;
@@ -727,16 +736,15 @@ QtObject {
         }
         modeQuery.running = true;
     }
+    function restoreActiveColors(animated) {
+        if (!previewColorsActive || !activeColors)
+            return;
+
+        previewColorsActive = false;
+        applyColorValues(activeColors, animated);
+    }
     function setExpectedSource(sourceKey) {
         expectedSource = String(sourceKey || "");
-    }
-    function startGtkThemeSync() {
-        if (gtkThemeSetter.running || pendingGtkThemeMode === "")
-            return;
-        var mode = pendingGtkThemeMode;
-        pendingGtkThemeMode = "";
-        gtkThemeSetter.command = ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", mode === "dark" ? "adw-gtk3-dark" : "adw-gtk3"];
-        gtkThemeSetter.running = true;
     }
     function startPendingGeneration() {
         if (!pendingGenerationPath || generator.running)
@@ -750,7 +758,7 @@ QtObject {
         pendingGenerationForced = false;
         var matugenConfig = Config.dotfilesDir + "/.config/matugen/config.toml";
         var prepareGtk = Config.dotfilesDir + "/.config/matugen/scripts/prepare-gtk-runtime.sh";
-        var matugenRunner = Config.quickshellDir + "/scripts/theme/matugen-wallpaper-theme.sh";
+        var matugenRunner = Config.sownteeshellDir + "/scripts/theme/matugen-wallpaper-theme.sh";
         var metadata = JSON.stringify({
             "theme_source": source
         });
@@ -768,14 +776,12 @@ QtObject {
             modeQueryRetry.restart();
             return;
         }
-        var mode = text.indexOf("prefer-dark") >= 0 ? "dark" : text.indexOf("prefer-light") >= 0 ? "light" : text.indexOf("default") >= 0 ? "dark" : normalizeMode(colorMode);
+        var mode = text.indexOf("prefer-dark") >= 0 ? "dark" : text.indexOf("prefer-light") >= 0 ? "light" : normalizeMode(colorMode);
         var wasResolved = modeResolved;
         var changed = colorMode !== mode;
         modeQueryRetry.stop();
         colorMode = mode;
         modeResolved = true;
-        if (!wasResolved || changed)
-            requestGtkThemeSync(mode);
         if (changed && notifyChange)
             systemModeChanged(mode);
     }
@@ -784,7 +790,6 @@ QtObject {
         var changed = colorMode !== normalized;
         colorMode = normalized;
         modeResolved = true;
-        requestGtkThemeSync(normalized);
         if (notifyChange && (changed || activeMode !== normalized))
             systemModeChanged(normalized);
     }

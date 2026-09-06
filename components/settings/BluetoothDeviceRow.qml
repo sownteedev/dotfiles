@@ -392,7 +392,7 @@ Rectangle {
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
                                     font.pixelSize: 11
-                                    font.weight: Font.DemiBold
+                                    font.weight: Font.Bold
                                     text: batteryChip.valueAvailable ? modelData.value + "%" : "—"
                                 }
                                 Text {

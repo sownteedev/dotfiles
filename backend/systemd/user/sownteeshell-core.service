@@ -1,0 +1,16 @@
+[Unit]
+Description=SownteeShell core backend
+PartOf=graphical-session.target
+After=graphical-session.target
+StartLimitIntervalSec=30s
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=%h/.local/lib/sownteeshell/sownteeshell-core serve
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=5s
+
+[Install]
+WantedBy=graphical-session.target

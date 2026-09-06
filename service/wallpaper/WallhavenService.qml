@@ -18,66 +18,46 @@ QtObject {
     property string collectionPendingId: ""
     property string collectionPendingLabel: ""
     property int collectionPendingPage: 1
-    property Process collectionProcess: Process {
-        property bool launchPending: false
-        property int requestGeneration: -1
-        property string requestJson: "{}"
+    property bool collectionRefreshPending: false
+    property CoreRequest collectionRequest: CoreRequest {
+        property string activeRequestKey: ""
+        property int panelGeneration: -1
 
-        command: ["python3", "-u", root.helperPath, "collection"]
-        stdinEnabled: true
+        timeoutMs: 40000
 
-        stderr: StdioCollector {
-            id: collectionError
-        }
-        stdout: StdioCollector {
-            id: collectionOutput
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            if (!root.requestIsCurrent(collectionProcess)) {
+        onFailed: message => {
+            if (!root.generationIsCurrent(panelGeneration)) {
                 root.runPendingCollection();
                 return;
             }
-            var response = root.parseResponse(collectionOutput.text, collectionError.text, qsTr("Could not load this Wallhaven collection"));
-            var superseded = root.collectionRefreshPending;
-            if (superseded) {
+            if (root.collectionRefreshPending) {
                 root.runPendingCollection();
                 return;
             }
-            if (exitCode !== 0 || !response.ok) {
-                root.collectionErrorMessage = response.message || qsTr("Could not load this Wallhaven collection");
-            } else {
+            root.collectionErrorMessage = String(message || qsTr("Could not load this Wallhaven collection"));
+            root.runPendingCollection();
+        }
+        onSucceeded: response => {
+            if (!root.generationIsCurrent(panelGeneration)) {
+                root.runPendingCollection();
+                return;
+            }
+            if (root.collectionRefreshPending) {
+                root.runPendingCollection();
+                return;
+            }
+            if (response && response.ok) {
                 root.collectionErrorMessage = "";
-                root.replaceModel(root.collectionResults, response.items);
+                root.replaceModel(root.collectionResults, response.items || []);
                 root.collectionPage = Number(response.current_page || 1);
                 root.collectionLastPage = Number(response.last_page || 1);
                 root.collectionTotalResults = Number(response.total || root.collectionResults.count);
+            } else {
+                root.collectionErrorMessage = response && response.message ? String(response.message) : qsTr("Could not load this Wallhaven collection");
             }
             root.runPendingCollection();
         }
-        onRunningChanged: {
-            if (!running && launchPending) {
-                launchPending = false;
-                if (!root.requestIsCurrent(collectionProcess)) {
-                    root.runPendingCollection();
-                    return;
-                }
-                root.collectionErrorMessage = qsTr("Could not start the Wallhaven collection request");
-                root.runPendingCollection();
-            }
-        }
-        onStarted: {
-            launchPending = false;
-            if (!root.requestIsCurrent(collectionProcess)) {
-                requestJson = "{}";
-                running = false;
-                return;
-            }
-            write(requestJson + "\n");
-            requestJson = "{}";
-        }
     }
-    property bool collectionRefreshPending: false
     property ListModel collectionResults: ListModel {
         dynamicRoles: true
     }
@@ -86,38 +66,42 @@ QtObject {
         dynamicRoles: true
     }
     property bool collectionsLoaded: false
-    property Process collectionsProcess: Process {
-        property bool launchPending: false
-        property int requestGeneration: -1
-        property string requestJson: "{}"
+    property bool collectionsRefreshPending: false
+    property CoreRequest collectionsRequest: CoreRequest {
+        property string activeApiKey: ""
+        property int panelGeneration: -1
 
-        command: ["python3", "-u", root.helperPath, "collections"]
-        stdinEnabled: true
+        timeoutMs: 40000
 
-        stderr: StdioCollector {
-            id: collectionsError
-        }
-        stdout: StdioCollector {
-            id: collectionsOutput
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            if (!root.requestIsCurrent(collectionsProcess)) {
+        onFailed: message => {
+            if (!root.generationIsCurrent(panelGeneration)) {
                 root.restartCollectionsLoadIfPending();
                 return;
             }
-            var response = root.parseResponse(collectionsOutput.text, collectionsError.text, qsTr("Could not load Wallhaven collections"));
             if (root.collectionsRefreshPending) {
                 root.restartCollectionsLoadIfPending();
                 return;
             }
-            if (exitCode !== 0 || !response.ok) {
-                root.collectionErrorMessage = response.message || qsTr("Could not load Wallhaven collections");
+            root.collectionErrorMessage = String(message || qsTr("Could not load Wallhaven collections"));
+            root.restartCollectionsLoadIfPending();
+        }
+        onSucceeded: response => {
+            if (!root.generationIsCurrent(panelGeneration)) {
+                root.restartCollectionsLoadIfPending();
+                return;
+            }
+            if (root.collectionsRefreshPending) {
+                root.restartCollectionsLoadIfPending();
+                return;
+            }
+            if (!response || !response.ok) {
+                root.collectionErrorMessage = response && response.message ? String(response.message) : qsTr("Could not load Wallhaven collections");
+                root.restartCollectionsLoadIfPending();
                 return;
             }
             root.collectionErrorMessage = "";
             root.collectionsLoaded = true;
-            root.replaceModel(root.collections, response.items);
+            root.replaceModel(root.collections, response.items || []);
             if (root.collections.count === 0) {
                 root.selectedCollectionId = "";
                 root.selectedCollectionLabel = "";
@@ -132,29 +116,7 @@ QtObject {
             }
             root.loadCollection(root.selectedCollectionId, root.selectedCollectionLabel, 1);
         }
-        onRunningChanged: {
-            if (!running && launchPending) {
-                launchPending = false;
-                if (!root.requestIsCurrent(collectionsProcess)) {
-                    root.restartCollectionsLoadIfPending();
-                    return;
-                }
-                root.collectionErrorMessage = qsTr("Could not start the Wallhaven collection request");
-                root.restartCollectionsLoadIfPending();
-            }
-        }
-        onStarted: {
-            launchPending = false;
-            if (!root.requestIsCurrent(collectionsProcess)) {
-                requestJson = "{}";
-                running = false;
-                return;
-            }
-            write(requestJson + "\n");
-            requestJson = "{}";
-        }
     }
-    property bool collectionsRefreshPending: false
     property string colors: ""
     property Connections configConnections: Connections {
         function onWallhavenApiKeyChanged() {
@@ -178,7 +140,7 @@ QtObject {
         property bool launchPending: false
         property string requestJson: "{}"
 
-        command: ["python3", "-u", root.helperPath, "download"]
+        command: [root.helperPath, "request-stdin", "wallpaper.wallhaven.download"]
         stdinEnabled: true
 
         stderr: StdioCollector {
@@ -234,7 +196,7 @@ QtObject {
     readonly property bool downloading: downloadingId !== ""
     property string downloadingId: ""
     property string downloadingTitle: ""
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/wallpaper/wallhaven_client.py"
+    readonly property string helperPath: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property string installedErrorMessage: ""
     property bool installedLoaded: false
     property Process installedProcess: Process {
@@ -242,7 +204,7 @@ QtObject {
         property int requestGeneration: -1
         property string requestJson: "{}"
 
-        command: ["python3", "-u", root.helperPath, "list"]
+        command: [root.helperPath, "request-stdin", "wallpaper.wallhaven.list"]
         stdinEnabled: true
 
         stderr: StdioCollector {
@@ -304,8 +266,8 @@ QtObject {
     property string installedStatusMessage: ""
     property int lastPage: 1
     readonly property bool listingInstalled: installedProcess.running || installedReloadPending
-    readonly property bool loadingCollection: collectionProcess.running || collectionRefreshPending
-    readonly property bool loadingCollections: collectionsProcess.running || collectionsRefreshPending
+    readonly property bool loadingCollection: collectionRequest.active || collectionRefreshPending
+    readonly property bool loadingCollections: collectionsRequest.active || collectionsRefreshPending
     property string order: "desc"
     property int page: 1
     property int panelConsumers: 0
@@ -317,7 +279,7 @@ QtObject {
         property bool launchPending: false
         property string requestJson: "{}"
 
-        command: ["python3", "-u", root.helperPath, "remove"]
+        command: [root.helperPath, "request-stdin", "wallpaper.wallhaven.remove"]
         stdinEnabled: true
 
         stderr: StdioCollector {
@@ -369,71 +331,50 @@ QtObject {
     property string searchErrorMessage: ""
     property int searchPendingPage: 1
     property bool searchPendingPreserveSeed: false
-    property Process searchProcess: Process {
-        property bool launchPending: false
-        property int requestGeneration: -1
-        property string requestJson: "{}"
+    property bool searchRefreshPending: false
+    property CoreRequest searchRequest: CoreRequest {
+        property int panelGeneration: -1
 
-        command: ["python3", "-u", root.helperPath, "search"]
-        stdinEnabled: true
+        timeoutMs: 40000
 
-        stderr: StdioCollector {
-            id: searchError
-        }
-        stdout: StdioCollector {
-            id: searchOutput
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            if (!root.requestIsCurrent(searchProcess)) {
+        onFailed: message => {
+            if (!root.generationIsCurrent(panelGeneration)) {
                 root.runPendingSearch();
                 return;
             }
-            var response = root.parseResponse(searchOutput.text, searchError.text, qsTr("Wallhaven search failed"));
-            var superseded = root.searchRefreshPending;
-            if (superseded) {
+            if (root.searchRefreshPending) {
                 root.runPendingSearch();
                 return;
             }
-            if (exitCode !== 0 || !response.ok) {
-                root.searchErrorMessage = response.message || qsTr("Wallhaven search failed");
-                root.statusMessage = "";
-            } else {
+            root.searchErrorMessage = String(message || qsTr("Wallhaven search failed"));
+            root.statusMessage = "";
+            root.runPendingSearch();
+        }
+        onSucceeded: response => {
+            if (!root.generationIsCurrent(panelGeneration)) {
+                root.runPendingSearch();
+                return;
+            }
+            if (root.searchRefreshPending) {
+                root.runPendingSearch();
+                return;
+            }
+            if (response && response.ok) {
                 root.searchErrorMessage = "";
-                root.replaceModel(root.results, response.items);
+                root.replaceModel(root.results, response.items || []);
                 root.page = Number(response.current_page || 1);
                 root.lastPage = Number(response.last_page || 1);
                 root.totalResults = Number(response.total || root.results.count);
                 root.seed = root.sorting === "random" ? String(response.seed || root.seed || "") : "";
                 root.statusMessage = "";
+            } else {
+                root.searchErrorMessage = response && response.message ? String(response.message) : qsTr("Wallhaven search failed");
+                root.statusMessage = "";
             }
             root.runPendingSearch();
         }
-        onRunningChanged: {
-            if (!running && launchPending) {
-                launchPending = false;
-                if (!root.requestIsCurrent(searchProcess)) {
-                    root.runPendingSearch();
-                    return;
-                }
-                root.searchErrorMessage = qsTr("Could not start Wallhaven search");
-                root.statusMessage = "";
-                root.runPendingSearch();
-            }
-        }
-        onStarted: {
-            launchPending = false;
-            if (!root.requestIsCurrent(searchProcess)) {
-                requestJson = "{}";
-                running = false;
-                return;
-            }
-            write(requestJson + "\n");
-            requestJson = "{}";
-        }
     }
-    property bool searchRefreshPending: false
-    readonly property bool searching: searchProcess.running || searchRefreshPending
+    readonly property bool searching: searchRequest.active || searchRefreshPending
     property string seed: ""
     property string selectedCollectionId: ""
     property string selectedCollectionLabel: ""
@@ -507,18 +448,32 @@ QtObject {
         downloadProcess.running = true;
         return true;
     }
+    function generationIsCurrent(generation) {
+        return panelConsumers > 0 && generation === requestGeneration;
+    }
     function loadCollection(collectionId, label, requestedPage) {
         if (panelConsumers <= 0 || !accountConfigured || String(collectionId || "") === "")
             return false;
 
-        selectedCollectionId = String(collectionId);
+        var targetCollectionId = String(collectionId);
+        selectedCollectionId = targetCollectionId;
         selectedCollectionLabel = String(label || "");
         var collectionIndex = modelIndexForId(collections, selectedCollectionId);
         if (collectionIndex >= 0)
             collectionTotalResults = Number(collections.get(collectionIndex).count || 0);
 
         var targetPage = Math.max(1, Number(requestedPage || 1));
-        if (collectionProcess.running) {
+        var apiKey = Config.wallhavenApiKey.trim();
+        var username = Config.wallhavenUsername.trim();
+        var wallpaperDir = Config.wallhavenCacheFolder;
+        var targetRequestKey = JSON.stringify([targetCollectionId, targetPage, apiKey, username, wallpaperDir]);
+        if (collectionRequest.active) {
+            if (collectionRequest.activeRequestKey === targetRequestKey) {
+                collectionRefreshPending = false;
+                collectionPendingId = "";
+                collectionPendingLabel = "";
+                return true;
+            }
             collectionPendingId = selectedCollectionId;
             collectionPendingLabel = selectedCollectionLabel;
             collectionPendingPage = targetPage;
@@ -526,16 +481,15 @@ QtObject {
             return true;
         }
         collectionErrorMessage = "";
-        collectionProcess.requestJson = JSON.stringify({
-            "api_key": Config.wallhavenApiKey.trim(),
+        collectionRequest.activeRequestKey = targetRequestKey;
+        collectionRequest.panelGeneration = requestGeneration;
+        collectionRequest.start("wallpaper.wallhaven.collection", {
+            "api_key": apiKey,
             "collection_id": selectedCollectionId,
             "page": targetPage,
-            "username": Config.wallhavenUsername.trim(),
-            "wallpaper_dir": Config.wallhavenCacheFolder
+            "username": username,
+            "wallpaper_dir": wallpaperDir
         });
-        collectionProcess.launchPending = true;
-        collectionProcess.requestGeneration = requestGeneration;
-        collectionProcess.running = true;
         return true;
     }
     function loadCollections(force) {
@@ -547,11 +501,10 @@ QtObject {
             collectionErrorMessage = qsTr("Add your Wallhaven username and API key in Settings");
             return false;
         }
-        if (collectionsProcess.running) {
-            if (force === true)
-                collectionsRefreshPending = true;
-
-            return force === true;
+        var apiKey = Config.wallhavenApiKey.trim();
+        if (collectionsRequest.active) {
+            collectionsRefreshPending = collectionsRequest.activeApiKey !== apiKey;
+            return true;
         }
 
         if (collectionsLoaded && !force) {
@@ -561,12 +514,11 @@ QtObject {
             return true;
         }
         collectionErrorMessage = "";
-        collectionsProcess.requestJson = JSON.stringify({
-            "api_key": Config.wallhavenApiKey.trim()
+        collectionsRequest.activeApiKey = apiKey;
+        collectionsRequest.panelGeneration = requestGeneration;
+        collectionsRequest.start("wallpaper.wallhaven.collections", {
+            "api_key": apiKey
         });
-        collectionsProcess.launchPending = true;
-        collectionsProcess.requestGeneration = requestGeneration;
-        collectionsProcess.running = true;
         return true;
     }
     function loadInstalled(force) {
@@ -654,9 +606,9 @@ QtObject {
         collectionPendingId = "";
         collectionPendingLabel = "";
         searchPendingPreserveSeed = false;
-        cancelBrowseProcess(searchProcess);
-        cancelBrowseProcess(collectionProcess);
-        cancelBrowseProcess(collectionsProcess);
+        searchRequest.cancel();
+        collectionRequest.cancel();
+        collectionsRequest.cancel();
         cancelBrowseProcess(installedProcess);
         clearPanelModels();
     }
@@ -795,7 +747,7 @@ QtObject {
         if (preserveRandomSeed !== true)
             seed = "";
 
-        if (searchProcess.running) {
+        if (searchRequest.active) {
             searchPendingPage = page;
             searchPendingPreserveSeed = preserveRandomSeed === true;
             searchRefreshPending = true;
@@ -803,7 +755,8 @@ QtObject {
         }
         searchErrorMessage = "";
         statusMessage = "";
-        searchProcess.requestJson = JSON.stringify({
+        searchRequest.panelGeneration = requestGeneration;
+        searchRequest.start("wallpaper.wallhaven.search", {
             "api_key": Config.wallhavenApiKey.trim(),
             "atleast": resolutionMode === "atleast" ? atleast : "",
             "categories": categories,
@@ -819,9 +772,6 @@ QtObject {
             "top_range": topRange,
             "wallpaper_dir": Config.wallhavenCacheFolder
         });
-        searchProcess.launchPending = true;
-        searchProcess.requestGeneration = requestGeneration;
-        searchProcess.running = true;
         return true;
     }
     function updateDownloaded(model, wallpaperId, path, modified, fileSize) {

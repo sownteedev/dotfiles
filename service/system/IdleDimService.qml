@@ -100,7 +100,9 @@ QtObject {
         }
     }
     readonly property int normalSuspendTimeout: Math.max(0, QuickSettingsService.effectiveIdleSuspendTimeout)
-    readonly property bool policyEnabled: Config.idleEnabled && QuickSettingsService.idlePolicyReady && !QuickSettingsService.caffeineEnabled
+    // Keep the in-process fallback independent of swayidle recreation so a
+    // shell reload cannot leave every idle action disabled.
+    readonly property bool policyEnabled: Config.idleEnabled && !QuickSettingsService.caffeineEnabled
     property Process powerOffProcess: Process {
         command: ["niri", "msg", "action", "power-off-monitors"]
 

@@ -13,6 +13,10 @@ singleton ApplicationPackageService 1.0 system/ApplicationPackageService.qml
 singleton BatteryService 1.0 system/BatteryService.qml
 singleton BluetoothService 1.0 system/BluetoothService.qml
 singleton BrightnessService 1.0 system/BrightnessService.qml
+
+singleton CoreService 1.0 system/CoreService.qml
+CoreRequest 1.0 system/CoreRequest.qml
+
 singleton DisplayHotplugService 1.0 system/DisplayHotplugService.qml
 singleton DisplayService 1.0 system/DisplayService.qml
 singleton DisplayBrightnessService 1.0 system/DisplayBrightnessService.qml

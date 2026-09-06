@@ -24,7 +24,7 @@ Item {
                 root.applyManifest(text());
         }
     }
-    readonly property string manifestPath: Quickshell.env("GREETD_BACKGROUND_PATH") || "/var/lib/quickshell-greeter/background.json"
+    readonly property string manifestPath: Quickshell.env("GREETD_BACKGROUND_PATH") || "/var/lib/sownteeshell/greeter/background.json"
     property string sourcePath: ""
 
     function applyManifest(rawText) {

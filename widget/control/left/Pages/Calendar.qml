@@ -305,11 +305,13 @@ Item {
                         Item {
                             id: monthCanvas
 
-                            height: 580
+                            height: Math.max(580, monthLayout.implicitHeight + 24)
                             width: monthFlickable.width
                             y: Math.max(0, (monthFlickable.contentHeight - height) / 2)
 
                             ColumnLayout {
+                                id: monthLayout
+
                                 anchors.fill: parent
                                 anchors.margins: 12
                                 spacing: 40
@@ -323,23 +325,8 @@ Item {
                                         color: Config.md3.on_surface
                                         font.family: Config.fontName
                                         font.pixelSize: 26
-                                        font.weight: Font.DemiBold
+                                        font.weight: Font.Bold
                                         text: calendarRoot.monthNames[monthPage.viewMonth] + " " + monthPage.viewYear
-                                    }
-                                    SettingsActionButton {
-                                        anchors.right: parent.right
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        height: 44
-                                        iconName: "window-new-symbolic"
-                                        iconOnly: true
-                                        radius: 14
-                                        text: qsTr("Open full calendar")
-                                        width: 44
-
-                                        onClicked: {
-                                            StateManager.showCalendarApp();
-                                            controlLeftWindow.hideControl();
-                                        }
                                     }
                                 }
                                 GridLayout {
@@ -398,7 +385,7 @@ Item {
                                                         color: dayInfo.isCurrent ? (isWeekend ? Config.md3.tertiary : Config.md3.on_surface) : Config.alpha(Config.md3.on_surface_variant, 0.5)
                                                         font.family: Config.fontName
                                                         font.pixelSize: Math.min(18, Math.max(14, dayCircle.width * 0.36))
-                                                        font.weight: dayInfo.isCurrent ? Font.Bold : Font.Normal
+                                                        font.weight: dayInfo.isCurrent ? Font.DemiBold : Font.Normal
                                                         text: dayInfo.day
                                                     }
                                                     Text {
@@ -562,6 +549,8 @@ Item {
             ListView {
                 id: eventList
 
+                readonly property real cardInset: 2
+
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 boundsBehavior: Flickable.StopAtBounds
@@ -570,11 +559,25 @@ Item {
                 spacing: 12
 
                 delegate: Item {
+                    id: eventDelegateRoot
+
                     readonly property color eventAccent: modelData.calendarColor || Config.md3.primary
                     required property var modelData
 
                     height: Math.max(106, eventContent.implicitHeight + 32)
-                    width: ListView.view.width
+                    layer.enabled: cardContent.swipeX < -0.4
+                    width: ListView.view.width - eventList.cardInset * 2
+
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            height: eventDelegateRoot.height
+                            radius: 17
+                            width: eventDelegateRoot.width
+                        }
+                    }
+                    transform: Translate {
+                        x: eventList.cardInset
+                    }
 
                     SwipeDeleteBackground {
                         actionText: qsTr("Delete")

@@ -1,5 +1,6 @@
 import "../../"
 import "../../components/animate" as Animate
+import "../../service"
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import Quickshell
@@ -34,10 +35,13 @@ Item {
             return;
 
         var mimeType = format === "gif" ? "image/gif" : format === "png" ? "image/png" : "image/webp";
-        var command = ["python3", Config.quickshellDir + "/backend/python/launcher/klipy_client.py", "copy", "--url", url, "--mime", mimeType];
-        if (Config.launcherClipboardAutoPaste)
-            command.push("--paste");
-        Quickshell.execDetached(command);
+        CoreService.sendRequest("launcher.klipy.copy", {
+            "url": url,
+            "mime": mimeType,
+            "paste": Config.launcherClipboardAutoPaste
+        }, null, function (message) {
+            console.warn("[LauncherMediaSearch]", message);
+        }, 30000);
         resultLaunched();
     }
     function errorDescription() {

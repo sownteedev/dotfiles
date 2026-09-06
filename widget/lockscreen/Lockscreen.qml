@@ -31,7 +31,8 @@ Scope {
     // Reading text() with blockLoading forces the PAM service decision to be
     // made before PamContext starts. The file may also contain a password-only
     // fallback, so only an active pam_howdy rule means face unlock is enabled.
-    readonly property bool faceUnlockAvailable: pamConfigHasHowdy(pamConfigFile.text())
+    readonly property string facePamService: pamConfigHasHowdy(sownteeshellPamConfigFile.text()) ? "sownteeshell" : pamConfigHasHowdy(legacyPamConfigFile.text()) ? "quickshell" : "login"
+    readonly property bool faceUnlockAvailable: facePamService !== "login"
     readonly property string fallbackWallpaper: wallpaperState.frame || wallpaperState.thumbnail || (wallpaperState.mode === "static" ? wallpaperState.path : "")
     // Fonts
     readonly property string fontName: settingValue("fontName", "Inter Variable")
@@ -50,6 +51,7 @@ Scope {
         readonly property color waitingText: Config.alpha(Config.md3.on_surface_variant, 0.62)
     }
     property var runtimeSettings: ({})
+    property bool unlockCompleted: false
     property string username: Quickshell.env("USER") || "sownteedev"
     property var wallpaperState: ({})
     property bool weatherConsumerAcquired: false
@@ -80,6 +82,14 @@ Scope {
         var baseAlpha = isMajor ? 0.52 : 0.28;
         var a = baseAlpha * (1 - spotlight) + (0.65 + 0.35 * spotlight) * spotlight;
         return Qt.rgba(r, g, b, a);
+    }
+    function completeUnlock() {
+        if (unlockCompleted)
+            return;
+
+        unlockCompleted = true;
+        StateManager.sessionLocked = false;
+        dismissed();
     }
     function loadRuntimeSettings() {
         if (!settingsFile.loaded)
@@ -146,6 +156,20 @@ Scope {
         var value = runtimeSettings ? runtimeSettings[name] : undefined;
         return value !== undefined && value !== null ? value : fallback;
     }
+    function unlockSession() {
+        if (unlockCompleted)
+            return;
+
+        sessionLock.locked = false;
+
+        // Quickshell revisions affected by the WlSessionLock notification
+        // regression do not emit lockedChanged after a successful unlock.
+        // Complete our loader lifecycle explicitly after releasing the lock.
+        if (!sessionLock.locked)
+            completeUnlock();
+        else
+            console.warn("[Lockscreen] Compositor did not release the session lock");
+    }
 
     Component.onCompleted: {
         StateManager.sessionLocked = true;
@@ -159,7 +183,15 @@ Scope {
     }
 
     FileView {
-        id: pamConfigFile
+        id: sownteeshellPamConfigFile
+
+        blockLoading: true
+        path: "/etc/pam.d/sownteeshell"
+        printErrors: false
+        watchChanges: false
+    }
+    FileView {
+        id: legacyPamConfigFile
 
         blockLoading: true
         path: "/etc/pam.d/quickshell"
@@ -187,7 +219,7 @@ Scope {
         id: wallpaperStateFile
 
         blockLoading: true
-        path: root.cacheRoot + "/quickshell_wallpaper.txt"
+        path: root.cacheRoot + "/wallpaper.json"
         printErrors: false
         watchChanges: true
 
@@ -219,10 +251,8 @@ Scope {
         locked: true // Lock screen immediately on launch
 
         onLockedChanged: {
-            if (!locked) {
-                StateManager.sessionLocked = false;
-                root.dismissed();
-            }
+            if (!locked)
+                root.completeUnlock();
         }
         onSecureStateChanged: {
             if (secure && !root.authenticationGranted)
@@ -275,7 +305,7 @@ Scope {
                         windupAnim.start();
                         boomTriggerTimer.start();
                     } else {
-                        sessionLock.locked = false;
+                        root.unlockSession();
                     }
                 }
 
@@ -322,7 +352,7 @@ Scope {
                     id: boomSequence
 
                     onFinished: {
-                        sessionLock.locked = false;
+                        root.unlockSession();
                     }
 
                     NumberAnimation {
@@ -1395,7 +1425,7 @@ Scope {
                 return;
 
             var useFace = root.faceUnlockAvailable && !faceFallbackOnly && faceAttempts < maxFaceAttempts;
-            pam.config = useFace ? "quickshell" : "login";
+            pam.config = useFace ? root.facePamService : "login";
             if (useFace) {
                 verifiedMethod = "";
                 faceAttempts += 1;
@@ -1420,7 +1450,7 @@ Scope {
             passwordToSubmit = "";
             verifiedMethod = "";
             hasError = false;
-            pam.config = "quickshell";
+            pam.config = root.facePamService;
             beginAuthentication();
         }
         function submitPassword(password) {
@@ -1437,7 +1467,7 @@ Scope {
             pam.start();
         }
 
-        config: root.faceUnlockAvailable ? "quickshell" : "login"
+        config: root.faceUnlockAvailable ? root.facePamService : "login"
 
         onCompleted: result => {
             var usedPassword = passwordAttempt;

@@ -60,7 +60,7 @@ QtObject {
             }
         }
     }
-    readonly property string generatorScript: Config.quickshellDir + "/backend/python/wallpaper/backdrop_cache.py"
+    readonly property string generatorScript: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property Connections globalConnections: Connections {
         function onWallpaperLoadedChanged() {
             if (StateManager.wallpaperLoaded)
@@ -165,7 +165,7 @@ QtObject {
         ++generationSerial;
         generatedBackdrop = "";
         generator.jobSerial = generationSerial;
-        generator.command = ["python3", generatorScript, generationSource, cacheDir, generationIdentity, generationCanCreate ? "true" : "false"];
+        generator.command = [generatorScript, "wallpaper-backdrop", generationSource, cacheDir, generationIdentity, generationCanCreate ? "true" : "false"];
         generator.running = true;
     }
 

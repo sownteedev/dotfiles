@@ -114,7 +114,7 @@ Item {
                         color: Config.md3.on_surface
                         font.family: Config.fontName
                         font.pixelSize: 44
-                        font.weight: Font.DemiBold
+                        font.weight: Font.Bold
                         horizontalAlignment: Text.AlignRight
                         renderType: Text.NativeRendering
                         text: WeatherService.formatTemperature(WeatherService.temperature)

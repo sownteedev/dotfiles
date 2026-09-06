@@ -1,98 +1,120 @@
 pragma Singleton
 import "../.."
+import ".."
 import QtQuick
 import Quickshell.Io
 
 QtObject {
     id: root
 
-    readonly property bool busy: syncProcess.running
+    property string activeRequestId: ""
+    property bool busy: false
     readonly property string configuredDefaultSession: Config.greeterDefaultSession
     readonly property bool configuredRememberLastSession: Config.greeterRememberLastSession
+    property Connections coreConnections: Connections {
+        function onReadyChanged() {
+            if (!CoreService.ready)
+                return;
+            if (root.sessionsPending)
+                Qt.callLater(root.refreshSessions);
+            if (root.pendingSync && !root.busy)
+                Qt.callLater(root.sync);
+        }
+
+        target: CoreService
+    }
     property string errorMessage: ""
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/profile/greeter_settings_sync.py"
     property bool initialized: false
     property bool pendingSync: false
-    property Process sessionScanner: Process {
-        command: ["python3", Config.quickshellDir + "/widget/greeter/scripts/list_sessions.py"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    var result = JSON.parse(String(text || "[]"));
-                    root.sessions = Array.isArray(result) ? result : [];
-                } catch (error) {
-                    root.sessions = [];
-                    console.warn("[GreeterSettingsService] Invalid session list:", error);
-                }
-            }
-        }
-    }
     property var sessions: []
+    property bool sessionsPending: false
+    property string sessionsRequestId: ""
     property string statusMessage: ""
     property Timer syncDebounce: Timer {
         interval: 120
 
         onTriggered: root.sync()
     }
-    property Process syncProcess: Process {
-        stderr: StdioCollector {
-            id: syncError
-        }
-        stdout: StdioCollector {
-            id: syncOutput
-        }
 
-        onExited: (exitCode, exitStatus) => {
-            var response = root.parseResponse(syncOutput.text, syncError.text);
-            if (exitCode !== 0 || response.ok !== true) {
-                root.errorMessage = response.message || qsTr("Could not update greetd settings");
-                root.statusMessage = "";
-            } else {
-                root.errorMessage = "";
-                root.statusMessage = qsTr("Greeter settings synchronized");
-            }
-            if (root.pendingSync) {
-                root.pendingSync = false;
-                Qt.callLater(root.sync);
-            }
+    function finishSync(response, transportSuccess) {
+        activeRequestId = "";
+        busy = false;
+        var succeeded = transportSuccess && response && response.ok === true;
+        if (!succeeded) {
+            errorMessage = String(response && response.message || qsTr("Could not update greetd settings"));
+            statusMessage = "";
+            if (!CoreService.ready)
+                pendingSync = true;
+        } else {
+            errorMessage = "";
+            statusMessage = qsTr("Greeter settings synchronized");
         }
-    }
-
-    function parseResponse(stdoutText, stderrText) {
-        try {
-            var response = JSON.parse(String(stdoutText || "").trim());
-            if (response && typeof response === "object")
-                return response;
-        } catch (error) {}
-        return {
-            "ok": false,
-            "message": String(stderrText || "").trim()
-        };
+        if (pendingSync && CoreService.ready) {
+            pendingSync = false;
+            Qt.callLater(root.sync);
+        }
     }
     function refreshSessions() {
-        if (!sessionScanner.running)
-            sessionScanner.running = true;
+        if (sessionsRequestId !== "")
+            return;
+        if (!CoreService.ready) {
+            sessionsPending = true;
+            CoreService.ensureRunning();
+            return;
+        }
+        sessionsPending = false;
+        sessionsRequestId = CoreService.sendRequest("greeter.sessions.list", {}, function (result) {
+            root.sessionsRequestId = "";
+            root.sessions = Array.isArray(result) ? result : [];
+        }, function (message) {
+            root.sessionsRequestId = "";
+            root.sessions = [];
+            if (!CoreService.ready)
+                root.sessionsPending = true;
+            console.warn("[GreeterSettingsService] Could not list sessions:", message);
+        }, 10000);
     }
     function scheduleSync() {
         if (initialized)
             syncDebounce.restart();
     }
     function sync() {
-        if (syncProcess.running) {
+        if (busy) {
             pendingSync = true;
             return;
         }
+        if (!CoreService.ready) {
+            pendingSync = true;
+            statusMessage = qsTr("Waiting for the core backend…");
+            errorMessage = "";
+            CoreService.ensureRunning();
+            return;
+        }
+        pendingSync = false;
         statusMessage = qsTr("Synchronizing greeter settings…");
         errorMessage = "";
-        syncProcess.command = ["python3", "-u", helperPath, "--default-session", configuredDefaultSession, "--remember-last-session", configuredRememberLastSession ? "true" : "false"];
-        syncProcess.running = true;
+        busy = true;
+        activeRequestId = CoreService.sendRequest("greeter.settings.sync", {
+            "defaultSession": configuredDefaultSession,
+            "rememberLastSession": configuredRememberLastSession
+        }, function (result) {
+            root.finishSync(result, true);
+        }, function (message) {
+            root.finishSync({
+                "ok": false,
+                "message": message
+            }, false);
+        }, 15000);
     }
 
     Component.onCompleted: {
         initialized = true;
         refreshSessions();
         scheduleSync();
+    }
+    Component.onDestruction: {
+        CoreService.forgetRequest(activeRequestId);
+        CoreService.forgetRequest(sessionsRequestId);
     }
     onConfiguredDefaultSessionChanged: scheduleSync()
     onConfiguredRememberLastSessionChanged: scheduleSync()

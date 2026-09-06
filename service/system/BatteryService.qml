@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.UPower
 import "../../"
+import ".."
 
 QtObject {
     id: root
@@ -54,32 +55,6 @@ QtObject {
     property bool batteryAwareTarget: false
     readonly property int batteryPercentage: batteryReadingReady ? Math.round(UPower.displayDevice.percentage * 100) : -1
     property alias batteryPowerProfile: policy.batteryPowerProfile
-    property Process batteryQuery: Process {
-        command: [Config.quickshellDir + "/backend/rust/system-stats/run-system-stats", "--battery-stream"]
-        running: root.active
-
-        stdout: SplitParser {
-            onRead: line => {
-                try {
-                    var data = JSON.parse(line);
-                    root.gpuPower = root.formatValue(data.gpu_power, 1, " W");
-                    root.healthNumeric = root.validNumber(data.health) ? Number(data.health) : -1;
-                    root.health = root.formatValue(data.health, 1, "%");
-                    root.cycleCount = data.cycle_count === null || data.cycle_count <= 0 ? "N/A" : String(Math.round(data.cycle_count));
-                    root.temperature = root.formatValue(data.temperature, 1, "°C");
-                    root.voltage = root.formatValue(data.voltage, 2, " V");
-                    root.powerDraw = root.formatValue(data.power_draw, 1, " W");
-                    root.fullEnergy = root.formatValue(data.full_energy, 1, " Wh");
-                    root.designEnergy = root.formatValue(data.design_energy, 1, " Wh");
-                    root.deviceName = data.device_name || qsTr("Battery");
-                } catch (error) {
-                    console.warn("[BatteryService] Invalid backend output:", error);
-                }
-            }
-        }
-
-        Component.onDestruction: running = false
-    }
     readonly property bool batteryReadingReady: UPower.displayDevice && UPower.displayDevice.ready
     property Process chargeCommand: Process {
         stderr: StdioCollector {
@@ -114,25 +89,18 @@ QtObject {
     property Process commandExecutor: Process {
         onExited: root.refreshDelay.restart()
     }
-    property Process controlQuery: Process {
-        command: [Config.quickshellDir + "/backend/rust/system-stats/run-system-stats", "--battery-control"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    var data = JSON.parse(text.trim());
-                    root.chargeMode = data.charge_mode || "custom";
-                    root.chargeStartThreshold = root.validNumber(data.charge_start_threshold) ? Math.round(Number(data.charge_start_threshold)) : 0;
-                    root.chargeEndThreshold = root.validNumber(data.charge_end_threshold) ? Math.round(Number(data.charge_end_threshold)) : 0;
-                    root.chargeThresholdSupported = data.charge_threshold_supported === true;
-                    root.currentGovernor = data.current_governor || "N/A";
-                    root.governorOverride = data.governor_override || "default";
-                    root.turboOverride = data.turbo_override || "auto";
-                } catch (error) {
-                    console.warn("[BatteryService] Invalid control output:", error);
-                }
-            }
+    property bool controlQueryBusy: false
+    property bool controlRefreshPending: false
+    property Connections coreConnections: Connections {
+        function onBatteryUpdated(data) {
+            root.applyBatteryData(data);
         }
+        function onReadyChanged() {
+            if (CoreService.ready && root.active)
+                root.refresh();
+        }
+
+        target: CoreService
     }
     property alias criticalBatteryAction: policy.criticalBatteryAction
     property alias criticalBatteryHandled: policy.criticalBatteryHandled
@@ -228,6 +196,33 @@ QtObject {
     property string turboOverride: "auto"
     property string voltage: "N/A"
 
+    function applyBatteryData(data) {
+        if (!data)
+            return;
+
+        gpuPower = formatValue(data.gpu_power, 1, " W");
+        healthNumeric = validNumber(data.health) ? Number(data.health) : -1;
+        health = formatValue(data.health, 1, "%");
+        cycleCount = data.cycle_count === null || data.cycle_count <= 0 ? "N/A" : String(Math.round(data.cycle_count));
+        temperature = formatValue(data.temperature, 1, "°C");
+        voltage = formatValue(data.voltage, 2, " V");
+        powerDraw = formatValue(data.power_draw, 1, " W");
+        fullEnergy = formatValue(data.full_energy, 1, " Wh");
+        designEnergy = formatValue(data.design_energy, 1, " Wh");
+        deviceName = data.device_name || qsTr("Battery");
+    }
+    function applyControlData(data) {
+        if (!data)
+            return;
+
+        chargeMode = data.charge_mode || "custom";
+        chargeStartThreshold = validNumber(data.charge_start_threshold) ? Math.round(Number(data.charge_start_threshold)) : 0;
+        chargeEndThreshold = validNumber(data.charge_end_threshold) ? Math.round(Number(data.charge_end_threshold)) : 0;
+        chargeThresholdSupported = data.charge_threshold_supported === true;
+        currentGovernor = data.current_governor || "N/A";
+        governorOverride = data.governor_override || "default";
+        turboOverride = data.turbo_override || "auto";
+    }
     function applySourcePowerProfile() {
         if (!policyReady || !powerProfilesAvailable || autoPowerSaverManaged)
             return;
@@ -284,6 +279,14 @@ QtObject {
             criticalBatteryHandled = false;
         }
     }
+    function finishControlRefresh() {
+        controlQueryBusy = false;
+        if (!controlRefreshPending || !active)
+            return;
+
+        controlRefreshPending = false;
+        Qt.callLater(root.refresh);
+    }
     function formatValue(value, precision, suffix) {
         return !validNumber(value) || Number(value) <= 0 ? "N/A" : Number(value).toFixed(precision) + suffix;
     }
@@ -331,9 +334,15 @@ QtObject {
     function refresh() {
         if (!active)
             return;
-
-        controlQuery.running = false;
-        controlQuery.running = true;
+        if (controlQueryBusy) {
+            controlRefreshPending = true;
+            return;
+        }
+        controlQueryBusy = true;
+        CoreService.sendRequest("battery.control", {}, result => {
+            root.applyControlData(result);
+            root.finishControlRefresh();
+        }, message => root.finishControlRefresh());
     }
     function restartAvailabilityQuery() {
         availabilityQuery.running = false;
@@ -355,7 +364,7 @@ QtObject {
         chargeCommandError = "";
         chargeCommandStderr = "";
         chargeCommandBusy = true;
-        chargeCommand.command = ["pkexec", Config.quickshellDir + "/backend/rust/system-stats/run-system-stats", "--set-charge-thresholds", String(pendingChargeStart), String(pendingChargeEnd)];
+        chargeCommand.command = ["pkexec", Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon", "--set-charge-thresholds", String(pendingChargeStart), String(pendingChargeEnd)];
         chargeCommand.running = false;
         chargeCommand.running = true;
         return true;
@@ -463,11 +472,14 @@ QtObject {
     }
 
     Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", Config.cacheRoot])
+    Component.onDestruction: CoreService.setBatteryEnabled(false)
     onActiveChanged: {
-        if (active)
+        CoreService.setBatteryEnabled(active);
+        if (active) {
             refresh();
-        else
-            controlQuery.running = false;
+        } else {
+            controlRefreshPending = false;
+        }
     }
     onAutoPowerSaverEnabledChanged: evaluatePolicy()
     onBatteryPercentageChanged: evaluatePolicy()

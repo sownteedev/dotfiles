@@ -391,7 +391,7 @@ PanelWindow {
 
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.namespace: "quickshell-dock"
+    WlrLayershell.namespace: "sownteeshell-dock"
     aboveWindows: true
     anchors.bottom: true
     anchors.left: true

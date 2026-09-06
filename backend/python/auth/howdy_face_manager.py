@@ -22,14 +22,17 @@ HOWDY_MODULE = Path("/usr/lib/security/pam_howdy.so")
 HOWDY_CONFIG = Path("/etc/howdy/config.ini")
 HOWDY_MODELS = Path("/etc/howdy/models")
 V4L2_CTL = Path("/usr/bin/v4l2-ctl")
-PAM_TARGET = Path("/etc/pam.d/quickshell")
-PAM_BACKUP = Path("/etc/pam.d/quickshell.before-face-manager")
+PAM_TARGET = Path("/etc/pam.d/sownteeshell")
+PAM_BACKUP = Path("/etc/pam.d/sownteeshell.before-face-manager")
+LEGACY_PAM_TARGET = Path("/etc/pam.d/quickshell")
+LEGACY_PAM_BACKUP = Path("/etc/pam.d/quickshell.before-face-manager")
 PAM_CONTENT = """#%PAM-1.0
 
-# Face authentication is intentionally scoped to the Quickshell lock screen.
+# Face authentication is intentionally scoped to the SownteeShell lock screen.
 auth      sufficient  /usr/lib/security/pam_howdy.so
 auth      include     system-auth
 """
+LEGACY_PAM_CONTENT = PAM_CONTENT.replace("SownteeShell", "Quickshell")
 
 
 class ManagerError(RuntimeError):
@@ -89,16 +92,28 @@ def read_camera_path() -> str:
     return parser.get("video", "device_path", fallback="")
 
 
+def managed_pam_targets() -> list[tuple[Path, Path]]:
+    managed: list[tuple[Path, Path]] = []
+    for target, backup in (
+        (PAM_TARGET, PAM_BACKUP),
+        (LEGACY_PAM_TARGET, LEGACY_PAM_BACKUP),
+    ):
+        if not target.exists():
+            continue
+        try:
+            contents = target.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if contents in (PAM_CONTENT, LEGACY_PAM_CONTENT):
+            managed.append((target, backup))
+    return managed
+
+
 def status() -> None:
     account = requesting_account()
     installed = HOWDY.exists() and HOWDY_MODULE.exists() and HOWDY_COMPARE.exists()
     cameras = list_cameras()
-    managed_pam = False
-    if PAM_TARGET.exists():
-        try:
-            managed_pam = PAM_TARGET.read_text(encoding="utf-8") == PAM_CONTENT
-        except OSError:
-            managed_pam = False
+    managed_pam = bool(managed_pam_targets())
     models = load_models(account) if installed else []
     emit(
         True,
@@ -260,10 +275,10 @@ def write_managed_pam() -> None:
     PAM_TARGET.parent.mkdir(parents=True, exist_ok=True)
     if PAM_TARGET.exists():
         current = PAM_TARGET.read_text(encoding="utf-8")
-        if current != PAM_CONTENT and not PAM_BACKUP.exists():
+        if current not in (PAM_CONTENT, LEGACY_PAM_CONTENT) and not PAM_BACKUP.exists():
             shutil.copy2(PAM_TARGET, PAM_BACKUP)
 
-    descriptor, temporary_name = tempfile.mkstemp(prefix=".quickshell.", dir=PAM_TARGET.parent)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=".sownteeshell.", dir=PAM_TARGET.parent)
     try:
         os.fchmod(descriptor, 0o644)
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
@@ -276,17 +291,37 @@ def write_managed_pam() -> None:
             os.unlink(temporary_name)
 
 
+def restore_or_remove_managed_target(target: Path, backup: Path) -> None:
+    if backup.exists():
+        os.replace(backup, target)
+    else:
+        target.unlink()
+
+
+def migrate_legacy_pam() -> None:
+    require_root()
+    managed_targets = managed_pam_targets()
+    legacy_managed = (LEGACY_PAM_TARGET, LEGACY_PAM_BACKUP) in managed_targets
+    if not legacy_managed:
+        emit(True, "No managed legacy PAM configuration needs migration")
+        return
+    if PAM_TARGET.exists() and (PAM_TARGET, PAM_BACKUP) not in managed_targets:
+        raise ManagerError("Refusing to replace an unmanaged SownteeShell PAM configuration")
+    if not PAM_TARGET.exists():
+        write_managed_pam()
+    restore_or_remove_managed_target(LEGACY_PAM_TARGET, LEGACY_PAM_BACKUP)
+    emit(True, "Migrated face authentication to the SownteeShell PAM service")
+
+
 def remove_managed_pam() -> bool:
     """Remove our PAM stack and restore the configuration it replaced."""
-    if not PAM_TARGET.exists():
+    managed_targets = managed_pam_targets()
+    if not managed_targets:
+        if PAM_TARGET.exists():
+            raise ManagerError("Refusing to remove an unmanaged PAM configuration")
         return False
-    current = PAM_TARGET.read_text(encoding="utf-8")
-    if current != PAM_CONTENT:
-        raise ManagerError("Refusing to remove an unmanaged PAM configuration")
-    if PAM_BACKUP.exists():
-        os.replace(PAM_BACKUP, PAM_TARGET)
-    else:
-        PAM_TARGET.unlink()
+    for target, backup in managed_targets:
+        restore_or_remove_managed_target(target, backup)
     return True
 
 
@@ -305,7 +340,8 @@ def disable() -> None:
     if not remove_managed_pam():
         emit(True, "Face unlock is already disabled")
         return
-    message = "Face unlock disabled; previous PAM configuration restored" if PAM_TARGET.exists() else "Face unlock disabled; password authentication remains active"
+    restored = PAM_TARGET.exists() or LEGACY_PAM_TARGET.exists()
+    message = "Face unlock disabled; previous PAM configuration restored" if restored else "Face unlock disabled; password authentication remains active"
     emit(True, message)
 
 
@@ -318,7 +354,7 @@ def remove_model(model_id: str) -> None:
     remaining = load_models(account)
     if remaining:
         normalize_model_permissions(account)
-    elif PAM_TARGET.exists() and PAM_TARGET.read_text(encoding="utf-8") == PAM_CONTENT:
+    elif managed_pam_targets():
         remove_managed_pam()
     emit(True, "Face model removed" if remaining else "Last face model removed; face unlock disabled")
 
@@ -336,6 +372,8 @@ def main() -> int:
             enable()
         elif command == "disable":
             disable()
+        elif command == "migrate-pam":
+            migrate_legacy_pam()
         elif command == "remove":
             remove_model(sys.argv[2] if len(sys.argv) > 2 else "")
         elif command == "set-camera":

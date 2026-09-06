@@ -42,6 +42,7 @@ QtObject {
         onStarted: launchPending = false
     }
     property bool available: false
+    readonly property string backendPath: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property bool browsing: false
     readonly property string cacheDir: Config.cacheRoot + "/wallpaper-engine"
     property Timer cleanupRestart: Timer {
@@ -239,7 +240,7 @@ QtObject {
     property Process previewCachePruner: Process {
         property string requestJson: "{}"
 
-        command: ["python3", "-u", Config.quickshellDir + "/backend/python/wallpaper/steam_workshop_client.py", "prune-preview-cache"]
+        command: [root.backendPath, "request-stdin", "wallpaper.workshop.prunePreviewCache"]
         stdinEnabled: true
 
         onStarted: {
@@ -311,7 +312,6 @@ QtObject {
                 root.markReady(root.startedPath, root.validatedFramePath);
         }
     }
-    readonly property string readyProbeScript: Config.quickshellDir + "/backend/python/wallpaper/wallpaper_frame_probe.py"
     property Timer readyTimer: Timer {
         interval: 1600
         repeat: false
@@ -359,7 +359,6 @@ QtObject {
             }
         }
     }
-    readonly property string scannerPath: Config.quickshellDir + "/backend/python/wallpaper/wallpaper_engine_library.py"
     readonly property bool scanning: scanner.running || scanDebounce.running
     property Connections screenConnections: Connections {
         function onScreensChanged() {
@@ -418,7 +417,7 @@ QtObject {
             return;
 
         var target = renderedPreviewPath(path);
-        Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\"; cp -f -- \"$2\" \"$3.tmp\" && mv -f -- \"$3.tmp\" \"$3\"", "engine-rendered-preview", previewCacheDir, framePath, target]);
+        Quickshell.execDetached([backendPath, "wallpaper-engine-cache-preview", framePath, target, previewCacheDir]);
         previewCachePruneTimer.restart();
     }
     function checkAvailability() {
@@ -588,7 +587,7 @@ QtObject {
 
         previewThumbnailJob = previewThumbnailQueue[0];
         previewThumbnailQueue = previewThumbnailQueue.slice(1);
-        previewThumbnailWorker.command = ["sh", "-c", "mkdir -p \"$3\"; if [ ! -s \"$2\" ]; then rm -f \"$2.tmp.jpeg\"; if ! nice -n 10 ffmpeg -hide_banner -loglevel error -y -ss 0.5 -i \"$1\" -frames:v 1 -vf \"scale='min($4,iw)':'min($4,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=fast_bilinear,format=yuvj420p\" -q:v 3 -update 1 \"$2.tmp.jpeg\" || [ ! -s \"$2.tmp.jpeg\" ]; then rm -f \"$2.tmp.jpeg\"; nice -n 10 ffmpeg -hide_banner -loglevel error -y -i \"$1\" -frames:v 1 -vf \"scale='min($4,iw)':'min($4,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2:flags=fast_bilinear,format=yuvj420p\" -q:v 3 -update 1 \"$2.tmp.jpeg\"; fi && mv \"$2.tmp.jpeg\" \"$2\"; fi", "engine-preview-thumbnail", previewThumbnailJob.path, previewThumbnailJob.target, previewCacheDir, String(previewThumbnailJob.width)];
+        previewThumbnailWorker.command = [backendPath, "wallpaper-engine-preview", previewThumbnailJob.path, previewThumbnailJob.target, previewCacheDir, String(previewThumbnailJob.width)];
         previewThumbnailWorker.running = true;
     }
     function processNextProjectResolution() {
@@ -597,7 +596,7 @@ QtObject {
 
         projectResolutionJob = projectResolutionQueue[0];
         projectResolutionQueue = projectResolutionQueue.slice(1);
-        projectResolver.command = ["python3", scannerPath, "--project", projectResolutionJob.path];
+        projectResolver.command = [backendPath, "wallpaper-engine-project", projectResolutionJob.path];
         projectResolver.running = true;
     }
     function processPendingRendererRestart() {
@@ -780,7 +779,7 @@ QtObject {
 
         if (readyProbe.running)
             readyProbe.running = false;
-        readyProbe.command = ["python3", readyProbeScript, readyFramePath, "4.8"];
+        readyProbe.command = [backendPath, "wallpaper-frame-probe", readyFramePath, "4.8"];
         readyProbe.running = true;
     }
     function startScan() {
@@ -791,7 +790,7 @@ QtObject {
             return;
         }
         rescanPending = false;
-        scanner.command = ["python3", scannerPath, Config.wallpaperEngineWorkshopDir, Config.legacyWallpaperEngineWorkshopDir];
+        scanner.command = [backendPath, "wallpaper-engine-scan", Config.wallpaperEngineWorkshopDir, Config.legacyWallpaperEngineWorkshopDir];
         scanner.running = true;
     }
     function stop() {

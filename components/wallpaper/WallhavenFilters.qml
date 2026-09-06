@@ -11,7 +11,7 @@ import Quickshell.Widgets
 Item {
     id: root
 
-    readonly property int activeFilterCount: (WallhavenService.categories === "111" ? 0 : 1) + (WallhavenService.purity === "111" ? 0 : 1) + (WallhavenService.atleast === "" && WallhavenService.resolutions === "" ? 0 : 1) + (WallhavenService.ratios === "" ? 0 : 1) + (WallhavenService.colors === "" ? 0 : 1) + (WallhavenService.sorting === "toplist" && WallhavenService.order === "desc" && WallhavenService.topRange === "1M" ? 0 : 1) + (Config.wallhavenShowNsfw ? 1 : 0)
+    readonly property int activeFilterCount: (WallhavenService.categories === "111" ? 0 : 1) + (WallhavenService.purity === "111" ? 0 : 1) + (WallhavenService.atleast === "" && WallhavenService.resolutions === "" ? 0 : 1) + (WallhavenService.ratios === "" ? 0 : 1) + (WallhavenService.colors === "" ? 0 : 1) + (WallhavenService.sorting === "toplist" && WallhavenService.order === "desc" && WallhavenService.topRange === "1M" ? 0 : 1)
     readonly property var colorOptions: ["660000", "990000", "cc0000", "cc3333", "ea4c88", "993399", "663399", "333399", "0066cc", "0099cc", "66cccc", "77cc33", "669900", "336600", "666600", "999900", "cccc33", "ffff00", "ffcc33", "ff9900", "ff6600", "cc6633", "996633", "663300", "000000", "999999", "cccccc", "ffffff"]
     readonly property bool popupOpen: filterPopup.visible
     property Item popupParent: null
@@ -99,7 +99,6 @@ Item {
         WallhavenService.sorting = "toplist";
         WallhavenService.order = "desc";
         WallhavenService.topRange = "1M";
-        Config.wallhavenShowNsfw = false;
         filterChanged();
     }
     function setResolution(value) {
@@ -408,15 +407,6 @@ Item {
 
                                 onClicked: root.toggleBit("purity", index)
                             }
-                        }
-                        FilterChip {
-                            accentColor: Config.md3.error_container
-                            enabled: Config.wallhavenApiKey.trim() !== "" && root.bitEnabled(WallhavenService.purity, 2)
-                            label: Config.wallhavenShowNsfw ? qsTr("NSFW visible") : qsTr("NSFW blurred")
-                            selected: Config.wallhavenShowNsfw
-                            selectedTextColor: Config.md3.on_error_container
-
-                            onClicked: Config.wallhavenShowNsfw = !Config.wallhavenShowNsfw
                         }
                     }
                 }

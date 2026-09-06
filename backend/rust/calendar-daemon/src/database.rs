@@ -10,6 +10,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, MutexGuard};
+use tokio::task;
 use uuid::Uuid;
 
 const INITIAL_MIGRATION: &str = include_str!("../migrations/001_initial.sql");
@@ -52,6 +53,17 @@ impl Database {
         self.connection
             .lock()
             .map_err(|_| anyhow!("calendar database lock was poisoned"))
+    }
+
+    pub async fn run_blocking<T, F>(&self, operation: F) -> Result<T>
+    where
+        T: Send + 'static,
+        F: FnOnce(&Database) -> Result<T> + Send + 'static,
+    {
+        let database = self.clone();
+        task::spawn_blocking(move || operation(&database))
+            .await
+            .context("join calendar database worker")?
     }
 
     pub fn list_accounts(&self, enabled_only: bool) -> Result<Vec<Account>> {

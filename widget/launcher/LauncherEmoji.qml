@@ -1,13 +1,13 @@
 import "../../"
+import "../../service"
 import QtQuick
 import Quickshell
-import Quickshell.Io
 
 Item {
     id: root
 
-    readonly property string helperPath: Config.quickshellDir + "/backend/python/launcher/emoji_search_worker.py"
     property bool loading: false
+    property var pendingRequestIds: []
     property string pendingSearchTerm: ""
     property string query: ""
     property int requestGeneration: 0
@@ -19,7 +19,6 @@ Item {
         return query.substring(prefix.length + 1).trim().toLowerCase();
     }
     property bool sendWhenReady: false
-    property bool workerReady: false
 
     function copy(entry) {
         if (!entry || !entry.glyph)
@@ -28,25 +27,12 @@ Item {
         var command = Config.launcherClipboardAutoPaste ? "if wl-copy \"$1\"; then if command -v wtype >/dev/null 2>&1; then sleep 0.35; wtype -M ctrl -k v -m ctrl; fi; fi" : "wl-copy \"$1\"";
         Quickshell.execDetached(["sh", "-c", command, "emoji_paste", entry.glyph]);
     }
-    function handleWorkerLine(line) {
-        var response;
-        try {
-            response = JSON.parse(String(line || ""));
-        } catch (error) {
+    function forgetRequest(requestId) {
+        if (!requestId)
             return;
-        }
-        if (response.ready) {
-            workerReady = true;
-            if (sendWhenReady)
-                sendSearch();
-            return;
-        }
-
-        var generation = Number(response.requestId);
-        if (generation !== requestGeneration)
-            return;
-        results = Array.isArray(response.results) ? response.results : [];
-        loading = false;
+        pendingRequestIds = pendingRequestIds.filter(function (id) {
+            return id !== requestId;
+        });
     }
     function scheduleSearch() {
         pendingSearchTerm = searchTerm;
@@ -56,44 +42,46 @@ Item {
         searchTimer.restart();
     }
     function sendSearch() {
-        if (!workerReady || !searchProcess.running) {
+        if (!CoreService.ready) {
             sendWhenReady = true;
+            CoreService.ensureRunning();
             return;
         }
 
         sendWhenReady = false;
-        searchProcess.write(JSON.stringify({
-            "requestId": requestGeneration,
+        var generation = requestGeneration;
+        var requestId = CoreService.sendRequest("launcher.catalog.search", {
+            "emojiPath": Config.sownteeshellDir + "/backend/python/launcher/emoji_catalog.jsonl",
+            "unicodePath": Config.sownteeshellDir + "/backend/python/launcher/unicode_catalog.jsonl",
+            "requestId": generation,
             "query": pendingSearchTerm,
             "limit": Math.max(1, Config.launcherMaxResults)
-        }) + "\n");
+        }, function (response) {
+            root.forgetRequest(requestId);
+            if (generation !== root.requestGeneration)
+                return;
+            root.results = response && Array.isArray(response.results) ? response.results : [];
+            root.loading = false;
+        }, function (message) {
+            root.forgetRequest(requestId);
+            if (generation !== root.requestGeneration)
+                return;
+            root.results = [];
+            root.loading = false;
+            console.warn("[LauncherEmoji]", message);
+        });
+        if (requestId !== "")
+            pendingRequestIds = pendingRequestIds.concat([requestId]);
     }
 
     Component.onCompleted: scheduleSearch()
+    Component.onDestruction: {
+        for (var index = 0; index < pendingRequestIds.length; ++index)
+            CoreService.forgetRequest(pendingRequestIds[index]);
+        CoreService.sendRequest("launcher.catalog.release", {});
+    }
     onSearchTermChanged: scheduleSearch()
 
-    Process {
-        id: searchProcess
-
-        command: ["python3", "-u", root.helperPath]
-        running: true
-        stdinEnabled: true
-
-        stderr: SplitParser {
-            onRead: line => console.warn("[LauncherEmoji]", line)
-        }
-        stdout: SplitParser {
-            onRead: line => root.handleWorkerLine(line)
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            root.workerReady = false;
-            root.sendWhenReady = false;
-            root.loading = false;
-            if (exitCode !== 0)
-                root.results = [];
-        }
-    }
     Timer {
         id: searchTimer
 
@@ -101,6 +89,14 @@ Item {
         repeat: false
 
         onTriggered: root.sendSearch()
+    }
+    Connections {
+        function onReadyChanged() {
+            if (CoreService.ready && root.sendWhenReady)
+                root.sendSearch();
+        }
+
+        target: CoreService
     }
     Connections {
         function onLauncherMaxResultsChanged() {

@@ -1,204 +1,48 @@
 pragma Singleton
+import "../../"
+import ".."
+import QtQuick
 import Quickshell
 import Quickshell.Io
-import QtQuick
 
 QtObject {
     id: root
 
-    property Process actionProcess: Process {
-        id: actionProcess
-
-        property string errorBuffer: ""
-        property string outputBuffer: ""
-
-        command: []
-        running: false
-
-        stderr: SplitParser {
-            onRead: line => {
-                actionProcess.errorBuffer += line + "\n";
-                console.log("Google API Action Error:", line);
-            }
-        }
-        stdout: SplitParser {
-            onRead: line => {
-                actionProcess.outputBuffer += line;
-            }
-        }
-
-        onExited: {
-            console.log("Action completed. Output:", outputBuffer);
-            var succeeded = false;
-            try {
-                if (outputBuffer.trim() !== "") {
-                    var parsed = JSON.parse(outputBuffer);
-                    if (parsed.success) {
-                        succeeded = true;
-                    } else if (parsed.error) {
-                        root.handleRequestError(parsed.error);
-                    }
-                } else if (errorBuffer.trim() !== "") {
-                    root.handleRequestError(errorBuffer.trim());
-                }
-            } catch (e) {
-                root.handleRequestError("Invalid response from Google Calendar");
-            }
-            outputBuffer = "";
-            errorBuffer = "";
-            if (succeeded)
-                root.fetchEvents();
-            root.startNextEventAction();
-        }
-    }
-    property Process actionTasksProcess: Process {
-        id: actionTasksProcess
-
-        property var actionContext: ({})
-        property string errorBuffer: ""
-        property string outputBuffer: ""
-
-        command: []
-        running: false
-
-        stderr: SplitParser {
-            onRead: line => {
-                actionTasksProcess.errorBuffer += line + "\n";
-                console.log("Google API Task Action Error:", line);
-            }
-        }
-        stdout: SplitParser {
-            onRead: line => {
-                actionTasksProcess.outputBuffer += line;
-            }
-        }
-
-        onExited: {
-            var succeeded = false;
-            var remoteId = "";
-            var failureMessage = "";
-            try {
-                if (outputBuffer.trim() !== "") {
-                    var parsed = JSON.parse(outputBuffer);
-                    if (parsed.success) {
-                        succeeded = true;
-                        remoteId = String(parsed.id || "");
-                    } else if (parsed.error) {
-                        failureMessage = String(parsed.error);
-                        root.handleRequestError(failureMessage);
-                    }
-                } else if (errorBuffer.trim() !== "") {
-                    failureMessage = errorBuffer.trim();
-                    try {
-                        var parsedError = JSON.parse(failureMessage);
-                        failureMessage = String(parsedError.error || failureMessage);
-                    } catch (parseError) {}
-                    root.handleRequestError(failureMessage);
-                }
-            } catch (e) {
-                failureMessage = "Invalid response from Google Tasks";
-                root.handleRequestError(failureMessage);
-            }
-            if (!succeeded && failureMessage === "")
-                failureMessage = "Google Tasks request failed";
-            var completedContext = actionContext || {};
-            actionContext = ({});
-            outputBuffer = "";
-            errorBuffer = "";
-            if (succeeded)
-                root.fetchTasks();
-            root.taskActionFinished(String(completedContext.operation || ""), String(completedContext.sourceId || ""), succeeded, remoteId, failureMessage);
-            root.startNextTaskAction();
-        }
-    }
     readonly property bool active: activeConsumers > 0
     property int activeConsumers: 0
-
-    // An array of all events for the current loaded time window
-    property var allEvents: []
+    property var activeTaskContext: ({})
+    property string activeTaskJobId: ""
+    property string activeTaskRequestId: ""
     property var allTasks: []
     property bool authCheckPending: false
-    property Process authCheckProcess: Process {
-        id: authCheckProcess
-
-        command: ["python3", "-u", root.getScriptPath(), "--auth-status"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    var result = JSON.parse(text.trim());
-                    root.authenticated = result.authenticated === true;
-                    root.oauthClientId = String(result.client_id || "");
-                    root.oauthClientSecret = String(result.client_secret || "");
-                    if (root.authClientIdDraft === "" && root.oauthClientId !== "")
-                        root.authClientIdDraft = root.oauthClientId;
-                } catch (error) {
-                    root.authenticated = false;
-                    root.oauthClientId = "";
-                    root.oauthClientSecret = "";
-                }
-                root.authChecked = true;
-                if (root.authenticated)
-                    root.fetchAll();
-            }
-        }
-
-        onExited: {
-            if (root.authCheckPending) {
-                root.authCheckPending = false;
-                root.checkAuthentication();
-            }
-        }
-    }
+    property string authCheckRequestId: ""
     property bool authChecked: false
-    // Non-sensitive draft kept outside the panel so closing/recreating its
-    // Loader does not discard a Client ID the user has already pasted.
     property string authClientIdDraft: ""
     property string authError: ""
     property bool authPanelVisible: false
     property Process authProcess: Process {
+        id: authProcess
+
         property string credentialsJson: ""
 
-        command: ["python3", "-u", root.getScriptPath(), "--auth-local"]
+        command: [root.coreRunner, "google-tasks-auth-local"]
         stdinEnabled: true
 
         stderr: SplitParser {
-            onRead: line => root.authError = line
-        }
-        stdout: SplitParser {
             onRead: line => {
-                try {
-                    var message = JSON.parse(line);
-                    if (message.event === "authorization_url") {
-                        root.authUrl = message.url || "";
-                        root.authStatus = "Complete authentication in your browser";
-                        if (root.authUrl !== "")
-                            Quickshell.execDetached(["xdg-open", root.authUrl]);
-                    } else if (message.event === "success") {
-                        var context = root.pendingAuthContext;
-                        root.authenticated = true;
-                        root.authChecked = true;
-                        root.authenticating = false;
-                        root.authPanelVisible = false;
-                        root.authStatus = "Connected";
-                        root.authError = "";
-                        root.authUrl = "";
-                        root.pendingAuthContext = "";
-                        root.fetchAll();
-                        root.authenticationSucceeded(context);
-                    } else if (message.event === "error") {
-                        root.authError = message.message || "Authentication failed";
-                        root.authStatus = "";
-                    }
-                } catch (error) {
-                    root.authError = "Invalid authentication response";
-                }
+                var message = String(line || "").trim();
+                if (message !== "" && root.authError === "")
+                    root.authError = message;
             }
         }
+        stdout: SplitParser {
+            onRead: line => root.handleAuthenticationEvent(line)
+        }
 
+        Component.onDestruction: running = false
         onExited: {
             if (!root.authenticated && root.authenticating && root.authError === "")
-                root.authError = "Authentication stopped before completion";
+                root.authError = qsTr("Authentication stopped before completion");
             root.authenticating = false;
         }
         onStarted: {
@@ -210,200 +54,33 @@ QtObject {
     property string authUrl: ""
     property bool authenticated: false
     property bool authenticating: false
-    property var calendars: []
-    property Process calendarsProcess: Process {
-        id: calendarsProcess
-
-        property string outputBuffer: ""
-
-        command: ["python3", "-u", root.getScriptPath(), "--get-calendars"]
-        running: false
-
-        stderr: SplitParser {
-            onRead: line => {
-                console.log("Google API Calendars Error:", line);
-            }
-        }
-        stdout: SplitParser {
-            onRead: line => {
-                calendarsProcess.outputBuffer += line;
-            }
+    property string connectedAccount: ""
+    property Connections coreConnections: Connections {
+        function onReadyChanged() {
+            if (!CoreService.ready)
+                return;
+            if (root.authCheckPending)
+                Qt.callLater(root.checkAuthentication);
+            if (root.disconnecting && root.disconnectRequestId === "")
+                Qt.callLater(root.runDisconnect);
+            if (root.tasksRefreshPending && root.authenticated && !root.isLoadingTasks)
+                Qt.callLater(root.fetchTasks);
+            if (root.taskActionQueue.length > 0 && root.activeTaskRequestId === "")
+                Qt.callLater(root.startNextTaskAction);
         }
 
-        onExited: {
-            try {
-                if (outputBuffer.trim() !== "") {
-                    var parsed = JSON.parse(outputBuffer);
-                    if (!parsed.error) {
-                        root.calendars = parsed;
-                        console.log("Loaded", root.calendars.length, "calendars");
-                        root.calendarsChanged();
-                    } else {
-                        root.handleRequestError(parsed.error);
-                    }
-                }
-            } catch (e) {
-                console.log("Failed to parse calendars output:", e);
-            }
-            outputBuffer = "";
-            if (root.calendarsRefreshPending) {
-                root.calendarsRefreshPending = false;
-                root.fetchCalendars();
-            }
-        }
+        target: CoreService
     }
-    property bool calendarsRefreshPending: false
-    readonly property string connectedAccount: {
-        var availableCalendars = calendars || [];
-        for (var i = 0; i < availableCalendars.length; ++i) {
-            var calendar = availableCalendars[i];
-            if (calendar && calendar.primary === true && String(calendar.id || "") !== "")
-                return String(calendar.id);
-        }
-        return "";
-    }
-    property Process disconnectProcess: Process {
-        id: disconnectProcess
-
-        command: ["python3", "-u", root.getScriptPath(), "--logout"]
-
-        stderr: StdioCollector {
-            id: disconnectError
-        }
-        stdout: StdioCollector {
-            id: disconnectOutput
-        }
-
-        onExited: {
-            var succeeded = false;
-            var failureMessage = disconnectError.text.trim();
-            try {
-                var result = JSON.parse(disconnectOutput.text.trim());
-                succeeded = result.success === true;
-                if (!succeeded && result.error)
-                    failureMessage = String(result.error);
-            } catch (error) {
-                if (failureMessage === "")
-                    failureMessage = "Invalid response while removing Google account";
-            }
-
-            root.disconnecting = false;
-            if (succeeded) {
-                root.finishDisconnect();
-            } else {
-                root.authStatus = "Could not remove Google account: " + (failureMessage || "Unknown error");
-                root.checkAuthentication();
-            }
-        }
-    }
+    readonly property string coreRunner: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
+    property string disconnectRequestId: ""
     property bool disconnecting: false
     property string errorMessage: ""
-    readonly property bool eventActionBusy: actionProcess.running || eventActionQueue.length > 0
-    property var eventActionQueue: []
-    property bool eventsRefreshPending: false
-    property Process fetchProcess: Process {
-        id: fetchProcess
-
-        property string outputBuffer: ""
-
-        command: ["python3", "-u", root.getScriptPath(), root.loadedMonth.toString(), root.loadedYear.toString()]
-        running: false
-
-        stderr: SplitParser {
-            onRead: line => {
-                console.log("Google API Error:", line);
-                root.errorMessage = line;
-            }
-        }
-        stdout: SplitParser {
-            onRead: line => {
-                fetchProcess.outputBuffer += line;
-            }
-        }
-
-        onExited: {
-            root.isLoading = false;
-            try {
-                if (outputBuffer.trim() !== "") {
-                    var parsed = JSON.parse(outputBuffer);
-                    if (parsed.error) {
-                        root.errorMessage = parsed.error;
-                        console.log("Google API Error:", parsed.error);
-                    } else {
-                        root.allEvents = parsed;
-                        root.errorMessage = "";
-                        root.lastEventsUpdated = new Date();
-                        console.log("Loaded", root.allEvents.length, "events for month", root.loadedMonth);
-                        root.eventsChanged();
-                    }
-                }
-            } catch (e) {
-                console.log("Failed to parse Google API output:", e);
-                root.errorMessage = "Failed to parse JSON";
-            }
-            outputBuffer = "";
-            if (root.eventsRefreshPending) {
-                root.eventsRefreshPending = false;
-                root.fetchEvents();
-            }
-        }
-    }
-    property Process fetchTasksProcess: Process {
-        id: fetchTasksProcess
-
-        property string errorBuffer: ""
-        property string outputBuffer: ""
-
-        command: []
-        running: false
-
-        stderr: SplitParser {
-            onRead: line => {
-                fetchTasksProcess.errorBuffer += line + "\n";
-                console.log("Google API Tasks Error:", line);
-            }
-        }
-        stdout: SplitParser {
-            onRead: line => {
-                fetchTasksProcess.outputBuffer += line;
-            }
-        }
-
-        onExited: {
-            root.isLoadingTasks = false;
-            try {
-                if (outputBuffer.trim() !== "") {
-                    var parsed = JSON.parse(outputBuffer);
-                    if (!parsed.error) {
-                        root.allTasks = parsed;
-                        root.lastTasksUpdated = new Date();
-                        console.log("Loaded", root.allTasks.length, "tasks");
-                        root.tasksChanged();
-                    } else {
-                        root.handleRequestError(parsed.error);
-                    }
-                } else if (errorBuffer.trim() !== "") {
-                    root.handleRequestError(errorBuffer.trim());
-                }
-            } catch (e) {
-                console.log("Failed to parse tasks output:", e);
-            }
-            outputBuffer = "";
-            errorBuffer = "";
-            if (root.tasksRefreshPending) {
-                root.tasksRefreshPending = false;
-                root.fetchTasks(root.lastTaskListId);
-            }
-        }
-    }
-    property bool isLoading: false
+    property string fetchTasksJobId: ""
+    property string fetchTasksRequestId: ""
     property bool isLoadingTasks: false
-    property date lastEventsUpdated
     property string lastTaskListId: "@default"
     property date lastTasksUpdated
-    // Internal state
-    property int loadedMonth: new Date().getMonth() + 1
-    property int loadedYear: new Date().getFullYear()
+    readonly property int networkRequestTimeoutMs: 45000
     property string oauthClientId: ""
     property string oauthClientSecret: ""
     property string pendingAuthContext: ""
@@ -412,27 +89,26 @@ QtObject {
         repeat: true
         running: root.active && root.authenticated
 
-        onTriggered: root.fetchAll()
+        onTriggered: root.fetchTasks()
     }
-    readonly property bool taskActionBusy: actionTasksProcess.running || taskActionQueue.length > 0
+    readonly property bool taskActionBusy: activeTaskRequestId !== "" || taskActionQueue.length > 0
     property var taskActionQueue: []
     property bool tasksRefreshPending: false
 
     signal authenticationSucceeded(string context)
-    signal eventsChanged
     signal taskActionFinished(string operation, string sourceId, bool succeeded, string remoteId, string message)
     signal tasksChanged
 
     function acquire() {
         activeConsumers++;
-        if (!authChecked) {
+        if (!authChecked)
             checkAuthentication();
-        } else if (authenticated && needsRefresh()) {
-            fetchAll();
-        }
+        else if (authenticated && needsRefresh())
+            fetchTasks();
     }
     function cancelAuthentication() {
-        authProcess.running = false;
+        if (authProcess.running)
+            authProcess.running = false;
         authenticating = false;
         authPanelVisible = false;
         authStatus = "";
@@ -440,71 +116,80 @@ QtObject {
         authUrl = "";
         pendingAuthContext = "";
     }
+    function cancelCoreRequest(requestId, jobId) {
+        if (requestId !== "")
+            CoreService.forgetRequest(requestId);
+        if (jobId !== "" && CoreService.ready)
+            CoreService.sendRequest("job.cancel", {
+                "jobId": jobId
+            });
+    }
     function checkAuthentication() {
-        if (authCheckProcess.running) {
+        if (disconnecting)
+            return;
+        if (authCheckRequestId !== "") {
             authCheckPending = true;
             return;
         }
-        authCheckProcess.running = true;
-    }
-    function createEvent(calendarId, title, date, startTime, endTime, allDay, location, description) {
-        if (!authenticated) {
-            requireAuthentication("calendar-add");
+        if (!CoreService.ready) {
+            authCheckPending = true;
+            CoreService.ensureRunning();
             return;
         }
-        var jsonData = {
-            calendarId: calendarId,
-            title: title,
-            date: date,
-            startTime: startTime,
-            endTime: endTime,
-            allDay: allDay,
-            location: location,
-            description: description
-        };
-        var jsonString = JSON.stringify(jsonData);
-        console.log("Creating event:", jsonString);
-        enqueueEventAction(["python3", "-u", getScriptPath(), "--create", jsonString]);
+
+        authCheckPending = false;
+        authCheckRequestId = CoreService.sendRequest("productivity.googleTasks.authStatus", {}, function (result) {
+            root.authCheckRequestId = "";
+            root.authChecked = true;
+            root.authenticated = result && result.authenticated === true;
+            root.oauthClientId = String(result && result.clientId || "");
+            root.oauthClientSecret = String(result && result.clientSecret || "");
+            root.connectedAccount = String(result && result.accountEmail || "");
+            if (root.authClientIdDraft === "" && root.oauthClientId !== "")
+                root.authClientIdDraft = root.oauthClientId;
+            if (root.authenticated) {
+                root.authStatus = "";
+                root.fetchTasks();
+            } else if (root.allTasks.length > 0) {
+                root.allTasks = [];
+                root.tasksChanged();
+            }
+        }, function (message) {
+            root.authCheckRequestId = "";
+            root.authChecked = true;
+            root.authenticated = false;
+            root.authStatus = String(message || qsTr("Could not check Google Tasks authentication"));
+        });
     }
     function createTask(listId, title, due, notes, sourceId) {
         if (!authenticated) {
             requireAuthentication("todo-add");
             return false;
         }
-        if (!listId)
-            listId = "@default";
-        var jsonData = {
-            title: title,
-            due: due,
-            notes: notes
-        };
-        enqueueTaskAction(["python3", "-u", getScriptPath(), "--create-task", listId, JSON.stringify(jsonData)], {
+        enqueueTaskAction("productivity.googleTasks.create", {
+            "due": due,
+            "listId": listId || "@default",
+            "notes": notes,
+            "title": title
+        }, {
             "operation": sourceId ? "sync-local" : "create",
             "sourceId": String(sourceId || "")
         });
         return true;
     }
-    function deleteEvent(calendarId, eventId) {
-        if (!authenticated) {
-            requireAuthentication("");
-            return;
-        }
-        if (!calendarId)
-            calendarId = "primary";
-        console.log("Deleting event:", eventId, "from", calendarId);
-        enqueueEventAction(["python3", "-u", getScriptPath(), "--delete", calendarId, eventId]);
-    }
     function deleteTask(listId, taskId) {
         if (!authenticated) {
             requireAuthentication("");
-            return;
+            return false;
         }
-        if (!listId)
-            listId = "@default";
-        enqueueTaskAction(["python3", "-u", getScriptPath(), "--delete-task", listId, taskId], {
+        enqueueTaskAction("productivity.googleTasks.delete", {
+            "listId": listId || "@default",
+            "taskId": taskId
+        }, {
             "operation": "delete",
             "sourceId": ""
         });
+        return true;
     }
     function disconnectAccount() {
         if (disconnecting)
@@ -513,89 +198,94 @@ QtObject {
         disconnecting = true;
         authenticated = false;
         authCheckPending = false;
-        eventsRefreshPending = false;
-        calendarsRefreshPending = false;
         tasksRefreshPending = false;
-        eventActionQueue = [];
+        var interruptedActions = taskActionQueue;
         taskActionQueue = [];
-
         cancelAuthentication();
-        authCheckProcess.running = false;
-        actionProcess.running = false;
-        actionTasksProcess.running = false;
-        fetchProcess.running = false;
-        fetchTasksProcess.running = false;
-        calendarsProcess.running = false;
 
-        authStatus = "Removing Google account…";
-        disconnectProcess.running = true;
+        for (var i = 0; i < interruptedActions.length; ++i) {
+            var interruptedActionContext = interruptedActions[i].context || {};
+            taskActionFinished(String(interruptedActionContext.operation || ""), String(interruptedActionContext.sourceId || ""), false, "", qsTr("Google account was disconnected"));
+        }
+
+        if (authCheckRequestId !== "") {
+            CoreService.forgetRequest(authCheckRequestId);
+            authCheckRequestId = "";
+        }
+        if (fetchTasksRequestId !== "") {
+            cancelCoreRequest(fetchTasksRequestId, fetchTasksJobId);
+            fetchTasksRequestId = "";
+            fetchTasksJobId = "";
+            isLoadingTasks = false;
+        }
+        if (activeTaskRequestId !== "") {
+            var interruptedContext = activeTaskContext || {};
+            cancelCoreRequest(activeTaskRequestId, activeTaskJobId);
+            activeTaskRequestId = "";
+            activeTaskJobId = "";
+            activeTaskContext = ({});
+            taskActionFinished(String(interruptedContext.operation || ""), String(interruptedContext.sourceId || ""), false, "", qsTr("Google account was disconnected"));
+        }
+        authStatus = qsTr("Removing Google account…");
+        runDisconnect();
     }
-    function enqueueEventAction(command) {
-        var queue = eventActionQueue.slice();
-        queue.push(command);
-        eventActionQueue = queue;
-        startNextEventAction();
-    }
-    function enqueueTaskAction(command, context) {
+    function enqueueTaskAction(method, params, context) {
         var queue = taskActionQueue.slice();
         queue.push({
-            "command": command,
-            "context": context || ({})
+            "context": context || {},
+            "method": method,
+            "params": params || {}
         });
         taskActionQueue = queue;
         startNextTaskAction();
     }
     function fetchAll() {
-        if (!authenticated)
-            return;
-        fetchEvents();
-        fetchCalendars();
         fetchTasks();
-    }
-    function fetchCalendars() {
-        if (!authenticated)
-            return;
-        if (calendarsProcess.running) {
-            calendarsRefreshPending = true;
-            return;
-        }
-        calendarsProcess.running = true;
-    }
-    function fetchEvents(month, year) {
-        if (!authenticated)
-            return;
-
-        if (isLoading) {
-            eventsRefreshPending = true;
-            return;
-        }
-
-        // Month should be 1-12
-        if (month !== undefined)
-            root.loadedMonth = month + 1;
-        if (year !== undefined)
-            root.loadedYear = year;
-
-        console.log("Fetching events for", root.loadedMonth, root.loadedYear);
-        isLoading = true;
-        fetchProcess.command = ["python3", "-u", getScriptPath(), root.loadedMonth.toString(), root.loadedYear.toString()];
-        fetchProcess.running = true;
     }
     function fetchTasks(listId) {
         if (!authenticated)
             return;
-        if (!listId)
-            listId = "@default";
-        lastTaskListId = listId;
-        if (isLoadingTasks) {
+        if (listId)
+            lastTaskListId = String(listId);
+        if (isLoadingTasks || fetchTasksRequestId !== "") {
             tasksRefreshPending = true;
             return;
         }
+        if (!CoreService.ready) {
+            tasksRefreshPending = true;
+            CoreService.ensureRunning();
+            return;
+        }
+
+        tasksRefreshPending = false;
         isLoadingTasks = true;
-        fetchTasksProcess.command = ["python3", "-u", getScriptPath(), "--get-tasks", listId];
-        fetchTasksProcess.running = true;
+        fetchTasksJobId = requestJobId("google-tasks-list");
+        fetchTasksRequestId = CoreService.sendRequest("productivity.googleTasks.list", {
+            "_job_id": fetchTasksJobId,
+            "listId": lastTaskListId
+        }, function (result) {
+            root.fetchTasksRequestId = "";
+            root.fetchTasksJobId = "";
+            root.isLoadingTasks = false;
+            if (Array.isArray(result)) {
+                root.allTasks = result;
+                root.lastTasksUpdated = new Date();
+                root.errorMessage = "";
+                root.tasksChanged();
+            } else {
+                root.handleRequestError(qsTr("Google Tasks returned an invalid response"));
+            }
+            root.finishTaskRefresh();
+        }, function (message) {
+            root.fetchTasksRequestId = "";
+            root.fetchTasksJobId = "";
+            root.isLoadingTasks = false;
+            root.handleRequestError(message);
+            root.finishTaskRefresh();
+        }, networkRequestTimeoutMs);
     }
     function finishDisconnect() {
+        disconnecting = false;
         authenticated = false;
         authChecked = true;
         authPanelVisible = false;
@@ -603,173 +293,198 @@ QtObject {
         authUrl = "";
         pendingAuthContext = "";
         errorMessage = "";
-        allEvents = [];
-        calendars = [];
         allTasks = [];
+        connectedAccount = "";
         oauthClientId = "";
         oauthClientSecret = "";
-        authStatus = "Google account removed from this device.";
-        eventsChanged();
+        authClientIdDraft = "";
+        authStatus = qsTr("Google account removed from this device.");
         tasksChanged();
     }
-    function getEventsForDate(day, month, year) {
-        // month is 0-indexed here
-        var targetDateStr = year + "-" + String(month + 1).padStart(2, '0') + "-" + String(day).padStart(2, '0');
-        var res = [];
-
-        for (var i = 0; i < allEvents.length; i++) {
-            var ev = allEvents[i];
-            var evStartStr = "";
-
-            // Check if the event falls on this date
-            if (ev.allDay) {
-                // All-day event: 'start' is 'YYYY-MM-DD'
-                evStartStr = ev.start;
-                if (evStartStr === targetDateStr) {
-                    res.push(ev);
-                }
-            } else {
-                // Timed event: 'start' is ISO string 'YYYY-MM-DDThh:mm:ss...'
-                if (ev.start && ev.start.startsWith(targetDateStr)) {
-                    res.push(ev);
-                }
-            }
-        }
-        return res;
+    function finishTaskAction(succeeded, result, message) {
+        var context = activeTaskContext || {};
+        var remoteId = String(result && result.id || "");
+        activeTaskRequestId = "";
+        activeTaskJobId = "";
+        activeTaskContext = ({});
+        if (succeeded)
+            fetchTasks();
+        else
+            handleRequestError(message);
+        taskActionFinished(String(context.operation || ""), String(context.sourceId || ""), succeeded, remoteId, String(message || ""));
+        Qt.callLater(startNextTaskAction);
     }
-
-    // Helper to get script path
-    function getScriptPath() {
-        var path = Qt.resolvedUrl("../../backend/python/productivity/google_calendar_tasks.py").toString();
-        if (path.startsWith("file://")) {
-            path = path.substring(7);
+    function finishTaskRefresh() {
+        if (!tasksRefreshPending || !authenticated)
+            return;
+        tasksRefreshPending = false;
+        Qt.callLater(fetchTasks);
+    }
+    function handleAuthenticationEvent(line) {
+        var text = String(line || "").trim();
+        if (text === "")
+            return;
+        try {
+            var message = JSON.parse(text);
+            if (message.event === "authorization_url") {
+                authUrl = String(message.url || "");
+                authStatus = qsTr("Complete authentication in your browser");
+                if (authUrl !== "")
+                    Quickshell.execDetached(["xdg-open", authUrl]);
+            } else if (message.event === "success") {
+                var context = pendingAuthContext;
+                authenticated = true;
+                authChecked = true;
+                authenticating = false;
+                authPanelVisible = false;
+                authStatus = qsTr("Connected");
+                authError = "";
+                authUrl = "";
+                pendingAuthContext = "";
+                fetchTasks();
+                authenticationSucceeded(context);
+            } else if (message.event === "error") {
+                authError = String(message.message || qsTr("Authentication failed"));
+                authStatus = "";
+            }
+        } catch (error) {
+            authError = qsTr("Invalid authentication response");
         }
-        return path;
     }
     function handleRequestError(message) {
-        var text = String(message || "Google request failed").trim();
+        var text = String(message || qsTr("Google Tasks request failed")).trim();
         errorMessage = text;
         var normalized = text.toLowerCase();
-        if (normalized.indexOf("invalid_grant") >= 0 || normalized.indexOf("unauthorized") >= 0 || normalized.indexOf("no access token") >= 0 || normalized.indexOf("no token file") >= 0 || normalized.indexOf("401") >= 0) {
+        if (normalized.indexOf("invalid_grant") >= 0 || normalized.indexOf("unauthorized") >= 0 || normalized.indexOf("session expired") >= 0 || normalized.indexOf("not connected") >= 0 || normalized.indexOf("401") >= 0) {
             authenticated = false;
             authChecked = true;
-            authStatus = "Google session expired. Connect again to continue.";
+            authStatus = qsTr("Google session expired. Connect again to continue.");
         }
     }
-    function hasEvents(day, month, year) {
-        return getEventsForDate(day, month, year).length > 0;
-    }
     function needsRefresh() {
-        var eventsTime = lastEventsUpdated && !isNaN(lastEventsUpdated.getTime()) ? lastEventsUpdated.getTime() : 0;
-        var tasksTime = lastTasksUpdated && !isNaN(lastTasksUpdated.getTime()) ? lastTasksUpdated.getTime() : 0;
-        var newest = Math.min(eventsTime, tasksTime);
-        return newest === 0 || Date.now() - newest >= refreshTimer.interval;
+        var updatedAt = lastTasksUpdated && !isNaN(lastTasksUpdated.getTime()) ? lastTasksUpdated.getTime() : 0;
+        return updatedAt === 0 || Date.now() - updatedAt >= refreshTimer.interval;
     }
     function release() {
         activeConsumers = Math.max(0, activeConsumers - 1);
+    }
+    function requestJobId(prefix) {
+        return prefix + "-" + Date.now() + "-" + Math.floor(Math.random() * 1000000);
     }
     function requireAuthentication(context) {
         if (authenticated)
             return true;
         pendingAuthContext = context || "";
         authError = "";
-        authStatus = authChecked ? "Connect your Google account to continue" : "Checking Google authentication…";
+        authStatus = authChecked ? qsTr("Connect your Google account to continue") : qsTr("Checking Google authentication…");
         authPanelVisible = true;
         return false;
+    }
+    function runDisconnect() {
+        if (!disconnecting || disconnectRequestId !== "")
+            return;
+        if (!CoreService.ready) {
+            CoreService.ensureRunning();
+            return;
+        }
+        disconnectRequestId = CoreService.sendRequest("productivity.googleTasks.logout", {}, function (result) {
+            root.disconnectRequestId = "";
+            if (result && result.success === true)
+                root.finishDisconnect();
+            else {
+                root.disconnecting = false;
+                root.authStatus = qsTr("Could not remove Google account");
+                root.checkAuthentication();
+            }
+        }, function (message) {
+            root.disconnectRequestId = "";
+            root.disconnecting = false;
+            root.authStatus = qsTr("Could not remove Google account: %1").arg(String(message || qsTr("Unknown error")));
+            root.checkAuthentication();
+        });
     }
     function startAuthentication(clientId, clientSecret) {
         if (authenticating)
             return;
-        if (!clientId.trim() || !clientSecret.trim()) {
-            authError = "Client ID and Client Secret are required";
+        if (!String(clientId || "").trim() || !String(clientSecret || "").trim()) {
+            authError = qsTr("Client ID and Client Secret are required");
             return;
         }
         authError = "";
         authUrl = "";
-        authStatus = "Starting local authentication…";
-        oauthClientId = clientId.trim();
-        oauthClientSecret = clientSecret.trim();
+        authStatus = qsTr("Starting local authentication…");
+        oauthClientId = String(clientId).trim();
+        oauthClientSecret = String(clientSecret).trim();
         authenticating = true;
         authProcess.credentialsJson = JSON.stringify({
-            client_id: clientId.trim(),
-            client_secret: clientSecret.trim()
+            "clientId": oauthClientId,
+            "clientSecret": oauthClientSecret
         });
         authProcess.running = true;
     }
-    function startNextEventAction() {
-        if (actionProcess.running || eventActionQueue.length === 0)
-            return;
-        var queue = eventActionQueue.slice();
-        actionProcess.command = queue.shift();
-        eventActionQueue = queue;
-        actionProcess.outputBuffer = "";
-        actionProcess.errorBuffer = "";
-        actionProcess.running = true;
-    }
     function startNextTaskAction() {
-        if (actionTasksProcess.running || taskActionQueue.length === 0)
+        if (activeTaskRequestId !== "" || taskActionQueue.length === 0)
             return;
+        if (!authenticated) {
+            var abandoned = taskActionQueue;
+            taskActionQueue = [];
+            for (var i = 0; i < abandoned.length; ++i) {
+                var abandonedContext = abandoned[i].context || {};
+                taskActionFinished(String(abandonedContext.operation || ""), String(abandonedContext.sourceId || ""), false, "", qsTr("Google account is not connected"));
+            }
+            return;
+        }
+        if (!CoreService.ready) {
+            CoreService.ensureRunning();
+            return;
+        }
+
         var queue = taskActionQueue.slice();
         var action = queue.shift();
-        // Accept queued commands created by an older hot-reloaded service.
-        var argv = Array.isArray(action) ? action : action && action.command;
-        var context = Array.isArray(action) ? ({}) : action && action.context || ({});
         taskActionQueue = queue;
-        if (!argv || argv.length === 0) {
-            taskActionFinished(String(context.operation || ""), String(context.sourceId || ""), false, "", "Invalid Google Tasks command");
-            Qt.callLater(startNextTaskAction);
-            return;
-        }
-        var normalizedArgv = [];
-        for (var i = 0; i < argv.length; ++i)
-            normalizedArgv.push(String(argv[i]));
-        actionTasksProcess.command = normalizedArgv;
-        actionTasksProcess.actionContext = context;
-        actionTasksProcess.outputBuffer = "";
-        actionTasksProcess.errorBuffer = "";
-        actionTasksProcess.running = true;
-    }
-    function updateEvent(calendarId, eventId, title, date, startTime, endTime, allDay, location, description) {
-        if (!authenticated) {
-            requireAuthentication("");
-            return;
-        }
-        if (!calendarId)
-            calendarId = "primary";
-        var jsonData = {
-            title: title,
-            date: date,
-            startTime: startTime,
-            endTime: endTime,
-            allDay: allDay,
-            location: location,
-            description: description
-        };
-        var jsonString = JSON.stringify(jsonData);
-        console.log("Updating event:", eventId, "in", calendarId);
-        enqueueEventAction(["python3", "-u", getScriptPath(), "--update", calendarId, eventId, jsonString]);
+        activeTaskContext = action.context || {};
+        activeTaskJobId = requestJobId("google-task-action");
+        var params = Object.assign({}, action.params || {});
+        params._job_id = activeTaskJobId;
+        activeTaskRequestId = CoreService.sendRequest(String(action.method || ""), params, function (result) {
+            if (result && result.success === false) {
+                root.finishTaskAction(false, result, String(result.error || qsTr("Google Tasks request failed")));
+                return;
+            }
+            root.finishTaskAction(true, result || {}, "");
+        }, function (message) {
+            root.finishTaskAction(false, {}, String(message || qsTr("Google Tasks request failed")));
+        }, networkRequestTimeoutMs);
     }
     function updateTask(listId, taskId, title, due, notes, status) {
         if (!authenticated) {
             requireAuthentication("");
-            return;
+            return false;
         }
-        if (!listId)
-            listId = "@default";
-        var jsonData = {};
+        var params = {
+            "listId": listId || "@default",
+            "taskId": taskId
+        };
         if (title !== undefined)
-            jsonData.title = title;
+            params.title = title;
         if (due !== undefined)
-            jsonData.due = due;
+            params.due = due;
         if (notes !== undefined)
-            jsonData.notes = notes;
+            params.notes = notes;
         if (status !== undefined)
-            jsonData.status = status;
-        enqueueTaskAction(["python3", "-u", getScriptPath(), "--update-task", listId, taskId, JSON.stringify(jsonData)], {
+            params.status = status;
+        enqueueTaskAction("productivity.googleTasks.update", params, {
             "operation": "update",
             "sourceId": ""
         });
+        return true;
     }
 
     Component.onCompleted: checkAuthentication()
+    Component.onDestruction: {
+        if (authProcess.running)
+            authProcess.running = false;
+        cancelCoreRequest(fetchTasksRequestId, fetchTasksJobId);
+        cancelCoreRequest(activeTaskRequestId, activeTaskJobId);
+    }
 }

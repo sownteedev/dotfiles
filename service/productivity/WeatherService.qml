@@ -2,8 +2,8 @@ pragma Singleton
 import QtPositioning
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import "../../"
+import ".."
 
 QtObject {
     id: root
@@ -30,47 +30,26 @@ QtObject {
     property real dewPoint: 0
     property string errorMessage: ""
     property real feelsLike: 0
-    property Process forecastProcess: Process {
-        id: forecastProcess
+    property CoreRequest forecastRequest: CoreRequest {
+        timeoutMs: 45000
 
-        property bool cancelled: false
-
-        stderr: StdioCollector {
-            id: forecastError
+        onCancelled: root.finishForecastRequest()
+        onFailed: message => {
+            root.errorMessage = String(message || qsTr("Weather request failed"));
+            console.log("[WeatherService] Fetch failed:", root.errorMessage);
+            root.finishForecastRequest();
         }
-        stdout: StdioCollector {
-            id: forecastOutput
-        }
-
-        Component.onDestruction: running = false
-        onExited: {
-            if (cancelled) {
-                var shouldRetry = root.refreshPending && root.active;
-                cancelled = false;
-                root.loading = false;
-                root.refreshPending = false;
-                if (shouldRetry)
-                    Qt.callLater(root.fetchWeather);
-                return;
-            }
+        onSucceeded: result => {
             try {
-                var output = forecastOutput.text.trim();
-                if (output === "")
-                    throw new Error(forecastError.text.trim() || "No weather data received");
-                root.applyForecast(JSON.parse(output));
+                root.applyForecast(result);
                 root.fetchLocation();
             } catch (error) {
                 root.errorMessage = String(error);
                 console.log("[WeatherService] Fetch failed:", error);
             }
-            root.loading = false;
-            if (root.refreshPending && root.active) {
-                root.refreshPending = false;
-                Qt.callLater(root.fetchWeather);
-            }
+            root.finishForecastRequest();
         }
     }
-    readonly property string forecastUrl: "https://api.openweathermap.org/data/3.0/onecall" + "?lat=" + latitude + "&lon=" + longitude + "&appid=" + Config.apiWeather + "&units=metric&exclude=minutely,alerts"
     property bool hasData: false
     property var hourlyForecast: []
     property int humidity: 0
@@ -119,17 +98,14 @@ QtObject {
             value: "org.quickshell"
         }
     }
-    property Process locationProcess: Process {
-        id: locationProcess
+    property CoreRequest locationRequest: CoreRequest {
+        timeoutMs: 30000
 
-        stdout: StdioCollector {
-            id: locationOutput
-        }
-
-        Component.onDestruction: running = false
-        onExited: {
+        onFailed: message => console.log("[WeatherService] Location lookup failed:", message)
+        onSucceeded: locations => {
             try {
-                var locations = JSON.parse(locationOutput.text.trim());
+                if (locations && locations.ok === false)
+                    throw new Error(locations.message || "Location lookup failed");
                 if (Array.isArray(locations) && locations.length > 0) {
                     var location = locations[0];
                     var countryCode = String(location.country || root.country).toUpperCase();
@@ -143,7 +119,6 @@ QtObject {
             }
         }
     }
-    readonly property string locationUrl: "https://api.openweathermap.org/geo/1.0/reverse" + "?lat=" + latitude + "&lon=" + longitude + "&limit=1&appid=" + Config.apiWeather
     readonly property string longitude: coordinates.length > 1 ? coordinates[1] : ""
     property real precipitationLastHour: 0
     property int pressure: 0
@@ -154,6 +129,14 @@ QtObject {
         running: root.active
 
         onTriggered: root.fetchWeather()
+    }
+    property Connections settingsConnections: Connections {
+        function onApiWeatherChanged() {
+            if (root.active)
+                root.coordinateRefreshTimer.restart();
+        }
+
+        target: Config
     }
     property real tempMax: 0
     property real tempMin: 0
@@ -187,7 +170,10 @@ QtObject {
         locationDetected(formattedCoordinates);
     }
     function acquire() {
+        var wasActive = active;
         activeConsumers++;
+        if (wasActive && needsRefresh() && !loading && !forecastRequest.active)
+            Qt.callLater(fetchWeather);
     }
     function applyForecast(result) {
         if (!result || !result.current)
@@ -337,10 +323,9 @@ QtObject {
         locationDetectionStatus = message;
     }
     function fetchLocation() {
-        if (!active || locationProcess.running)
+        if (!active || locationRequest.active)
             return;
-        locationProcess.command = ["curl", "-fsS", "--connect-timeout", "10", "--max-time", "15", locationUrl];
-        locationProcess.running = true;
+        locationRequest.start("weather.location", requestParameters());
     }
     function fetchWeather() {
         if (!active)
@@ -353,15 +338,20 @@ QtObject {
             errorMessage = "OpenWeather API key is not configured";
             return;
         }
-        if (loading || forecastProcess.running) {
+        if (loading || forecastRequest.active) {
             refreshPending = true;
             return;
         }
         loading = true;
         errorMessage = "";
-        forecastProcess.cancelled = false;
-        forecastProcess.command = ["curl", "-fsS", "--connect-timeout", "10", "--max-time", "25", forecastUrl];
-        forecastProcess.running = true;
+        forecastRequest.start("weather.forecast", requestParameters());
+    }
+    function finishForecastRequest() {
+        loading = false;
+        if (refreshPending && active) {
+            refreshPending = false;
+            Qt.callLater(fetchWeather);
+        }
     }
     function flagForCountry(countryCode) {
         var code = String(countryCode || "").trim().toUpperCase();
@@ -403,16 +393,21 @@ QtObject {
     function release() {
         activeConsumers = Math.max(0, activeConsumers - 1);
     }
+    function requestParameters() {
+        return {
+            "latitude": latitude,
+            "longitude": longitude,
+            "apiKey": String(Config.apiWeather || "").trim()
+        };
+    }
     function stopRequests() {
         refreshPending = false;
-        if (forecastProcess.running) {
-            forecastProcess.cancelled = true;
-            forecastProcess.running = false;
-        } else {
+        if (forecastRequest.active)
+            forecastRequest.cancel();
+        else
             loading = false;
-        }
-        if (locationProcess.running)
-            locationProcess.running = false;
+        if (locationRequest.active)
+            locationRequest.cancel();
     }
     function timeText(timestamp) {
         var date = new Date(timestamp * 1000);

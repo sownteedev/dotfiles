@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../../"
+import ".."
 
 QtObject {
     id: root
@@ -10,70 +11,35 @@ QtObject {
     property string activeUpgradeResultPath: ""
     property bool available: true
     readonly property bool busy: checking || upgrading
-    property Process checkProcess: Process {
-        command: [Config.quickshellDir + "/scripts/system/package-updates.sh", "check"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.receivedResult = true;
-                var output = text.trim();
-                if (output === "__YAY_MISSING__") {
-                    root.available = false;
-                    root.error = "yay is not installed";
-                    root.packages = [];
-                    return;
-                }
-                root.available = true;
-                if (output === "__CHECK_FAILED__") {
-                    root.error = "Could not check for updates";
-                    return;
-                }
-
-                root.error = "";
-                root.packages = output === "" ? [] : output.split(/\r?\n/);
-            }
-        }
-
-        onExited: (exitCode, exitStatus) => {
-            root.checkTimeout.stop();
-            root.checking = false;
-            root.lastCheckedAt = Date.now();
-            if (!root.receivedResult && exitCode !== 0 && root.error === "")
-                root.error = "Could not check for updates";
-        }
-    }
-    property Timer checkTimeout: Timer {
-        interval: 45 * 1000
+    property Timer checkWatchdog: Timer {
+        interval: 55 * 1000
         repeat: false
 
         onTriggered: {
             if (!root.checking)
                 return;
-            root.checkProcess.running = false;
             root.checking = false;
+            root.error = qsTr("Update check timed out");
             root.lastCheckedAt = Date.now();
-            root.error = "Update check timed out";
         }
     }
-    property bool checking: false
+    property bool checking: true
+    property Connections coreConnections: Connections {
+        function onUpdatesFailed(message) {
+            root.checkWatchdog.stop();
+            root.checking = false;
+            root.error = message;
+            root.lastCheckedAt = Date.now();
+        }
+        function onUpdatesUpdated(data) {
+            root.applyResult(data);
+        }
+
+        target: CoreService
+    }
     property string error: ""
     property double lastCheckedAt: 0
     property var packages: []
-    property Timer periodicRefresh: Timer {
-        interval: 2 * 60 * 60 * 1000
-        repeat: true
-        running: true
-
-        onTriggered: root.refresh(false)
-    }
-    property bool receivedResult: false
-    property Timer startupRefresh: Timer {
-        interval: 2500
-        repeat: false
-        running: true
-
-        onTriggered: root.refresh(true)
-    }
     readonly property string statusText: {
         if (!available)
             return "yay missing";
@@ -137,6 +103,22 @@ QtObject {
     property bool upgradeTerminalExited: false
     property bool upgrading: false
 
+    function applyResult(result) {
+        checkWatchdog.stop();
+        checking = false;
+        if (!result) {
+            error = qsTr("Could not check for updates");
+            lastCheckedAt = Date.now();
+            return;
+        }
+        available = result.available !== false;
+        error = String(result.error || "");
+        lastCheckedAt = Number(result.checkedAt || Date.now());
+        if (!available)
+            packages = [];
+        else if (error === "")
+            packages = Array.isArray(result.packages) ? result.packages : [];
+    }
     function finishUpgradeTracking() {
         var completedResultPath = activeUpgradeResultPath;
         upgradePollTimer.stop();
@@ -166,11 +148,9 @@ QtObject {
             return;
 
         checking = true;
-        receivedResult = false;
         error = "";
-        checkProcess.running = false;
-        checkTimeout.restart();
-        checkProcess.running = true;
+        checkWatchdog.restart();
+        CoreService.requestUpdateCheck(force === true);
     }
     function shellQuote(value) {
         return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
@@ -179,17 +159,26 @@ QtObject {
         if (!available || busy)
             return;
 
-        activeUpgradeResultPath = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/quickshell-update-result-" + Date.now();
+        activeUpgradeResultPath = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/sownteeshell-update-result-" + Date.now();
         upgradePollMisses = 0;
         upgradeResultReceived = false;
         upgradeResultText = "";
         upgradeTerminalExited = false;
         upgrading = true;
         error = "";
-        var upgradeCommand = "exec " + shellQuote(Config.quickshellDir + "/scripts/system/package-updates.sh") + " upgrade " + shellQuote(activeUpgradeResultPath);
+        var upgradeCommand = "exec " + shellQuote(Config.sownteeshellDir + "/scripts/system/package-updates.sh") + " upgrade " + shellQuote(activeUpgradeResultPath);
         var terminalCommand = "exec /usr/bin/zsh -c " + shellQuote(upgradeCommand);
         upgradeTerminal.command = ["blackbox-terminal", "--command", terminalCommand];
         upgradeTerminal.running = true;
         upgradePollTimer.restart();
+    }
+
+    Component.onCompleted: {
+        CoreService.setUpdatesEnabled(true);
+        checkWatchdog.restart();
+    }
+    Component.onDestruction: {
+        checkWatchdog.stop();
+        CoreService.setUpdatesEnabled(false);
     }
 }

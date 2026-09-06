@@ -46,18 +46,27 @@ impl ReminderScheduler {
         let cutoff = now + ChronoDuration::minutes(REMINDER_LEAD_MINUTES);
         let events = self
             .database
-            .pending_event_reminders(now, cutoff)
+            .run_blocking(move |database| database.pending_event_reminders(now, cutoff))
+            .await
             .context("query upcoming calendar reminders")?;
 
         for event in events {
             self.send_notification(&event).await?;
+            let event_id = event.id.clone();
+            let event_start = event.start;
+            let sent_at = Utc::now();
             self.database
-                .mark_event_reminder_sent(&event.id, event.start, Utc::now())
+                .run_blocking(move |database| {
+                    database.mark_event_reminder_sent(&event_id, event_start, sent_at)
+                })
+                .await
                 .with_context(|| format!("record reminder for calendar event {}", event.id))?;
         }
 
+        let retention_cutoff = now - ChronoDuration::days(REMINDER_RETENTION_DAYS);
         self.database
-            .prune_event_reminders_before(now - ChronoDuration::days(REMINDER_RETENTION_DAYS))
+            .run_blocking(move |database| database.prune_event_reminders_before(retention_cutoff))
+            .await
             .context("prune old calendar reminders")?;
         Ok(())
     }

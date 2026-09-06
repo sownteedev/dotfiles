@@ -1691,7 +1691,7 @@ FloatingWindow {
             var scaleY = sourceImage.sourceSize.height / Math.max(1, captureSurface.height);
             var targetWidth = Math.max(1, Math.round(region.width * scaleX));
             var targetHeight = Math.max(1, Math.round(region.height * scaleY));
-            var outputPath = "/tmp/quickshell-ocr-" + Date.now() + ".png";
+            var outputPath = "/tmp/sownteeshell-ocr-" + Date.now() + ".png";
             var started = root.startRenderExport("ocr", region, targetWidth, targetHeight, outputPath, editorSession);
             if (!started && root.ocrPreparing) {
                 root.ocrPreparing = false;
@@ -1986,7 +1986,7 @@ FloatingWindow {
             var scaleY = sourceImage.sourceSize.height / Math.max(1, captureSurface.height);
             var targetWidth = root.cropActive ? Math.max(1, Math.round(root.cropRect.width * scaleX)) : Math.max(1, sourceImage.sourceSize.width);
             var targetHeight = root.cropActive ? Math.max(1, Math.round(root.cropRect.height * scaleY)) : Math.max(1, sourceImage.sourceSize.height);
-            var outputPath = "/tmp/quickshell-reverse-image-" + Date.now() + ".png";
+            var outputPath = "/tmp/sownteeshell-reverse-image-" + Date.now() + ".png";
             var exportRegion = root.cropActive ? root.cropRect : null;
             var started = root.startRenderExport("reverse", exportRegion, targetWidth, targetHeight, outputPath, searchSession);
             if (!started && root.reverseSearchPreparing) {
@@ -2310,7 +2310,7 @@ FloatingWindow {
             var exportItem = root.cropActive ? cropExportSurface : captureSurface;
             var targetWidth = root.cropActive ? Math.max(1, Math.round(root.cropRect.width * scaleX)) : Math.max(1, sourceImage.sourceSize.width);
             var targetHeight = root.cropActive ? Math.max(1, Math.round(root.cropRect.height * scaleY)) : Math.max(1, sourceImage.sourceSize.height);
-            var sourcePath = "/tmp/quickshell-edge-stitch-source-" + Date.now() + ".png";
+            var sourcePath = "/tmp/sownteeshell-edge-stitch-source-" + Date.now() + ".png";
             root.edgeStitchSourcePath = sourcePath;
             var started = exportItem.grabToImage(function (result) {
                 var saved = result.saveToFile(sourcePath);
@@ -2329,7 +2329,7 @@ FloatingWindow {
                 var imageFirst = edge === "left" || edge === "top";
                 var paths = imageFirst ? [root.edgeStitchImagePath, sourcePath] : [sourcePath, root.edgeStitchImagePath];
                 root.edgeStitchProcessSession = stitchSession;
-                edgeStitchProcess.command = ["python3", "-u", Config.quickshellDir + "/backend/python/capture/screenshot_stitcher.py", "merge", "--orientation", orientation, "--output", CaptureService.stitchedScreenshotPath()].concat(paths);
+                edgeStitchProcess.command = ["python3", "-u", Config.sownteeshellDir + "/backend/python/capture/screenshot_stitcher.py", "merge", "--orientation", orientation, "--output", CaptureService.stitchedScreenshotPath()].concat(paths);
                 edgeStitchProcess.running = true;
             }, Qt.size(targetWidth, targetHeight));
             if (!started) {
@@ -2364,7 +2364,7 @@ FloatingWindow {
         var captureScale = Math.min(1, maximumDimension / Math.max(captureSurface.width, captureSurface.height));
         var captureWidth = Math.max(1, Math.round(captureSurface.width * captureScale));
         var captureHeight = Math.max(1, Math.round(captureSurface.height * captureScale));
-        var inputPath = "/tmp/quickshell-editor-export-" + Date.now() + "-" + sessionToken + ".bmp";
+        var inputPath = "/tmp/sownteeshell-editor-export-" + Date.now() + "-" + sessionToken + ".bmp";
         renderExportInputPath = inputPath;
         renderExportInputTemporary = true;
         renderExportCropRect = renderExportRectForSize(region, captureWidth, captureHeight);

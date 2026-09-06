@@ -47,7 +47,7 @@ open_manual_fallback() {
 
 create_upload_page() {
     command -v python3 >/dev/null 2>&1 || return 1
-    HTML_PATH="$(mktemp --suffix=.html /tmp/quickshell-google-lens-XXXXXX)" || return 1
+    HTML_PATH="$(mktemp --suffix=.html /tmp/sownteeshell-google-lens-XXXXXX)" || return 1
 
     python3 - "$IMAGE_PATH" "$HTML_PATH" "$IMAGE_WIDTH" "$IMAGE_HEIGHT" <<'PY'
 import base64

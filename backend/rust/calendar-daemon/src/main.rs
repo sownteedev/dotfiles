@@ -22,8 +22,9 @@ use serde_json::{Value, json};
 use std::env;
 use std::process::ExitCode;
 use tokio::sync::{broadcast, watch};
+use tokio::task;
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() -> ExitCode {
     match run().await {
         Ok(()) => ExitCode::SUCCESS,
@@ -73,7 +74,7 @@ async fn run() -> Result<()> {
 }
 
 async fn serve() -> Result<()> {
-    let runtime = Runtime::load()?;
+    let runtime = Runtime::load().await?;
     let (listener, _socket_guard) = ipc::bind_socket(&runtime.config.socket_path).await?;
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
 
@@ -121,8 +122,8 @@ async fn request(method: String, params: Value) -> Result<()> {
 }
 
 async fn check() -> Result<()> {
-    let runtime = Runtime::load()?;
-    let (accounts, calendars, events) = runtime.database.counts()?;
+    let runtime = Runtime::load().await?;
+    let (accounts, calendars, events) = runtime.database.run_blocking(Database::counts).await?;
     let value = json!({
         "ok": true,
         "version": env!("CARGO_PKG_VERSION"),
@@ -139,7 +140,7 @@ async fn check() -> Result<()> {
 }
 
 async fn sync_once(account_id: Option<&str>) -> Result<()> {
-    let runtime = Runtime::load()?;
+    let runtime = Runtime::load().await?;
     let value = if let Some(account_id) = account_id {
         let account = runtime.sync.sync_account(account_id).await?;
         json!({"accounts": [account]})
@@ -189,7 +190,7 @@ fn print_help() {
            sownteeshell-calendar-daemon check\n  \
            sownteeshell-calendar-daemon sync-once [account-id]\n  \
            sownteeshell-calendar-daemon paths\n\n\
-         The current Quickshell Calendar is not connected to this daemon."
+         SownteeShell Calendar connects through CalendarService over the private Unix socket."
     );
 }
 
@@ -203,9 +204,12 @@ struct Runtime {
 }
 
 impl Runtime {
-    fn load() -> Result<Self> {
+    async fn load() -> Result<Self> {
         let config = Config::load()?;
-        let database = Database::open(&config.database_path)?;
+        let database_path = config.database_path.clone();
+        let database = task::spawn_blocking(move || Database::open(&database_path))
+            .await
+            .context("join calendar database initialization")??;
         let keyring = Keyring;
         let providers = ProviderRegistry::new(keyring.clone())?;
         let (events, _) = broadcast::channel(256);

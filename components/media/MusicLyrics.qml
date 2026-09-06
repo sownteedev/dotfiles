@@ -147,7 +147,7 @@ Rectangle {
         }
         loading = true;
         pendingRequestKey = requestKey;
-        pendingCommand = ["curl", "-fsSL", "--max-time", "8", "--user-agent", "Quickshell-Music/1.0", "--get", "https://lrclib.net/api/search", "--data-urlencode", "track_name=" + (player.trackTitle || ""), "--data-urlencode", "artist_name=" + (player.trackArtist || "")];
+        pendingCommand = ["curl", "-fsSL", "--max-time", "8", "--user-agent", "SownteeShell-Music/1.0", "--get", "https://lrclib.net/api/search", "--data-urlencode", "track_name=" + (player.trackTitle || ""), "--data-urlencode", "artist_name=" + (player.trackArtist || "")];
         Qt.callLater(startPendingLookup);
     }
     function normalized(value) {
@@ -448,7 +448,7 @@ Rectangle {
             fillMode: Image.PreserveAspectFit
             height: 70
             playing: !root.hasLyrics && !root.loading
-            source: "file://" + Config.quickshellDir + "/assets/kurukuru.gif"
+            source: "file://" + Config.sownteeshellDir + "/assets/kurukuru.gif"
             visible: !root.loading && !root.instrumental
         }
         LoadingIndicator {

@@ -9,7 +9,7 @@ QtObject {
     id: configRoot
 
     // Weather
-    // Private values are loaded from XDG_CACHE_HOME/quickshell/settings.json.
+    // Private values are loaded from XDG_CACHE_HOME/sownteeshell/settings.json.
     // Keep public source defaults empty so this repository is safe to share.
     property alias apiWeather: runtimeSettings.apiWeather
     property alias audioMaxVolume: runtimeSettings.audioMaxVolume
@@ -28,7 +28,8 @@ QtObject {
     property alias barShowWeather: runtimeSettings.barShowWeather
     property alias barShowWorkspaces: runtimeSettings.barShowWorkspaces
     property var base16: ({})
-    readonly property string cacheRoot: (Quickshell.env("XDG_CACHE_HOME") || homeDir + "/.cache") + "/quickshell"
+    readonly property string cacheHome: Quickshell.env("XDG_CACHE_HOME") || homeDir + "/.cache"
+    readonly property string cacheRoot: cacheHome + "/sownteeshell"
     property alias caffeineAutoDisableMinutes: runtimeSettings.caffeineAutoDisableMinutes
     // Pre-defined alpha variants (0.8 opacity)
     property alias captureAutoCopyRecording: runtimeSettings.captureAutoCopyRecording
@@ -183,7 +184,6 @@ QtObject {
     property var palette: ({})
     readonly property string profileImage: expandHomePath(profileImagePath)
     property alias profileImagePath: runtimeSettings.profileImagePath
-    readonly property string quickshellDir: dotfilesRoot + "/quickshell"
     // Color
     property FileView runtimeSettingsFile: FileView {
         atomicWrites: true
@@ -372,6 +372,7 @@ QtObject {
     property alias shellShadowOffsetY: runtimeSettings.shellShadowOffsetY
     property alias shellShadowOpacity: runtimeSettings.shellShadowOpacity
     property alias shellShadowSpread: runtimeSettings.shellShadowSpread
+    readonly property string sownteeshellDir: dotfilesRoot + "/sownteeshell"
     readonly property string steamDir: homeDir + "/.local/share/Steam"
     property alias steamUsername: runtimeSettings.steamUsername
     property alias steamWebApiKey: runtimeSettings.steamWebApiKey

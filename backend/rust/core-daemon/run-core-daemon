@@ -1,0 +1,133 @@
+#!/bin/sh
+
+set -eu
+
+backend_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+target_dir="$backend_dir/target"
+binary="$target_dir/release/sownteeshell-core"
+manifest="$backend_dir/Cargo.toml"
+lockfile="$backend_dir/Cargo.lock"
+systemd_unit="${SOWNTEE_CORE_UNIT:-sownteeshell-core.service}"
+serve_mode=0
+client_mode=0
+standalone_mode=0
+
+if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = "serve" ]; }; then
+    serve_mode=1
+fi
+
+if [ "$#" -ge 1 ]; then
+    case "$1" in
+        google-tasks-auth-local|theme-xsettings-apply)
+            standalone_mode=1
+            ;;
+        request|request-stdin|clipboard-restore|display-ddc-get|display-ddc-set|display-niri-mode|display-niri-options|display-niri-persist|display-niri-set-vrr|display-sunshine-status|display-sunshine-apply|launcher-klipy-copy|wallpaper-engine-scan|wallpaper-engine-project|wallpaper-frame-probe|wallpaper-engine-preview|wallpaper-engine-cache-preview|wallpaper-backdrop)
+            client_mode=1
+            ;;
+    esac
+fi
+
+daemon_is_running() {
+    [ -x "$binary" ] || return 1
+    timeout 1 "$binary" request ping >/dev/null 2>&1
+}
+
+daemon_pid() {
+    [ -x "$binary" ] || return 1
+    timeout 1 "$binary" request system.info 2>/dev/null \
+        | awk '/"pid"/ { gsub(/[^0-9]/, "", $0); print; exit }'
+}
+
+daemon_uses_current_binary() {
+    pid=$(daemon_pid) || return 1
+    [ -n "$pid" ] || return 1
+    [ -e "/proc/$pid/exe" ] || return 1
+    cmp -s "$binary" "/proc/$pid/exe"
+}
+
+daemon_is_systemd_managed() {
+    pid=$(daemon_pid) || return 1
+    [ -n "$pid" ] || return 1
+    command -v systemctl >/dev/null 2>&1 || return 1
+    service_pid=$(systemctl --user show "$systemd_unit" --property=MainPID --value 2>/dev/null) || return 1
+    [ "$service_pid" != "0" ] && [ "$service_pid" = "$pid" ]
+}
+
+stop_stale_daemon() {
+    pid=$(daemon_pid) || return 1
+    [ -n "$pid" ] || return 1
+    kill -TERM "$pid" 2>/dev/null || return 1
+
+    attempts=0
+    while kill -0 "$pid" 2>/dev/null && [ "$attempts" -lt 50 ]; do
+        sleep 0.1
+        attempts=$((attempts + 1))
+    done
+
+    if kill -0 "$pid" 2>/dev/null; then
+        printf '%s\n' "core daemon did not stop after its binary was updated" >&2
+        return 1
+    fi
+}
+
+needs_build() {
+    [ ! -x "$binary" ] && return 0
+    [ "$manifest" -nt "$binary" ] && return 0
+    [ -f "$lockfile" ] && [ "$lockfile" -nt "$binary" ] && return 0
+    find "$backend_dir/src" -type f -newer "$binary" -print -quit | grep -q .
+}
+
+if needs_build; then
+    if ! command -v cargo >/dev/null 2>&1; then
+        printf '%s\n' "core daemon needs rebuilding, but cargo is not installed" >&2
+        exit 1
+    fi
+
+    mkdir -p "$target_dir"
+    exec 9>"$target_dir/core-daemon-build.lock"
+    flock 9
+    if needs_build; then
+        CARGO_TARGET_DIR="$target_dir" cargo build --release --quiet --manifest-path "$manifest"
+    fi
+    exec 9>&-
+fi
+
+if [ "$standalone_mode" -eq 1 ]; then
+    exec "$binary" "$@"
+fi
+
+if daemon_is_running; then
+    if daemon_uses_current_binary || daemon_is_systemd_managed; then
+        if [ "$serve_mode" -eq 1 ]; then
+            exit 0
+        fi
+    else
+        stop_stale_daemon
+    fi
+fi
+
+if [ "$client_mode" -eq 1 ] && ! daemon_is_running; then
+    if [ -z "${SOWNTEE_CORE_SOCKET:-}" ] && [ "${SOWNTEE_CORE_ALLOW_FALLBACK:-0}" != "1" ]; then
+        if ! command -v systemctl >/dev/null 2>&1; then
+            printf '%s\n' "systemctl is required to start $systemd_unit" >&2
+            exit 1
+        fi
+        if ! systemctl --user start "$systemd_unit"; then
+            printf '%s\n' "could not start $systemd_unit; run: systemctl --user reset-failed $systemd_unit" >&2
+            exit 1
+        fi
+    else
+        "$binary" serve >/dev/null 2>&1 &
+    fi
+    attempts=0
+    while ! daemon_is_running && [ "$attempts" -lt 100 ]; do
+        sleep 0.05
+        attempts=$((attempts + 1))
+    done
+    if ! daemon_is_running; then
+        printf '%s\n' "could not start the SownteeShell core daemon" >&2
+        exit 1
+    fi
+fi
+
+exec "$binary" "$@"

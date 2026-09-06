@@ -69,7 +69,7 @@ PanelWindow {
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "quickshell-osd"
+    WlrLayershell.namespace: "sownteeshell-osd"
 
     // Position: bottom center of screen
     anchors.bottom: Config.osdPosition === "bottom"

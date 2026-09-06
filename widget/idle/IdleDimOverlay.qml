@@ -10,7 +10,7 @@ PanelWindow {
 
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "quickshell-idle-dim"
+    WlrLayershell.namespace: "sownteeshell-idle-dim"
     anchors.bottom: true
     anchors.left: true
     anchors.right: true
