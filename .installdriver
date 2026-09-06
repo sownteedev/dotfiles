@@ -227,7 +227,7 @@ sleep 3 && clear
 
 # Network
 red_echo "[*] Installing network ..."
-retry sudo pacman -S --needed --noconfirm networkmanager wpa_supplicant wireless_tools
+retry sudo pacman -S --needed --noconfirm networkmanager qrencode wpa_supplicant wireless_tools
 sudo systemctl enable --now NetworkManager
 green_echo "[*] Done."
 sleep 2 && clear
@@ -262,7 +262,7 @@ sleep 3 && clear
 # Other
 red_echo "[*] Installing other ..."
 retry sudo pacman -S --needed --noconfirm devtools polkit-gnome pacman-contrib github-cli wget curl zsh fzf usbutils
-retry yay -S --needed --noconfirm mission-center gnome-keyring
+retry yay -S --needed --noconfirm gnome-keyring
 green_echo "[*] Done."
 sleep 3 && clear
 

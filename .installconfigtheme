@@ -3,7 +3,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 readonly DOTFILES_DIR="$HOME/Dotfiles/dotf"
-readonly QUICKSHELL_DIR="$HOME/Dotfiles/quickshell"
+readonly QUICKSHELL_DIR="$HOME/Dotfiles/sownteeshell"
 readonly INSTALLER_DRY_RUN="${INSTALLER_DRY_RUN:-0}"
 
 # Output helpers
@@ -64,6 +64,24 @@ safe_link() {
     ln -s "$src" "$dst"
 }
 
+safe_copy() {
+    local src="$1"
+    local dst="$2"
+    local mode="${3:-0644}"
+    local dst_dir
+    local temp
+
+    if [ -z "$dst" ] || [ "$dst" = "/" ] || [ "$dst" = "$HOME" ]; then
+        red_echo "[!] Refusing unsafe copy destination: ${dst:-<empty>}"
+        return 1
+    fi
+    dst_dir=$(dirname "$dst")
+    mkdir -p "$dst_dir"
+    temp=$(mktemp "$dst_dir/.${dst##*/}.XXXXXX")
+    install -m "$mode" "$src" "$temp"
+    mv -f -- "$temp" "$dst"
+}
+
 run_yay() {
     if [ "$INSTALLER_DRY_RUN" = "1" ]; then
         printf '[dry-run] yay -S --needed --noconfirm'
@@ -95,7 +113,8 @@ install_shell_runtime() {
     local -a packages=(
         niri xwayland-satellite quickshell-git qt6-connectivity qt6-multimedia qt6-positioning
         qt6-avif-image-plugin qt6-5compat qt6-imageformats geoclue
-        libnotify inotify-tools libcanberra zenity cava cliphist
+        libnotify inotify-tools libcanberra cava cliphist
+        python-gobject xdg-desktop-portal xdg-desktop-portal-gtk
         slurp wl-clipboard wtype hyprpicker gpu-screen-recorder ffmpeg imagemagick
         mesa libva-utils
         jq pciutils ddcutil matugen-bin
@@ -165,7 +184,7 @@ install_shell_features() {
         return 0
     fi
     if command -v howdy >/dev/null 2>&1; then
-        sudo install -Dm755 "$QUICKSHELL_DIR/scripts/howdy-face-manager.py" /usr/lib/quickshell/howdy-face-manager
+        sudo install -Dm755 "$QUICKSHELL_DIR/backend/python/auth/howdy_face_manager.py" /usr/lib/quickshell/howdy-face-manager
     else
         red_echo "[!] Howdy is not installed; skipping the Settings bridge."
     fi
@@ -260,7 +279,7 @@ install_dotfiles() {
     safe_link "$DOTFILES_DIR/.config/fontconfig" "$HOME/.config/fontconfig"
 
     mkdir -p "$HOME/.config/gtk-3.0"
-    safe_link "$DOTFILES_DIR/.config/gtk-3.0/settings.ini" "$HOME/.config/gtk-3.0/settings.ini"
+    safe_copy "$DOTFILES_DIR/.config/gtk-3.0/settings.ini" "$HOME/.config/gtk-3.0/settings.ini"
     safe_link "$DOTFILES_DIR/.config/gtk-3.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css"
     write_gtk_bookmarks
 
@@ -300,7 +319,7 @@ install_shell_environment() {
     run_yay fcitx5 fcitx5-lotus-bin fcitx5-configtool fcitx5-gtk fcitx5-qt
     sudo systemctl enable --now fcitx5-lotus-server@$(whoami).service
     mkdir -p ~/.config/fcitx5/conf
-    printf 'Mode="Uinput (Slow)"\nFixUinputWithAck=True\nAutoNonVnRestore=False\nDoubleSpaceToPeriod=True\nUseLotusIcons=False' > ~/.config/fcitx5/conf/lotus.conf
+    printf 'Mode="Uinput (Slow)"\nFixUinputWithAck=True\nDoubleSpaceToPeriod=True\nUseLotusIcons=False' > ~/.config/fcitx5/conf/lotus.conf
     safe_link "$DOTFILES_DIR/.config/niri" "$HOME/.config/niri"
     clear
 
@@ -402,13 +421,19 @@ install_greetd() {
     local greeter_theme_file="$greeter_theme_dir/colors.json"
     local greeter_background_file="$greeter_theme_dir/background.json"
     local greeter_profile_file="$greeter_theme_dir/profile.json"
+    local greeter_settings_file="$greeter_theme_dir/settings.json"
     local greeter_runtime_dir="$greeter_theme_dir/runtime"
+    local greeter_core_binary="/usr/lib/quickshell-greeter/sownteeshell-core"
+    local core_manifest="$QUICKSHELL_DIR/backend/rust/core-daemon/Cargo.toml"
+    local core_target_dir="$QUICKSHELL_DIR/backend/rust/core-daemon/target"
+    local core_binary="$core_target_dir/release/sownteeshell-core"
     local config_temp=""
+    local settings_temp=""
     local required_command=""
     # Keep the standalone --greetd path self-contained on a fresh installation.
     local -a packages=(
         greetd cage quickshell-git qt6-multimedia qt6-5compat qt6-imageformats qt6-avif-image-plugin
-        ffmpeg matugen-bin gnome-keyring niri python upower rsync inter-font ttf-nerd-fonts-symbols
+        ffmpeg matugen-bin gnome-keyring niri python upower rsync rustup inter-font ttf-nerd-fonts-symbols
     )
 
     if [ "$(id -u)" -eq 0 ] || [ "$USER" = "root" ]; then
@@ -423,7 +448,7 @@ install_greetd() {
         red_echo "[!] Quickshell greeter source not found: $greeter_source"
         return 1
     fi
-    if [ ! -f "$greeter_source/scripts/list_sessions.py" ] || [ ! -f "$greeter_source/qmldir" ]; then
+    if [ ! -f "$greeter_source/qmldir" ] || [ ! -f "$core_manifest" ]; then
         red_echo "[!] Quickshell greeter source is incomplete: $greeter_source"
         return 1
     fi
@@ -445,6 +470,10 @@ install_greetd() {
         return 0
     fi
 
+    if command -v rustup >/dev/null 2>&1; then
+        rustup default stable
+    fi
+
     if [ ! -f /usr/lib/sysusers.d/greetd.conf ]; then
         red_echo "[!] greetd installed without its sysusers configuration."
         return 1
@@ -460,12 +489,22 @@ install_greetd() {
         sudo usermod -aG video greeter
     fi
 
-    for required_command in cage ffmpeg matugen quickshell python3 niri-session systemd-cat; do
+    for required_command in cage cargo ffmpeg matugen quickshell python3 niri-session systemd-cat; do
         if ! command -v "$required_command" >/dev/null 2>&1; then
             red_echo "[!] Required greetd command is missing after installation: $required_command"
             return 1
         fi
     done
+
+    if ! CARGO_TARGET_DIR="$core_target_dir" cargo build --release --locked --manifest-path "$core_manifest"; then
+        red_echo "[!] Could not build the SownteeShell core backend for greetd."
+        return 1
+    fi
+    if [ ! -x "$core_binary" ]; then
+        red_echo "[!] SownteeShell core binary was not produced: $core_binary"
+        return 1
+    fi
+    sudo install -D -m 0755 "$core_binary" "$greeter_core_binary"
 
     sudo install -d -m 0755 "$greeter_install_dir" /etc/greetd /etc/pam.d
     sudo install -d -o "$USER" -g greeter -m 2750 "$greeter_theme_dir"
@@ -473,6 +512,12 @@ install_greetd() {
     sudo chmod 2750 "$greeter_theme_dir"
     sudo find "$greeter_theme_dir" -maxdepth 1 -type f -exec chown "$USER:greeter" {} +
     sudo find "$greeter_theme_dir" -maxdepth 1 -type f -exec chmod 0640 {} +
+    if [ ! -f "$greeter_settings_file" ]; then
+        settings_temp=$(mktemp /tmp/quickshell-greeter-settings.XXXXXX)
+        printf '%s\n' '{"defaultSession":"niri","rememberLastSession":false}' > "$settings_temp"
+        sudo install -o "$USER" -g greeter -m 0640 "$settings_temp" "$greeter_settings_file"
+        rm -f -- "$settings_temp"
+    fi
     sudo install -d -o greeter -g greeter -m 0700 \
         "$greeter_runtime_dir" \
         "$greeter_runtime_dir/cache" \
@@ -492,7 +537,7 @@ install_greetd() {
 vt = 1
 
 [default_session]
-command = "env HOME=$greeter_runtime_dir XDG_CACHE_HOME=$greeter_runtime_dir/cache XDG_CONFIG_HOME=$greeter_runtime_dir/config XDG_DATA_HOME=$greeter_runtime_dir/data GREETD_DEFAULT_USER=$USER GREETD_SESSION_NAME=Niri GREETD_THEME_PATH=$greeter_theme_file GREETD_BACKGROUND_PATH=$greeter_background_file GREETD_PROFILE_PATH=$greeter_profile_file systemd-cat --identifier=quickshell-greeter cage -d -s -m extend -- quickshell --no-color --path $greeter_install_dir"
+command = "env HOME=$greeter_runtime_dir XDG_CACHE_HOME=$greeter_runtime_dir/cache XDG_CONFIG_HOME=$greeter_runtime_dir/config XDG_DATA_HOME=$greeter_runtime_dir/data GREETD_DEFAULT_USER=$USER GREETD_SESSION_NAME=Niri GREETD_THEME_PATH=$greeter_theme_file GREETD_BACKGROUND_PATH=$greeter_background_file GREETD_PROFILE_PATH=$greeter_profile_file GREETD_SETTINGS_PATH=$greeter_settings_file SOWNTEE_CORE_BINARY=$greeter_core_binary systemd-cat --identifier=quickshell-greeter cage -d -s -m extend -- quickshell --no-color --path $greeter_install_dir"
 user = "greeter"
 EOF
     if ! python3 -c 'import pathlib, sys, tomllib; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' "$config_temp"; then
