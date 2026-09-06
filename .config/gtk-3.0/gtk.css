@@ -1,2 +1,1 @@
-/* Stable GTK 3 entrypoint. Matugen only replaces the imported palette. */
-@import url("colors.css");
+/* GTK 3 Matugen colors are loaded from the active SownteeShell A/B theme. */

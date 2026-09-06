@@ -2,14 +2,13 @@ binds {
     Mod+Shift+Slash								{ show-hotkey-overlay; }
 
     Mod+Return									{ spawn "blackbox-terminal"; }
-    Alt+Space									{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call launcher toggle"; }
-    Mod+I repeat=false							{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call settings toggle"; }
-    Mod+L										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call lockscreen lock"; }
-	Mod+M										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call wallpaper toggle"; }
-	Ctrl+Alt+R repeat=false					    { spawn-sh "killall quickshell; \"$HOME/Dotfiles/quickshell/run-quickshell\" -d"; }
+    Alt+Space									{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/sownteeshell/shell.qml\" call launcher toggle"; }
+    Mod+I repeat=false							{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/sownteeshell/shell.qml\" call settings toggle"; }
+    Mod+L										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/sownteeshell/shell.qml\" call lockscreen lock"; }
+	Mod+M										{ spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/sownteeshell/shell.qml\" call wallpaper toggle"; }
+	Ctrl+Alt+R repeat=false					    { spawn-sh "killall quickshell; \"$HOME/Dotfiles/sownteeshell/run-sownteeshell\" -d"; }
 	Alt+F4										{ spawn "~/.config/niri/scripts/close"; }
 	Mod+E										{ spawn "nautilus"; }
-	Ctrl+Shift+Escape							{ spawn "missioncenter"; }
 	Alt+P										{ spawn-sh "hyprpicker -a"; }
 
 	XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "pactl set-sink-volume @DEFAULT_SINK@ +2%"; }
@@ -133,8 +132,8 @@ binds {
 
     Mod+W						{ toggle-column-tabbed-display; }
 
-    Mod+Shift+S repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call capture screenshot"; }
-	Mod+Shift+R repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/quickshell/shell.qml\" call capture toggleRecording"; }
+    Mod+Shift+S repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/sownteeshell/shell.qml\" call capture screenshot"; }
+	Mod+Shift+R repeat=false    { spawn-sh "quickshell ipc -p \"$HOME/Dotfiles/sownteeshell/shell.qml\" call capture toggleRecording"; }
 
     Mod+Alt+Q { quit; }
 }

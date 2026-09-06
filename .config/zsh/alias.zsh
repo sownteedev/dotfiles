@@ -91,13 +91,7 @@ alias dotpush='git add . && git commit -m ":>" && git push'
 alias syncfont='sudo fc-cache -fv'
 
 cleanarch() {
-    print -r -- "Cleaning package caches..."
-
-    sudo paccache -rk2
-
-    sudo paccache -ruk0
-
-    yay -Sc --aur --noconfirm
+    print -r -- "Removing orphan packages..."
 
     local -a orphans
     orphans=("${(@f)$(pacman -Qtdq 2>/dev/null)}")
@@ -106,14 +100,25 @@ cleanarch() {
         print -r -- "Orphan packages:"
         print -l -- "${orphans[@]}"
 
-        sudo pacman -Rns -- "${orphans[@]}"
+        sudo pacman -Rns -- "${orphans[@]}" || return 1
     else
         print -r -- "No orphan packages."
     fi
 
+    print -r -- "Cleaning package caches..."
+    sudo paccache -rk2 || return 1
+    sudo paccache -ruk0 || return 1
+
+    print -r -- "Cleaning AUR cache..."
+    yay -Sc --aur || return 1
+
+    if (( $+commands[flatpak] )); then
+        print -r -- "Removing unused Flatpak runtimes..."
+        flatpak uninstall --unused -y || return 1
+    fi
+
     print -r -- "Cleaning old journal logs..."
-    sudo journalctl --rotate
-    sudo journalctl --vacuum-time=14d
+    sudo journalctl --rotate --vacuum-time=14d || return 1
 
     print -r -- "Arch cleanup completed."
 }

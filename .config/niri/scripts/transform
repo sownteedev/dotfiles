@@ -8,7 +8,12 @@ CONFIG="$HOME/.config/niri/include/outputs.kdl"
 FOCUSED_JSON=$(niri msg -j focused-output)
 OUTPUT=$(echo "$FOCUSED_JSON" | jq -r '.name')
 ALL_OUTPUTS=$(niri msg -j outputs)
-SYNC_RESULT=$(python3 "$HOME/Dotfiles/quickshell/scripts/display_output_config.py" "$CONFIG" "$(echo "$ALL_OUTPUTS" | jq -c '[.[]]')") || exit 1
+SYNC_RESULT=$(
+    "$HOME/Dotfiles/sownteeshell/backend/rust/core-daemon/run-core-daemon" \
+        display-niri-persist \
+        "$CONFIG" \
+        "$(echo "$ALL_OUTPUTS" | jq -c '[.[]]')"
+) || exit 1
 TARGET_OUTPUT=$(echo "$SYNC_RESULT" | jq -r --arg output "$OUTPUT" '.identities[$output] // $output')
 
 current=$(awk "/output \"$TARGET_OUTPUT\" {/,/}/{if (\$1==\"transform\") print \$2}" "$CONFIG" | tr -d '"')

@@ -9,6 +9,48 @@ window-rule {
     open-floating true
 }
 
+// SownteeShell Settings is an xdg-toplevel so it can resize and maximize like a
+// regular application while retaining the shell's custom MD3 surface.
+window-rule {
+    match title="^SownteeShell Settings$"
+    open-floating true
+    default-column-width { fixed 1240; }
+    default-window-height { fixed 860; }
+    geometry-corner-radius 26
+    clip-to-geometry true
+    background-effect {
+        xray false
+    }
+}
+
+// SownteeShell Calendar uses the same regular, resizable application surface as
+// Settings while leaving a little working-area context around the window.
+window-rule {
+    match title="^SownteeShell Calendar$"
+    open-floating true
+    default-column-width { proportion 0.90; }
+    default-window-height { proportion 0.88; }
+    geometry-corner-radius 26
+    clip-to-geometry true
+    background-effect {
+        xray false
+    }
+}
+
+// Fill the target output's working area on open while remaining a regular
+// movable and resizable floating window. The working area excludes the bar.
+window-rule {
+    match title="^SownteeShell Screenshot Editor$"
+    open-floating true
+    open-maximized false
+    open-maximized-to-edges false
+    open-fullscreen false
+    open-focused true
+    default-column-width { proportion 1.0; }
+    default-window-height { proportion 1.0; }
+    default-floating-position x=0 y=0 relative-to="top-left"
+}
+
 window-rule {
     match app-id=r".*\.exe$"
     open-floating true

@@ -13,16 +13,19 @@ scheme=${scheme%\'}
 scheme=${scheme:-prefer-dark}
 
 if [[ "$scheme" == "prefer-dark" ]]; then
-    alternate_scheme="default"
+    alternate_scheme="prefer-light"
 elif [[ "$scheme" == "prefer-light" ]]; then
-    alternate_scheme="default"
+    alternate_scheme="prefer-dark"
 else
     alternate_scheme="prefer-dark"
 fi
 
-# GTK 4/libadwaita watches color-scheme and reliably rebuilds its style
-# cascade. GTK 3 is intentionally left alone because Chromium can latch onto
-# the temporary fallback theme and ignore the restore notification.
+# Matugen replaces colors.css atomically, while an existing libadwaita process
+# can keep the old imported stylesheet. Briefly crossing the real light/dark
+# boundary makes GTK 4 rebuild its style cascade after the new file exists.
+# "default" is not sufficient here because it still resolves to light when
+# the active preference is light. GTK 3 is intentionally left alone because
+# Chromium can latch onto a temporary fallback theme.
 gsettings set "$schema" color-scheme "$alternate_scheme" 2>/dev/null || true
 sleep 0.08
 gsettings set "$schema" color-scheme "$scheme" 2>/dev/null || true

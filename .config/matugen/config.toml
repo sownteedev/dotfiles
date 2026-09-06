@@ -11,7 +11,7 @@ cyan = "#44ffff"
 
 [templates.quickshell_colors]
 input_path = '~/Dotfiles/dotf/.config/matugen/templates/quickshell/color.json'
-output_path = '~/Dotfiles/quickshell/colors.json'
+output_path = '~/Dotfiles/sownteeshell/colors.json'
 
 [templates.gtk4]
 input_path = "~/Dotfiles/dotf/.config/matugen/templates/gtk-4.0/colors.css"
@@ -21,6 +21,7 @@ post_hook = '"$HOME/.config/matugen/scripts/reload-gtk-theme.sh"'
 [templates.gtk3]
 input_path = "~/Dotfiles/dotf/.config/matugen/templates/gtk-3.0/colors.css"
 output_path = "~/.config/gtk-3.0/colors.css"
+post_hook = '"$HOME/.config/matugen/scripts/reload-gtk3-theme.sh"'
 
 [templates.qt5ct]
 input_path = '~/Dotfiles/dotf/.config/matugen/templates/qt/qt.conf'
