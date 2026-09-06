@@ -9,8 +9,8 @@ blue = "#4444ff"
 magenta = "#ff44ff"
 cyan = "#44ffff"
 
-[templates.quickshell_colors]
-input_path = '~/Dotfiles/dotf/.config/matugen/templates/quickshell/color.json'
+[templates.sownteeshell_colors]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/sownteeshell/color.json'
 output_path = '~/Dotfiles/sownteeshell/colors.json'
 
 [templates.niri]

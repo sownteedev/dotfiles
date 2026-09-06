@@ -11,11 +11,11 @@ layer-rule {
     }
 }
 
-// Quickshell requests a precise rounded blur region for these full-screen
+// SownteeShell requests a precise rounded blur region for these full-screen
 // surfaces. Only switch the source to the real scene underneath; do not force
 // blur for the entire layer surface here.
 layer-rule {
-    match namespace=r"^quickshell-(control-left|control-right|launcher|dock|osd|notification-popup|notification-screenshot)$"
+    match namespace=r"^sownteeshell-(control-left|control-right|launcher|dock|osd|notification-popup|notification-screenshot)$"
     background-effect {
         xray false
     }
