@@ -75,11 +75,11 @@ Item {
     Flickable {
         id: sidebarFlickable
 
-        anchors.bottomMargin: 10
+        anchors.bottomMargin: 12
         anchors.fill: parent
-        anchors.leftMargin: 10
-        anchors.rightMargin: 4
-        anchors.topMargin: 10
+        anchors.leftMargin: 12
+        anchors.rightMargin: 6
+        anchors.topMargin: 12
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         contentHeight: Math.max(height, sidebarContent.implicitHeight)
@@ -90,28 +90,32 @@ Item {
         ColumnLayout {
             id: sidebarContent
 
-            spacing: 12
+            spacing: 16
             width: sidebarFlickable.width
 
             SettingsActionButton {
                 Layout.fillWidth: true
+                Layout.preferredHeight: 48
                 iconName: "appointment-new-symbolic"
+                primary: true
                 text: qsTr("Create event")
 
                 onClicked: root.createRequested()
             }
             Rectangle {
                 Layout.fillWidth: true
-                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.78 : 0.5)
-                implicitHeight: monthContent.implicitHeight + 24
-                radius: 18
+                border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.34 : 0.22)
+                border.width: 1
+                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.86 : 0.46)
+                implicitHeight: monthContent.implicitHeight + 28
+                radius: 20
 
                 ColumnLayout {
                     id: monthContent
 
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 10
+                    anchors.margins: 14
+                    spacing: 8
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -122,13 +126,13 @@ Item {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 16
-                            font.weight: Font.Bold
+                            font.pixelSize: 15
+                            font.weight: Font.DemiBold
                             text: root.displayMonth.toLocaleString(Qt.locale(), "MMMM yyyy")
                         }
                         SettingsActionButton {
-                            Layout.preferredHeight: 32
-                            Layout.preferredWidth: 32
+                            Layout.preferredHeight: 30
+                            Layout.preferredWidth: 30
                             iconName: "go-previous-symbolic"
                             iconOnly: true
                             text: qsTr("Previous month")
@@ -136,8 +140,8 @@ Item {
                             onClicked: root.moveMonth(-1)
                         }
                         SettingsActionButton {
-                            Layout.preferredHeight: 32
-                            Layout.preferredWidth: 32
+                            Layout.preferredHeight: 30
+                            Layout.preferredWidth: 30
                             iconName: "go-next-symbolic"
                             iconOnly: true
                             text: qsTr("Next month")
@@ -152,9 +156,9 @@ Item {
 
                         Layout.fillWidth: true
                         Layout.preferredHeight: childrenRect.height
-                        columnSpacing: 2
+                        columnSpacing: 1
                         columns: 7
-                        rowSpacing: 3
+                        rowSpacing: 2
 
                         Repeater {
                             model: [qsTr("M"), qsTr("T"), qsTr("W"), qsTr("T"), qsTr("F"), qsTr("S"), qsTr("S")]
@@ -184,7 +188,7 @@ Item {
                                 required property var modelData
                                 readonly property date value: modelData.date
 
-                                height: 32
+                                height: 31
                                 width: monthGrid.cellWidth
 
                                 Rectangle {
@@ -231,36 +235,32 @@ Item {
             }
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 10
 
-                Text {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    color: Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: 15
-                    font.weight: Font.Bold
-                    text: qsTr("Calendars")
-                }
-                Rectangle {
-                    Layout.preferredHeight: 24
-                    Layout.preferredWidth: Math.max(24, accountCount.implicitWidth + 14)
-                    color: Config.alpha(Config.md3.primary, 0.12)
-                    radius: 12
+                    spacing: 1
 
                     Text {
-                        id: accountCount
-
-                        anchors.centerIn: parent
-                        color: Config.md3.primary
+                        Layout.fillWidth: true
+                        color: Config.md3.on_surface
+                        font.family: Config.fontName
+                        font.pixelSize: 16
+                        font.weight: Font.DemiBold
+                        text: qsTr("Calendars")
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        color: Config.md3.on_surface_variant
                         font.family: Config.fontName
                         font.pixelSize: 11
-                        font.weight: Font.Bold
-                        text: root.accounts.length
+                        font.weight: Font.Medium
+                        text: root.accounts.length === 1 ? qsTr("1 connected account") : qsTr("%1 connected accounts").arg(root.accounts.length)
                     }
                 }
                 SettingsActionButton {
-                    Layout.preferredHeight: 34
-                    Layout.preferredWidth: 34
+                    Layout.preferredHeight: 38
+                    Layout.preferredWidth: 38
                     iconName: "contact-new-symbolic"
                     iconOnly: true
                     text: qsTr("Add calendar account")
@@ -286,22 +286,24 @@ Item {
             }
             Rectangle {
                 Layout.fillWidth: true
-                color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.8 : 0.52)
-                implicitHeight: emptyContent.implicitHeight + 24
-                radius: 18
+                border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.34 : 0.22)
+                border.width: 1
+                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.86 : 0.46)
+                implicitHeight: emptyContent.implicitHeight + 28
+                radius: 20
                 visible: root.accounts.length === 0
 
                 ColumnLayout {
                     id: emptyContent
 
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
+                    anchors.margins: 14
+                    spacing: 9
 
                     Rectangle {
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredHeight: 44
-                        Layout.preferredWidth: 44
+                        Layout.preferredHeight: 48
+                        Layout.preferredWidth: 48
                         color: Config.alpha(Config.md3.primary, 0.13)
                         radius: 15
 
@@ -321,8 +323,8 @@ Item {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 13
-                        font.weight: Font.Bold
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
                         horizontalAlignment: Text.AlignHCenter
                         text: qsTr("Bring every calendar together")
                     }
@@ -330,7 +332,7 @@ Item {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface_variant
                         font.family: Config.fontName
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         horizontalAlignment: Text.AlignHCenter
                         text: qsTr("Connect Google, Microsoft 365, or iCloud. Events stay in one timeline.")
                         wrapMode: Text.Wrap

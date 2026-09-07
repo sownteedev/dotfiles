@@ -42,7 +42,7 @@ Item {
 
         IconImage {
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredHeight: root.compact ? 19 : 22
+            Layout.preferredHeight: root.compact ? 21 : 24
             Layout.preferredWidth: Layout.preferredHeight
             layer.enabled: true
             source: Quickshell.iconPath(WeatherService.icon || "weather-none-available-symbolic")
@@ -53,12 +53,18 @@ Item {
         }
         Text {
             Layout.alignment: Qt.AlignVCenter
+            Layout.fillHeight: true
             color: WeatherService.hasData ? Config.md3.on_surface : Config.md3.on_surface_variant
             font.family: Config.fontName
             font.pixelSize: root.compact ? 13 : 14
             font.weight: Font.Bold
             renderType: Text.NativeRendering
             text: root.temperatureText
+            verticalAlignment: Text.AlignVCenter
+
+            transform: Translate {
+                y: 3
+            }
         }
     }
 }

@@ -7,20 +7,24 @@ target_dir="$backend_dir/target"
 binary="$target_dir/release/sownteeshell-calendar-daemon"
 manifest="$backend_dir/Cargo.toml"
 lockfile="$backend_dir/Cargo.lock"
+systemd_unit="${SOWNTEE_CALENDAR_UNIT:-sownteeshell-calendar.service}"
 serve_mode=0
+client_mode=0
 
 if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = "serve" ]; }; then
     serve_mode=1
 fi
 
+if [ "$#" -ge 1 ] && [ "$1" = "request" ]; then
+    client_mode=1
+fi
+
 daemon_is_running() {
-    [ "$serve_mode" -eq 1 ] || return 1
     [ -x "$binary" ] || return 1
     timeout 1 "$binary" request ping >/dev/null 2>&1
 }
 
 daemon_pid() {
-    [ "$serve_mode" -eq 1 ] || return 1
     [ -x "$binary" ] || return 1
     timeout 1 "$binary" request system.info 2>/dev/null \
         | awk '/"pid"/ { gsub(/[^0-9]/, "", $0); print; exit }'
@@ -30,7 +34,15 @@ daemon_uses_current_binary() {
     pid=$(daemon_pid) || return 1
     [ -n "$pid" ] || return 1
     [ -e "/proc/$pid/exe" ] || return 1
-    [ "$binary" -ef "/proc/$pid/exe" ]
+    cmp -s "$binary" "/proc/$pid/exe"
+}
+
+daemon_is_systemd_managed() {
+    pid=$(daemon_pid) || return 1
+    [ -n "$pid" ] || return 1
+    command -v systemctl >/dev/null 2>&1 || return 1
+    service_pid=$(systemctl --user show "$systemd_unit" --property=MainPID --value 2>/dev/null) || return 1
+    [ "$service_pid" != "0" ] && [ "$service_pid" = "$pid" ]
 }
 
 stop_stale_daemon() {
@@ -73,10 +85,37 @@ if needs_build; then
 fi
 
 if daemon_is_running; then
-    if daemon_uses_current_binary; then
-        exit 0
+    if daemon_uses_current_binary || daemon_is_systemd_managed; then
+        if [ "$serve_mode" -eq 1 ]; then
+            exit 0
+        fi
+    else
+        stop_stale_daemon
     fi
-    stop_stale_daemon
+fi
+
+if [ "$client_mode" -eq 1 ] && ! daemon_is_running; then
+    if [ -z "${SOWNTEE_CALENDAR_SOCKET:-}" ]; then
+        if ! command -v systemctl >/dev/null 2>&1; then
+            printf '%s\n' "systemctl is required to start $systemd_unit" >&2
+            exit 1
+        fi
+        if ! systemctl --user start "$systemd_unit"; then
+            printf '%s\n' "could not start $systemd_unit; run: systemctl --user reset-failed $systemd_unit" >&2
+            exit 1
+        fi
+    else
+        "$binary" serve >/dev/null 2>&1 &
+    fi
+    attempts=0
+    while ! daemon_is_running && [ "$attempts" -lt 100 ]; do
+        sleep 0.05
+        attempts=$((attempts + 1))
+    done
+    if ! daemon_is_running; then
+        printf '%s\n' "could not start the SownteeShell calendar daemon" >&2
+        exit 1
+    fi
 fi
 
 exec "$binary" "$@"

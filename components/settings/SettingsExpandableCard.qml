@@ -15,6 +15,8 @@ Rectangle {
     property int contentPadding: 20
     property int detailsSpacing: 16
     readonly property bool expanded: !toggleVisible || checked
+    property bool heightAnimationEnabled: true
+    property bool heightAnimationReady: false
     property string iconName: "preferences-system-symbolic"
     property string note: ""
     property string title: ""
@@ -28,11 +30,15 @@ Rectangle {
     radius: 18
 
     Behavior on implicitHeight {
+        enabled: root.heightAnimationEnabled && root.heightAnimationReady
+
         NumberAnimation {
             duration: 180
             easing.type: Easing.OutCubic
         }
     }
+
+    Component.onCompleted: heightAnimationReady = true
 
     ColumnLayout {
         id: content
@@ -94,7 +100,9 @@ Rectangle {
                 checked: root.checked
                 visible: root.toggleVisible
 
-                onToggled: checked => root.toggled(checked)
+                onToggled: checked => {
+                    return root.toggled(checked);
+                }
             }
         }
         ColumnLayout {

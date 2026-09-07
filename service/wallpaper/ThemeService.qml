@@ -532,21 +532,18 @@ QtObject {
         if (!colors)
             return;
 
-        // Always update palette and base16 instantly as they are not animated
-        if (colors.palette) {
-            Config.palette = colors.palette;
-            Config.paletteChanged();
-        }
-        if (colors.base16) {
-            Config.base16 = colors.base16;
-            Config.base16Changed();
-        }
-
         colorTransition.stop();
         if (!animated || !Config.matugenAnimateColors) {
             Config.updateMd3(colors);
             return;
         }
+
+        // Palette and base16 are not animated. Property assignment already
+        // emits their QML change signals, so do not emit them a second time.
+        if (colors.palette)
+            Config.palette = colors.palette;
+        if (colors.base16)
+            Config.base16 = colors.base16;
 
         if (colors.md3) {
             if (colors.md3.background)

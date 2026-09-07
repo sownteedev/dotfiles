@@ -56,7 +56,7 @@ QtObject {
         }
     }
     property Timer daemonRestart: Timer {
-        interval: 1200
+        interval: 5000
         repeat: false
 
         onTriggered: root.ensureRunning()
@@ -65,7 +65,10 @@ QtObject {
         interval: 5000
         repeat: false
 
-        onTriggered: root.startFallbackDaemon()
+        onTriggered: {
+            if (!root.requestSocket.connected)
+                root.daemonRestart.restart();
+        }
     }
     property bool daemonStarted: false
     property string daemonStatus: "starting"
@@ -151,7 +154,6 @@ QtObject {
     }
     property bool syncBusy: false
     property var syncingAccounts: ({})
-    property bool systemdAttempted: false
     property Process systemdStarter: Process {
         id: systemdStarter
 
@@ -166,8 +168,11 @@ QtObject {
         onExited: (exitCode, exitStatus) => {
             if (requestSocket.connected)
                 return;
-            if (exitCode !== 0)
-                root.startFallbackDaemon();
+            if (exitCode !== 0) {
+                root.daemonStatus = "stopped";
+                root.daemonStartDelay.stop();
+                root.daemonRestart.restart();
+            }
         }
         onStarted: {
             root.daemonStatus = "starting";
@@ -349,14 +354,13 @@ QtObject {
         }
         if (!connectionRetry.running)
             connectionRetry.start();
-        if (daemonProcess.running || systemdStarter.running || daemonStartDelay.running)
-            return;
-        if (!systemdAttempted && socketOverride === "") {
-            systemdAttempted = true;
-            systemdStarter.running = true;
+        if (socketOverride !== "") {
+            startFallbackDaemon();
             return;
         }
-        startFallbackDaemon();
+        if (systemdStarter.running || daemonStartDelay.running || daemonRestart.running)
+            return;
+        systemdStarter.running = true;
     }
     function failPendingRequests(message) {
         var pending = pendingRequests;
@@ -475,7 +479,6 @@ QtObject {
         connectionRetry.stop();
         daemonStartDelay.stop();
         daemonRestart.stop();
-        systemdAttempted = false;
         daemonStatus = "connected";
         lastError = "";
         if (!subscriptionSocket.connected)
@@ -653,7 +656,7 @@ QtObject {
     }
     function startFallbackDaemon() {
         daemonStartDelay.stop();
-        if (requestSocket.connected || daemonProcess.running)
+        if (socketOverride === "" || requestSocket.connected || daemonProcess.running)
             return;
         daemonStatus = "starting";
         daemonProcess.running = true;

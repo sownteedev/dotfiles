@@ -2,6 +2,8 @@
 Description=SownteeShell calendar backend
 PartOf=graphical-session.target
 After=graphical-session.target
+StartLimitIntervalSec=30s
+StartLimitBurst=5
 
 [Service]
 Type=simple

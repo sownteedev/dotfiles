@@ -8,6 +8,8 @@ privileged, stateful, or performance-sensitive work.
 
 ```text
 backend/
+├── cli/
+│   └── sownteeshell       # User-facing IPC command
 ├── native/
 │   └── bluetooth/          # Small Qt/C++ hardware helpers
 ├── python/
@@ -124,6 +126,22 @@ Both services use `Restart=on-failure`. In a normal installed session, systemd
 owns their lifecycle, logs, and cgroups, so reloading or closing Quickshell does
 not destroy backend state. The repository runners rebuild stale development
 binaries when Cargo is available and expose one-shot compatibility commands.
+
+The installer also provides a unified IPC client at
+`~/.local/bin/sownteeshell`:
+
+```sh
+sownteeshell ipc call core ping
+sownteeshell ipc call core system.info
+sownteeshell ipc call calendar accounts.list
+sownteeshell ipc methods core
+sownteeshell ipc methods calendar
+```
+
+An optional JSON object can be supplied as one quoted final argument. The CLI
+forwards the request and exit status directly to the selected daemon client.
+Run `sownteeshell --help` for the categorized method reference, parameter
+fields, safety flags, examples, environment overrides, and exit statuses.
 
 `SOWNTEE_CORE_SOCKET` and `SOWNTEE_CALENDAR_SOCKET` override the socket paths for
 isolated development or tests without attaching to the active user services.

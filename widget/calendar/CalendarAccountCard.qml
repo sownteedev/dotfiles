@@ -51,56 +51,43 @@ Rectangle {
             return Config.md3.on_tertiary;
         return Config.md3.on_primary;
     }
-    function statusColor() {
-        if (account && (account.needsReauth === true || String(account.lastError || "") !== ""))
-            return Config.md3.error;
-        if (loading)
-            return Config.md3.tertiary;
-        return Config.md3.primary;
-    }
-    function statusText() {
-        if (!account)
-            return qsTr("Unavailable");
-        if (account.needsReauth === true)
-            return qsTr("Reconnect required");
-        if (String(account.lastError || "") !== "")
-            return qsTr("Sync issue");
-        if (loading)
-            return qsTr("Syncing…");
-        var value = new Date(account.lastSyncAt || "");
-        if (!isNaN(value.getTime()))
-            return qsTr("Synced %1").arg(Qt.formatTime(value, "HH:mm"));
-        return qsTr("Waiting for sync");
-    }
 
-    color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.82 : 0.58)
-    implicitHeight: cardContent.implicitHeight + 20
+    border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.32 : 0.2)
+    border.width: 1
+    color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.84 : 0.44)
+    implicitHeight: cardContent.implicitHeight + 18
     radius: 18
 
     ColumnLayout {
         id: cardContent
 
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 8
+        anchors.margins: 9
+        spacing: 7
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 42
-            spacing: 8
+            Layout.preferredHeight: 46
+            spacing: 12
 
             Rectangle {
                 id: accountToggle
 
                 Accessible.name: qsTr("Filter %1 calendars").arg(root.providerLabel(String(root.account.provider || "")))
                 Accessible.role: Accessible.CheckBox
-                Layout.preferredHeight: 22
-                Layout.preferredWidth: 22
+                Layout.preferredHeight: 40
+                Layout.preferredWidth: 40
                 activeFocusOnTab: true
-                border.color: root.allVisible || root.partiallyVisible ? root.providerColor : Config.alpha(Config.md3.on_surface, 0.34)
-                border.width: 2
-                color: root.allVisible || root.partiallyVisible ? root.providerColor : "transparent"
-                radius: 7
+                border.color: activeFocus ? Config.alpha(root.providerColor, 0.78) : Config.alpha(root.providerColor, 0.12)
+                border.width: 1
+                color: accountToggleMouse.containsMouse ? Config.alpha(root.providerColor, 0.2) : Config.alpha(root.providerColor, 0.13)
+                radius: 13
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Config.animationDuration(110)
+                    }
+                }
 
                 Keys.onReturnPressed: event => {
                     root.accountVisibilityRequested(String(root.account.id || ""), !root.allVisible);
@@ -111,31 +98,6 @@ Rectangle {
                     event.accepted = true;
                 }
 
-                Text {
-                    anchors.centerIn: parent
-                    color: root.providerOnColor(String(root.account.provider || ""))
-                    font.family: Config.fontName
-                    font.pixelSize: root.partiallyVisible ? 15 : 12
-                    font.weight: Font.Black
-                    text: root.partiallyVisible ? "−" : "✓"
-                    visible: root.allVisible || root.partiallyVisible
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-
-                    onClicked: {
-                        accountToggle.forceActiveFocus();
-                        root.accountVisibilityRequested(String(root.account.id || ""), !root.allVisible);
-                    }
-                }
-            }
-            Rectangle {
-                Layout.preferredHeight: 38
-                Layout.preferredWidth: 38
-                color: Config.alpha(root.providerColor, 0.14)
-                radius: 13
-
                 CalendarProviderIcon {
                     anchors.centerIn: parent
                     height: 21
@@ -143,69 +105,53 @@ Rectangle {
                     tint: root.providerColor
                     width: 21
                 }
-            }
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 1
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: -2
+                    anchors.right: parent.right
+                    anchors.rightMargin: -2
+                    border.color: root.allVisible || root.partiallyVisible ? root.providerColor : Config.alpha(Config.md3.on_surface, 0.34)
+                    border.width: 1
+                    color: root.allVisible || root.partiallyVisible ? root.providerColor : Config.md3.surface_container_highest
+                    height: 17
+                    radius: 8.5
+                    width: 17
 
-                Text {
-                    Layout.fillWidth: true
-                    color: Config.md3.on_surface
-                    elide: Text.ElideRight
-                    font.family: Config.fontName
-                    font.pixelSize: 13
-                    font.weight: Font.Bold
-                    text: String(root.account.displayName || root.account.email || root.providerLabel(String(root.account.provider || "")))
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 5
-
-                    Rectangle {
-                        Layout.preferredHeight: 6
-                        Layout.preferredWidth: 6
-                        color: root.statusColor()
-                        radius: 3
-                    }
                     Text {
-                        Layout.fillWidth: true
-                        color: Config.md3.on_surface_variant
-                        elide: Text.ElideRight
+                        anchors.centerIn: parent
+                        color: root.providerOnColor(String(root.account.provider || ""))
                         font.family: Config.fontName
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                        text: root.statusText()
+                        font.pixelSize: root.partiallyVisible ? 12 : 10
+                        font.weight: Font.Black
+                        text: root.partiallyVisible ? "−" : "✓"
+                        visible: root.allVisible || root.partiallyVisible
+                    }
+                }
+                MouseArea {
+                    id: accountToggleMouse
+
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
+                    onClicked: {
+                        accountToggle.forceActiveFocus();
+                        root.accountVisibilityRequested(String(root.account.id || ""), !root.allVisible);
                     }
                 }
             }
-        }
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 7
-
-            Rectangle {
-                Layout.preferredHeight: 24
-                Layout.preferredWidth: providerText.implicitWidth + 14
-                color: Config.alpha(root.providerColor, 0.11)
-                radius: 12
-
-                Text {
-                    id: providerText
-
-                    anchors.centerIn: parent
-                    color: root.providerColor
-                    font.family: Config.fontName
-                    font.pixelSize: 10
-                    font.weight: Font.Bold
-                    text: root.providerLabel(String(root.account.provider || ""))
-                }
-            }
-            Item {
+            Text {
                 Layout.fillWidth: true
+                color: Config.md3.on_surface
+                elide: Text.ElideRight
+                font.family: Config.fontName
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
+                text: String(root.account.displayName || root.account.email || root.providerLabel(String(root.account.provider || "")))
             }
             SettingsActionButton {
-                Layout.preferredHeight: 30
-                Layout.preferredWidth: 30
+                Layout.preferredHeight: 32
+                Layout.preferredWidth: 32
                 enabled: !root.loading
                 iconName: root.removeArmed ? "dialog-warning-symbolic" : "user-trash-symbolic"
                 iconOnly: true
@@ -225,7 +171,7 @@ Rectangle {
         }
         Rectangle {
             Layout.fillWidth: true
-            color: Config.alpha(Config.md3.on_surface, 0.065)
+            color: Config.alpha(Config.md3.outline_variant, 0.22)
             implicitHeight: 1
         }
         ColumnLayout {
@@ -247,8 +193,8 @@ Rectangle {
                     Layout.fillWidth: true
                     activeFocusOnTab: true
                     color: calendarMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.on_surface, 0.055) : "transparent"
-                    implicitHeight: 38
-                    radius: 11
+                    implicitHeight: 40
+                    radius: 12
 
                     Behavior on color {
                         ColorAnimation {
@@ -267,17 +213,17 @@ Rectangle {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 8
+                        anchors.leftMargin: 7
                         anchors.rightMargin: 7
-                        spacing: 9
+                        spacing: 10
 
                         Rectangle {
-                            Layout.preferredHeight: 17
-                            Layout.preferredWidth: 17
+                            Layout.preferredHeight: 18
+                            Layout.preferredWidth: 18
                             border.color: calendarRow.checked ? calendarRow.accentColor : Config.alpha(Config.md3.on_surface, 0.32)
                             border.width: 2
                             color: calendarRow.checked ? calendarRow.accentColor : "transparent"
-                            radius: 5
+                            radius: 6
 
                             Text {
                                 anchors.centerIn: parent

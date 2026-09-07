@@ -24,7 +24,6 @@ FloatingWindow {
 
         for (index = 0; index < niriSectionNames.length; ++index) {
             items.push({
-                "color": niriSectionColors[index],
                 "divider": false,
                 "icon": niriSectionIcons[index],
                 "page": 0,
@@ -34,7 +33,6 @@ FloatingWindow {
         }
         for (index = 0; index < quickshellSectionNames.length; ++index) {
             items.push({
-                "color": quickshellSectionColors[index],
                 "divider": index === 0,
                 "icon": quickshellSectionIcons[index],
                 "page": 1,
@@ -44,7 +42,6 @@ FloatingWindow {
         }
         for (index = 0; index < securitySectionNames.length; ++index) {
             items.push({
-                "color": securitySectionColors[index],
                 "divider": index === 0,
                 "icon": securitySectionIcons[index],
                 "page": 2,
@@ -257,6 +254,13 @@ FloatingWindow {
         if (activeQuickshellSection === 7)
             return "AdvancedSettingsPage.qml";
         return "QuickshellSettingsPage.qml";
+    }
+    function sectionColor(page, section) {
+        if (page === 0)
+            return niriSectionColors[section];
+        if (page === 1)
+            return quickshellSectionColors[section];
+        return securitySectionColors[section];
     }
     function switchSection(page, section) {
         var currentSection = page === 0 ? activeNiriSection : page === 1 ? activeQuickshellSection : activeSecuritySection;
@@ -487,7 +491,7 @@ FloatingWindow {
         border.color: Config.alpha(Config.md3.on_surface, 0.08)
         border.width: 1
         clip: true
-        color: Config.shellBlurSettingsEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
+        color: Config.shellBlurSettingsEnabled && !root.maximized ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
         focus: true
         opacity: root.active ? 1 : 0
         radius: root.maximized ? 0 : root.compactViewport ? 22 : 26
@@ -513,13 +517,6 @@ FloatingWindow {
             }
         }
 
-        AnimatedStars {
-            anchors.fill: parent
-            color: Config.md3.primary
-            running: root.active && !root.resizeActive && !Config.shellLowPowerMode
-            starCount: root.compactViewport ? 48 : 64
-            visible: !root.resizeActive
-        }
         MouseArea {
             anchors.fill: parent
 
@@ -651,7 +648,7 @@ FloatingWindow {
                                         active: root.activePage === modelData.page && (modelData.page === 0 ? root.activeNiriSection === modelData.section : modelData.page === 1 ? root.activeQuickshellSection === modelData.section : root.activeSecuritySection === modelData.section)
                                         compact: true
                                         dense: true
-                                        iconColor: modelData.color
+                                        iconColor: root.sectionColor(modelData.page, modelData.section)
                                         iconName: modelData.icon
                                         indented: true
                                         text: modelData.title

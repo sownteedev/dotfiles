@@ -14,6 +14,7 @@ Item {
     property real cameraPopupRightMargin: 12
     property real cameraPopupY: 0
     property int faceAttemptValue: 3
+    property bool faceContentReady: false
     property bool faceRetryOnWakeValue: true
     property bool greeterRememberLastSessionValue: false
     readonly property var greeterSessionOptions: {
@@ -170,11 +171,26 @@ Item {
 
     Component.onCompleted: {
         syncFields();
-        FaceAuthService.refresh();
+        if (FaceAuthService.initialized)
+            faceContentReady = true;
+        else
+            FaceAuthService.refresh();
         GreeterSettingsService.refreshSessions();
     }
 
+    Timer {
+        id: faceRevealTimer
+
+        interval: 140
+        repeat: false
+
+        onTriggered: root.faceContentReady = true
+    }
     Connections {
+        function onInitializedChanged() {
+            if (FaceAuthService.initialized && !root.faceContentReady)
+                faceRevealTimer.restart();
+        }
         function onOperationFinished(success, message) {
             if (success && FaceAuthService.activeAction === "add")
                 modelLabelField.text = "";
@@ -193,6 +209,7 @@ Item {
         id: pageContent
 
         anchors.fill: parent
+        visible: root.faceContentReady
 
         SettingsSectionCard {
             Layout.fillWidth: true
@@ -548,6 +565,14 @@ Item {
                 wrapMode: Text.Wrap
             }
         }
+    }
+    LoadingIndicator {
+        anchors.centerIn: parent
+        color: Config.md3.primary
+        height: 42
+        visible: !root.faceContentReady
+        width: 42
+        z: 20
     }
     SelectPopup {
         accentColor: Config.md3.secondary

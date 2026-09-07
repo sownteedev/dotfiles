@@ -10,24 +10,32 @@ import "../../service"
 Rectangle {
     id: root
 
+    readonly property int actionHeight: 38
     readonly property bool actuallyPaired: device && device.bonded
     readonly property int batteryPercent: hasBattery ? Math.round(device.battery * 100) : -1
+    readonly property int batteryStripHeight: 28
     readonly property bool busy: connecting || disconnecting || commandPending || (device && device.pairing)
     readonly property bool commandPending: device && BluetoothService.pendingAddress === BluetoothService.normalizeAddress(device.address)
     readonly property bool connected: device && device.connected
     readonly property bool connecting: device && device.state === BluetoothDeviceState.Connecting
     readonly property var detailedBattery: BluetoothService.airpodsBattery || ({})
     required property var device
-    readonly property string deviceName: device ? (device.name || device.deviceName || "Bluetooth device") : "Bluetooth device"
+    readonly property string deviceAddress: device ? String(device.address || "") : ""
+    readonly property string deviceName: device ? (device.name || device.deviceName || qsTr("Bluetooth device")) : qsTr("Bluetooth device")
+    readonly property bool deviceNameIsAddress: deviceAddress !== "" && deviceName.replace(/[:-]/g, "").toUpperCase() === deviceAddress.replace(/[:-]/g, "").toUpperCase()
     readonly property bool disconnecting: device && device.state === BluetoothDeviceState.Disconnecting
+    readonly property string displayName: deviceNameIsAddress ? qsTr("Unknown device") : deviceName
     property bool forgetArmed: false
     readonly property bool hasBattery: device && device.batteryAvailable
     readonly property bool hasDetailedBattery: connected && isAirpods && BluetoothService.airpodsBatteryAvailable && detailedBattery.accurate === true && BluetoothService.normalizeAddress(detailedBattery.address) === BluetoothService.normalizeAddress(device.address)
+    readonly property bool hasSecondaryContent: hasDetailedBattery || showStatus || showDeviceAddress
+    readonly property string iconName: device ? String(device.icon || "") : ""
     readonly property bool isAirpods: deviceName.toLowerCase().indexOf("airpods") !== -1
     property bool pairPending: false
     property bool pairedDevice: false
     readonly property bool remembered: pairedDevice || savedDevice
     property bool savedDevice: false
+    readonly property bool showDeviceAddress: !remembered && deviceNameIsAddress
     readonly property bool showStatus: busy || BluetoothService.lastErrorAddress === BluetoothService.normalizeAddress(device.address) || (!connected && remembered) || (connected && isAirpods && !hasDetailedBattery)
     readonly property color statusColor: BluetoothService.lastErrorAddress === BluetoothService.normalizeAddress(device.address) ? Config.md3.error : busy ? Config.md3.tertiary : connected ? Config.md3.secondary : Config.md3.on_surface_variant
     readonly property string statusText: {
@@ -54,6 +62,7 @@ Rectangle {
             return "Disconnected";
         return actuallyPaired ? "Disconnected" : "Ready to pair";
     }
+    readonly property bool useGenericBluetoothIcon: deviceNameIsAddress || iconName === "" || iconName === "bluetooth"
 
     signal pairingStarted
 
@@ -81,10 +90,10 @@ Rectangle {
     }
 
     Layout.fillWidth: true
-    border.color: root.connected ? Config.alpha(Config.md3.primary, 0.28) : root.remembered ? Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09) : "transparent"
+    border.color: root.connected ? Config.alpha(Config.md3.primary, 0.28) : Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09)
     border.width: 1
-    color: root.connected ? Config.alpha(Config.md3.primary, 0.10) : root.remembered ? Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.64 : 0.30) : Config.alpha(Config.md3.on_surface, 0.055)
-    implicitHeight: root.remembered ? 72 : 60
+    color: root.connected ? Config.alpha(Config.md3.primary, 0.10) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.64 : 0.30)
+    implicitHeight: 76
     radius: 18
 
     Behavior on border.color {
@@ -95,12 +104,6 @@ Rectangle {
     Behavior on color {
         ColorAnimation {
             duration: 140
-        }
-    }
-    Behavior on implicitHeight {
-        NumberAnimation {
-            duration: 180
-            easing.type: Easing.OutCubic
         }
     }
 
@@ -141,28 +144,33 @@ Rectangle {
     RowLayout {
         id: contentRow
 
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 10
         anchors.left: parent.left
         anchors.leftMargin: 12
         anchors.right: parent.right
         anchors.rightMargin: 10
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 10
         spacing: 10
 
         Rectangle {
-            Layout.preferredHeight: root.remembered ? 42 : 38
-            Layout.preferredWidth: root.remembered ? 42 : 38
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredHeight: 44
+            Layout.preferredWidth: 44
             border.color: Config.alpha(Config.md3.primary, 0.35)
             border.width: root.connected ? 1 : 0
             color: root.connected ? Config.alpha(Config.md3.primary, 0.16) : root.remembered ? Config.alpha(Config.md3.on_surface, 0.11) : Config.alpha(Config.md3.primary, 0.09)
-            radius: root.remembered ? 13 : 19
+            radius: root.remembered ? 14 : 22
 
             IconImage {
                 id: deviceIcon
 
                 anchors.centerIn: parent
-                implicitHeight: root.remembered ? 24 : 22
-                implicitWidth: root.remembered ? 24 : 22
-                source: Quickshell.iconPath(((root.device && root.device.icon) || "bluetooth") + "-symbolic", "bluetooth-symbolic")
+                anchors.verticalCenterOffset: -1
+                implicitHeight: root.isAirpods ? 23 : root.useGenericBluetoothIcon ? 22 : 24
+                implicitWidth: root.isAirpods ? 23 : root.useGenericBluetoothIcon ? 22 : 24
+                source: root.isAirpods ? Qt.resolvedUrl("../../assets/icons/device-headphones.svg") : root.useGenericBluetoothIcon ? Qt.resolvedUrl("../../assets/icons/device-bluetooth.svg") : Quickshell.iconPath(root.iconName + "-symbolic", "bluetooth-symbolic")
                 visible: false
             }
             ColorOverlay {
@@ -194,215 +202,229 @@ Rectangle {
             }
         }
         ColumnLayout {
+            Layout.alignment: Qt.AlignVCenter
             Layout.fillWidth: true
             Layout.minimumWidth: 0
-            spacing: root.hasDetailedBattery ? 3 : 4
 
             Text {
                 Layout.fillWidth: true
+                Layout.preferredHeight: 18
                 color: Config.md3.on_surface
                 elide: Text.ElideRight
                 font.family: Config.fontName
                 font.pixelSize: 15
                 font.weight: root.connected ? Font.Bold : Font.DemiBold
-                text: root.deviceName
+                text: root.displayName
+                verticalAlignment: Text.AlignVCenter
             }
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 6
-                visible: root.showStatus
+            Item {
+                id: secondarySlot
 
-                Rectangle {
-                    Layout.preferredHeight: 6
-                    Layout.preferredWidth: 6
-                    color: root.statusColor
-                    opacity: root.connected ? 1 : 0.58
-                    radius: 3
+                Layout.fillWidth: true
+                Layout.preferredHeight: root.batteryStripHeight
+                visible: root.hasSecondaryContent
+
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 6
+                    visible: root.showStatus
+
+                    Rectangle {
+                        Layout.preferredHeight: 6
+                        Layout.preferredWidth: 6
+                        color: root.statusColor
+                        opacity: root.connected ? 1 : 0.58
+                        radius: 3
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        color: root.statusColor
+                        elide: Text.ElideRight
+                        font.family: Config.fontName
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                        text: root.statusText
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
                 Text {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    color: root.statusColor
+                    anchors.fill: parent
+                    color: Config.md3.on_surface_variant
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.pixelSize: 13
                     font.weight: Font.Medium
-                    text: root.statusText
+                    text: root.deviceAddress
+                    verticalAlignment: Text.AlignVCenter
+                    visible: root.showDeviceAddress
                 }
-            }
-            Flickable {
-                id: batteryDetailViewport
+                Rectangle {
+                    id: batteryStrip
 
-                Layout.fillWidth: true
-                Layout.preferredHeight: visible ? 26 : 0
-                boundsBehavior: Flickable.StopAtBounds
-                clip: contentWidth > width
-                contentHeight: height
-                contentWidth: Math.max(width, batteryDetailRow.implicitWidth)
-                flickableDirection: Flickable.HorizontalFlick
-                interactive: contentWidth > width
-                visible: root.hasDetailedBattery
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    border.color: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.14 : 0.11)
+                    border.width: 1
+                    color: Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.58 : 0.30)
+                    height: root.batteryStripHeight
+                    radius: 9
+                    visible: root.hasDetailedBattery
+                    width: Math.min(parent.width, 216)
 
-                Row {
-                    id: batteryDetailRow
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 0
 
-                    height: parent.height
-                    spacing: 6
-                    x: 0
+                        Repeater {
+                            model: root.hasDetailedBattery ? [
+                                {
+                                    "label": "L",
+                                    "type": "left",
+                                    "value": root.detailedBattery.left,
+                                    "charging": root.detailedBattery.leftCharging === true
+                                },
+                                {
+                                    "label": "R",
+                                    "type": "right",
+                                    "value": root.detailedBattery.right,
+                                    "charging": root.detailedBattery.rightCharging === true
+                                },
+                                {
+                                    "label": "Case",
+                                    "type": "case",
+                                    "value": root.detailedBattery.case,
+                                    "charging": root.detailedBattery.caseCharging === true
+                                }
+                            ] : []
 
-                    Repeater {
-                        model: root.hasDetailedBattery ? [
-                            {
-                                "label": "L",
-                                "type": "left",
-                                "value": root.detailedBattery.left,
-                                "charging": root.detailedBattery.leftCharging === true
-                            },
-                            {
-                                "label": "R",
-                                "type": "right",
-                                "value": root.detailedBattery.right,
-                                "charging": root.detailedBattery.rightCharging === true
-                            },
-                            {
-                                "label": "Case",
-                                "type": "case",
-                                "value": root.detailedBattery.case,
-                                "charging": root.detailedBattery.caseCharging === true
-                            }
-                        ] : []
+                            Item {
+                                id: batterySegment
 
-                        Rectangle {
-                            id: batteryChip
+                                required property int index
+                                readonly property color levelColor: root.batteryColor(modelData.value)
+                                required property var modelData
+                                readonly property bool valueAvailable: modelData.value !== null && modelData.value !== undefined && modelData.value >= 0 && modelData.value <= 100
 
-                            readonly property color levelColor: root.batteryColor(modelData.value)
-                            required property var modelData
-                            readonly property bool valueAvailable: modelData.value !== null && modelData.value !== undefined && modelData.value >= 0 && modelData.value <= 100
+                                Layout.fillHeight: true
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
 
-                            border.color: Config.alpha(levelColor, 0.35)
-                            border.width: 1
-                            clip: true
-                            color: Config.alpha(levelColor, 0.12)
-                            height: 26
-                            radius: 8
-                            width: detailContent.implicitWidth + 14
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.16 : 0.12)
+                                    height: 14
+                                    visible: batterySegment.index > 0
+                                    width: 1
+                                }
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 4
 
-                            RowLayout {
-                                id: detailContent
-
-                                anchors.centerIn: parent
-                                spacing: 4
-
-                                Item {
-                                    id: iconHolder
-
-                                    Layout.alignment: Qt.AlignVCenter
-                                    Layout.preferredHeight: 15
-                                    Layout.preferredWidth: modelData.type === "case" ? 13 : 10
-
-                                    // Left Earbud: Head on left, stem on right
                                     Item {
-                                        anchors.fill: parent
-                                        visible: modelData.type === "left"
+                                        id: iconHolder
 
-                                        Rectangle {
-                                            color: batteryChip.levelColor
-                                            height: 6
-                                            radius: 3
-                                            width: 6
-                                            x: 3
-                                            y: 1
+                                        Layout.alignment: Qt.AlignVCenter
+                                        Layout.preferredHeight: 15
+                                        Layout.preferredWidth: modelData.type === "case" ? 13 : 10
+
+                                        // Left Earbud: Head on left, stem on right
+                                        Item {
+                                            anchors.fill: parent
+                                            visible: modelData.type === "left"
+
+                                            Rectangle {
+                                                color: batterySegment.levelColor
+                                                height: 6
+                                                radius: 3
+                                                width: 6
+                                                x: 3
+                                                y: 1
+                                            }
+                                            Rectangle {
+                                                color: batterySegment.levelColor
+                                                height: 8.5
+                                                radius: 1
+                                                width: 2.2
+                                                x: 2.3
+                                                y: 4.5
+                                            }
                                         }
+
+                                        // Right Earbud: Head on right, stem on left
+                                        Item {
+                                            anchors.fill: parent
+                                            visible: modelData.type === "right"
+
+                                            Rectangle {
+                                                color: batterySegment.levelColor
+                                                height: 6
+                                                radius: 3
+                                                width: 6
+                                                x: 0
+                                                y: 1
+                                            }
+                                            Rectangle {
+                                                color: batterySegment.levelColor
+                                                height: 8.5
+                                                radius: 1
+                                                width: 2.2
+                                                x: 4.5
+                                                y: 4.5
+                                            }
+                                        }
+
+                                        // Case: Rounded container with lid line & LED
                                         Rectangle {
-                                            color: batteryChip.levelColor
-                                            height: 8.5
-                                            radius: 1
-                                            width: 2.2
-                                            x: 2.3
-                                            y: 4.5
+                                            anchors.centerIn: parent
+                                            border.color: batterySegment.levelColor
+                                            border.width: 1.2
+                                            color: "transparent"
+                                            height: 13
+                                            radius: 3.5
+                                            visible: modelData.type === "case"
+                                            width: 11
+
+                                            // Lid seam line
+                                            Rectangle {
+                                                anchors.left: parent.left
+                                                anchors.right: parent.right
+                                                anchors.top: parent.top
+                                                anchors.topMargin: 4
+                                                color: batterySegment.levelColor
+                                                height: 1
+                                            }
+
+                                            // LED dot
+                                            Rectangle {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                anchors.top: parent.top
+                                                anchors.topMargin: 7
+                                                color: batterySegment.levelColor
+                                                height: 2
+                                                radius: 1
+                                                width: 2
+                                            }
                                         }
                                     }
-
-                                    // Right Earbud: Head on right, stem on left
-                                    Item {
-                                        anchors.fill: parent
-                                        visible: modelData.type === "right"
-
-                                        Rectangle {
-                                            color: batteryChip.levelColor
-                                            height: 6
-                                            radius: 3
-                                            width: 6
-                                            x: 0
-                                            y: 1
-                                        }
-                                        Rectangle {
-                                            color: batteryChip.levelColor
-                                            height: 8.5
-                                            radius: 1
-                                            width: 2.2
-                                            x: 4.5
-                                            y: 4.5
-                                        }
+                                    Text {
+                                        Layout.alignment: Qt.AlignVCenter
+                                        color: Config.md3.on_surface
+                                        font.family: Config.fontName
+                                        font.pixelSize: 11
+                                        font.weight: Font.Bold
+                                        text: batterySegment.valueAvailable ? modelData.value + "%" : "—"
                                     }
-
-                                    // Case: Rounded container with lid line & LED
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        border.color: batteryChip.levelColor
-                                        border.width: 1.2
-                                        color: "transparent"
-                                        height: 13
-                                        radius: 3.5
-                                        visible: modelData.type === "case"
-                                        width: 11
-
-                                        // Lid seam line
-                                        Rectangle {
-                                            anchors.left: parent.left
-                                            anchors.right: parent.right
-                                            anchors.top: parent.top
-                                            anchors.topMargin: 4
-                                            color: batteryChip.levelColor
-                                            height: 1
-                                        }
-
-                                        // LED dot
-                                        Rectangle {
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            anchors.top: parent.top
-                                            anchors.topMargin: 7
-                                            color: batteryChip.levelColor
-                                            height: 2
-                                            radius: 1
-                                            width: 2
-                                        }
+                                    Text {
+                                        Layout.alignment: Qt.AlignVCenter
+                                        color: Config.md3.tertiary
+                                        font.family: Config.fontName
+                                        font.pixelSize: 11
+                                        font.weight: Font.Bold
+                                        text: "⚡"
+                                        visible: batterySegment.valueAvailable && modelData.charging === true
                                     }
-                                }
-                                Text {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    color: batteryChip.levelColor
-                                    font.family: Config.fontName
-                                    font.pixelSize: 10
-                                    font.weight: Font.Bold
-                                    text: modelData.label
-                                }
-                                Text {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 11
-                                    font.weight: Font.Bold
-                                    text: batteryChip.valueAvailable ? modelData.value + "%" : "—"
-                                }
-                                Text {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    color: Config.md3.tertiary
-                                    font.family: Config.fontName
-                                    font.pixelSize: 11
-                                    font.weight: Font.Bold
-                                    text: "⚡"
-                                    visible: batteryChip.valueAvailable && modelData.charging === true
                                 }
                             }
                         }
@@ -417,8 +439,9 @@ Rectangle {
 
             Accessible.name: primaryAction.label
             Accessible.role: Accessible.Button
+            Layout.alignment: Qt.AlignVCenter
             Layout.maximumWidth: 104
-            Layout.preferredHeight: 36
+            Layout.preferredHeight: root.actionHeight
             Layout.preferredWidth: Math.min(Layout.maximumWidth, Math.max(66, primaryLabel.implicitWidth + 20))
             activeFocusOnTab: true
             border.color: root.busy ? Config.alpha(Config.md3.tertiary, 0.28) : root.connected ? Config.alpha(Config.md3.on_surface, 0.13) : Config.alpha(Config.md3.primary, 0.26)
@@ -483,8 +506,9 @@ Rectangle {
 
             Accessible.name: root.forgetArmed ? qsTr("Forget device") : qsTr("More device actions")
             Accessible.role: Accessible.Button
-            Layout.preferredHeight: 36
-            Layout.preferredWidth: root.forgetArmed ? 82 : 36
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredHeight: root.actionHeight
+            Layout.preferredWidth: root.forgetArmed ? 82 : root.actionHeight
             activeFocusOnTab: visible
             border.color: root.forgetArmed ? Config.alpha(Config.md3.error, 0.28) : Config.alpha(Config.md3.on_surface, 0.10)
             border.width: 1

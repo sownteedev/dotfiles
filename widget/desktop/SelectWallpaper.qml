@@ -17,6 +17,7 @@ PanelWindow {
     readonly property real cardWidth: Responsive.fit(380, (width - 24) / 1.15, 240)
     property bool changingMode: false
     property string initialSelectionPath: ""
+    property string lastPreviewSource: ""
     property int openGeneration: 0
     readonly property real pathSpan: Math.min(450, Math.max(cardWidth * 0.85, width * 0.34))
     property string selectedMode: "static"
@@ -81,6 +82,7 @@ PanelWindow {
         hideTimer.stop();
         changingMode = true;
         initialSelectionPath = String(WallpaperService.currentWallpaper || "");
+        lastPreviewSource = "";
         selectionCommitted = false;
         wallhavenOpen = false;
         workshopOpen = false;
@@ -141,8 +143,7 @@ PanelWindow {
                 return;
 
             var modified = roleAt(pathView.currentIndex, "fileModified", 0);
-            WallpaperService.previewStatic(path);
-            WallpaperPreviewService.preview(path, modified);
+            previewSource(path, modified);
             preloadTimer.restart();
         } else if (selectedMode === "video") {
             var currentIndex = pathView.currentIndex;
@@ -153,10 +154,20 @@ PanelWindow {
             if (!previewImage)
                 return;
 
-            WallpaperService.previewStatic(previewImage);
-            WallpaperPreviewService.preview(previewImage, videoModified);
+            previewSource(previewImage, videoModified);
             preloadTimer.restart();
         }
+    }
+    function previewSource(path, modified) {
+        var source = String(path || "");
+        if (!source)
+            return;
+
+        if (lastPreviewSource !== source) {
+            lastPreviewSource = source;
+            WallpaperService.previewStatic(source);
+        }
+        WallpaperPreviewService.preview(source, modified);
     }
     function rememberCurrentIndex() {
         if (pathView.currentIndex < 0)
@@ -241,11 +252,16 @@ PanelWindow {
         var item = staticModel.get(index);
         return item && item[role] !== undefined ? item[role] : fallbackValue;
     }
-    function schedulePreview() {
+    function schedulePreview(immediate) {
         if (changingMode || initialSelectionPath !== "" || browserOpen || (selectedMode === "video" && !videoPreviewStarted))
             return;
 
-        previewTimer.restart();
+        if (immediate === true) {
+            previewTimer.stop();
+            previewCurrent();
+        } else if (!previewTimer.running) {
+            previewTimer.start();
+        }
     }
     function selectCurrentWallpaper() {
         if (browserOpen || !pathView.currentItem)
@@ -275,6 +291,7 @@ PanelWindow {
         rememberCurrentIndex();
         changingMode = true;
         initialSelectionPath = "";
+        lastPreviewSource = "";
         selectedMode = mode;
         if (mode === "video") {
             videoPreviewStarted = false;
@@ -490,7 +507,7 @@ PanelWindow {
     Timer {
         id: previewTimer
 
-        interval: 40
+        interval: 120
         repeat: false
 
         onTriggered: wallpaperWindow.previewCurrent()
@@ -785,10 +802,7 @@ PanelWindow {
                         wallpaperWindow.schedulePreview();
                 }
             }
-            onMovementEnded: {
-                if (wallpaperWindow.selectedMode === "video")
-                    Qt.callLater(wallpaperWindow.schedulePreview);
-            }
+            onMovementEnded: Qt.callLater(() => wallpaperWindow.schedulePreview(true))
             onMovementStarted: {
                 wallpaperWindow.startUserNavigation();
                 if (wallpaperWindow.selectedMode === "video") {

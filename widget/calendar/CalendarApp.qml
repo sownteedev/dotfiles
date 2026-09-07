@@ -381,7 +381,7 @@ FloatingWindow {
         border.color: Config.alpha(Config.md3.on_surface, 0.08)
         border.width: 1
         clip: true
-        color: Config.shellBlurSettingsEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
+        color: Config.shellBlurSettingsEnabled && !root.maximized ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
         focus: true
         opacity: root.active ? 1 : 0
         radius: root.maximized ? 0 : 26

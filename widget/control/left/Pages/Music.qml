@@ -226,7 +226,7 @@ Item {
                 ColumnLayout {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
-                    spacing: 2
+                    spacing: 8
 
                     Text {
                         Layout.fillWidth: true
@@ -508,7 +508,6 @@ Item {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 115
-                    Layout.topMargin: 12
                     border.color: Config.alpha(Config.md3.on_surface, 0.04)
                     border.width: 1
                     color: Config.alpha(Config.md3.on_surface, 0.02)

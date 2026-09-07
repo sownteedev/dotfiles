@@ -10,6 +10,7 @@ QtObject {
 
     property bool active: false
     property var activeJob: null
+    property string appliedPreviewKey: ""
     readonly property string cacheDir: Config.cacheRoot + "/wallpaper-preview"
     property bool commitApplyColors: false
     property string commitKey: ""
@@ -41,7 +42,7 @@ QtObject {
                     // A slow, stale job must never recolor the wallpaper which
                     // is currently focused in the selector.
                     if (palette && root.active && job.key === root.currentKey)
-                        ThemeService.applyPreviewColors(palette, true);
+                        root.applyPreviewPalette(job.key, palette);
 
                     if (root.commitKey === job.key)
                         root.finishCommit(job, palette);
@@ -72,6 +73,7 @@ QtObject {
 
         var key = cacheKey(path, modified);
         active = false;
+        appliedPreviewKey = "";
         currentKey = "";
         commitKey = key;
         commitToken = Number(requestToken || 0);
@@ -85,8 +87,19 @@ QtObject {
 
         queue(path, modified);
     }
+    function applyPreviewPalette(key, palette) {
+        if (!palette || key !== currentKey || appliedPreviewKey === key)
+            return;
+
+        appliedPreviewKey = key;
+        // Browsing can change focus several times per second. Applying the
+        // preview directly avoids restarting every MD3 color animation while
+        // the carousel and the full-screen cover are moving.
+        ThemeService.applyPreviewColors(palette, false);
+    }
     function begin() {
         active = true;
+        appliedPreviewKey = "";
         currentKey = "";
         commitKey = "";
         commitToken = 0;
@@ -96,6 +109,7 @@ QtObject {
         return WallpaperService.stableHash(thumbnailKey(path, modified) + "|" + ThemeService.colorMode);
     }
     function cancel() {
+        appliedPreviewKey = "";
         currentKey = "";
         commitKey = "";
         commitToken = 0;
@@ -187,7 +201,7 @@ QtObject {
         var cached = paletteCache[key];
         if (cached !== undefined) {
             touchPalette(key);
-            ThemeService.applyPreviewColors(cached, true);
+            applyPreviewPalette(key, cached);
             return;
         }
 

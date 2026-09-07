@@ -443,7 +443,7 @@ Item {
             Rectangle {
                 id: swipeContent
 
-                color: listMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
+                color: listMouse.containsMouse && !delegateRoot.isSelected ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
                 height: parent.height
                 radius: 28
                 width: parent.width
@@ -622,8 +622,6 @@ Item {
                 drag.threshold: 10
                 hoverEnabled: true
 
-                // Keep pointer hover visual-only. Updating selectedIndex here
-                // changes ListView.currentIndex and scrolls the last visible row.
                 onClicked: {
                     if (isFile && swipeContent.x > 10) {
                         delegateRoot.snapBack();
@@ -642,6 +640,7 @@ Item {
                         Quickshell.execDetached(["gio", "open", itemData.path]);
                     searchRoot.resultLaunched();
                 }
+                onEntered: searchRoot.selectedIndex = index
                 onReleased: {
                     if (isFile) {
                         if (swipeContent.x > 120)

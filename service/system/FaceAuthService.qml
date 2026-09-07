@@ -55,6 +55,7 @@ QtObject {
         onTriggered: {
             if (!actionProcess.running)
                 return;
+
             root.actionTimedOut = true;
             actionProcess.signal(15);
             actionKillTimeout.restart();
@@ -65,6 +66,7 @@ QtObject {
     property string camera: ""
     property var cameras: []
     property bool enabled: false
+    property bool initialized: false
     property bool installed: false
     readonly property string legacyManagerPath: "/usr/lib/quickshell/howdy-face-manager"
     readonly property string managerPath: primaryManagerProbe.loaded ? primaryManagerPath : legacyManagerPath
@@ -110,6 +112,7 @@ QtObject {
                 root.statusSuccess = false;
                 root.statusMessage = "Face manager status timed out";
                 root.busy = false;
+                root.initialized = true;
                 return;
             }
             var response = root.parseResponse(statusOutput.text, statusError.text.trim() || "Face manager is not installed");
@@ -128,6 +131,7 @@ QtObject {
                 root.statusMessage = response.message || "Face manager is not installed";
             }
             root.busy = false;
+            root.initialized = true;
         }
     }
     property bool statusSuccess: true
@@ -139,6 +143,7 @@ QtObject {
         onTriggered: {
             if (!statusProcess.running)
                 return;
+
             root.statusTimedOut = true;
             statusProcess.signal(15);
             statusKillTimeout.restart();
@@ -172,6 +177,7 @@ QtObject {
     function refresh() {
         if (statusProcess.running || actionProcess.running)
             return;
+
         busy = true;
         statusTimedOut = false;
         statusProcess.running = true;
@@ -183,6 +189,7 @@ QtObject {
     function runAction(action, argument) {
         if (busy || actionProcess.running)
             return;
+
         activeAction = action;
         statusMessage = action === "add" || action === "test" ? "Authorize, then look straight into the camera…" : action === "set-camera" ? "Authorize to change the face camera…" : "Waiting for administrator authorization…";
         statusSuccess = true;
@@ -191,6 +198,7 @@ QtObject {
         var args = ["pkexec", managerPath, action];
         if (argument !== undefined && String(argument) !== "")
             args.push(String(argument));
+
         actionProcess.command = args;
         actionProcess.running = true;
         actionTimeout.restart();

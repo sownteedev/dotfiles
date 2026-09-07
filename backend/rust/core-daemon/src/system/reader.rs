@@ -17,7 +17,6 @@ pub struct SystemReader {
     cpu_count: f64,
     cpu_model: String,
     page_size_kib: f64,
-    self_pid: u32,
     thermal_path: Option<PathBuf>,
 }
 
@@ -30,7 +29,6 @@ impl SystemReader {
                 .unwrap_or(1) as f64,
             cpu_model: cpu_model(),
             page_size_kib: getconf("PAGESIZE").unwrap_or(4096) as f64 / 1024.0,
-            self_pid: std::process::id(),
             thermal_path: find_thermal_path(),
         }
     }
@@ -148,15 +146,10 @@ impl SystemReader {
     }
 
     pub fn process_snapshot(&self, include_cpu: bool, include_ram: bool) -> ProcessSnapshot {
-        self.collect_process_snapshot(include_cpu, include_ram, true)
+        self.collect_process_snapshot(include_cpu, include_ram)
     }
 
-    fn collect_process_snapshot(
-        &self,
-        include_cpu: bool,
-        include_ram: bool,
-        omit_self: bool,
-    ) -> ProcessSnapshot {
+    fn collect_process_snapshot(&self, include_cpu: bool, include_ram: bool) -> ProcessSnapshot {
         let mut snapshot = HashMap::new();
         let Ok(entries) = fs::read_dir("/proc") else {
             return snapshot;
@@ -166,7 +159,7 @@ impl SystemReader {
             let Ok(pid) = entry.file_name().to_string_lossy().parse::<u32>() else {
                 continue;
             };
-            if pid <= 1 || (omit_self && pid == self.self_pid) {
+            if pid <= 1 {
                 continue;
             }
 
@@ -248,7 +241,7 @@ impl SystemReader {
             ));
         }
 
-        let snapshot = self.collect_process_snapshot(false, true, false);
+        let snapshot = self.collect_process_snapshot(false, true);
         let Some(target) = snapshot.get(&root_pid) else {
             return Err(io::Error::new(
                 io::ErrorKind::NotFound,
@@ -758,6 +751,12 @@ mod process_name_tests {
     fn resolves_linked_crashpad_handler_pid() {
         let command_line = b"/usr/share/code/code\0--type=renderer\0--crashpad-handler-pid=456\0";
         assert_eq!(crashpad_handler_pids(command_line), vec![456]);
+    }
+
+    #[test]
+    fn includes_sampler_process_in_snapshot() {
+        let snapshot = SystemReader::new().process_snapshot(false, true);
+        assert!(snapshot.contains_key(&std::process::id()));
     }
 
     #[test]

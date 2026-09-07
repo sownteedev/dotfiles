@@ -28,7 +28,10 @@ Item {
     property int selectionCurrentMinutes: -1
     property int selectionDayIndex: -1
     property bool selectionDragged: false
+    property int selectionEdgeScrollDirection: 0
+    readonly property real selectionEdgeScrollMargin: Math.min(64, Math.max(36, timelineFlickable.height * 0.12))
     readonly property int selectionEndMinutes: selectionAnchorMinutes < 0 || selectionCurrentMinutes < 0 ? -1 : Math.max(selectionAnchorMinutes, selectionCurrentMinutes)
+    property real selectionPointerViewportY: -1
     property real selectionPressY: 0
     readonly property int selectionStartMinutes: selectionAnchorMinutes < 0 || selectionCurrentMinutes < 0 ? -1 : Math.min(selectionAnchorMinutes, selectionCurrentMinutes)
     readonly property bool selectionVisible: selectionDayIndex >= 0 && selectionStartMinutes >= 0 && selectionEndMinutes > selectionStartMinutes
@@ -142,6 +145,8 @@ Item {
         selectionAnchorMinutes = -1;
         selectionCurrentMinutes = -1;
         selectionDragged = false;
+        selectionEdgeScrollDirection = 0;
+        selectionPointerViewportY = -1;
     }
     function dayDifference(first, second) {
         var firstUtc = Date.UTC(first.getFullYear(), first.getMonth(), first.getDate());
@@ -240,6 +245,28 @@ Item {
     function startOfDay(value) {
         return new Date(value.getFullYear(), value.getMonth(), value.getDate());
     }
+    function updateSelectionEdgeScroll(canvasY) {
+        selectionPointerViewportY = canvasY - timelineFlickable.contentY;
+        if (!selectionActive || !selectionDragged) {
+            selectionEdgeScrollDirection = 0;
+            return;
+        }
+
+        var maximumContentY = Math.max(0, timelineFlickable.contentHeight - timelineFlickable.height);
+        if (selectionPointerViewportY <= selectionEdgeScrollMargin && timelineFlickable.contentY > 0)
+            selectionEdgeScrollDirection = -1;
+        else if (selectionPointerViewportY >= timelineFlickable.height - selectionEdgeScrollMargin && timelineFlickable.contentY < maximumContentY)
+            selectionEdgeScrollDirection = 1;
+        else
+            selectionEdgeScrollDirection = 0;
+    }
+    function updateSelectionForY(canvasY) {
+        var distance = canvasY - selectionPressY;
+        var current = snappedMinutesForY(canvasY, true);
+        if (current === selectionAnchorMinutes)
+            current = distance < 0 ? Math.max(0, selectionAnchorMinutes - 15) : Math.min(23 * 60 + 59, selectionAnchorMinutes + 15);
+        selectionCurrentMinutes = current;
+    }
 
     Component.onCompleted: Qt.callLater(scrollToWorkingHours)
     onWeekStartChanged: clearSelection()
@@ -251,6 +278,26 @@ Item {
         triggeredOnStart: true
 
         onTriggered: root.now = new Date()
+    }
+    Timer {
+        interval: 16
+        repeat: true
+        running: root.visible && root.selectionActive && root.selectionDragged && root.selectionEdgeScrollDirection !== 0
+
+        onTriggered: {
+            var maximumContentY = Math.max(0, timelineFlickable.contentHeight - timelineFlickable.height);
+            var edgeDepth = root.selectionEdgeScrollDirection < 0 ? (root.selectionEdgeScrollMargin - root.selectionPointerViewportY) / root.selectionEdgeScrollMargin : (root.selectionPointerViewportY - (timelineFlickable.height - root.selectionEdgeScrollMargin)) / root.selectionEdgeScrollMargin;
+            edgeDepth = Math.max(0, Math.min(1, edgeDepth));
+            var step = 2 + 6 * edgeDepth;
+            var nextContentY = Math.max(0, Math.min(maximumContentY, timelineFlickable.contentY + root.selectionEdgeScrollDirection * step));
+            if (nextContentY === timelineFlickable.contentY) {
+                root.selectionEdgeScrollDirection = 0;
+                return;
+            }
+
+            timelineFlickable.contentY = nextContentY;
+            root.updateSelectionForY(nextContentY + root.selectionPointerViewportY);
+        }
     }
     Rectangle {
         anchors.fill: parent
@@ -486,6 +533,8 @@ Item {
                     preventStealing: root.selectionActive
 
                     onCanceled: {
+                        root.selectionEdgeScrollDirection = 0;
+                        root.selectionPointerViewportY = -1;
                         if (!root.selectionCommitted)
                             root.clearSelection();
                         else
@@ -505,14 +554,13 @@ Item {
                             var distance = mouse.y - root.selectionPressY;
                             if (Math.abs(distance) >= 5)
                                 root.selectionDragged = true;
-                            if (!root.selectionDragged)
+                            if (!root.selectionDragged) {
+                                root.selectionEdgeScrollDirection = 0;
                                 return;
-
-                            var current = root.snappedMinutesForY(mouse.y, true);
-                            if (current === root.selectionAnchorMinutes) {
-                                current = distance < 0 ? Math.max(0, root.selectionAnchorMinutes - 15) : Math.min(23 * 60 + 59, root.selectionAnchorMinutes + 15);
                             }
-                            root.selectionCurrentMinutes = current;
+
+                            root.updateSelectionForY(mouse.y);
+                            root.updateSelectionEdgeScroll(mouse.y);
                             return;
                         }
 
@@ -538,6 +586,8 @@ Item {
                         root.selectionDragged = false;
                         root.selectionCommitted = false;
                         root.selectionActive = true;
+                        root.selectionEdgeScrollDirection = 0;
+                        root.selectionPointerViewportY = mouse.y - timelineFlickable.contentY;
                         root.hoverDayIndex = -1;
                         root.hoverMinutes = -1;
                     }
@@ -555,6 +605,8 @@ Item {
                             endMinutes = Math.min(23 * 60 + 59, startMinutes + 15);
                         }
 
+                        root.selectionEdgeScrollDirection = 0;
+                        root.selectionPointerViewportY = -1;
                         root.selectionActive = false;
                         root.selectionCommitted = true;
                         var selectionX = root.timeGutterWidth + root.selectionDayIndex * root.dayWidth + 3;

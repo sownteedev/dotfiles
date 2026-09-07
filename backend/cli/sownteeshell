@@ -1,0 +1,350 @@
+#!/bin/sh
+
+set -eu
+
+print_usage() {
+    cat <<'EOF'
+SownteeShell command-line interface
+
+Usage:
+  sownteeshell ipc call <core|calendar> <method> [params-json]
+  sownteeshell ipc methods [core|calendar]
+  sownteeshell ipc help [core|calendar]
+  sownteeshell --help [core|calendar]
+
+Examples:
+  sownteeshell ipc call core ping
+  sownteeshell ipc call core system.info
+  sownteeshell ipc call calendar accounts.list
+  sownteeshell ipc methods core
+EOF
+}
+
+print_legend() {
+    cat <<'EOF'
+
+Method flags:
+  [read]     Does not intentionally change state
+  [write]    Changes configuration, files, remote data, or runtime state
+  [delete]   Removes data or terminates a process; use carefully
+  [network]  Contacts an external service
+  [stream]   Requires a persistent IPC connection; one-shot call is not useful
+
+Most parameters use camelCase JSON fields. Wallpaper-provider fields are
+snake_case and are shown exactly below. Required fields have no '?', optional
+fields end in '?', and omitted params default to {}.
+EOF
+}
+
+print_core_methods() {
+    cat <<'EOF'
+
+Core methods (79):
+
+  System and jobs
+    ping                                  [read] Check IPC responsiveness
+    system.info                           [read] PID, uptime, socket and capabilities
+    job.cancel                            [write] jobId
+    wallpaper.cancel                      [write] Alias of job.cancel
+
+  Stats, battery and processes
+    stats.snapshot                        [read] mode? = none|cpu|ram|gpu
+    battery.snapshot                      [read] Current battery telemetry
+    battery.control                       [read] Charge profiles and threshold support
+    process.memory                        [read] pid
+    process.terminate                     [delete] pid; terminates the process tree
+
+  Package updates
+    updates.check                         [read] force?
+
+  Applications
+    application.inspect                   [read] appId; package/removal information
+    application.uninstall                 [delete] appId; uninstall its managed package
+
+  Clipboard and diagnostics
+    clipboard.restore                     [write] entryId, autoPaste?
+    diagnostics.snapshot                  [read] Dependencies, services and cache sizes
+    diagnostics.clear                     [delete] scope = wallpaper-previews|
+                                                   engine-previews|backdrops
+
+  Displays
+    display.ddc.get                       [read] output
+    display.ddc.set                       [write] output, value, bus?, maximum?
+    display.niri.mode                     [write] mode = internal|extend|external,
+                                                   preferredExternal?
+    display.niri.options                  [read] configPath
+    display.niri.persist                  [write] configPath, outputs
+    display.niri.setVrr                   [write] configPath, output,
+                                                   mode = off|on|on-demand
+    display.sunshine.status               [read] configPath
+    display.sunshine.apply                [write] configPath, displayId, output
+
+  Greeter
+    greeter.keyboardLayout                [read] Current keyboard layout
+    greeter.sessions.list                 [read] Installed Wayland sessions
+    greeter.background.sync               [write] kind, source, destination?
+    greeter.profile.sync                  [write] source?, destination?
+    greeter.settings.sync                 [write] defaultSession?,
+                                                   rememberLastSession?, destination?
+
+  Launcher
+    launcher.catalog.search               [read] emojiPath, unicodePath, query?,
+                                                  limit?, requestId?
+    launcher.catalog.release              [write] Release the in-memory Emoji/Unicode catalog
+    launcher.klipy.search                 [read, network] apiKey?, kind?, query?,
+                                                           perPage?, requestId?
+    launcher.klipy.copy                   [write, network] url, mime, paste?
+
+  Google Tasks
+    productivity.googleTasks.authStatus   [read] Current authentication state
+    productivity.googleTasks.logout       [delete] Remove the stored Google Tasks token
+    productivity.googleTasks.list         [read, network] listId?
+    productivity.googleTasks.create       [write, network] title, listId?, notes?, due?
+    productivity.googleTasks.update       [write, network] taskId, listId?, title?,
+                                                           notes?, due?, status?
+    productivity.googleTasks.delete       [delete, network] taskId, listId?
+
+  Settings
+    settings.snapshot                     [read] quickshellDir
+    settings.layout.apply                 [write] quickshellDir + layout payload
+    settings.keybind.apply                [write] quickshellDir + keybind payload
+    settings.input.apply                  [write] quickshellDir + input payload
+    settings.input.enabled                [write] quickshellDir + enabled state
+    settings.input.entryEnabled           [write] quickshellDir + entry state
+    settings.animations.apply             [write] quickshellDir + global animation state
+    settings.animation.apply              [write] quickshellDir + animation entry
+    settings.behavior.apply               [write] quickshellDir + behavior payload
+    settings.niriFile.apply               [write] quickshellDir + Niri file payload
+    settings.quickshell.apply              [write] quickshellDir + shell setting payload
+
+  Weather and Wi-Fi
+    weather.forecast                      [read, network] apiKey, latitude, longitude
+    weather.location                      [read, network] apiKey, latitude, longitude
+    wifi.qr.generate                      [write] ssid, profile?, openNetwork?
+    wifi.qr.delete                        [delete] path
+    wifi.qr.cleanup                       [delete] Remove stale temporary QR images
+
+  Wallhaven
+    wallpaper.wallhaven.search            [read, network] query/filter payload,
+                                                           api_key?, wallpaper_dir?
+    wallpaper.wallhaven.collections       [read, network] api_key?
+    wallpaper.wallhaven.collection        [read, network] api_key?, collection_id,
+                                                           username?, page?, wallpaper_dir?
+    wallpaper.wallhaven.download          [write, network] id, url, wallpaper_dir?
+    wallpaper.wallhaven.list              [read] wallpaper_dir?
+    wallpaper.wallhaven.remove            [delete] id?, path?, current_path?,
+                                                   wallpaper_dir?
+
+  Steam Workshop and Wallpaper Engine
+    wallpaper.workshop.search             [read, network] api_key, query/filter/root payload
+    wallpaper.workshop.list               [read] steam_root?, workshop_root?,
+                                                  legacy_workshop_root?
+    wallpaper.workshop.subscriptions      [read] steam_root?
+    wallpaper.workshop.download           [write, network] id, username?, steam_root?,
+                                                           workshop_root?
+    wallpaper.workshop.remove             [delete] id?, path?, current_path?, root fields?
+    wallpaper.workshop.prunePreviewCache  [delete] path?, max_bytes?, max_files?
+    wallpaper.engine.scan                 [read] roots
+    wallpaper.engine.project              [read] path
+    wallpaper.engine.frameProbe           [read] path, timeout?
+    wallpaper.engine.preview              [write] source, target, cache_dir, width?
+    wallpaper.engine.cachePreview         [write] source, target, cache_dir
+    wallpaper.backdrop.ensure             [write] source, cache_dir,
+                                                   stable_identity?, generate_if_missing?
+
+  Persistent IPC only
+    stats.subscribe                       [stream] mode?
+    stats.setMode                         [stream] mode; requires the active stats connection
+    stats.unsubscribe                     [stream] Requires the active stats connection
+    battery.subscribe                     [stream] Stream battery samples
+    battery.unsubscribe                   [stream] Requires the active battery connection
+    updates.subscribe                     [stream] Stream package-update snapshots
+    updates.unsubscribe                   [stream] Requires the active updates connection
+EOF
+}
+
+print_calendar_methods() {
+    cat <<'EOF'
+
+Calendar methods (16):
+
+  System
+    ping                                  [read] Check IPC responsiveness
+    system.info                           [read] PID, paths, providers and database counts
+
+  Accounts
+    accounts.list                         [read] List configured accounts
+    accounts.google.add                   [write, network] clientId?, clientSecret?
+    accounts.microsoft.add                [write, network] clientId?, tenant?
+    accounts.icloud.add                   [write, network] email, username?, appPassword,
+                                                           server?, displayName?
+    accounts.remove                       [delete] accountId and its locally stored data
+    accounts.setEnabled                   [write] accountId, enabled
+
+  Calendars
+    calendars.list                        [read] accountId?
+    calendars.setVisible                  [write] calendarId, visible
+
+  Events
+    events.list                           [read] from?, to?, calendarId?, visibleOnly?
+    events.create                         [write, network] calendarId, event
+    events.update                         [write, network] eventId, event
+    events.delete                         [delete, network] eventId
+
+  Synchronization
+    sync.now                              [write, network] accountId?; omit to sync all accounts
+    subscribe                             [stream] topics? = accounts|calendars|events|
+                                                   sync|system
+
+  Event object
+    Required: title, start, end
+    Optional: description, location, allDay
+    Time values use RFC 3339, for example 2026-09-07T09:00:00Z.
+
+  Security note
+    Account-add methods may place credentials in shell history. Prefer the
+    Calendar UI for normal sign-in and use IPC authentication only for testing.
+EOF
+}
+
+print_examples() {
+    printf '\n%s\n' "Parameter examples:"
+    case "${1:-all}" in
+        all|core)
+            cat <<'EOF'
+  sownteeshell ipc call core stats.snapshot '{"mode":"ram"}'
+  sownteeshell ipc call core process.memory '{"pid":1234}'
+  sownteeshell ipc call core updates.check '{"force":true}'
+EOF
+            ;;
+    esac
+    case "${1:-all}" in
+        all|calendar)
+            cat <<'EOF'
+  sownteeshell ipc call calendar calendars.list '{"accountId":"ACCOUNT_ID"}'
+  sownteeshell ipc call calendar events.list \
+    '{"from":"2026-09-07T00:00:00Z","to":"2026-09-08T00:00:00Z"}'
+EOF
+            ;;
+    esac
+    cat <<'EOF'
+
+Environment:
+  SOWNTEESHELL_BACKEND_DIR   Override ~/.local/lib/sownteeshell
+  SOWNTEE_CORE_SOCKET        Override the Core Unix socket
+  SOWNTEE_CALENDAR_SOCKET    Override the Calendar Unix socket
+
+Exit status:
+  0    Request completed successfully
+  2    Invalid CLI syntax or target
+  127  Selected backend binary is unavailable
+  Other values are forwarded from the backend client.
+EOF
+}
+
+print_methods() {
+    case "${1:-all}" in
+        all)
+            print_core_methods
+            print_calendar_methods
+            ;;
+        core)
+            print_core_methods
+            ;;
+        calendar)
+            print_calendar_methods
+            ;;
+        *)
+            printf '%s\n' "unknown IPC target '$1'; expected core or calendar" >&2
+            return 2
+            ;;
+    esac
+}
+
+print_full_help() {
+    print_usage
+    print_legend
+    print_methods all
+    print_examples all
+}
+
+case "${1:-}" in
+    "")
+        print_full_help
+        exit 0
+        ;;
+    -h|--help|help)
+        if [ "$#" -gt 2 ]; then
+            print_usage >&2
+            exit 2
+        fi
+        print_usage
+        print_legend
+        print_methods "${2:-all}"
+        print_examples "${2:-all}"
+        exit 0
+        ;;
+esac
+
+if [ "$1" = "ipc" ]; then
+    case "${2:-}" in
+        methods|list|help|-h|--help)
+            if [ "$#" -gt 3 ]; then
+                print_usage >&2
+                exit 2
+            fi
+            print_legend
+            print_methods "${3:-all}"
+            print_examples "${3:-all}"
+            exit 0
+            ;;
+    esac
+fi
+
+if [ "$#" -lt 4 ] || [ "$1" != "ipc" ] || [ "$2" != "call" ]; then
+    print_usage >&2
+    exit 2
+fi
+
+case "$4" in
+    -h|--help|help)
+        print_legend
+        print_methods "$3"
+        print_examples "$3"
+        exit 0
+        ;;
+esac
+
+target=$3
+method=$4
+shift 4
+
+if [ "$#" -gt 1 ]; then
+    printf '%s\n' "params-json must be passed as one quoted argument" >&2
+    exit 2
+fi
+
+backend_dir="${SOWNTEESHELL_BACKEND_DIR:-$HOME/.local/lib/sownteeshell}"
+case "$target" in
+    core)
+        backend="$backend_dir/sownteeshell-core"
+        ;;
+    calendar)
+        backend="$backend_dir/sownteeshell-calendar-daemon"
+        ;;
+    *)
+        printf '%s\n' "unknown IPC target '$target'; expected core or calendar" >&2
+        exit 2
+        ;;
+esac
+
+if [ ! -x "$backend" ]; then
+    printf '%s\n' "SownteeShell backend is not installed or executable: $backend" >&2
+    exit 127
+fi
+
+if [ "$#" -eq 1 ]; then
+    exec "$backend" request "$method" "$1"
+fi
+
+exec "$backend" request "$method"

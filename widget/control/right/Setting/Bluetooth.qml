@@ -175,15 +175,18 @@ Item {
                     RowLayout {
                         Layout.bottomMargin: 2
                         Layout.fillWidth: true
+                        Layout.preferredHeight: 36
                         visible: root.pairedDevices.length > 0
 
                         Text {
+                            Layout.alignment: Qt.AlignVCenter
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             font.family: Config.fontName
                             font.pixelSize: 16
                             font.weight: Font.DemiBold
                             text: qsTr("Paired devices")
+                            verticalAlignment: Text.AlignVCenter
                         }
                     }
                     Repeater {
@@ -210,16 +213,19 @@ Item {
                     RowLayout {
                         Layout.bottomMargin: 2
                         Layout.fillWidth: true
+                        Layout.preferredHeight: 36
                         Layout.topMargin: 6
                         visible: root.savedDevices.length > 0
 
                         Text {
+                            Layout.alignment: Qt.AlignVCenter
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             font.family: Config.fontName
                             font.pixelSize: 16
                             font.weight: Font.DemiBold
                             text: qsTr("Saved devices")
+                            verticalAlignment: Text.AlignVCenter
                         }
                     }
                     Repeater {
@@ -235,16 +241,19 @@ Item {
                     RowLayout {
                         Layout.bottomMargin: 2
                         Layout.fillWidth: true
+                        Layout.preferredHeight: 36
                         Layout.topMargin: root.pairedDevices.length > 0 || root.savedDevices.length > 0 ? 12 : 0
                         spacing: 8
 
                         Text {
+                            Layout.alignment: Qt.AlignVCenter
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             font.family: Config.fontName
                             font.pixelSize: 16
                             font.weight: Font.DemiBold
                             text: qsTr("Available devices")
+                            verticalAlignment: Text.AlignVCenter
                         }
                         Rectangle {
                             id: scanButton
@@ -261,7 +270,7 @@ Item {
                             activeFocusOnTab: true
                             border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.48) : "transparent"
                             border.width: 1
-                            color: scanMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.13) : "transparent"
+                            color: Config.alpha(scanMouse.containsMouse ? Config.md3.primary : Config.md3.on_surface, scanMouse.containsMouse ? 0.13 : 0.055)
                             opacity: root.adapter && root.adapter.enabled ? 1 : 0.4
                             radius: 18
 
@@ -332,31 +341,32 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 76
-                        border.color: controlRightWindow.sectionCardBorderColor
+                        border.color: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09)
                         border.width: 1
-                        color: controlRightWindow.sectionCardColor
-                        radius: 16
+                        color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.64 : 0.30)
+                        radius: 18
                         visible: root.availableDevices.length === 0
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.leftMargin: 16
-                            anchors.rightMargin: 16
-                            spacing: 14
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 10
 
                             Rectangle {
-                                Layout.preferredHeight: 40
-                                Layout.preferredWidth: 40
+                                Layout.preferredHeight: 44
+                                Layout.preferredWidth: 44
                                 color: Config.alpha(Config.md3.primary, 0.09)
-                                radius: 20
+                                radius: 22
 
                                 IconImage {
                                     id: emptyBluetoothIcon
 
                                     anchors.centerIn: parent
-                                    implicitHeight: 21
-                                    implicitWidth: 21
-                                    source: Quickshell.iconPath("bluetooth-symbolic")
+                                    anchors.verticalCenterOffset: -1
+                                    implicitHeight: 22
+                                    implicitWidth: 22
+                                    source: Qt.resolvedUrl("../../../../assets/icons/device-bluetooth.svg")
                                     visible: false
                                 }
                                 ColorOverlay {
@@ -366,24 +376,30 @@ Item {
                                 }
                             }
                             ColumnLayout {
+                                Layout.alignment: Qt.AlignVCenter
                                 Layout.fillWidth: true
-                                spacing: 5
+                                spacing: 4
 
                                 Text {
                                     Layout.fillWidth: true
+                                    Layout.preferredHeight: 18
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 16
+                                    font.pixelSize: 15
                                     font.weight: Font.DemiBold
                                     text: qsTr("No nearby devices found")
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                                 Text {
                                     Layout.fillWidth: true
-                                    color: Config.md3.outline
+                                    Layout.preferredHeight: 18
+                                    color: Config.md3.on_surface_variant
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
-                                    font.pixelSize: 14
+                                    font.pixelSize: 12
+                                    font.weight: Font.Medium
                                     text: qsTr("Make the device visible, then press refresh")
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
                         }
