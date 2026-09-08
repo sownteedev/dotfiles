@@ -139,12 +139,14 @@ install_shell_daemons() {
     local calendar_target="$backend_root/rust/calendar-daemon/target"
     local calendar_binary="$calendar_target/release/sownteeshell-calendar-daemon"
     local binary_dir="$HOME/.local/lib/sownteeshell"
+    local cli_source="$backend_root/cli/sownteeshell"
+    local cli_target="$HOME/.local/bin/sownteeshell"
     local source=""
     local unit_source="$backend_root/systemd/user"
     local unit_dir="$HOME/.config/systemd/user"
     local -a units=(sownteeshell-core.service sownteeshell-calendar.service)
 
-    for source in "$core_manifest" "$calendar_manifest" \
+    for source in "$core_manifest" "$calendar_manifest" "$cli_source" \
         "$unit_source/${units[0]}" "$unit_source/${units[1]}"; do
         if [ ! -f "$source" ]; then
             red_echo "[!] SownteeShell daemon source is missing: $source"
@@ -155,6 +157,7 @@ install_shell_daemons() {
     if [ "$INSTALLER_DRY_RUN" = "1" ]; then
         printf '[dry-run] build SownteeShell core and calendar daemons with Cargo\n'
         printf '[dry-run] install daemon binaries under %q\n' "$binary_dir"
+        printf '[dry-run] install SownteeShell CLI at %q\n' "$cli_target"
         printf '[dry-run] install and enable user units under %q\n' "$unit_dir"
         return 0
     fi
@@ -171,6 +174,7 @@ install_shell_daemons() {
     CARGO_TARGET_DIR="$calendar_target" cargo build --release --locked --manifest-path "$calendar_manifest"
     install -Dm755 "$core_binary" "$binary_dir/sownteeshell-core"
     install -Dm755 "$calendar_binary" "$binary_dir/sownteeshell-calendar-daemon"
+    install -Dm755 "$cli_source" "$cli_target"
     safe_copy "$unit_source/${units[0]}" "$unit_dir/${units[0]}"
     safe_copy "$unit_source/${units[1]}" "$unit_dir/${units[1]}"
 
@@ -288,9 +292,6 @@ write_gtk_bookmarks() {
 
         # if [ -d /mnt/windows ]; then
         #     printf 'file:///mnt/windows windows\n'
-        # fi
-        # if [ -d "/mnt/windows/Users/Nguyen Thanh Son/Downloads" ]; then
-        #     printf 'file:///mnt/windows/Users/Nguyen%%20Thanh%%20Son/Downloads Downloads\n'
         # fi
 
         # printf 'admin:///var/lib/tailscale/files files\n'
@@ -781,13 +782,13 @@ install_workspace() {
 
     retry sudo pacman -S --needed --noconfirm flatpak
     retry flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    retry flatpak install -y flathub com.usebottles.bottles com.spotify.Client
-    flatpak override --user --filesystem=home com.usebottles.bottles
-    flatpak override --user --socket=session-bus com.usebottles.bottles
-    flatpak override --user --talk-name=org.fcitx.Fcitx5 com.usebottles.bottles
-    flatpak override --user --talk-name=org.freedesktop.portal.Fcitx com.usebottles.bottles
-    flatpak override --user --env=XMODIFIERS=@im=fcitx com.usebottles.bottles
-    flatpak override --user --env=GTK_IM_MODULE=fcitx com.usebottles.bottles
+    retry flatpak install -y flathub com.spotify.Client #com.usebottles.bottles
+    # flatpak override --user --filesystem=home com.usebottles.bottles
+    # flatpak override --user --socket=session-bus com.usebottles.bottles
+    # flatpak override --user --talk-name=org.fcitx.Fcitx5 com.usebottles.bottles
+    # flatpak override --user --talk-name=org.freedesktop.portal.Fcitx com.usebottles.bottles
+    # flatpak override --user --env=XMODIFIERS=@im=fcitx com.usebottles.bottles
+    # flatpak override --user --env=GTK_IM_MODULE=fcitx com.usebottles.bottles
     # --disable-gpu-compositing --disable-smooth-scrolling
 
     green_echo "[*] Environment setup complete."
