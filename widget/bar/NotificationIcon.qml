@@ -50,12 +50,8 @@ MouseArea {
 
             anchors.bottom: parent.bottom
             anchors.bottomMargin: -4
-
-            // Position at the bottom right of the icon
             anchors.right: parent.right
             anchors.rightMargin: -6
-            border.color: Config.md3.background // outline to distinguish from bar background
-            border.width: 1.5
             color: dndActive ? Config.md3.tertiary : Config.md3.error
             height: dndActive ? 13 : 16
             radius: height / 2

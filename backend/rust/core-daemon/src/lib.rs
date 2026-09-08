@@ -21,7 +21,6 @@ pub mod launcher;
 #[cfg(feature = "daemon")]
 pub mod network;
 #[cfg(feature = "daemon")]
-pub mod productivity;
 #[cfg(feature = "daemon")]
 pub mod settings;
 pub mod system;

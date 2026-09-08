@@ -12,6 +12,7 @@ Rectangle {
     property color accentColor: Config.md3.primary
     property string label: ""
     property string note: ""
+    property color valueBadgeColor: "transparent"
     property string valueText: ""
 
     signal clicked(var sourceItem)
@@ -112,6 +113,13 @@ Rectangle {
                 anchors.rightMargin: 11
                 spacing: 8
 
+                Rectangle {
+                    Layout.preferredHeight: 8
+                    Layout.preferredWidth: 8
+                    color: root.valueBadgeColor
+                    radius: 4
+                    visible: root.valueBadgeColor.a > 0
+                }
                 Text {
                     Layout.fillWidth: true
                     color: Config.alpha(Config.md3.on_surface, 0.78)

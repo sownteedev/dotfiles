@@ -8,6 +8,7 @@ mod providers;
 mod reminder;
 mod scheduler;
 mod sync;
+mod tasks;
 
 use crate::config::Config;
 use crate::database::Database;

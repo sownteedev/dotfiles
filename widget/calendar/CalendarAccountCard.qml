@@ -249,7 +249,7 @@ Rectangle {
                             Layout.preferredWidth: 14
                             layer.enabled: true
                             source: Quickshell.iconPath("changes-prevent-symbolic")
-                            visible: calendarRow.modelData.readOnly === true
+                            visible: calendarRow.modelData.readOnly === true && !calendarRow.modelData.isTaskList
 
                             layer.effect: ColorOverlay {
                                 color: Config.md3.on_surface_variant

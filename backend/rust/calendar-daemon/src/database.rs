@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 const INITIAL_MIGRATION: &str = include_str!("../migrations/001_initial.sql");
 const EVENT_REMINDERS_MIGRATION: &str = include_str!("../migrations/002_event_reminders.sql");
+const GOOGLE_TASK: &str = include_str!("../migrations/003_google_tasks.sql");
 
 #[derive(Clone)]
 pub struct Database {
@@ -40,6 +41,7 @@ impl Database {
         )?;
         connection.execute_batch(INITIAL_MIGRATION)?;
         connection.execute_batch(EVENT_REMINDERS_MIGRATION)?;
+        connection.execute_batch(GOOGLE_TASK)?;
 
         fs::set_permissions(path, fs::Permissions::from_mode(0o600))
             .with_context(|| format!("set database permissions {}", path.display()))?;
@@ -49,7 +51,7 @@ impl Database {
         })
     }
 
-    fn connection(&self) -> Result<MutexGuard<'_, Connection>> {
+    pub(crate) fn connection(&self) -> Result<MutexGuard<'_, Connection>> {
         self.connection
             .lock()
             .map_err(|_| anyhow!("calendar database lock was poisoned"))

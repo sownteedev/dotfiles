@@ -9,6 +9,113 @@ import "LauncherCalculatorEngine.js" as CalculatorEngine
 Item {
     id: calcRoot
 
+    readonly property var calculatorFunctions: [
+        {
+            name: "abs",
+            sig: "abs(x)",
+            desc: qsTr("Absolute value")
+        },
+        {
+            name: "acos",
+            sig: "acos(x)",
+            desc: qsTr("Arccosine")
+        },
+        {
+            name: "asin",
+            sig: "asin(x)",
+            desc: qsTr("Arcsine")
+        },
+        {
+            name: "atan",
+            sig: "atan(x)",
+            desc: qsTr("Arctangent")
+        },
+        {
+            name: "atan2",
+            sig: "atan2(y, x)",
+            desc: qsTr("Two-arg arctangent")
+        },
+        {
+            name: "cbrt",
+            sig: "cbrt(x)",
+            desc: qsTr("Cube root")
+        },
+        {
+            name: "ceil",
+            sig: "ceil(x)",
+            desc: qsTr("Round up")
+        },
+        {
+            name: "cos",
+            sig: "cos(x)",
+            desc: qsTr("Cosine")
+        },
+        {
+            name: "exp",
+            sig: "exp(x)",
+            desc: qsTr("e^x")
+        },
+        {
+            name: "floor",
+            sig: "floor(x)",
+            desc: qsTr("Round down")
+        },
+        {
+            name: "hypot",
+            sig: "hypot(a, b)",
+            desc: qsTr("Hypotenuse")
+        },
+        {
+            name: "log",
+            sig: "log(x)",
+            desc: qsTr("Natural log (ln)")
+        },
+        {
+            name: "log10",
+            sig: "log10(x)",
+            desc: qsTr("Log base 10")
+        },
+        {
+            name: "log2",
+            sig: "log2(x)",
+            desc: qsTr("Log base 2")
+        },
+        {
+            name: "max",
+            sig: "max(a, b)",
+            desc: qsTr("Maximum")
+        },
+        {
+            name: "min",
+            sig: "min(a, b)",
+            desc: qsTr("Minimum")
+        },
+        {
+            name: "pow",
+            sig: "pow(x, y)",
+            desc: qsTr("Power x^y")
+        },
+        {
+            name: "round",
+            sig: "round(x)",
+            desc: qsTr("Round to nearest")
+        },
+        {
+            name: "sin",
+            sig: "sin(x)",
+            desc: qsTr("Sine")
+        },
+        {
+            name: "sqrt",
+            sig: "sqrt(x)",
+            desc: qsTr("Square root")
+        },
+        {
+            name: "tan",
+            sig: "tan(x)",
+            desc: qsTr("Tangent")
+        }
+    ]
     readonly property bool calculatorMode: Config.launcherCalculatorEnabled && query.toLowerCase().startsWith(calculatorPrefix.toLowerCase())
     readonly property string calculatorPrefix: Config.launcherCalculatorPrefix + " "
     property bool copied: false
@@ -19,9 +126,35 @@ Item {
     readonly property bool hasResult: copied ? copiedResult !== "" : evaluation.status === "result"
     property string query: ""
     readonly property string result: copied && copiedResult !== "" ? copiedResult : hasResult ? evaluation.display : ""
+    readonly property var suggestions: {
+        var token = trailingToken;
+        if (token === "")
+            return calculatorFunctions.filter(fn => ["sin", "cos", "tan", "sqrt", "floor", "ceil", "log", "abs"].indexOf(fn.name) !== -1);
+        return calculatorFunctions.filter(fn => fn.name.indexOf(token) === 0);
+    }
+    property int tabCycleIndex: 0
+    readonly property string trailingToken: {
+        var match = String(expression || "").match(/[a-zA-Z0-9_]+$/);
+        return match ? match[0].toLowerCase() : "";
+    }
 
+    signal insertRequested(string textToInsert, int replaceLength)
     signal resultCopied
 
+    function applySuggestion(funcName) {
+        var insertion = (funcName === "pi" || funcName === "e") ? funcName : (funcName + "(");
+        insertRequested(insertion, trailingToken.length);
+    }
+    function completeCurrentToken() {
+        var list = suggestions;
+        if (list.length === 0)
+            return false;
+
+        var pick = list[tabCycleIndex % list.length];
+        tabCycleIndex = (tabCycleIndex + 1) % list.length;
+        applySuggestion(pick.name);
+        return true;
+    }
     function copyResult() {
         if (!hasResult || copied)
             return;
@@ -58,7 +191,7 @@ Item {
         Config.launcherCalculatorAngleMode = Config.launcherCalculatorAngleMode === "deg" ? "rad" : "deg";
     }
 
-    implicitHeight: 132
+    implicitHeight: 148
 
     onEvaluationChanged: {
         delayedErrorVisible = false;
@@ -70,6 +203,7 @@ Item {
         copied = false;
         copiedResult = "";
     }
+    onTrailingTokenChanged: tabCycleIndex = 0
     onVisibleChanged: {
         if (!visible) {
             copied = false;
@@ -101,13 +235,13 @@ Item {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 14
-            spacing: 5
+            anchors.margins: 16
+            spacing: 8
 
             RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 30
-                spacing: 9
+                spacing: 12
 
                 Rectangle {
                     Layout.preferredHeight: 30
@@ -211,7 +345,7 @@ Item {
             RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 30
-                spacing: 10
+                spacing: 12
 
                 Text {
                     Layout.fillWidth: true
@@ -220,7 +354,60 @@ Item {
                     font.family: Config.fontName
                     font.pixelSize: 12
                     font.weight: Font.Medium
-                    text: calcRoot.hasResult ? qsTr("↑↓ History  ·  Enter Copy") : calcRoot.evaluation.status === "empty" ? qsTr("2pi  ·  25% of 800  ·  10 km to mi") : calcRoot.evaluation.status === "incomplete" || !calcRoot.delayedErrorVisible ? qsTr("Complete the expression") : qsTr("Functions, units and ans are supported")
+                    text: calcRoot.hasResult ? qsTr("↑↓ History  ·  Enter Copy") : calcRoot.delayedErrorVisible ? qsTr("Check the expression") : qsTr("Tab for autocomplete  ·  Functions:")
+                    visible: calcRoot.hasResult || calcRoot.suggestions.length === 0
+                }
+                ListView {
+                    id: suggestionView
+
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    flickableDirection: Flickable.HorizontalFlick
+                    model: calcRoot.suggestions
+                    orientation: ListView.Horizontal
+                    spacing: 8
+                    visible: !calcRoot.hasResult && calcRoot.suggestions.length > 0
+
+                    delegate: Rectangle {
+                        id: chip
+
+                        required property var modelData
+
+                        border.color: Config.alpha(Config.md3.tertiary, chipMouse.containsMouse ? 0.45 : 0.22)
+                        border.width: 1
+                        color: chipMouse.pressed ? Config.alpha(Config.md3.tertiary, 0.24) : chipMouse.containsMouse ? Config.alpha(Config.md3.tertiary, 0.16) : Config.alpha(Config.md3.tertiary, 0.09)
+                        height: 30
+                        radius: 8
+                        width: chipText.implicitWidth + 20
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 120
+                            }
+                        }
+
+                        Text {
+                            id: chipText
+
+                            anchors.centerIn: parent
+                            color: Config.md3.tertiary
+                            font.family: Config.fontName
+                            font.pixelSize: 12
+                            font.weight: Font.Bold
+                            text: chip.modelData.sig
+                        }
+                        MouseArea {
+                            id: chipMouse
+
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+
+                            onClicked: calcRoot.applySuggestion(chip.modelData.name)
+                        }
+                    }
                 }
                 Rectangle {
                     id: copyButton
@@ -237,6 +424,7 @@ Item {
                     opacity: enabled ? 1 : 0
                     radius: 10
                     scale: calcRoot.copied ? 1.05 : 1
+                    visible: calcRoot.hasResult
 
                     Behavior on color {
                         ColorAnimation {

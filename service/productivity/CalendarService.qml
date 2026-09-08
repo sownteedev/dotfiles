@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../.."
+import ".."
 
 QtObject {
     id: root
@@ -13,6 +14,7 @@ QtObject {
     property int activeConsumers: 0
     property var allEvents: []
     readonly property bool authenticated: accounts.length > 0
+    readonly property var calendarAppEvents: allEvents.concat(taskEvents, Config.calendarShowLocalTasks ? localTaskEvents : [])
     property var calendars: []
     readonly property string connectedAccount: accounts.length > 0 ? String(accounts[0].email || accounts[0].displayName || "") : ""
     property Timer connectionRetry: Timer {
@@ -79,6 +81,7 @@ QtObject {
     readonly property bool isLoading: fetchInFlight > 0 || syncBusy || accountActionBusy
     property string lastError: ""
     property date lastEventsUpdated
+    readonly property var localTaskEvents: buildLocalTaskEvents(LocalTaskService.tasks)
     property int nextRequestId: 1
     property var pendingRequests: ({})
     property var rawEvents: []
@@ -140,7 +143,7 @@ QtObject {
                 "id": "subscription",
                 "method": "subscribe",
                 "params": {
-                    "topics": ["accounts", "calendars", "events", "sync"]
+                    "topics": ["accounts", "calendars", "events", "tasks", "sync"]
                 }
             }) + "\n");
             flush();
@@ -179,6 +182,8 @@ QtObject {
             root.daemonStartDelay.restart();
         }
     }
+    property var taskEvents: []
+    property var taskSnapshots: []
 
     signal accountAdded(string accountId)
     signal accountRemoved(string accountId)
@@ -307,6 +312,33 @@ QtObject {
             "allDay": allDay === true
         };
     }
+    function buildLocalTaskEvents(sourceTasks) {
+        var tasks = Array.isArray(sourceTasks) ? sourceTasks : (typeof LocalTaskService !== "undefined" && LocalTaskService ? LocalTaskService.tasks : []);
+        if (!tasks)
+            return [];
+        return tasks.filter(task => task && (task.status === "needsAction" || task.status === "completed") && task.due).map(task => {
+            var day = String(task.due).slice(0, 10);
+            var parts = day.split("-");
+            var end = new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]) + 1));
+            return {
+                "id": task.id,
+                "taskId": task.id,
+                "calendarId": "local-tasks",
+                "isTask": true,
+                "taskSource": "local",
+                "title": task.title,
+                "description": task.notes || "",
+                "start": day + "T00:00:00Z",
+                "end": isNaN(end.getTime()) ? "" : end.toISOString(),
+                "allDay": true,
+                "readOnly": false,
+                "status": task.status,
+                "calendarColor": Config.md3.secondary,
+                "calendarName": qsTr("Local tasks"),
+                "accountName": qsTr("On this device")
+            };
+        }).filter(task => task.end !== "");
+    }
     function calendarById(calendarId) {
         var wanted = String(calendarId || "");
         for (var index = 0; index < calendars.length; ++index) {
@@ -392,7 +424,12 @@ QtObject {
 
         refreshPending = false;
         lastError = "";
-        fetchInFlight = 3;
+        fetchInFlight = 4;
+        sendRequest("tasks.list", {}, result => {
+            taskSnapshots = Array.isArray(result) ? result : [];
+            rebuildDecoratedData();
+            finishFetch();
+        }, message => finishFetch());
         sendRequest("accounts.list", {}, result => {
             accounts = Array.isArray(result) ? result : [];
             rebuildDecoratedData();
@@ -552,6 +589,8 @@ QtObject {
         var decoratedCalendars = [];
         for (var calendarIndex = 0; calendarIndex < calendars.length; ++calendarIndex) {
             var sourceCalendar = calendars[calendarIndex];
+            if (sourceCalendar.isTaskList)
+                continue;
             var sourceAccount = accountMap[String(sourceCalendar.accountId || "")] || null;
             var decoratedCalendar = Object.assign({}, sourceCalendar, {
                 "accountName": sourceAccount ? String(sourceAccount.displayName || sourceAccount.email || "") : "",
@@ -561,7 +600,60 @@ QtObject {
             decoratedCalendars.push(decoratedCalendar);
             calendarMap[String(decoratedCalendar.id || "")] = decoratedCalendar;
         }
+        var decoratedTasks = [];
+        for (var taskIndex = 0; taskIndex < taskSnapshots.length; ++taskIndex) {
+            var snapshot = taskSnapshots[taskIndex];
+            var taskAccount = accountMap[String(snapshot.accountId || "")];
+            if (!taskAccount || taskAccount.enabled === false)
+                continue;
+            var taskCalendarId = "google-tasks:" + snapshot.accountId;
+            decoratedCalendars.push({
+                "id": taskCalendarId,
+                "accountId": snapshot.accountId,
+                "name": qsTr("Tasks"),
+                "accountName": taskAccount.displayName || taskAccount.email,
+                "accountEmail": taskAccount.email,
+                "provider": "google",
+                "isTaskList": true,
+                "readOnly": true,
+                "visible": snapshot.visible !== false,
+                "color": taskAccountColor(snapshot.accountId),
+                "syncError": snapshot.error || ""
+            });
+            var tasks = snapshot.tasks || [];
+            for (var index = 0; index < tasks.length; ++index) {
+                var task = tasks[index];
+                if (!task.due || (task.status !== "needsAction" && task.status !== "completed") || task.deleted || task.hidden)
+                    continue;
+                var day = String(task.due).slice(0, 10);
+                var parts = day.split("-");
+                var nextDay = new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]) + 1));
+                if (isNaN(nextDay.getTime()))
+                    continue;
+                decoratedTasks.push({
+                    "id": "task:" + snapshot.accountId + ":" + task.taskListId + ":" + task.id,
+                    "taskId": task.id,
+                    "taskListId": task.taskListId,
+                    "taskListName": task.taskListName,
+                    "calendarId": taskCalendarId,
+                    "accountId": snapshot.accountId,
+                    "accountName": taskAccount.displayName || taskAccount.email,
+                    "title": task.title || qsTr("Untitled task"),
+                    "description": task.notes || "",
+                    "start": day + "T00:00:00Z",
+                    "end": nextDay.toISOString(),
+                    "allDay": true,
+                    "isTask": true,
+                    "status": task.status,
+                    "readOnly": false,
+                    "calendarColor": taskListColor(snapshot.accountId, task.taskListId),
+                    "calendarName": qsTr("Tasks"),
+                    "provider": "google"
+                });
+            }
+        }
         calendars = decoratedCalendars;
+        taskEvents = decoratedTasks;
 
         var decoratedEvents = [];
         for (var eventIndex = 0; eventIndex < rawEvents.length; ++eventIndex) {
@@ -640,6 +732,18 @@ QtObject {
     }
     function setCalendarVisible(calendarId, visible) {
         var wanted = String(calendarId || "");
+        if (wanted.indexOf("google-tasks:") === 0) {
+            var accountId = wanted.slice("google-tasks:".length);
+            taskSnapshots = taskSnapshots.map(snapshot => snapshot.accountId === accountId ? Object.assign({}, snapshot, {
+                    "visible": visible === true
+                }) : snapshot);
+            rebuildDecoratedData();
+            sendRequest("tasks.setVisible", {
+                "accountId": accountId,
+                "visible": visible === true
+            }, null, message => refreshDebounce.restart());
+            return;
+        }
         var nextCalendars = [];
         for (var index = 0; index < calendars.length; ++index) {
             var calendar = calendars[index];
@@ -672,6 +776,46 @@ QtObject {
             syncBusy = false;
             fetchAll();
         }, message => syncBusy = false);
+    }
+    function taskAccountColor(accountId) {
+        var basePalette = ["#4285F4", "#34A853", "#FB8C00", "#A142F4", "#00ACC1", "#E91E63", "#3F51B5", "#00897B", "#D81B60", "#8E24AA", "#1E88E5", "#43A047", "#F4511E", "#00B0FF", "#7CB342", "#00E676"];
+        var googleAccounts = accounts.filter(account => account.provider === "google");
+        var index = googleAccounts.findIndex(account => account.id === accountId);
+        if (index >= 0) {
+            var slot = index * 5;
+            if (slot < basePalette.length)
+                return basePalette[slot];
+            var hue = (0.58 + slot * 0.618033988749895) % 1.0;
+            return String(Qt.hsla(hue, 0.78, 0.60, 1.0));
+        }
+        var hash = 0;
+        var str = String(accountId || "");
+        for (var i = 0; i < str.length; i++)
+            hash = (hash * 31 + str.charCodeAt(i)) & 0x7fffffff;
+        var hashSlot = hash % 360;
+        return String(Qt.hsla(hashSlot / 360.0, 0.78, 0.60, 1.0));
+    }
+    function taskListColor(accountId, listId) {
+        var basePalette = ["#4285F4", "#34A853", "#FB8C00", "#A142F4", "#00ACC1", "#E91E63", "#3F51B5", "#00897B", "#D81B60", "#8E24AA", "#1E88E5", "#43A047", "#F4511E", "#00B0FF", "#7CB342", "#00E676"];
+        var snapshot = taskSnapshots.find(item => item.accountId === accountId);
+        if (snapshot && Array.isArray(snapshot.lists) && listId) {
+            var listIndex = snapshot.lists.findIndex(list => list.id === listId);
+            if (listIndex >= 0) {
+                var googleAccounts = accounts.filter(account => account.provider === "google");
+                var accIndex = Math.max(0, googleAccounts.findIndex(account => account.id === accountId));
+                var slot = accIndex * 5 + listIndex;
+                if (slot < basePalette.length)
+                    return basePalette[slot];
+                var hue = (0.58 + slot * 0.618033988749895) % 1.0;
+                return String(Qt.hsla(hue, 0.78, 0.60, 1.0));
+            }
+        }
+        var hash = 0;
+        var str = String(accountId || "") + ":" + String(listId || "");
+        for (var i = 0; i < str.length; i++)
+            hash = (hash * 31 + str.charCodeAt(i)) & 0x7fffffff;
+        var hashSlot = hash % 360;
+        return String(Qt.hsla(hashSlot / 360.0, 0.78, 0.60, 1.0));
     }
     function updateEvent(calendarId, eventId, title, date, startTime, endTime, allDay, location, description, callback) {
         if (eventActionBusy)

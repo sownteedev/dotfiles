@@ -11,6 +11,7 @@ const FULL_SYNC_PADDING_DAYS: i64 = 14;
 
 #[derive(Clone)]
 pub struct SyncService {
+    pub tasks: crate::tasks::GoogleTasks,
     database: Database,
     providers: ProviderRegistry,
     past_days: i64,
@@ -27,6 +28,7 @@ impl SyncService {
         events: broadcast::Sender<DaemonEvent>,
     ) -> Self {
         Self {
+            tasks: crate::tasks::GoogleTasks::new(database.clone(), &providers, events.clone()),
             database,
             providers,
             past_days: config.sync_past_days,
@@ -75,6 +77,10 @@ impl SyncService {
 
     async fn sync_one(&self, account: &Account) -> AccountSyncReport {
         self.publish(DaemonEvent::sync("started", &account.id, None));
+        // Tasks have their own status: a missing Tasks scope must not break Calendar sync.
+        if account.provider == ProviderKind::Google {
+            let _ = self.tasks.refresh(account).await;
+        }
         match self.sync_one_inner(account).await {
             Ok(calendars_synced) => {
                 let account_id = account.id.clone();

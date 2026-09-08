@@ -65,10 +65,16 @@ Rectangle {
     function performSearch(page, preserveRandomSeed) {
         WallhavenService.search(wallhavenSearch.text, page || 1, WallhavenService.sorting, preserveRandomSeed === true);
     }
-    function resetResultView() {
+    function positionResultViewAtBeginning() {
+        resultGrid.cancelFlick();
         resultGrid.currentIndex = -1;
-        resultGrid.positionViewAtBeginning();
         resultGrid.forceLayout();
+        resultGrid.positionViewAtBeginning();
+        resultGrid.contentY = resultGrid.originY;
+    }
+    function resetResultView() {
+        positionResultViewAtBeginning();
+        resultViewResetTimer.restart();
     }
     function selectCollection(item) {
         if (!item)
@@ -95,9 +101,7 @@ Rectangle {
         contentTransitionDirection = newIndex > oldIndex ? 1 : -1;
         activeTab = tab;
         deleteArmedId = "";
-        Qt.callLater(() => {
-            return root.resetResultView();
-        });
+        resetResultView();
         if (collectionsMode) {
             WallhavenService.loadCollections(false);
         } else if (installedMode) {
@@ -156,13 +160,29 @@ Rectangle {
     }
 
     Connections {
+        function onCollectionPageChanged() {
+            if (root.collectionsMode)
+                root.positionResultViewAtBeginning();
+        }
         function onDownloadCompleted(wallpaperId, path, modified, purpose) {
             if (purpose === "greetd")
                 return;
             root.applyRequested(path, modified);
         }
+        function onPageChanged() {
+            if (!root.collectionsMode && !root.installedMode)
+                root.positionResultViewAtBeginning();
+        }
 
         target: WallhavenService
+    }
+    Timer {
+        id: resultViewResetTimer
+
+        interval: 0
+        repeat: false
+
+        onTriggered: root.positionResultViewAtBeginning()
     }
     Timer {
         id: closeTimer

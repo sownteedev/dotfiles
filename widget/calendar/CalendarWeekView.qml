@@ -8,9 +8,9 @@ import Quickshell.Widgets
 Item {
     id: root
 
-    readonly property real allDayLaneHeight: allDayMaxCount > 0 ? 12 + Math.min(2, allDayMaxCount) * 31 + (allDayMaxCount > 2 ? 16 : 0) : 0
+    readonly property real allDayLaneHeight: allDayMaxCount > 0 ? 12 + Math.min(4, allDayMaxCount) * 31 : 0
     readonly property int allDayMaxCount: maximumAllDayCount()
-    readonly property var allDaySegments: buildAllDaySegments()
+    readonly property var allDaySegments: buildAllDaySegments(events)
     property bool available: false
     readonly property int currentDayIndex: dayDifference(weekStart, now)
     readonly property real dayWidth: Math.max(0, (timelineFlickable.width - timeGutterWidth) / 7)
@@ -54,9 +54,9 @@ Item {
         }
         return result;
     }
-    function buildAllDaySegments() {
+    function buildAllDaySegments(sourceEvents) {
         var result = [];
-        var source = events || [];
+        var source = sourceEvents || events || [];
         var rangeStart = startOfDay(weekStart);
         var rangeEnd = addDays(rangeStart, 7);
 
@@ -423,74 +423,94 @@ Item {
                         height: parent.height
                         width: Math.max(0, (calendarHeader.width - root.timeGutterWidth) / 7)
 
-                        Column {
+                        ListView {
+                            id: allDayList
+
+                            anchors.bottomMargin: 5
                             anchors.fill: parent
                             anchors.leftMargin: 3
                             anchors.rightMargin: 3
                             anchors.topMargin: 5
+                            boundsBehavior: Flickable.StopAtBounds
+                            clip: true
+                            flickableDirection: Flickable.VerticalFlick
+                            model: allDayColumn.dayEvents
+                            reuseItems: true
                             spacing: 3
 
-                            Repeater {
-                                model: allDayColumn.dayEvents.slice(0, 2)
+                            delegate: Rectangle {
+                                id: allDayCard
+
+                                readonly property color accentColor: root.eventColor(modelData.eventData)
+                                readonly property bool isCompletedTask: allDayCard.modelData.eventData.isTask === true && allDayCard.modelData.eventData.status === "completed"
+                                required property var modelData
+
+                                color: allDayMouse.containsMouse ? Config.alpha(accentColor, Config.lightTheme ? (allDayCard.isCompletedTask ? 0.22 : 0.3) : (allDayCard.isCompletedTask ? 0.34 : 0.46)) : Config.alpha(accentColor, Config.lightTheme ? (allDayCard.isCompletedTask ? 0.14 : 0.22) : (allDayCard.isCompletedTask ? 0.24 : 0.36))
+                                height: 28
+                                radius: 9
+                                width: allDayList.width
 
                                 Rectangle {
-                                    id: allDayCard
+                                    anchors.bottom: parent.bottom
+                                    anchors.left: parent.left
+                                    anchors.top: parent.top
+                                    color: allDayCard.accentColor
+                                    radius: 2
+                                    width: 3
+                                }
+                                Text {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: allDayCard.modelData.eventData.isTask ? 30 : 9
+                                    anchors.rightMargin: 6
+                                    color: allDayCard.isCompletedTask ? Config.alpha(Config.md3.on_surface, 0.58) : Config.md3.on_surface
+                                    elide: Text.ElideRight
+                                    font.family: Config.fontName
+                                    font.pixelSize: 12
+                                    font.strikeout: allDayCard.isCompletedTask
+                                    font.weight: allDayCard.isCompletedTask ? Font.Medium : Font.Bold
+                                    text: allDayCard.modelData.eventData.title || qsTr("Untitled event")
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    border.color: allDayCard.accentColor
+                                    border.width: 1.5
+                                    color: allDayCard.isCompletedTask ? Config.alpha(allDayCard.accentColor, 0.18) : "transparent"
+                                    height: 13
+                                    radius: 6.5
+                                    visible: allDayCard.modelData.eventData.isTask === true
+                                    width: 13
 
-                                    readonly property color accentColor: root.eventColor(modelData.eventData)
-                                    required property var modelData
-
-                                    color: allDayMouse.containsMouse ? Config.alpha(accentColor, Config.lightTheme ? 0.3 : 0.46) : Config.alpha(accentColor, Config.lightTheme ? 0.22 : 0.36)
-                                    height: 28
-                                    radius: 9
-                                    width: parent.width
-
-                                    Rectangle {
-                                        anchors.bottom: parent.bottom
-                                        anchors.left: parent.left
-                                        anchors.top: parent.top
-                                        color: allDayCard.accentColor
-                                        radius: 2
-                                        width: 3
-                                    }
                                     Text {
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 9
-                                        anchors.rightMargin: 6
-                                        color: Config.md3.on_surface
-                                        elide: Text.ElideRight
+                                        anchors.centerIn: parent
+                                        color: allDayCard.accentColor
                                         font.family: Config.fontName
-                                        font.pixelSize: 12
-                                        font.weight: Font.Bold
-                                        text: allDayCard.modelData.eventData.title || qsTr("Untitled event")
-                                        verticalAlignment: Text.AlignVCenter
-                                    }
-                                    MouseArea {
-                                        id: allDayMouse
-
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        hoverEnabled: true
-
-                                        onClicked: {
-                                            var position = allDayCard.mapToItem(root, 0, 0);
-                                            root.clearSelection();
-                                            root.eventClicked(allDayCard.modelData.eventData, {
-                                                "x": position.x,
-                                                "y": position.y,
-                                                "width": allDayCard.width,
-                                                "height": allDayCard.height
-                                            });
-                                        }
+                                        font.pixelSize: 9
+                                        font.weight: Font.Black
+                                        text: "✓"
+                                        visible: allDayCard.isCompletedTask
                                     }
                                 }
-                            }
-                            Text {
-                                color: Config.md3.primary
-                                font.family: Config.fontName
-                                font.pixelSize: 10
-                                font.weight: Font.Bold
-                                text: qsTr("+%1 more").arg(allDayColumn.dayEvents.length - 2)
-                                visible: allDayColumn.dayEvents.length > 2
+                                MouseArea {
+                                    id: allDayMouse
+
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+
+                                    onClicked: {
+                                        var position = allDayCard.mapToItem(root, 0, 0);
+                                        root.clearSelection();
+                                        root.eventClicked(allDayCard.modelData.eventData, {
+                                            "x": position.x,
+                                            "y": position.y,
+                                            "width": allDayCard.width,
+                                            "height": allDayCard.height
+                                        });
+                                    }
+                                }
                             }
                         }
                     }

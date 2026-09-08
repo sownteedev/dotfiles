@@ -15,7 +15,6 @@ Item {
     readonly property bool headerActionVisible: true
     readonly property bool headerResetVisible: baselineState !== "" && JSON.stringify(currentState()) !== baselineState
     property bool revealApiKey: false
-    property bool revealGoogleToken: false
     property bool revealKlipyApiKey: false
     property bool revealSteamApiKey: false
     property bool revealWallhavenApiKey: false
@@ -162,66 +161,18 @@ Item {
                 }
             }
             SettingsIntegrationCard {
-                id: googleIntegration
-
-                property bool confirmingRemoval: false
-                property Timer removalTimer: Timer {
-                    interval: 3000
-
-                    onTriggered: googleIntegration.confirmingRemoval = false
-                }
-
                 accentColor: Config.md3.secondary
-                actionEnabled: !GoogleService.disconnecting
-                actionIcon: confirmingRemoval ? "dialog-warning-symbolic" : "user-trash-symbolic"
-                actionText: GoogleService.disconnecting ? qsTr("Removing account") : confirmingRemoval ? qsTr("Confirm account removal") : qsTr("Remove account")
-                actionVisible: GoogleService.authenticated || GoogleService.disconnecting
-                iconName: "x-office-calendar-symbolic"
-                note: GoogleService.authenticated ? (GoogleService.connectedAccount !== "" ? qsTr("Connected as %1").arg(GoogleService.connectedAccount) : qsTr("Connected Google Tasks account")) : GoogleService.authStatus || qsTr("Connect your account from Todo")
-                statusColor: GoogleService.authenticated ? Config.md3.secondary : Config.md3.tertiary
-                statusIcon: GoogleService.disconnecting ? "process-working-symbolic" : GoogleService.authenticated ? "emblem-ok-symbolic" : "dialog-information-symbolic"
-                statusText: GoogleService.disconnecting ? qsTr("Disconnecting") : GoogleService.authenticated ? qsTr("Connected") : qsTr("Not connected")
+                actionIcon: "go-next-symbolic"
+                actionText: qsTr("Manage in Calendar")
+                actionVisible: true
+                iconName: "checkbox-checked-symbolic"
+                note: qsTr("Tasks use all Google accounts connected in SownteeShell Calendar.")
+                statusColor: Config.md3.secondary
+                statusIcon: "x-office-calendar-symbolic"
+                statusText: qsTr("%1 accounts").arg(GoogleService.accounts.length)
                 title: qsTr("Google Tasks")
 
-                onActionClicked: {
-                    if (!confirmingRemoval) {
-                        confirmingRemoval = true;
-                        removalTimer.restart();
-                    } else {
-                        confirmingRemoval = false;
-                        removalTimer.stop();
-                        GoogleService.disconnectAccount();
-                    }
-                }
-
-                GridLayout {
-                    id: googleCredentialFields
-
-                    Layout.fillWidth: true
-                    columnSpacing: 12
-                    columns: width >= 720 ? 2 : 1
-                    rowSpacing: 10
-                    uniformCellWidths: true
-
-                    SettingsTextField {
-                        Layout.fillWidth: true
-                        inputItem.readOnly: true
-                        label: qsTr("App ID (Client ID)")
-                        placeholder: qsTr("No App ID stored")
-                        text: GoogleService.oauthClientId
-                    }
-                    SettingsTextField {
-                        Layout.fillWidth: true
-                        actionIcon: GoogleService.oauthClientSecret !== "" ? (root.revealGoogleToken ? "view-conceal-symbolic" : "view-reveal-symbolic") : ""
-                        echoMode: root.revealGoogleToken ? TextInput.Normal : TextInput.Password
-                        inputItem.readOnly: true
-                        label: qsTr("Token (Client Secret)")
-                        placeholder: qsTr("No token stored")
-                        text: GoogleService.oauthClientSecret
-
-                        onActionClicked: root.revealGoogleToken = !root.revealGoogleToken
-                    }
-                }
+                onActionClicked: StateManager.showCalendarApp()
             }
             SettingsIntegrationCard {
                 id: klipyIntegration

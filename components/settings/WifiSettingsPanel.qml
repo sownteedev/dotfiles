@@ -646,20 +646,15 @@ Item {
                 border.color: root.cardOutlineColor
                 border.width: 1
                 color: root.cardColor
-                implicitHeight: ipv6Header.implicitHeight + (root.ipv6Expanded ? ipv6Body.implicitHeight + 16 : 0) + 36
+                implicitHeight: ipv6Content.implicitHeight + 36
                 radius: 18
 
-                Behavior on implicitHeight {
-                    NumberAnimation {
-                        duration: 220
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
                 ColumnLayout {
+                    id: ipv6Content
+
                     anchors.fill: parent
                     anchors.margins: 18
-                    spacing: 16
+                    spacing: 0
 
                     Item {
                         id: ipv6Header
@@ -747,18 +742,31 @@ Item {
                     Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: root.ipv6Expanded ? ipv6Body.implicitHeight : 0
+                        Layout.topMargin: root.ipv6Expanded ? 16 : 0
                         clip: true
                         opacity: root.ipv6Expanded ? 1 : 0
+
+                        Behavior on Layout.preferredHeight {
+                            NumberAnimation {
+                                duration: 200
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 150
+                            }
+                        }
 
                         ColumnLayout {
                             id: ipv6Body
 
-                            spacing: 14
+                            spacing: 0
                             width: parent.width
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 6
+                                spacing: 8
 
                                 Text {
                                     color: Config.md3.on_surface
@@ -792,81 +800,130 @@ Item {
                                     onSelected: value => root.ipv6Method = value
                                 }
                             }
-                            Rectangle {
+                            Item {
                                 Layout.fillWidth: true
-                                border.color: Config.alpha(Config.md3.primary, 0.16)
-                                border.width: 1
-                                color: Config.alpha(Config.md3.primary, Config.lightTheme ? 0.09 : 0.075)
-                                implicitHeight: root.ipv6Method === "disabled" ? 0 : 68
-                                opacity: root.ipv6Method === "disabled" ? 0 : 1
-                                radius: 15
-                                visible: root.ipv6Method !== "disabled"
+                                Layout.preferredHeight: root.ipv6Method !== "disabled" ? 68 : 0
+                                Layout.topMargin: root.ipv6Method !== "disabled" ? 16 : 0
+                                clip: true
+                                opacity: root.ipv6Method !== "disabled" ? 1 : 0
 
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 16
-                                    anchors.rightMargin: 16
-                                    spacing: 16
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 2
-
-                                        Text {
-                                            color: Config.md3.on_surface
-                                            font.family: Config.fontName
-                                            font.pixelSize: 15
-                                            font.weight: Font.Bold
-                                            text: "DNS assignment"
-                                        }
-                                        Text {
-                                            color: Config.alpha(Config.md3.on_surface, 0.58)
-                                            font.family: Config.fontName
-                                            font.pixelSize: root.supportingFontSize
-                                            text: root.ipv6AutomaticDns ? "Automatic (from the network)" : "Custom servers below"
-                                        }
+                                Behavior on Layout.preferredHeight {
+                                    NumberAnimation {
+                                        duration: 180
+                                        easing.type: Easing.OutCubic
                                     }
-                                    ToggleSwitch {
-                                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                                        Layout.maximumWidth: 40
-                                        Layout.minimumWidth: 40
-                                        Layout.preferredWidth: 40
-                                        accessibleName: "Use automatic IPv6 DNS"
-                                        checked: root.ipv6AutomaticDns
-                                        checkedColor: Config.alpha(Config.md3.primary, 0.26)
-                                        enabled: !root.applying
-                                        thumbCheckedColor: Config.md3.primary
+                                }
 
-                                        onToggled: checked => root.ipv6AutomaticDns = checked
+                                Rectangle {
+                                    id: ipv6DnsBox
+
+                                    border.color: Config.alpha(Config.md3.primary, 0.16)
+                                    border.width: 1
+                                    color: Config.alpha(Config.md3.primary, Config.lightTheme ? 0.09 : 0.075)
+                                    height: 68
+                                    radius: 15
+                                    width: parent.width
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 16
+                                        anchors.rightMargin: 16
+                                        spacing: 16
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 2
+
+                                            Text {
+                                                color: Config.md3.on_surface
+                                                font.family: Config.fontName
+                                                font.pixelSize: 15
+                                                font.weight: Font.Bold
+                                                text: "DNS assignment"
+                                            }
+                                            Text {
+                                                color: Config.alpha(Config.md3.on_surface, 0.58)
+                                                font.family: Config.fontName
+                                                font.pixelSize: root.supportingFontSize
+                                                text: root.ipv6AutomaticDns ? "Automatic (from the network)" : "Custom servers below"
+                                            }
+                                        }
+                                        ToggleSwitch {
+                                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                                            Layout.maximumWidth: 40
+                                            Layout.minimumWidth: 40
+                                            Layout.preferredWidth: 40
+                                            accessibleName: "Use automatic IPv6 DNS"
+                                            checked: root.ipv6AutomaticDns
+                                            checkedColor: Config.alpha(Config.md3.primary, 0.26)
+                                            enabled: !root.applying
+                                            thumbCheckedColor: Config.md3.primary
+
+                                            onToggled: checked => root.ipv6AutomaticDns = checked
+                                        }
                                     }
                                 }
                             }
-                            SettingsTextField {
-                                id: ipv6DnsField
-
+                            Item {
                                 Layout.fillWidth: true
-                                editable: !root.applying
-                                label: "Custom IPv6 DNS servers"
-                                placeholder: "2606:4700:4700::1111"
-                                visible: root.ipv6Method !== "disabled" && !root.ipv6AutomaticDns
+                                Layout.preferredHeight: root.ipv6Method !== "disabled" && !root.ipv6AutomaticDns ? ipv6DnsField.implicitHeight : 0
+                                Layout.topMargin: root.ipv6Method !== "disabled" && !root.ipv6AutomaticDns ? 14 : 0
+                                clip: true
+                                opacity: root.ipv6Method !== "disabled" && !root.ipv6AutomaticDns ? 1 : 0
+
+                                Behavior on Layout.preferredHeight {
+                                    NumberAnimation {
+                                        duration: 180
+                                        easing.type: Easing.OutCubic
+                                    }
+                                }
+
+                                SettingsTextField {
+                                    id: ipv6DnsField
+
+                                    Layout.fillWidth: true
+                                    editable: !root.applying
+                                    label: "Custom IPv6 DNS servers"
+                                    placeholder: "2606:4700:4700::1111"
+                                }
                             }
-                            SettingsTextField {
-                                id: ipv6AddressField
-
+                            Item {
                                 Layout.fillWidth: true
-                                editable: !root.applying
-                                label: "Address / prefix"
-                                placeholder: "2001:db8::10/64"
-                                visible: root.ipv6Method === "manual"
-                            }
-                            SettingsTextField {
-                                id: ipv6GatewayField
+                                Layout.preferredHeight: root.ipv6Method === "manual" ? ipv6ManualFields.implicitHeight : 0
+                                Layout.topMargin: root.ipv6Method === "manual" ? 14 : 0
+                                clip: true
+                                opacity: root.ipv6Method === "manual" ? 1 : 0
 
-                                Layout.fillWidth: true
-                                editable: !root.applying
-                                label: "Gateway (optional)"
-                                placeholder: "2001:db8::1"
-                                visible: root.ipv6Method === "manual"
+                                Behavior on Layout.preferredHeight {
+                                    NumberAnimation {
+                                        duration: 180
+                                        easing.type: Easing.OutCubic
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    id: ipv6ManualFields
+
+                                    spacing: 14
+                                    width: parent.width
+
+                                    SettingsTextField {
+                                        id: ipv6AddressField
+
+                                        Layout.fillWidth: true
+                                        editable: !root.applying
+                                        label: "Address / prefix"
+                                        placeholder: "2001:db8::10/64"
+                                    }
+                                    SettingsTextField {
+                                        id: ipv6GatewayField
+
+                                        Layout.fillWidth: true
+                                        editable: !root.applying
+                                        label: "Gateway (optional)"
+                                        placeholder: "2001:db8::1"
+                                    }
+                                }
                             }
                         }
                     }

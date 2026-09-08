@@ -24,7 +24,7 @@ Item {
     readonly property real timeContentWidth: Math.max(110, Math.min(width, height) - 82 * visualScale)
     property real totalMilliseconds: 0
     readonly property real visibleProgress: preparing ? preparationProgress : idle ? 0 : animatedProgress
-    readonly property real visualScale: Responsive.clamp(Math.min(width, height) / 280, 0.72, 1)
+    readonly property real visualScale: Responsive.clamp(Math.min(width, height) / 280, 0.72, 1.25)
 
     function formatTime(milliseconds) {
         var totalSeconds = Math.ceil(milliseconds / 1000);
@@ -186,7 +186,7 @@ Item {
                 "tnum": 1
             }
             font.letterSpacing: 1.1 * root.visualScale
-            font.pixelSize: root.totalMilliseconds >= 3600000 ? 46 : 58
+            font.pixelSize: Math.round((root.totalMilliseconds >= 3600000 ? 46 : 58) * root.visualScale)
             font.weight: Font.DemiBold
             fontSizeMode: Text.Fit
             height: Math.max(46, Math.round(68 * root.visualScale))

@@ -7,7 +7,7 @@ Rectangle {
     property string accessibleName: ""
     property color backgroundColor: Config.md3.surface_container
     property real fontPixelSize: 14
-    property real minimumSegmentWidth: 112
+    property real minimumSegmentWidth: 64
     property var options: []
     property string selectedValue: ""
 
@@ -32,6 +32,8 @@ Rectangle {
         }
     }
     function revealSelection() {
+        if (segmentView.contentWidth <= segmentView.width)
+            return;
         var index = selectedIndex();
         if (index >= 0)
             segmentView.positionViewAtIndex(index, ListView.Contain);

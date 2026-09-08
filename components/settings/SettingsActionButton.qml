@@ -1,4 +1,5 @@
 import "../../"
+import ".."
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Controls.Basic
@@ -11,7 +12,9 @@ Rectangle {
     property string iconName: ""
     property bool iconOnly: false
     property bool primary: false
+    property bool spinning: false
     property string text: ""
+    property string tooltipText: ""
 
     signal clicked
 
@@ -57,16 +60,38 @@ Rectangle {
         anchors.centerIn: parent
         spacing: 10
 
-        IconImage {
+        Item {
+            id: iconSlot
+
             anchors.verticalCenter: parent.verticalCenter
             height: 19
-            layer.enabled: visible
-            source: root.iconName === "" ? "" : Quickshell.iconPath(root.iconName)
-            visible: root.iconName !== ""
+            visible: root.spinning || (root.iconName !== "")
             width: 19
 
-            layer.effect: ColorOverlay {
-                color: root.primary ? Config.md3.on_primary : Config.md3.on_surface
+            IconImage {
+                id: actionIcon
+
+                anchors.centerIn: parent
+                height: 19
+                layer.enabled: visible
+                source: root.iconName === "" ? "" : Quickshell.iconPath(root.iconName)
+                visible: !root.spinning && root.iconName !== ""
+                width: 19
+
+                layer.effect: ColorOverlay {
+                    color: root.primary ? Config.md3.on_primary : Config.md3.on_surface
+                }
+            }
+            AnimatedSpinner {
+                id: actionSpinner
+
+                anchors.centerIn: parent
+                color: root.primary ? Config.md3.on_primary : Config.md3.primary
+                height: 18
+                lineWidth: 2.2
+                running: root.spinning && root.visible
+                visible: root.spinning
+                width: 18
             }
         }
         Text {
@@ -101,14 +126,16 @@ Rectangle {
         margins: 8
         popupType: Popup.Item
         rightPadding: 11
-        text: root.text
+        text: root.tooltipText !== "" ? root.tooltipText : root.text
         timeout: 3200
         topPadding: 8
-        visible: root.iconOnly && mouse.containsMouse && root.text !== ""
+        visible: (root.iconOnly || root.tooltipText !== "") && mouse.containsMouse && actionToolTip.text !== ""
         x: Math.round((root.width - width) / 2)
         y: root.height + 7
 
         background: Rectangle {
+            border.color: Config.alpha(Config.md3.on_surface, 0.08)
+            border.width: 1
             color: Config.md3.surface_container_highest
             radius: 10
         }

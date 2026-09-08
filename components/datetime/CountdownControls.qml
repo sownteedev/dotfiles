@@ -10,8 +10,8 @@ import "../../"
 Item {
     id: root
 
-    readonly property color actionBackground: preparing ? Config.md3.primary_container : completed ? Config.md3.secondary_container : running ? Config.md3.tertiary_container : hasStarted ? Config.md3.primary_container : Config.md3.primary
-    readonly property color actionForeground: preparing ? Config.md3.on_primary_container : completed ? Config.md3.on_secondary_container : running ? Config.md3.on_tertiary_container : hasStarted ? Config.md3.on_primary_container : Config.md3.on_primary
+    readonly property color actionBackground: completed ? Config.md3.secondary : Config.md3.primary
+    readonly property color actionForeground: completed ? Config.md3.on_secondary : Config.md3.on_primary
     property bool completed: false
     property bool hasStarted: false
     property bool preparing: false
@@ -37,9 +37,9 @@ Item {
             Layout.fillHeight: true
             Layout.preferredWidth: 50
             activeFocusOnTab: available
-            border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
+            border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : Config.alpha(Config.md3.outline, 0.14)
             border.width: 1
-            color: resetArea.pressed && available ? Config.md3.surface_container_highest : resetArea.containsMouse && available ? Config.md3.surface_container_high : Config.md3.surface_container
+            color: resetArea.pressed && available ? Config.md3.surface_container_highest : resetArea.containsMouse && available ? Config.md3.surface_container_high : Config.alpha(Config.md3.surface_container, 0.65)
             enabled: available
             opacity: available ? 1 : 0.38
             radius: height / 2

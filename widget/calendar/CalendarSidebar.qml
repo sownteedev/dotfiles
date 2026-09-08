@@ -185,6 +185,8 @@ Item {
                                 id: dayCell
 
                                 required property int index
+                                readonly property bool isSelected: root.isSameDay(dayCell.value, root.selectedDate)
+                                readonly property bool isToday: root.isSameDay(dayCell.value, new Date())
                                 required property var modelData
                                 readonly property date value: modelData.date
 
@@ -199,7 +201,9 @@ Item {
                                 }
                                 Rectangle {
                                     anchors.centerIn: parent
-                                    color: root.isSameDay(dayCell.value, root.selectedDate) ? Config.md3.primary : dayMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"
+                                    border.color: dayCell.isToday && !dayCell.isSelected ? Config.md3.primary : "transparent"
+                                    border.width: dayCell.isToday && !dayCell.isSelected ? 1.5 : 0
+                                    color: dayCell.isSelected ? Config.md3.primary : dayCell.isToday ? (dayMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.32) : Config.alpha(Config.md3.primary, 0.20)) : dayMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"
                                     height: width
                                     radius: width / 2
                                     width: Math.max(0, Math.min(29, dayCell.width - 2))
@@ -212,10 +216,10 @@ Item {
 
                                     Text {
                                         anchors.centerIn: parent
-                                        color: root.isSameDay(dayCell.value, root.selectedDate) ? Config.md3.on_primary : dayCell.modelData.inMonth ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.3)
+                                        color: dayCell.isSelected ? Config.md3.on_primary : dayCell.isToday ? Config.md3.primary : dayCell.modelData.inMonth ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.3)
                                         font.family: Config.fontName
                                         font.pixelSize: 11
-                                        font.weight: root.isSameDay(dayCell.value, root.selectedDate) ? Font.Bold : Font.Medium
+                                        font.weight: dayCell.isSelected || dayCell.isToday ? Font.Bold : Font.Medium
                                         text: dayCell.value.getDate()
                                     }
                                 }
@@ -282,6 +286,52 @@ Item {
                     onAccountRemoveRequested: accountId => root.accountRemoveRequested(accountId)
                     onAccountVisibilityRequested: (accountId, visible) => root.accountToggled(accountId, visible)
                     onCalendarVisibilityRequested: (calendarId, visible) => root.calendarToggled(calendarId, visible)
+                }
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.32 : 0.2)
+                border.width: 1
+                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.84 : 0.44)
+                implicitHeight: 52
+                radius: 16
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    spacing: 12
+
+                    IconImage {
+                        Layout.preferredHeight: 20
+                        Layout.preferredWidth: 20
+                        layer.enabled: true
+                        source: Quickshell.iconPath("checkbox-checked-symbolic")
+
+                        layer.effect: ColorOverlay {
+                            color: Config.md3.primary
+                        }
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        color: Config.md3.on_surface
+                        elide: Text.ElideRight
+                        font.family: Config.fontName
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        text: qsTr("Local tasks")
+                    }
+                    ToggleSwitch {
+                        checked: Config.calendarShowLocalTasks
+                        interactive: false
+                    }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
+                    onClicked: Config.calendarShowLocalTasks = !Config.calendarShowLocalTasks
                 }
             }
             Rectangle {

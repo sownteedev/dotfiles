@@ -21,9 +21,13 @@ Item {
     property string eventId: ""
     property bool eventReadOnly: false
     property string eventTitle: ""
+    readonly property bool isTask: taskData !== null
     property string location: ""
     property bool opened: false
     property string startTime: "10:00"
+    property bool taskBusy: false
+    property var taskData: null
+    property string taskError: ""
     readonly property bool validTimeRange: allDay || minutesForTime(endTime) > minutesForTime(startTime)
     readonly property var writableCalendars: buildWritableCalendars()
 
@@ -39,6 +43,8 @@ Item {
         return result;
     }
     function calendarColor() {
+        if (isTask)
+            return taskData.calendarColor || Config.md3.primary;
         for (var i = 0; i < CalendarService.calendars.length; ++i) {
             if (String(CalendarService.calendars[i].id || "") === calendarId)
                 return CalendarService.calendars[i].color || Config.md3.primary;
@@ -46,13 +52,44 @@ Item {
         return Config.md3.primary;
     }
     function calendarName() {
+        if (isTask)
+            return (taskData.taskListName || taskData.calendarName || qsTr("Tasks")) + " · " + (taskData.accountName || "");
         for (var i = 0; i < CalendarService.calendars.length; ++i) {
             if (String(CalendarService.calendars[i].id || "") === calendarId)
                 return CalendarService.calendars[i].name || qsTr("Calendar");
         }
         return writableCalendars.length > 0 ? writableCalendars[0].name : qsTr("Calendar");
     }
+    function changeTask(operation) {
+        if (!isTask || taskBusy)
+            return;
+        taskError = "";
+        var id = taskData.taskId;
+        var nextStatus = operation === "complete" ? "completed" : operation === "reopen" ? "needsAction" : undefined;
+        if (taskData.taskSource === "local") {
+            if (operation === "delete")
+                LocalTaskService.deleteTask(id);
+            else
+                LocalTaskService.updateTask(id, eventTitle.trim(), dateForApi(), description, nextStatus);
+            close();
+            return;
+        }
+        taskBusy = true;
+        var done = function (ok, message) {
+            root.taskBusy = false;
+            if (ok)
+                root.close();
+            else
+                root.taskError = message;
+        };
+        if (operation === "delete")
+            GoogleService.deleteTask(taskData.taskListId, id, taskData.accountId, done);
+        else
+            GoogleService.updateTask(taskData.taskListId, id, eventTitle.trim(), dateForApi(), description, nextStatus, taskData.accountId, done);
+    }
     function close() {
+        if (taskBusy)
+            return;
         calendarPopupOpen = false;
         opened = false;
         closed();
@@ -74,6 +111,10 @@ Item {
         if (eventId === "")
             return;
 
+        if (isTask) {
+            changeTask("delete");
+            return;
+        }
         CalendarService.deleteEvent(calendarId, eventId);
         close();
     }
@@ -81,15 +122,19 @@ Item {
         return String(value.getHours()).padStart(2, "0") + ":" + String(value.getMinutes()).padStart(2, "0");
     }
     function horizontalPosition(cardWidth) {
-        var margin = 12;
+        var margin = 16;
         if (!anchorRect)
-            return Math.max(margin, width - cardWidth - 18);
+            return Math.max(margin, Math.round((width - cardWidth) / 2));
 
         var rightPosition = Number(anchorRect.x || 0) + Number(anchorRect.width || 0) + 12;
         if (rightPosition + cardWidth <= width - margin)
             return rightPosition;
 
-        return Math.max(margin, Number(anchorRect.x || 0) - cardWidth - 12);
+        var leftPosition = Number(anchorRect.x || 0) - cardWidth - 12;
+        if (leftPosition >= margin)
+            return leftPosition;
+
+        return Math.max(margin, Math.min(width - cardWidth - margin, Math.round((width - cardWidth) / 2)));
     }
     function minutesForTime(value) {
         var parts = String(value || "").split(":");
@@ -99,9 +144,11 @@ Item {
         return Number(parts[0]) * 60 + Number(parts[1]);
     }
     function openEvent(eventData, editorAnchor) {
-        if (!eventData)
+        if (!eventData || taskBusy)
             return;
 
+        taskData = eventData.isTask ? eventData : null;
+        taskError = "";
         anchorRect = editorAnchor || null;
         eventId = String(eventData.id || "");
         eventReadOnly = eventData.readOnly === true;
@@ -129,6 +176,10 @@ Item {
         });
     }
     function openNew(value, selectedStartMinutes, selectedEndMinutes, editorAnchor) {
+        if (taskBusy)
+            return;
+        taskData = null;
+        taskError = "";
         anchorRect = editorAnchor || null;
         eventId = "";
         eventReadOnly = false;
@@ -167,6 +218,10 @@ Item {
         if (eventTitle.trim() === "" || !validTimeRange)
             return;
 
+        if (isTask) {
+            changeTask("update");
+            return;
+        }
         if (calendarId === "")
             calendarId = defaultCalendarId();
 
@@ -186,11 +241,12 @@ Item {
         return String(Math.floor(minutes / 60)).padStart(2, "0") + ":" + String(minutes % 60).padStart(2, "0");
     }
     function verticalPosition(cardHeight) {
-        var margin = 12;
+        var margin = 16;
         if (!anchorRect)
-            return Math.max(margin, Math.min((height - cardHeight) / 2, height - cardHeight - margin));
+            return Math.max(margin, Math.round((height - cardHeight) / 2));
 
-        return Math.max(margin, Math.min(Number(anchorRect.y || 0) - 18, height - cardHeight - margin));
+        var targetY = Number(anchorRect.y || 0) - 18;
+        return Math.max(margin, Math.min(height - cardHeight - margin, targetY));
     }
 
     enabled: opened
@@ -222,11 +278,11 @@ Item {
         border.color: Config.alpha(Config.md3.on_surface, 0.09)
         border.width: 1
         color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.98 : 0.96)
-        height: Math.min(620, Math.max(0, root.height - 24))
+        height: Math.min(Math.max(540, editorForm.implicitHeight + 162), Math.max(540, root.height - 48))
         radius: 24
         scale: root.opened ? 1 : 0.96
         transformOrigin: Item.Center
-        width: Math.min(430, parent.width - 36)
+        width: Math.min(440, parent.width - 40)
         x: root.horizontalPosition(width)
         y: root.verticalPosition(height)
 
@@ -246,11 +302,11 @@ Item {
             anchors.left: parent.left
             anchors.leftMargin: 20
             anchors.right: parent.right
-            anchors.rightMargin: 14
+            anchors.rightMargin: 20
             anchors.top: parent.top
-            anchors.topMargin: 14
+            anchors.topMargin: 16
             height: 52
-            spacing: 10
+            spacing: 12
 
             Rectangle {
                 Layout.preferredHeight: 40
@@ -281,7 +337,7 @@ Item {
                     font.family: Config.fontName
                     font.pixelSize: 18
                     font.weight: Font.Bold
-                    text: root.eventId !== "" ? qsTr("Edit event") : qsTr("New event")
+                    text: root.isTask ? qsTr("Edit task") : root.eventId !== "" ? qsTr("Edit event") : qsTr("New event")
                 }
                 Text {
                     Layout.fillWidth: true
@@ -313,23 +369,25 @@ Item {
             id: formFlickable
 
             anchors.bottom: footerDivider.top
+            anchors.bottomMargin: 10
             anchors.left: parent.left
-            anchors.leftMargin: 18
+            anchors.leftMargin: 20
             anchors.right: parent.right
-            anchors.rightMargin: 18
+            anchors.rightMargin: 20
             anchors.top: editorHeader.bottom
             anchors.topMargin: 14
             boundsBehavior: Flickable.StopAtBounds
             clip: true
-            contentHeight: Math.max(height, editorForm.implicitHeight + 8)
+            contentHeight: editorForm.implicitHeight + 16
             contentWidth: width
+            enabled: !root.taskBusy
             flickableDirection: Flickable.VerticalFlick
             interactive: contentHeight > height
 
             ColumnLayout {
                 id: editorForm
 
-                spacing: 14
+                spacing: 12
                 width: formFlickable.width
 
                 FormTextField {
@@ -355,7 +413,7 @@ Item {
                         font.family: Config.fontName
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
-                        text: qsTr("Calendar")
+                        text: root.isTask ? qsTr("Task list") : qsTr("Calendar")
                     }
                     Rectangle {
                         id: calendarField
@@ -418,7 +476,7 @@ Item {
                         font.family: Config.fontName
                         font.pixelSize: 11
                         text: qsTr("The calendar cannot be changed after an event is created.")
-                        visible: root.eventId !== ""
+                        visible: root.eventId !== "" && !root.isTask
                         wrapMode: Text.Wrap
                     }
                 }
@@ -517,6 +575,7 @@ Item {
                     border.width: 1
                     color: allDayMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.075) : Config.alpha(Config.md3.surface, Config.lightTheme ? 0.65 : 0.22)
                     radius: 13
+                    visible: !root.isTask
 
                     Behavior on border.color {
                         ColorAnimation {
@@ -687,6 +746,7 @@ Item {
                     labelFontPixelSize: 13
                     labelFontWeight: Font.DemiBold
                     placeholder: qsTr("Add a location")
+                    visible: !root.isTask
 
                     onTextChanged: root.location = text
                 }
@@ -702,6 +762,15 @@ Item {
                     placeholder: qsTr("Add notes or details")
 
                     onTextChanged: root.description = text
+                }
+                Text {
+                    Layout.fillWidth: true
+                    color: Config.md3.error
+                    font.family: Config.fontName
+                    font.pixelSize: 13
+                    text: root.taskError
+                    visible: text !== ""
+                    wrapMode: Text.Wrap
                 }
             }
         }
@@ -720,17 +789,18 @@ Item {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 14
             anchors.left: parent.left
-            anchors.leftMargin: 16
+            anchors.leftMargin: 20
             anchors.right: parent.right
-            anchors.rightMargin: 16
+            anchors.rightMargin: 20
             height: 60
             spacing: 10
 
             Rectangle {
-                Layout.preferredHeight: 44
-                Layout.preferredWidth: 44
+                Layout.preferredHeight: 40
+                Layout.preferredWidth: 40
                 color: deleteMouse.containsMouse ? Config.alpha(Config.md3.error, 0.16) : Config.alpha(Config.md3.error, 0.09)
-                radius: 13
+                enabled: !root.taskBusy
+                radius: 12
                 visible: root.eventId !== "" && !root.eventReadOnly
 
                 Behavior on color {
@@ -764,15 +834,27 @@ Item {
                 Layout.fillWidth: true
             }
             SettingsActionButton {
+                enabled: !root.taskBusy
+                iconName: root.taskData && root.taskData.status === "completed" ? "checkbox-symbolic" : "checkbox-checked-symbolic"
+                iconOnly: true
+                text: root.taskData && root.taskData.status === "completed" ? qsTr("Mark incomplete") : qsTr("Mark completed")
+                visible: root.isTask
+
+                onClicked: root.changeTask(root.taskData && root.taskData.status === "completed" ? "reopen" : "complete")
+            }
+            SettingsActionButton {
+                Layout.preferredHeight: 40
+                enabled: !root.taskBusy
                 text: qsTr("Cancel")
 
                 onClicked: root.close()
             }
             SettingsActionButton {
-                enabled: !root.eventReadOnly && root.eventTitle.trim() !== "" && root.calendarId !== "" && root.validTimeRange && !CalendarService.eventActionBusy
+                Layout.preferredHeight: 40
+                enabled: !root.eventReadOnly && root.eventTitle.trim() !== "" && root.calendarId !== "" && root.validTimeRange && !CalendarService.eventActionBusy && !root.taskBusy
                 iconName: root.eventId !== "" ? "emblem-ok-symbolic" : "appointment-new-symbolic"
                 primary: true
-                text: root.eventId !== "" ? qsTr("Update") : qsTr("Create")
+                text: root.taskBusy ? qsTr("Saving…") : root.eventId !== "" ? qsTr("Update") : qsTr("Create")
 
                 onClicked: root.save()
             }

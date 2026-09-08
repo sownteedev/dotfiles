@@ -90,7 +90,7 @@ PanelWindow {
             proxy.y = 0;
         }
         if (modelSyncPending)
-            Qt.callLater(syncDockModel);
+            modelSyncTimer.restart();
         updateAutoHide();
     }
     function focusPreviewWindow(windowId) {
@@ -139,6 +139,11 @@ PanelWindow {
         if (sourceIndex === -1 || sourceIndex === target)
             return;
         dockModel.move(sourceIndex, target, 1);
+    }
+    function requestDockModelSync() {
+        modelSyncPending = true;
+        if (!dragActive)
+            modelSyncTimer.restart();
     }
     function requestWindowPreview(entryId, appName, iconName, anchorItem) {
         var id = String(entryId || "");
@@ -302,12 +307,19 @@ PanelWindow {
             } else {
                 if (currentIndex !== targetIndex)
                     dockModel.move(currentIndex, targetIndex, 1);
-                dockModel.setProperty(targetIndex, "appName", entry.appName);
-                dockModel.setProperty(targetIndex, "entryId", entry.entryId);
-                dockModel.setProperty(targetIndex, "iconName", entry.iconName);
-                dockModel.setProperty(targetIndex, "kind", entry.kind);
-                dockModel.setProperty(targetIndex, "launchable", entry.launchable);
-                dockModel.setProperty(targetIndex, "pinned", entry.pinned);
+                var currentEntry = dockModel.get(targetIndex);
+                if (currentEntry.appName !== entry.appName)
+                    dockModel.setProperty(targetIndex, "appName", entry.appName);
+                if (currentEntry.entryId !== entry.entryId)
+                    dockModel.setProperty(targetIndex, "entryId", entry.entryId);
+                if (currentEntry.iconName !== entry.iconName)
+                    dockModel.setProperty(targetIndex, "iconName", entry.iconName);
+                if (currentEntry.kind !== entry.kind)
+                    dockModel.setProperty(targetIndex, "kind", entry.kind);
+                if (currentEntry.launchable !== entry.launchable)
+                    dockModel.setProperty(targetIndex, "launchable", entry.launchable);
+                if (currentEntry.pinned !== entry.pinned)
+                    dockModel.setProperty(targetIndex, "pinned", entry.pinned);
             }
         }
         pinnedAppCount = pinned.length;
@@ -436,7 +448,7 @@ PanelWindow {
         syncDockModel();
         updateAutoHide();
     }
-    onDesktopApplicationsChanged: Qt.callLater(syncDockModel)
+    onDesktopApplicationsChanged: requestDockModelSync()
     onDockObstructedChanged: updateAutoHide()
     onPreviewWindowsChanged: {
         if (previewWindows.length === 0)
@@ -446,23 +458,31 @@ PanelWindow {
 
     Connections {
         function onPinnedEntriesChanged() {
-            Qt.callLater(dockWindow.syncDockModel);
+            dockWindow.requestDockModelSync();
         }
         function onPinnedIdsChanged() {
-            Qt.callLater(dockWindow.syncDockModel);
+            dockWindow.requestDockModelSync();
         }
 
         target: DockService
     }
     Connections {
         function onWorkspacesChanged() {
-            Qt.callLater(dockWindow.syncDockModel);
+            dockWindow.requestDockModelSync();
         }
 
         target: WorkspaceService
     }
     ListModel {
         id: dockModel
+    }
+    Timer {
+        id: modelSyncTimer
+
+        interval: 0
+        repeat: false
+
+        onTriggered: dockWindow.syncDockModel()
     }
     Timer {
         id: hideTimer
@@ -615,20 +635,22 @@ PanelWindow {
                         Drag.supportedActions: Qt.MoveAction
                         height: 48
                         opacity: 0
+                        // Reordering moves appButton; the pointer must stay in list coordinates.
+                        parent: dockAppList.contentItem
                         width: 48
                     }
                     Rectangle {
                         id: appVisual
 
-                        color: appMouse.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : appMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"
+                        color: appMouse.drag.active ? Config.alpha(Config.md3.on_surface, 0.16) : (!dockWindow.dragActive && appMouse.pressed ? Config.alpha(Config.md3.on_surface, 0.16) : (!dockWindow.dragActive && appMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"))
                         height: 48
                         radius: 15
                         rotation: appMouse.drag.active ? 5 : 0
-                        scale: appMouse.drag.active ? 1.13 : appMouse.pressed ? 0.92 : appMouse.containsMouse ? 1.08 : 1
+                        scale: appMouse.drag.active ? 1.13 : (!dockWindow.dragActive && appMouse.pressed ? 0.92 : (!dockWindow.dragActive && appMouse.containsMouse ? 1.08 : 1))
                         visible: !appButton.isSeparator
                         width: 48
-                        x: appMouse.drag.active ? dragProxy.x : 0
-                        y: appMouse.drag.active ? dragProxy.y : 1
+                        x: appMouse.drag.active ? dragProxy.x - appButton.x : 0
+                        y: appMouse.drag.active ? dragProxy.y - appButton.y : 1
 
                         Behavior on color {
                             ColorAnimation {
@@ -741,13 +763,15 @@ PanelWindow {
                             }
                         }
                         onEntered: {
-                            if (!drag.active && appButton.windowCount > 0)
+                            if (!dockWindow.dragActive && !appMouse.drag.active && appButton.windowCount > 0)
                                 dockWindow.requestWindowPreview(appButton.entryId, appButton.appName, appButton.iconName, appButton);
                         }
                         onExited: dockWindow.cancelWindowPreview(appButton.entryId)
                         onPressed: mouse => {
                             if (mouse.button === Qt.LeftButton) {
                                 appButton.draggedDuringPress = false;
+                                dragProxy.x = appButton.x;
+                                dragProxy.y = appButton.y + 1;
                             }
                         }
                         onReleased: mouse => {

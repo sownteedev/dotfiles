@@ -5,19 +5,15 @@ use anyhow::{Context, Result, bail};
 use config::Config;
 use ipc::IpcServer;
 use serde_json::{Value, json};
-use sownteeshell_core::job::JobRegistry;
-use sownteeshell_core::network::NetworkClient;
-use sownteeshell_core::productivity::GoogleTasksBackend;
 use sownteeshell_core::system::{self, BatteryReader, Sampler};
 use sownteeshell_core::wallpaper;
 use sownteeshell_core::{greeter, theme};
 use std::env;
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead};
 use std::process::ExitCode;
 use std::time::Instant;
 use tokio::sync::watch;
 use tokio::task;
-use tokio_util::sync::CancellationToken;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() -> ExitCode {
@@ -53,10 +49,6 @@ async fn run() -> Result<()> {
                 .context("request-stdin requires a method name")?;
             ensure_no_more_arguments(arguments)?;
             request_stdin(method).await
-        }
-        Some("google-tasks-auth-local") => {
-            ensure_no_more_arguments(arguments)?;
-            google_tasks_auth_local().await
         }
         Some("greeter-sessions") => {
             ensure_no_more_arguments(arguments)?;
@@ -445,35 +437,6 @@ async fn request_stdin(method: String) -> Result<()> {
     ensure_business_success(&result)
 }
 
-async fn google_tasks_auth_local() -> Result<()> {
-    let mut input = String::new();
-    io::stdin()
-        .lock()
-        .read_line(&mut input)
-        .context("read Google OAuth credentials")?;
-    let params = if input.trim().is_empty() {
-        json!({})
-    } else {
-        serde_json::from_str(&input).context("parse Google OAuth credentials")?
-    };
-    let backend = GoogleTasksBackend::new(NetworkClient::default(), JobRegistry::default())?;
-    match backend
-        .authenticate_local(params, print_json_line, CancellationToken::new())
-        .await
-    {
-        Ok(()) => print_json_line(json!({"event": "success"})),
-        Err(error) => print_json_line(json!({
-            "event": "error",
-            "message": format!("{error:#}"),
-        })),
-    }
-}
-
-fn print_json_line(value: Value) -> Result<()> {
-    println!("{}", serde_json::to_string(&value)?);
-    io::stdout().flush().context("flush JSON event")
-}
-
 async fn compatibility_request(method: &str, params: Value, output: OutputMode) -> Result<()> {
     let result = cancellable_request(method, params).await?;
     if matches!(output, OutputMode::JsonStatus) {
@@ -609,7 +572,6 @@ fn print_help() {
            sownteeshell-core serve\n  \
            sownteeshell-core request <method> [params-json]\n  \
            sownteeshell-core request-stdin <method>\n  \
-           sownteeshell-core google-tasks-auth-local\n  \
            sownteeshell-core greeter-sessions\n  \
            sownteeshell-core greeter-keyboard-layout\n  \
            sownteeshell-core clipboard-restore <entry-id> [true|false]\n  \

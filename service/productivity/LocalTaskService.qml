@@ -7,7 +7,6 @@ import ".."
 QtObject {
     id: root
 
-    property string activeSyncId: ""
     property Process cacheInitializer: Process {
         command: ["mkdir", "-p", Config.cacheRoot]
         running: false
@@ -19,20 +18,8 @@ QtObject {
                 console.warn("[LocalTaskService] Could not initialize task storage:", exitCode);
         }
     }
-    property Connections googleConnections: Connections {
-        function onTaskActionFinished(operation, sourceId, succeeded, remoteId, message) {
-            if (operation !== "sync-local" || sourceId === "")
-                return;
-            root.finishGoogleSync(sourceId, succeeded, message);
-        }
-
-        target: GoogleService
-    }
     readonly property string statePath: Config.cacheRoot + "/local_tasks.json"
     property bool storageReady: false
-    property string syncError: ""
-    property var syncQueue: []
-    property var syncingTasks: ({})
     property FileView taskFile: FileView {
         atomicWrites: true
         blockLoading: true
@@ -58,8 +45,6 @@ QtObject {
 
         onTriggered: root.persist()
     }
-
-    signal syncFinished(string taskId, bool succeeded)
 
     function createTask(title, due, notes) {
         var now = Date.now();
@@ -95,26 +80,6 @@ QtObject {
                 return tasks[i];
         }
         return null;
-    }
-    function finishGoogleSync(taskId, succeeded, message) {
-        taskId = String(taskId || "");
-        if (taskId === "" || taskId !== activeSyncId)
-            return;
-
-        activeSyncId = "";
-        setSyncing(taskId, false);
-        if (succeeded) {
-            deleteTask(taskId);
-            syncError = "";
-        } else {
-            syncError = String(message || qsTr("Google Tasks sync failed"));
-            console.warn("[LocalTaskService] Google sync failed:", syncError);
-        }
-        syncFinished(taskId, succeeded);
-        Qt.callLater(startNextGoogleSync);
-    }
-    function isSyncing(taskId) {
-        return syncingTasks[String(taskId)] === true;
     }
     function loadTasks(rawText) {
         try {
@@ -152,52 +117,6 @@ QtObject {
             "version": 1,
             "tasks": tasks
         }) + "\n");
-    }
-    function setSyncing(taskId, syncing) {
-        var next = Object.assign({}, syncingTasks);
-        if (syncing)
-            next[String(taskId)] = true;
-        else
-            delete next[String(taskId)];
-        syncingTasks = next;
-    }
-    function startNextGoogleSync() {
-        if (activeSyncId !== "" || syncQueue.length === 0)
-            return;
-        var queue = syncQueue.slice();
-        var taskId = String(queue.shift() || "");
-        syncQueue = queue;
-        var task = findTask(taskId);
-        if (!task) {
-            setSyncing(taskId, false);
-            Qt.callLater(startNextGoogleSync);
-            return;
-        }
-        activeSyncId = taskId;
-        if (!GoogleService.createTask("@default", task.title, task.due || "", task.notes || "", taskId))
-            finishGoogleSync(taskId, false, qsTr("Google account is not connected"));
-    }
-    function syncToGoogle(taskId) {
-        var task = findTask(taskId);
-        if (!task)
-            return false;
-        if (isSyncing(taskId)) {
-            if (activeSyncId === String(taskId) || syncQueue.indexOf(String(taskId)) >= 0)
-                return true;
-            setSyncing(taskId, false);
-        }
-        if (!GoogleService.authenticated) {
-            syncError = qsTr("Connect Google before syncing local tasks");
-            GoogleService.requireAuthentication("todo-sync");
-            return false;
-        }
-        syncError = "";
-        var queue = syncQueue.slice();
-        queue.push(String(taskId));
-        syncQueue = queue;
-        setSyncing(taskId, true);
-        startNextGoogleSync();
-        return true;
     }
     function updateTask(taskId, title, due, notes, status) {
         var next = [];

@@ -39,7 +39,7 @@ EOF
 print_core_methods() {
     cat <<'EOF'
 
-Core methods (79):
+Core methods (73):
 
   System and jobs
     ping                                  [read] Check IPC responsiveness
@@ -94,15 +94,6 @@ Core methods (79):
     launcher.klipy.search                 [read, network] apiKey?, kind?, query?,
                                                            perPage?, requestId?
     launcher.klipy.copy                   [write, network] url, mime, paste?
-
-  Google Tasks
-    productivity.googleTasks.authStatus   [read] Current authentication state
-    productivity.googleTasks.logout       [delete] Remove the stored Google Tasks token
-    productivity.googleTasks.list         [read, network] listId?
-    productivity.googleTasks.create       [write, network] title, listId?, notes?, due?
-    productivity.googleTasks.update       [write, network] taskId, listId?, title?,
-                                                           notes?, due?, status?
-    productivity.googleTasks.delete       [delete, network] taskId, listId?
 
   Settings
     settings.snapshot                     [read] quickshellDir
@@ -166,7 +157,7 @@ EOF
 print_calendar_methods() {
     cat <<'EOF'
 
-Calendar methods (16):
+Calendar methods (22):
 
   System
     ping                                  [read] Check IPC responsiveness
@@ -194,7 +185,19 @@ Calendar methods (16):
   Synchronization
     sync.now                              [write, network] accountId?; omit to sync all accounts
     subscribe                             [stream] topics? = accounts|calendars|events|
-                                                   sync|system
+                                                   tasks|sync|system
+
+  Google Tasks (shared with Todo)
+    tasks.list                            [read] Cached tasks, lists, visibility and
+                                                  per-account errors for every Google account
+    tasks.setVisible                      [write] accountId, visible; Calendar filter only
+    tasks.google.refresh                  [read, network] accountId
+    tasks.google.create                   [write, network] accountId, listId, title, due?, notes?
+    tasks.google.update                   [write, network] accountId, listId, taskId,
+                                                  title?, due?, notes?, status?
+    tasks.google.delete                   [delete, network] accountId, listId, taskId
+    Due dates use YYYY-MM-DD; status is needsAction or completed.
+    Google accounts and OAuth permissions are managed by Calendar, not Core.
 
   Event object
     Required: title, start, end

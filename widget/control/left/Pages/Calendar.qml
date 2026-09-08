@@ -25,15 +25,12 @@ Item {
     property var monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     property int pendingMonthDirection: 0
     property bool pendingNewEventAfterConnect: false
-    readonly property var pendingTasksByDate: buildPendingTasksIndex(LocalTaskService.tasks, GoogleService.allTasks)
-    readonly property var pendingTasksForSelectedDate: tasksForDate(selectedDay, selectedMonth, selectedYear)
     readonly property Item popupBackdropHost: controlLeftWindow.topPopupBackdropHost
     readonly property real popupBackdropRadius: controlLeftWindow.topPopupBackdropRadius
     property int selectedDay: todayDate
     readonly property int selectedEventCount: eventsForSelectedDate ? eventsForSelectedDate.length : 0
-    readonly property int selectedItemCount: selectedEventCount + selectedTaskCount
+    readonly property int selectedItemCount: selectedEventCount
     property int selectedMonth: todayMonth
-    readonly property int selectedTaskCount: pendingTasksForSelectedDate ? pendingTasksForSelectedDate.length : 0
     property int selectedYear: todayYear
     property bool showEvents: false
     property real swipeOffset: 0
@@ -42,47 +39,6 @@ Item {
     property int todayYear: new Date().getFullYear()
     property var weekDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-    function appendPendingTasks(index, tasks, taskSource) {
-        if (!Array.isArray(tasks))
-            return;
-
-        for (var i = 0; i < tasks.length; ++i) {
-            var task = tasks[i] || {};
-            if (String(task.status || "needsAction") !== "needsAction")
-                continue;
-
-            var due = String(task.due || "");
-            var dueKey = due.slice(0, 10);
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dueKey))
-                continue;
-
-            if (!index[dueKey])
-                index[dueKey] = [];
-
-            index[dueKey].push({
-                "due": due,
-                "id": String(task.id || ""),
-                "notes": String(task.notes || ""),
-                "taskSource": taskSource,
-                "title": String(task.title || "")
-            });
-        }
-    }
-    function buildPendingTasksIndex(localTasks, googleTasks) {
-        var index = ({});
-        appendPendingTasks(index, localTasks, "local");
-        appendPendingTasks(index, googleTasks, "google");
-        return index;
-    }
-    function completeTask(task) {
-        if (!task || !task.id)
-            return;
-
-        if (task.taskSource === "google")
-            GoogleService.updateTask("@default", task.id, undefined, undefined, undefined, "completed");
-        else
-            LocalTaskService.updateTask(task.id, undefined, undefined, undefined, "completed");
-    }
     function dateKey(day, month, year) {
         return year + "-" + String(month + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0");
     }
@@ -160,12 +116,6 @@ Item {
         }
     }
     function scheduleCountText() {
-        if (selectedEventCount > 0 && selectedTaskCount > 0)
-            return qsTr("%1 · %2").arg(qsTr("%n event(s)", "", selectedEventCount)).arg(qsTr("%n task(s)", "", selectedTaskCount));
-
-        if (selectedTaskCount > 0)
-            return qsTr("%n task(s)", "", selectedTaskCount);
-
         return qsTr("%n event(s)", "", selectedEventCount);
     }
     function settleMonth(direction) {
@@ -178,23 +128,14 @@ Item {
         monthSlide.to = direction * (calendarViewport.width + 100);
         monthSlide.start();
     }
-    function tasksForDate(day, month, year) {
-        return pendingTasksByDate[dateKey(day, month, year)] || [];
-    }
 
     anchors.fill: parent
 
     Component.onCompleted: {
         CalendarService.acquire();
-        if (typeof GoogleService.acquire === "function")
-            GoogleService.acquire();
-        else if (GoogleService.authenticated)
-            GoogleService.fetchAll();
     }
     Component.onDestruction: {
         CalendarService.release();
-        if (typeof GoogleService.release === "function")
-            GoogleService.release();
     }
 
     NumberAnimation {
@@ -406,8 +347,7 @@ Item {
                                                 radius: 3
                                                 visible: {
                                                     var dummyEvents = CalendarService.allEvents;
-                                                    var dummyTasks = calendarRoot.pendingTasksByDate;
-                                                    return CalendarService.hasEvents(dayInfo.day, dayInfo.month, dayInfo.year) || calendarRoot.tasksForDate(dayInfo.day, dayInfo.month, dayInfo.year).length > 0;
+                                                    return CalendarService.hasEvents(dayInfo.day, dayInfo.month, dayInfo.year);
                                                 }
                                                 width: 5
                                             }
@@ -808,49 +748,22 @@ Item {
                         }
                     }
                 }
-                footer: Item {
-                    height: visible ? taskFooterColumn.implicitHeight + (eventList.count > 0 ? 12 : 0) : 0
-                    visible: calendarRoot.selectedTaskCount > 0
-                    width: eventList.width
-
-                    Column {
-                        id: taskFooterColumn
-
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.topMargin: eventList.count > 0 ? 12 : 0
-                        spacing: 12
-
-                        Repeater {
-                            model: calendarRoot.pendingTasksForSelectedDate
-
-                            CalendarTaskCard {
-                                required property var modelData
-
-                                task: modelData
-                                width: taskFooterColumn.width
-
-                                onCompletionRequested: task => {
-                                    return calendarRoot.completeTask(task);
-                                }
-                            }
-                        }
-                    }
-                }
 
                 ProductivityEmptyState {
-                    actionText: qsTr("Add event")
-                    actionVisible: true
+                    actionVisible: false
                     anchors.centerIn: parent
                     description: qsTr("Your schedule is clear for this date")
                     iconName: "x-office-calendar-symbolic"
+                    opacity: calendarRoot.selectedItemCount === 0 ? 1 : 0
                     title: qsTr("No events today")
-                    visible: calendarRoot.selectedItemCount === 0
+                    visible: opacity > 0
                     width: Math.min(parent.width - 40, 320)
 
-                    onActionTriggered: {
-                        calendarRoot.requestNewEvent();
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Config.animationDuration(140)
+                            easing.type: Easing.OutCubic
+                        }
                     }
                 }
             }
@@ -881,8 +794,5 @@ Item {
         anchors.fill: parent
 
         onClosed: calendarRoot.pendingNewEventAfterConnect = false
-    }
-    GoogleAuthPanel {
-        anchors.fill: parent
     }
 }

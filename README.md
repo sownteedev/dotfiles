@@ -39,8 +39,8 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 
 ### Panels, productivity, and system control
 
-- **Left panel** with Vietnamese lunar calendar, Google Calendar events, local and Google Tasks, timed task indicators, OpenWeather forecasts with GeoClue location detection, synced lyrics, media controls, and countdown timers.
-- A standalone, responsive **SownteeShell Calendar** with week and month views, drag-to-create time ranges, all-day events, event editing, and unified account/calendar filtering.
+- **Left panel** with Vietnamese lunar calendar, Google/Microsoft/iCloud events, local tasks, and multi-account Google Tasks with account colors and task-list selection. Also includes OpenWeather forecasts with GeoClue location detection, synced lyrics, media controls, and countdown timers.
+- A standalone, responsive **SownteeShell Calendar** with week and month views, drag-to-create events, and dated Google/Local tasks in the all-day lane. Edit or complete tasks in place, with per-account calendar/Tasks filters and a separate Local Tasks toggle.
 - Calendar sync for **Google, Microsoft, and iCloud**, backed by a dedicated Rust daemon with a local SQLite cache, background and manual sync, Secret Service credentials, and critical notifications 30 minutes before events.
 - **Right panel** with notification history, Wi-Fi and Bluetooth management, advanced IPv4/IPv6 profiles, Wi-Fi QR sharing, AirPods L/R/Case battery data, and a PipeWire per-application mixer with peak meters and device routing.
 - **Display control** with drag-and-drop arrangement, orientation, mode, resolution, refresh rate, scale, startup focus, VRR (`Off`, `On`, `On Demand`), internal/external display presets, DDC/CI brightness, and Sunshine output selection.

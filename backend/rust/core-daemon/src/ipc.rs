@@ -11,7 +11,6 @@ use sownteeshell_core::greeter::GreeterBackend;
 use sownteeshell_core::job::JobRegistry;
 use sownteeshell_core::launcher::LauncherBackend;
 use sownteeshell_core::network::NetworkClient;
-use sownteeshell_core::productivity::GoogleTasksBackend;
 use sownteeshell_core::settings::SettingsBackend;
 use sownteeshell_core::system::{self, BatteryReader, ProcessMode, Sampler};
 use sownteeshell_core::updates::UpdatesBackend;
@@ -44,7 +43,6 @@ pub struct IpcServer {
     config: Config,
     diagnostics: DiagnosticsBackend,
     display: DisplayBackend,
-    google_tasks: GoogleTasksBackend,
     greeter: GreeterBackend,
     jobs: JobRegistry,
     launcher: LauncherBackend,
@@ -65,7 +63,6 @@ impl IpcServer {
             clipboard: ClipboardBackend::new(jobs.clone()),
             diagnostics: DiagnosticsBackend::new(jobs.clone()),
             display: DisplayBackend::new(jobs.clone()),
-            google_tasks: GoogleTasksBackend::new(network.clone(), jobs.clone())?,
             greeter: GreeterBackend::new(jobs.clone()),
             launcher: LauncherBackend::new(
                 network.clone(),
@@ -303,7 +300,6 @@ impl IpcServer {
                     "diagnostics",
                     "display",
                     "greeter",
-                    "google-tasks",
                     "launcher",
                     "process-memory",
                     "process-terminate",
@@ -380,15 +376,6 @@ impl IpcServer {
             }
             _ if method.starts_with("launcher.") => {
                 match self.launcher.request(&method, params).await {
-                    Ok(Some(result)) => Ok(result),
-                    Ok(None) => Err(RpcError::method_not_found(format!(
-                        "unknown method '{method}'"
-                    ))),
-                    Err(error) => Err(RpcError::backend(error)),
-                }
-            }
-            _ if method.starts_with("productivity.") => {
-                match self.google_tasks.request(&method, params).await {
                     Ok(Some(result)) => Ok(result),
                     Ok(None) => Err(RpcError::method_not_found(format!(
                         "unknown method '{method}'"

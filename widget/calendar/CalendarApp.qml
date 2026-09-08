@@ -425,7 +425,7 @@ FloatingWindow {
                 id: appHeader
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: 74
+                Layout.preferredHeight: 68
 
                 MouseArea {
                     acceptedButtons: Qt.LeftButton
@@ -437,12 +437,13 @@ FloatingWindow {
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: 16
-                    anchors.rightMargin: 14
-                    spacing: root.compactHeader ? 7 : 10
+                    anchors.rightMargin: 16
+                    spacing: root.compactHeader ? 8 : 10
 
                     SettingsActionButton {
-                        Layout.preferredHeight: 42
-                        Layout.preferredWidth: 42
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: 40
                         iconName: root.sidebarExpanded ? "sidebar-collapse-left" : "sidebar-expand-right"
                         iconOnly: true
                         text: root.sidebarExpanded ? qsTr("Hide sidebar") : qsTr("Show sidebar")
@@ -450,56 +451,67 @@ FloatingWindow {
                         onClicked: root.sidebarExpanded = !root.sidebarExpanded
                     }
                     Rectangle {
-                        Layout.leftMargin: root.compactHeader ? 0 : 2
-                        Layout.preferredHeight: 42
-                        Layout.preferredWidth: 42
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: 40
                         color: Config.alpha(Config.md3.primary, 0.14)
-                        radius: 14
+                        radius: 12
 
                         Column {
                             anchors.centerIn: parent
-                            spacing: -1
+                            anchors.verticalCenterOffset: 1
+                            spacing: -2
+                            width: parent.width
 
                             Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
                                 color: Config.md3.primary
                                 font.capitalization: Font.AllUppercase
                                 font.family: Config.fontName
-                                font.pixelSize: 8
-                                font.weight: Font.Black
+                                font.pixelSize: 9
+                                font.weight: Font.Bold
+                                horizontalAlignment: Text.AlignHCenter
                                 text: Qt.formatDate(new Date(), "MMM")
+                                width: parent.width
                             }
                             Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
                                 color: Config.md3.primary
                                 font.family: Config.fontName
-                                font.pixelSize: 17
-                                font.weight: Font.Black
+                                font.pixelSize: 16
+                                font.weight: Font.Bold
+                                horizontalAlignment: Text.AlignHCenter
                                 text: new Date().getDate()
+                                width: parent.width
                             }
                         }
                     }
                     Text {
+                        Layout.alignment: Qt.AlignVCenter
                         color: Config.md3.on_surface
                         font.family: Config.fontName
                         font.pixelSize: 18
                         font.weight: Font.Bold
                         text: qsTr("Calendar")
+                        verticalAlignment: Text.AlignVCenter
                         visible: !root.compactHeader
                     }
                     Rectangle {
-                        Layout.leftMargin: root.compactHeader ? 1 : 5
-                        Layout.preferredHeight: 28
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.leftMargin: root.compactHeader ? 2 : 4
+                        Layout.preferredHeight: 22
                         Layout.preferredWidth: 1
-                        color: Config.alpha(Config.md3.on_surface, 0.09)
+                        Layout.rightMargin: root.compactHeader ? 2 : 4
+                        color: Config.alpha(Config.md3.on_surface, 0.10)
                     }
                     SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
+                        primary: true
                         text: qsTr("Today")
 
                         onClicked: root.showToday()
                     }
                     SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
                         Layout.preferredWidth: 40
                         iconName: "go-previous-symbolic"
@@ -509,6 +521,7 @@ FloatingWindow {
                         onClicked: root.shiftPeriod(-1)
                     }
                     SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
                         Layout.preferredWidth: 40
                         iconName: "go-next-symbolic"
@@ -518,23 +531,31 @@ FloatingWindow {
                         onClicked: root.shiftPeriod(1)
                     }
                     Text {
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 100
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.leftMargin: root.compactHeader ? 2 : 4
+                        Layout.maximumWidth: root.compactHeader ? 220 : 420
                         color: Config.md3.on_surface
                         elide: Text.ElideRight
                         font.family: Config.fontName
                         font.pixelSize: root.compactHeader ? 16 : 18
                         font.weight: Font.DemiBold
                         text: root.formatPeriodRange()
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    Item {
+                        Layout.fillWidth: true
                     }
                     SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
-                        Layout.preferredWidth: root.compactHeader ? 40 : implicitWidth
+                        Layout.preferredWidth: 40
                         enabled: CalendarService.authenticated
-                        iconName: "view-refresh-symbolic"
-                        iconOnly: root.compactHeader
+                        iconName: "emblem-synchronizing-symbolic"
+                        iconOnly: true
                         primary: CalendarService.isLoading
-                        text: root.formatSyncStatus()
+                        spinning: CalendarService.isLoading
+                        text: qsTr("Sync all accounts")
+                        tooltipText: root.formatSyncStatus()
 
                         onClicked: {
                             if (!CalendarService.isLoading)
@@ -542,8 +563,9 @@ FloatingWindow {
                         }
                     }
                     SettingsActionButton {
-                        Layout.preferredHeight: 38
-                        Layout.preferredWidth: root.compactHeader ? 38 : implicitWidth
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: root.compactHeader ? 40 : implicitWidth
                         iconName: root.viewMode === "month" ? "view-calendar-month" : "view-calendar-week"
                         iconOnly: root.compactHeader
                         text: root.viewMode === "month" ? qsTr("Month") : qsTr("Week")
@@ -551,6 +573,7 @@ FloatingWindow {
                         onClicked: root.toggleViewMode()
                     }
                     SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
                         Layout.preferredWidth: 40
                         iconName: root.maximized ? "window-restore-symbolic" : "window-maximize-symbolic"
@@ -560,6 +583,7 @@ FloatingWindow {
                         onClicked: root.maximized = !root.maximized
                     }
                     SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
                         Layout.preferredWidth: 40
                         iconName: "window-close-symbolic"
@@ -639,8 +663,8 @@ FloatingWindow {
             id: weekViewComponent
 
             CalendarWeekView {
-                available: CalendarService.authenticated
-                events: CalendarService.allEvents
+                available: CalendarService.authenticated || CalendarService.calendarAppEvents.length > 0
+                events: CalendarService.calendarAppEvents
                 hiddenCalendars: root.hiddenCalendars
                 loading: CalendarService.isLoading
                 selectedDate: root.selectedDate
@@ -655,8 +679,8 @@ FloatingWindow {
             id: monthViewComponent
 
             CalendarMonthView {
-                available: CalendarService.authenticated
-                events: CalendarService.allEvents
+                available: CalendarService.authenticated || CalendarService.calendarAppEvents.length > 0
+                events: CalendarService.calendarAppEvents
                 hiddenCalendars: root.hiddenCalendars
                 loading: CalendarService.isLoading
                 monthDate: root.selectedDate

@@ -36,6 +36,19 @@ QtObject {
 
     signal finished
 
+    function addSeconds(seconds) {
+        var addMs = Math.max(1, seconds) * 1000;
+        if (completed || remainingMilliseconds <= 0) {
+            setDuration(seconds);
+            start();
+            return;
+        }
+        totalMilliseconds += addMs;
+        remainingMilliseconds += addMs;
+        if (running) {
+            deadline += addMs;
+        }
+    }
     function beginRunning() {
         deadline = Date.now() + remainingMilliseconds;
         running = true;

@@ -249,6 +249,50 @@ impl IpcServer {
                 "pid": std::process::id(),
             })),
             "system.info" => self.system_info().await,
+            "tasks.list" => Ok(json!(
+                self.sync
+                    .tasks
+                    .snapshots()
+                    .await
+                    .map_err(RpcError::backend)?
+            )),
+            "tasks.setVisible" => {
+                let account_id = request.params["accountId"]
+                    .as_str()
+                    .ok_or_else(|| RpcError::invalid_params("accountId is required"))?
+                    .to_owned();
+                let visible = request.params["visible"]
+                    .as_bool()
+                    .ok_or_else(|| RpcError::invalid_params("visible must be a boolean"))?;
+                self.sync
+                    .tasks
+                    .set_visible(account_id, visible)
+                    .await
+                    .map_err(RpcError::backend)?;
+                Ok(json!({"changed": true}))
+            }
+            "tasks.google.refresh" => {
+                let account = self
+                    .sync
+                    .tasks
+                    .account(request.params["accountId"].as_str().unwrap_or_default())
+                    .await
+                    .map_err(RpcError::backend)?;
+                self.sync
+                    .tasks
+                    .refresh(&account)
+                    .await
+                    .map_err(RpcError::backend)?;
+                Ok(json!({"success": true}))
+            }
+            "tasks.google.create" | "tasks.google.update" | "tasks.google.delete" => {
+                let operation = request.method.rsplit('.').next().unwrap_or_default();
+                self.sync
+                    .tasks
+                    .mutate(operation, request.params)
+                    .await
+                    .map_err(RpcError::backend)
+            }
             "accounts.list" => Ok(json!(
                 self.database
                     .run_blocking(|database| database.list_accounts(false))

@@ -15,6 +15,7 @@ Item {
     id: searchRoot
 
     // Combine apps and file results into a single list, or output clipboard history/file search
+    property var _fileItemCache: ({})
     readonly property var combinedResults: {
         if (isCalculatorMode)
             return [];
@@ -29,20 +30,29 @@ Item {
             return [];
 
         if (isFileMode) {
-            var fileList = [];
             var files = filesSearch.fileResults;
+            var cached = searchRoot._fileItemCache || ({});
+            var nextCache = {};
+            var fileList = [];
             for (var j = 0; j < files.length; j++) {
                 var fileEntry = files[j];
                 var path = fileEntry.path ? fileEntry.path : files[j];
                 var kind = fileEntry.kind ? fileEntry.kind : "file";
-                fileList.push({
-                    "type": kind,
-                    "data": {
-                        "path": path,
-                        "name": fileEntry.name ? fileEntry.name : path.substring(path.lastIndexOf("/") + 1)
-                    }
-                });
+                var name = fileEntry.name ? fileEntry.name : path.substring(path.lastIndexOf("/") + 1);
+                var cachedItem = cached[path];
+                if (!cachedItem || cachedItem.data.name !== name || cachedItem.type !== kind) {
+                    cachedItem = {
+                        "type": kind,
+                        "data": {
+                            "path": path,
+                            "name": name
+                        }
+                    };
+                }
+                nextCache[path] = cachedItem;
+                fileList.push(cachedItem);
             }
+            searchRoot._fileItemCache = nextCache;
             return fileList;
         }
         // Default mode: ONLY show apps (saving CPU/IO from file search!)
@@ -209,6 +219,15 @@ Item {
     // Auto-fit height: show up to 5 items (apps + files + clipboards), scroll for more
     implicitHeight: Math.min(combinedResults.length, 5) * (80 + 12) - (combinedResults.length > 0 ? 12 : 0)
 
+    onCombinedResultsChanged: {
+        if (combinedResults.length === 0) {
+            selectedIndex = 0;
+            return;
+        }
+        if (selectedIndex >= combinedResults.length) {
+            selectedIndex = Math.max(0, combinedResults.length - 1);
+        }
+    }
     onQueryChanged: selectedIndex = 0
     onSelectedIndexChanged: {}
 
@@ -226,8 +245,26 @@ Item {
             return item ? item["isVideoPreviewReady"](path) : false;
         }
         function removeFile(path) {
+            var targetIdx = -1;
+            for (var i = 0; i < combinedResults.length; ++i) {
+                if (combinedResults[i].data && combinedResults[i].data.path === path) {
+                    targetIdx = i;
+                    break;
+                }
+            }
+            var targetSelection = searchRoot.selectedIndex;
+            if (targetIdx !== -1) {
+                if (targetSelection > targetIdx)
+                    targetSelection = targetSelection - 1;
+                else if (targetSelection === targetIdx)
+                    targetSelection = Math.min(targetSelection, Math.max(0, combinedResults.length - 2));
+            }
+            searchRoot._savedIndexBeforeModelUpdate = targetSelection;
             if (item)
                 item["removeFile"](path);
+            searchRoot.selectedIndex = targetSelection;
+            searchList.currentIndex = targetSelection;
+            searchRoot.isDeletingItem = false;
         }
         function videoPreviewSource(path) {
             return item ? item["videoPreviewSource"](path) : "";
@@ -375,23 +412,27 @@ Item {
                     return;
 
                 isDeleting = true;
-                swipeContent.x = swipeContent.width;
+                swipeContent.x = delegateRoot.width + 20;
                 Quickshell.execDetached(["gio", "trash", itemData.path]);
-                collapseTimer.start();
             }
 
             clip: true
             color: "transparent"
             height: isDeleting ? 0 : 80
-            layer.enabled: isFile && swipeContent.x > 0.4
+            layer.enabled: isFile && swipeContent.x > 0.4 && !isDeleting
             opacity: isDeleting ? 0 : 1
             radius: 28
             width: searchList.width - searchList.cardInset * 2
 
             Behavior on height {
                 NumberAnimation {
-                    duration: 250
-                    easing.type: Easing.InOutQuad
+                    duration: Config.animationDuration(220)
+                    easing.type: Easing.InOutCubic
+
+                    onFinished: {
+                        if (delegateRoot.isDeleting)
+                            filesSearch.removeFile(itemData.path);
+                    }
                 }
             }
             layer.effect: OpacityMask {
@@ -403,7 +444,8 @@ Item {
             }
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 200
+                    duration: Config.animationDuration(160)
+                    easing.type: Easing.OutQuad
                 }
             }
             transform: Translate {
@@ -417,17 +459,6 @@ Item {
             onClipDataChanged: requestClipboardPreview()
             onItemDataChanged: requestVideoPreview()
 
-            Timer {
-                id: collapseTimer
-
-                interval: 250
-                repeat: false
-                running: false
-
-                onTriggered: {
-                    filesSearch.removeFile(itemData.path);
-                }
-            }
             SwipeDeleteBackground {
                 actionText: qsTr("Trash")
                 anchors.fill: parent
@@ -454,7 +485,7 @@ Item {
                     }
                 }
                 Behavior on x {
-                    enabled: !listMouse.drag.active && !Config.shellReducedMotion
+                    enabled: !listMouse.drag.active && !Config.shellReducedMotion && !deleteSlideOutAnimation.running
 
                     SpringAnimation {
                         damping: 0.52
@@ -554,7 +585,7 @@ Item {
                         Image {
                             anchors.fill: parent
                             asynchronous: true
-                            cache: false
+                            cache: true
                             clip: true
                             fillMode: Image.PreserveAspectCrop
                             // Round the corners of the preview image to make it look premium
@@ -640,7 +671,14 @@ Item {
                         Quickshell.execDetached(["gio", "open", itemData.path]);
                     searchRoot.resultLaunched();
                 }
-                onEntered: searchRoot.selectedIndex = index
+                onEntered: {
+                    if (!delegateRoot.isDeleting)
+                        searchRoot.selectedIndex = index;
+                }
+                onPositionChanged: {
+                    if (!delegateRoot.isDeleting && searchRoot.selectedIndex !== index)
+                        searchRoot.selectedIndex = index;
+                }
                 onReleased: {
                     if (isFile) {
                         if (swipeContent.x > 120)
@@ -709,7 +747,37 @@ Item {
         }
 
         // Invisible highlight just for the engine
-        highlight: Item {
+        highlight: Rectangle {
+            readonly property var curItem: searchList.currentItem
+
+            color: curItem ? Config.alpha(curItem.accentColor, 0.13) : Config.alpha(Config.md3.primary, 0.13)
+            radius: 28
+            visible: searchRoot.combinedResults.length > 0
+            width: searchList.width - searchList.cardInset * 2
+            x: searchList.cardInset
+            z: 0
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 150
+                }
+            }
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.leftMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                color: parent.curItem ? parent.curItem.accentColor : Config.md3.primary
+                height: 36
+                radius: 2
+                width: 3
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 150
+                    }
+                }
+            }
         }
 
         NumberAnimation {
@@ -725,46 +793,11 @@ Item {
             target: null
 
             onWheel: event => {
-                var pixelDelta = event.pixelDelta.y;
-                var delta = pixelDelta !== 0 ? pixelDelta : (event.angleDelta.y / 120) * 82;
+                var pDelta = event.pixelDelta.y;
+                var aDelta = event.angleDelta.y;
+                var delta = pDelta !== 0 ? pDelta : (aDelta / 120) * 82;
                 searchList.smoothWheelScroll(delta);
                 event.accepted = true;
-            }
-        }
-
-        // Our actual visible custom highlight
-        Rectangle {
-            color: searchList.currentItem ? Config.alpha(searchList.currentItem.accentColor, 0.13) : "transparent"
-            height: searchList.currentItem ? searchList.currentItem.height : 80
-            parent: searchList.contentItem
-            radius: 28
-            visible: searchList.currentItem !== null && searchRoot.combinedResults.length > 0
-            width: searchList.width - searchList.cardInset * 2
-            x: searchList.cardInset
-            y: searchList.currentItem ? searchList.currentItem.y : 0
-            z: -1
-
-            Behavior on y {
-                NumberAnimation {
-                    duration: 250
-                    easing.type: Easing.OutBack
-                }
-            }
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.leftMargin: 4
-                anchors.verticalCenter: parent.verticalCenter
-                color: searchList.currentItem ? searchList.currentItem.accentColor : "transparent"
-                height: 36
-                radius: 2
-                width: 3
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 160
-                    }
-                }
             }
         }
     }

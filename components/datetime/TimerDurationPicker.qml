@@ -15,11 +15,11 @@ Item {
     readonly property int seconds: totalSeconds % 60
     property int totalSeconds: 300
     readonly property real visualScale: Responsive.clamp(height / Math.max(1, implicitHeight), 0.82, 1)
-    readonly property int wheelRowHeight: Math.max(34, Math.round(36 * visualScale))
+    readonly property int wheelRowHeight: Math.max(38, Math.round(42 * visualScale))
 
     signal durationSelected(int seconds)
 
-    implicitHeight: 128
+    implicitHeight: 146
     implicitWidth: 480
 
     Rectangle {

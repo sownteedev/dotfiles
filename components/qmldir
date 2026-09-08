@@ -80,7 +80,6 @@ WallpaperWorkshopFilters 1.0 wallpaper/WallpaperWorkshopFilters.qml
 
 CalendarEventEditor 1.0 productivity/CalendarEventEditor.qml
 CalendarTaskCard 1.0 productivity/CalendarTaskCard.qml
-GoogleAuthPanel 1.0 productivity/GoogleAuthPanel.qml
 ProductivityEmptyState 1.0 productivity/ProductivityEmptyState.qml
 
 MusicArtwork 1.0 media/MusicArtwork.qml

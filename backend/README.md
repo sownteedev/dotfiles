@@ -37,8 +37,7 @@ sockets using newline-delimited JSON.
 - transactional Niri and SownteeShell settings, GTK/XSettings theme updates,
   and greetd profile, session, background, and palette synchronization;
 - Weather, Emoji/Unicode, KLIPY, Wallhaven, Steam Workshop, Wallpaper Engine,
-  preview generation, and bounded media caches;
-- Google Tasks authentication and Todo synchronization.
+  preview generation, and bounded media caches.
 
 The default socket is:
 
@@ -58,21 +57,34 @@ command output, and caches. Long-running renderers, SteamCMD, FFmpeg,
 ImageMagick, Matugen, and privileged system commands remain separate processes
 by design.
 
-See [`rust/core-daemon/README.md`](rust/core-daemon/README.md) for its IPC
-methods and compatibility commands.
+Run `sownteeshell ipc methods core` for its IPC methods and parameters.
 
 ## Calendar daemon
 
-`rust/calendar-daemon` is independent from Google Tasks and is dedicated to
-calendar data. It supports:
+`rust/calendar-daemon` owns calendar accounts, events, and Google Tasks. It supports:
 
 - Google Calendar through OAuth;
 - Microsoft Calendar through Microsoft Graph OAuth;
 - iCloud Calendar through CalDAV and an app-specific password;
+- Google Tasks from all connected Google accounts and task lists, with cached
+  snapshots, account-scoped mutations, and shared updates for Todo and Calendar;
 - account and calendar visibility, event create/update/delete, background
   synchronization, and live change subscriptions;
 - local SQLite persistence and deduplicated desktop reminders 30 minutes
   before an event.
+
+Google Tasks uses the Calendar account's OAuth credentials. Existing Google
+connections need to grant the additional Tasks scope by reconnecting in Calendar;
+Google Tasks API must also be enabled in the OAuth project's Google Cloud console.
+The previous Core Tasks backend and separate Tasks sign-in are no longer used.
+Local tasks stay on this device and are never uploaded automatically.
+
+`tasks.list` returns per-account cached tasks and lists, including tasks without a
+due date. Calendar renders unfinished dated tasks in the all-day lane; Todo keeps
+the complete task lists. `tasks.setVisible` only changes Calendar visibility.
+Task refresh failures preserve the previous complete snapshot and report a
+per-account error without stopping event synchronization. See `sownteeshell ipc
+methods calendar` for the task methods and their required account/list identifiers.
 
 The default socket and database are:
 

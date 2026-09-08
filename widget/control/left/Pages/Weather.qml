@@ -13,6 +13,23 @@ Item {
     readonly property bool animationActive: visible && !WeatherService.hasData
     readonly property bool missingApiKey: String(Config.apiWeather || "").trim() === ""
 
+    function weatherAccentColor(iconName) {
+        var name = String(iconName || "").toLowerCase();
+        if (name.indexOf("clear") !== -1 || name.indexOf("sunny") !== -1)
+            return "#f59e0b";
+        if (name.indexOf("storm") !== -1 || name.indexOf("thunder") !== -1)
+            return "#a855f7";
+        if (name.indexOf("snow") !== -1)
+            return "#38bdf8";
+        if (name.indexOf("shower") !== -1 || name.indexOf("rain") !== -1)
+            return "#60a5fa";
+        if (name.indexOf("overcast") !== -1 || name.indexOf("cloud") !== -1)
+            return "#94a3b8";
+        if (name.indexOf("fog") !== -1)
+            return "#cbd5e1";
+        return Config.md3.primary;
+    }
+
     anchors.fill: parent
 
     Component.onCompleted: WeatherService.acquire()
@@ -88,7 +105,7 @@ Item {
                             width: 68
 
                             layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface
+                                color: root.weatherAccentColor(WeatherService.icon)
                             }
                         }
                     }
@@ -213,7 +230,7 @@ Item {
                                     source: Quickshell.iconPath(modelData.icon)
 
                                     layer.effect: ColorOverlay {
-                                        color: Config.md3.on_surface
+                                        color: modelData.sunEvent ? "#f59e0b" : root.weatherAccentColor(modelData.icon)
                                     }
                                 }
                             }
@@ -235,126 +252,136 @@ Item {
             }
 
             // Six-day forecast.
-            Flickable {
-                id: dailyForecastViewport
-
+            Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 142
-                boundsBehavior: Flickable.StopAtBounds
-                clip: contentWidth > width
-                contentHeight: height
-                contentWidth: Math.max(width, dailyForecastRow.implicitWidth)
-                flickableDirection: Flickable.HorizontalFlick
-                interactive: contentWidth > width
+                Layout.preferredHeight: 148
+                border.color: Config.alpha(Config.md3.on_surface, 0.07)
+                border.width: 1
+                clip: true
+                color: Config.alpha(Config.md3.surface_container_high, 0.36)
+                radius: 14
 
-                Row {
-                    id: dailyForecastRow
+                Flickable {
+                    id: dailyForecastViewport
 
-                    height: parent.height
-                    spacing: 4
-                    x: implicitWidth <= dailyForecastViewport.width ? (dailyForecastViewport.width - implicitWidth) / 2 : 0
+                    anchors.fill: parent
+                    anchors.margins: 4
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: contentWidth > width
+                    contentHeight: height
+                    contentWidth: Math.max(width, dailyForecastRow.implicitWidth)
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: contentWidth > width
 
-                    Repeater {
-                        id: dailyForecastRepeater
+                    Row {
+                        id: dailyForecastRow
 
-                        model: WeatherService.dailyForecast
+                        height: parent.height
+                        spacing: 4
+                        x: implicitWidth <= dailyForecastViewport.width ? (dailyForecastViewport.width - implicitWidth) / 2 : 0
 
-                        delegate: Item {
-                            id: dayItem
+                        Repeater {
+                            id: dailyForecastRepeater
 
-                            readonly property real equalWidth: (dailyForecastViewport.width - Math.max(0, dailyForecastRepeater.count - 1) * dailyForecastRow.spacing) / Math.max(1, dailyForecastRepeater.count)
-                            required property var modelData
+                            model: WeatherService.dailyForecast
 
-                            height: dailyForecastViewport.height
-                            width: Math.max(78, equalWidth)
+                            delegate: Item {
+                                id: dayItem
 
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 5
-                                width: dayItem.width
+                                readonly property real equalWidth: (dailyForecastViewport.width - Math.max(0, dailyForecastRepeater.count - 1) * dailyForecastRow.spacing) / Math.max(1, dailyForecastRepeater.count)
+                                required property var modelData
 
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    color: Config.alpha(Config.md3.on_surface_variant, 0.75)
-                                    elide: Text.ElideRight
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.DemiBold
-                                    horizontalAlignment: Text.AlignHCenter
-                                    renderType: Text.NativeRendering
-                                    text: modelData.day
-                                    width: dayItem.width - 8
-                                }
-                                Item {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    height: 42
-                                    width: 42
+                                height: dailyForecastViewport.height
+                                width: Math.max(76, equalWidth)
 
-                                    IconImage {
-                                        anchors.fill: parent
-                                        layer.enabled: true
-                                        source: Quickshell.iconPath(modelData.icon)
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: 5
+                                    width: dayItem.width
 
-                                        layer.effect: ColorOverlay {
-                                            color: Config.md3.on_surface
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        color: Config.alpha(Config.md3.on_surface_variant, 0.75)
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 14
+                                        font.weight: Font.DemiBold
+                                        horizontalAlignment: Text.AlignHCenter
+                                        renderType: Text.NativeRendering
+                                        text: modelData.day
+                                        width: dayItem.width - 8
+                                    }
+                                    Item {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        height: 38
+                                        width: 38
+
+                                        IconImage {
+                                            anchors.fill: parent
+                                            layer.enabled: true
+                                            source: Quickshell.iconPath(modelData.icon)
+
+                                            layer.effect: ColorOverlay {
+                                                color: root.weatherAccentColor(modelData.icon)
+                                            }
                                         }
                                     }
-                                }
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    color: Config.md3.on_surface
-                                    elide: Text.ElideRight
-                                    font.family: Config.fontName
-                                    font.pixelSize: 13
-                                    font.weight: Font.DemiBold
-                                    horizontalAlignment: Text.AlignHCenter
-                                    renderType: Text.NativeRendering
-                                    text: WeatherService.formatTemperature(modelData.tempMax, 0, false) + " / " + WeatherService.formatTemperature(modelData.tempMin, 0, false)
-                                    width: dayItem.width - 8
-                                }
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        color: Config.md3.on_surface
+                                        elide: Text.ElideRight
+                                        font.family: Config.fontName
+                                        font.pixelSize: 13
+                                        font.weight: Font.DemiBold
+                                        horizontalAlignment: Text.AlignHCenter
+                                        renderType: Text.NativeRendering
+                                        text: WeatherService.formatTemperature(modelData.tempMax, 0, false) + " / " + WeatherService.formatTemperature(modelData.tempMin, 0, false)
+                                        width: dayItem.width - 8
+                                    }
 
-                                // Always reserve this slot so dry and rainy days align.
-                                Item {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    height: 30
-                                    width: parent.width
+                                    // Always reserve this slot so dry and rainy days align.
+                                    Item {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        height: 28
+                                        width: parent.width
 
-                                    Column {
-                                        anchors.centerIn: parent
-                                        spacing: 5
-                                        visible: modelData.precipitationProbability > 0
-
-                                        Row {
-                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        Column {
+                                            anchors.centerIn: parent
                                             spacing: 3
+                                            visible: modelData.precipitationProbability > 0
 
-                                            IconImage {
-                                                height: 12
-                                                layer.enabled: true
-                                                source: Quickshell.iconPath("weather-showers-symbolic")
-                                                width: 12
+                                            Row {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                spacing: 3
 
-                                                layer.effect: ColorOverlay {
-                                                    color: Config.md3.primary
+                                                IconImage {
+                                                    height: 12
+                                                    layer.enabled: true
+                                                    source: Quickshell.iconPath("weather-showers-symbolic")
+                                                    width: 12
+
+                                                    layer.effect: ColorOverlay {
+                                                        color: "#60a5fa"
+                                                    }
+                                                }
+                                                Text {
+                                                    color: "#60a5fa"
+                                                    font.family: Config.fontName
+                                                    font.pixelSize: 11
+                                                    font.weight: Font.Bold
+                                                    renderType: Text.NativeRendering
+                                                    text: modelData.precipitationProbability + "%"
                                                 }
                                             }
                                             Text {
-                                                color: Config.md3.primary
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                color: Config.alpha("#60a5fa", 0.85)
                                                 font.family: Config.fontName
-                                                font.pixelSize: 11
-                                                font.weight: Font.Bold
+                                                font.pixelSize: 10
+                                                font.weight: Font.DemiBold
                                                 renderType: Text.NativeRendering
-                                                text: modelData.precipitationProbability + "%"
+                                                text: modelData.precipitationAmount > 0 ? modelData.precipitationAmount.toFixed(1) + " mm" : ""
                                             }
-                                        }
-                                        Text {
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            color: Config.md3.primary
-                                            font.family: Config.fontName
-                                            font.pixelSize: 10
-                                            font.weight: Font.DemiBold
-                                            renderType: Text.NativeRendering
-                                            text: modelData.precipitationAmount > 0 ? modelData.precipitationAmount.toFixed(1) + " mm" : ""
                                         }
                                     }
                                 }
@@ -367,7 +394,7 @@ Item {
             // Extra current conditions exposed by One Call 3.0.
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 170
+                Layout.preferredHeight: 168
                 border.color: Config.alpha(Config.md3.on_surface, 0.07)
                 border.width: 1
                 color: Config.alpha(Config.md3.surface_container_high, 0.32)
@@ -376,64 +403,82 @@ Item {
                 GridLayout {
                     anchors.fill: parent
                     anchors.margins: 10
-                    columnSpacing: 10
+                    columnSpacing: 8
                     columns: 3
-                    rowSpacing: 10
+                    rowSpacing: 8
 
                     Repeater {
                         model: [
                             {
-                                label: "Wind",
+                                label: qsTr("Wind"),
                                 icon: "weather-windy-symbolic",
+                                iconColor: "#2dd4bf",
                                 value: WeatherService.windSpeed.toFixed(1) + " m/s " + WeatherService.windDirection(WeatherService.windDegree)
                             },
                             {
-                                label: "UV index",
+                                label: qsTr("UV index"),
                                 icon: "weather-clear-symbolic",
+                                iconColor: "#f59e0b",
                                 value: WeatherService.uvIndex.toFixed(1)
                             },
                             {
-                                label: "Visibility",
+                                label: qsTr("Visibility"),
                                 icon: "view-reveal-symbolic",
+                                iconColor: "#818cf8",
                                 value: (WeatherService.visibility / 1000).toFixed(1) + " km"
                             },
                             {
-                                label: "Pressure",
+                                label: qsTr("Pressure"),
                                 icon: "speedometer-symbolic",
+                                iconColor: "#fb923c",
                                 value: WeatherService.pressure + " hPa"
                             },
                             {
-                                label: "Clouds",
+                                label: qsTr("Clouds"),
                                 icon: "weather-clouds-symbolic",
+                                iconColor: "#94a3b8",
                                 value: WeatherService.cloudiness + "%"
                             },
                             {
-                                label: "Dew point",
+                                label: qsTr("Dew point"),
                                 icon: "weather-fog-symbolic",
+                                iconColor: "#34d399",
                                 value: WeatherService.formatTemperature(WeatherService.dewPoint, 1)
                             }
                         ]
 
-                        delegate: Item {
+                        delegate: Rectangle {
+                            id: metricTile
+
                             required property int index
                             required property var modelData
 
                             Layout.fillHeight: true
                             Layout.fillWidth: true
+                            border.color: Config.alpha(Config.md3.on_surface, tileMouse.containsMouse ? 0.10 : 0.04)
+                            border.width: 1
+                            color: Config.alpha(Config.md3.surface, tileMouse.containsMouse ? 0.38 : 0.18)
+                            radius: 10
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: Config.animationDuration(120)
+                                }
+                            }
 
                             Column {
                                 anchors.centerIn: parent
-                                spacing: 5
+                                spacing: 4
 
                                 IconImage {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    height: 24
+                                    height: 22
                                     layer.enabled: true
-                                    source: Quickshell.iconPath(modelData.icon)
-                                    width: 24
+                                    source: Quickshell.iconPath(metricTile.modelData.icon)
+                                    width: 22
 
                                     layer.effect: ColorOverlay {
-                                        color: Config.md3.on_surface_variant
+                                        color: metricTile.modelData.iconColor || Config.md3.on_surface_variant
                                     }
                                 }
                                 Text {
@@ -443,35 +488,23 @@ Item {
                                     font.pixelSize: 13
                                     font.weight: Font.Bold
                                     renderType: Text.NativeRendering
-                                    text: modelData.value
+                                    text: metricTile.modelData.value
                                 }
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    color: Config.md3.on_surface_variant
+                                    color: Config.alpha(Config.md3.on_surface_variant, 0.82)
                                     font.family: Config.fontName
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
                                     font.weight: Font.Medium
                                     renderType: Text.NativeRendering
-                                    text: modelData.label
+                                    text: metricTile.modelData.label
                                 }
                             }
-                            Rectangle {
-                                anchors.right: parent.right
-                                anchors.rightMargin: -5
-                                anchors.verticalCenter: parent.verticalCenter
-                                color: Config.alpha(Config.md3.on_surface_variant, 0.16)
-                                height: 42
-                                visible: index % 3 !== 2
-                                width: 1
-                            }
-                            Rectangle {
-                                anchors.bottom: parent.bottom
-                                anchors.bottomMargin: -5
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                color: Config.alpha(Config.md3.on_surface_variant, 0.16)
-                                height: 1
-                                visible: index < 3
-                                width: parent.width * 0.72
+                            MouseArea {
+                                id: tileMouse
+
+                                anchors.fill: parent
+                                hoverEnabled: true
                             }
                         }
                     }

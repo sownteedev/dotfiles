@@ -12,7 +12,8 @@ const TOKEN_ENDPOINT: &str = "https://oauth2.googleapis.com/token";
 const USERINFO_ENDPOINT: &str = "https://www.googleapis.com/oauth2/v2/userinfo";
 const SCOPES: &str = "openid email profile \
 https://www.googleapis.com/auth/calendar.events \
-https://www.googleapis.com/auth/calendar.calendarlist.readonly";
+https://www.googleapis.com/auth/calendar.calendarlist.readonly \
+https://www.googleapis.com/auth/tasks";
 
 #[derive(Debug, Deserialize)]
 struct GoogleUser {

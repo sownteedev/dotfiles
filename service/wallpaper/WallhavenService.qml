@@ -742,13 +742,14 @@ QtObject {
             return false;
 
         query = String(searchText || "").trim();
-        page = Math.max(1, Number(requestedPage || 1));
+        // page belongs to the displayed results, not the in-flight request.
+        var targetPage = Math.max(1, Number(requestedPage || 1));
         sorting = String(requestedSorting || sorting || "toplist");
         if (preserveRandomSeed !== true)
             seed = "";
 
         if (searchRequest.active) {
-            searchPendingPage = page;
+            searchPendingPage = targetPage;
             searchPendingPreserveSeed = preserveRandomSeed === true;
             searchRefreshPending = true;
             return true;
@@ -762,7 +763,7 @@ QtObject {
             "categories": categories,
             "colors": colors,
             "order": order,
-            "page": page,
+            "page": targetPage,
             "purity": purity,
             "query": query,
             "ratios": ratios,

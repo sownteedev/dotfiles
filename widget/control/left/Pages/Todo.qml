@@ -11,7 +11,11 @@ import "../../../../components"
 Item {
     id: root
 
+    property var activeSelectorOptions: []
+    readonly property bool canSave: newTaskTitle.trim() !== "" && !saving && (editingTaskSource === "local" || GoogleService.listsForAccount(editingAccountId).some(list => list.id === editingListId))
     property int currentTab: 0 // 0: To do, 1: Done
+    property string editingAccountId: ""
+    property string editingListId: ""
     property string editingTaskId: ""
     property string editingTaskSource: "local"
     property var filteredTasks: {
@@ -21,6 +25,8 @@ Item {
             return list;
         for (var i = 0; i < sourceTasks.length; i++) {
             var task = sourceTasks[i];
+            if (taskSource === "google" && selectedTaskListKey !== "" && JSON.stringify([task.accountId, task.taskListId]) !== selectedTaskListKey)
+                continue;
             if (currentTab === 0 && task.status === "needsAction") {
                 list.push(task);
             } else if (currentTab === 1 && task.status === "completed") {
@@ -38,51 +44,128 @@ Item {
         });
         return list;
     }
-    property bool googleDropHovered: false
+    property string formError: ""
+    readonly property var listOptions: [
+        {
+            "color": "",
+            "id": "",
+            "label": qsTr("All accounts and lists")
+        }
+    ].concat(GoogleService.taskLists.map(list => ({
+                "color": CalendarService.taskListColor(list.accountId, list.id),
+                "id": JSON.stringify([list.accountId, list.id]),
+                "label": list.title + " · " + list.accountLabel
+            })))
     property string newTaskDue: ""
     property string newTaskNotes: ""
     property string newTaskTitle: ""
     readonly property Item popupBackdropHost: controlLeftWindow.topPopupBackdropHost
     readonly property real popupBackdropRadius: controlLeftWindow.topPopupBackdropRadius
+    property bool saving: false
+    property string selectedTaskListKey: ""
+    property string selectionKind: ""
+    property real selectionY: 0
+    readonly property var selectorOptions: selectionKind === "account" ? GoogleService.accounts.map(account => ({
+                "color": CalendarService.taskAccountColor(account.id),
+                "id": account.id,
+                "label": account.email || account.displayName
+            })) : selectionKind === "list" ? GoogleService.listsForAccount(editingAccountId).map(list => ({
+                "color": CalendarService.taskListColor(editingAccountId, list.id),
+                "id": list.id,
+                "label": list.title
+            })) : listOptions
     property bool showAddEvent: false
     property string taskSource: "local"
 
     function openNewTask() {
+        if (saving)
+            return;
+        if (taskSource === "google" && GoogleService.authenticated)
+            GoogleService.fetchTasks();
         editingTaskId = "";
         editingTaskSource = taskSource;
+        formError = "";
+        var selected = GoogleService.taskLists.find(list => JSON.stringify([list.accountId, list.id]) === selectedTaskListKey);
+        editingAccountId = selected ? selected.accountId : GoogleService.accounts.length > 0 ? GoogleService.accounts[0].id : "";
+        var lists = GoogleService.listsForAccount(editingAccountId);
+        editingListId = selected ? selected.id : lists.length > 0 ? lists[0].id : "";
         newTaskTitle = "";
         newTaskDue = "";
         newTaskNotes = "";
         titleField.text = "";
         notesField.text = "";
         showAddEvent = true;
+        formFlickable.contentY = 0;
+    }
+    function openSelector(kind, sourceItem) {
+        activeSelectorOptions = kind === "account" ? GoogleService.accounts.map(account => ({
+                    "color": CalendarService.taskAccountColor(account.id),
+                    "id": account.id,
+                    "label": account.email || account.displayName
+                })) : kind === "list" ? GoogleService.listsForAccount(editingAccountId).map(list => ({
+                    "color": CalendarService.taskListColor(editingAccountId, list.id),
+                    "id": list.id,
+                    "label": list.title
+                })) : listOptions;
+        selectionKind = kind;
+        selectionY = sourceItem.mapToItem(root, 0, sourceItem.height).y + 6;
     }
     function openTask(task) {
+        if (saving)
+            return;
         editingTaskId = String(task.id || "");
         editingTaskSource = taskSource;
+        editingAccountId = task.accountId || "";
+        editingListId = task.taskListId || "";
+        formError = "";
         newTaskTitle = task.title || "";
         newTaskNotes = task.notes || "";
         titleField.text = newTaskTitle;
         notesField.text = newTaskNotes;
         if (task.due) {
-            var d = new Date(task.due);
+            var parts = String(task.due).slice(0, 10).split("-");
+            var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
             newTaskDue = String(d.getDate()).padStart(2, '0') + "/" + String(d.getMonth() + 1).padStart(2, '0') + "/" + d.getFullYear();
         } else {
             newTaskDue = "";
         }
         showAddEvent = true;
+        formFlickable.contentY = 0;
     }
-    function syncLocalTask(taskId) {
-        var stableTaskId = String(taskId || "");
-        if (stableTaskId === "")
+    function saveTask() {
+        if (!canSave)
             return;
-        // Enqueue before changing the model. Switching source destroys the
-        // Local delegate that owns the click/drag callback.
-        if (LocalTaskService.syncToGoogle(stableTaskId)) {
-            taskSource = "google";
+        var due = "";
+        if (newTaskDue) {
+            var parts = newTaskDue.split("/");
+            if (parts.length === 3)
+                due = parts[2] + "-" + parts[1].padStart(2, "0") + "-" + parts[0].padStart(2, "0");
+        }
+        formError = "";
+        if (editingTaskSource === "local") {
+            if (editingTaskId)
+                LocalTaskService.updateTask(editingTaskId, newTaskTitle, due, newTaskNotes, undefined);
+            else
+                LocalTaskService.createTask(newTaskTitle, due, newTaskNotes);
+            showAddEvent = false;
             return;
         }
-        Quickshell.execDetached(["notify-send", "-a", "Todo", "-u", "normal", "-h", "boolean:transient:true", "Could not start Google sync", LocalTaskService.syncError || "The local task could not be queued"]);
+        saving = true;
+        var done = function (ok, message) {
+            root.saving = false;
+            if (ok)
+                root.showAddEvent = false;
+            else
+                root.formError = message;
+        };
+        if (editingTaskId)
+            GoogleService.updateTask(editingListId, editingTaskId, newTaskTitle, due, newTaskNotes, undefined, editingAccountId, done);
+        else
+            GoogleService.createTask(editingListId, newTaskTitle, due, newTaskNotes, "", editingAccountId, done);
+    }
+    function selectedLabel(options, id, fallback) {
+        var item = options.find(option => option.id === id);
+        return item ? item.label || item.title : fallback;
     }
 
     anchors.fill: parent
@@ -96,6 +179,10 @@ Item {
     Component.onDestruction: {
         if (typeof GoogleService.release === "function")
             GoogleService.release();
+    }
+    onTaskSourceChanged: {
+        if (taskSource === "google" && GoogleService.authenticated)
+            GoogleService.fetchTasks();
     }
 
     ColumnLayout {
@@ -251,7 +338,7 @@ Item {
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    color: modelData.value === "google" && root.googleDropHovered ? Config.alpha(Config.md3.primary, 0.18) : "transparent"
+                                    color: "transparent"
                                     radius: 11
                                 }
                                 Text {
@@ -262,33 +349,15 @@ Item {
                                     font.weight: Font.DemiBold
                                     text: modelData.label
                                 }
-                                DropArea {
-                                    anchors.fill: parent
-                                    enabled: modelData.value === "google" && GoogleService.authenticated
-                                    keys: ["local-task"]
-                                    z: 1
-
-                                    onDropped: drop => {
-                                        root.googleDropHovered = false;
-                                        if (drop.source && drop.source.localTaskId) {
-                                            root.syncLocalTask(drop.source.localTaskId);
-                                            drop.acceptProposedAction();
-                                        }
-                                    }
-                                    onEntered: root.googleDropHovered = true
-                                    onExited: root.googleDropHovered = false
-                                }
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     z: 2
 
                                     onClicked: {
-                                        if (modelData.value === "google" && !GoogleService.authenticated) {
-                                            GoogleService.requireAuthentication("todo-google-tab");
-                                            return;
-                                        }
                                         root.taskSource = modelData.value;
+                                        if (modelData.value === "google" && GoogleService.authenticated)
+                                            GoogleService.fetchTasks();
                                     }
                                 }
                             }
@@ -304,38 +373,149 @@ Item {
                     primary: true
                     text: qsTr("Add task")
 
-                    onClicked: root.openNewTask()
+                    onClicked: taskSource === "google" && !GoogleService.authenticated ? StateManager.showCalendarApp() : root.openNewTask()
                 }
             }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 40
+            spacing: 12
+            visible: root.taskSource === "google" && GoogleService.authenticated
+
+            Text {
+                color: Config.md3.on_surface
+                font.family: Config.fontName
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
+                renderType: Text.NativeRendering
+                text: qsTr("Task lists")
+            }
+            Item {
+                Layout.fillWidth: true
+            }
+            Rectangle {
+                id: filterSelectorButton
+
+                Layout.preferredHeight: 38
+                Layout.preferredWidth: Math.min(280, Math.max(160, filterText.implicitWidth + 36 + (filterBadge.visible ? 14 : 0)))
+                border.color: filterMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.35) : Config.alpha(Config.md3.on_surface, 0.09)
+                border.width: 1
+                color: filterMouse.pressed ? Config.alpha(Config.md3.primary, 0.16) : filterMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.surface_container_high, 0.45)
+                radius: 11
+
+                Behavior on border.color {
+                    ColorAnimation {
+                        duration: Config.animationDuration(120)
+                    }
+                }
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Config.animationDuration(120)
+                    }
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 10
+                    spacing: filterBadge.visible ? 8 : 0
+
+                    Rectangle {
+                        id: filterBadge
+
+                        readonly property string badgeColorStr: {
+                            var selected = root.listOptions.find(item => item.id === root.selectedTaskListKey);
+                            return selected && selected.color ? String(selected.color) : "";
+                        }
+                        readonly property bool hasBadge: badgeColorStr !== "" && badgeColorStr !== "transparent" && badgeColorStr !== "#00000000"
+
+                        Layout.preferredHeight: 8
+                        Layout.preferredWidth: hasBadge ? 8 : 0
+                        color: hasBadge ? badgeColorStr : "transparent"
+                        radius: 4
+                        visible: hasBadge
+                    }
+                    Text {
+                        id: filterText
+
+                        Layout.fillWidth: true
+                        color: Config.md3.on_surface
+                        elide: Text.ElideRight
+                        font.family: Config.fontName
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                        renderType: Text.NativeRendering
+                        text: root.selectedLabel(root.listOptions, root.selectedTaskListKey, qsTr("All lists"))
+                    }
+                    IconImage {
+                        Layout.preferredHeight: 15
+                        Layout.preferredWidth: 15
+                        layer.enabled: true
+                        source: Quickshell.iconPath("pan-down-symbolic")
+
+                        layer.effect: ColorOverlay {
+                            color: Config.alpha(Config.md3.on_surface, 0.58)
+                        }
+                    }
+                }
+                MouseArea {
+                    id: filterMouse
+
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
+                    onClicked: root.openSelector("filter", filterSelectorButton)
+                }
+            }
+        }
+        Text {
+            Layout.fillWidth: true
+            color: Config.md3.error
+            elide: Text.ElideRight
+            font.family: Config.fontName
+            font.pixelSize: 13
+            maximumLineCount: 3
+            text: GoogleService.errorMessage || CalendarService.taskSnapshots.filter(snapshot => snapshot.error).map(snapshot => GoogleService.accountLabel(snapshot.accountId) + ": " + snapshot.error).join("\n")
+            visible: root.taskSource === "google" && text !== ""
+            wrapMode: Text.Wrap
         }
         Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
             ProductivityEmptyState {
-                actionText: qsTr("Add task")
-                actionVisible: currentTab === 0
+                actionVisible: false
                 anchors.centerIn: parent
-                busy: taskSource === "google" && (GoogleService.taskActionBusy || GoogleService.isLoadingTasks)
+                busy: taskSource === "google" && currentTab === 0 && GoogleService.isLoadingTasks && GoogleService.allTasks.length === 0
                 description: {
-                    if (busy)
-                        return qsTr("Fetching the latest task list");
                     if (currentTab === 1)
                         return qsTr("Completed tasks will appear here");
+                    if (taskSource === "google" && !GoogleService.authenticated)
+                        return qsTr("Connect Google in Calendar to see tasks here");
+                    if (busy)
+                        return qsTr("Fetching the latest task list");
                     return qsTr("Create a task to start organizing your day");
                 }
                 iconName: currentTab === 0 ? "view-list-symbolic" : "checkbox-checked-symbolic"
+                opacity: filteredTasks.length === 0 ? 1 : 0
                 title: {
-                    if (busy)
-                        return qsTr("Syncing tasks…");
                     if (currentTab === 1)
                         return qsTr("Nothing completed yet");
+                    if (busy)
+                        return qsTr("Syncing tasks…");
                     return taskSource === "google" ? qsTr("No Google tasks") : qsTr("No local tasks");
                 }
-                visible: filteredTasks.length === 0
+                visible: opacity > 0
                 width: Math.min(parent.width - 40, 320)
 
-                onActionTriggered: root.openNewTask()
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Config.animationDuration(140)
+                        easing.type: Easing.OutCubic
+                    }
+                }
             }
             ListView {
                 id: taskList
@@ -371,41 +551,30 @@ Item {
                     SwipeDeleteBackground {
                         actionText: qsTr("Delete")
                         anchors.fill: parent
-                        interactive: !cardContent.taskSyncing
+                        interactive: !(root.taskSource === "google" && GoogleService.taskActionBusy)
                         swipeOffset: cardContent.swipeX
 
                         onTriggered: {
                             if (taskSource === "local")
                                 LocalTaskService.deleteTask(modelData.id);
                             else
-                                GoogleService.deleteTask("@default", modelData.id);
+                                GoogleService.deleteTask(modelData.taskListId, modelData.id, modelData.accountId);
                         }
                     }
                     Rectangle {
                         id: cardContent
 
-                        property string localTaskId: taskSource === "local" ? String(modelData.id || "") : ""
+                        readonly property color accountColor: root.taskSource === "google" ? CalendarService.taskListColor(modelData.accountId, modelData.taskListId) : Config.md3.primary
                         property real swipeX: 0
-                        property real syncDragY: 0
-                        property bool syncDragging: false
-                        readonly property bool taskSyncing: taskSource === "local" && LocalTaskService.isSyncing(modelData.id)
 
-                        Drag.active: syncDragging
-                        Drag.hotSpot.x: width / 2
-                        Drag.hotSpot.y: 20
-                        Drag.keys: ["local-task"]
-                        Drag.supportedActions: Qt.CopyAction
                         border.color: taskCardMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.28) : Config.alpha(Config.md3.on_surface, 0.08)
                         border.width: 1
                         color: taskCardMouse.pressed ? Config.alpha(Config.md3.primary, 0.13) : taskCardMouse.containsMouse ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.9 : 0.58) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.76 : 0.4)
                         height: parent.height
-                        opacity: syncDragging ? 0.78 : taskSyncing ? 0.6 : modelData.status === "completed" ? 0.72 : 1
+                        opacity: modelData.status === "completed" ? 0.72 : 1
                         radius: 17
-                        scale: syncDragging ? 0.97 : 1
                         width: parent.width
                         x: swipeX
-                        y: syncDragY
-                        z: syncDragging ? 20 : 0
 
                         Behavior on swipeX {
                             enabled: !taskSwipe.active && !Config.shellReducedMotion
@@ -418,12 +587,22 @@ Item {
                             }
                         }
 
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 6
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: cardContent.accountColor
+                            height: parent.height - 24
+                            radius: 2
+                            visible: root.taskSource === "google"
+                            width: 3.5
+                        }
                         MouseArea {
                             id: taskCardMouse
 
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            enabled: !cardContent.taskSyncing && !googleSyncHandle.syncPressed
+                            enabled: !(root.taskSource === "google" && GoogleService.taskActionBusy)
                             hoverEnabled: true
 
                             onClicked: {
@@ -438,7 +617,7 @@ Item {
                         DragHandler {
                             id: taskSwipe
 
-                            enabled: !cardContent.taskSyncing && !googleSyncHandle.syncPressed
+                            enabled: !(root.taskSource === "google" && GoogleService.taskActionBusy)
                             target: null
                             xAxis.enabled: true
                             yAxis.enabled: false
@@ -449,7 +628,7 @@ Item {
                                         if (taskSource === "local")
                                             LocalTaskService.deleteTask(modelData.id);
                                         else
-                                            GoogleService.deleteTask("@default", modelData.id);
+                                            GoogleService.deleteTask(modelData.taskListId, modelData.id, modelData.accountId);
                                         cardContent.swipeX = 0;
                                     } else {
                                         cardContent.swipeX = 0;
@@ -468,9 +647,9 @@ Item {
                             spacing: 12
 
                             Rectangle {
-                                border.color: Config.md3.primary
+                                border.color: cardContent.accountColor
                                 border.width: 2
-                                color: modelData.status === "completed" ? Config.md3.primary : "transparent"
+                                color: modelData.status === "completed" ? cardContent.accountColor : "transparent"
                                 height: 28
                                 radius: 14
                                 width: 28
@@ -495,14 +674,14 @@ Item {
                                 }
                                 MouseArea {
                                     anchors.fill: parent
-                                    enabled: !cardContent.taskSyncing
+                                    enabled: !(root.taskSource === "google" && GoogleService.taskActionBusy)
 
                                     onClicked: {
                                         var newStatus = modelData.status === "completed" ? "needsAction" : "completed";
                                         if (taskSource === "local")
                                             LocalTaskService.updateTask(modelData.id, undefined, undefined, undefined, newStatus);
                                         else
-                                            GoogleService.updateTask("@default", modelData.id, undefined, undefined, undefined, newStatus);
+                                            GoogleService.updateTask(modelData.taskListId, modelData.id, undefined, undefined, undefined, newStatus, modelData.accountId);
                                     }
                                 }
                             }
@@ -529,8 +708,8 @@ Item {
                                     font.pixelSize: 12
                                     font.weight: Font.Medium
                                     maximumLineCount: 2
-                                    text: modelData.notes || ""
-                                    visible: Boolean(modelData.notes)
+                                    text: modelData.notes || (taskSource === "google" && modelData.taskListName && modelData.taskListName !== "Tasks" && modelData.taskListName !== "Việc cần làm của tôi" ? modelData.taskListName : "")
+                                    visible: Boolean(text)
                                     wrapMode: Text.Wrap
                                 }
                             }
@@ -570,87 +749,10 @@ Item {
                                         text: {
                                             if (!modelData.due)
                                                 return "";
-                                            var dueDate = new Date(modelData.due);
+                                            var parts = String(modelData.due).slice(0, 10).split("-");
+                                            var dueDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
                                             var shortDate = String(dueDate.getDate()).padStart(2, "0") + "/" + String(dueDate.getMonth() + 1).padStart(2, "0");
                                             return taskList.width < 420 ? shortDate : shortDate + "/" + dueDate.getFullYear();
-                                        }
-                                    }
-                                }
-                            }
-                            Item {
-                                id: googleSyncHandle
-
-                                property bool completedDrag: false
-                                property real pressSceneY: 0
-                                property bool syncPressed: false
-
-                                Layout.alignment: Qt.AlignVCenter
-                                Layout.preferredHeight: 36
-                                Layout.preferredWidth: 40
-                                visible: taskSource === "local" && GoogleService.authenticated
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    border.color: Config.alpha(Config.md3.primary, syncMouse.containsMouse ? 0.42 : 0.26)
-                                    border.width: 1
-                                    color: syncMouse.pressed ? Config.alpha(Config.md3.primary, 0.2) : syncMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.15) : Config.alpha(Config.md3.primary, 0.1)
-                                    radius: 11
-
-                                    IconImage {
-                                        anchors.centerIn: parent
-                                        height: 19
-                                        layer.enabled: true
-                                        opacity: cardContent.taskSyncing ? 0.5 : 1
-                                        source: "file://" + Config.sownteeshellDir + "/assets/icons/cloud-upload.svg"
-                                        width: 19
-
-                                        layer.effect: ColorOverlay {
-                                            color: Config.md3.primary
-                                        }
-                                    }
-                                }
-                                MouseArea {
-                                    id: syncMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    enabled: !cardContent.taskSyncing
-                                    hoverEnabled: true
-                                    preventStealing: true
-
-                                    onCanceled: {
-                                        googleSyncHandle.completedDrag = false;
-                                        googleSyncHandle.syncPressed = false;
-                                        cardContent.syncDragging = false;
-                                        cardContent.syncDragY = 0;
-                                    }
-                                    onClicked: {
-                                        var shouldSync = !googleSyncHandle.completedDrag;
-                                        googleSyncHandle.completedDrag = false;
-                                        if (shouldSync)
-                                            root.syncLocalTask(modelData.id);
-                                    }
-                                    onPositionChanged: mouse => {
-                                        var scenePoint = googleSyncHandle.mapToItem(null, mouse.x, mouse.y);
-                                        var offset = scenePoint.y - googleSyncHandle.pressSceneY;
-                                        if (pressed && offset < -8) {
-                                            cardContent.syncDragging = true;
-                                            cardContent.syncDragY = offset;
-                                        }
-                                    }
-                                    onPressed: mouse => {
-                                        googleSyncHandle.completedDrag = false;
-                                        googleSyncHandle.syncPressed = true;
-                                        googleSyncHandle.pressSceneY = googleSyncHandle.mapToItem(null, mouse.x, mouse.y).y;
-                                        cardContent.swipeX = 0;
-                                    }
-                                    onReleased: {
-                                        googleSyncHandle.syncPressed = false;
-                                        if (cardContent.syncDragging) {
-                                            googleSyncHandle.completedDrag = true;
-                                            cardContent.Drag.drop();
-                                            cardContent.syncDragging = false;
-                                            cardContent.syncDragY = 0;
                                         }
                                     }
                                 }
@@ -678,6 +780,7 @@ Item {
         }
 
         DragHandler {
+            enabled: !root.saving
             target: null
             xAxis.enabled: true
             yAxis.enabled: false
@@ -704,7 +807,7 @@ Item {
                     font.family: Config.fontName
                     font.pixelSize: 18
                     font.weight: Font.Bold
-                    text: editingTaskId ? "Edit task" : "Add task"
+                    text: editingTaskId ? qsTr("Edit task") : qsTr("Add task")
                 }
             }
             Flickable {
@@ -716,6 +819,7 @@ Item {
                 clip: true
                 contentHeight: formLayout.implicitHeight
                 contentWidth: width
+                enabled: !root.saving
 
                 ColumnLayout {
                     id: formLayout
@@ -723,6 +827,35 @@ Item {
                     spacing: 25
                     width: formFlickable.width
 
+                    SettingsSelectRow {
+                        Layout.fillWidth: true
+                        enabled: root.editingTaskId === "" && !root.saving
+                        label: qsTr("Google account")
+                        valueBadgeColor: CalendarService.taskAccountColor(root.editingAccountId)
+                        valueText: GoogleService.accountLabel(root.editingAccountId) || qsTr("Choose account")
+                        visible: root.editingTaskSource === "google"
+
+                        onClicked: sourceItem => root.openSelector("account", sourceItem)
+                    }
+                    SettingsSelectRow {
+                        Layout.fillWidth: true
+                        enabled: root.editingTaskId === "" && !root.saving
+                        label: qsTr("Task list")
+                        valueBadgeColor: CalendarService.taskListColor(root.editingAccountId, root.editingListId)
+                        valueText: root.selectedLabel(GoogleService.listsForAccount(root.editingAccountId), root.editingListId, qsTr("Choose list"))
+                        visible: root.editingTaskSource === "google"
+
+                        onClicked: sourceItem => root.openSelector("list", sourceItem)
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        color: Config.md3.error
+                        font.family: Config.fontName
+                        font.pixelSize: 13
+                        text: root.formError || (root.editingTaskSource === "google" ? GoogleService.errorForAccount(root.editingAccountId) : "")
+                        visible: text !== ""
+                        wrapMode: Text.Wrap
+                    }
                     FormTextField {
                         id: titleField
 
@@ -758,52 +891,25 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 50
-                color: newTaskTitle.trim() !== "" ? (saveBtn.pressed ? Config.alpha(Config.md3.primary, 0.8) : Config.md3.primary) : Config.alpha(Config.md3.on_surface, 0.10)
+                color: root.canSave ? (saveBtn.pressed ? Config.alpha(Config.md3.primary, 0.8) : Config.md3.primary) : Config.alpha(Config.md3.on_surface, 0.10)
                 radius: 15
 
                 Text {
                     anchors.centerIn: parent
-                    color: newTaskTitle.trim() !== "" ? Config.md3.on_primary : Config.md3.outline
+                    color: root.canSave ? Config.md3.on_primary : Config.md3.outline
                     font.family: Config.fontName
                     font.pixelSize: 16
                     font.weight: Font.Bold
-                    text: "Save"
+                    text: root.saving ? qsTr("Saving…") : qsTr("Save")
                 }
                 MouseArea {
                     id: saveBtn
 
                     anchors.fill: parent
                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    enabled: newTaskTitle.trim() !== ""
+                    enabled: root.canSave
 
-                    onClicked: {
-                        var isoDue = undefined;
-                        if (newTaskDue) {
-                            var parts = newTaskDue.split("/");
-                            if (parts.length === 3) {
-                                isoDue = parts[2] + "-" + parts[1] + "-" + parts[0];
-                            }
-                        }
-
-                        if (editingTaskId) {
-                            if (editingTaskSource === "local")
-                                LocalTaskService.updateTask(editingTaskId, newTaskTitle, isoDue, newTaskNotes, undefined);
-                            else
-                                GoogleService.updateTask("@default", editingTaskId, newTaskTitle, isoDue, newTaskNotes, undefined);
-                        } else {
-                            if (editingTaskSource === "google" && GoogleService.authenticated)
-                                GoogleService.createTask("@default", newTaskTitle, isoDue, newTaskNotes);
-                            else
-                                LocalTaskService.createTask(newTaskTitle, isoDue, newTaskNotes);
-                        }
-                        editingTaskId = "";
-                        newTaskTitle = "";
-                        newTaskDue = "";
-                        newTaskNotes = "";
-                        titleField.text = "";
-                        notesField.text = "";
-                        showAddEvent = false;
-                    }
+                    onClicked: root.saveTask()
                 }
             }
         }
@@ -818,31 +924,41 @@ Item {
         onDateCleared: root.newTaskDue = ""
         onDateSelected: value => root.newTaskDue = value
     }
-    Connections {
-        function onAuthenticatedChanged() {
-            if (!GoogleService.authenticated && root.taskSource === "google")
-                root.taskSource = "local";
+    SelectPopup {
+        anchors.fill: parent
+        itemActive: item => item.id === (root.selectionKind === "account" ? root.editingAccountId : root.selectionKind === "list" ? root.editingListId : root.selectedTaskListKey)
+        itemColor: item => item && item.color ? item.color : ""
+        itemLabel: item => item.label
+        model: root.selectionKind !== "" ? root.selectorOptions : root.activeSelectorOptions
+        opened: root.selectionKind !== ""
+        popupWidth: Math.min(420, root.width - 24)
+        popupY: root.selectionY
+
+        onDismissed: root.selectionKind = ""
+        onItemSelected: item => {
+            if (root.selectionKind === "account") {
+                root.editingAccountId = item.id;
+                var lists = GoogleService.listsForAccount(item.id);
+                root.editingListId = lists.length > 0 ? lists[0].id : "";
+            } else if (root.selectionKind === "list") {
+                root.editingListId = item.id;
+            } else {
+                root.selectedTaskListKey = item.id;
+            }
+            root.selectionKind = "";
         }
-        function onAuthenticationSucceeded(context) {
-            if (context === "todo-google-tab")
-                root.taskSource = "google";
+    }
+    Connections {
+        function onTaskListsChanged() {
+            if (!root.listOptions.some(item => item.id === root.selectedTaskListKey))
+                root.selectedTaskListKey = "";
+            if (root.showAddEvent && root.editingTaskSource === "google" && root.editingTaskId === "" && root.editingListId === "") {
+                var lists = GoogleService.listsForAccount(root.editingAccountId);
+                if (lists.length > 0)
+                    root.editingListId = lists[0].id;
+            }
         }
 
         target: GoogleService
-    }
-    Connections {
-        function onSyncFinished(taskId, succeeded) {
-            if (succeeded) {
-                root.taskSource = "google";
-                return;
-            }
-            root.taskSource = "local";
-            Quickshell.execDetached(["notify-send", "-a", "Todo", "-u", "normal", "-h", "boolean:transient:true", "Google Tasks sync failed", LocalTaskService.syncError || "The local task was kept on this device"]);
-        }
-
-        target: LocalTaskService
-    }
-    GoogleAuthPanel {
-        anchors.fill: parent
     }
 }

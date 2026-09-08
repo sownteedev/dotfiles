@@ -24,14 +24,20 @@ const CALENDAR_API_ROOT: &str = "https://www.googleapis.com/calendar/v3/";
 pub struct GoogleProvider {
     http: Client,
     keyring: Keyring,
+    token_gate: std::sync::Arc<tokio::sync::Mutex<()>>,
 }
 
 impl GoogleProvider {
     pub fn new(http: Client, keyring: Keyring) -> Self {
-        Self { http, keyring }
+        Self {
+            http,
+            keyring,
+            token_gate: Default::default(),
+        }
     }
 
-    async fn access_token(&self, account: &Account) -> ProviderResult<String> {
+    pub(crate) async fn access_token(&self, account: &Account) -> ProviderResult<String> {
+        let _guard = self.token_gate.lock().await;
         let client_id = account
             .config
             .get("clientId")

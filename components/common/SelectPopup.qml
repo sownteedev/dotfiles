@@ -9,6 +9,9 @@ Item {
     property var itemActive: function (item) {
         return false;
     }
+    property var itemColor: function (item) {
+        return item && item.color ? item.color : "";
+    }
     property var itemLabel: function (item) {
         return item && item.label ? item.label : "";
     }
@@ -58,11 +61,11 @@ Item {
     }
 
     opacity: opened ? 1 : 0
-    visible: opened || opacity > 0
+    visible: opacity > 0
 
     Behavior on opacity {
         NumberAnimation {
-            duration: 150
+            duration: root.opened ? 150 : 110
             easing.type: Easing.OutQuad
         }
     }
@@ -135,6 +138,8 @@ Item {
                 delegate: Rectangle {
                     id: row
 
+                    readonly property string badgeColor: String(root.itemColor(modelData) || "")
+                    readonly property bool hasColorBadge: badgeColor !== "" && badgeColor !== "transparent"
                     readonly property bool included: root.itemVisible(modelData)
                     required property var modelData
                     readonly property bool selected: root.itemActive(modelData)
@@ -145,9 +150,21 @@ Item {
                     visible: included
                     width: ListView.view.width
 
-                    Text {
+                    Rectangle {
+                        id: colorDot
+
                         anchors.left: parent.left
                         anchors.leftMargin: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: row.badgeColor
+                        height: 8
+                        radius: 4
+                        visible: row.hasColorBadge
+                        width: 8
+                    }
+                    Text {
+                        anchors.left: row.hasColorBadge ? colorDot.right : parent.left
+                        anchors.leftMargin: row.hasColorBadge ? 8 : 12
                         anchors.right: checkmark.left
                         anchors.rightMargin: 8
                         anchors.verticalCenter: parent.verticalCenter

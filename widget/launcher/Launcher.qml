@@ -84,6 +84,10 @@ PanelWindow {
             calcView.copyResult();
             return true;
         }
+        if (event.key === Qt.Key_Tab) {
+            if (calcView.completeCurrentToken())
+                return true;
+        }
         if (event.key !== Qt.Key_Up && event.key !== Qt.Key_Down)
             return false;
 
@@ -334,8 +338,8 @@ PanelWindow {
     Rectangle {
         id: mainLayout
 
-        readonly property real desiredHeight: launcherWindow.calculatorMode ? 229 : launcherWindow.fixedProviderMode ? 545 : searchQuery.trim() !== "" && hasContent ? (97 + searchView.implicitHeight) : (launcherWindow.compact ? 76 : 82)
-        readonly property real desiredWidth: launcherWindow.calculatorMode || launcherWindow.fixedProviderMode || searchQuery.trim() !== "" && hasContent ? 500 : (searchQuery.trim() !== "" ? 440 : 380)
+        readonly property real desiredHeight: launcherWindow.calculatorMode ? 245 : launcherWindow.fixedProviderMode ? 545 : searchQuery.trim() !== "" && hasContent ? (97 + searchView.implicitHeight) : (launcherWindow.compact ? 76 : 82)
+        readonly property real desiredWidth: launcherWindow.calculatorMode ? 580 : launcherWindow.fixedProviderMode || searchQuery.trim() !== "" && hasContent ? 500 : (searchQuery.trim() !== "" ? 440 : 380)
         readonly property bool hasContent: launcherWindow.calculatorMode || launcherWindow.fixedProviderMode || searchView.combinedResults.length > 0
         readonly property real targetHeight: showAllApps ? launcherWindow.height : Responsive.fitWithMargins(desiredHeight, launcherWindow.height, launcherWindow.compact ? 10 : 20, 82)
         readonly property real targetWidth: showAllApps ? launcherWindow.width : Responsive.fitWithMargins(desiredWidth, launcherWindow.width, launcherWindow.compact ? 10 : 20, 300)
@@ -600,6 +604,13 @@ PanelWindow {
                         query: searchQuery
                         visible: launcherWindow.calculatorMode
 
+                        onInsertRequested: (textToInsert, replaceLength) => {
+                            var cur = searchEntry.text;
+                            var before = cur.substring(0, cur.length - replaceLength);
+                            searchEntry.text = before + textToInsert;
+                            searchEntry.cursorPosition = searchEntry.text.length;
+                            syncSearchQuery();
+                        }
                         onResultCopied: closeLauncher()
                     }
 

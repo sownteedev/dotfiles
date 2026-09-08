@@ -7,7 +7,7 @@ Rectangle {
     id: root
 
     property bool available: false
-    readonly property var eventBuckets: buildEventBuckets()
+    readonly property var eventBuckets: buildEventBuckets(events)
     property var events: []
     readonly property date gridStart: beginningOfGrid(monthStart)
     property var hiddenCalendars: ({})
@@ -32,14 +32,14 @@ Rectangle {
         var offset = day === 0 ? -6 : 1 - day;
         return addDays(value, offset);
     }
-    function buildEventBuckets() {
+    function buildEventBuckets(sourceEvents) {
         var result = {};
         for (var dayIndex = 0; dayIndex < monthDays.length; ++dayIndex)
             result[monthDays[dayIndex].key] = [];
 
         var rangeStart = startOfDay(gridStart);
         var rangeEnd = addDays(rangeStart, 42);
-        var source = events || [];
+        var source = sourceEvents || events || [];
         for (var eventIndex = 0; eventIndex < source.length; ++eventIndex) {
             var eventData = source[eventIndex];
             if (!eventData || isCalendarHidden(eventData.calendarId))
@@ -289,9 +289,10 @@ Rectangle {
 
                                 readonly property color accentColor: root.eventColor(modelData)
                                 required property int index
+                                readonly property bool isCompletedTask: eventChip.modelData.isTask === true && eventChip.modelData.status === "completed"
                                 required property var modelData
 
-                                color: eventMouse.containsMouse ? Config.alpha(accentColor, Config.lightTheme ? 0.28 : 0.4) : Config.alpha(accentColor, Config.lightTheme ? 0.18 : 0.28)
+                                color: eventMouse.containsMouse ? Config.alpha(accentColor, Config.lightTheme ? (eventChip.isCompletedTask ? 0.2 : 0.28) : (eventChip.isCompletedTask ? 0.3 : 0.4)) : Config.alpha(accentColor, Config.lightTheme ? (eventChip.isCompletedTask ? 0.12 : 0.18) : (eventChip.isCompletedTask ? 0.2 : 0.28))
                                 height: 23
                                 radius: 7
                                 width: eventColumn.width
@@ -316,6 +317,25 @@ Rectangle {
                                     anchors.rightMargin: 5
                                     spacing: 5
 
+                                    Rectangle {
+                                        Layout.preferredHeight: 11
+                                        Layout.preferredWidth: 11
+                                        border.color: eventChip.accentColor
+                                        border.width: 1.3
+                                        color: eventChip.isCompletedTask ? Config.alpha(eventChip.accentColor, 0.18) : "transparent"
+                                        radius: 5.5
+                                        visible: eventChip.modelData.isTask === true
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            color: eventChip.accentColor
+                                            font.family: Config.fontName
+                                            font.pixelSize: 8
+                                            font.weight: Font.Black
+                                            text: "✓"
+                                            visible: eventChip.isCompletedTask
+                                        }
+                                    }
                                     Text {
                                         color: Config.alpha(Config.md3.on_surface, 0.7)
                                         font.family: Config.fontName
@@ -326,11 +346,12 @@ Rectangle {
                                     }
                                     Text {
                                         Layout.fillWidth: true
-                                        color: Config.md3.on_surface
+                                        color: eventChip.isCompletedTask ? Config.alpha(Config.md3.on_surface, 0.58) : Config.md3.on_surface
                                         elide: Text.ElideRight
                                         font.family: Config.fontName
                                         font.pixelSize: 12
-                                        font.weight: Font.DemiBold
+                                        font.strikeout: eventChip.isCompletedTask
+                                        font.weight: eventChip.isCompletedTask ? Font.Medium : Font.DemiBold
                                         text: eventChip.modelData.title || qsTr("Untitled event")
                                     }
                                 }

@@ -123,6 +123,10 @@ impl ProviderRegistry {
         self.http.clone()
     }
 
+    pub fn google(&self) -> Arc<google::GoogleProvider> {
+        self.google.clone()
+    }
+
     pub fn get(&self, kind: ProviderKind) -> Arc<dyn CalendarProvider> {
         match kind {
             ProviderKind::Google => self.google.clone(),

@@ -4,13 +4,8 @@ import Quickshell
 import Quickshell.Io
 
 QtObject {
-    // Legacy colors are removed
-
     id: configRoot
 
-    // Weather
-    // Private values are loaded from XDG_CACHE_HOME/sownteeshell/settings.json.
-    // Keep public source defaults empty so this repository is safe to share.
     property alias apiWeather: runtimeSettings.apiWeather
     property alias audioMaxVolume: runtimeSettings.audioMaxVolume
     property alias barDensity: runtimeSettings.barDensity
@@ -31,7 +26,7 @@ QtObject {
     readonly property string cacheHome: Quickshell.env("XDG_CACHE_HOME") || homeDir + "/.cache"
     readonly property string cacheRoot: cacheHome + "/sownteeshell"
     property alias caffeineAutoDisableMinutes: runtimeSettings.caffeineAutoDisableMinutes
-    // Pre-defined alpha variants (0.8 opacity)
+    property alias calendarShowLocalTasks: runtimeSettings.calendarShowLocalTasks
     property alias captureAutoCopyRecording: runtimeSettings.captureAutoCopyRecording
     property alias captureAutoCopyScreenshot: runtimeSettings.captureAutoCopyScreenshot
     property alias captureEditorColor: runtimeSettings.captureEditorColor
@@ -55,16 +50,12 @@ QtObject {
     property alias captureScreenshotQuality: runtimeSettings.captureScreenshotQuality
     property alias cavaEnabled: runtimeSettings.cavaEnabled
     property alias clock24h: runtimeSettings.clock24h
-    // Keep the recovery wallpaper independent from a user-selected wallpaper
-    // directory, which may not contain mori.jpg.
     readonly property string defaultWallpaper: dotfilesDir + "/.walls/flower-plant-petal.jpg"
     readonly property string dotfilesDir: dotfilesRoot + "/dotf"
     readonly property string dotfilesRoot: homeDir + "/Dotfiles"
-    // Font
     property alias fontName: runtimeSettings.fontName
     property alias greeterDefaultSession: runtimeSettings.greeterDefaultSession
     property alias greeterRememberLastSession: runtimeSettings.greeterRememberLastSession
-    // Paths
     readonly property string homeDir: Quickshell.env("HOME")
     property alias idleBatteryDisplayTimeout: runtimeSettings.idleBatteryDisplayTimeout
     property alias idleBatteryLockTimeout: runtimeSettings.idleBatteryLockTimeout
@@ -184,7 +175,6 @@ QtObject {
     property var palette: ({})
     readonly property string profileImage: expandHomePath(profileImagePath)
     property alias profileImagePath: runtimeSettings.profileImagePath
-    // Color
     property FileView runtimeSettingsFile: FileView {
         atomicWrites: true
         path: configRoot.runtimeSettingsPath
@@ -211,6 +201,7 @@ QtObject {
             property bool barShowWeather: true
             property bool barShowWorkspaces: true
             property int caffeineAutoDisableMinutes: 0
+            property bool calendarShowLocalTasks: true
             property bool captureAutoCopyRecording: true
             property bool captureAutoCopyScreenshot: true
             property string captureEditorColor: "#ff3b30"

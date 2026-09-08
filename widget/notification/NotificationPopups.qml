@@ -243,7 +243,10 @@ PanelWindow {
         return Config.notificationNormalTimeout;
     }
     function popupBlurTarget(index) {
-        if (!Config.shellBlurNotificationEnabled || index < 0 || index >= notifModel.count)
+        return Config.shellBlurNotificationEnabled ? popupInputTarget(index) : null;
+    }
+    function popupInputTarget(index) {
+        if (index < 0 || index >= notifModel.count)
             return null;
         var delegateItem = notificationRepeater.itemAt(index);
         return delegateItem ? delegateItem.blurTarget : null;
@@ -400,8 +403,8 @@ PanelWindow {
 
     focusable: false
     implicitHeight: visible ? Math.max(layout.implicitHeight, retainedStackHeight) + 30 : 0
-    // Dynamically sized window wrapper to adapt to layout content
-    implicitWidth: layout.implicitWidth + 30
+    // Reserve swipe space before dragging, without moving the resting stack.
+    implicitWidth: popupAtRight ? layout.implicitWidth + 30 : Math.min(screen ? screen.width - 30 : layout.implicitWidth * 3 + 30, layout.implicitWidth * 3 + 30)
     margins.bottom: anchors.bottom ? 15 : 0
     margins.right: anchors.right ? 15 : 0
     margins.top: anchors.top ? 15 : 0
@@ -434,7 +437,30 @@ PanelWindow {
         }
     }
     mask: Region {
-        item: layout
+        Region {
+            item: notifWindow.popupInputTarget(0)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupInputTarget(1)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupInputTarget(2)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupInputTarget(3)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupInputTarget(4)
+            radius: item ? item.radius : 0
+        }
+        Region {
+            item: notifWindow.popupInputTarget(5)
+            radius: item ? item.radius : 0
+        }
     }
 
     Component.onDestruction: {
@@ -562,7 +588,7 @@ PanelWindow {
                     property bool active: model.active
                     property string appIcon: model.appIcon
                     property string appName: model.appName
-                    readonly property Item blurTarget: container
+                    readonly property Item blurTarget: container.visible && container.opacity > 0 && container.scale > 0 ? popupBlurGeometry : null
                     property string body: model.body
                     property bool completed: false
                     property string image: model.image
@@ -577,6 +603,33 @@ PanelWindow {
                     property int revision: model.revision
                     property bool showActions: model.showActions
                     property string summary: model.summary
+
+                    function dismissSwipe() {
+                        if (!active || container.swipeDismissing)
+                            return;
+                        container.swipeDismissing = true;
+                        swipeReturn.stop();
+                        stopNotifTimer(nid);
+                        popupDismissTimer.stop();
+                        progressAnim.stop();
+                        swipeTravel.duration = Config.animationDuration(container.swipeOffset < container.width ? 140 : 0);
+                        swipeDismissAnimation.start();
+                    }
+                    function syncInteraction() {
+                        if (!active || container.swipeDismissing)
+                            return;
+                        if (containerHover.hovered || swipeDrag.active || swipeReturn.running) {
+                            stopNotifTimer(nid);
+                            if (progressAnim.running && !progressAnim.paused)
+                                progressAnim.pause();
+                        } else {
+                            resumeNotifTimer(nid, progress, notifObj);
+                            if (progressAnim.paused)
+                                progressAnim.resume();
+                        }
+                        if (!swipeDrag.active && !swipeReturn.running)
+                            showActions = containerHover.hovered && actionsList.length > 0;
+                    }
 
                     height: container.height
                     width: container.width
@@ -594,10 +647,12 @@ PanelWindow {
                         });
                     }
                     onActionsListChanged: {
-                        if (containerHover.hovered && actionsList.length > 0)
+                        if (!swipeDrag.active && !container.swipeDismissing && containerHover.hovered && actionsList.length > 0)
                             showActions = true;
                     }
                     onActiveChanged: {
+                        if (container.swipeDismissing)
+                            return;
                         if (!active) {
                             popupDismissTimer.restart();
                         } else {
@@ -609,10 +664,11 @@ PanelWindow {
                     }
                     onRevisionChanged: {
                         progress = 1;
-                        if (active && shouldAutoExpire(notifObj))
+                        if (active && !container.swipeDismissing && shouldAutoExpire(notifObj))
                             progressAnim.restart();
                         else
                             progressAnim.stop();
+                        syncInteraction();
                     }
 
                     Timer {
@@ -641,40 +697,60 @@ PanelWindow {
                     }
                     // Loop-free natural width calculations (bypasses circular dependency between container and layout)
 
+                    // Region tracks only its item's geometry, not moving ancestors.
+                    Item {
+                        id: popupBlurGeometry
+
+                        readonly property real radius: container.radius * container.scale
+
+                        height: container.height * container.scale
+                        parent: layout.parent
+                        width: container.width * container.scale
+                        x: layout.x + delegateWrapper.x + container.x
+                        y: layout.y + delegateWrapper.y + container.y + (container.height - height) / 2
+                    }
+
                     // Main Container with Auto-fitting Width and Stable Heights!
                     ShellShadow {
                         active: container.opacity > 0
                         componentShadow: true
                         cornerRadius: container.radius
                         opacity: container.opacity
+                        scale: container.scale
                         target: container
-
-                        transform: Translate {
-                            x: container.swipeOffset + container.xOffset
-                        }
+                        transformOrigin: Item.Left
                     }
                     Rectangle {
                         id: container
 
                         readonly property real collapsedHeight: mainLayout.implicitHeight - actionsBlock.implicitHeight - 12 + 30
                         property real contentReveal: 0
+                        property real dismissOpacity: 1
+                        property real dismissScale: 1
+                        property real entryOpacity: 0
 
                         // Loop-free stable height values (calculated from static mainLayout height)
                         readonly property real expandedHeight: mainLayout.implicitHeight + 30
                         // Swipe-right-to-dismiss
+                        property bool swipeDismissing: false
                         property real swipeOffset: 0
+                        // At a physical screen edge, contract instead of clipping the card.
+                        readonly property real swipeScale: swipeOffset > 0 ? Math.min(1, Math.max(0, (notifWindow.width - 15 - layout.x - delegateWrapper.x - x) / width)) : 1
                         // Keep the travel short so the popup feels attached to the bar.
                         property real xOffset: notifWindow.popupAtRight ? 18 : 0
                         property real yOffset: notifWindow.popupFromTop ? -18 : 0
 
                         anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.horizontalCenterOffset: swipeOffset + xOffset
                         border.color: delegateWrapper.isCritical ? Config.alpha(Config.md3.error, 0.72) : Config.alpha(Config.md3.outline_variant, 0.26)
                         border.width: 1
                         clip: true // Clean rounded clipping of actions panel
                         color: Config.shellBlurNotificationEnabled ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
                         height: delegateWrapper.showActions ? expandedHeight : collapsedHeight
-                        opacity: 0
+                        opacity: entryOpacity * dismissOpacity
                         radius: delegateWrapper.showActions ? 45 : height / 2
+                        scale: swipeScale * dismissScale
+                        transformOrigin: Item.Left
                         width: Math.min(notifWindow.popupMaximumWidth, Math.max(notifWindow.popupMinimumWidth, delegateWrapper.naturalTextWidth + 145))
                         y: yOffset
 
@@ -701,11 +777,11 @@ PanelWindow {
                         states: [
                             State {
                                 name: "visible"
-                                when: delegateWrapper.active
+                                when: delegateWrapper.active || container.swipeDismissing
 
                                 PropertyChanges {
                                     contentReveal: 1
-                                    opacity: 1
+                                    entryOpacity: 1
                                     target: container
                                     xOffset: 0
                                     yOffset: 0
@@ -713,30 +789,18 @@ PanelWindow {
                             },
                             State {
                                 name: "hidden"
-                                when: !delegateWrapper.active
+                                when: !delegateWrapper.active && !container.swipeDismissing
 
                                 PropertyChanges {
                                     contentReveal: 0
-                                    opacity: 0
+                                    entryOpacity: 0
                                     target: container
                                     xOffset: notifWindow.popupAtRight ? 14 : 0
                                     yOffset: notifWindow.popupFromTop ? -14 : 0
                                 }
                             }
                         ]
-                        Behavior on swipeOffset {
-                            enabled: !swipeDrag.active
-
-                            NumberAnimation {
-                                duration: Config.animationDuration(150)
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-                        transform: Translate {
-                            x: container.swipeOffset + container.xOffset
-                        }
-                        // Animate compositor-friendly properties only. Scaling the clipped
-                        // card forced the text, rounded mask, and progress canvas to redraw.
+                        // Entry/exit motion stays separate from an in-progress swipe.
                         transitions: [
                             Transition {
                                 from: "hidden"
@@ -746,7 +810,7 @@ PanelWindow {
                                     NumberAnimation {
                                         duration: Config.animationDuration(160)
                                         easing.type: Easing.OutCubic
-                                        property: "opacity"
+                                        property: "entryOpacity"
                                         target: container
                                     }
                                     NumberAnimation {
@@ -776,7 +840,7 @@ PanelWindow {
                                     NumberAnimation {
                                         duration: Config.animationDuration(120)
                                         easing.type: Easing.InCubic
-                                        property: "opacity"
+                                        property: "entryOpacity"
                                         target: container
                                     }
                                     NumberAnimation {
@@ -799,22 +863,7 @@ PanelWindow {
                         HoverHandler {
                             id: containerHover
 
-                            onHoveredChanged: {
-                                if (hovered) {
-                                    stopNotifTimer(delegateWrapper.nid);
-                                    if (progressAnim.running)
-                                        progressAnim.pause();
-
-                                    if (delegateWrapper.actionsList.length > 0)
-                                        delegateWrapper.showActions = true;
-                                } else {
-                                    resumeNotifTimer(delegateWrapper.nid, delegateWrapper.progress, delegateWrapper.notifObj);
-                                    if (progressAnim.paused)
-                                        progressAnim.resume();
-
-                                    delegateWrapper.showActions = false;
-                                }
-                            }
+                            onHoveredChanged: delegateWrapper.syncInteraction()
                         }
 
                         // Main vertical column layout (anchored to top/left/right so height remains static during container animation, preventing text layout recalculations)
@@ -970,35 +1019,84 @@ PanelWindow {
                         DragHandler {
                             id: swipeDrag
 
+                            property real startOffset: 0
+                            property real startPointerX: 0
+
+                            enabled: delegateWrapper.active && !container.swipeDismissing
+                            parent: delegateWrapper
                             target: null
                             xAxis.enabled: true
                             xAxis.minimum: 0
                             yAxis.enabled: false
 
                             onActiveChanged: {
-                                if (!active) {
-                                    if (container.swipeOffset > container.width * 0.38) {
-                                        // Swipe far enough → slide off then dismiss
-                                        container.swipeOffset = container.width + 80;
-                                        swipeDismissTimer.start();
+                                if (container.swipeDismissing || !delegateWrapper.active)
+                                    return;
+                                if (active) {
+                                    swipeReturn.stop();
+                                    startOffset = container.swipeOffset;
+                                    startPointerX = centroid.scenePosition.x;
+                                    delegateWrapper.syncInteraction();
+                                } else {
+                                    if (container.swipeOffset >= container.width * 0.38) {
+                                        delegateWrapper.dismissSwipe();
                                     } else {
-                                        // Not far enough → snap back
-                                        container.swipeOffset = 0;
+                                        swipeReturn.start();
                                     }
                                 }
                             }
-                            onTranslationChanged: {
-                                container.swipeOffset = Math.max(0, translation.x);
+                            onActiveTranslationChanged: {
+                                if (!active || container.swipeDismissing)
+                                    return;
+                                container.swipeOffset = Math.max(0, Math.min(container.width, startOffset + centroid.scenePosition.x - startPointerX));
+                                if (container.swipeOffset >= container.width)
+                                    delegateWrapper.dismissSwipe();
                             }
                         }
-                        Timer {
-                            id: swipeDismissTimer
+                        NumberAnimation {
+                            id: swipeReturn
 
-                            interval: 160
+                            duration: Config.animationDuration(180)
+                            easing.type: Easing.OutCubic
+                            property: "swipeOffset"
+                            target: container
+                            to: 0
 
-                            onTriggered: {
-                                NotificationHistory.dismiss(delegateWrapper.nid);
-                                handleCloseImmediate(delegateWrapper.nid);
+                            onFinished: delegateWrapper.syncInteraction()
+                        }
+                        SequentialAnimation {
+                            id: swipeDismissAnimation
+
+                            onFinished: {
+                                var notificationId = delegateWrapper.nid;
+                                NotificationHistory.dismiss(notificationId);
+                                handleCloseImmediate(notificationId);
+                            }
+
+                            NumberAnimation {
+                                id: swipeTravel
+
+                                duration: Config.animationDuration(140)
+                                easing.type: Easing.OutCubic
+                                property: "swipeOffset"
+                                target: container
+                                to: container.width
+                            }
+                            ParallelAnimation {
+                                NumberAnimation {
+                                    duration: Config.animationDuration(container.swipeScale > 0 ? 140 : 0)
+                                    easing.type: Easing.InCubic
+                                    property: "dismissOpacity"
+                                    target: container
+                                    to: 0
+                                }
+                                NumberAnimation {
+                                    duration: Config.animationDuration(container.swipeScale > 0 ? 140 : 0)
+                                    easing.type: Easing.InCubic
+                                    property: "dismissScale"
+                                    target: container
+                                    to: 0.86
+                                }
                             }
                         }
 
