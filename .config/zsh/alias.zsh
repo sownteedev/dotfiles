@@ -94,7 +94,7 @@ cleanarch() {
     print -r -- "Removing orphan packages..."
 
     local -a orphans
-    orphans=("${(@f)$(pacman -Qtdq 2>/dev/null)}")
+    orphans=(${(f)"$(pacman -Qtdq 2>/dev/null)"})
 
     if (( ${#orphans[@]} )); then
         print -r -- "Orphan packages:"
