@@ -3,6 +3,8 @@ import "../../components"
 import "../../service"
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
 
 Item {
     id: root
@@ -14,8 +16,10 @@ Item {
     property real cameraPopupRightMargin: 12
     property real cameraPopupY: 0
     property int faceAttemptValue: 3
-    property bool faceContentReady: false
     property bool faceRetryOnWakeValue: true
+    property bool greeterDeployBusy: false
+    property string greeterDeployMessage: ""
+    property bool greeterDeploySuccess: true
     property bool greeterRememberLastSessionValue: false
     readonly property var greeterSessionOptions: {
         var result = [
@@ -90,6 +94,18 @@ Item {
             "notificationShowOnLock": lockPrivacyValue !== "hidden"
         };
     }
+    function deployGreeter() {
+        if (greeterDeployBusy || greeterDeployProcess.running)
+            return;
+
+        greeterDeployBusy = true;
+        greeterDeployMessage = qsTr("Authorizing and deploying greeter to system…");
+        greeterDeploySuccess = true;
+
+        var deployScript = Config.sownteeshellDir + "/scripts/system/deploy-greeter.sh";
+        greeterDeployProcess.command = [deployScript];
+        greeterDeployProcess.running = true;
+    }
     function greeterSessionLabel() {
         for (var index = 0; index < greeterSessionOptions.length; ++index) {
             if (greeterSessionOptions[index].value === greeterSessionValue)
@@ -163,6 +179,12 @@ Item {
 
         baselineState = JSON.stringify(currentState());
     }
+    function testGreeter() {
+        var dotfilesDir = Config.dotfilesDir;
+        var greeterWidget = Config.sownteeshellDir + "/widget/greeter";
+        var script = 'cd "$1" && ' + 'GREETD_DEFAULT_USER="$USER" ' + 'GREETD_SESSION_NAME="Niri" ' + 'GREETD_THEME_PATH="/var/lib/sownteeshell/greeter/colors.json" ' + 'GREETD_BACKGROUND_PATH="/var/lib/sownteeshell/greeter/background.json" ' + 'GREETD_PROFILE_PATH="/var/lib/sownteeshell/greeter/profile.json" ' + 'exec quickshell --path "$2"';
+        Quickshell.execDetached(["sh", "-c", script, "test-greeter", dotfilesDir, greeterWidget]);
+    }
     function triggerHeaderAction() {
         cameraPopupOpen = false;
         sessionPopupOpen = false;
@@ -171,26 +193,34 @@ Item {
 
     Component.onCompleted: {
         syncFields();
-        if (FaceAuthService.initialized)
-            faceContentReady = true;
-        else
+        if (!FaceAuthService.initialized)
             FaceAuthService.refresh();
         GreeterSettingsService.refreshSessions();
     }
 
-    Timer {
-        id: faceRevealTimer
+    Process {
+        id: greeterDeployProcess
 
-        interval: 140
-        repeat: false
+        stderr: StdioCollector {
+            id: deployStderr
+        }
+        stdout: StdioCollector {
+            id: deployStdout
+        }
 
-        onTriggered: root.faceContentReady = true
+        onExited: (exitCode, exitStatus) => {
+            root.greeterDeployBusy = false;
+            if (exitCode === 0) {
+                root.greeterDeploySuccess = true;
+                root.greeterDeployMessage = qsTr("Greeter deployed to system successfully");
+            } else {
+                root.greeterDeploySuccess = false;
+                var err = deployStderr.text.trim() || deployStdout.text.trim();
+                root.greeterDeployMessage = err !== "" ? err : qsTr("Deploy failed (exit code %1)").arg(exitCode);
+            }
+        }
     }
     Connections {
-        function onInitializedChanged() {
-            if (FaceAuthService.initialized && !root.faceContentReady)
-                faceRevealTimer.restart();
-        }
         function onOperationFinished(success, message) {
             if (success && FaceAuthService.activeAction === "add")
                 modelLabelField.text = "";
@@ -209,7 +239,6 @@ Item {
         id: pageContent
 
         anchors.fill: parent
-        visible: root.faceContentReady
 
         SettingsSectionCard {
             Layout.fillWidth: true
@@ -505,6 +534,35 @@ Item {
                     return root.greeterRememberLastSessionValue = value;
                 }
             }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                Text {
+                    Layout.fillWidth: true
+                    color: root.greeterDeployMessage !== "" ? (root.greeterDeploySuccess ? Config.md3.primary : Config.md3.error) : Config.alpha(Config.md3.on_surface_variant, 0.58)
+                    font.family: Config.fontName
+                    font.pixelSize: 12
+                    text: root.greeterDeployMessage !== "" ? root.greeterDeployMessage : qsTr("Test greeter in a window or deploy files to /usr/share/sownteeshell/greeter")
+                    wrapMode: Text.Wrap
+                }
+                SettingsActionButton {
+                    iconName: "video-display-symbolic"
+                    primary: false
+                    text: qsTr("Test Greeter")
+
+                    onClicked: root.testGreeter()
+                }
+                SettingsActionButton {
+                    enabled: !root.greeterDeployBusy
+                    iconName: "system-software-update-symbolic"
+                    primary: true
+                    spinning: root.greeterDeployBusy
+                    text: root.greeterDeployBusy ? qsTr("Deploying…") : qsTr("Sync to Greetd")
+
+                    onClicked: root.deployGreeter()
+                }
+            }
             Text {
                 Layout.fillWidth: true
                 color: GreeterSettingsService.errorMessage !== "" ? Config.md3.error : Config.alpha(Config.md3.on_surface_variant, 0.58)
@@ -565,14 +623,6 @@ Item {
                 wrapMode: Text.Wrap
             }
         }
-    }
-    LoadingIndicator {
-        anchors.centerIn: parent
-        color: Config.md3.primary
-        height: 42
-        visible: !root.faceContentReady
-        width: 42
-        z: 20
     }
     SelectPopup {
         accentColor: Config.md3.secondary

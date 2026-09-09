@@ -61,7 +61,7 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 - Wallpaper Engine support routes video projects through the native renderer and scene projects through `linux-wallpaperengine`, with battery-aware FPS and pause-on-lock/fullscreen policies.
 - Integrated Wallhaven and Steam Workshop browsers with search, source-specific filters, favorites, installed-library management, cached previews, and desktop/Greetd/both destinations.
 - Frame-aware video handoff, cached covers, rollback-safe transitions, and synchronized live theme previews while browsing.
-- Matugen-generated Material You colors with animated shell transitions and optional theme propagation through configured system templates.
+- Matugen-generated Material You colors with animated shell transitions, soft secondary/tertiary accents for monochrome wallpapers, and optional theme propagation through configured system templates.
 - Greetd keeps its own background and palette, generated independently from its selected image or Wallpaper Engine video.
 
 ### Capture and notifications

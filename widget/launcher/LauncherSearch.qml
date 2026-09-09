@@ -15,7 +15,7 @@ Item {
     id: searchRoot
 
     // Combine apps and file results into a single list, or output clipboard history/file search
-    property var _fileItemCache: ({})
+    property bool _suppressIndexReset: false
     readonly property var combinedResults: {
         if (isCalculatorMode)
             return [];
@@ -29,32 +29,8 @@ Item {
         if (isGifMode || isStickerMode)
             return [];
 
-        if (isFileMode) {
-            var files = filesSearch.fileResults;
-            var cached = searchRoot._fileItemCache || ({});
-            var nextCache = {};
-            var fileList = [];
-            for (var j = 0; j < files.length; j++) {
-                var fileEntry = files[j];
-                var path = fileEntry.path ? fileEntry.path : files[j];
-                var kind = fileEntry.kind ? fileEntry.kind : "file";
-                var name = fileEntry.name ? fileEntry.name : path.substring(path.lastIndexOf("/") + 1);
-                var cachedItem = cached[path];
-                if (!cachedItem || cachedItem.data.name !== name || cachedItem.type !== kind) {
-                    cachedItem = {
-                        "type": kind,
-                        "data": {
-                            "path": path,
-                            "name": name
-                        }
-                    };
-                }
-                nextCache[path] = cachedItem;
-                fileList.push(cachedItem);
-            }
-            searchRoot._fileItemCache = nextCache;
-            return fileList;
-        }
+        if (isFileMode)
+            return filesSearch.displayModel;
         // Default mode: ONLY show apps (saving CPU/IO from file search!)
         var appList = [];
         var apps = searchResults;
@@ -220,6 +196,8 @@ Item {
     implicitHeight: Math.min(combinedResults.length, 5) * (80 + 12) - (combinedResults.length > 0 ? 12 : 0)
 
     onCombinedResultsChanged: {
+        if (_suppressIndexReset)
+            return;
         if (combinedResults.length === 0) {
             selectedIndex = 0;
             return;
@@ -234,6 +212,8 @@ Item {
     Loader {
         id: filesSearch
 
+        property var _resultCache: ({})
+        property var displayModel: []
         readonly property var fileResults: item ? item["fileResults"] : []
         readonly property bool loading: active && (status === Loader.Null || status === Loader.Loading || status === Loader.Ready && item && item["loading"])
 
@@ -246,8 +226,8 @@ Item {
         }
         function removeFile(path) {
             var targetIdx = -1;
-            for (var i = 0; i < combinedResults.length; ++i) {
-                if (combinedResults[i].data && combinedResults[i].data.path === path) {
+            for (var i = 0; i < displayModel.length; ++i) {
+                if (displayModel[i].data && displayModel[i].data.path === path) {
                     targetIdx = i;
                     break;
                 }
@@ -257,14 +237,54 @@ Item {
                 if (targetSelection > targetIdx)
                     targetSelection = targetSelection - 1;
                 else if (targetSelection === targetIdx)
-                    targetSelection = Math.min(targetSelection, Math.max(0, combinedResults.length - 2));
+                    targetSelection = Math.min(targetSelection, Math.max(0, displayModel.length - 2));
             }
-            searchRoot._savedIndexBeforeModelUpdate = targetSelection;
+            searchRoot._suppressIndexReset = true;
+            // Save scroll position — full model replacement repositions the
+            // view; we restore it immediately after so nothing jumps.
+            var savedY = searchList.contentY;
             if (item)
                 item["removeFile"](path);
+            // updateResults() fires synchronously via onFileResultsChanged
+            // and replaces displayModel.  Set selectedIndex *after* the new
+            // model is in place so the ListView picks up the right position.
             searchRoot.selectedIndex = targetSelection;
-            searchList.currentIndex = targetSelection;
-            searchRoot.isDeletingItem = false;
+            // Model replacement may reset ListView.currentIndex internally;
+            // restore the binding so highlight tracks the selected item.
+            searchList.currentIndex = Qt.binding(function () {
+                return searchRoot.selectedIndex;
+            });
+            // Restore scroll so the viewport doesn't jump.
+            searchList.contentY = savedY;
+            Qt.callLater(function () {
+                searchRoot._suppressIndexReset = false;
+            });
+        }
+        function updateResults() {
+            var nextCache = {};
+            var nextResults = [];
+            for (var i = 0; i < fileResults.length; ++i) {
+                var entry = fileResults[i];
+                if (!entry)
+                    continue;
+                var path = entry.path ? entry.path : String(entry);
+                var kind = entry.kind ? entry.kind : "file";
+                var name = entry.name ? entry.name : path.substring(path.lastIndexOf("/") + 1);
+                var cachedItem = _resultCache[path];
+                if (!cachedItem || cachedItem.data.name !== name || cachedItem.type !== kind) {
+                    cachedItem = {
+                        "type": kind,
+                        "data": {
+                            "path": path,
+                            "name": name
+                        }
+                    };
+                }
+                nextCache[path] = cachedItem;
+                nextResults.push(cachedItem);
+            }
+            _resultCache = nextCache;
+            displayModel = nextResults;
         }
         function videoPreviewSource(path) {
             return item ? item["videoPreviewSource"](path) : "";
@@ -273,6 +293,7 @@ Item {
         active: searchRoot.isFileMode
         source: Qt.resolvedUrl("LauncherFiles.qml")
 
+        onFileResultsChanged: updateResults()
         onLoaded: {
             item["query"] = Qt.binding(function () {
                 return searchRoot.query;
@@ -361,18 +382,20 @@ Item {
         clip: true
         currentIndex: searchRoot.selectedIndex
         highlightFollowsCurrentItem: true
-        highlightMoveDuration: 250
+        highlightMoveDuration: searchRoot._suppressIndexReset ? 0 : 250
         highlightRangeMode: ListView.ApplyRange
         model: searchRoot.combinedResults
         preferredHighlightBegin: 0
-        preferredHighlightEnd: Math.max(0, searchList.height - 80)
-        spacing: 12
+        preferredHighlightEnd: Math.max(0, searchList.height - 92)
+        spacing: 0
 
-        delegate: Rectangle {
+        delegate: Item {
             id: delegateRoot
 
             readonly property color accentColor: isClipboard ? Config.md3.secondary : (isFolder ? Config.md3.primary : (isApp ? Config.md3.primary : (isEmoji ? (isUnicode ? Config.md3.tertiary : Config.md3.error) : Config.md3.tertiary)))
+            readonly property real cardHeight: 80
             readonly property var clipData: modelData
+            property string deletingPath: ""
             readonly property bool isApp: !isClipboard && modelData.type === "app"
             readonly property bool isClipboard: searchRoot.isClipboardMode
             property bool isDeleting: false
@@ -382,6 +405,7 @@ Item {
             readonly property bool isSelected: index === searchRoot.selectedIndex
             readonly property bool isUnicode: isEmoji && modelData.characterKind === "unicode"
             readonly property var itemData: !isClipboard ? modelData.data : null
+            readonly property real totalHeight: 92
 
             function characterSubtitle() {
                 if (!isEmoji || !itemData)
@@ -408,49 +432,19 @@ Item {
                 swipeContent.x = 80;
             }
             function triggerDelete() {
-                if (isDeleting)
+                if (isDeleting || !isFile || !itemData || !itemData.path)
                     return;
 
+                deletingPath = itemData.path;
                 isDeleting = true;
-                swipeContent.x = delegateRoot.width + 20;
-                Quickshell.execDetached(["gio", "trash", itemData.path]);
+                swipeContent.x = card.width + 20;
+                Quickshell.execDetached(["gio", "trash", deletingPath]);
+                deleteAnimation.start();
             }
 
             clip: true
-            color: "transparent"
-            height: isDeleting ? 0 : 80
-            layer.enabled: isFile && swipeContent.x > 0.4 && !isDeleting
-            opacity: isDeleting ? 0 : 1
-            radius: 28
-            width: searchList.width - searchList.cardInset * 2
-
-            Behavior on height {
-                NumberAnimation {
-                    duration: Config.animationDuration(220)
-                    easing.type: Easing.InOutCubic
-
-                    onFinished: {
-                        if (delegateRoot.isDeleting)
-                            filesSearch.removeFile(itemData.path);
-                    }
-                }
-            }
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    height: delegateRoot.height
-                    radius: delegateRoot.radius
-                    width: delegateRoot.width
-                }
-            }
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: Config.animationDuration(160)
-                    easing.type: Easing.OutQuad
-                }
-            }
-            transform: Translate {
-                x: searchList.cardInset
-            }
+            height: totalHeight
+            width: searchList.width
 
             Component.onCompleted: {
                 requestClipboardPreview();
@@ -459,322 +453,376 @@ Item {
             onClipDataChanged: requestClipboardPreview()
             onItemDataChanged: requestVideoPreview()
 
-            SwipeDeleteBackground {
-                actionText: qsTr("Trash")
-                anchors.fill: parent
-                cornerRadius: 28
-                leading: true
-                swipeOffset: swipeContent.x
-                visible: isFile && revealProgress > 0.005
+            // A Behavior does not emit Animation.finished. Own the removal
+            // animation explicitly so even a zero-duration collapse commits.
+            ParallelAnimation {
+                id: deleteAnimation
 
-                onTriggered: delegateRoot.triggerDelete()
+                onFinished: filesSearch.removeFile(delegateRoot.deletingPath)
+
+                NumberAnimation {
+                    duration: Config.animationDuration(220)
+                    easing.type: Easing.InOutCubic
+                    property: "height"
+                    target: delegateRoot
+                    to: 0
+                }
+                NumberAnimation {
+                    duration: Config.animationDuration(160)
+                    easing.type: Easing.OutQuad
+                    property: "opacity"
+                    target: delegateRoot
+                    to: 0
+                }
             }
-
-            // Sliding panel containing actual item UI
             Rectangle {
-                id: swipeContent
+                id: card
 
-                color: listMouse.containsMouse && !delegateRoot.isSelected ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
-                height: parent.height
+                clip: true
+                color: "transparent"
+                height: delegateRoot.cardHeight
+                layer.enabled: isFile && swipeContent.x > 0.4 && !delegateRoot.isDeleting
                 radius: 28
-                width: parent.width
+                width: searchList.width - searchList.cardInset * 2
+                x: searchList.cardInset
 
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 100
-                    }
-                }
-                Behavior on x {
-                    enabled: !listMouse.drag.active && !Config.shellReducedMotion && !deleteSlideOutAnimation.running
-
-                    SpringAnimation {
-                        damping: 0.52
-                        epsilon: 0.25
-                        mass: 0.85
-                        spring: 4.6
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle {
+                        height: card.height
+                        radius: card.radius
+                        width: card.width
                     }
                 }
 
-                RowLayout {
+                SwipeDeleteBackground {
+                    actionText: qsTr("Trash")
                     anchors.fill: parent
-                    anchors.leftMargin: 15
-                    anchors.rightMargin: isClipboard ? 64 : 15
-                    spacing: 15
+                    cornerRadius: 28
+                    leading: true
+                    swipeOffset: swipeContent.x
+                    visible: isFile && revealProgress > 0.005
 
-                    Item {
-                        id: iconContainer
+                    onTriggered: delegateRoot.triggerDelete()
+                }
 
-                        readonly property color iconColor: delegateRoot.isSelected ? delegateRoot.accentColor : Config.md3.on_surface_variant
-                        readonly property string imagePreviewSource: {
-                            if (isClipboard) {
-                                if (clipData.isFileImage)
-                                    return "file://" + clipData.sourcePath;
-                                return (clipData.isImage || clipData.isVideo) ? clipboardSearch.previewPath(clipData.id) : "";
-                            }
+                // Sliding panel containing actual item UI
+                Rectangle {
+                    id: swipeContent
 
-                            if (!isFile)
-                                return "";
-                            if (isImageFile(itemData.name))
-                                return "file://" + itemData.path;
-                            return isVideoFile(itemData.name) ? filesSearch.videoPreviewSource(itemData.path) : "";
-                        }
-                        readonly property bool isImagePreview: {
-                            if (isClipboard)
-                                return clipData.isFileImage || (clipData.isImage || clipData.isVideo) && clipboardSearch.isPreviewReady(clipData.id);
+                    color: listMouse.containsMouse && !delegateRoot.isSelected ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
+                    height: parent.height
+                    radius: 28
+                    width: parent.width
 
-                            return isFile && (isImageFile(itemData.name) || isVideoFile(itemData.name) && filesSearch.isVideoPreviewReady(itemData.path));
-                        }
-
-                        Layout.alignment: Qt.AlignVCenter
-                        height: 50
-                        width: 50
-
-                        Rectangle {
-                            anchors.fill: parent
-                            border.color: Config.alpha(iconContainer.iconColor, delegateRoot.isSelected ? 0.28 : 0.14)
-                            border.width: 1
-                            color: delegateRoot.isSelected ? Config.alpha(delegateRoot.accentColor, 0.16) : Config.md3.surface_container_high
-                            radius: 14
-                            visible: !iconContainer.isImagePreview && !isEmoji
-
-                            Behavior on border.color {
-                                ColorAnimation {
-                                    duration: 160
-                                }
-                            }
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 160
-                                }
-                            }
-                        }
-
-                        // Show standard IconImage for apps, non-image files, and text clipboard items
-                        IconImage {
-                            id: standardIcon
-
-                            anchors.centerIn: parent
-                            height: isApp ? 38 : 28
-                            mipmap: true
-                            smooth: true
-                            source: isClipboard ? Quickshell.iconPath(clipData.iconName || "edit-copy-symbolic") : Quickshell.iconPath(isApp ? (itemData.icon || "application-x-executable") : (isFolder ? "folder-symbolic" : getFileIcon(itemData.name)))
-                            visible: !iconContainer.isImagePreview && !isEmoji
-                            width: height
-                        }
-                        ColorOverlay {
-                            anchors.fill: standardIcon
-                            color: iconContainer.iconColor
-                            source: standardIcon
-                            visible: standardIcon.visible && !isApp
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 160
-                                }
-                            }
-                        }
-                        Text {
-                            anchors.centerIn: parent
-                            font.family: isUnicode ? "Noto Sans Symbols" : "Noto Color Emoji"
-                            font.pixelSize: isUnicode ? 32 : 34
-                            text: isEmoji && itemData ? itemData.glyph : ""
-                            visible: isEmoji
-                        }
-
-                        // Show real Image preview for images, video frames, and clipboard images
-                        Image {
-                            anchors.fill: parent
-                            asynchronous: true
-                            cache: true
-                            clip: true
-                            fillMode: Image.PreserveAspectCrop
-                            // Round the corners of the preview image to make it look premium
-                            layer.enabled: true
-                            smooth: true
-                            source: iconContainer.imagePreviewSource
-                            sourceSize: Qt.size(iconContainer.width * 2, iconContainer.height * 2)
-                            visible: iconContainer.isImagePreview
-
-                            layer.effect: OpacityMask {
-                                maskSource: Rectangle {
-                                    height: iconContainer.height
-                                    radius: 8
-                                    width: iconContainer.width
-                                }
-                            }
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 100
                         }
                     }
-                    ColumnLayout {
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.fillWidth: true
-                        spacing: 4
+                    Behavior on x {
+                        enabled: !listMouse.drag.active && !Config.shellReducedMotion && !delegateRoot.isDeleting
 
-                        Text {
+                        SpringAnimation {
+                            damping: 0.52
+                            epsilon: 0.25
+                            mass: 0.85
+                            spring: 4.6
+                        }
+                    }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 15
+                        anchors.rightMargin: isClipboard ? 64 : 15
+                        spacing: 15
+
+                        Item {
+                            id: iconContainer
+
+                            readonly property color iconColor: delegateRoot.isSelected ? delegateRoot.accentColor : Config.md3.on_surface_variant
+                            readonly property string imagePreviewSource: {
+                                if (isClipboard) {
+                                    if (clipData.isFileImage)
+                                        return "file://" + clipData.sourcePath;
+                                    return (clipData.isImage || clipData.isVideo) ? clipboardSearch.previewPath(clipData.id) : "";
+                                }
+
+                                if (!isFile)
+                                    return "";
+                                if (isImageFile(itemData.name))
+                                    return "file://" + itemData.path;
+                                return isVideoFile(itemData.name) ? filesSearch.videoPreviewSource(itemData.path) : "";
+                            }
+                            readonly property bool isImagePreview: {
+                                if (isClipboard)
+                                    return clipData.isFileImage || (clipData.isImage || clipData.isVideo) && clipboardSearch.isPreviewReady(clipData.id);
+
+                                return isFile && (isImageFile(itemData.name) || isVideoFile(itemData.name) && filesSearch.isVideoPreviewReady(itemData.path));
+                            }
+
+                            Layout.alignment: Qt.AlignVCenter
+                            height: 50
+                            width: 50
+
+                            Rectangle {
+                                anchors.fill: parent
+                                border.color: Config.alpha(iconContainer.iconColor, delegateRoot.isSelected ? 0.28 : 0.14)
+                                border.width: 1
+                                color: delegateRoot.isSelected ? Config.alpha(delegateRoot.accentColor, 0.16) : Config.md3.surface_container_high
+                                radius: 14
+                                visible: !iconContainer.isImagePreview && !isEmoji
+
+                                Behavior on border.color {
+                                    ColorAnimation {
+                                        duration: 160
+                                    }
+                                }
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: 160
+                                    }
+                                }
+                            }
+
+                            // Show standard IconImage for apps, non-image files, and text clipboard items
+                            IconImage {
+                                id: standardIcon
+
+                                anchors.centerIn: parent
+                                height: isApp ? 38 : 28
+                                mipmap: true
+                                smooth: true
+                                source: isClipboard ? Quickshell.iconPath(clipData.iconName || "edit-copy-symbolic") : Quickshell.iconPath(isApp ? (itemData.icon || "application-x-executable") : (isFolder ? "folder-symbolic" : getFileIcon(itemData.name)))
+                                visible: !iconContainer.isImagePreview && !isEmoji
+                                width: height
+                            }
+                            ColorOverlay {
+                                anchors.fill: standardIcon
+                                color: iconContainer.iconColor
+                                source: standardIcon
+                                visible: standardIcon.visible && !isApp
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: 160
+                                    }
+                                }
+                            }
+                            Text {
+                                anchors.centerIn: parent
+                                font.family: isUnicode ? "Noto Sans Symbols" : "Noto Color Emoji"
+                                font.pixelSize: isUnicode ? 32 : 34
+                                text: isEmoji && itemData ? itemData.glyph : ""
+                                visible: isEmoji
+                            }
+
+                            // Show real Image preview for images, video frames, and clipboard images
+                            Image {
+                                anchors.fill: parent
+                                asynchronous: true
+                                cache: true
+                                clip: true
+                                fillMode: Image.PreserveAspectCrop
+                                // Round the corners of the preview image to make it look premium
+                                layer.enabled: true
+                                smooth: true
+                                source: iconContainer.imagePreviewSource
+                                sourceSize: Qt.size(iconContainer.width * 2, iconContainer.height * 2)
+                                visible: iconContainer.isImagePreview
+
+                                layer.effect: OpacityMask {
+                                    maskSource: Rectangle {
+                                        height: iconContainer.height
+                                        radius: 8
+                                        width: iconContainer.width
+                                    }
+                                }
+                            }
+                        }
+                        ColumnLayout {
+                            Layout.alignment: Qt.AlignVCenter
                             Layout.fillWidth: true
-                            color: isFile && swipeContent.x > 0.4 ? Config.md3.on_error : Config.md3.on_surface
-                            elide: Text.ElideRight
-                            font.family: Config.fontName
-                            font.pixelSize: 16
-                            font.weight: Font.DemiBold
-                            text: isClipboard ? clipData.title : itemData.name
+                            spacing: 4
 
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: Config.animationDuration(100)
+                            Text {
+                                Layout.fillWidth: true
+                                color: isFile && swipeContent.x > 0.4 ? Config.md3.on_error : Config.md3.on_surface
+                                elide: Text.ElideRight
+                                font.family: Config.fontName
+                                font.pixelSize: 16
+                                font.weight: Font.DemiBold
+                                text: isClipboard ? clipData.title : itemData.name
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: Config.animationDuration(100)
+                                    }
+                                }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                color: Config.alpha(isFile && swipeContent.x > 0.4 ? Config.md3.on_error : Config.md3.on_surface, 0.68)
+                                elide: isApp ? Text.ElideRight : Text.ElideMiddle
+                                font.family: Config.fontName
+                                font.pixelSize: 15
+                                text: isClipboard ? clipData.subtitle : (isEmoji ? characterSubtitle() : (isApp ? (itemData.comment || itemData.genericName || "") : itemData.path.replace(Config.homeDir, "~")))
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: Config.animationDuration(100)
+                                    }
                                 }
                             }
                         }
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.alpha(isFile && swipeContent.x > 0.4 ? Config.md3.on_error : Config.md3.on_surface, 0.68)
-                            elide: isApp ? Text.ElideRight : Text.ElideMiddle
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            text: isClipboard ? clipData.subtitle : (isEmoji ? characterSubtitle() : (isApp ? (itemData.comment || itemData.genericName || "") : itemData.path.replace(Config.homeDir, "~")))
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: Config.animationDuration(100)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            MouseArea {
-                id: listMouse
-
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                drag.axis: Drag.XAxis
-                drag.maximumX: 160
-                drag.minimumX: 0
-                drag.target: isFile ? swipeContent : null
-                drag.threshold: 10
-                hoverEnabled: true
-
-                onClicked: {
-                    if (isFile && swipeContent.x > 10) {
-                        delegateRoot.snapBack();
-                        return;
-                    }
-                    searchRoot.selectedIndex = index;
-                    if (isClipboard)
-                        clipboardSearch.copySelected(clipData.id);
-                    else if (isEmoji)
-                        emojiLoader.copyEntry(itemData);
-                    else if (isApp)
-                        itemData.execute();
-                    else if (isFolder)
-                        openInNeovide(itemData.path);
-                    else
-                        Quickshell.execDetached(["gio", "open", itemData.path]);
-                    searchRoot.resultLaunched();
-                }
-                onEntered: {
-                    if (!delegateRoot.isDeleting)
-                        searchRoot.selectedIndex = index;
-                }
-                onPositionChanged: {
-                    if (!delegateRoot.isDeleting && searchRoot.selectedIndex !== index)
-                        searchRoot.selectedIndex = index;
-                }
-                onReleased: {
-                    if (isFile) {
-                        if (swipeContent.x > 120)
-                            delegateRoot.triggerDelete();
-                        else if (swipeContent.x > 40)
-                            delegateRoot.snapToReveal();
-                        else
-                            delegateRoot.snapBack();
-                    }
-                }
-            }
-            Rectangle {
-                id: pinButton
-
-                readonly property bool pinned: isClipboard && clipData.pinned === true
-
-                Accessible.name: pinned ? qsTr("Unpin clipboard item") : qsTr("Pin clipboard item")
-                anchors.right: parent.right
-                anchors.rightMargin: 14
-                anchors.verticalCenter: parent.verticalCenter
-                border.color: pinned ? Config.alpha(Config.md3.secondary, 0.44) : Config.alpha(Config.md3.outline_variant, 0.4)
-                border.width: 1
-                color: pinned ? Config.alpha(Config.md3.secondary, 0.18) : (pinMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent")
-                height: 40
-                radius: 20
-                visible: isClipboard
-                width: 40
-                z: 2
-
-                Behavior on border.color {
-                    ColorAnimation {
-                        duration: 140
-                    }
-                }
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 140
-                    }
-                }
-
-                IconImage {
-                    anchors.centerIn: parent
-                    height: 21
-                    layer.enabled: true
-                    source: Quickshell.iconPath(pinButton.pinned ? "starred-symbolic" : "non-starred-symbolic")
-                    width: 21
-
-                    layer.effect: ColorOverlay {
-                        color: pinButton.pinned ? Config.md3.secondary : Config.md3.on_surface_variant
                     }
                 }
                 MouseArea {
-                    id: pinMouse
+                    id: listMouse
 
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
+                    drag.axis: Drag.XAxis
+                    drag.maximumX: 160
+                    drag.minimumX: 0
+                    drag.target: isFile ? swipeContent : null
+                    drag.threshold: 10
+                    enabled: !delegateRoot.isDeleting
                     hoverEnabled: true
 
-                    onClicked: mouse => {
-                        var updatedIndex = clipboardSearch.togglePinned(clipData.id);
-                        searchRoot.selectedIndex = updatedIndex >= 0 ? updatedIndex : index;
-                        mouse.accepted = true;
+                    onClicked: {
+                        if (isFile && swipeContent.x > 10) {
+                            delegateRoot.snapBack();
+                            return;
+                        }
+                        searchRoot.selectedIndex = index;
+                        if (isClipboard)
+                            clipboardSearch.copySelected(clipData.id);
+                        else if (isEmoji)
+                            emojiLoader.copyEntry(itemData);
+                        else if (isApp)
+                            itemData.execute();
+                        else if (isFolder)
+                            openInNeovide(itemData.path);
+                        else
+                            Quickshell.execDetached(["gio", "open", itemData.path]);
+                        searchRoot.resultLaunched();
+                    }
+                    onEntered: {
+                        if (!delegateRoot.isDeleting)
+                            searchRoot.selectedIndex = index;
+                    }
+                    onPositionChanged: {
+                        if (!delegateRoot.isDeleting && searchRoot.selectedIndex !== index)
+                            searchRoot.selectedIndex = index;
+                    }
+                    onReleased: {
+                        if (isFile) {
+                            if (swipeContent.x > 120)
+                                delegateRoot.triggerDelete();
+                            else if (swipeContent.x > 40)
+                                delegateRoot.snapToReveal();
+                            else
+                                delegateRoot.snapBack();
+                        }
+                    }
+                }
+                Rectangle {
+                    id: pinButton
+
+                    readonly property bool pinned: isClipboard && clipData.pinned === true
+
+                    Accessible.name: pinned ? qsTr("Unpin clipboard item") : qsTr("Pin clipboard item")
+                    anchors.right: parent.right
+                    anchors.rightMargin: 14
+                    anchors.verticalCenter: parent.verticalCenter
+                    border.color: pinned ? Config.alpha(Config.md3.secondary, 0.44) : Config.alpha(Config.md3.outline_variant, 0.4)
+                    border.width: 1
+                    color: pinned ? Config.alpha(Config.md3.secondary, 0.18) : (pinMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent")
+                    height: 40
+                    radius: 20
+                    visible: isClipboard
+                    width: 40
+                    z: 2
+
+                    Behavior on border.color {
+                        ColorAnimation {
+                            duration: 140
+                        }
+                    }
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 140
+                        }
+                    }
+
+                    IconImage {
+                        anchors.centerIn: parent
+                        height: 21
+                        layer.enabled: true
+                        source: Quickshell.iconPath(pinButton.pinned ? "starred-symbolic" : "non-starred-symbolic")
+                        width: 21
+
+                        layer.effect: ColorOverlay {
+                            color: pinButton.pinned ? Config.md3.secondary : Config.md3.on_surface_variant
+                        }
+                    }
+                    MouseArea {
+                        id: pinMouse
+
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+
+                        onClicked: mouse => {
+                            var updatedIndex = clipboardSearch.togglePinned(clipData.id);
+                            searchRoot.selectedIndex = updatedIndex >= 0 ? updatedIndex : index;
+                            mouse.accepted = true;
+                        }
                     }
                 }
             }
         }
+        displaced: Transition {
+            NumberAnimation {
+                duration: Config.animationDuration(180)
+                easing.type: Easing.OutCubic
+                properties: "y"
+            }
+        }
 
         // Invisible highlight just for the engine
-        highlight: Rectangle {
+        highlight: Item {
             readonly property var curItem: searchList.currentItem
 
-            color: curItem ? Config.alpha(curItem.accentColor, 0.13) : Config.alpha(Config.md3.primary, 0.13)
-            radius: 28
-            visible: searchRoot.combinedResults.length > 0
-            width: searchList.width - searchList.cardInset * 2
-            x: searchList.cardInset
+            visible: searchRoot.combinedResults.length > 0 && curItem && !curItem.isDeleting
             z: 0
 
-            Behavior on color {
-                ColorAnimation {
-                    duration: 150
-                }
-            }
-
             Rectangle {
-                anchors.left: parent.left
-                anchors.leftMargin: 4
-                anchors.verticalCenter: parent.verticalCenter
-                color: parent.curItem ? parent.curItem.accentColor : Config.md3.primary
-                height: 36
-                radius: 2
-                width: 3
+                color: curItem ? Config.alpha(curItem.accentColor, 0.13) : Config.alpha(Config.md3.primary, 0.13)
+                height: 80
+                radius: 28
+                width: parent.width - searchList.cardInset * 2
+                x: searchList.cardInset
 
                 Behavior on color {
                     ColorAnimation {
                         duration: 150
+                    }
+                }
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: parent.curItem ? parent.curItem.accentColor : Config.md3.primary
+                    height: 36
+                    radius: 2
+                    width: 3
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 150
+                        }
                     }
                 }
             }

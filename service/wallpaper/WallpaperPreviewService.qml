@@ -106,7 +106,9 @@ QtObject {
         commitApplyColors = false;
     }
     function cacheKey(path, modified) {
-        return WallpaperService.stableHash(thumbnailKey(path, modified) + "|" + ThemeService.colorMode);
+        // Regenerate color JSON for the soft-accent policy, reusing the same
+        // JPEG thumbnails and fullscreen/video cover caches.
+        return WallpaperService.stableHash(thumbnailKey(path, modified) + "|" + ThemeService.colorMode + "|mono-soft-accents");
     }
     function cancel() {
         appliedPreviewKey = "";
