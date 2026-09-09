@@ -402,10 +402,11 @@ install_shell_environment() {
     run_yay evince loupe
     gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
     gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'
-    gsettings set org.gnome.desktop.interface color-scheme prefer-dark
-    gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3-dark
-    gsettings set org.gnome.desktop.interface icon-theme WhiteSur
-    gsettings set org.gnome.desktop.interface cursor-theme Dark_Cursor
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+    gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark'
+    gsettings set org.gnome.desktop.interface icon-theme 'WhiteSur'
+    gsettings set org.gnome.desktop.interface cursor-theme 'Dark_Cursor'
+    gsettings set org.gnome.desktop.interface font-name 'SF Pro Text 10.5'
 
     cd ~
     sleep 3 && clear

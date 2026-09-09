@@ -255,7 +255,7 @@ sleep 3 && clear
 
 # Monitor and Theme
 red_echo "[*] Installing monitor and theme ..."
-retry sudo pacman -S --needed --noconfirm nwg-look fastfetch xdg-desktop-portal-gtk
+retry sudo pacman -S --needed --noconfirm fastfetch xdg-desktop-portal-gtk
 echo "[*] Done."
 sleep 3 && clear
 
