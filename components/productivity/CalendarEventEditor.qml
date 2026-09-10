@@ -375,6 +375,7 @@ Rectangle {
         model: root.writableCalendars
         opened: root.calendarPopupOpen
         popupY: root.calendarPopupY
+        shadowOpacity: 0.5
 
         onDismissed: root.calendarPopupOpen = false
         onItemSelected: calendar => {

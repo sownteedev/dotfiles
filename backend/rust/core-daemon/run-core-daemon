@@ -77,7 +77,10 @@ needs_build() {
     find "$backend_dir/src" -type f -newer "$binary" -print -quit | grep -q .
 }
 
-if needs_build; then
+if [ "$client_mode" -eq 1 ] && [ -x "$binary" ]; then
+    # Client requests from UI/CLI must not block on a full release rebuild if binary already exists
+    :
+elif needs_build; then
     if ! command -v cargo >/dev/null 2>&1; then
         printf '%s\n' "core daemon needs rebuilding, but cargo is not installed" >&2
         exit 1

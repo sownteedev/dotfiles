@@ -183,12 +183,18 @@ Item {
         Quickshell.execDetached(["neovide", path]);
     }
     function selectNext() {
-        if (combinedResults.length > 0)
+        if (combinedResults.length > 0) {
             selectedIndex = (selectedIndex + 1) % combinedResults.length;
+            wheelScrollAnimation.stop();
+            searchList.positionViewAtIndex(selectedIndex, ListView.Contain);
+        }
     }
     function selectPrev() {
-        if (combinedResults.length > 0)
+        if (combinedResults.length > 0) {
             selectedIndex = (selectedIndex - 1 + combinedResults.length) % combinedResults.length;
+            wheelScrollAnimation.stop();
+            searchList.positionViewAtIndex(selectedIndex, ListView.Contain);
+        }
     }
 
     clip: true
@@ -206,7 +212,11 @@ Item {
             selectedIndex = Math.max(0, combinedResults.length - 1);
         }
     }
-    onQueryChanged: selectedIndex = 0
+    onQueryChanged: {
+        selectedIndex = 0;
+        wheelScrollAnimation.stop();
+        searchList.positionViewAtBeginning();
+    }
     onSelectedIndexChanged: {}
 
     Loader {
@@ -305,6 +315,7 @@ Item {
 
         readonly property var clipboardResults: item ? item["clipboardResults"] : []
         readonly property bool loading: active && (status === Loader.Null || status === Loader.Loading || status === Loader.Ready && item && item["loading"])
+        readonly property bool pinning: status === Loader.Ready && item && item["pinning"]
         readonly property var readyPreviewIds: item ? item["readyPreviewIds"] : ({})
 
         function copySelected(id) {
@@ -333,6 +344,13 @@ Item {
                 return searchRoot.query;
             });
         }
+    }
+    Connections {
+        function onSelectionRequested(index) {
+            searchRoot.selectedIndex = index;
+        }
+
+        target: clipboardSearch.status === Loader.Ready ? clipboardSearch.item : null
     }
     Loader {
         id: emojiLoader
@@ -381,12 +399,9 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         currentIndex: searchRoot.selectedIndex
-        highlightFollowsCurrentItem: true
-        highlightMoveDuration: searchRoot._suppressIndexReset ? 0 : 250
-        highlightRangeMode: ListView.ApplyRange
+        highlightFollowsCurrentItem: false
+        highlightRangeMode: ListView.NoHighlightRange
         model: searchRoot.combinedResults
-        preferredHighlightBegin: 0
-        preferredHighlightEnd: Math.max(0, searchList.height - 92)
         spacing: 0
 
         delegate: Item {
@@ -568,7 +583,7 @@ Item {
                                 anchors.fill: parent
                                 border.color: Config.alpha(iconContainer.iconColor, delegateRoot.isSelected ? 0.28 : 0.14)
                                 border.width: 1
-                                color: delegateRoot.isSelected ? Config.alpha(delegateRoot.accentColor, 0.16) : Config.md3.surface_container_high
+                                color: Config.md3.surface_container_high
                                 radius: 14
                                 visible: !iconContainer.isImagePreview && !isEmoji
 
@@ -580,6 +595,23 @@ Item {
                                 Behavior on color {
                                     ColorAnimation {
                                         duration: 160
+                                    }
+                                }
+
+                                Rectangle {
+                                    id: selectionTint
+
+                                    property real tintAlpha: delegateRoot.isSelected ? 0.16 : 0
+
+                                    anchors.fill: parent
+                                    anchors.margins: parent.border.width
+                                    color: Config.alpha(delegateRoot.accentColor, selectionTint.tintAlpha)
+                                    radius: parent.radius - parent.border.width
+
+                                    Behavior on tintAlpha {
+                                        NumberAnimation {
+                                            duration: Config.animationDuration(160)
+                                        }
                                     }
                                 }
                             }
@@ -771,6 +803,7 @@ Item {
 
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
+                        enabled: !clipboardSearch.pinning
                         hoverEnabled: true
 
                         onClicked: mouse => {
@@ -790,12 +823,24 @@ Item {
             }
         }
 
-        // Invisible highlight just for the engine
+        // Move the highlight without making hover scroll the viewport.
         highlight: Item {
             readonly property var curItem: searchList.currentItem
 
+            height: curItem ? curItem.height : 0
             visible: searchRoot.combinedResults.length > 0 && curItem && !curItem.isDeleting
+            width: searchList.width
+            y: curItem ? curItem.y : 0
             z: 0
+
+            Behavior on y {
+                enabled: !searchRoot._suppressIndexReset
+
+                NumberAnimation {
+                    duration: Config.animationDuration(200)
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             Rectangle {
                 color: curItem ? Config.alpha(curItem.accentColor, 0.13) : Config.alpha(Config.md3.primary, 0.13)

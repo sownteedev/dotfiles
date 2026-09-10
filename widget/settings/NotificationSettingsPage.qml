@@ -379,6 +379,7 @@ Item {
         popupY: root.timeoutPopupY
         rightMargin: root.timeoutPopupRightMargin
         rowHeight: 44
+        shadowOpacity: 0.5
         z: 20
 
         onDismissed: root.timeoutPopupOpen = false

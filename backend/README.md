@@ -32,9 +32,11 @@ sockets using newline-delimited JSON.
 `rust/core-daemon` provides the shared backend for:
 
 - system, process, battery, charging, application, and package telemetry;
-- clipboard restoration, diagnostics, updates, Wi-Fi QR generation, and
-  display integration for Niri, DDC/CI, and Sunshine;
-- transactional Niri and SownteeShell settings, GTK/XSettings theme updates,
+- clipboard history, persistent favorites and restoration, diagnostics, updates,
+  Wi-Fi QR generation, and display integration for Niri, DDC/CI, and Sunshine;
+- transactional Niri and SownteeShell settings, synchronized GTK 3/4 and Qt 5/6
+  appearance (application themes, icons, cursor theme & size, interface typography,
+  Kvantum/Fusion widget styles, color schemes, standard dialogs, and XSettings broadcast),
   and greetd profile, session, background, and palette synchronization;
 - Weather, Emoji/Unicode, KLIPY, Wallhaven, Steam Workshop, Wallpaper Engine,
   preview generation, and bounded media caches.
@@ -49,6 +51,14 @@ $XDG_RUNTIME_DIR/sownteeshell/core/core.sock
 services use `CoreRequest.qml` for cancellable work, so closing a provider or
 starting a newer search can cancel the previous backend job without spawning a
 new helper process for every request.
+
+Clipboard favorites are stored by content hash under
+`$XDG_DATA_HOME/sownteeshell/core/clipboard/favorites` (default:
+`~/.local/share/sownteeshell/core/clipboard/favorites`). Text and clipboard images
+survive history cleanup and backend restarts; copied files retain references to
+the original files, not backups of those files. Storage is private to the user
+(directories `0700`, files `0600`), but is not encrypted. Unpinning removes the
+saved copy without deleting clipboard history.
 
 The daemon uses a four-thread Tokio runtime, moves blocking filesystem work off
 the async workers, reuses one bounded HTTP client, limits IPC messages to 1 MiB

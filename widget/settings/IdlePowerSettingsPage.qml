@@ -731,6 +731,7 @@ Item {
         popupY: root.sleepPopupY
         rightMargin: root.sleepPopupRightMargin
         rowHeight: 44
+        shadowOpacity: 0.5
         z: 40
 
         onDismissed: root.sleepPopupOpen = false

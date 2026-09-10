@@ -7,6 +7,7 @@ use regex::Regex;
 use serde_json::{Map, Value, json};
 use std::collections::HashSet;
 use std::fs;
+use tokio::process::Command;
 use tokio_util::sync::CancellationToken;
 
 const ANIMATION_NAMES: &[&str] = &[
@@ -774,6 +775,12 @@ pub async fn behavior(
         Ok(updates) => updates,
         Err(error) => return failure(error),
     };
+    let cursor_theme = non_empty_string(payload, "cursorTheme", "");
+    let cursor_size = value_i64(payload, "cursorSize", 24).clamp(12, 128);
+    if !cursor_theme.is_empty() {
+        let _ = set_gsettings_value("cursor-theme", &cursor_theme, &cancellation).await;
+        let _ = set_gsettings_value("cursor-size", &cursor_size.to_string(), &cancellation).await;
+    }
     apply_niri_changes(paths, updates, "Niri behavior applied", cancellation).await
 }
 
@@ -1448,6 +1455,516 @@ pub async fn quickshell(
     }
 }
 
+pub async fn gtk(
+    paths: &SettingsPaths,
+    payload: &Value,
+    cancellation: CancellationToken,
+) -> Value {
+    let gtk_fb = snapshot::gtk_defaults();
+    let qt_fb = snapshot::qt_defaults();
+    let fb_str = |map: &serde_json::Map<String, Value>, key: &str, default: &str| {
+        map.get(key)
+            .and_then(Value::as_str)
+            .unwrap_or(default)
+            .to_string()
+    };
+    let fb_i64 = |map: &serde_json::Map<String, Value>, key: &str, default: i64| {
+        map.get(key).and_then(Value::as_i64).unwrap_or(default)
+    };
+
+    let gtk_theme = match required_setting(payload, "gtkTheme", "GTK theme") {
+        Ok(val) => val,
+        Err(_) => fb_str(&gtk_fb, "gtkTheme", "adw-gtk3-dark"),
+    };
+    let icon_theme = match required_setting(payload, "iconTheme", "icon theme") {
+        Ok(val) => val,
+        Err(_) => fb_str(&gtk_fb, "iconTheme", "WhiteSur"),
+    };
+    let cursor_theme = match required_setting(payload, "cursorTheme", "cursor theme") {
+        Ok(val) => val,
+        Err(_) => fb_str(&gtk_fb, "cursorTheme", "Dark_Cursor"),
+    };
+    let font_name = match required_setting(payload, "fontName", "interface font") {
+        Ok(val) => val,
+        Err(_) => fb_str(&gtk_fb, "fontName", "SF Pro Text 10.5"),
+    };
+    let cursor_size = value_i64(payload, "cursorSize", fb_i64(&gtk_fb, "cursorSize", 24)).clamp(12, 128);
+    let cursor_size_str = cursor_size.to_string();
+
+    let values = [
+        ("gtk-theme", &gtk_theme),
+        ("icon-theme", &icon_theme),
+        ("cursor-theme", &cursor_theme),
+        ("cursor-size", &cursor_size_str),
+        ("font-name", &font_name),
+    ];
+
+    for (key, value) in values {
+        if let Err(error) = set_gsettings_value(key, value, &cancellation).await {
+            return failure(error);
+        }
+    }
+
+    // Synchronize cursor in Niri include/cursor.kdl
+    let cursor_path = paths.include_dir.join("cursor.kdl");
+    if cursor_path.is_file() {
+        if let Ok(mut cursor) = read_file(&cursor_path) {
+            let mut changed = false;
+            if let Ok(updated) = replace_once_with(
+                &cursor,
+                r#"(?m)^(\s*xcursor-theme\s+)"[^"]+""#,
+                "cursor theme",
+                |captures| format!("{}{}", &captures[1], json_quote(&cursor_theme)),
+            ) {
+                cursor = updated;
+                changed = true;
+            }
+            if let Ok(updated) = replace_once_with(
+                &cursor,
+                r"(?m)^(\s*xcursor-size\s+)\d+",
+                "cursor size",
+                |captures| format!("{}{cursor_size}", &captures[1]),
+            ) {
+                cursor = updated;
+                changed = true;
+            }
+            if changed {
+                let _ = apply_niri_changes(
+                    paths,
+                    vec![NiriUpdate {
+                        path: cursor_path,
+                        content: cursor,
+                    }],
+                    "Niri cursor updated",
+                    cancellation.clone(),
+                )
+                .await;
+            }
+        }
+    }
+
+    let qt_style = non_empty_string(payload, "qtStyle", &fb_str(&qt_fb, "qtStyle", "kvantum"));
+    let qt_color_scheme = non_empty_string(payload, "qtColorScheme", &fb_str(&qt_fb, "qtColorScheme", "matugen"));
+    let qt_dialogs = allowed_string(
+        payload,
+        "qtDialogs",
+        &fb_str(&qt_fb, "qtDialogs", "gtk3"),
+        &["gtk3", "default", "xdgdesktopportal"],
+    );
+
+    // Synchronize Qt5 and Qt6 configuration (qt5ct / qt6ct)
+    if let Err(error) = sync_qt_settings(&icon_theme, &font_name, &qt_style, &qt_color_scheme, &qt_dialogs) {
+        eprintln!("Warning: failed to synchronize Qt settings: {error}");
+    }
+
+    // Synchronize GTK 3 and GTK 4 settings.ini
+    if let Err(error) = sync_gtk_ini_settings(&gtk_theme, &icon_theme, &cursor_theme, cursor_size, &font_name) {
+        eprintln!("Warning: failed to synchronize GTK settings.ini: {error}");
+    }
+
+    // Broadcast XSettings for XWayland applications
+    let _ = crate::theme::xsettings::apply(&gtk_theme, &icon_theme, &cursor_theme, cursor_size as i32);
+
+    json!({"ok": true, "message": "GTK and Qt appearance applied"})
+}
+
+pub async fn general(
+    paths: &SettingsPaths,
+    payload: &Value,
+    cancellation: CancellationToken,
+) -> Value {
+    let quickshell_payload = payload.get("quickshell").unwrap_or(&Value::Null);
+    let gtk_payload = payload.get("gtk").unwrap_or(&Value::Null);
+
+    let quickshell_result = quickshell(paths, quickshell_payload, cancellation.clone()).await;
+    if quickshell_result.get("ok").and_then(Value::as_bool) != Some(true) {
+        return quickshell_result;
+    }
+
+    let gtk_result = gtk(paths, gtk_payload, cancellation).await;
+    if gtk_result.get("ok").and_then(Value::as_bool) != Some(true) {
+        return gtk_result;
+    }
+
+    json!({"ok": true, "message": "General, GTK and Qt settings applied"})
+}
+
+fn sync_qt_settings(
+    icon_theme: &str,
+    font_name: &str,
+    style: &str,
+    color_scheme: &str,
+    dialogs: &str,
+) -> Result<()> {
+    let (family, size) = parse_font_name(font_name);
+    let qt5_font = format!("\"{family},{size},-1,5,50,0,0,0,0,0\"");
+    let qt6_font = format!("\"{family},{size},-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0\"");
+
+    let config_dir = std::env::var_os("XDG_CONFIG_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(".config"))
+        })
+        .context("could not determine user configuration directory")?;
+
+    let qt5_path = config_dir.join("qt5ct/qt5ct.conf");
+    let qt6_path = config_dir.join("qt6ct/qt6ct.conf");
+
+    sync_single_qt_conf(&qt5_path, "qt5ct", &config_dir, icon_theme, &qt5_font, style, color_scheme, dialogs)?;
+    sync_single_qt_conf(&qt6_path, "qt6ct", &config_dir, icon_theme, &qt6_font, style, color_scheme, dialogs)?;
+
+    Ok(())
+}
+
+fn parse_font_name(font_name: &str) -> (String, String) {
+    let text = font_name.trim();
+    if let Ok(re) = Regex::new(r"^(.+?)\s+([0-9]+(?:\.[0-9]+)?)$") {
+        if let Some(captures) = re.captures(text) {
+            let family = captures
+                .get(1)
+                .map(|m| m.as_str().trim().to_string())
+                .unwrap_or_else(|| "SF Pro Text".into());
+            let size = captures
+                .get(2)
+                .map(|m| m.as_str().trim().to_string())
+                .unwrap_or_else(|| "10.5".into());
+            return (family, size);
+        }
+    }
+    (text.to_string(), "10.5".into())
+}
+
+fn sync_single_qt_conf(
+    path: &std::path::Path,
+    ct_name: &str,
+    config_dir: &std::path::Path,
+    icon_theme: &str,
+    font_value: &str,
+    style: &str,
+    color_scheme: &str,
+    dialogs: &str,
+) -> Result<()> {
+    let target = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let original = fs::read_to_string(&target).unwrap_or_default();
+
+    let (custom_palette_val, resolved_color_path) = match color_scheme {
+        "system" => (false, String::new()),
+        "style" => (true, format!("~/.config/{ct_name}/colors/style-colors.conf")),
+        val => {
+            let kcolor_path = format!("/usr/share/color-schemes/{val}.colors");
+            let local_kcolor = config_dir
+                .parent()
+                .unwrap_or(config_dir)
+                .join(format!(".local/share/color-schemes/{val}.colors"));
+            if local_kcolor.is_file() {
+                (true, local_kcolor.to_string_lossy().to_string())
+            } else if std::path::Path::new(&kcolor_path).is_file() {
+                (true, kcolor_path)
+            } else {
+                let user_color = format!("~/.config/{ct_name}/colors/{val}.conf");
+                let expanded_user_color = config_dir.join(format!("{ct_name}/colors/{val}.conf"));
+                let system_color = format!("/usr/share/{ct_name}/colors/{val}.conf");
+                if expanded_user_color.is_file() {
+                    (true, user_color)
+                } else if std::path::Path::new(&system_color).is_file() {
+                    (true, system_color)
+                } else {
+                    (true, user_color)
+                }
+            }
+        }
+    };
+
+    let updated = update_qt_conf_content(
+        &original,
+        icon_theme,
+        font_value,
+        style,
+        &resolved_color_path,
+        custom_palette_val,
+        dialogs,
+    );
+
+    if let Some(parent) = target.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    fs::write(&target, updated.as_bytes())
+        .with_context(|| format!("write {}", target.display()))?;
+    Ok(())
+}
+
+fn update_qt_conf_content(
+    original: &str,
+    icon_theme: &str,
+    font_value: &str,
+    style: &str,
+    color_scheme_path: &str,
+    custom_palette: bool,
+    dialogs: &str,
+) -> String {
+    if original.trim().is_empty() {
+        return format!(
+            "[Appearance]\ncolor_scheme_path={color_scheme_path}\ncustom_palette={custom_palette}\nicon_theme={icon_theme}\nstandard_dialogs={dialogs}\nstyle={style}\n\n[Fonts]\nfixed={font_value}\ngeneral={font_value}\n\n[Interface]\nactivate_item_on_single_click=1\nbuttonbox_layout=0\ncursor_flash_time=1000\ndialog_buttons_have_icons=1\ndouble_click_interval=400\ngui_effects=@Invalid()\nkeyboard_scheme=2\nmenus_have_icons=true\nshow_shortcuts_in_context_menus=true\nstylesheets=@Invalid()\ntoolbutton_style=4\nunderline_shortcut=1\nwheel_scroll_lines=3\n\n[Troubleshooting]\nforce_raster_widgets=1\nignored_applications=@Invalid()\n"
+        );
+    }
+
+    let mut lines: Vec<String> = Vec::new();
+    let mut in_appearance = false;
+    let mut in_fonts = false;
+    let mut found_style = false;
+    let mut found_palette = false;
+    let mut found_color = false;
+    let mut found_icon = false;
+    let mut found_dialogs = false;
+    let mut found_fixed = false;
+    let mut found_general = false;
+    let mut has_appearance_header = false;
+    let mut has_fonts_header = false;
+
+    for line in original.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            if in_appearance {
+                if !found_color { lines.push(format!("color_scheme_path={color_scheme_path}")); }
+                if !found_palette { lines.push(format!("custom_palette={custom_palette}")); }
+                if !found_icon { lines.push(format!("icon_theme={icon_theme}")); }
+                if !found_dialogs { lines.push(format!("standard_dialogs={dialogs}")); }
+                if !found_style { lines.push(format!("style={style}")); }
+            } else if in_fonts {
+                if !found_fixed { lines.push(format!("fixed={font_value}")); }
+                if !found_general { lines.push(format!("general={font_value}")); }
+            }
+
+            if trimmed == "[Appearance]" {
+                in_appearance = true;
+                in_fonts = false;
+                has_appearance_header = true;
+            } else if trimmed == "[Fonts]" {
+                in_appearance = false;
+                in_fonts = true;
+                has_fonts_header = true;
+            } else {
+                in_appearance = false;
+                in_fonts = false;
+            }
+            lines.push(line.to_string());
+            continue;
+        }
+
+        if in_appearance {
+            if trimmed.starts_with("style=") || trimmed.starts_with("style =") {
+                lines.push(format!("style={style}"));
+                found_style = true;
+                continue;
+            }
+            if trimmed.starts_with("custom_palette=") || trimmed.starts_with("custom_palette =") {
+                lines.push(format!("custom_palette={custom_palette}"));
+                found_palette = true;
+                continue;
+            }
+            if trimmed.starts_with("color_scheme_path=") || trimmed.starts_with("color_scheme_path =") {
+                lines.push(format!("color_scheme_path={color_scheme_path}"));
+                found_color = true;
+                continue;
+            }
+            if trimmed.starts_with("icon_theme=") || trimmed.starts_with("icon_theme =") {
+                lines.push(format!("icon_theme={icon_theme}"));
+                found_icon = true;
+                continue;
+            }
+            if trimmed.starts_with("standard_dialogs=") || trimmed.starts_with("standard_dialogs =") {
+                lines.push(format!("standard_dialogs={dialogs}"));
+                found_dialogs = true;
+                continue;
+            }
+        }
+
+        if in_fonts {
+            if trimmed.starts_with("fixed=") || trimmed.starts_with("fixed =") {
+                lines.push(format!("fixed={font_value}"));
+                found_fixed = true;
+                continue;
+            }
+            if trimmed.starts_with("general=") || trimmed.starts_with("general =") {
+                lines.push(format!("general={font_value}"));
+                found_general = true;
+                continue;
+            }
+        }
+
+        lines.push(line.to_string());
+    }
+
+    if in_appearance {
+        if !found_color { lines.push(format!("color_scheme_path={color_scheme_path}")); }
+        if !found_palette { lines.push(format!("custom_palette={custom_palette}")); }
+        if !found_icon { lines.push(format!("icon_theme={icon_theme}")); }
+        if !found_dialogs { lines.push(format!("standard_dialogs={dialogs}")); }
+        if !found_style { lines.push(format!("style={style}")); }
+    } else if in_fonts {
+        if !found_fixed { lines.push(format!("fixed={font_value}")); }
+        if !found_general { lines.push(format!("general={font_value}")); }
+    }
+
+    if !has_appearance_header {
+        lines.push(String::new());
+        lines.push("[Appearance]".to_string());
+        lines.push(format!("color_scheme_path={color_scheme_path}"));
+        lines.push(format!("custom_palette={custom_palette}"));
+        lines.push(format!("icon_theme={icon_theme}"));
+        lines.push(format!("standard_dialogs={dialogs}"));
+        lines.push(format!("style={style}"));
+    }
+    if !has_fonts_header {
+        lines.push(String::new());
+        lines.push("[Fonts]".to_string());
+        lines.push(format!("fixed={font_value}"));
+        lines.push(format!("general={font_value}"));
+    }
+
+    let mut result = lines.join("\n");
+    result.push('\n');
+    result
+}
+
+fn sync_gtk_ini_settings(
+    gtk_theme: &str,
+    icon_theme: &str,
+    cursor_theme: &str,
+    cursor_size: i64,
+    font_name: &str,
+) -> Result<()> {
+    let config_dir = std::env::var_os("XDG_CONFIG_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(".config"))
+        })
+        .context("could not determine user configuration directory")?;
+
+    for version in &["gtk-3.0", "gtk-4.0"] {
+        let ini_path = config_dir.join(version).join("settings.ini");
+        if ini_path.is_file() {
+            let _ = update_gtk_ini_file(&ini_path, gtk_theme, icon_theme, cursor_theme, cursor_size, font_name);
+        }
+    }
+    Ok(())
+}
+
+fn update_gtk_ini_file(
+    path: &std::path::Path,
+    gtk_theme: &str,
+    icon_theme: &str,
+    cursor_theme: &str,
+    cursor_size: i64,
+    font_name: &str,
+) -> Result<()> {
+    let target = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let original = fs::read_to_string(&target)?;
+    let updated = update_gtk_ini_content(&original, gtk_theme, icon_theme, cursor_theme, cursor_size, font_name);
+    atomic_write(&target, &updated, Some(0o644))?;
+    Ok(())
+}
+
+fn update_gtk_ini_content(
+    original: &str,
+    gtk_theme: &str,
+    icon_theme: &str,
+    cursor_theme: &str,
+    cursor_size: i64,
+    font_name: &str,
+) -> String {
+    let mut lines: Vec<String> = original.lines().map(str::to_string).collect();
+    let mut found_theme = false;
+    let mut found_icon = false;
+    let mut found_cursor_theme = false;
+    let mut found_cursor_size = false;
+    let mut found_font = false;
+
+    for line in &mut lines {
+        let trimmed = line.trim();
+        if trimmed.starts_with("gtk-theme-name=") || trimmed.starts_with("gtk-theme-name =") {
+            *line = format!("gtk-theme-name={gtk_theme}");
+            found_theme = true;
+        } else if trimmed.starts_with("gtk-icon-theme-name=") || trimmed.starts_with("gtk-icon-theme-name =") {
+            *line = format!("gtk-icon-theme-name={icon_theme}");
+            found_icon = true;
+        } else if trimmed.starts_with("gtk-cursor-theme-name=") || trimmed.starts_with("gtk-cursor-theme-name =") {
+            *line = format!("gtk-cursor-theme-name={cursor_theme}");
+            found_cursor_theme = true;
+        } else if trimmed.starts_with("gtk-cursor-theme-size=") || trimmed.starts_with("gtk-cursor-theme-size =") {
+            *line = format!("gtk-cursor-theme-size={cursor_size}");
+            found_cursor_size = true;
+        } else if trimmed.starts_with("gtk-font-name=") || trimmed.starts_with("gtk-font-name =") {
+            *line = format!("gtk-font-name={font_name}");
+            found_font = true;
+        }
+    }
+
+    if !found_theme {
+        lines.push(format!("gtk-theme-name={gtk_theme}"));
+    }
+    if !found_icon {
+        lines.push(format!("gtk-icon-theme-name={icon_theme}"));
+    }
+    if !found_cursor_theme {
+        lines.push(format!("gtk-cursor-theme-name={cursor_theme}"));
+    }
+    if !found_cursor_size {
+        lines.push(format!("gtk-cursor-theme-size={cursor_size}"));
+    }
+    if !found_font {
+        lines.push(format!("gtk-font-name={font_name}"));
+    }
+
+    let mut result = lines.join("\n");
+    result.push('\n');
+    result
+}
+
+fn required_setting(payload: &Value, key: &str, label: &str) -> Result<String> {
+    let value = payload
+        .get(key)
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .with_context(|| format!("{label} is required"))?;
+    if value.len() > 256 || value.chars().any(char::is_control) {
+        bail!("{label} contains invalid characters");
+    }
+    Ok(value.into())
+}
+
+async fn set_gsettings_value(
+    key: &str,
+    value: &str,
+    cancellation: &CancellationToken,
+) -> Result<()> {
+    if cancellation.is_cancelled() {
+        bail!("GTK appearance update cancelled");
+    }
+
+    let mut command = Command::new("gsettings");
+    command
+        .args(["set", "org.gnome.desktop.interface", key, value])
+        .kill_on_drop(true);
+    let output = tokio::select! {
+        result = command.output() => result.with_context(|| format!("run gsettings for {key}"))?,
+        _ = cancellation.cancelled() => bail!("GTK appearance update cancelled"),
+    };
+    if !output.status.success() {
+        let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        bail!(
+            "could not set {key}: {}",
+            if message.is_empty() {
+                "gsettings failed"
+            } else {
+                &message
+            }
+        );
+    }
+    Ok(())
+}
+
 fn sanitize_quickshell(paths: &SettingsPaths, payload: &Value) -> Result<Map<String, Value>> {
     let defaults = snapshot::defaults();
     let mut stored = fs::read_to_string(&paths.runtime_settings)
@@ -2060,4 +2577,66 @@ fn json_text(value: &Value) -> String {
 
 fn failure(error: impl std::fmt::Display) -> Value {
     json!({"ok": false, "message": error.to_string()})
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn updates_gtk_ini_settings() {
+        let sample = "[Settings]\ngtk-theme-name=OldTheme\ngtk-cursor-theme-size=24\n";
+        let updated = update_gtk_ini_content(sample, "NewTheme", "NewIcons", "NewCursor", 32, "Inter 11");
+        assert!(updated.contains("gtk-theme-name=NewTheme"));
+        assert!(updated.contains("gtk-icon-theme-name=NewIcons"));
+        assert!(updated.contains("gtk-cursor-theme-name=NewCursor"));
+        assert!(updated.contains("gtk-cursor-theme-size=32"));
+        assert!(updated.contains("gtk-font-name=Inter 11"));
+    }
+
+    use super::*;
+
+    #[test]
+    fn parses_font_names_with_sizes() {
+        let (family, size) = parse_font_name("SF Pro Text 10.5");
+        assert_eq!(family, "SF Pro Text");
+        assert_eq!(size, "10.5");
+
+        let (family, size) = parse_font_name("Inter Variable 11");
+        assert_eq!(family, "Inter Variable");
+        assert_eq!(size, "11");
+
+        let (family, size) = parse_font_name("Noto Sans");
+        assert_eq!(family, "Noto Sans");
+        assert_eq!(size, "10.5");
+    }
+
+    #[test]
+    fn updates_qt_conf_in_memory() {
+        let sample = "[Appearance]\nicon_theme=OldTheme\nstyle=kvantum\n\n[Fonts]\nfixed=\"OldFont,10,-1,5,50,0,0,0,0,0\"\ngeneral=\"OldFont,10,-1,5,50,0,0,0,0,0\"\n";
+        let temp_dir = std::env::temp_dir().join(format!("qt_test_{}", std::process::id()));
+        let _ = fs::create_dir_all(&temp_dir);
+        let file_path = temp_dir.join("qt5ct.conf");
+        fs::write(&file_path, sample).unwrap();
+
+        sync_single_qt_conf(
+            &file_path,
+            "qt5ct",
+            &temp_dir,
+            "WhiteSur",
+            "\"SF Pro Text,10.5,-1,5,50,0,0,0,0,0\"",
+            "kvantum",
+            "matugen",
+            "gtk3",
+        )
+        .unwrap();
+        let content = fs::read_to_string(&file_path).unwrap();
+        assert!(content.contains("icon_theme=WhiteSur"));
+        assert!(content.contains("style=kvantum"));
+        assert!(content.contains("standard_dialogs=gtk3"));
+        assert!(content.contains("color_scheme_path="));
+        assert!(content.contains("matugen.conf"));
+        assert!(content.contains("general=\"SF Pro Text,10.5,-1,5,50,0,0,0,0,0\""));
+        assert!(content.contains("fixed=\"SF Pro Text,10.5,-1,5,50,0,0,0,0,0\""));
+        let _ = fs::remove_file(&file_path);
+        let _ = fs::remove_dir(&temp_dir);
+    }
 }

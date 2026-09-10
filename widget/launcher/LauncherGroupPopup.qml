@@ -21,6 +21,7 @@ FocusScope {
     property bool dragOutside: false
     property real dragSourceHeight: 1
     property real dragSourceWidth: 1
+    property bool editingNewGroupName: false
     readonly property var groupData: LauncherGroupService.groupById(groupId)
     property string groupId: ""
     readonly property int itemsPerPage: columns * rows
@@ -68,9 +69,11 @@ FocusScope {
     function closeGroup(saveName) {
         if (!opened && !dragActive)
             return;
+        memberActionPopup.close();
         if ((saveName === undefined || saveName) && groupData)
             commitName();
         cancelDrag();
+        editingNewGroupName = false;
         opened = false;
         focusSearchRequested();
     }
@@ -80,9 +83,11 @@ FocusScope {
         var nextName = nameInput.text.trim();
         if (nextName === "") {
             nameInput.text = groupData.name || qsTr("Apps");
+            editingNewGroupName = false;
             return;
         }
         LauncherGroupService.renameGroup(groupId, nextName);
+        editingNewGroupName = false;
     }
     function entriesForPage(pageIndex) {
         var startIndex = pageIndex * itemsPerPage;
@@ -155,8 +160,11 @@ FocusScope {
             return;
 
         cancelDrag();
+        editingNewGroupName = startEditing === true;
         groupId = target.id;
-        nameInput.text = target.name || qsTr("Apps");
+        nameInput.text = editingNewGroupName ? "" : target.name || qsTr("Apps");
+        nameInput.focus = editingNewGroupName;
+        folderCard.focus = !editingNewGroupName;
         currentIndex = 0;
         currentPage = 0;
         keyboardNavigationActive = false;
@@ -165,11 +173,10 @@ FocusScope {
             if (!root.opened)
                 return;
             memberPager.contentX = 0;
-            if (startEditing) {
+            if (root.editingNewGroupName) {
                 nameInput.forceActiveFocus();
-                nameInput.selectAll();
             } else {
-                root.forceActiveFocus();
+                folderCard.forceActiveFocus();
             }
         });
     }
@@ -268,11 +275,15 @@ FocusScope {
             cancelDrag();
             opened = false;
             focusSearchRequested();
-        } else if (groupData && !nameInput.activeFocus) {
+        } else if (groupData && !nameInput.activeFocus && !editingNewGroupName) {
             nameInput.text = groupData.name || qsTr("Apps");
         }
     }
     onMemberEntriesChanged: Qt.callLater(syncSelection)
+    onOpenedChanged: {
+        if (!opened)
+            memberActionPopup.close();
+    }
 
     Timer {
         id: wheelUnlockTimer
@@ -297,11 +308,15 @@ FocusScope {
         }
     }
     MouseArea {
+        acceptedButtons: Qt.AllButtons
         anchors.fill: parent
         enabled: root.opened && !root.dragActive
         hoverEnabled: true
 
-        onClicked: root.closeGroup()
+        onClicked: {
+            memberActionPopup.close();
+            root.closeGroup();
+        }
     }
     Item {
         id: folderPresentation
@@ -357,6 +372,11 @@ FocusScope {
             TextInput {
                 id: nameInput
 
+                function finishEditing(event) {
+                    root.closeGroup();
+                    event.accepted = true;
+                }
+
                 Accessible.name: qsTr("Folder name")
                 Accessible.role: Accessible.EditableText
                 activeFocusOnTab: true
@@ -374,15 +394,13 @@ FocusScope {
                 verticalAlignment: TextInput.AlignVCenter
                 width: parent.width - 116
 
+                Keys.onEnterPressed: event => finishEditing(event)
                 Keys.onEscapePressed: event => {
                     root.commitName();
-                    root.forceActiveFocus();
+                    folderCard.forceActiveFocus();
                     event.accepted = true;
                 }
-                onAccepted: {
-                    root.commitName();
-                    root.forceActiveFocus();
-                }
+                Keys.onReturnPressed: event => finishEditing(event)
                 onActiveFocusChanged: {
                     if (!activeFocus)
                         root.commitName();
@@ -455,7 +473,10 @@ FocusScope {
             width: parent.width
 
             MouseArea {
+                acceptedButtons: Qt.AllButtons
                 anchors.fill: parent
+
+                onClicked: memberActionPopup.close()
             }
             ListView {
                 id: memberPager
@@ -591,7 +612,7 @@ FocusScope {
                                 MouseArea {
                                     id: memberMouse
 
-                                    acceptedButtons: Qt.LeftButton
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
                                     anchors.fill: parent
                                     anchors.margins: 6
                                     cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.PointingHandCursor
@@ -604,6 +625,7 @@ FocusScope {
 
                                     drag.onActiveChanged: {
                                         if (drag.active) {
+                                            memberActionPopup.close();
                                             memberDelegate.wasDragged = true;
                                             root.activatePreparedDrag();
                                         }
@@ -612,9 +634,16 @@ FocusScope {
                                         memberDelegate.wasDragged = false;
                                         root.cancelDrag();
                                     }
-                                    onClicked: {
-                                        if (!memberDelegate.wasDragged)
+                                    onClicked: mouse => {
+                                        if (memberDelegate.wasDragged)
+                                            return;
+                                        root.currentIndex = memberDelegate.modelData.globalIndex;
+                                        if (mouse.button === Qt.RightButton) {
+                                            memberActionPopup.openFor(memberDelegate.modelData.entry, memberDelegate.modelData.entry.name, memberSurface, mouse.x, mouse.y);
+                                        } else {
+                                            memberActionPopup.close();
                                             root.launchEntry(memberDelegate.modelData.entry);
+                                        }
                                     }
                                     onEntered: {
                                         root.keyboardNavigationActive = false;
@@ -622,14 +651,18 @@ FocusScope {
                                     }
                                     onPressed: mouse => {
                                         root.currentIndex = memberDelegate.modelData.globalIndex;
-                                        memberDelegate.wasDragged = false;
-                                        root.prepareDrag(memberDelegate.modelData.entry, memberDelegate, mouse.x, mouse.y);
+                                        if (mouse.button === Qt.LeftButton) {
+                                            memberDelegate.wasDragged = false;
+                                            root.prepareDrag(memberDelegate.modelData.entry, memberDelegate, mouse.x, mouse.y);
+                                        }
                                     }
-                                    onReleased: {
-                                        if (memberDelegate.wasDragged)
-                                            root.finishDrag();
-                                        else
-                                            root.dragEntry = null;
+                                    onReleased: mouse => {
+                                        if (mouse.button === Qt.LeftButton) {
+                                            if (memberDelegate.wasDragged)
+                                                root.finishDrag();
+                                            else
+                                                root.dragEntry = null;
+                                        }
                                     }
                                 }
                             }
@@ -638,6 +671,7 @@ FocusScope {
                 }
 
                 onMovementEnded: root.currentPage = Math.max(0, Math.min(Math.round(contentX / Math.max(1, width)), root.pageCount - 1))
+                onMovementStarted: memberActionPopup.close()
             }
             NumberAnimation {
                 id: pageAnimation
@@ -780,6 +814,16 @@ FocusScope {
                     text: root.dragEntry ? root.dragEntry.name : ""
                 }
             }
+        }
+    }
+    AppActionPopup {
+        id: memberActionPopup
+
+        z: 2000
+
+        onAppLaunched: {
+            root.closeGroup();
+            root.appLaunched();
         }
     }
 }

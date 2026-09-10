@@ -53,6 +53,7 @@ SettingsNavButton 1.0 settings/SettingsNavButton.qml
 SettingsPageContent 1.0 settings/SettingsPageContent.qml
 SettingsSearch 1.0 settings/SettingsSearch.qml
 SettingsSelectRow 1.0 settings/SettingsSelectRow.qml
+SettingsSelectField 1.0 settings/SettingsSelectField.qml
 SettingsDurationPopup 1.0 settings/SettingsDurationPopup.qml
 SettingsSegmentedControl 1.0 settings/SettingsSegmentedControl.qml
 SettingsSliderRow 1.0 settings/SettingsSliderRow.qml

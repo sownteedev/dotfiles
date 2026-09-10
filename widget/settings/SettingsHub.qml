@@ -206,7 +206,6 @@ FloatingWindow {
             return;
         blurAcquireTimer.stop();
         resizeIdleTimer.stop();
-        blurActive = false;
         resizeActive = false;
         visible = false;
         active = false;
@@ -227,8 +226,8 @@ FloatingWindow {
         if (targetScreen)
             screen = targetScreen;
         blurAcquireTimer.stop();
-        resizeIdleTimer.stop();
         blurActive = false;
+        resizeIdleTimer.stop();
         resizeActive = false;
         sectionTransition.stop();
         pageFrame.opacity = 1;
@@ -299,9 +298,9 @@ FloatingWindow {
         blurAcquireTimer.stop();
         resizeIdleTimer.stop();
         root.active = false;
-        root.blurActive = false;
         root.resizeActive = false;
         root.visible = false;
+        SettingsHubService.endEditorSession();
         root.dismissed();
     }
     onHeightChanged: {
@@ -313,6 +312,7 @@ FloatingWindow {
             resizeIdleTimer.restart();
     }
 
+    // Match Calendar's entrance; retain the acquired blur until the surface closes.
     Timer {
         id: blurAcquireTimer
 
@@ -495,17 +495,17 @@ FloatingWindow {
         focus: true
         opacity: root.active ? 1 : 0
         radius: root.maximized ? 0 : root.compactViewport ? 22 : 26
-        scale: root.active ? 1 : 0.96
+        scale: root.active ? 1 : 0.975
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Config.animationDuration(190)
+                duration: Config.animationDuration(170)
                 easing.type: Easing.OutQuad
             }
         }
         Behavior on scale {
             NumberAnimation {
-                duration: Config.animationDuration(230)
+                duration: Config.animationDuration(210)
                 easing.type: Easing.OutCubic
             }
         }

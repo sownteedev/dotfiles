@@ -307,6 +307,10 @@ Item {
         appActionPopup.close();
         Qt.callLater(syncSelection);
     }
+    onGroupPopupOpenedChanged: {
+        if (groupPopupOpened)
+            appActionPopup.close();
+    }
     onItemsPerPageChanged: Qt.callLater(syncSelection)
     onWidthChanged: Qt.callLater(syncSelection)
 
@@ -514,15 +518,18 @@ Item {
                                     if (sourceAppId === "")
                                         return;
 
+                                    var createdGroupId = "";
                                     if (delegateRoot.isGroup) {
                                         if (!LauncherGroupService.addApp(delegateRoot.modelData.groupId, sourceAppId))
                                             return;
                                     } else {
-                                        var createdGroupId = LauncherGroupService.createGroup(sourceAppId, delegateRoot.modelData.entry.id);
+                                        createdGroupId = LauncherGroupService.createGroup(sourceAppId, delegateRoot.modelData.entry.id);
                                         if (createdGroupId === "")
                                             return;
                                     }
                                     drop.acceptProposedAction();
+                                    if (createdGroupId !== "")
+                                        appsGrid.groupOpenRequested(createdGroupId, true);
                                 }
                                 onEntered: drag => {
                                     var sourceAppId = String(drag.source ? drag.source.objectName || "" : "");
@@ -584,7 +591,8 @@ Item {
                             drag.axis: Drag.XAndYAxis
                             drag.smoothed: false
                             drag.target: !delegateRoot.isGroup && appsGrid.query.trim() === "" && (pressedButtons & Qt.LeftButton) ? dragProxy : null
-                            hoverEnabled: true
+                            enabled: !appsGrid.groupPopupOpened
+                            hoverEnabled: !appsGrid.groupPopupOpened
                             preventStealing: !delegateRoot.isGroup && appsGrid.query.trim() === ""
 
                             drag.onActiveChanged: {

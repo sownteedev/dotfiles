@@ -26,6 +26,7 @@ Item {
     property real popupY: 0
     property real rightMargin: 12
     property real rowHeight: 46
+    property real shadowOpacity: 1
     readonly property int visibleItemCount: {
         var count = 0;
         var values = model || [];
@@ -110,6 +111,7 @@ Item {
         ShellShadow {
             active: root.opened
             cornerRadius: popupCard.radius
+            opacity: root.shadowOpacity
             target: popupCard
         }
         Rectangle {

@@ -50,6 +50,7 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 ### Settings
 
 - A searchable, responsive, resizable **SownteeShell Settings** window that behaves like a regular Niri application.
+- **Desktop applications (GTK & Qt)** appearance synchronization across GSettings, GTK 3/4 `settings.ini`, `qt5ct`/`qt6ct`, and XWayland XSettings: GTK themes, icon themes, cursor theme and size (px), interface typography, Qt widget styles, Qt color schemes, and Qt standard dialogs.
 - GUI editors for Niri keybindings, layout, input, animations, behavior, window and layer rules, and raw configuration files.
 - Shell controls for typography, bar modules, launcher providers, notifications, wallpapers, capture, integrations, audio, OSDs, idle behavior, and performance.
 - Per-surface blur, light/dark surface opacity, separate panel/component shadows, reduced motion, low-power mode, dependency diagnostics, and scoped cache cleanup.

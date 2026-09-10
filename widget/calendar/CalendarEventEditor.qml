@@ -873,6 +873,7 @@ Item {
         popupWidth: 300
         popupY: root.calendarPopupY
         rightMargin: Math.max(12, root.width - editorCard.x - editorCard.width + 8)
+        shadowOpacity: 0.5
         z: 60
 
         onDismissed: root.calendarPopupOpen = false

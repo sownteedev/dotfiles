@@ -707,6 +707,7 @@ Item {
         popupY: root.capturePopupY
         rightMargin: root.capturePopupRightMargin
         rowHeight: 44
+        shadowOpacity: 0.5
         z: 30
 
         onDismissed: root.closeCapturePopup()

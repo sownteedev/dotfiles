@@ -68,6 +68,8 @@ impl SettingsBackend {
             "settings.quickshell.apply" => {
                 apply::quickshell(&paths, &params, job.cancellation()).await
             }
+            "settings.gtk.apply" => apply::gtk(&paths, &params, job.cancellation()).await,
+            "settings.general.apply" => apply::general(&paths, &params, job.cancellation()).await,
             _ => return Ok(None),
         };
         Ok(Some(result))

@@ -39,7 +39,7 @@ EOF
 print_core_methods() {
     cat <<'EOF'
 
-Core methods (73):
+Core methods (78):
 
   System and jobs
     ping                                  [read] Check IPC responsiveness
@@ -62,7 +62,10 @@ Core methods (73):
     application.uninstall                 [delete] appId; uninstall its managed package
 
   Clipboard and diagnostics
-    clipboard.restore                     [write] entryId, autoPaste?
+    clipboard.list                        [read] query?, limit?; favorites + history
+    clipboard.favorite.add                [write] entryId; save history content permanently
+    clipboard.favorite.remove             [delete] entryId = favorite:<hash>
+    clipboard.restore                     [write] entryId (history or favorite:<hash>), autoPaste?
     diagnostics.snapshot                  [read] Dependencies, services and cache sizes
     diagnostics.clear                     [delete] scope = wallpaper-previews|
                                                    engine-previews|backdrops
@@ -106,7 +109,9 @@ Core methods (73):
     settings.animation.apply              [write] quickshellDir + animation entry
     settings.behavior.apply               [write] quickshellDir + behavior payload
     settings.niriFile.apply               [write] quickshellDir + Niri file payload
-    settings.quickshell.apply              [write] quickshellDir + shell setting payload
+    settings.quickshell.apply             [write] quickshellDir + shell setting payload
+    settings.gtk.apply                    [write] quickshellDir + GTK & Qt appearance payload
+    settings.general.apply                [write] quickshellDir + combined general & appearance payload
 
   Weather and Wi-Fi
     weather.forecast                      [read, network] apiKey, latitude, longitude

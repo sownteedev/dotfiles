@@ -88,6 +88,40 @@ pub async fn run_bounded_input(
     .await
 }
 
+// Commands such as wl-copy fork an owner that keeps stderr open. When only the
+// exit status matters, do not capture pipes whose EOF depends on that owner.
+pub async fn run_bounded_input_status(
+    program: &Path,
+    arguments: &[&str],
+    input: &[u8],
+    deadline: Duration,
+    cancellation: CancellationToken,
+) -> Result<ExitStatus> {
+    let mut child = Command::new(program)
+        .args(arguments)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .kill_on_drop(true)
+        .spawn()
+        .with_context(|| format!("start {}", program.display()))?;
+
+    let result = tokio::select! {
+        biased;
+        _ = cancellation.cancelled() => Err(anyhow::anyhow!("command was cancelled")),
+        result = timeout(deadline, async {
+            let mut stdin = child.stdin.take().context("open command stdin")?;
+            stdin.write_all(input).await.context("write command stdin")?;
+            drop(stdin);
+            child.wait().await.context("wait for command")
+        }) => result.context("command timed out").and_then(|result| result),
+    };
+    if result.is_err() {
+        stop_child(&mut child).await;
+    }
+    result
+}
+
 async fn run_bounded_inner(
     program: &Path,
     arguments: &[&str],
@@ -214,5 +248,35 @@ mod tests {
         assert!(output.status.success());
         assert_eq!(output.stdout, b"1234");
         assert!(output.stdout_truncated);
+    }
+
+    #[tokio::test]
+    async fn status_command_times_out_while_input_is_blocked() {
+        let error = run_bounded_input_status(
+            Path::new("/bin/sleep"),
+            &["5"],
+            &vec![0; 1024 * 1024],
+            Duration::from_millis(50),
+            CancellationToken::new(),
+        )
+        .await
+        .expect_err("timeout must also cover writing stdin");
+        assert!(error.to_string().contains("timed out"));
+    }
+
+    #[tokio::test]
+    async fn status_command_honors_cancellation() {
+        let cancellation = CancellationToken::new();
+        cancellation.cancel();
+        let error = run_bounded_input_status(
+            Path::new("/bin/sleep"),
+            &["5"],
+            &[],
+            Duration::from_secs(2),
+            cancellation,
+        )
+        .await
+        .expect_err("cancelled commands must not wait for exit");
+        assert!(error.to_string().contains("cancelled"));
     }
 }

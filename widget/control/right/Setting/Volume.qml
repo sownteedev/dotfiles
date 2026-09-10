@@ -799,6 +799,7 @@ Item {
         openAbove: volumePageRoot.popupOpenAbove
         opened: volumePageRoot.popupOpen
         popupY: volumePageRoot.popupY
+        shadowOpacity: 0.5
 
         onDismissed: {
             volumePageRoot.closeDevicePopup();

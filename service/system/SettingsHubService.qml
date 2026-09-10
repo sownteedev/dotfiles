@@ -84,6 +84,22 @@ QtObject {
             return started;
         }
     }
+    property var gtkSettings: ({
+            "gtkTheme": "adw-gtk3-dark",
+            "iconTheme": "WhiteSur",
+            "cursorTheme": "Dark_Cursor",
+            "cursorSize": 24,
+            "fontName": "SF Pro Text 10.5",
+            "qtStyle": "kvantum",
+            "qtColorScheme": "matugen",
+            "qtDialogs": "gtk3",
+            "gtkThemes": [],
+            "iconThemes": [],
+            "cursorThemes": [],
+            "qtStyles": [],
+            "qtColorSchemes": [],
+            "qtDialogOptions": []
+        })
     property var inputEnabled: ({
             "Touchpad": true,
             "Mouse": true,
@@ -448,6 +464,7 @@ QtObject {
         }
 
         onExited: (exitCode, exitStatus) => {
+            snapshotWatchdog.stop();
             root.busy = false;
             if (exitCode !== 0) {
                 root.setStatus(false, snapshotError.text.trim() || "Could not read settings");
@@ -462,9 +479,24 @@ QtObject {
                 root.setStatus(false, "Invalid settings response: " + error);
             }
         }
-        onStarted: write(JSON.stringify({
-            "quickshellDir": Config.sownteeshellDir
-        }) + "\n")
+        onStarted: {
+            snapshotWatchdog.restart();
+            write(JSON.stringify({
+                "quickshellDir": Config.sownteeshellDir
+            }) + "\n");
+        }
+    }
+    property Timer snapshotWatchdog: Timer {
+        interval: 10000
+        repeat: false
+
+        onTriggered: {
+            if (!snapshotProcess.running)
+                return;
+            snapshotProcess.signal(15);
+            root.busy = false;
+            root.setStatus(false, "Reading settings timed out");
+        }
     }
     property string statusMessage: ""
     property bool statusSuccess: true
@@ -486,6 +518,7 @@ QtObject {
         animationSettings = niri.animations || animationSettings;
         behaviorSettings = niri.behavior || behaviorSettings;
         niriFiles = niri.files || {};
+        gtkSettings = data.gtk || gtkSettings;
         quickshellSettings = data.quickshell || quickshellSettings;
     }
     function beginEditorSession() {
@@ -520,6 +553,10 @@ QtObject {
             return "settings.niriFile.apply";
         case "set-quickshell":
             return "settings.quickshell.apply";
+        case "set-gtk":
+            return "settings.gtk.apply";
+        case "set-general":
+            return "settings.general.apply";
         default:
             return "";
         }
@@ -579,6 +616,15 @@ QtObject {
     }
     function saveBehavior(settings) {
         save("set-behavior", settings);
+    }
+    function saveGeneral(quickshellSettings, gtkSettings) {
+        save("set-general", {
+            "quickshell": quickshellSettings,
+            "gtk": gtkSettings
+        });
+    }
+    function saveGtk(settings) {
+        save("set-gtk", settings);
     }
     function saveInput(section, entryIndex, value) {
         save("set-input", {

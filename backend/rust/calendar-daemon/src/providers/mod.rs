@@ -99,10 +99,7 @@ pub struct ProviderRegistry {
 impl ProviderRegistry {
     pub fn new(keyring: Keyring) -> anyhow::Result<Self> {
         let http = Client::builder()
-            .user_agent(format!(
-                "SownteeCalendar/{} (+https://github.com/nguyenthanhson)",
-                env!("CARGO_PKG_VERSION")
-            ))
+            .user_agent(format!("SownteeCalendar/{}", env!("CARGO_PKG_VERSION")))
             .connect_timeout(std::time::Duration::from_secs(15))
             .pool_idle_timeout(std::time::Duration::from_secs(45))
             .pool_max_idle_per_host(2)

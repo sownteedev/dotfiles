@@ -89,8 +89,9 @@ PanelWindow {
     visible: active || popup.opacity > 0.0
 
     BackgroundEffect.blurRegion: Region {
-        item: Config.shellBlurOsdEnabled ? popup : null
-        radius: popup.radius
+        // Compositor blur cannot follow opacity; release it before the fade-out.
+        item: Config.shellBlurOsdEnabled && osdWindow.active && popup.opacity > 0.01 ? popupBlurGeometry : null
+        radius: popupBlurGeometry.radius
     }
 
     Component.onCompleted: Qt.callLater(function () {
@@ -115,6 +116,17 @@ PanelWindow {
         anchors.fill: parent
         clip: true // Cleanly clip the popup as it slides past the nearest window boundary
 
+        // Keep Region updates in sync with the popup's center-origin scale.
+        Item {
+            id: popupBlurGeometry
+
+            readonly property real radius: popup.radius * popup.scale
+
+            height: popup.height * popup.scale
+            width: popup.width * popup.scale
+            x: popup.x + (popup.width - width) / 2
+            y: popup.y + (popup.height - height) / 2
+        }
         ShellShadow {
             active: popup.opacity > 0.0
             componentShadow: true
@@ -205,12 +217,7 @@ PanelWindow {
                     NumberAnimation {
                         duration: Config.animationDuration(150)
                         easing.type: Easing.OutQuad
-                        properties: "opacity"
-                    }
-                    NumberAnimation {
-                        duration: Config.animationDuration(200)
-                        easing.type: Easing.InQuad
-                        properties: "yOffset, popScale"
+                        properties: "opacity, yOffset, popScale"
                     }
                 }
             ]

@@ -18,9 +18,11 @@ Rectangle {
     readonly property bool hasSyncedLyrics: syncedLines.length > 0
     property bool instrumental: false
     property bool loading: false
+    property bool lyricScrollAnimating: false
     property var lyricsCache: ({})
     readonly property int lyricsCacheLimit: 24
     property var lyricsCacheOrder: []
+    readonly property bool lyricsSeekable: !!player && player.canSeek && player.positionSupported
     property string lyricsSource: ""
     property var pendingCommand: []
     property string pendingRequestKey: ""
@@ -207,8 +209,48 @@ Rectangle {
 
         return score;
     }
+    function returnToCurrentLine() {
+        updateActiveLine();
+        if (activeLineIndex >= 0)
+            scrollToLine(activeLineIndex, false);
+    }
     function scheduleLookup() {
         lookupDelay.restart();
+    }
+    function scrollToLine(lineIndex, selectLine) {
+        if (lineIndex < 0 || lineIndex >= syncedLines.length || syncedList.height <= 0)
+            return;
+
+        lyricScrollAnimation.stop();
+        lyricScrollAnimating = true;
+        followLyrics = true;
+        if (selectLine)
+            activeLineIndex = lineIndex;
+
+        var lineHeight = 32;
+        var minimumY = syncedList.originY;
+        var maximumY = Math.max(minimumY, minimumY + syncedList.contentHeight - syncedList.height);
+        var centeredY = minimumY + lineIndex * (lineHeight + syncedList.spacing) - (syncedList.height - lineHeight) / 2;
+        var targetY = Math.max(minimumY, Math.min(maximumY, centeredY));
+        var distance = Math.abs(targetY - syncedList.contentY);
+        if (distance < 0.5) {
+            syncedList.contentY = targetY;
+            lyricScrollAnimating = false;
+            return;
+        }
+
+        lyricScrollAnimation.from = syncedList.contentY;
+        lyricScrollAnimation.to = targetY;
+        lyricScrollAnimation.duration = Config.animationDuration(Math.min(420, 180 + distance * 0.7));
+        lyricScrollAnimation.start();
+    }
+    function seekToLine(lineIndex) {
+        if (!lyricsSeekable || lineIndex < 0 || lineIndex >= syncedLines.length)
+            return;
+
+        var targetPosition = Math.max(0, Number(syncedLines[lineIndex].time || 0));
+        scrollToLine(lineIndex, true);
+        player.position = targetPosition;
     }
     function startPendingLookup() {
         if (lyricsProcess.running || pendingRequestKey === "" || pendingCommand.length === 0)
@@ -317,9 +359,9 @@ Rectangle {
         boundsBehavior: Flickable.StopAtBounds
         cacheBuffer: 128
         clip: true
-        currentIndex: root.followLyrics ? root.activeLineIndex : -1
+        currentIndex: root.followLyrics && !root.lyricScrollAnimating ? root.activeLineIndex : -1
         highlightMoveDuration: 350
-        highlightRangeMode: root.followLyrics ? ListView.StrictlyEnforceRange : ListView.NoHighlightRange
+        highlightRangeMode: root.followLyrics && !root.lyricScrollAnimating ? ListView.StrictlyEnforceRange : ListView.NoHighlightRange
         model: root.syncedLines
         preferredHighlightBegin: height / 2 - 16
         preferredHighlightEnd: height / 2 + 16
@@ -395,24 +437,47 @@ Rectangle {
                     }
                 }
             }
+            TapHandler {
+                acceptedButtons: Qt.LeftButton
+                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                enabled: root.lyricsSeekable
+
+                onTapped: root.seekToLine(index)
+            }
         }
 
         onDraggingChanged: {
-            if (dragging && root.followLyrics)
-                root.followLyrics = false;
+            if (dragging) {
+                lyricScrollAnimation.stop();
+                if (root.followLyrics)
+                    root.followLyrics = false;
+            }
         }
         onFlickingChanged: {
-            if (flicking && root.followLyrics)
-                root.followLyrics = false;
+            if (flicking) {
+                lyricScrollAnimation.stop();
+                if (root.followLyrics)
+                    root.followLyrics = false;
+            }
         }
 
         WheelHandler {
             onWheel: event => {
+                lyricScrollAnimation.stop();
                 if (root.followLyrics)
                     root.followLyrics = false;
                 event.accepted = false;
             }
         }
+    }
+    NumberAnimation {
+        id: lyricScrollAnimation
+
+        easing.type: Easing.OutCubic
+        property: "contentY"
+        target: syncedList
+
+        onStopped: root.lyricScrollAnimating = false
     }
     Flickable {
         id: plainFlick
@@ -499,12 +564,7 @@ Rectangle {
             cursorShape: Qt.PointingHandCursor
             hoverEnabled: true
 
-            onClicked: {
-                root.followLyrics = true;
-                root.updateActiveLine();
-                if (root.activeLineIndex >= 0)
-                    syncedList.positionViewAtIndex(root.activeLineIndex, ListView.Center);
-            }
+            onClicked: root.returnToCurrentLine()
         }
     }
 }

@@ -1,13 +1,21 @@
-use crate::command::{command_path, run_bounded, run_bounded_input};
+use crate::command::{command_path, run_bounded, run_bounded_input_status};
 use crate::job::JobRegistry;
 use anyhow::{Context, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::env;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tokio::time::sleep;
+
+mod favorites;
+mod history;
+
+use favorites::FavoriteStore;
+use history::{ClipboardEntry, ListParams};
 
 const CLIPBOARD_LIMIT: usize = 128 * 1024 * 1024;
 const COMMAND_OUTPUT_LIMIT: usize = 256 * 1024;
@@ -16,6 +24,8 @@ const COMMAND_TIMEOUT: Duration = Duration::from_secs(20);
 #[derive(Clone)]
 pub struct ClipboardBackend {
     jobs: JobRegistry,
+    favorites: FavoriteStore,
+    favorite_lock: Arc<Mutex<()>>,
 }
 
 #[derive(Deserialize)]
@@ -27,8 +37,12 @@ struct RestoreParams {
 }
 
 impl ClipboardBackend {
-    pub fn new(jobs: JobRegistry) -> Self {
-        Self { jobs }
+    pub fn new(jobs: JobRegistry, data_dir: PathBuf) -> Self {
+        Self {
+            jobs,
+            favorites: FavoriteStore::new(data_dir.join("clipboard/favorites")),
+            favorite_lock: Arc::new(Mutex::new(())),
+        }
     }
 
     pub async fn request(&self, method: &str, mut params: Value) -> Result<Option<Value>> {
@@ -42,7 +56,36 @@ impl ClipboardBackend {
             "clipboard.restore" => {
                 let params: RestoreParams =
                     serde_json::from_value(params).context("decode clipboard restore request")?;
-                restore(params, cancellation).await
+                let data = if let Some(hash) = params.entry_id.strip_prefix("favorite:") {
+                    let _guard = self.favorite_lock.lock().await;
+                    self.favorites.read_data(hash).await
+                } else {
+                    decode_entry(&params.entry_id, cancellation.clone()).await
+                };
+                match data {
+                    Ok(data) => restore(params, data, cancellation).await,
+                    Err(error) => Err(error),
+                }
+            }
+            "clipboard.list" => {
+                let params: ListParams = serde_json::from_value(params)?;
+                self.list(params, cancellation).await
+            }
+            "clipboard.favorite.add" => {
+                let params: EntryParams = serde_json::from_value(params)?;
+                self.add_favorite(&params.entry_id, cancellation).await
+            }
+            "clipboard.favorite.remove" => {
+                let params: EntryParams = serde_json::from_value(params)?;
+                let hash = params
+                    .entry_id
+                    .strip_prefix("favorite:")
+                    .context("Invalid favorite ID")?;
+                let _guard = self.favorite_lock.lock().await;
+                self.favorites
+                    .remove(hash)
+                    .await
+                    .map(|()| json!({"ok": true}))
             }
             _ => return Ok(None),
         };
@@ -53,14 +96,24 @@ impl ClipboardBackend {
     }
 }
 
-async fn restore(
-    params: RestoreParams,
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EntryParams {
+    entry_id: String,
+}
+
+async fn decode_entry(
+    entry_id: &str,
     cancellation: tokio_util::sync::CancellationToken,
-) -> Result<Value> {
+) -> Result<Vec<u8>> {
+    anyhow::ensure!(
+        !entry_id.is_empty() && entry_id.bytes().all(|b| b.is_ascii_digit()),
+        "Invalid clipboard entry ID"
+    );
     let cliphist = command_path("cliphist").context("cliphist is unavailable")?;
     let decoded = run_bounded(
         &cliphist,
-        &["decode", &params.entry_id],
+        &["decode", entry_id],
         COMMAND_TIMEOUT,
         cancellation.clone(),
         CLIPBOARD_LIMIT,
@@ -73,39 +126,53 @@ async fn restore(
         anyhow::bail!("Clipboard entry exceeds the 128 MiB safety limit");
     }
 
-    let uri_data = normalize_uri_list(&decoded.stdout);
-    let clipboard_data = uri_data.as_deref().unwrap_or(&decoded.stdout);
+    Ok(decoded.stdout)
+}
+
+async fn restore(
+    params: RestoreParams,
+    data: Vec<u8>,
+    cancellation: tokio_util::sync::CancellationToken,
+) -> Result<Value> {
+    let uri_data = normalize_uri_list(&data);
+    let clipboard_data = uri_data.as_deref().unwrap_or(&data);
     let wl_copy = command_path("wl-copy").context("wl-copy is unavailable")?;
     let arguments = if uri_data.is_some() {
         vec!["--type", "text/uri-list"]
     } else {
         Vec::new()
     };
-    let copied = run_bounded_input(
+    let copied = run_bounded_input_status(
         &wl_copy,
         &arguments,
         clipboard_data,
         COMMAND_TIMEOUT,
         cancellation.clone(),
-        COMMAND_OUTPUT_LIMIT,
     )
     .await?;
-    if !copied.status.success() {
+    if !copied.success() {
         anyhow::bail!("Could not copy the clipboard entry");
     }
 
-    if params.auto_paste
-        && let Some(wtype) = command_path("wtype")
-    {
-        sleep(Duration::from_millis(400)).await;
-        let _ = run_bounded(
+    if params.auto_paste {
+        let wtype = command_path("wtype")
+            .context("Clipboard copied, but wtype is unavailable for automatic paste")?;
+        tokio::select! {
+            _ = cancellation.cancelled() => anyhow::bail!("Clipboard paste was cancelled"),
+            _ = sleep(Duration::from_millis(400)) => {},
+        }
+        let pasted = run_bounded(
             &wtype,
             &["-M", "ctrl", "-k", "v", "-m", "ctrl"],
             Duration::from_secs(5),
             cancellation,
             COMMAND_OUTPUT_LIMIT,
         )
-        .await;
+        .await
+        .context("Clipboard copied, but automatic paste failed")?;
+        if !pasted.status.success() {
+            anyhow::bail!("Clipboard copied, but automatic paste failed");
+        }
     }
     Ok(json!({
         "ok": true,

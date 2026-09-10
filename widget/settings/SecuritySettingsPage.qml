@@ -636,6 +636,7 @@ Item {
         popupWidth: 320
         popupY: root.cameraPopupY
         rightMargin: root.cameraPopupRightMargin
+        shadowOpacity: 0.5
         z: 40
 
         onDismissed: root.cameraPopupOpen = false
@@ -655,6 +656,7 @@ Item {
         popupWidth: 260
         popupY: root.sessionPopupY
         rightMargin: root.sessionPopupRightMargin
+        shadowOpacity: 0.5
         z: 40
 
         onDismissed: root.sessionPopupOpen = false

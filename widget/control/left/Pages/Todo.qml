@@ -881,6 +881,7 @@ Item {
         opened: root.selectionKind !== ""
         popupWidth: Math.min(420, root.width - 24)
         popupY: root.selectionY
+        shadowOpacity: 0.5
 
         onDismissed: root.selectionKind = ""
         onItemSelected: item => root.selectOption(item)

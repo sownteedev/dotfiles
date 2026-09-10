@@ -82,9 +82,24 @@ QtObject {
             });
         }
     }
+    property bool transientMoveFocusGuard: false
+    property Timer transientMoveFocusTimer: Timer {
+        interval: 450
+        repeat: false
+
+        onTriggered: {
+            root.transientMoveFocusGuard = false;
+            root.refresh();
+        }
+    }
+    property bool windowDragActive: false
     property var workspaceIdByWindow: ({})
     property var workspaces: []
 
+    function beginTransientMoveFocusGuard() {
+        transientMoveFocusGuard = true;
+        transientMoveFocusTimer.restart();
+    }
     function compareWindowsByLayout(a, b, floating) {
         var field = floating ? "tile_pos_in_workspace_view" : "pos_in_scrolling_layout";
         var primaryIndex = 0;
@@ -164,7 +179,8 @@ QtObject {
             return;
 
         if (restoreFocus) {
-            Quickshell.execDetached(["sh", "-c", "if niri msg action focus-window --id \"$1\"; then niri msg action move-column-to-index \"$2\"; niri msg action focus-window-previous; fi", "workspace-reorder", id, String(targetColumn)]);
+            beginTransientMoveFocusGuard();
+            Quickshell.execDetached(["sh", "-c", "niri msg action do-screen-transition --delay-ms 120; if niri msg action focus-window --id \"$1\"; then niri msg action move-column-to-index \"$2\"; niri msg action focus-window-previous; fi", "workspace-reorder", id, String(targetColumn)]);
             return;
         }
         Quickshell.execDetached(["sh", "-c", "niri msg action focus-window --id \"$1\" && niri msg action move-column-to-index \"$2\"", "workspace-reorder-focused", id, String(targetColumn)]);
@@ -184,7 +200,8 @@ QtObject {
 
         if (fromOutput !== "" && targetOutput !== "" && fromOutput !== targetOutput) {
             if (targetColumn > 0) {
-                Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-monitor --id \"$1\" \"$2\" && niri msg action move-window-to-workspace --window-id \"$1\" --focus false \"$3\" || exit 1; if niri msg action focus-window --id \"$1\"; then niri msg action move-column-to-index \"$4\"; niri msg action focus-window-previous; fi", "workspace-cross-output-positioned", id, targetOutput, reference, String(targetColumn)]);
+                beginTransientMoveFocusGuard();
+                Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-monitor --id \"$1\" \"$2\" && niri msg action move-window-to-workspace --window-id \"$1\" --focus false \"$3\" || exit 1; niri msg action do-screen-transition --delay-ms 120; if niri msg action focus-window --id \"$1\"; then niri msg action move-column-to-index \"$4\"; niri msg action focus-window-previous; fi", "workspace-cross-output-positioned", id, targetOutput, reference, String(targetColumn)]);
                 return;
             }
             Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-monitor --id \"$1\" \"$2\" && niri msg action move-window-to-workspace --window-id \"$1\" --focus false \"$3\"", "workspace-cross-output", id, targetOutput, reference]);
@@ -192,7 +209,8 @@ QtObject {
         }
 
         if (targetColumn > 0) {
-            Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-workspace --window-id \"$1\" --focus false \"$2\" || exit 1; if niri msg action focus-window --id \"$1\"; then niri msg action move-column-to-index \"$3\"; niri msg action focus-window-previous; fi", "workspace-positioned", id, reference, String(targetColumn)]);
+            beginTransientMoveFocusGuard();
+            Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-workspace --window-id \"$1\" --focus false \"$2\" || exit 1; niri msg action do-screen-transition --delay-ms 120; if niri msg action focus-window --id \"$1\"; then niri msg action move-column-to-index \"$3\"; niri msg action focus-window-previous; fi", "workspace-positioned", id, reference, String(targetColumn)]);
             return;
         }
         Quickshell.execDetached(["niri", "msg", "action", "move-window-to-workspace", "--window-id", id, "--focus", "false", reference]);
@@ -322,6 +340,19 @@ QtObject {
                     return a.idx - b.idx;
                 return a.output < b.output ? -1 : 1;
             });
+            if (root.transientMoveFocusGuard) {
+                var previousWorkspaceById = {};
+                for (var previousWorkspaceIndex = 0; previousWorkspaceIndex < root.workspaces.length; previousWorkspaceIndex++)
+                    previousWorkspaceById[String(root.workspaces[previousWorkspaceIndex].id)] = root.workspaces[previousWorkspaceIndex];
+                for (var guardedWorkspaceIndex = 0; guardedWorkspaceIndex < processed.length; guardedWorkspaceIndex++) {
+                    var previousWorkspaceState = previousWorkspaceById[String(processed[guardedWorkspaceIndex].id)];
+                    if (!previousWorkspaceState)
+                        continue;
+                    processed[guardedWorkspaceIndex].active_window_id = previousWorkspaceState.active_window_id;
+                    processed[guardedWorkspaceIndex].is_active = previousWorkspaceState.is_active;
+                    processed[guardedWorkspaceIndex].is_focused = previousWorkspaceState.is_focused;
+                }
+            }
             var previousActiveWindowByOutput = root.activeWindowByOutput || {};
             var newActiveWindowByOutput = {};
             var newActiveWindowsByOutput = {};
@@ -376,18 +407,20 @@ QtObject {
                     }
                 }
             }
-            root.activeWindowId = newActiveWindowId;
-            root.activeWorkspaceId = newActiveWorkspaceId;
-            if (JSON.stringify(root.activeWindowByOutput) !== JSON.stringify(newActiveWindowByOutput))
-                root.activeWindowByOutput = newActiveWindowByOutput;
-            if (JSON.stringify(root.activeWindowsByOutput) !== JSON.stringify(newActiveWindowsByOutput))
-                root.activeWindowsByOutput = newActiveWindowsByOutput;
-            root.focusedOutputName = newFocusedOutputName;
+            if (!root.transientMoveFocusGuard) {
+                root.activeWindowId = newActiveWindowId;
+                root.activeWorkspaceId = newActiveWorkspaceId;
+                if (JSON.stringify(root.activeWindowByOutput) !== JSON.stringify(newActiveWindowByOutput))
+                    root.activeWindowByOutput = newActiveWindowByOutput;
+                if (JSON.stringify(root.activeWindowsByOutput) !== JSON.stringify(newActiveWindowsByOutput))
+                    root.activeWindowsByOutput = newActiveWindowsByOutput;
+                root.focusedOutputName = newFocusedOutputName;
+                if (root.isWorkspaceFloating !== floating)
+                    root.isWorkspaceFloating = floating;
+            }
             root.outputNames = newOutputNames;
             if (JSON.stringify(root.floatingByOutput) !== JSON.stringify(newFloatingByOutput))
                 root.floatingByOutput = newFloatingByOutput;
-            if (root.isWorkspaceFloating !== floating)
-                root.isWorkspaceFloating = floating;
 
             if (needsRebuild)
                 root.workspaces = processed;

@@ -3,8 +3,10 @@ use super::parser::*;
 use anyhow::{Context, Result};
 use serde_json::{Map, Value, json};
 use std::collections::HashMap;
+use std::env;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 const ANIMATION_NAMES: &[&str] = &[
     "workspace-switch",
@@ -259,8 +261,439 @@ pub fn build(paths: &SettingsPaths) -> Result<Value> {
             "behavior": behavior_snapshot(&behavior_source, &cursor_source, &input_source, &switch_events_source),
             "files": Value::Object(files),
         },
+        "gtk": gtk_snapshot(),
         "quickshell": quickshell_snapshot(paths, &config_source),
     }))
+}
+
+fn gtk_snapshot() -> Value {
+    let gtk_fb = gtk_defaults();
+    let qt_fb = qt_defaults();
+    let fb_str = |map: &Map<String, Value>, key: &str, default: &str| {
+        map.get(key)
+            .and_then(Value::as_str)
+            .unwrap_or(default)
+            .to_string()
+    };
+    let fb_i64 = |map: &Map<String, Value>, key: &str, default: i64| {
+        map.get(key).and_then(Value::as_i64).unwrap_or(default)
+    };
+
+    let gtk_theme = gsettings_string("gtk-theme", &fb_str(&gtk_fb, "gtkTheme", "adw-gtk3-dark"));
+    let icon_theme = gsettings_string("icon-theme", &fb_str(&gtk_fb, "iconTheme", "WhiteSur"));
+    let cursor_theme = gsettings_string("cursor-theme", &fb_str(&gtk_fb, "cursorTheme", "Dark_Cursor"));
+    let cursor_size = gsettings_int("cursor-size", fb_i64(&gtk_fb, "cursorSize", 24));
+    let font_name = gsettings_string("font-name", &fb_str(&gtk_fb, "fontName", "SF Pro Text 10.5"));
+    let (qt_style, qt_color_scheme, qt_dialogs) = qt_snapshot(
+        &fb_str(&qt_fb, "qtStyle", "kvantum"),
+        &fb_str(&qt_fb, "qtColorScheme", "matugen"),
+        &fb_str(&qt_fb, "qtDialogs", "gtk3"),
+    );
+
+    json!({
+        "gtkTheme": gtk_theme,
+        "iconTheme": icon_theme,
+        "cursorTheme": cursor_theme,
+        "cursorSize": cursor_size,
+        "fontName": font_name,
+        "qtStyle": qt_style,
+        "qtColorScheme": qt_color_scheme,
+        "qtDialogs": qt_dialogs,
+        "gtkThemes": installed_gtk_themes(&gtk_theme),
+        "iconThemes": installed_icon_themes(&icon_theme),
+        "cursorThemes": installed_cursor_themes(&cursor_theme),
+        "qtStyles": installed_qt_styles(&qt_style),
+        "qtColorSchemes": installed_qt_color_schemes(&qt_color_scheme),
+        "qtDialogOptions": installed_qt_dialogs(),
+    })
+}
+
+fn gsettings_string(key: &str, fallback: &str) -> String {
+    let Ok(output) = Command::new("gsettings")
+        .args(["get", "org.gnome.desktop.interface", key])
+        .output()
+    else {
+        return fallback.into();
+    };
+    if !output.status.success() {
+        return fallback.into();
+    }
+
+    let value = decode_gvariant_string(&String::from_utf8_lossy(&output.stdout));
+    if value.is_empty() {
+        fallback.into()
+    } else {
+        value
+    }
+}
+
+fn gsettings_int(key: &str, fallback: i64) -> i64 {
+    let Ok(output) = Command::new("gsettings")
+        .args(["get", "org.gnome.desktop.interface", key])
+        .output()
+    else {
+        return fallback;
+    };
+    if !output.status.success() {
+        return fallback;
+    }
+
+    let text = String::from_utf8_lossy(&output.stdout);
+    text.trim().parse::<i64>().unwrap_or(fallback)
+}
+
+fn decode_gvariant_string(raw: &str) -> String {
+    let value = raw.trim();
+    if value.len() < 2 || !value.starts_with('\'') || !value.ends_with('\'') {
+        return value.to_string();
+    }
+
+    let mut decoded = String::new();
+    let mut escaped = false;
+    for character in value[1..value.len() - 1].chars() {
+        if escaped {
+            decoded.push(character);
+            escaped = false;
+        } else if character == '\\' {
+            escaped = true;
+        } else {
+            decoded.push(character);
+        }
+    }
+    if escaped {
+        decoded.push('\\');
+    }
+    decoded
+}
+
+fn data_roots(subdirectory: &str, legacy_home_directory: &str) -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    if let Some(home) = env::var_os("HOME").map(PathBuf::from) {
+        roots.push(home.join(legacy_home_directory));
+        roots.push(
+            env::var_os("XDG_DATA_HOME")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| home.join(".local/share"))
+                .join(subdirectory),
+        );
+    } else if let Some(data_home) = env::var_os("XDG_DATA_HOME") {
+        roots.push(PathBuf::from(data_home).join(subdirectory));
+    }
+    let data_dirs =
+        env::var("XDG_DATA_DIRS").unwrap_or_else(|_| "/usr/local/share:/usr/share".into());
+    roots.extend(
+        data_dirs
+            .split(':')
+            .filter(|directory| !directory.is_empty())
+            .map(|directory| PathBuf::from(directory).join(subdirectory)),
+    );
+    roots
+}
+
+fn installed_names<F>(roots: Vec<PathBuf>, current: &str, is_valid: F) -> Vec<String>
+where
+    F: Fn(&Path, &str) -> bool,
+{
+    let mut names = Vec::new();
+    for root in roots {
+        let Ok(entries) = fs::read_dir(root) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let Some(name) = entry.file_name().to_str().map(str::to_string) else {
+                continue;
+            };
+            if !name.starts_with('.') && is_valid(&path, &name) {
+                names.push(name);
+            }
+        }
+    }
+    if !current.is_empty() {
+        names.push(current.into());
+    }
+    names.sort_by_key(|name| name.to_lowercase());
+    names.dedup();
+    names
+}
+
+fn installed_gtk_themes(current: &str) -> Vec<String> {
+    installed_names(data_roots("themes", ".themes"), current, |path, _name| {
+        path.join("gtk-3.0/gtk.css").is_file()
+            || path.join("gtk-4.0/gtk.css").is_file()
+            || path.join("gtk-2.0/gtkrc").is_file()
+    })
+}
+
+fn is_excluded_icon_or_cursor_theme(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    lower == "default" || lower == "hicolor" || lower == "locolor"
+}
+
+fn has_icon_directories(path: &Path) -> bool {
+    let index_path = path.join("index.theme");
+    let Ok(content) = fs::read_to_string(&index_path) else {
+        return false;
+    };
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("Directories=")
+            || trimmed.starts_with("Directories =")
+            || trimmed.starts_with("ScaledDirectories=")
+            || trimmed.starts_with("ScaledDirectories =")
+        {
+            return true;
+        }
+    }
+    false
+}
+
+fn installed_icon_themes(current: &str) -> Vec<String> {
+    let current_clean = if is_excluded_icon_or_cursor_theme(current) {
+        ""
+    } else {
+        current
+    };
+    installed_names(data_roots("icons", ".icons"), current_clean, |path, name| {
+        !is_excluded_icon_or_cursor_theme(name) && has_icon_directories(path)
+    })
+}
+
+fn installed_cursor_themes(current: &str) -> Vec<String> {
+    let current_clean = if is_excluded_icon_or_cursor_theme(current) {
+        ""
+    } else {
+        current
+    };
+    installed_names(data_roots("icons", ".icons"), current_clean, |path, name| {
+        !is_excluded_icon_or_cursor_theme(name) && path.join("cursors").is_dir()
+    })
+}
+
+fn qt_snapshot(
+    default_style: &str,
+    default_color: &str,
+    default_dialogs: &str,
+) -> (String, String, String) {
+    let config_dir = env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .or_else(|| env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")));
+    let Some(config_dir) = config_dir else {
+        return (default_style.into(), default_color.into(), default_dialogs.into());
+    };
+
+    let conf_path = config_dir.join("qt6ct/qt6ct.conf");
+    let target = if conf_path.is_file() {
+        conf_path
+    } else {
+        config_dir.join("qt5ct/qt5ct.conf")
+    };
+
+    let Ok(content) = fs::read_to_string(&target) else {
+        return (default_style.into(), default_color.into(), default_dialogs.into());
+    };
+
+    let mut style = default_style.to_string();
+    let mut color_scheme = default_color.to_string();
+    let mut dialogs = default_dialogs.to_string();
+    let mut custom_palette = true;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("style=") || trimmed.starts_with("style =") {
+            if let Some(val) = trimmed.split('=').nth(1) {
+                let v = val.trim();
+                if !v.is_empty() {
+                    style = v.to_string();
+                }
+            }
+        } else if trimmed.starts_with("custom_palette=") || trimmed.starts_with("custom_palette =") {
+            if let Some(val) = trimmed.split('=').nth(1) {
+                custom_palette = val.trim().eq_ignore_ascii_case("true") || val.trim() == "1";
+            }
+        } else if trimmed.starts_with("color_scheme_path=") || trimmed.starts_with("color_scheme_path =") {
+            if let Some(val) = trimmed.split('=').nth(1) {
+                let v = val.trim();
+                if !v.is_empty() {
+                    if v.contains("style-colors") {
+                        color_scheme = "style".to_string();
+                    } else {
+                        let path = Path::new(v);
+                        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                            color_scheme = stem.to_string();
+                        }
+                    }
+                }
+            }
+        } else if trimmed.starts_with("standard_dialogs=") || trimmed.starts_with("standard_dialogs =") {
+            if let Some(val) = trimmed.split('=').nth(1) {
+                let v = val.trim();
+                if !v.is_empty() {
+                    dialogs = v.to_string();
+                }
+            }
+        }
+    }
+
+    if !custom_palette {
+        color_scheme = "system".to_string();
+    }
+
+    (style, color_scheme, dialogs)
+}
+
+fn installed_qt_styles(current: &str) -> Vec<String> {
+    let mut styles = Vec::new();
+    let mut found_kvantum = false;
+    for dir in &["/usr/lib/qt6/plugins/styles", "/usr/lib/qt/plugins/styles"] {
+        let Ok(entries) = fs::read_dir(dir) else { continue };
+        for entry in entries.flatten() {
+            let Some(name) = entry.file_name().to_str().map(str::to_string) else { continue };
+            if name == "libkvantum.so" {
+                found_kvantum = true;
+            } else if name.ends_with(".so") && !name.ends_with("-style.so") {
+                let mut base = name.trim_end_matches(".so");
+                if base.starts_with("lib") {
+                    base = &base[3..];
+                }
+                styles.push(base.to_string());
+            }
+        }
+    }
+    if found_kvantum {
+        styles.push("kvantum-dark".to_string());
+        styles.push("kvantum".to_string());
+    }
+    styles.push("Windows".to_string());
+    styles.push("Fusion".to_string());
+    if !current.is_empty() {
+        styles.push(current.to_string());
+    }
+
+    let mut ordered = Vec::new();
+    for preferred in ["kvantum-dark", "kvantum", "Windows", "Fusion"] {
+        if styles.iter().any(|s| s.eq_ignore_ascii_case(preferred)) && !ordered.iter().any(|s: &String| s.eq_ignore_ascii_case(preferred)) {
+            ordered.push(preferred.to_string());
+        }
+    }
+    for s in styles {
+        if !ordered.iter().any(|o: &String| o.eq_ignore_ascii_case(&s)) {
+            ordered.push(s);
+        }
+    }
+    ordered
+}
+
+fn installed_qt_dialogs() -> Vec<Value> {
+    let mut options = vec![json!({"label": "Default", "value": "default"})];
+    let has_gtk3 = Path::new("/usr/lib/qt6/plugins/platformthemes/libqgtk3.so").is_file()
+        || Path::new("/usr/lib/qt/plugins/platformthemes/libqgtk3.so").is_file();
+    let has_portal = Path::new("/usr/lib/qt6/plugins/platformthemes/libqxdgdesktopportal.so").is_file()
+        || Path::new("/usr/lib/qt/plugins/platformthemes/libqxdgdesktopportal.so").is_file();
+    let has_kde = Path::new("/usr/lib/qt6/plugins/platformthemes/KDEPlatformTheme6.so").is_file()
+        || Path::new("/usr/lib/qt6/plugins/platformthemes/libkded.so").is_file();
+    let has_gtk2 = Path::new("/usr/lib/qt6/plugins/platformthemes/libqgtk2.so").is_file()
+        || Path::new("/usr/lib/qt/plugins/platformthemes/libqgtk2.so").is_file();
+
+    if has_gtk3 {
+        options.push(json!({"label": "GTK3", "value": "gtk3"}));
+    } else if has_gtk2 {
+        options.push(json!({"label": "GTK2", "value": "gtk2"}));
+    }
+    if has_kde {
+        options.push(json!({"label": "KDE", "value": "kde"}));
+    }
+    if has_portal {
+        options.push(json!({"label": "XDG Desktop Portal", "value": "xdgdesktopportal"}));
+    }
+    options
+}
+
+fn installed_qt_color_schemes(current: &str) -> Vec<Value> {
+    let mut schemes = Vec::new();
+    schemes.push(json!({"label": "Default", "value": "system"}));
+    schemes.push(json!({"label": "Style's colors", "value": "style"}));
+
+    let home = env::var_os("HOME").map(PathBuf::from);
+    let mut conf_dirs = vec![
+        PathBuf::from("/usr/share/qt6ct/colors"),
+        PathBuf::from("/usr/share/qt5ct/colors"),
+    ];
+    if let Some(h) = &home {
+        conf_dirs.insert(0, h.join(".config/qt5ct/colors"));
+        conf_dirs.insert(0, h.join(".config/qt6ct/colors"));
+    }
+
+    let mut conf_stems = Vec::new();
+    for dir in conf_dirs {
+        let Ok(entries) = fs::read_dir(dir) else { continue };
+        for entry in entries.flatten() {
+            let Some(name) = entry.file_name().to_str().map(str::to_string) else { continue };
+            if name.ends_with(".conf") {
+                let stem = name.trim_end_matches(".conf").to_string();
+                if !conf_stems.contains(&stem) {
+                    conf_stems.push(stem);
+                }
+            }
+        }
+    }
+    if conf_stems.contains(&"matugen".to_string()) {
+        schemes.push(json!({"label": "matugen", "value": "matugen"}));
+    }
+    conf_stems.sort_by_key(|s| s.to_lowercase());
+    for stem in conf_stems {
+        if stem != "matugen" {
+            schemes.push(json!({"label": stem, "value": stem}));
+        }
+    }
+
+    let mut kcolor_dirs = vec![PathBuf::from("/usr/share/color-schemes")];
+    if let Some(h) = &home {
+        kcolor_dirs.insert(0, h.join(".local/share/color-schemes"));
+    }
+    let mut kcolors = Vec::new();
+    for dir in kcolor_dirs {
+        let Ok(entries) = fs::read_dir(dir) else { continue };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(file_name) = entry.file_name().to_str().map(str::to_string) else { continue };
+            if file_name.ends_with(".colors") {
+                let stem = file_name.trim_end_matches(".colors").to_string();
+                if kcolors.iter().any(|(s, _): &(String, String)| s == &stem) {
+                    continue;
+                }
+                let mut display_name = stem.clone();
+                if let Ok(content) = fs::read_to_string(&path) {
+                    for line in content.lines() {
+                        let trimmed = line.trim();
+                        if trimmed.starts_with("Name=") {
+                            display_name = trimmed[5..].trim().to_string();
+                            break;
+                        }
+                    }
+                }
+                let full_label = format!("{display_name} (KColorScheme)");
+                kcolors.push((stem, full_label));
+            }
+        }
+    }
+    kcolors.sort_by_key(|(stem, _)| stem.to_lowercase());
+    for (stem, label) in kcolors {
+        schemes.push(json!({"label": label, "value": stem}));
+    }
+
+    if !current.is_empty()
+        && current != "system"
+        && current != "style"
+        && !schemes.iter().any(|val| val.get("value").and_then(Value::as_str) == Some(current))
+    {
+        schemes.push(json!({"label": current, "value": current}));
+    }
+
+    schemes
 }
 
 fn read(path: &Path) -> Result<String> {
@@ -553,11 +986,36 @@ fn quickshell_snapshot(paths: &SettingsPaths, config_source: &str) -> Value {
 }
 
 pub fn defaults() -> Map<String, Value> {
-    serde_json::from_str::<Value>(include_str!("defaults.json"))
+    let mut map = serde_json::from_str::<Value>(include_str!("defaults.json"))
         .expect("settings defaults are valid JSON")
         .as_object()
         .expect("settings defaults are an object")
-        .clone()
+        .clone();
+    map.remove("gtk");
+    map.remove("qt");
+    map
+}
+
+pub fn gtk_defaults() -> Map<String, Value> {
+    serde_json::from_str::<Value>(include_str!("defaults.json"))
+        .ok()
+        .and_then(|mut val| val.get_mut("gtk").map(Value::take))
+        .and_then(|val| match val {
+            Value::Object(map) => Some(map),
+            _ => None,
+        })
+        .unwrap_or_default()
+}
+
+pub fn qt_defaults() -> Map<String, Value> {
+    serde_json::from_str::<Value>(include_str!("defaults.json"))
+        .ok()
+        .and_then(|mut val| val.get_mut("qt").map(Value::take))
+        .and_then(|val| match val {
+            Value::Object(map) => Some(map),
+            _ => None,
+        })
+        .unwrap_or_default()
 }
 
 pub fn blur_keys() -> &'static [&'static str] {

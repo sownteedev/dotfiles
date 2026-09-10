@@ -883,6 +883,7 @@ Item {
         popupY: root.profilePopupY
         rightMargin: root.profilePopupRightMargin
         rowHeight: 44
+        shadowOpacity: 0.5
 
         onDismissed: root.profilePopupOpen = false
         onItemSelected: item => root.selectProfilePolicy(item)

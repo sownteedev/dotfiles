@@ -943,8 +943,9 @@ PanelWindow {
         anchors.bottomMargin: 12
         height: implicitHeight
         iconName: dockWindow.previewIconName
+        isMonochrome: dockWindow.isShellWindowEntryId(dockWindow.previewEntryId)
         shown: dockWindow.previewShown && dockWindow.previewWindows.length > 0
-        width: implicitWidth
+        width: Math.min(implicitWidth, Math.max(0, dockWindow.width - 32))
         windows: dockWindow.previewWindows
         x: Math.max(16, Math.min(dockWindow.previewAnchorCenterX - width / 2, dockWindow.width - width - 16))
         z: 300

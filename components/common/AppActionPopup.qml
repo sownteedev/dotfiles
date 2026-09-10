@@ -85,6 +85,7 @@ Popup {
     padding: 8
     parent: Overlay.overlay
     width: 236
+    z: 2000
 
     background: Item {
         id: popupBackground

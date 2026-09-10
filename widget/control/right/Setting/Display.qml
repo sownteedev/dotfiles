@@ -1499,6 +1499,7 @@ Item {
         popupY: displayPageRoot.popupY
         rightMargin: displayPageRoot.activeDropdown === "vrr" ? 12 : Math.max(12, width - displayPageRoot.popupX - popupWidth)
         rowHeight: 40
+        shadowOpacity: 0.5
 
         onDismissed: displayPageRoot.popupOpen = false
         onItemSelected: item => displayPageRoot.selectPopupItem(item)

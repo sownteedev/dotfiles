@@ -60,7 +60,7 @@ impl IpcServer {
         let network = NetworkClient::default();
         Ok(Self {
             applications: ApplicationBackend::new(jobs.clone()),
-            clipboard: ClipboardBackend::new(jobs.clone()),
+            clipboard: ClipboardBackend::new(jobs.clone(), config.data_dir.clone()),
             diagnostics: DiagnosticsBackend::new(jobs.clone()),
             display: DisplayBackend::new(jobs.clone()),
             greeter: GreeterBackend::new(jobs.clone()),

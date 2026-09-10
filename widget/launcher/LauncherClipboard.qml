@@ -12,16 +12,49 @@ Item {
     property string activePreviewId: ""
     property string activePreviewPath: ""
     property var clipboardResults: []
+    property int favoriteIndex: -1
     property var generatedPreviewPaths: []
-    readonly property bool loading: searchDebounceTimer.running || cliphistProcess.running
-    property var pinnedIds: ({})
-    readonly property string pinnedStatePath: Config.cacheRoot + "/launcher_clipboard_pins.json"
+    readonly property bool loading: searchDebounceTimer.running || searchRequest.active
+    readonly property bool pinning: favoriteRequest.active
+    property string preferredSelectedId: ""
     property var previewQueue: []
     readonly property string previewSessionId: String(Date.now())
     property string query: ""
     property var readyPreviewIds: ({})
     property int requestGeneration: 0
 
+    signal selectionRequested(int index)
+
+    function applyEntries(entries) {
+        var results = [];
+        for (var i = 0; i < entries.length; ++i) {
+            var entry = entries[i];
+            var classification = classifyContent(entry.content, entry.isImage, entry.characterCount, entry.lineCount, entry.fileCount, entry.firstFile);
+            results.push(Object.assign({}, entry, {
+                historyIndex: i,
+                isFileImage: Boolean(classification.isFileImage),
+                isVideo: Boolean(classification.isVideo),
+                kind: classification.kind,
+                title: classification.title,
+                subtitle: classification.subtitle,
+                iconName: classification.iconName,
+                sourcePath: classification.sourcePath || ""
+            }));
+        }
+        clipboardResults = results;
+        if (favoriteIndex >= 0) {
+            var selected = Math.min(favoriteIndex, Math.max(0, results.length - 1));
+            for (var index = 0; index < results.length; ++index) {
+                if (results[index].id === preferredSelectedId) {
+                    selected = index;
+                    break;
+                }
+            }
+            preferredSelectedId = "";
+            favoriteIndex = -1;
+            selectionRequested(selected);
+        }
+    }
     function classifyContent(content, isImage, characterCount, decodedLineCount, decodedFileCount, decodedFirstFile) {
         var text = String(content || "").trim();
         if (isImage)
@@ -76,7 +109,10 @@ Item {
         CoreService.sendRequest("clipboard.restore", {
             "entryId": key,
             "autoPaste": Config.launcherClipboardAutoPaste
-        }, null, function (message) {
+        }, function (result) {
+            if (!result || result.ok !== true)
+                console.warn("[LauncherClipboard]", result && result.message ? result.message : "Could not restore the clipboard entry");
+        }, function (message) {
             console.warn("[LauncherClipboard]", message);
         });
     }
@@ -97,6 +133,10 @@ Item {
             if (result.id !== id || (!result.isImage && !result.isVideo) || readyPreviewIds[id])
                 continue;
 
+            if (result.isImage && result.previewPath) {
+                markPreviewReady(id, result.previewPath, requestGeneration);
+                return;
+            }
             var path = previewPathForId(id, result.isVideo ? "jpg" : "png");
             if (generatedPreviewPaths.indexOf(path) === -1)
                 generatedPreviewPaths = generatedPreviewPaths.concat([path]);
@@ -209,30 +249,9 @@ Item {
         var extension = String(path || "").split(".").pop().toLowerCase();
         return ["png", "jpg", "jpeg", "avif", "gif", "webp", "bmp", "svg"].indexOf(extension) !== -1;
     }
-    function isPinned(id) {
-        return pinnedIds[String(id)] === true;
-    }
     function isVideoFile(path) {
         var extension = String(path || "").split(".").pop().toLowerCase();
         return ["mp4", "mkv", "avi", "mov", "webm", "m4v", "mpeg", "mpg"].indexOf(extension) !== -1;
-    }
-    function loadPinnedState(rawText) {
-        var next = {};
-        try {
-            var parsed = JSON.parse(String(rawText || "{}"));
-            var ids = Array.isArray(parsed) ? parsed : parsed.ids;
-            if (Array.isArray(ids)) {
-                for (var i = 0; i < ids.length; ++i) {
-                    var id = String(ids[i] || "");
-                    if (id !== "")
-                        next[id] = true;
-                }
-            }
-        } catch (error) {
-            console.warn("[LauncherClipboard] Ignoring invalid pinned clipboard state:", error);
-        }
-        pinnedIds = next;
-        refreshPinnedResults();
     }
     function localPath(value) {
         var path = String(value || "").replace(/^file:\/\/localhost(?=\/)/i, "").replace(/^file:\/\//i, "");
@@ -269,32 +288,12 @@ Item {
         var separator = normalized.lastIndexOf("/");
         return separator >= 0 ? normalized.substring(separator + 1) || normalized : normalized;
     }
-    function persistPinnedState() {
-        pinnedStateFile.setText(JSON.stringify({
-            "version": 1,
-            "ids": Object.keys(pinnedIds)
-        }) + "\n");
-    }
     function previewPathForId(id, extension) {
         var safeId = String(id).replace(/[^A-Za-z0-9_-]/g, "_");
         return "/tmp/sownteeshell-launcher-cliphist-" + previewSessionId + "-" + safeId + "." + extension;
     }
-    function refreshPinnedResults() {
-        var updated = [];
-        for (var i = 0; i < clipboardResults.length; ++i) {
-            var item = Object.assign({}, clipboardResults[i]);
-            item.pinned = isPinned(item.id);
-            updated.push(item);
-        }
-        updated.sort(function (a, b) {
-            if (a.pinned !== b.pinned)
-                return a.pinned ? -1 : 1;
-            return a.historyIndex - b.historyIndex;
-        });
-        clipboardResults = updated;
-    }
     function runClipboardSearch() {
-        cliphistProcess.running = false;
+        searchRequest.cancel();
         var q = query.trim();
         // Determine search term after "c "
         var searchTerm = "";
@@ -308,11 +307,10 @@ Item {
             return;
         }
 
-        var generation = requestGeneration;
-        var pinnedIdList = Object.keys(pinnedIds).join(",");
-        var script = "printf '__QS_REQUEST__%s\\n' \"$1\"; cliphist list 2>/dev/null | grep -aFi -- \"$2\" 2>/dev/null | awk -F '\t' -v max=\"$3\" -v pins=\",$4,\" '{ id=$1; if (index(pins, \",\" id \",\") > 0) pinnedRows[++pinnedCount]=$0; else if (recentCount < max) recentRows[++recentCount]=$0 } END { emitted=0; for (i=1; i<=pinnedCount && emitted<max; ++i) { print pinnedRows[i]; ++emitted } for (i=1; i<=recentCount && emitted<max; ++i) { print recentRows[i]; ++emitted } }' | while IFS= read -r entry; do clip_id=${entry%%\t*}; preview=${entry#*\t}; if printf '%s' \"$preview\" | grep -aqE 'binary data|image/'; then printf '%s\\t-1\\t-1\\t0\\t-\\n' \"$entry\"; else stats=$(cliphist decode \"$clip_id\" 2>/dev/null | awk 'BEGIN { fileList=1 } { if (NR > 1) chars++; chars += length($0); lines++; value=$0; sub(/\\r$/, \"\", value); lower=tolower(value); if (value == \"\" || value ~ /^#/ || lower == \"copy\" || lower == \"cut\") next; if (value ~ /^file:\\\/\\\// || value ~ /^\\\// || value ~ /^~\\\//) { files++; if (first == \"\") first=value } else fileList=0 } END { if (!fileList || files == 0) { files=0; first=\"-\" } gsub(/\\t/, \" \", first); printf \"%d\\t%d\\t%d\\t%s\", chars, lines, files, first }'); printf '%s\\t%s\\n' \"$entry\" \"$stats\"; fi; done";
-        cliphistProcess.command = ["sh", "-c", script, "cliphist_script", String(generation), searchTerm, String(Config.launcherMaxResults), pinnedIdList];
-        cliphistProcess.running = true;
+        searchRequest.start("clipboard.list", {
+            query: searchTerm,
+            limit: Config.launcherMaxResults
+        });
     }
     function startNextPreview() {
         if (previewDecodeProcess.running)
@@ -338,20 +336,18 @@ Item {
     }
     function togglePinned(id) {
         var key = String(id || "");
-        if (key === "")
+        if (key === "" || favoriteRequest.active)
             return -1;
 
-        var next = Object.assign({}, pinnedIds);
-        if (next[key])
-            delete next[key];
-        else
-            next[key] = true;
-        pinnedIds = next;
-        refreshPinnedResults();
-        persistPinnedState();
         for (var i = 0; i < clipboardResults.length; ++i) {
-            if (String(clipboardResults[i].id) === key)
+            if (String(clipboardResults[i].id) === key) {
+                favoriteIndex = i;
+                preferredSelectedId = "";
+                favoriteRequest.start(clipboardResults[i].pinned ? "clipboard.favorite.remove" : "clipboard.favorite.add", {
+                    entryId: key
+                });
                 return i;
+            }
         }
         return -1;
     }
@@ -362,7 +358,7 @@ Item {
     Component.onDestruction: {
         requestGeneration += 1;
         previewQueue = [];
-        cliphistProcess.running = false;
+        searchRequest.cancel();
         previewDecodeProcess.running = false;
         if (generatedPreviewPaths.length > 0) {
             var cleanupCommand = ["rm", "-f", "--"];
@@ -376,7 +372,7 @@ Item {
         clipboardResults = [];
         previewQueue = [];
         readyPreviewIds = ({});
-        cliphistProcess.running = false;
+        searchRequest.cancel();
         previewDecodeProcess.running = false;
         searchDebounceTimer.restart();
     }
@@ -391,89 +387,34 @@ Item {
             runClipboardSearch();
         }
     }
-    FileView {
-        id: pinnedStateFile
+    CoreRequest {
+        id: searchRequest
 
-        atomicWrites: true
-        blockLoading: true
-        blockWrites: true
-        path: clipboardRoot.pinnedStatePath
-        printErrors: false
-        watchChanges: false
-
-        onLoadFailed: clipboardRoot.persistPinnedState()
-        onLoadedChanged: {
-            if (loaded)
-                clipboardRoot.loadPinnedState(text());
+        onFailed: message => console.warn("[LauncherClipboard]", message)
+        onSucceeded: result => {
+            if (result && result.ok === true)
+                clipboardRoot.applyEntries(result.entries || []);
+            else
+                console.warn("[LauncherClipboard]", result && result.message ? result.message : "Could not load clipboard history");
         }
-        onSaveFailed: error => console.warn("[LauncherClipboard] Could not save pinned clipboard state:", error)
     }
-    Process {
-        id: cliphistProcess
+    CoreRequest {
+        id: favoriteRequest
 
-        stdout: StdioCollector {
-            id: cliphistCollector
+        // An accepted save must finish even if the Launcher provider is unloaded.
+        cancellable: false
+
+        onFailed: message => {
+            clipboardRoot.favoriteIndex = -1;
+            console.warn("[LauncherClipboard]", message);
         }
-
-        onRunningChanged: {
-            if (!running) {
-                var output = cliphistCollector.text.trim();
-                var lines = output === "" ? [] : output.split("\n");
-                var markerPrefix = "__QS_REQUEST__";
-                if (lines.length === 0 || lines[0].indexOf(markerPrefix) !== 0)
-                    return;
-
-                var responseGeneration = parseInt(lines.shift().substring(markerPrefix.length));
-                if (responseGeneration !== requestGeneration)
-                    return;
-
-                if (lines.length === 0) {
-                    clipboardResults = [];
-                } else {
-                    var results = [];
-                    for (var i = 0; i < lines.length; i++) {
-                        var line = lines[i];
-                        if (line.trim() === "")
-                            continue;
-                        var firstFileTab = line.lastIndexOf("\t");
-                        var fileCountTab = line.lastIndexOf("\t", firstFileTab - 1);
-                        var lineCountTab = line.lastIndexOf("\t", fileCountTab - 1);
-                        var characterCountTab = line.lastIndexOf("\t", lineCountTab - 1);
-                        if (characterCountTab === -1 || lineCountTab === -1 || fileCountTab === -1 || firstFileTab === -1)
-                            continue;
-
-                        var decodedCharacterCount = parseInt(line.substring(characterCountTab + 1, lineCountTab));
-                        var decodedLineCount = parseInt(line.substring(lineCountTab + 1, fileCountTab));
-                        var decodedFileCount = parseInt(line.substring(fileCountTab + 1, firstFileTab));
-                        var decodedFirstFile = line.substring(firstFileTab + 1);
-                        if (decodedFirstFile === "-")
-                            decodedFirstFile = "";
-                        var clipboardLine = line.substring(0, characterCountTab);
-                        var tabIdx = clipboardLine.indexOf("\t");
-                        if (tabIdx !== -1) {
-                            var id = clipboardLine.substring(0, tabIdx).trim();
-                            var content = clipboardLine.substring(tabIdx + 1);
-                            var isImg = content.indexOf("binary data") !== -1 || content.indexOf("image/") !== -1;
-                            var classification = classifyContent(content, isImg, decodedCharacterCount, decodedLineCount, decodedFileCount, decodedFirstFile);
-                            results.push({
-                                id: id,
-                                content: content,
-                                historyIndex: results.length,
-                                pinned: isPinned(id),
-                                isImage: isImg,
-                                isFileImage: Boolean(classification.isFileImage),
-                                isVideo: Boolean(classification.isVideo),
-                                kind: classification.kind,
-                                title: classification.title,
-                                subtitle: classification.subtitle,
-                                iconName: classification.iconName,
-                                sourcePath: classification.sourcePath || ""
-                            });
-                        }
-                    }
-                    clipboardResults = results.slice(0, Config.launcherMaxResults);
-                    refreshPinnedResults();
-                }
+        onSucceeded: result => {
+            if (result && result.ok === true) {
+                clipboardRoot.preferredSelectedId = result.entryId || "";
+                clipboardRoot.runClipboardSearch();
+            } else {
+                clipboardRoot.favoriteIndex = -1;
+                console.warn("[LauncherClipboard]", result && result.message ? result.message : "Could not update clipboard favorite");
             }
         }
     }
