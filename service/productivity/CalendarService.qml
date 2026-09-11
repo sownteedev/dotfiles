@@ -569,6 +569,19 @@ QtObject {
     function hasEvents(day, month, year) {
         return getEventsForDate(day, month, year).length > 0;
     }
+    function importIcs(calendarId, filePath, callback) {
+        if (eventActionBusy)
+            return;
+        eventActionBusy = true;
+        sendRequest("events.importIcs", {
+            "calendarId": String(calendarId || "").trim(),
+            "filePath": String(filePath || "").trim()
+        }, result => {
+            finishEventAction("import-ics", true, "", callback);
+        }, message => {
+            finishEventAction("import-ics", false, message, callback);
+        });
+    }
     function localDateParts(value) {
         if (value instanceof Date && !isNaN(value.getTime())) {
             return [value.getFullYear(), value.getMonth(), value.getDate()];
@@ -577,6 +590,17 @@ QtObject {
         if (parts.length !== 3)
             return null;
         return [Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])];
+    }
+    function parseIcs(filePath, callback) {
+        sendRequest("events.parseIcs", {
+            "filePath": String(filePath || "").trim()
+        }, result => {
+            if (callback)
+                callback(true, result, "");
+        }, message => {
+            if (callback)
+                callback(false, null, message);
+        });
     }
     function rebuildDecoratedData() {
         var accountMap = {};

@@ -31,7 +31,7 @@ FloatingWindow {
         return shape.tool === "callout";
     })
     readonly property bool canRedo: redoHistory.length > 0
-    readonly property bool canUndo: shapes.length > 0 || (cropActive && cropWasLastAction) || lastMoveUndo !== null || edgeStitchHistory.length > 0
+    readonly property bool canUndo: shapes.length > 0 || cropActive || lastMoveUndo !== null || edgeStitchHistory.length > 0
     readonly property real chromeMargin: Responsive.clamp(width * 0.012, 12, 24)
     property color colorPickerColor: selectedColor
     property bool colorPickerCommitPending: false
@@ -61,6 +61,9 @@ FloatingWindow {
     property int edgeStitchProcessSession: -1
     property int edgeStitchSessionToken: 0
     property string edgeStitchSourcePath: ""
+    property var editingTextOriginalShape: null
+    property real editingTextRotation: 0
+    property int editingTextShapeIndex: -1
     readonly property bool editorChromeBusy: saving || reverseSearchPreparing || edgeStitchPreparing || (renderExportBusy && renderExportOperation !== "ocr")
     property bool editorPresented: false
     readonly property bool editorReady: sourceImage.status === Image.Error || (sourceImage.status === Image.Ready && logicalSurfaceReady && !baseImageFitPending && baseImageReady)
@@ -290,6 +293,9 @@ FloatingWindow {
         if (inlineTextEditor.visible)
             commitText();
 
+        editingTextShapeIndex = -1;
+        editingTextOriginalShape = null;
+        editingTextRotation = 0;
         inlineTextEditor.x = Math.max(8, Math.min(captureSurface.width - 188, x));
         inlineTextEditor.y = Math.max(8, Math.min(captureSurface.height - inlineTextEditor.height - 8, y));
         inlineTextBoxWidth = 180;
@@ -319,6 +325,18 @@ FloatingWindow {
             return;
         cancelShapeMove();
     }
+    function cancelCrop() {
+        if (!cropActive && !cropDragging && cropTargetLayerId === "")
+            return false;
+        stopSelectionPreview();
+        cropRect = Qt.rect(0, 0, 0, 0);
+        cropDraftRect = Qt.rect(0, 0, 0, 0);
+        cropDragging = false;
+        cropTargetLayerId = "";
+        cropTargetOriginal = null;
+        cropWasLastAction = false;
+        return true;
+    }
     function cancelEdgeStitch() {
         edgeStitchSessionToken += 1;
         if (edgeStitchProcess.running)
@@ -329,6 +347,25 @@ FloatingWindow {
     function cancelEditor() {
         if (annotationTransformActive) {
             cancelAnnotationTransform();
+            return;
+        }
+        if (inlineTextEditor.visible) {
+            cancelText();
+            return;
+        }
+        if (cancelCrop())
+            return;
+        if (ocrDragging || ocrRect.width > 2) {
+            ocrDragging = false;
+            ocrRect = Qt.rect(0, 0, 0, 0);
+            ocrDraftRect = Qt.rect(0, 0, 0, 0);
+            if (selectedTool === "ocr")
+                selectedTool = "select";
+            return;
+        }
+        if (selectedAnnotationShape !== null) {
+            selectedAnnotationShape = null;
+            selectedAnnotationIndex = -1;
             return;
         }
         stopSelectionPreview();
@@ -428,6 +465,21 @@ FloatingWindow {
         scheduleLivePaint();
     }
     function cancelText() {
+        if (editingTextOriginalShape !== null && editingTextShapeIndex >= 0) {
+            var nextShapes = shapes.slice();
+            if (editingTextShapeIndex <= nextShapes.length)
+                nextShapes.splice(editingTextShapeIndex, 0, editingTextOriginalShape);
+            else
+                nextShapes.push(editingTextOriginalShape);
+            shapes = nextShapes;
+            committedCanvas.requestPaint();
+            selectedAnnotationShape = copyShape(editingTextOriginalShape);
+            selectedAnnotationIndex = editingTextShapeIndex;
+            selectedTool = "select";
+        }
+        editingTextShapeIndex = -1;
+        editingTextOriginalShape = null;
+        editingTextRotation = 0;
         inlineTextEditor.text = "";
         inlineTextEditor.visible = false;
         keyScope.forceActiveFocus();
@@ -607,12 +659,13 @@ FloatingWindow {
     }
     function commitText() {
         var value = inlineTextEditor.text.trim();
+        var wasEditing = editingTextShapeIndex >= 0;
         if (value !== "") {
             invalidateRedo();
             lastMoveUndo = null;
             var fontSize = textFontSize();
             var nextShapes = shapes.slice();
-            nextShapes.push({
+            var updatedShape = {
                 "tool": "text",
                 "color": String(selectedColor),
                 "opacity": selectedOpacity,
@@ -623,12 +676,33 @@ FloatingWindow {
                 "startY": inlineTextEditor.y,
                 "endX": inlineTextEditor.x + Math.max(1, inlineTextEditor.contentWidth),
                 "endY": inlineTextEditor.y + fontSize,
-                "points": []
-            });
+                "points": [],
+                "rotation": Number(editingTextRotation || 0)
+            };
+            var insertIndex = nextShapes.length;
+            if (editingTextShapeIndex >= 0 && editingTextShapeIndex <= nextShapes.length) {
+                insertIndex = editingTextShapeIndex;
+                nextShapes.splice(editingTextShapeIndex, 0, updatedShape);
+            } else {
+                nextShapes.push(updatedShape);
+            }
             shapes = nextShapes;
             cropWasLastAction = false;
             committedCanvas.requestPaint();
+            if (wasEditing) {
+                selectedTool = "select";
+                selectedAnnotationShape = copyShape(updatedShape);
+                selectedAnnotationIndex = insertIndex;
+            }
+        } else if (editingTextOriginalShape !== null && editingTextShapeIndex >= 0) {
+            invalidateRedo();
+            lastMoveUndo = null;
+            cropWasLastAction = false;
+            committedCanvas.requestPaint();
         }
+        editingTextShapeIndex = -1;
+        editingTextOriginalShape = null;
+        editingTextRotation = 0;
         inlineTextEditor.text = "";
         inlineTextEditor.visible = false;
         keyScope.forceActiveFocus();
@@ -1260,8 +1334,9 @@ FloatingWindow {
             return dist <= (shape.markerSize / 2) + threshold;
         }
         if (shape.tool === "text") {
-            var estW = (shape.text || "").length * shape.fontSize * 0.6;
-            return x >= shape.startX - threshold && x <= shape.startX + estW + threshold && y >= shape.startY - threshold && y <= shape.startY + shape.fontSize + threshold;
+            var textW = Math.max(Number(shape.endX || 0) - shape.startX, (shape.text || "").length * (shape.fontSize || 16) * 0.65);
+            var textH = Math.max(Number(shape.endY || 0) - shape.startY, Number(shape.fontSize || 16));
+            return x >= shape.startX - threshold && x <= shape.startX + textW + threshold && y >= shape.startY - threshold && y <= shape.startY + textH + threshold;
         }
 
         if (shape.tool === "line" || shape.tool === "arrow") {
@@ -2338,6 +2413,55 @@ FloatingWindow {
             }
         });
     }
+    function startEditingTextShape(shapeIndex) {
+        if (shapeIndex < 0 || shapeIndex >= shapes.length)
+            return;
+        var shape = shapes[shapeIndex];
+        if (!shape || shape.tool !== "text")
+            return;
+
+        if (inlineTextEditor.visible)
+            commitText();
+
+        editingTextShapeIndex = shapeIndex;
+        editingTextOriginalShape = copyShape(shape);
+        editingTextRotation = Number(shape.rotation || 0);
+
+        selectedTool = "text";
+        selectedColor = shape.color || selectedColor;
+        selectedOpacity = shape.opacity !== undefined ? Number(shape.opacity) : 1.0;
+        if (shape.width)
+            selectedWidth = Number(shape.width);
+        else if (shape.fontSize)
+            selectedWidth = Math.max(2, Math.round(Number(shape.fontSize) / 3));
+
+        var textW = Math.max(Number(shape.endX || 0) - shape.startX, (shape.text || "").length * (shape.fontSize || 16) * 0.65);
+        inlineTextBoxWidth = Math.max(180, textW + 30);
+        inlineTextEditor.x = shape.startX;
+        inlineTextEditor.y = shape.startY;
+        inlineTextEditor.text = shape.text || "";
+
+        var nextShapes = shapes.slice();
+        nextShapes.splice(shapeIndex, 1);
+        shapes = nextShapes;
+
+        selectedAnnotationShape = null;
+        selectedAnnotationIndex = -1;
+        currentShape = null;
+        movingShapeDetached = false;
+        movingShapeIndex = -1;
+        movingShapeOriginal = null;
+        liveCanvasTranslate.x = 0;
+        liveCanvasTranslate.y = 0;
+
+        committedCanvas.requestPaint();
+        prepareLiveCanvas();
+        scheduleLivePaint();
+
+        inlineTextEditor.visible = true;
+        inlineTextEditor.selectAll();
+        inlineTextEditor.forceActiveFocus();
+    }
     function startRenderExport(operation, region, targetWidth, targetHeight, outputPath, operationSession) {
         if (renderExportBusy || operation === "" || outputPath === "" || captureSurface.width < 1 || captureSurface.height < 1)
             return false;
@@ -2515,7 +2639,7 @@ FloatingWindow {
                 return;
             }
         }
-        if (cropActive && cropWasLastAction) {
+        if (cropActive && (cropWasLastAction || shapes.length === 0)) {
             cropRect = Qt.rect(0, 0, 0, 0);
             cropWasLastAction = false;
             return;
@@ -2861,6 +2985,11 @@ FloatingWindow {
                 root.loupeHeld = true;
                 event.accepted = true;
             } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                if (inlineTextEditor.visible) {
+                    root.commitText();
+                    event.accepted = true;
+                    return;
+                }
                 root.saveEditedImage();
                 event.accepted = true;
             } else if (event.key === Qt.Key_Backspace) {
@@ -3316,6 +3445,22 @@ FloatingWindow {
                                 root.prepareLiveCanvas();
                             }
                         }
+                        onDoubleClicked: mouse => {
+                            if (root.selectedTool === "select" || root.selectedTool === "text") {
+                                if (root.selectedAnnotationShape && root.selectedAnnotationShape.tool === "text") {
+                                    if (root.hitTestShape(root.selectedAnnotationShape, mouse.x, mouse.y)) {
+                                        root.startEditingTextShape(root.selectedAnnotationIndex);
+                                        return;
+                                    }
+                                }
+                                for (var i = root.shapes.length - 1; i >= 0; i--) {
+                                    if (root.shapes[i].tool === "text" && root.hitTestShape(root.shapes[i], mouse.x, mouse.y)) {
+                                        root.startEditingTextShape(i);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
                         onEntered: {
                             root.loupePointerInside = true;
                             if (root.colorPickerHeld || root.selectedTool === "loupe" || root.loupeHeld) {
@@ -3440,6 +3585,12 @@ FloatingWindow {
                             }
                             if (root.selectedTool === "loupe" || root.loupeHeld)
                                 return;
+
+                            if (inlineTextEditor.visible) {
+                                var inTextFrame = mouse.x >= inlineTextFrame.x && mouse.x <= inlineTextFrame.x + inlineTextFrame.width && mouse.y >= inlineTextFrame.y && mouse.y <= inlineTextFrame.y + inlineTextFrame.height;
+                                if (!inTextFrame)
+                                    root.commitText();
+                            }
 
                             if (root.selectedTool === "select") {
                                 root.edgeStitchDropEdge = "";
@@ -3900,7 +4051,6 @@ FloatingWindow {
                         Rectangle {
                             color: "#88000000"
                             height: Math.max(0, root.displayedCropRect.y)
-                            visible: !root.cropDragging
                             width: parent.width
                             x: 0
                             y: 0
@@ -3908,7 +4058,6 @@ FloatingWindow {
                         Rectangle {
                             color: "#88000000"
                             height: Math.max(0, parent.height - y)
-                            visible: !root.cropDragging
                             width: parent.width
                             x: 0
                             y: root.displayedCropRect.y + root.displayedCropRect.height
@@ -3916,7 +4065,6 @@ FloatingWindow {
                         Rectangle {
                             color: "#88000000"
                             height: root.displayedCropRect.height
-                            visible: !root.cropDragging
                             width: Math.max(0, root.displayedCropRect.x)
                             x: 0
                             y: root.displayedCropRect.y
@@ -3924,7 +4072,6 @@ FloatingWindow {
                         Rectangle {
                             color: "#88000000"
                             height: root.displayedCropRect.height
-                            visible: !root.cropDragging
                             width: Math.max(0, parent.width - x)
                             x: root.displayedCropRect.x + root.displayedCropRect.width
                             y: root.displayedCropRect.y
@@ -3973,6 +4120,8 @@ FloatingWindow {
 
                         Accessible.ignored: true
                         height: inlineTextEditor.height + 10
+                        rotation: root.editingTextRotation
+                        transformOrigin: Item.Center
                         visible: inlineTextEditor.visible && !root.renderingOutput
                         width: inlineTextEditor.width + 14
                         x: inlineTextEditor.x - 7
@@ -4038,15 +4187,22 @@ FloatingWindow {
                     TextInput {
                         id: inlineTextEditor
 
+                        bottomPadding: 0
                         clip: true
                         color: Config.alpha(root.selectedColor, root.selectedOpacity)
                         font.family: Config.fontName
                         font.pixelSize: root.textFontSize()
                         font.weight: Font.DemiBold
-                        height: Math.max(32, font.pixelSize * 1.35)
+                        height: Math.max(font.pixelSize, contentHeight)
+                        leftPadding: 0
+                        padding: 0
+                        rightPadding: 0
+                        rotation: root.editingTextRotation
                         selectedTextColor: Config.md3.background
                         selectionColor: Config.md3.tertiary
-                        verticalAlignment: TextInput.AlignVCenter
+                        topPadding: 0
+                        transformOrigin: Item.Center
+                        verticalAlignment: TextInput.AlignTop
                         visible: false
                         width: Math.min(captureSurface.width - x - 16, Math.max(root.inlineTextBoxWidth, contentWidth + 18))
                         z: 1

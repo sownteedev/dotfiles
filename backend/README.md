@@ -35,9 +35,10 @@ sockets using newline-delimited JSON.
 - clipboard history, persistent favorites and restoration, diagnostics, updates,
   Wi-Fi QR generation, and display integration for Niri, DDC/CI, and Sunshine;
 - transactional Niri and SownteeShell settings, synchronized GTK 3/4 and Qt 5/6
-  appearance (application themes, icons, cursor theme & size, interface typography,
-  Kvantum/Fusion widget styles, color schemes, standard dialogs, and XSettings broadcast),
-  and greetd profile, session, background, and palette synchronization;
+  appearance (`settings.gtk.apply`, `settings.general.apply`: application themes, icons,
+  cursor theme & size synchronized with Niri, interface typography, Kvantum/Fusion widget styles,
+  color schemes, standard dialogs, and XSettings broadcast), and greetd profile, session,
+  background, and palette synchronization;
 - Weather, Emoji/Unicode, KLIPY, Wallhaven, Steam Workshop, Wallpaper Engine,
   preview generation, and bounded media caches.
 
@@ -78,7 +79,8 @@ Run `sownteeshell ipc methods core` for its IPC methods and parameters.
 - iCloud Calendar through CalDAV and an app-specific password;
 - Google Tasks from all connected Google accounts and task lists, with cached
   snapshots, account-scoped mutations, and shared updates for Todo and Calendar;
-- account and calendar visibility, event create/update/delete, background
+- account and calendar visibility, event create/update/delete, iCalendar (`.ics` / `.ical`)
+  parsing and batch import (`events.parseIcs`, `events.importIcs`), background
   synchronization, and live change subscriptions;
 - local SQLite persistence and deduplicated desktop reminders 30 minutes
   before an event.
@@ -105,8 +107,9 @@ $XDG_DATA_HOME/sownteeshell/calendar/calendar.db
 
 OAuth tokens, client secrets, and CalDAV passwords are stored through the
 desktop Secret Service rather than in the repository or SQLite database. The
-default sync interval is 15 minutes, with a 90-day past window and a 365-day
-future window. These values can be overridden with:
+default sync interval is 15 minutes, with a 180-day past window and a 365-day
+future window. `events.list` queries default to a 365-day past and 730-day future
+window so month and week navigation stays smooth without re-querying. These values can be overridden with:
 
 ```text
 SOWNTEE_CALENDAR_SYNC_INTERVAL_SECONDS

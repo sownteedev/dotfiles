@@ -223,14 +223,15 @@ PanelWindow {
                     visible: activeTopTab === 1
                 }
                 AnimatedPulse {
-                    readonly property bool hasTimerGeometry: activeTopTab === 2 && topCurrentPage.status === Loader.Ready && topCurrentPage.item && typeof topCurrentPage.item.dialCenter !== "undefined" && typeof topCurrentPage.item.dialSize !== "undefined"
+                    readonly property bool hasTimerGeometry: activeTopTab === 2 && timerLoader && timerLoader.status === Loader.Ready && timerLoader.item && typeof timerLoader.item.dialCenter !== "undefined" && typeof timerLoader.item.dialSize !== "undefined"
                     readonly property point timerCenter: {
-                        topCurrentPage.x;
-                        topCurrentPage.y;
                         if (!hasTimerGeometry)
                             return Qt.point(width / 2, height / 2);
-                        return topCurrentPage.item.mapToItem(topSection, topCurrentPage.item.dialCenter.x, topCurrentPage.item.dialCenter.y);
+                        timerLoader.x;
+                        timerLoader.y;
+                        return timerLoader.item.mapToItem(topSection, timerLoader.item.dialCenter.x, timerLoader.item.dialCenter.y);
                     }
+                    readonly property var timerLoader: topPagesRepeater && topPagesRepeater.count > 2 ? topPagesRepeater.itemAt(2) : null
 
                     anchors.fill: parent
                     centerX: timerCenter.x
@@ -238,7 +239,7 @@ PanelWindow {
                     color: CountdownService.completed ? Config.md3.secondary : Config.md3.primary
                     endRadius: Math.hypot(Math.max(centerX, width - centerX), Math.max(centerY, height - centerY)) + 12
                     running: controlLeftWindow.active && activeTopTab === 2 && CountdownService.running
-                    startRadius: hasTimerGeometry ? topCurrentPage.item.dialSize / 2 - 20 : Math.min(width, height) * 0.3
+                    startRadius: hasTimerGeometry ? timerLoader.item.dialSize / 2 - 20 : Math.min(width, height) * 0.3
                     visible: activeTopTab === 2
                 }
                 ColumnLayout {
@@ -336,6 +337,7 @@ PanelWindow {
                             Layout.fillWidth: true
                         }
                     }
+                    // Content page with slide animation
                     Item {
                         id: topPageContainer
 
@@ -343,88 +345,34 @@ PanelWindow {
                         Layout.fillWidth: true
                         clip: true
 
-                        Loader {
-                            id: topOutgoingPage
+                        Repeater {
+                            id: topPagesRepeater
 
-                            active: source !== ""
-                            height: topPageContainer.height
-                            opacity: 0
-                            width: topPageContainer.width
-                            x: 0
-                            z: 0
+                            model: topPages.length
 
-                            NumberAnimation on opacity {
-                                id: topFadeOutAnim
+                            delegate: Loader {
+                                active: controlLeftWindow.visible && (index === activeTopTab || (index === previousTopTab && opacity > 0))
+                                asynchronous: true
+                                height: topPageContainer.height
+                                opacity: index === activeTopTab ? 1 : 0
+                                source: "Pages/" + topPages[index] + ".qml"
+                                visible: opacity > 0
+                                width: topPageContainer.width
+                                x: (index === activeTopTab) ? 0 : (index < activeTopTab ? -width * 0.35 : width)
 
-                                duration: 220
-                                easing.type: Easing.InQuad
-                                running: false
-                                to: 0
-
-                                onFinished: {
-                                    if (topOutgoingPage.opacity === 0)
-                                        topOutgoingPage.source = "";
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 220
+                                        easing.type: index === activeTopTab ? Easing.OutQuad : Easing.InQuad
+                                    }
+                                }
+                                Behavior on x {
+                                    NumberAnimation {
+                                        duration: 320
+                                        easing.type: Easing.OutCubic
+                                    }
                                 }
                             }
-                            NumberAnimation on x {
-                                id: topSlideOutAnim
-
-                                duration: 320
-                                easing.type: Easing.OutCubic
-                                running: false
-                            }
-                        }
-                        Loader {
-                            id: topCurrentPage
-
-                            active: controlLeftWindow.visible
-                            height: topPageContainer.height
-                            opacity: 1
-                            source: "Pages/" + topPages[activeTopTab] + ".qml"
-                            width: topPageContainer.width
-                            x: 0
-                            z: 1
-
-                            NumberAnimation on opacity {
-                                id: topFadeInAnim
-
-                                duration: 220
-                                easing.type: Easing.OutQuad
-                                from: 0.3
-                                running: false
-                                to: 1
-                            }
-                            NumberAnimation on x {
-                                id: topSlideInAnim
-
-                                duration: 320
-                                easing.type: Easing.OutCubic
-                                running: false
-                                to: 0
-                            }
-                        }
-                        Connections {
-                            function onActiveTopTabChanged() {
-                                if (!controlLeftWindow.visible)
-                                    return;
-                                var isNext = (activeTopTab > previousTopTab);
-                                if (activeTopTab === previousTopTab)
-                                    return;
-
-                                topOutgoingPage.source = "Pages/" + topPages[previousTopTab] + ".qml";
-                                topOutgoingPage.x = 0;
-                                topOutgoingPage.opacity = 1;
-
-                                topSlideOutAnim.to = isNext ? -topPageContainer.width : topPageContainer.width;
-                                topSlideOutAnim.restart();
-                                topFadeOutAnim.restart();
-
-                                topCurrentPage.x = isNext ? topPageContainer.width : -topPageContainer.width;
-                                topSlideInAnim.restart();
-                                topFadeInAnim.restart();
-                            }
-
-                            target: controlLeftWindow
                         }
                     }
                 }
@@ -554,6 +502,7 @@ PanelWindow {
                             Layout.fillWidth: true
                         }
                     }
+                    // Content page with slide animation
                     Item {
                         id: bottomPageContainer
 
@@ -561,88 +510,32 @@ PanelWindow {
                         Layout.fillWidth: true
                         clip: true
 
-                        Loader {
-                            id: bottomOutgoingPage
+                        Repeater {
+                            model: bottomPages.length
 
-                            active: source !== ""
-                            height: bottomPageContainer.height
-                            opacity: 0
-                            width: bottomPageContainer.width
-                            x: 0
-                            z: 0
+                            delegate: Loader {
+                                active: controlLeftWindow.visible && (index === activeBottomTab || (index === previousBottomTab && opacity > 0))
+                                asynchronous: true
+                                height: bottomPageContainer.height
+                                opacity: index === activeBottomTab ? 1 : 0
+                                source: "Pages/" + bottomPages[index] + ".qml"
+                                visible: opacity > 0
+                                width: bottomPageContainer.width
+                                x: (index === activeBottomTab) ? 0 : (index < activeBottomTab ? -width * 0.35 : width)
 
-                            NumberAnimation on opacity {
-                                id: bottomFadeOutAnim
-
-                                duration: 220
-                                easing.type: Easing.InQuad
-                                running: false
-                                to: 0
-
-                                onFinished: {
-                                    if (bottomOutgoingPage.opacity === 0)
-                                        bottomOutgoingPage.source = "";
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 220
+                                        easing.type: index === activeBottomTab ? Easing.OutQuad : Easing.InQuad
+                                    }
+                                }
+                                Behavior on x {
+                                    NumberAnimation {
+                                        duration: 320
+                                        easing.type: Easing.OutCubic
+                                    }
                                 }
                             }
-                            NumberAnimation on x {
-                                id: bottomSlideOutAnim
-
-                                duration: 320
-                                easing.type: Easing.OutCubic
-                                running: false
-                            }
-                        }
-                        Loader {
-                            id: bottomCurrentPage
-
-                            active: controlLeftWindow.visible
-                            height: bottomPageContainer.height
-                            opacity: 1
-                            source: "Pages/" + bottomPages[activeBottomTab] + ".qml"
-                            width: bottomPageContainer.width
-                            x: 0
-                            z: 1
-
-                            NumberAnimation on opacity {
-                                id: bottomFadeInAnim
-
-                                duration: 220
-                                easing.type: Easing.OutQuad
-                                from: 0.3
-                                running: false
-                                to: 1
-                            }
-                            NumberAnimation on x {
-                                id: bottomSlideInAnim
-
-                                duration: 320
-                                easing.type: Easing.OutCubic
-                                running: false
-                                to: 0
-                            }
-                        }
-                        Connections {
-                            function onActiveBottomTabChanged() {
-                                if (!controlLeftWindow.visible)
-                                    return;
-                                var isNext = (activeBottomTab > previousBottomTab);
-                                if (activeBottomTab === previousBottomTab)
-                                    return;
-
-                                bottomOutgoingPage.source = "Pages/" + bottomPages[previousBottomTab] + ".qml";
-                                bottomOutgoingPage.x = 0;
-                                bottomOutgoingPage.opacity = 1;
-
-                                bottomSlideOutAnim.to = isNext ? -bottomPageContainer.width : bottomPageContainer.width;
-                                bottomSlideOutAnim.restart();
-                                bottomFadeOutAnim.restart();
-
-                                bottomCurrentPage.x = isNext ? bottomPageContainer.width : -bottomPageContainer.width;
-                                bottomSlideInAnim.restart();
-                                bottomFadeInAnim.restart();
-                            }
-
-                            target: controlLeftWindow
                         }
                     }
                 }

@@ -364,6 +364,8 @@ impl IpcServer {
             "events.create" => self.create_event(parse_params(request.params)?).await,
             "events.update" => self.update_event(parse_params(request.params)?).await,
             "events.delete" => self.delete_event(parse_params(request.params)?).await,
+            "events.parseIcs" => self.parse_ics(parse_params(request.params)?).await,
+            "events.importIcs" => self.import_ics(parse_params(request.params)?).await,
             "sync.now" => self.sync_now(parse_params(request.params)?).await,
             method => Err(RpcError::method_not_found(method)),
         }
@@ -674,8 +676,10 @@ impl IpcServer {
 
     async fn list_events(&self, parameters: ListEventsParams) -> RpcResult<Value> {
         let now = Utc::now();
-        let from = parse_optional_time(parameters.from, now - Duration::days(30), "from")?;
-        let to = parse_optional_time(parameters.to, now + Duration::days(365), "to")?;
+        let default_past_days = self.config.sync_past_days.max(365);
+        let default_future_days = self.config.sync_future_days.max(730);
+        let from = parse_optional_time(parameters.from, now - Duration::days(default_past_days), "from")?;
+        let to = parse_optional_time(parameters.to, now + Duration::days(default_future_days), "to")?;
         if from > to {
             return Err(RpcError::invalid_params("events.list requires from <= to"));
         }
@@ -769,6 +773,62 @@ impl IpcServer {
             Some(&calendar.id),
         ));
         Ok(json!({"deleted": true}))
+    }
+
+    async fn parse_ics(&self, parameters: ParseIcsParams) -> RpcResult<Value> {
+        let path = std::path::PathBuf::from(&parameters.file_path);
+        let (summary, _) = crate::ics::parse_ics_file(&path)
+            .map_err(|err| RpcError::backend(err.to_string()))?;
+        Ok(json!(summary))
+    }
+
+    async fn import_ics(&self, parameters: ImportIcsParams) -> RpcResult<Value> {
+        let path = std::path::PathBuf::from(&parameters.file_path);
+        let (_, drafts) = crate::ics::parse_ics_file(&path)
+            .map_err(|err| RpcError::backend(err.to_string()))?;
+
+        let (account, calendar) = self.writable_calendar(&parameters.calendar_id).await?;
+        let provider = self.providers.get(account.provider);
+
+        let mut imported_count = 0;
+        let mut failed_count = 0;
+        let mut errors = Vec::new();
+
+        for draft in drafts {
+            match provider.create_event(&account, &calendar, &draft).await {
+                Ok(event) => {
+                    let stored_event = event.clone();
+                    if let Err(err) = self
+                        .database
+                        .run_blocking(move |database| database.upsert_event(&stored_event))
+                        .await
+                    {
+                        errors.push(format!("Database error for '{}': {err}", draft.title));
+                        failed_count += 1;
+                    } else {
+                        imported_count += 1;
+                    }
+                }
+                Err(err) => {
+                    errors.push(format!("Provider error for '{}': {err}", draft.title));
+                    failed_count += 1;
+                }
+            }
+        }
+
+        if imported_count > 0 {
+            self.publish(DaemonEvent::changed(
+                "events",
+                Some(&account.id),
+                Some(&calendar.id),
+            ));
+        }
+
+        Ok(json!({
+            "importedCount": imported_count,
+            "failedCount": failed_count,
+            "errors": errors,
+        }))
     }
 
     async fn writable_calendar(&self, calendar_id: &str) -> RpcResult<(Account, Calendar)> {
@@ -1291,6 +1351,19 @@ struct UpdateEventParams {
 #[serde(rename_all = "camelCase")]
 struct DeleteEventParams {
     event_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ParseIcsParams {
+    file_path: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ImportIcsParams {
+    calendar_id: String,
+    file_path: String,
 }
 
 #[derive(Debug, Default, Deserialize)]

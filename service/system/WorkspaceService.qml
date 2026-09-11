@@ -100,16 +100,39 @@ QtObject {
         transientMoveFocusGuard = true;
         transientMoveFocusTimer.restart();
     }
-    function compareWindowsByLayout(a, b, floating) {
-        var field = floating ? "tile_pos_in_workspace_view" : "pos_in_scrolling_layout";
-        var primaryIndex = 0;
-        var secondaryIndex = 1;
-        var primaryDifference = windowLayoutCoordinate(a, field, primaryIndex) - windowLayoutCoordinate(b, field, primaryIndex);
-        if (primaryDifference !== 0)
-            return primaryDifference;
-        var secondaryDifference = windowLayoutCoordinate(a, field, secondaryIndex) - windowLayoutCoordinate(b, field, secondaryIndex);
-        if (secondaryDifference !== 0)
-            return secondaryDifference;
+    function compareWindowsByLayout(a, b, workspaceIsFloating) {
+        var aFloating = Boolean(a && (a.is_floating === true || workspaceIsFloating));
+        var bFloating = Boolean(b && (b.is_floating === true || workspaceIsFloating));
+
+        if (!aFloating && bFloating)
+            return -1;
+        if (aFloating && !bFloating)
+            return 1;
+
+        if (aFloating && bFloating) {
+            var aX = windowLayoutCoordinate(a, "tile_pos_in_workspace_view", 0);
+            var bX = windowLayoutCoordinate(b, "tile_pos_in_workspace_view", 0);
+            if (aX !== bX)
+                return aX - bX;
+
+            var aY = windowLayoutCoordinate(a, "tile_pos_in_workspace_view", 1);
+            var bY = windowLayoutCoordinate(b, "tile_pos_in_workspace_view", 1);
+            if (aY !== bY)
+                return aY - bY;
+
+            return Number(a.id || 0) - Number(b.id || 0);
+        }
+
+        var aCol = windowLayoutCoordinate(a, "pos_in_scrolling_layout", 0);
+        var bCol = windowLayoutCoordinate(b, "pos_in_scrolling_layout", 0);
+        if (aCol !== bCol)
+            return aCol - bCol;
+
+        var aRow = windowLayoutCoordinate(a, "pos_in_scrolling_layout", 1);
+        var bRow = windowLayoutCoordinate(b, "pos_in_scrolling_layout", 1);
+        if (aRow !== bRow)
+            return aRow - bRow;
+
         return Number(a.id || 0) - Number(b.id || 0);
     }
     function focusWorkspace(workspace) {
@@ -502,7 +525,7 @@ QtObject {
         return isNaN(value) ? 999999 : value;
     }
     function windowMetadataChanged(previous, current) {
-        return String(previous.app_id || "") !== String(current.app_id || "") || String(previous.title || "") !== String(current.title || "") || previous.workspace_id !== current.workspace_id;
+        return String(previous.app_id || "") !== String(current.app_id || "") || String(previous.title || "") !== String(current.title || "") || previous.workspace_id !== current.workspace_id || previous.is_floating !== current.is_floating;
     }
     function windowSummary(window) {
         if (!window)

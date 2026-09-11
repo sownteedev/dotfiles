@@ -261,10 +261,15 @@ Item {
         }
     }
 
+    WheelHandler {
+        blocking: true
+        target: null
+    }
     MouseArea {
         anchors.fill: parent
 
         onClicked: root.close()
+        onWheel: event => event.accepted = true
     }
     ShellShadow {
         active: root.opened
@@ -293,8 +298,14 @@ Item {
             }
         }
 
+        WheelHandler {
+            blocking: true
+            target: null
+        }
         MouseArea {
             anchors.fill: parent
+
+            onWheel: event => event.accepted = true
         }
         RowLayout {
             id: editorHeader

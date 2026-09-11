@@ -162,7 +162,7 @@ EOF
 print_calendar_methods() {
     cat <<'EOF'
 
-Calendar methods (22):
+Calendar methods (24):
 
   System
     ping                                  [read] Check IPC responsiveness
@@ -186,6 +186,8 @@ Calendar methods (22):
     events.create                         [write, network] calendarId, event
     events.update                         [write, network] eventId, event
     events.delete                         [delete, network] eventId
+    events.parseIcs                       [read] filePath
+    events.importIcs                      [write, network] calendarId, filePath
 
   Synchronization
     sync.now                              [write, network] accountId?; omit to sync all accounts

@@ -74,7 +74,16 @@ QtObject {
                 return;
             if (exitCode === 0 && root.upgradeResultReceived) {
                 if (root.upgradeResultText === "started") {
-                    root.upgradePollMisses = 0;
+                    if (root.upgradeTerminalExited) {
+                        root.upgradePollMisses += 1;
+                        if (root.upgradePollMisses >= 4) {
+                            console.warn("[UpdateService] Upgrade terminal exited while still marked as started");
+                            root.finishUpgradeTracking();
+                            return;
+                        }
+                    } else {
+                        root.upgradePollMisses = 0;
+                    }
                     root.upgradePollTimer.restart();
                 } else {
                     root.finishUpgradeTracking();
@@ -101,6 +110,17 @@ QtObject {
         }
     }
     property bool upgradeTerminalExited: false
+    property Timer upgradeWatchdog: Timer {
+        interval: 30 * 60 * 1000
+        repeat: false
+
+        onTriggered: {
+            if (!root.upgrading)
+                return;
+            console.warn("[UpdateService] Upgrade timed out");
+            root.finishUpgradeTracking();
+        }
+    }
     property bool upgrading: false
 
     function applyResult(result) {
@@ -121,6 +141,7 @@ QtObject {
     }
     function finishUpgradeTracking() {
         var completedResultPath = activeUpgradeResultPath;
+        upgradeWatchdog.stop();
         upgradePollTimer.stop();
         upgrading = false;
         activeUpgradeResultPath = "";
@@ -170,6 +191,7 @@ QtObject {
         var terminalCommand = "exec /usr/bin/zsh -c " + shellQuote(upgradeCommand);
         upgradeTerminal.command = ["blackbox-terminal", "--command", terminalCommand];
         upgradeTerminal.running = true;
+        upgradeWatchdog.restart();
         upgradePollTimer.restart();
     }
 

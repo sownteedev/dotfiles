@@ -147,11 +147,16 @@ Item {
         anchors.fill: parent
         color: Config.alpha(Config.md3.scrim, Config.lightTheme ? 0.25 : 0.44)
     }
+    WheelHandler {
+        blocking: true
+        target: null
+    }
     MouseArea {
         anchors.fill: parent
         enabled: !CalendarService.accountActionBusy
 
         onClicked: root.close()
+        onWheel: event => event.accepted = true
     }
     ShellShadow {
         active: root.opened
@@ -179,8 +184,14 @@ Item {
             }
         }
 
+        WheelHandler {
+            blocking: true
+            target: null
+        }
         MouseArea {
             anchors.fill: parent
+
+            onWheel: event => event.accepted = true
         }
         ColumnLayout {
             anchors.fill: parent

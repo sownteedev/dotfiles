@@ -1,4 +1,5 @@
 mod config;
+pub(crate) mod ics;
 mod database;
 mod ipc;
 mod keyring;

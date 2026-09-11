@@ -13,9 +13,11 @@ FloatingWindow {
     id: root
 
     property bool active: false
+    property string activeIcsPickerRequestId: ""
     property bool blurActive: false
     readonly property bool compactHeader: width < 1120
     readonly property var hiddenCalendars: buildHiddenCalendars()
+    property bool icsParseBusy: false
     property bool pendingCreateAfterConnect: false
     property date pendingCreateDate: new Date()
     property int pendingCreateEndMinutes: 11 * 60
@@ -77,6 +79,7 @@ FloatingWindow {
         eventEditorLoader.active = false;
         clearCurrentViewSelection();
         accountDialog.opened = false;
+        icsDialog.opened = false;
         pendingCreateAfterConnect = false;
     }
     function createAtSelectedTime() {
@@ -125,6 +128,19 @@ FloatingWindow {
             return Qt.formatDate(weekStart, "MMM d") + " – " + Qt.formatDate(end, "MMM d, yyyy");
         return Qt.formatDate(weekStart, "MMMM d") + "–" + Qt.formatDate(end, "d, yyyy");
     }
+    function handleIcsFileSelected(filePath) {
+        if (!filePath)
+            return;
+        icsParseBusy = true;
+        CalendarService.parseIcs(filePath, function (success, result, message) {
+            icsParseBusy = false;
+            if (success && result && result.totalEvents > 0) {
+                icsDialog.openWithSummary(filePath, result);
+            } else {
+                console.warn("[CalendarApp] Could not parse .ics file:", message);
+            }
+        });
+    }
     function hasWritableCalendar() {
         var calendars = CalendarService.calendars || [];
         for (var index = 0; index < calendars.length; ++index) {
@@ -154,6 +170,16 @@ FloatingWindow {
         Qt.callLater(function () {
             if (eventEditorLoader.status === Loader.Ready)
                 eventEditorLoader.item.openEvent(eventData, anchorRect);
+        });
+    }
+    function openIcsFilePicker() {
+        if (!hasWritableCalendar() || PortalFilePickerService.active)
+            return;
+        var requestId = PortalFilePickerService.nextRequestId("calendar-ics");
+        activeIcsPickerRequestId = requestId;
+        PortalFilePickerService.open(requestId, {
+            "title": qsTr("Select iCalendar (.ics) file"),
+            "filters": [qsTr("iCalendar files (*.ics, *.ical) | *.ics *.ical")]
         });
     }
     function openNewEditor(value, startMinutes, endMinutes, anchorRect) {
@@ -565,6 +591,19 @@ FloatingWindow {
                     SettingsActionButton {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
+                        Layout.preferredWidth: 40
+                        enabled: root.hasWritableCalendar() && !CalendarService.isLoading
+                        iconName: "document-import-symbolic"
+                        iconOnly: root.compactHeader
+                        primary: root.icsParseBusy
+                        spinning: root.icsParseBusy
+                        tooltipText: qsTr("Import events from an iCalendar (.ics) file")
+
+                        onClicked: root.openIcsFilePicker()
+                    }
+                    SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 40
                         Layout.preferredWidth: root.compactHeader ? 40 : implicitWidth
                         iconName: root.viewMode === "month" ? "view-calendar-month" : "view-calendar-week"
                         iconOnly: root.compactHeader
@@ -717,6 +756,35 @@ FloatingWindow {
             anchors.fill: parent
 
             onClosed: root.pendingCreateAfterConnect = false
+        }
+        CalendarIcsDialog {
+            id: icsDialog
+
+            anchors.fill: parent
+        }
+        Connections {
+            function onAccepted(requestId, paths, uris) {
+                if (requestId !== root.activeIcsPickerRequestId)
+                    return;
+                root.activeIcsPickerRequestId = "";
+                var filePath = (paths && paths.length > 0) ? String(paths[0]) : "";
+                if (filePath === "" && uris && uris.length > 0)
+                    filePath = String(uris[0]).replace(/^file:\/\//, "");
+                if (filePath !== "")
+                    root.handleIcsFileSelected(decodeURIComponent(filePath));
+            }
+            function onCanceled(requestId) {
+                if (requestId === root.activeIcsPickerRequestId)
+                    root.activeIcsPickerRequestId = "";
+            }
+            function onFailed(requestId, message) {
+                if (requestId === root.activeIcsPickerRequestId) {
+                    root.activeIcsPickerRequestId = "";
+                    console.warn("[CalendarApp] File picker failed:", message);
+                }
+            }
+
+            target: PortalFilePickerService
         }
     }
 }

@@ -10,6 +10,7 @@ upgrade_packages() {
     fi
 
     printf 'started\n' >"$result_file"
+    trap 'exit_code=$?; printf "%s\n" "$exit_code" >"$result_file" 2>/dev/null || true' EXIT
     printf 'Authenticate once to update repository, AUR, and Flatpak packages…\n\n'
 
     sudo -v

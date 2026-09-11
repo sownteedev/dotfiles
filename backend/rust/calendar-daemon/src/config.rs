@@ -57,7 +57,7 @@ impl Config {
         if !(30..=24 * 60 * 60).contains(&sync_interval_seconds) {
             bail!("calendar sync interval must be between 30 and 86400 seconds");
         }
-        let sync_past_days = env_i64("SOWNTEE_CALENDAR_SYNC_PAST_DAYS", 90)?;
+        let sync_past_days = env_i64("SOWNTEE_CALENDAR_SYNC_PAST_DAYS", 180)?;
         let sync_future_days = env_i64("SOWNTEE_CALENDAR_SYNC_FUTURE_DAYS", 365)?;
         if !(0..=3650).contains(&sync_past_days) {
             bail!("calendar past sync window must be between 0 and 3650 days");
