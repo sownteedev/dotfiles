@@ -20,17 +20,17 @@ Rectangle {
 
     Accessible.name: label
     Accessible.role: Accessible.Button
-    activeFocusOnTab: true
-    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
-    border.width: 1
-    color: mouse.pressed ? Config.alpha(Config.md3.on_surface, 0.14) : (active || expanded ? accentColor : (mouse.containsMouse || activeFocus ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"))
+    activeFocusOnTab: false
+    border.color: "transparent"
+    border.width: 0
+    color: mouse.pressed ? Config.alpha(Config.md3.on_surface, Md3.state.pressed) : (active || expanded ? accentColor : (mouse.containsMouse ? Config.alpha(Config.md3.on_surface, Md3.state.hover) : "transparent"))
     implicitHeight: 34
     implicitWidth: content.implicitWidth + 18
-    radius: 9
+    radius: Md3.shape.full
 
     Behavior on color {
         ColorAnimation {
-            duration: 120
+            duration: Config.animationDuration(Md3.motion.short2)
         }
     }
 
@@ -84,8 +84,8 @@ Rectangle {
 
             Behavior on rotation {
                 RotationAnimator {
-                    duration: 150
-                    easing.type: Easing.OutCubic
+                    duration: Config.animationDuration(Md3.motion.short3)
+                    easing.type: Md3.motion.emphasizedDecelerate
                 }
             }
         }

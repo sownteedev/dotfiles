@@ -24,7 +24,7 @@ Item {
         anchors.fill: parent
         color: Config.md3.on_surface
         font.family: Config.fontName
-        font.pixelSize: 13
+        font.pixelSize: 14
         leftPadding: 40
         placeholderText: qsTr("Search Wallhaven…")
         placeholderTextColor: Config.alpha(Config.md3.on_surface_variant, 0.72)
@@ -35,7 +35,7 @@ Item {
             border.color: searchInput.activeFocus ? Config.alpha(Config.md3.primary, 0.54) : Config.alpha(Config.md3.outline, 0.1)
             border.width: 1
             color: searchInput.activeFocus ? Config.alpha(Config.md3.primary_container, 0.18) : Config.alpha(Config.md3.on_surface, 0.025)
-            radius: 13
+            radius: Md3.shape.full
 
             Behavior on color {
                 ColorAnimation {
@@ -65,7 +65,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         color: searchMouse.pressed ? Config.md3.primary_container : (searchMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent")
         height: 30
-        radius: 10
+        radius: Md3.shape.full
         width: 30
 
         IconImage {

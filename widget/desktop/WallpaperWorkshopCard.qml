@@ -27,6 +27,7 @@ Item {
     readonly property bool nsfwBlurred: nsfw && blurNsfw
     property bool removing: false
     readonly property string resolutionLabel: String(wallpaper.resolution || "")
+    readonly property bool sceneConfigurable: installedMode && String(wallpaper.type || "").toLowerCase() === "scene" && wallpaper.properties && Object.keys(wallpaper.properties).some(name => String(name).toLowerCase() !== "schemecolor")
     readonly property bool subscribed: Boolean(wallpaper.subscribed)
     readonly property bool supported: installedMode ? !["web", "application"].includes(String(wallpaper.type || "").toLowerCase()) : wallpaper.supported !== false
     required property var wallpaper
@@ -36,6 +37,7 @@ Item {
     signal cancelDownloadRequested
     signal deleteRequested(var item)
     signal destinationRequested(var item, string destination)
+    signal propertiesRequested(var item, var anchorItem)
     signal subscribeRequested(var item)
 
     function formatFileSize(bytes) {
@@ -379,6 +381,42 @@ Item {
                 text: root.wallpaper.title || root.itemId
             }
             Rectangle {
+                id: propertiesAction
+
+                Accessible.name: qsTr("Customize scene")
+                Accessible.role: Accessible.Button
+                Layout.preferredHeight: 36
+                Layout.preferredWidth: 36
+                activeFocusOnTab: false
+                color: propertiesMouse.pressed ? Config.md3.secondary_container : (propertiesMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.1) : Config.alpha(Config.md3.on_surface, 0.055))
+                radius: 12
+                visible: root.sceneConfigurable
+
+                Keys.onReturnPressed: root.propertiesRequested(root.wallpaper, propertiesAction)
+                Keys.onSpacePressed: root.propertiesRequested(root.wallpaper, propertiesAction)
+
+                IconImage {
+                    anchors.centerIn: parent
+                    height: 18
+                    layer.enabled: true
+                    source: Quickshell.iconPath("preferences-system-symbolic")
+                    width: 18
+
+                    layer.effect: ColorOverlay {
+                        color: Config.md3.on_surface_variant
+                    }
+                }
+                MouseArea {
+                    id: propertiesMouse
+
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
+                    onClicked: root.propertiesRequested(root.wallpaper, propertiesAction)
+                }
+            }
+            Rectangle {
                 id: deleteAction
 
                 Layout.preferredHeight: 36
@@ -424,7 +462,7 @@ Item {
                 Accessible.role: Accessible.Button
                 Layout.preferredHeight: 36
                 Layout.preferredWidth: 36
-                activeFocusOnTab: true
+                activeFocusOnTab: false
                 color: primaryMouse.pressed ? Config.md3.primary_container : (primaryMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
                 enabled: root.supported && !root.downloading && !root.removing && !root.downloadBlocked
                 opacity: enabled ? 1 : 0.5

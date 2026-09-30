@@ -39,7 +39,7 @@ EOF
 print_core_methods() {
     cat <<'EOF'
 
-Core methods (78):
+Core methods (80):
 
   System and jobs
     ping                                  [read] Check IPC responsiveness
@@ -66,9 +66,14 @@ Core methods (78):
     clipboard.favorite.add                [write] entryId; save history content permanently
     clipboard.favorite.remove             [delete] entryId = favorite:<hash>
     clipboard.restore                     [write] entryId (history or favorite:<hash>), autoPaste?
+    clipboard.copyText                    [write] text; copy plain text without pasting
     diagnostics.snapshot                  [read] Dependencies, services and cache sizes
     diagnostics.clear                     [delete] scope = wallpaper-previews|
                                                    engine-previews|backdrops
+
+  Screenshot QR
+    capture.qr.scan                        [read] path (absolute image path); returns codes[]
+                                                   Each code: text, url, host; requires zbar
 
   Displays
     display.ddc.get                       [read] output
@@ -194,7 +199,7 @@ Calendar methods (24):
     subscribe                             [stream] topics? = accounts|calendars|events|
                                                    tasks|sync|system
 
-  Google Tasks (shared with Todo)
+  Google Tasks (SownteeShell Calendar)
     tasks.list                            [read] Cached tasks, lists, visibility and
                                                   per-account errors for every Google account
     tasks.setVisible                      [write] accountId, visible; Calendar filter only

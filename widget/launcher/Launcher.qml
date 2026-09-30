@@ -24,7 +24,12 @@ PanelWindow {
     property int calculatorHistoryIndex: -1
     readonly property bool calculatorMode: searchMode === "calculator"
     readonly property bool compact: Responsive.constrained(width, height, 720, 600)
+    readonly property bool displayCalculator: calculatorMode || heldProviderMode === "calculator"
+    readonly property bool displayMediaSearch: mediaSearchMode || heldProviderMode === "gif" || heldProviderMode === "sticker"
     readonly property bool fixedProviderMode: mediaSearchMode || searchMode === "files" || searchMode === "clipboard" || searchMode === "emoji"
+    property size heldMediaSize: Qt.size(0, 0)
+    property string heldProviderMode: ""
+    property string heldProviderQuery: ""
     readonly property string mediaSearchKind: searchMode === "sticker" ? "sticker" : "gif"
     readonly property bool mediaSearchMode: searchMode === "gif" || searchMode === "sticker"
     property string searchMode: ""
@@ -34,10 +39,17 @@ PanelWindow {
     signal dismissed
 
     function clearSearchMode() {
+        // Keep the outgoing card alive while the container contracts.
+        if ((calculatorMode || mediaSearchMode) && searchEntry.text.trim() === "") {
+            heldProviderQuery = searchQuery;
+            heldMediaSize = Qt.size(mediaLoader.width, mediaLoader.height);
+            heldProviderMode = searchMode;
+        }
         searchMode = "";
         resetCalculatorHistoryNavigation();
         syncSearchQuery();
         searchEntry.forceActiveFocus();
+        Qt.callLater(releaseHeldProvider);
     }
     function closeLauncher() {
         if (!active)
@@ -181,11 +193,21 @@ PanelWindow {
         active = true;
         searchEntry.forceActiveFocus();
     }
+    function releaseHeldProvider() {
+        if (!heightResizeAnimation.running && Math.abs(mainLayout.height - mainLayout.targetHeight) < 0.5) {
+            heldProviderMode = "";
+            heldProviderQuery = "";
+        }
+    }
     function resetCalculatorHistoryNavigation() {
         calculatorDraft = "";
         calculatorHistoryIndex = -1;
     }
     function resetSearch() {
+        heldProviderMode = "";
+        heldProviderQuery = "";
+        collapseResultsTimer.stop();
+        searchView.clearHeldResults();
         searchMode = "";
         searchEntry.text = "";
         searchQuery = "";
@@ -248,6 +270,10 @@ PanelWindow {
     }
 
     onSearchQueryChanged: {
+        if (searchQuery.trim() !== "") {
+            heldProviderMode = "";
+            heldProviderQuery = "";
+        }
         if (searchQuery.trim() !== "" && groupPopup.opened)
             groupPopup.closeGroup();
     }
@@ -292,6 +318,14 @@ PanelWindow {
             if (showAllApps)
                 allAppsLoaderActive = true;
         }
+    }
+    Timer {
+        id: collapseResultsTimer
+
+        interval: Math.max(1, Config.animationDuration(350))
+        repeat: false
+
+        onTriggered: searchView.clearHeldResults()
     }
 
     // Timer to delay visible=false until the fade-out/scale-down animation completes
@@ -339,7 +373,7 @@ PanelWindow {
         id: mainLayout
 
         readonly property real desiredHeight: launcherWindow.calculatorMode ? 245 : launcherWindow.fixedProviderMode ? 545 : searchQuery.trim() !== "" && hasContent ? (97 + searchView.implicitHeight) : (launcherWindow.compact ? 76 : 82)
-        readonly property real desiredWidth: launcherWindow.calculatorMode ? 580 : launcherWindow.fixedProviderMode || searchQuery.trim() !== "" && hasContent ? 500 : (searchQuery.trim() !== "" ? 440 : 380)
+        readonly property real desiredWidth: launcherWindow.calculatorMode ? 580 : launcherWindow.fixedProviderMode || searchQuery.trim() !== "" && hasContent ? 500 : 380
         readonly property bool hasContent: launcherWindow.calculatorMode || launcherWindow.fixedProviderMode || searchView.combinedResults.length > 0
         readonly property real targetHeight: showAllApps ? launcherWindow.height : Responsive.fitWithMargins(desiredHeight, launcherWindow.height, launcherWindow.compact ? 10 : 20, 82)
         readonly property real targetWidth: showAllApps ? launcherWindow.width : Responsive.fitWithMargins(desiredWidth, launcherWindow.width, launcherWindow.compact ? 10 : 20, 300)
@@ -358,8 +392,15 @@ PanelWindow {
 
         Behavior on height {
             NumberAnimation {
+                id: heightResizeAnimation
+
                 duration: Config.animationDuration(350)
                 easing.type: Easing.OutCubic
+
+                onRunningChanged: {
+                    if (!running)
+                        Qt.callLater(launcherWindow.releaseHeldProvider);
+                }
             }
         }
         // Unified transition behaviors
@@ -587,22 +628,27 @@ PanelWindow {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.maximumWidth: launcherWindow.showAllApps ? 2200 : mainLayout.width
+                Layout.minimumHeight: 0
                 clip: true
-                visible: launcherWindow.showAllApps || (launcherWindow.searchQuery.trim() !== "" && mainLayout.hasContent)
+                visible: launcherWindow.showAllApps || launcherWindow.searchQuery.trim() !== "" || searchView.holdingResults || launcherWindow.heldProviderMode !== ""
 
                 // Search mode: calculator card + search results (stacked)
                 ColumnLayout {
                     anchors.fill: parent
+                    enabled: launcherWindow.heldProviderMode === ""
                     spacing: 12
-                    visible: searchQuery !== "" && !showAllApps
+                    visible: (searchQuery !== "" || searchView.holdingResults || launcherWindow.heldProviderMode !== "") && !showAllApps
 
                     // Calculator (shown only for expressions prefixed with "=")
                     LauncherCalc {
                         id: calcView
 
+                        Layout.fillHeight: true
                         Layout.fillWidth: true
-                        query: searchQuery
-                        visible: launcherWindow.calculatorMode
+                        Layout.minimumHeight: 0
+                        Layout.preferredHeight: 0
+                        query: launcherWindow.heldProviderMode === "calculator" ? launcherWindow.heldProviderQuery : searchQuery
+                        visible: launcherWindow.displayCalculator
 
                         onInsertRequested: (textToInsert, replaceLength) => {
                             var cur = searchEntry.text;
@@ -622,28 +668,39 @@ PanelWindow {
                         Layout.fillWidth: true
                         Layout.minimumHeight: 0
                         query: searchQuery
-                        visible: !launcherWindow.mediaSearchMode && !launcherWindow.calculatorMode
+                        visible: !launcherWindow.displayMediaSearch && !launcherWindow.displayCalculator
 
+                        onCollapseRequested: collapseResultsTimer.restart()
                         onResultLaunched: closeLauncher()
+                        onResultsRestored: collapseResultsTimer.stop()
                     }
-                    Loader {
-                        id: mediaLoader
+                    Item {
+                        id: mediaViewport
 
                         Layout.fillHeight: true
                         Layout.fillWidth: true
                         Layout.minimumHeight: 0
-                        active: launcherWindow.mediaSearchMode
-                        asynchronous: true
-                        source: Qt.resolvedUrl("LauncherMediaSearch.qml")
-                        visible: active
+                        Layout.preferredHeight: 0
+                        visible: launcherWindow.displayMediaSearch
 
-                        onLoaded: {
-                            item["mediaKind"] = Qt.binding(function () {
-                                return launcherWindow.mediaSearchKind;
-                            });
-                            item["query"] = Qt.binding(function () {
-                                return searchEntry.text;
-                            });
+                        // Clip the outgoing grid without reflowing its columns or reloading thumbnails.
+                        Loader {
+                            id: mediaLoader
+
+                            active: launcherWindow.displayMediaSearch
+                            asynchronous: true
+                            height: launcherWindow.heldProviderMode !== "" ? launcherWindow.heldMediaSize.height : mediaViewport.height
+                            source: Qt.resolvedUrl("LauncherMediaSearch.qml")
+                            width: launcherWindow.heldProviderMode !== "" ? launcherWindow.heldMediaSize.width : mediaViewport.width
+
+                            onLoaded: {
+                                item["mediaKind"] = Qt.binding(function () {
+                                    return launcherWindow.heldProviderMode !== "" ? launcherWindow.heldProviderMode : launcherWindow.mediaSearchKind;
+                                });
+                                item["query"] = Qt.binding(function () {
+                                    return launcherWindow.heldProviderMode !== "" ? launcherWindow.heldProviderQuery.substring(launcherWindow.modePrefix(launcherWindow.heldProviderMode).length) : searchEntry.text;
+                                });
+                            }
                         }
                     }
                     Connections {

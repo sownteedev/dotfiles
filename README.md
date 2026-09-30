@@ -27,6 +27,8 @@ SownteeShell is the desktop UI and runtime layer of my Niri session: bar, Dock, 
 
 Every surface shares one Material Design 3 language, wallpaper-derived colors, compositor-backed blur, typography, motion, and state. Large interfaces are loaded only when opened, while system services follow their actual consumers instead of polling permanently.
 
+The visual layer uses shared MD3 typography, shape, spacing, state, motion, and elevation tokens. Material Symbols Rounded provides consistent shell action icons while application, provider, and brand icons retain their native artwork; freedesktop symbolic icons remain the runtime fallback.
+
 ## Highlights
 
 ### Desktop and navigation
@@ -39,18 +41,18 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 
 ### Panels, productivity, and system control
 
-- **Left panel** with Vietnamese lunar calendar, Google/Microsoft/iCloud events, local tasks, and multi-account Google Tasks with account colors and task-list selection. Also includes OpenWeather forecasts with GeoClue location detection, synced lyrics, media controls, and countdown timers.
-- A standalone, responsive **SownteeShell Calendar** with week and month views, drag-to-create events, iCalendar (`.ics`) file import with preview and destination calendar selection, and dated Google/Local tasks in the all-day lane. Edit or complete tasks in place, with per-account calendar/Tasks filters and a separate Local Tasks toggle.
+- **Left panel** with Weather and Music tabs above Stats and Timer: OpenWeather forecasts with GeoClue location detection, MPRIS media controls with decoded artwork frame retention to eliminate loading blackouts, inline volume slider, expandable synced lyrics with playback position seeking, live CPU/RAM/GPU charts, grouped process management, RSS/PSS memory details, and countdown timers.
+- A standalone, responsive **SownteeShell Calendar** with week and month views, Vietnamese lunar calendar display, auto-scroll to the current hour on open, drag-to-create events, iCalendar (`.ics`) file import with preview and destination calendar selection, and dated Google/Local tasks in the all-day lane. Edit or complete tasks in place, with per-account calendar/Tasks filters and a separate Local Tasks toggle.
 - Calendar sync for **Google, Microsoft, and iCloud**, backed by a dedicated Rust daemon with a local SQLite cache, background and manual sync, Secret Service credentials, and critical notifications 30 minutes before events.
-- **Right panel** with notification history, Wi-Fi and Bluetooth management, advanced IPv4/IPv6 profiles, Wi-Fi QR sharing, AirPods L/R/Case battery data, and a PipeWire per-application mixer with peak meters and device routing.
+- **Right panel** with Notifications, Wi-Fi, and Bluetooth tabs above Display, Battery, and Volume. Includes advanced IPv4/IPv6 profiles, Wi-Fi QR sharing, AirPods L/R/Case battery data, and a PipeWire per-application mixer with peak meters and device routing.
 - **Display control** with drag-and-drop arrangement, orientation, mode, resolution, refresh rate, scale, startup focus, VRR (`Off`, `On`, `On Demand`), internal/external display presets, DDC/CI brightness, and Sunshine output selection.
 - **System telemetry** with battery health and supported charge thresholds, power profiles, `auto-cpufreq`, Arch/AUR/Flatpak updates, live CPU/RAM/GPU charts, grouped process management, and RSS/PSS memory details.
 - **Quick controls** for Airplane Mode, Caffeine, DND, night light, power profiles, Tailscale, and Cloudflare WARP, with edge-drag access to both panels.
 
 ### Settings
 
-- A searchable, responsive, resizable **SownteeShell Settings** window that behaves like a regular Niri application.
-- **Desktop applications (GTK & Qt)** appearance synchronization across GSettings, GTK 3/4 `settings.ini`, `qt5ct`/`qt6ct`, and XWayland XSettings: GTK themes, icon themes, cursor theme and size (px), interface typography, Qt widget styles, Qt color schemes, and Qt standard dialogs.
+- A searchable, responsive, resizable **SownteeShell Settings** window featuring an MD3 **Home** dashboard with quick-jump category cards, color palette preview, and seamless tab transitions.
+- **Desktop applications (GTK & Qt)** appearance and default application choices: browser, file manager, terminal, text editor, image and video viewer, synchronized across GSettings, GTK 3/4 `settings.ini`, `qt5ct`/`qt6ct`, and XWayland XSettings: GTK themes, one shared icon theme for applications and SownteeShell, cursor theme and size (px), interface typography, Qt widget styles, Qt color schemes, and Qt standard dialogs.
 - GUI editors for Niri keybindings, layout, input, animations, behavior, window and layer rules, and raw configuration files.
 - Shell controls for typography, bar modules, launcher providers, notifications, wallpapers, capture, integrations, audio, OSDs, idle behavior, and performance.
 - Per-surface blur, light/dark surface opacity, separate panel/component shadows, reduced motion, low-power mode, dependency diagnostics, and scoped cache cleanup.
@@ -60,9 +62,11 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 
 - Static images, GIFs, and local videos, with video playback isolated in a separate Quickshell renderer process so its multimedia memory is reclaimed when playback stops.
 - Wallpaper Engine support routes video projects through the native renderer and scene projects through `linux-wallpaperengine`, with battery-aware FPS and pause-on-lock/fullscreen policies.
+- Installed Scene projects expose a Material 3 properties panel generated from their `project.json`, with project-defined switches, sliders, option lists, text values, and RGB controls. Overrides are saved per wallpaper and applied by restarting only the active `linux-wallpaperengine` renderer.
 - Integrated Wallhaven and Steam Workshop browsers with search, source-specific filters, favorites, installed-library management, cached previews, and desktop/Greetd/both destinations.
 - Frame-aware video handoff, cached covers, rollback-safe transitions, and synchronized live theme previews while browsing.
 - Matugen-generated Material You colors with animated shell transitions, soft secondary/tertiary accents for monochrome wallpapers, and optional theme propagation through configured system templates.
+- **Sowntee Horizon greeter for Greetd** with a cinematic, asymmetric layout: left-aligned clock and date typography, Sowntee shell session header, Material 3 Login Card, high-contrast readability gradient veil over custom wallpapers, decorative S-orbit curves, top-right status cluster (network and battery pills), and bottom-right power actions.
 - Greetd keeps its own background and palette, generated independently from its selected image or Wallpaper Engine video.
 
 ### Capture and notifications
@@ -70,6 +74,7 @@ Every surface shares one Material Design 3 language, wallpaper-derived colors, c
 - A layered screenshot editor with pen, highlighter, lines, arrows, shapes, text, numbered markers, blur, pixelation, crop, eraser, zoom callouts, and a magnifier loupe.
 - Transformable annotations and inserted image layers with move, crop, resize, rotate, opacity, visibility, z-order, edge snapping, automatic stitching, color picking, undo, and redo.
 - English/Vietnamese OCR, Google Lens reverse image search, automatic clipboard export, and screenshot actions directly from the notification popup.
+- Local QR detection in screenshot notifications: preview detected content, copy text, or explicitly open HTTP/HTTPS links. Multiple codes are listed separately; scanning never opens links or changes the clipboard automatically. Requires `zbar`.
 - GPU screen recording with region selection, configurable FPS/codec/quality, optional microphone capture, and CPU-encoding fallback.
 - Grouped notification popups with application actions, priority-aware timeouts, configurable placement, direction-aware stacking, swipe dismissal, persistent history, scheduled DND, lock-screen delivery, exclusions, and retention controls.
 
@@ -98,7 +103,7 @@ The Niri Settings pages target the include-based configuration used by this setu
 
 ## Dependencies
 
-The main stack includes Niri, `quickshell-git`, Qt 6, Rust/Cargo, PipeWire/WirePlumber, NetworkManager, UPower, Matugen, `wl-clipboard`, `cliphist`, FFmpeg, ImageMagick, and the capture utilities.
+The main stack includes Niri, `quickshell-git`, Qt 6, Rust/Cargo, PipeWire/WirePlumber, NetworkManager, UPower, Matugen, Material Symbols Rounded, `wl-clipboard`, `cliphist`, FFmpeg, ImageMagick, and the capture utilities.
 
 Optional or hardware-dependent features use Tesseract language data, GeoClue, Cava, `gpu-screen-recorder`, DDC/CI, Steam and `linux-wallpaperengine`, Howdy and V4L2, Tailscale, or Cloudflare WARP. Settings → Advanced → Dependencies reports which integrations are currently available.
 

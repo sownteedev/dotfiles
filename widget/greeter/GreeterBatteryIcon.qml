@@ -15,7 +15,7 @@ Item {
     readonly property color bubbleColor: Qt.lighter(batteryColor, 1.38)
     property bool charging: false
     property bool externalPower: false
-    readonly property color fillForeground: externalPower ? GreeterTheme.secondaryText : "#ffffff"
+    readonly property color fillForeground: externalPower ? GreeterTheme.secondaryText : GreeterTheme.surfaceText
     readonly property color outlineColor: GreeterTheme.withAlpha(batteryColor, 0.92)
     property int percentage: 0
     property real scaleFactor: 1

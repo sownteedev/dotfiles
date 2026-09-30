@@ -55,8 +55,10 @@ static LOGIN_FAILURE_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
 #[derive(Default, Deserialize)]
 struct SearchParams {
     api_key: Option<String>,
+    include_recent_votes_only: Option<bool>,
     #[serde(default)]
     excluded_tags: Vec<String>,
+    include_nsfw: Option<bool>,
     legacy_workshop_root: Option<String>,
     match_all_tags: Option<bool>,
     page: Option<u64>,
@@ -65,6 +67,7 @@ struct SearchParams {
     required_tags: Vec<String>,
     sort: Option<String>,
     steam_root: Option<String>,
+    trending_days: Option<u64>,
     workshop_root: Option<String>,
 }
 
@@ -123,7 +126,18 @@ pub async fn search(
     let query_type = match params.sort.as_deref().unwrap_or("trending") {
         "popular" => 0,
         "recent" => 1,
+        "subscribed" => 9,
+        "votes_up" => 11,
+        "relevance" => 12,
+        "played" => 14,
+        "updated" => 21,
         _ => 3,
+    };
+    let include_nsfw = params.include_nsfw.unwrap_or(false);
+    let include_recent_votes_only = params.include_recent_votes_only.unwrap_or(false);
+    let trending_days = match params.trending_days {
+        Some(1) => 1,
+        _ => 7,
     };
     let mut excluded_tags = normalized_tag_list(params.excluded_tags);
     let excluded_names = excluded_tags
@@ -135,7 +149,7 @@ pub async fn search(
             excluded_tags.push(unsupported.to_string());
         }
     }
-    let query_parameters = json!({
+    let mut query_parameters = json!({
         "query_type": query_type,
         "page": params.page.unwrap_or(1).clamp(1, 10_000),
         "numperpage": 30,
@@ -150,7 +164,14 @@ pub async fn search(
         "requiredtags": normalized_tag_list(params.required_tags),
         "match_all_tags": params.match_all_tags.unwrap_or(true),
         "excludedtags": excluded_tags,
+        "include_recent_votes_only": include_recent_votes_only,
     });
+    if query_type == 3 {
+        query_parameters["days"] = json!(trending_days);
+    }
+    if !include_nsfw {
+        query_parameters["excluded_content_descriptors"] = json!(NSFW_CONTENT_DESCRIPTOR_IDS);
+    }
     let input_json = serde_json::to_string(&query_parameters)?;
     let request = client
         .get(QUERY_ENDPOINT)
@@ -632,6 +653,14 @@ fn local_project_item(
     };
     let resolution = cache.local_resolution(project_dir, metadata, &tags);
     let file_size = cache.directory_size(project_dir);
+    let mut properties = metadata
+        .get("general")
+        .and_then(Value::as_object)
+        .and_then(|general| general.get("properties"))
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    properties.remove("schemecolor");
     Some(json!({
         "id": published_file_id,
         "title": title,
@@ -647,6 +676,7 @@ fn local_project_item(
         "path": project_dir,
         "file_size": file_size,
         "modified": modified_millis(&file_metadata),
+        "properties": Value::Object(properties),
     }))
 }
 

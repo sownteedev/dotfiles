@@ -195,7 +195,7 @@ Rectangle {
 
             Accessible.name: qsTr("Layer %1: %2").arg(index + 1).arg(layerName)
             Accessible.role: Accessible.ListItem
-            activeFocusOnTab: true
+            activeFocusOnTab: false
             height: layerList.height
             width: root.layerCardWidth
             z: root.dragging && layerSlot.layerId === root.draggedLayerId ? 100 : 0
@@ -236,7 +236,7 @@ Rectangle {
             Rectangle {
                 id: layerVisual
 
-                border.color: layerSlot.selected || layerSlot.activeFocus ? Config.alpha(Config.md3.primary, 0.72) : Config.alpha(Config.md3.outline_variant, 0.26)
+                border.color: layerSlot.selected ? Config.alpha(Config.md3.primary, 0.72) : layerPointer.containsMouse ? Config.alpha(Config.md3.on_surface, 0.34) : Config.alpha(Config.md3.outline_variant, 0.26)
                 border.width: 1
                 color: layerSlot.selected ? Config.md3.primary_container : layerPointer.containsMouse ? Config.md3.surface_container_highest : Config.md3.surface_container
                 height: parent.height
@@ -355,12 +355,12 @@ Rectangle {
 
                 Accessible.name: layerSlot.layerVisible ? qsTr("Hide layer") : qsTr("Show layer")
                 Accessible.role: Accessible.Button
-                activeFocusOnTab: true
+                activeFocusOnTab: false
                 anchors.left: layerVisual.left
                 anchors.leftMargin: 5
                 anchors.verticalCenter: layerVisual.verticalCenter
-                border.color: activeFocus ? Config.md3.primary : "transparent"
-                border.width: 1
+                border.color: "transparent"
+                border.width: 0
                 color: visibilityPointer.pressed ? Config.alpha(Config.md3.primary, 0.2) : visibilityPointer.containsMouse ? Config.alpha(Config.md3.primary, 0.12) : "transparent"
                 height: 24
                 radius: 8

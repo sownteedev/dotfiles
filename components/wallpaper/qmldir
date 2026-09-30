@@ -11,3 +11,5 @@ WallhavenResolutionPopup 1.0 WallhavenResolutionPopup.qml
 WallhavenSearchBar 1.0 WallhavenSearchBar.qml
 WallhavenSortPopup 1.0 WallhavenSortPopup.qml
 WallpaperSourceButton 1.0 WallpaperSourceButton.qml
+WallpaperScenePropertiesPopup 1.0 WallpaperScenePropertiesPopup.qml
+WallpaperScenePropertyRow 1.0 WallpaperScenePropertyRow.qml

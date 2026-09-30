@@ -2,14 +2,12 @@ import "../../"
 import ".."
 import QtQuick
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
-import Quickshell
-import Quickshell.Widgets
 
 Rectangle {
     id: root
 
     property color accentColor: Config.md3.primary
+    property color containerColor: Config.md3.surface_container_low
     property string iconName: "video-display-symbolic"
     property string label: ""
     property bool showChevron: true
@@ -21,28 +19,40 @@ Rectangle {
         if (!enabled)
             return;
 
-        forceActiveFocus();
         activated(root);
+    }
+    function blend(baseColor, overlayColor, amount) {
+        var base = Qt.color(baseColor);
+        var overlay = Qt.color(overlayColor);
+        var ratio = Math.max(0, Math.min(1, amount));
+        return Qt.rgba(base.r + (overlay.r - base.r) * ratio, base.g + (overlay.g - base.g) * ratio, base.b + (overlay.b - base.b) * ratio, 1);
     }
 
     Accessible.name: qsTr("%1: %2").arg(label).arg(value)
     Accessible.role: Accessible.ComboBox
     Layout.fillWidth: true
-    activeFocusOnTab: enabled
+    activeFocusOnTab: false
+    border.color: "transparent"
     border.width: 0
-    color: tileMouse.pressed ? Config.alpha(accentColor, 0.17) : activeFocus ? Config.alpha(accentColor, 0.12) : tileMouse.containsMouse ? Config.alpha(accentColor, 0.10) : Config.alpha(Config.md3.on_surface, 0.035)
-    implicitHeight: 58
-    opacity: enabled ? 1 : 0.45
-    radius: 14
+    color: {
+        if (tileMouse.pressed)
+            return root.blend(root.containerColor, Config.md3.on_surface, Md3.state.pressed);
+        if (tileMouse.containsMouse)
+            return root.blend(root.containerColor, Config.md3.on_surface, Md3.state.hover);
+        return root.containerColor;
+    }
+    implicitHeight: 64
+    opacity: enabled ? 1 : Md3.state.disabledContent
+    radius: Md3.shape.large
 
     Behavior on color {
         ColorAnimation {
-            duration: 130
+            duration: Config.animationDuration(Md3.motion.short3)
         }
     }
     Behavior on opacity {
         NumberAnimation {
-            duration: 120
+            duration: Config.animationDuration(Md3.motion.short2)
         }
     }
 
@@ -65,18 +75,14 @@ Rectangle {
             Layout.preferredHeight: 36
             Layout.preferredWidth: 36
             color: Config.alpha(root.accentColor, 0.14)
-            radius: 11
+            radius: Md3.shape.medium
 
-            IconImage {
+            Md3Icon {
                 anchors.centerIn: parent
-                height: 19
-                layer.enabled: true
-                source: Quickshell.iconPath(root.iconName)
-                width: 19
-
-                layer.effect: ColorOverlay {
-                    color: root.accentColor
-                }
+                color: root.accentColor
+                filled: true
+                name: root.iconName
+                size: 20
             }
         }
         ColumnLayout {
@@ -86,10 +92,10 @@ Rectangle {
 
             Text {
                 Layout.fillWidth: true
-                color: Config.alpha(Config.md3.on_surface, 0.58)
+                color: Config.md3.on_surface_variant
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 12
+                font.pixelSize: Md3.typography.labelMedium
                 font.weight: Font.Medium
                 renderType: Text.NativeRendering
                 text: root.label
@@ -99,23 +105,20 @@ Rectangle {
                 color: Config.md3.on_surface
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 15
+                font.pixelSize: Md3.typography.bodyLarge
                 font.weight: Font.DemiBold
                 renderType: Text.NativeRendering
                 text: root.value
             }
         }
-        IconImage {
+        Md3Icon {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: 16
             Layout.preferredWidth: 16
-            layer.enabled: true
-            source: Quickshell.iconPath("pan-down-symbolic")
+            color: Config.md3.on_surface_variant
+            name: "expand_more"
+            size: 18
             visible: root.showChevron
-
-            layer.effect: ColorOverlay {
-                color: Config.alpha(Config.md3.on_surface, 0.52)
-            }
         }
     }
     MouseArea {

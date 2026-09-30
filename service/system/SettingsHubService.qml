@@ -300,6 +300,14 @@ QtObject {
             "osdShowBrightness": Config.osdShowBrightness,
             "osdShowMicrophone": Config.osdShowMicrophone,
             "osdShowVolume": Config.osdShowVolume,
+            "defaultAudioPlayer": Config.defaultAudioPlayer,
+            "defaultBrowser": Config.defaultBrowser,
+            "defaultDocumentViewer": Config.defaultDocumentViewer,
+            "defaultEditor": Config.defaultEditor,
+            "defaultFileManager": Config.defaultFileManager,
+            "defaultImageViewer": Config.defaultImageViewer,
+            "defaultTerminal": Config.defaultTerminal,
+            "defaultVideoPlayer": Config.defaultVideoPlayer,
             "profileImagePath": Config.profileImagePath,
             "greeterDefaultSession": Config.greeterDefaultSession,
             "greeterRememberLastSession": Config.greeterRememberLastSession,
@@ -562,7 +570,8 @@ QtObject {
         }
     }
     function openFile(path) {
-        Quickshell.execDetached(["xdg-open", path]);
+        var target = String(path || "");
+        Quickshell.execDetached(/^https?:\/\//i.test(target) ? DefaultAppsService.openUrl(target) : DefaultAppsService.fileCommand(target));
     }
     function refresh() {
         if (snapshotProcess.running || saveProcess.running)

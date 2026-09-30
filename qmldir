@@ -1,4 +1,9 @@
 module quickshell
 singleton Config 1.0 Config.qml
+singleton Md3 1.0 Md3.qml
 singleton Responsive 1.0 Responsive.qml
 singleton StateManager 1.0 StateManager.qml
+Md3NumberAnimation 1.0 components/common/Md3NumberAnimation.qml
+Md3ColorAnimation 1.0 components/common/Md3ColorAnimation.qml
+Md3OpacityAnimator 1.0 components/common/Md3OpacityAnimator.qml
+Md3ScaleAnimator 1.0 components/common/Md3ScaleAnimator.qml

@@ -50,6 +50,14 @@ QtObject {
     property alias captureScreenshotQuality: runtimeSettings.captureScreenshotQuality
     property alias cavaEnabled: runtimeSettings.cavaEnabled
     property alias clock24h: runtimeSettings.clock24h
+    property alias defaultAudioPlayer: runtimeSettings.defaultAudioPlayer
+    property alias defaultBrowser: runtimeSettings.defaultBrowser
+    property alias defaultDocumentViewer: runtimeSettings.defaultDocumentViewer
+    property alias defaultEditor: runtimeSettings.defaultEditor
+    property alias defaultFileManager: runtimeSettings.defaultFileManager
+    property alias defaultImageViewer: runtimeSettings.defaultImageViewer
+    property alias defaultTerminal: runtimeSettings.defaultTerminal
+    property alias defaultVideoPlayer: runtimeSettings.defaultVideoPlayer
     readonly property string defaultWallpaper: dotfilesDir + "/.walls/flower-plant-petal.jpg"
     readonly property string dotfilesDir: dotfilesRoot + "/dotf"
     readonly property string dotfilesRoot: homeDir + "/Dotfiles"
@@ -143,6 +151,7 @@ QtObject {
         property color surface_container_low: "#ffffff"
         property color surface_container_lowest: "#ffffff"
         property color surface_dim: "#ffffff"
+        property color surface_tint: "#ffffff"
         property color surface_variant: "#ffffff"
         property color tertiary: "#ffffff"
         property color tertiary_container: "#ffffff"
@@ -223,6 +232,14 @@ QtObject {
             property int captureScreenshotQuality: 90
             property bool cavaEnabled: true
             property bool clock24h: true
+            property string defaultAudioPlayer: "system"
+            property string defaultBrowser: "system"
+            property string defaultDocumentViewer: "system"
+            property string defaultEditor: "neovide"
+            property string defaultFileManager: "system"
+            property string defaultImageViewer: "system"
+            property string defaultTerminal: "blackbox-terminal"
+            property string defaultVideoPlayer: "system"
             property string fontName: "Inter Variable"
             property string greeterDefaultSession: "niri"
             property bool greeterRememberLastSession: false

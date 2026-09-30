@@ -1,70 +1,72 @@
 import "../../"
+import ".."
 import QtQuick
-import QtQuick.Controls.Basic
+import QtQuick.Layouts
+import "../common"
 
-ToolTip {
+Md3ToolTip {
     id: root
 
     property string description: ""
     property string shortcut: ""
     required property string title
 
-    bottomPadding: 9
-    delay: 320
-    leftPadding: 11
-    margins: 8
-    rightPadding: 11
+    cornerRadius: Md3.shape.medium
+    margins: Md3.spacing.xs
+    maximumTextWidth: 300
     timeout: 5000
-    topPadding: 9
 
-    background: Rectangle {
-        border.color: Config.alpha(Config.md3.outline_variant, 0.5)
-        border.width: 1
-        color: Config.md3.surface_container_highest
-        radius: 11
-    }
-    contentItem: Column {
-        spacing: 4
+    contentItem: ColumnLayout {
+        spacing: Md3.spacing.xxs
 
-        Row {
-            spacing: 8
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Md3.spacing.xs
 
             Text {
-                anchors.verticalCenter: parent.verticalCenter
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 color: Config.md3.on_surface
+                elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
+                font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                font.pixelSize: Md3.typeScale.labelLarge.size
+                font.weight: Md3.typeScale.labelLarge.weight
                 text: root.title
             }
             Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                color: Config.alpha(Config.md3.primary, 0.14)
-                height: 20
-                radius: 6
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredHeight: 20
+                Layout.preferredWidth: shortcutLabel.implicitWidth + Md3.spacing.sm
+                color: Config.md3.secondary_container
+                radius: Md3.shape.extraSmall
                 visible: root.shortcut !== ""
-                width: shortcutLabel.implicitWidth + 12
 
                 Text {
                     id: shortcutLabel
 
                     anchors.centerIn: parent
-                    color: Config.md3.primary
+                    color: Config.md3.on_secondary_container
                     font.family: Config.fontName
-                    font.pixelSize: 10
-                    font.weight: Font.Bold
+                    font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                    font.pixelSize: Md3.typeScale.labelSmall.size
+                    font.weight: Md3.typeScale.labelSmall.weight
                     text: root.shortcut
                 }
             }
         }
         Text {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
             color: Config.md3.on_surface_variant
             font.family: Config.fontName
-            font.pixelSize: 11
-            lineHeight: 1.12
+            font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+            font.pixelSize: Md3.typeScale.bodySmall.size
+            font.weight: Md3.typeScale.bodySmall.weight
+            lineHeight: Md3.typeScale.bodySmall.lineHeight
+            lineHeightMode: Text.FixedHeight
             text: root.description
             visible: text !== ""
-            width: Math.min(300, implicitWidth)
             wrapMode: Text.Wrap
         }
     }

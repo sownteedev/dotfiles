@@ -4,6 +4,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sownteeshell_core::application::ApplicationBackend;
+use sownteeshell_core::capture::CaptureBackend;
 use sownteeshell_core::clipboard::ClipboardBackend;
 use sownteeshell_core::diagnostics::DiagnosticsBackend;
 use sownteeshell_core::display::DisplayBackend;
@@ -39,6 +40,7 @@ const UPDATES_INTERVAL: Duration = Duration::from_secs(2 * 60 * 60);
 #[derive(Clone)]
 pub struct IpcServer {
     applications: ApplicationBackend,
+    capture: CaptureBackend,
     clipboard: ClipboardBackend,
     config: Config,
     diagnostics: DiagnosticsBackend,
@@ -60,6 +62,7 @@ impl IpcServer {
         let network = NetworkClient::default();
         Ok(Self {
             applications: ApplicationBackend::new(jobs.clone()),
+            capture: CaptureBackend::new(jobs.clone()),
             clipboard: ClipboardBackend::new(jobs.clone(), config.data_dir.clone()),
             diagnostics: DiagnosticsBackend::new(jobs.clone()),
             display: DisplayBackend::new(jobs.clone()),
@@ -296,6 +299,7 @@ impl IpcServer {
                     "stats",
                     "application-packages",
                     "battery",
+                    "screenshot-qr",
                     "clipboard",
                     "diagnostics",
                     "display",
@@ -394,6 +398,15 @@ impl IpcServer {
             }
             _ if method.starts_with("weather.") => {
                 match self.weather.request(&method, params).await {
+                    Ok(Some(result)) => Ok(result),
+                    Ok(None) => Err(RpcError::method_not_found(format!(
+                        "unknown method '{method}'"
+                    ))),
+                    Err(error) => Err(RpcError::backend(error)),
+                }
+            }
+            _ if method.starts_with("capture.") => {
+                match self.capture.request(&method, params).await {
                     Ok(Some(result)) => Ok(result),
                     Ok(None) => Err(RpcError::method_not_found(format!(
                         "unknown method '{method}'"

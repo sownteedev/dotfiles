@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import "../../"
+import "../../components" as Components
 import "../../service"
 import Qt5Compat.GraphicalEffects
 import Quickshell
@@ -64,16 +65,12 @@ MouseArea {
         radius: 10
         visible: CaptureService.recordingSavedVisible && !CaptureService.recording && root.swipeOffset < 0
 
-        IconImage {
+        Components.Md3Icon {
             anchors.centerIn: parent
-            height: 14
-            layer.enabled: true
-            source: Quickshell.iconPath("user-trash-symbolic")
-            width: 14
-
-            layer.effect: ColorOverlay {
-                color: Config.md3.error
-            }
+            color: Config.md3.error
+            filled: true
+            name: "user-trash-symbolic"
+            size: 14
         }
     }
     Item {

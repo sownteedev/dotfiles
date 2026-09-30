@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
-import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Widgets
 import "../../../../"
@@ -23,8 +22,7 @@ Item {
     }
     readonly property string connectedAirpodsAddress: {
         for (var i = 0; i < pairedDevices.length; ++i) {
-            var name = String(pairedDevices[i].name || pairedDevices[i].deviceName || "").toLowerCase();
-            if (name.indexOf("airpods") !== -1 && pairedDevices[i].connected)
+            if (BluetoothService.isAirpodsDevice(pairedDevices[i]) && pairedDevices[i].connected)
                 return String(pairedDevices[i].address || "");
         }
         return "";
@@ -133,28 +131,21 @@ Item {
                 spacing: 18
                 visible: !root.adapter || !root.adapter.enabled
 
-                IconImage {
-                    id: disabledIcon
-
+                Md3Icon {
                     Layout.alignment: Qt.AlignHCenter
-                    implicitHeight: 88
-                    implicitWidth: 88
-                    source: Quickshell.iconPath("bluetooth-disabled-symbolic")
-                    visible: false
-                }
-                ColorOverlay {
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredHeight: 88
-                    Layout.preferredWidth: 88
-                    color: Config.alpha(Config.md3.on_surface, 0.20)
-                    source: disabledIcon
+                    color: Config.alpha(Config.md3.on_surface, Md3.state.disabledContent)
+                    name: "bluetooth-disabled-symbolic"
+                    size: 88
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    color: Config.alpha(Config.md3.on_surface, 0.6)
+                    color: Config.md3.on_surface_variant
                     font.family: Config.fontName
-                    font.pixelSize: 16
-                    font.weight: Font.Medium
+                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.titleMedium.size
+                    font.weight: Md3.typeScale.titleMedium.weight
+                    lineHeight: Md3.typeScale.titleMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: root.adapter ? "Bluetooth is disabled" : "Bluetooth is unavailable"
                 }
             }
@@ -183,8 +174,11 @@ Item {
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 16
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: qsTr("Paired devices")
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -205,8 +199,11 @@ Item {
                         Layout.topMargin: 10
                         color: Config.md3.outline
                         font.family: Config.fontName
-                        font.pixelSize: 14
-                        font.weight: Font.Medium
+                        font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyLarge.size
+                        font.weight: Md3.typeScale.bodyLarge.weight
+                        lineHeight: Md3.typeScale.bodyLarge.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: "No paired devices"
                         visible: root.pairedDevices.length === 0
                     }
@@ -222,8 +219,11 @@ Item {
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 16
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: qsTr("Saved devices")
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -250,8 +250,11 @@ Item {
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 16
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: qsTr("Available devices")
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -267,16 +270,16 @@ Item {
                             Accessible.role: Accessible.Button
                             Layout.preferredHeight: 36
                             Layout.preferredWidth: 36
-                            activeFocusOnTab: true
-                            border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.48) : "transparent"
-                            border.width: 1
+                            activeFocusOnTab: false
+                            border.color: "transparent"
+                            border.width: 0
                             color: Config.alpha(scanMouse.containsMouse ? Config.md3.primary : Config.md3.on_surface, scanMouse.containsMouse ? 0.13 : 0.055)
                             opacity: root.adapter && root.adapter.enabled ? 1 : 0.4
                             radius: 18
 
                             Behavior on color {
                                 ColorAnimation {
-                                    duration: 130
+                                    duration: Config.animationDuration(130)
                                 }
                             }
 
@@ -299,19 +302,11 @@ Item {
                                 visible: root.manualScanActive
                                 width: 22
                             }
-                            IconImage {
-                                id: refreshIcon
-
+                            Md3Icon {
                                 anchors.centerIn: parent
-                                implicitHeight: 19
-                                implicitWidth: 19
-                                source: Quickshell.iconPath("view-refresh-symbolic")
-                                visible: false
-                            }
-                            ColorOverlay {
-                                anchors.fill: refreshIcon
                                 color: Config.md3.on_surface_variant
-                                source: refreshIcon
+                                name: "view-refresh-symbolic"
+                                size: 22
                                 visible: !root.manualScanActive
                             }
                             MouseArea {
@@ -385,8 +380,11 @@ Item {
                                     Layout.preferredHeight: 18
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 15
+                                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                    font.pixelSize: Md3.typeScale.titleMedium.size
                                     font.weight: Font.DemiBold
+                                    lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                    lineHeightMode: Text.FixedHeight
                                     text: qsTr("No nearby devices found")
                                     verticalAlignment: Text.AlignVCenter
                                 }
@@ -396,8 +394,11 @@ Item {
                                     color: Config.md3.on_surface_variant
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
-                                    font.pixelSize: 12
-                                    font.weight: Font.Medium
+                                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                                    font.weight: Md3.typeScale.bodyMedium.weight
+                                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                                    lineHeightMode: Text.FixedHeight
                                     text: qsTr("Make the device visible, then press refresh")
                                     verticalAlignment: Text.AlignVCenter
                                 }

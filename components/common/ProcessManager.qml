@@ -180,8 +180,8 @@ Item {
                     Accessible.role: Accessible.Button
                     Layout.preferredHeight: 28
                     Layout.preferredWidth: 28
-                    activeFocusOnTab: visible
-                    color: clearMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"
+                    activeFocusOnTab: false
+                    color: clearMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"
                     radius: 9
                     visible: root.searchText !== ""
 
@@ -447,8 +447,8 @@ Item {
                                     Accessible.role: Accessible.Button
                                     Layout.preferredHeight: 28
                                     Layout.preferredWidth: armed ? 72 : 28
-                                    activeFocusOnTab: true
-                                    color: armed ? Config.md3.error_container : (terminateMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.error_container, 0.74) : Config.alpha(Config.md3.on_surface, 0.045))
+                                    activeFocusOnTab: false
+                                    color: armed ? Config.md3.error_container : (terminateMouse.containsMouse ? Config.alpha(Config.md3.error_container, 0.74) : Config.alpha(Config.md3.on_surface, 0.045))
                                     enabled: processRow.processPid > 1 && root.terminatingPid < 0
                                     opacity: enabled ? 1 : 0.45
                                     radius: 9

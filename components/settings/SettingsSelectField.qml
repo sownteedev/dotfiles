@@ -2,17 +2,19 @@ import ".."
 import "../../"
 import QtQuick
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
-import Quickshell
-import Quickshell.Widgets
 
 ColumnLayout {
     id: root
 
     property color accentColor: Config.md3.primary
+    property int fieldHeight: 56
     property string label: ""
+    property color labelColor: Config.md3.on_surface
+    property int labelFontPixelSize: 14
+    property int labelFontWeight: Font.DemiBold
     property string placeholder: ""
     property color valueBadgeColor: "transparent"
+    property int valueFontPixelSize: 15
     property string valueText: ""
 
     signal clicked(var sourceItem)
@@ -24,13 +26,19 @@ ColumnLayout {
         clicked(fieldFrame);
     }
 
-    spacing: 8
+    spacing: Md3.spacing.xs
 
     Text {
-        color: Config.alpha(Config.md3.on_surface, 0.85)
+        Layout.fillWidth: true
+        Layout.minimumWidth: 0
+        color: root.labelColor
+        elide: Text.ElideRight
         font.family: Config.fontName
-        font.pixelSize: 14
-        font.weight: Font.DemiBold
+        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+        font.pixelSize: root.labelFontPixelSize
+        font.weight: root.labelFontWeight
+        lineHeight: Md3.typeScale.labelLarge.lineHeight
+        lineHeightMode: Text.FixedHeight
         renderType: Text.NativeRendering
         text: root.label
         visible: text !== ""
@@ -42,22 +50,17 @@ ColumnLayout {
         Accessible.name: qsTr("%1: %2").arg(root.label).arg(root.valueText)
         Accessible.role: Accessible.ComboBox
         Layout.fillWidth: true
-        Layout.preferredHeight: 44
-        activeFocusOnTab: root.enabled
-        border.color: activeFocus ? Config.alpha(root.accentColor, 0.7) : "transparent"
+        Layout.preferredHeight: root.fieldHeight
+        activeFocusOnTab: false
+        border.color: fieldMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.56) : Config.alpha(Config.md3.outline, 0.22)
         border.width: 1
-        color: fieldMouse.pressed ? Config.alpha(root.accentColor, 0.17) : fieldMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.075) : Config.alpha(Config.md3.on_surface, 0.05)
-        opacity: root.enabled ? 1 : 0.45
-        radius: 12
+        color: Config.md3.surface_container_low
+        opacity: root.enabled ? 1 : Md3.state.disabledContent
+        radius: Md3.shape.medium
 
         Behavior on border.color {
             ColorAnimation {
-                duration: 150
-            }
-        }
-        Behavior on color {
-            ColorAnimation {
-                duration: 150
+                duration: Config.animationDuration(Md3.motion.short3)
             }
         }
 
@@ -69,17 +72,31 @@ ColumnLayout {
             }
         }
 
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 1
+            color: Config.md3.on_surface
+            opacity: fieldMouse.pressed ? Md3.state.pressed : fieldMouse.containsMouse ? Md3.state.hover : 0
+            radius: Math.max(0, fieldFrame.radius - 1)
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Config.animationDuration(Md3.motion.short2)
+                    easing.type: Md3.motion.standard
+                }
+            }
+        }
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 16
             anchors.rightMargin: 15
-            spacing: 8
+            spacing: 10
 
             Rectangle {
-                Layout.preferredHeight: 8
-                Layout.preferredWidth: 8
+                Layout.preferredHeight: 10
+                Layout.preferredWidth: 10
                 color: root.valueBadgeColor
-                radius: 4
+                radius: 5
                 visible: root.valueBadgeColor.a > 0
             }
             Text {
@@ -87,20 +104,18 @@ ColumnLayout {
                 color: root.valueText === "" ? Config.alpha(Config.md3.on_surface, 0.38) : Config.md3.on_surface
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 14
+                font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                font.pixelSize: root.valueFontPixelSize
                 font.weight: Font.Medium
                 renderType: Text.NativeRendering
                 text: root.valueText === "" ? root.placeholder : root.valueText
             }
-            IconImage {
-                Layout.preferredHeight: 16
-                Layout.preferredWidth: 16
-                layer.enabled: true
-                source: Quickshell.iconPath("pan-down-symbolic")
-
-                layer.effect: ColorOverlay {
-                    color: Config.alpha(Config.md3.on_surface, 0.58)
-                }
+            Md3Icon {
+                Layout.preferredHeight: 20
+                Layout.preferredWidth: 20
+                color: Config.md3.on_surface_variant
+                name: "expand_more"
+                size: 20
             }
         }
         MouseArea {
@@ -111,10 +126,7 @@ ColumnLayout {
             enabled: root.enabled
             hoverEnabled: true
 
-            onClicked: {
-                fieldFrame.forceActiveFocus();
-                root.activate();
-            }
+            onClicked: root.activate()
         }
     }
 }

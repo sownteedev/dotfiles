@@ -5,6 +5,8 @@
 #[cfg(feature = "daemon")]
 pub mod application;
 #[cfg(feature = "daemon")]
+pub mod capture;
+#[cfg(feature = "daemon")]
 pub mod clipboard;
 #[cfg(feature = "daemon")]
 pub mod command;

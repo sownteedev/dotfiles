@@ -104,7 +104,8 @@ Item {
                 if (!root.requested)
                     return;
 
-                var newBars = root.bars ? root.bars.slice(0) : [];
+                var newBars = root.bars || [];
+                var replaceBars = newBars.length !== 48;
                 if (newBars.length !== 48) {
                     newBars = [];
                     for (var i = 0; i < 48; ++i)
@@ -137,7 +138,8 @@ Item {
                 for (var barIndex = 0; barIndex < newBars.length; ++barIndex)
                     peak = Math.max(peak, Number(newBars[barIndex] || 0));
 
-                root.bars = newBars;
+                if (replaceBars)
+                    root.bars = newBars;
 
                 // Reveal only once Cava has produced useful spectrum data.
                 // Opacity and amplitude then rise together from zero.

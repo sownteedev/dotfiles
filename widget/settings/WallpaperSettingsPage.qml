@@ -91,6 +91,7 @@ Item {
                 Layout.columnSpan: content.columns
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                headerOutside: true
                 iconName: "preferences-desktop-wallpaper-symbolic"
                 note: "Folders scanned by the static and live wallpaper selectors"
                 title: "Wallpaper library"
@@ -128,6 +129,7 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                headerOutside: true
                 iconName: "media-playback-start-symbolic"
                 note: "Playback policy and transition timing"
                 title: "Playback"
@@ -218,6 +220,7 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                headerOutside: true
                 iconName: "color-select-symbolic"
                 note: "Generate the shell and application palette from the selected wallpaper"
                 title: "Matugen"

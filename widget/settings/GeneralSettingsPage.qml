@@ -14,6 +14,12 @@ Item {
     readonly property var cursorSizeOptions: [16, 20, 24, 28, 32, 36, 40, 48, 56, 64]
     property int cursorSizeValue: 24
     property string cursorThemeValue: "Dark_Cursor"
+    property string defaultAudioPlayerValue: "system"
+    property string defaultBrowserValue: "system"
+    property string defaultDocumentViewerValue: "system"
+    property string defaultEditorValue: "neovide"
+    property string defaultFileManagerValue: "system"
+    property string defaultImageViewerValue: "system"
     readonly property var defaultQtDialogOptions: [
         {
             "label": "Default",
@@ -28,6 +34,8 @@ Item {
             "value": "xdgdesktopportal"
         }
     ]
+    property string defaultTerminalValue: "blackbox-terminal"
+    property string defaultVideoPlayerValue: "system"
     readonly property bool gtkFontSizeValid: {
         var size = Number(gtkFontSizeField.text);
         return gtkFontSizeField.text !== "" && !isNaN(size) && size >= 6 && size <= 32;
@@ -67,6 +75,22 @@ Item {
             return qtColorSchemeValue;
         case "qtDialogs":
             return qtDialogsValue;
+        case "defaultAudioPlayer":
+            return defaultAudioPlayerValue;
+        case "defaultBrowser":
+            return defaultBrowserValue;
+        case "defaultDocumentViewer":
+            return defaultDocumentViewerValue;
+        case "defaultEditor":
+            return defaultEditorValue;
+        case "defaultFileManager":
+            return defaultFileManagerValue;
+        case "defaultImageViewer":
+            return defaultImageViewerValue;
+        case "defaultTerminal":
+            return defaultTerminalValue;
+        case "defaultVideoPlayer":
+            return defaultVideoPlayerValue;
         default:
             return "";
         }
@@ -100,6 +124,14 @@ Item {
             "shellShadowOpacity": Number(shadowOpacityField.text),
             "shellShadowSpread": Number(shadowSpreadField.text),
             "clock24h": clockToggle.checked,
+            "defaultAudioPlayer": defaultAudioPlayerValue,
+            "defaultBrowser": defaultBrowserValue,
+            "defaultDocumentViewer": defaultDocumentViewerValue,
+            "defaultEditor": defaultEditorValue,
+            "defaultFileManager": defaultFileManagerValue,
+            "defaultImageViewer": defaultImageViewerValue,
+            "defaultTerminal": defaultTerminalValue,
+            "defaultVideoPlayer": defaultVideoPlayerValue,
             "temperatureUnit": temperatureUnitChoice.value
         };
     }
@@ -131,6 +163,14 @@ Item {
         selectorPopupY = selectorPopupOpenAbove ? position.y - popupHeight - 8 : belowY;
         selectorPopupRightMargin = Math.max(12, width - position.x - sourceItem.width);
         selectorPopupOpen = activePopupModel.length > 0;
+    }
+    function optionLabel(options, value) {
+        var selected = String(value || "");
+        for (var index = 0; index < options.length; ++index) {
+            if (String(options[index].value) === selected)
+                return String(options[index].label);
+        }
+        return selected;
     }
     function optionModel(values, currentValue) {
         var result = [];
@@ -217,6 +257,31 @@ Item {
             qtColorSchemeValue = value;
         else if (activePopupKind === "qtDialogs")
             qtDialogsValue = value;
+        else if (activePopupKind === "defaultAudioPlayer") {
+            defaultAudioPlayerValue = value;
+            Config.defaultAudioPlayer = value;
+        } else if (activePopupKind === "defaultBrowser") {
+            defaultBrowserValue = value;
+            Config.defaultBrowser = value;
+        } else if (activePopupKind === "defaultDocumentViewer") {
+            defaultDocumentViewerValue = value;
+            Config.defaultDocumentViewer = value;
+        } else if (activePopupKind === "defaultEditor") {
+            defaultEditorValue = value;
+            Config.defaultEditor = value;
+        } else if (activePopupKind === "defaultFileManager") {
+            defaultFileManagerValue = value;
+            Config.defaultFileManager = value;
+        } else if (activePopupKind === "defaultImageViewer") {
+            defaultImageViewerValue = value;
+            Config.defaultImageViewer = value;
+        } else if (activePopupKind === "defaultTerminal") {
+            defaultTerminalValue = value;
+            Config.defaultTerminal = value;
+        } else if (activePopupKind === "defaultVideoPlayer") {
+            defaultVideoPlayerValue = value;
+            Config.defaultVideoPlayer = value;
+        }
         selectorPopupOpen = false;
     }
     function syncFields() {
@@ -257,6 +322,14 @@ Item {
         qtStyleValue = String(gtkSettings.qtStyle || "kvantum");
         qtColorSchemeValue = String(gtkSettings.qtColorScheme || "matugen");
         qtDialogsValue = String(gtkSettings.qtDialogs || "gtk3");
+        defaultAudioPlayerValue = Config.defaultAudioPlayer;
+        defaultBrowserValue = Config.defaultBrowser;
+        defaultDocumentViewerValue = Config.defaultDocumentViewer;
+        defaultEditorValue = Config.defaultEditor;
+        defaultFileManagerValue = Config.defaultFileManager;
+        defaultImageViewerValue = Config.defaultImageViewer;
+        defaultTerminalValue = Config.defaultTerminal;
+        defaultVideoPlayerValue = Config.defaultVideoPlayer;
         var gtkFont = parseGtkFontName(gtkSettings.fontName || "SF Pro Text 10.5");
         gtkFontFamilyField.text = gtkFont.family;
         gtkFontSizeField.text = gtkFont.size;
@@ -300,49 +373,31 @@ Item {
 
             columnSpacing: 12
             columns: 1
-            rowSpacing: 12
+            rowSpacing: Md3.spacing.lg
             uniformCellWidths: true
             width: scroll.availableWidth
             x: (scroll.availableWidth - width) / 2
 
             SettingsSectionCard {
-                Layout.columnSpan: content.columns
                 Layout.fillWidth: true
-                accentColor: Config.md3.secondary
-                iconName: "avatar-default-symbolic"
-                note: qsTr("Used by authentication prompts and the login screen")
-                title: qsTr("Profile image")
+                accentColor: Config.md3.primary
+                headerOutside: true
+                title: qsTr("Profile")
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 16
+                    spacing: Md3.spacing.md
 
                     ProfileAvatar {
-                        Layout.preferredHeight: 76
-                        Layout.preferredWidth: 76
+                        Layout.preferredHeight: 56
+                        Layout.preferredWidth: 56
                         sourcePath: root.profileImageField.text
                     }
-                    ColumnLayout {
+                    SettingsLabelBlock {
                         Layout.fillWidth: true
-                        spacing: 5
-
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.md3.on_surface
-                            elide: Text.ElideMiddle
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.DemiBold
-                            text: root.profileImageField.text === "" ? qsTr("Default profile icon") : root.profileImageField.text.split("/").pop()
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            color: ProfileImageService.errorMessage !== "" ? Config.md3.error : Config.alpha(Config.md3.on_surface, 0.5)
-                            font.family: Config.fontName
-                            font.pixelSize: 12
-                            text: ProfileImageService.errorMessage || ProfileImageService.statusMessage || qsTr("PNG, JPEG, WebP or AVIF")
-                            wrapMode: Text.Wrap
-                        }
+                        headline: qsTr("Profile image")
+                        supportingText: ProfileImageService.errorMessage || ProfileImageService.statusMessage || (root.profileImageField.text === "" ? qsTr("Used on the login screen and authentication prompts") : root.profileImageField.text.split("/").pop())
+                        supportingTextColor: ProfileImageService.errorMessage !== "" ? Config.md3.error : Config.md3.on_surface_variant
                     }
                     SettingsActionButton {
                         iconName: "document-open-symbolic"
@@ -362,87 +417,133 @@ Item {
                 }
             }
             SettingsSectionCard {
-                Layout.columnSpan: content.columns
                 Layout.fillWidth: true
                 accentColor: Config.md3.secondary
-                iconName: "preferences-desktop-font-symbolic"
-                note: "Shell typography"
-                title: "Typography"
+                contentSpacing: 0
+                headerOutside: true
+                iconName: "applications-system-symbolic"
+                note: qsTr("Changes save immediately and only affect SownteeShell")
+                title: qsTr("Default applications")
 
-                SettingsFontPicker {
-                    id: fontField
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("Interactive terminal")
+                    note: qsTr("Used for package updates and SteamCMD login")
+                    showDivider: true
+                    valueText: root.optionLabel(DefaultAppsService.terminalOptions, root.defaultTerminalValue)
 
-                    Layout.fillWidth: true
-                    label: "Font family"
-                    placeholder: Config.fontName
+                    onClicked: sourceItem => root.openSelector(sourceItem, "defaultTerminal", DefaultAppsService.terminalOptions)
+                }
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("Text editor")
+                    note: qsTr("Used for text and code files from Launcher")
+                    valueText: root.optionLabel(DefaultAppsService.editorOptions, root.defaultEditorValue)
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "defaultEditor", DefaultAppsService.editorOptions)
+                }
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("Browser")
+                    note: qsTr("Used for web links, QR links and provider setup pages")
+                    showDivider: true
+                    valueText: root.optionLabel(DefaultAppsService.browserOptions, root.defaultBrowserValue)
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "defaultBrowser", DefaultAppsService.browserOptions)
+                }
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("File manager")
+                    note: qsTr("Used when opening folders from Launcher and Capture")
+                    showDivider: true
+                    valueText: root.optionLabel(DefaultAppsService.fileManagerOptions, root.defaultFileManagerValue)
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "defaultFileManager", DefaultAppsService.fileManagerOptions)
+                }
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("Image viewer")
+                    note: qsTr("Used for image files opened from Launcher and Capture")
+                    showDivider: true
+                    valueText: root.optionLabel(DefaultAppsService.imageViewerOptions, root.defaultImageViewerValue)
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "defaultImageViewer", DefaultAppsService.imageViewerOptions)
+                }
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("Video player")
+                    note: qsTr("Used for videos and screen recordings")
+                    showDivider: true
+                    valueText: root.optionLabel(DefaultAppsService.videoPlayerOptions, root.defaultVideoPlayerValue)
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "defaultVideoPlayer", DefaultAppsService.videoPlayerOptions)
+                }
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("Audio player")
+                    note: qsTr("Used for audio files opened from Launcher")
+                    showDivider: true
+                    valueText: root.optionLabel(DefaultAppsService.audioPlayerOptions, root.defaultAudioPlayerValue)
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "defaultAudioPlayer", DefaultAppsService.audioPlayerOptions)
+                }
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("PDF / document viewer")
+                    note: qsTr("Used for PDF, EPUB and DJVU files")
+                    valueText: root.optionLabel(DefaultAppsService.documentViewerOptions, root.defaultDocumentViewerValue)
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "defaultDocumentViewer", DefaultAppsService.documentViewerOptions)
                 }
             }
             SettingsSectionCard {
-                Layout.columnSpan: content.columns
                 Layout.fillWidth: true
-                accentColor: Config.md3.tertiary
-                iconName: "applications-graphics-symbolic"
-                note: qsTr("Theme, icons and interface fonts synchronized across GTK and Qt5 / Qt6")
-                title: qsTr("Desktop applications (GTK & Qt)")
+                accentColor: Config.md3.primary
+                contentSpacing: 0
+                headerOutside: true
+                title: qsTr("Fonts")
 
-                SettingsSelectRow {
-                    accentColor: Config.md3.tertiary
-                    label: qsTr("Application theme (GTK)")
-                    note: qsTr("GTK style; Qt applications use Kvantum with Matugen palette")
-                    valueText: root.gtkThemeValue
+                SettingsControlRow {
+                    label: qsTr("Shell font")
+                    note: qsTr("Used throughout SownteeShell")
 
-                    onClicked: sourceItem => root.openSelector(sourceItem, "gtk", SettingsHubService.gtkSettings.gtkThemes)
-                }
-                SettingsSelectRow {
-                    accentColor: Config.md3.secondary
-                    label: qsTr("Icon theme")
-                    note: qsTr("Synchronized across GTK, Qt5 and Qt6 applications")
-                    valueText: root.iconThemeValue
-
-                    onClicked: sourceItem => root.openSelector(sourceItem, "icons", SettingsHubService.gtkSettings.iconThemes)
-                }
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 12
-                    columns: width >= 620 ? 2 : 1
-                    rowSpacing: 12
-                    uniformCellWidths: true
-
-                    SettingsSelectField {
-                        id: cursorThemeField
+                    SettingsFontPicker {
+                        id: fontField
 
                         Layout.fillWidth: true
-                        accentColor: Config.md3.primary
-                        label: qsTr("Cursor theme")
-                        placeholder: qsTr("Select cursor theme")
-                        valueText: root.cursorThemeValue
-
-                        onClicked: sourceItem => root.openSelector(sourceItem, "cursor", SettingsHubService.gtkSettings.cursorThemes)
+                        fieldHeight: 44
+                        label: qsTr("Shell font")
+                        placeholder: Config.fontName
+                        showLabel: false
                     }
-                    SettingsSelectField {
-                        id: cursorSizeField
+                }
+                SettingsControlRow {
+                    label: qsTr("Application font")
+                    note: qsTr("Synchronized across GTK and Qt applications")
 
-                        Layout.fillWidth: true
-                        accentColor: Config.md3.primary
-                        label: qsTr("Cursor size")
-                        placeholder: qsTr("Select cursor size")
-                        valueText: qsTr("%1 px").arg(root.cursorSizeValue)
-
-                        onClicked: sourceItem => root.openSelector(sourceItem, "cursorSize", root.cursorSizeOptions)
-                    }
                     SettingsFontPicker {
                         id: gtkFontFamilyField
 
                         Layout.fillWidth: true
-                        label: qsTr("Interface font (GTK & Qt)")
+                        fieldHeight: 44
+                        label: qsTr("Application font")
                         placeholder: qsTr("Select an installed font")
+                        showLabel: false
                     }
+                }
+                SettingsControlRow {
+                    label: qsTr("Application font size")
+                    note: qsTr("Size in points")
+                    showDivider: false
+
                     SettingsTextField {
                         id: gtkFontSizeField
 
                         Layout.fillWidth: true
-                        label: qsTr("Font size")
+                        fieldHeight: 44
+                        label: qsTr("Application font size")
                         placeholder: "10.5"
+                        showLabel: false
 
                         inputItem.validator: DoubleValidator {
                             bottom: 6
@@ -451,33 +552,84 @@ Item {
                             top: 32
                         }
                     }
-                    SettingsSelectField {
-                        id: qtStyleField
+                }
+            }
+            SettingsSectionCard {
+                Layout.fillWidth: true
+                accentColor: Config.md3.primary
+                contentSpacing: 0
+                headerOutside: true
+                title: qsTr("Appearance")
 
-                        Layout.fillWidth: true
-                        accentColor: Config.md3.tertiary
-                        label: qsTr("Qt widget style")
-                        placeholder: "kvantum"
-                        valueText: root.qtStyleValue
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("Application theme (GTK)")
+                    note: qsTr("Qt applications use Kvantum with the Matugen palette")
+                    showDivider: true
+                    valueText: root.gtkThemeValue
 
-                        onClicked: sourceItem => root.openSelector(sourceItem, "qtStyle", SettingsHubService.gtkSettings.qtStyles)
-                    }
-                    SettingsSelectField {
-                        id: qtColorSchemeField
-
-                        Layout.fillWidth: true
-                        accentColor: Config.md3.tertiary
-                        label: qsTr("Qt color scheme")
-                        placeholder: "matugen"
-                        valueText: root.qtColorSchemeLabel()
-
-                        onClicked: sourceItem => root.openSelector(sourceItem, "qtColorScheme", SettingsHubService.gtkSettings.qtColorSchemes)
-                    }
+                    onClicked: sourceItem => root.openSelector(sourceItem, "gtk", SettingsHubService.gtkSettings.gtkThemes)
                 }
                 SettingsSelectRow {
-                    accentColor: Config.md3.tertiary
-                    label: qsTr("Qt standard dialogs")
-                    note: qsTr("File chooser and message dialog provider for Qt applications")
+                    controlWidth: 260
+                    label: qsTr("Icon theme")
+                    note: qsTr("GTK, Qt and SownteeShell; reload the shell to update its icons")
+                    showDivider: true
+                    valueText: root.iconThemeValue
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "icons", SettingsHubService.gtkSettings.iconThemes)
+                }
+                SettingsSelectRow {
+                    id: cursorThemeField
+
+                    controlWidth: 260
+                    label: qsTr("Cursor theme")
+                    showDivider: true
+                    valueText: root.cursorThemeValue
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "cursor", SettingsHubService.gtkSettings.cursorThemes)
+                }
+                SettingsSelectRow {
+                    id: cursorSizeField
+
+                    controlWidth: 260
+                    label: qsTr("Cursor size")
+                    valueText: qsTr("%1 px").arg(root.cursorSizeValue)
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "cursorSize", root.cursorSizeOptions)
+                }
+            }
+            SettingsSectionCard {
+                Layout.fillWidth: true
+                accentColor: Config.md3.primary
+                contentSpacing: 0
+                headerOutside: true
+                title: qsTr("Qt integration")
+
+                SettingsSelectRow {
+                    id: qtStyleField
+
+                    controlWidth: 260
+                    label: qsTr("Widget style")
+                    showDivider: true
+                    valueText: root.qtStyleValue
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "qtStyle", SettingsHubService.gtkSettings.qtStyles)
+                }
+                SettingsSelectRow {
+                    id: qtColorSchemeField
+
+                    controlWidth: 260
+                    label: qsTr("Color scheme")
+                    showDivider: true
+                    valueText: root.qtColorSchemeLabel()
+
+                    onClicked: sourceItem => root.openSelector(sourceItem, "qtColorScheme", SettingsHubService.gtkSettings.qtColorSchemes)
+                }
+                SettingsSelectRow {
+                    controlWidth: 260
+                    label: qsTr("Standard dialogs")
+                    note: qsTr("File chooser and message dialogs for Qt applications")
                     valueText: root.qtDialogsLabel()
 
                     onClicked: sourceItem => root.openSelector(sourceItem, "qtDialogs", root.qtDialogOptions)
@@ -487,6 +639,7 @@ Item {
                 Layout.columnSpan: content.columns
                 Layout.fillWidth: true
                 accentColor: Config.md3.secondary
+                headerOutside: true
                 iconName: "weather-fog-symbolic"
                 note: "Higher values make surfaces more opaque"
                 title: "Surface blur"
@@ -640,6 +793,7 @@ Item {
                 Layout.columnSpan: content.columns
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                headerOutside: true
                 iconName: "preferences-desktop-effects-symbolic"
                 note: "Shadow used by large panels, dialogs and popups"
                 title: "Panel shadows"
@@ -747,6 +901,7 @@ Item {
                 Layout.columnSpan: content.columns
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                headerOutside: true
                 iconName: "color-select-symbolic"
                 note: "Lighter shadow for buttons, tabs and compact controls"
                 title: "Component shadows"
@@ -855,6 +1010,7 @@ Item {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
                 compact: true
+                headerOutside: true
                 iconName: "preferences-system-time-symbolic"
                 note: qsTr("Regional date, time and temperature presentation")
                 title: "Date & time"

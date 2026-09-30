@@ -93,7 +93,7 @@ pub async fn search(
 ) -> Result<Value> {
     let params: SearchParams = serde_json::from_value(params).unwrap_or_default();
     let api_key = trimmed(params.api_key);
-    let sorting = allowed_or(params.sorting, SORTING_OPTIONS, "toplist");
+    let sorting = allowed_or(params.sorting, SORTING_OPTIONS, "relevance");
     let categories = bit_filter(params.categories.as_deref(), "111");
     let mut purity = bit_filter(params.purity.as_deref(), "110");
     if api_key.is_empty() {

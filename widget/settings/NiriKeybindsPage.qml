@@ -80,9 +80,11 @@ ColumnLayout {
             anchors.right: clearSearch.left
             anchors.rightMargin: 8
             anchors.top: parent.top
+            clip: true
             color: Config.md3.on_surface
             font.family: Config.fontName
-            font.pixelSize: 13
+            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+            font.pixelSize: Md3.typeScale.bodyMedium.size
             verticalAlignment: TextInput.AlignVCenter
 
             Text {
@@ -119,7 +121,8 @@ ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
         color: Config.alpha(Config.md3.on_surface, 0.42)
         font.family: Config.fontName
-        font.pixelSize: 11
+        font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+        font.pixelSize: Md3.typeScale.bodySmall.size
         text: "Click a shortcut, press a new combination, then click elsewhere to apply"
     }
     ScrollView {

@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
+import "../../../components"
 
 RowLayout {
     id: root
@@ -38,35 +39,36 @@ RowLayout {
                 color: root.pillIconBackground
                 radius: 9
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 16
-                    layer.enabled: true
-                    source: Quickshell.iconPath("preferences-system-time-symbolic")
-                    width: 16
-
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.primary
-                    }
+                    color: Config.md3.primary
+                    filled: true
+                    name: "preferences-system-time-symbolic"
+                    size: 16
                 }
             }
             ColumnLayout {
                 spacing: 0
 
                 Text {
-                    color: Config.alpha(Config.md3.on_surface, 0.42)
+                    color: Config.md3.on_surface_variant
                     font.capitalization: Font.AllUppercase
                     font.family: Config.fontName
-                    font.letterSpacing: 0.7
-                    font.pixelSize: 8
-                    font.weight: Font.DemiBold
+                    font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                    font.pixelSize: Md3.typeScale.labelSmall.size
+                    font.weight: Md3.typeScale.labelSmall.weight
+                    lineHeight: Md3.typeScale.labelSmall.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: "System uptime"
                 }
                 Text {
                     color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 14
+                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.titleMedium.size
                     font.weight: Font.DemiBold
+                    lineHeight: Md3.typeScale.titleMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: SysStats.uptimeText.replace(/^Uptime\s*/, "")
                 }
             }
@@ -97,13 +99,13 @@ RowLayout {
 
         Behavior on Layout.preferredWidth {
             NumberAnimation {
-                duration: 220
+                duration: Config.animationDuration(220)
                 easing.type: Easing.OutCubic
             }
         }
         Behavior on color {
             ColorAnimation {
-                duration: 160
+                duration: Config.animationDuration(160)
             }
         }
 
@@ -123,56 +125,26 @@ RowLayout {
 
                 Behavior on color {
                     ColorAnimation {
-                        duration: 160
+                        duration: Config.animationDuration(160)
                     }
                 }
 
-                IconImage {
-                    id: updateIcon
-
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 16
-                    layer.enabled: true
-                    source: Quickshell.iconPath(UpdateService.available ? UpdateService.updateCount > 0 ? "software-update-available-symbolic" : "emblem-ok-symbolic" : "dialog-warning-symbolic")
+                    color: UpdateService.error !== "" || !UpdateService.available ? Config.md3.error : Config.md3.primary
+                    filled: UpdateService.updateCount <= 0 || !UpdateService.available
+                    name: UpdateService.available ? UpdateService.updateCount > 0 ? "software-update-available-symbolic" : "emblem-ok-symbolic" : "dialog-warning-symbolic"
+                    size: 16
                     visible: !UpdateService.busy
-                    width: 16
-
-                    layer.effect: ColorOverlay {
-                        color: UpdateService.error !== "" || !UpdateService.available ? Config.md3.error : Config.md3.primary
-                    }
                 }
-                Canvas {
-                    id: updateSpinner
-
+                AnimatedSpinner {
                     anchors.centerIn: parent
+                    color: Config.md3.primary
                     height: 17
-                    renderTarget: Canvas.FramebufferObject
+                    lineWidth: 2
+                    running: UpdateService.busy && visible
                     visible: UpdateService.busy
                     width: 17
-
-                    RotationAnimator on rotation {
-                        duration: 680
-                        from: 0
-                        loops: Animation.Infinite
-                        running: UpdateService.busy
-                        to: 360
-
-                        onRunningChanged: {
-                            if (!running)
-                                updateSpinner.rotation = 0;
-                        }
-                    }
-
-                    onPaint: {
-                        var context = getContext("2d");
-                        context.reset();
-                        context.beginPath();
-                        context.lineCap = "round";
-                        context.lineWidth = 2;
-                        context.strokeStyle = Config.md3.primary;
-                        context.arc(width / 2, height / 2, 6, -Math.PI * 0.15, Math.PI * 1.35);
-                        context.stroke();
-                    }
                 }
             }
             ColumnLayout {
@@ -180,19 +152,24 @@ RowLayout {
                 visible: !UpdateService.busy
 
                 Text {
-                    color: Config.alpha(Config.md3.on_surface, 0.42)
+                    color: Config.md3.on_surface_variant
                     font.capitalization: Font.AllUppercase
                     font.family: Config.fontName
-                    font.letterSpacing: 0.7
-                    font.pixelSize: 8
-                    font.weight: Font.DemiBold
+                    font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                    font.pixelSize: Md3.typeScale.labelSmall.size
+                    font.weight: Md3.typeScale.labelSmall.weight
+                    lineHeight: Md3.typeScale.labelSmall.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: "Package updates"
                 }
                 Text {
                     color: UpdateService.error !== "" || !UpdateService.available ? Config.md3.error : Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 14
+                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.titleMedium.size
                     font.weight: Font.DemiBold
+                    lineHeight: Md3.typeScale.titleMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: UpdateService.statusText
                 }
             }

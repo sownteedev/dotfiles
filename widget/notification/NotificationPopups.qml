@@ -545,7 +545,7 @@ PanelWindow {
     Timer {
         id: stackHeightReleaseTimer
 
-        interval: 230
+        interval: Config.animationDuration(220) + 10
 
         onTriggered: notifWindow.retainedStackHeight = 0
     }
@@ -558,18 +558,18 @@ PanelWindow {
         y: notifWindow.popupAtBottom ? parent.height - implicitHeight - 15 : 15
 
         move: Transition {
-            NumberAnimation {
+            Md3NumberAnimation {
                 duration: Config.animationDuration(notifWindow.retainedStackHeight > 0 ? 220 : 0)
-                easing.type: Easing.OutCubic
                 properties: "y"
+                role: "reflow"
             }
         }
         Behavior on y {
             enabled: notifWindow.popupAtBottom && notifWindow.retainedStackHeight > 0
 
-            NumberAnimation {
+            Md3NumberAnimation {
                 duration: Config.animationDuration(220)
-                easing.type: Easing.OutCubic
+                role: "reflow"
             }
         }
 
@@ -636,7 +636,7 @@ PanelWindow {
 
                     Component.onCompleted: {
                         var isFirst = notifModel.count <= 1;
-                        var delay = isFirst ? 0 : 35;
+                        var delay = Config.animationDuration(isFirst ? 0 : 35);
                         var t = entryDelayTimerComponent.createObject(delegateWrapper, {
                             "interval": delay,
                             "targetModel": model
@@ -674,7 +674,7 @@ PanelWindow {
                     Timer {
                         id: popupDismissTimer
 
-                        interval: 155
+                        interval: Config.animationDuration(150) + 5
 
                         onTriggered: {
                             handleCloseImmediate(delegateWrapper.nid);
@@ -807,26 +807,23 @@ PanelWindow {
                                 to: "visible"
 
                                 ParallelAnimation {
-                                    NumberAnimation {
-                                        duration: Config.animationDuration(160)
-                                        easing.type: Easing.OutCubic
+                                    Md3NumberAnimation {
                                         property: "entryOpacity"
+                                        role: "enter"
                                         target: container
                                     }
-                                    NumberAnimation {
-                                        duration: Config.animationDuration(220)
-                                        easing.type: Easing.OutCubic
+                                    Md3NumberAnimation {
                                         properties: "xOffset,yOffset"
+                                        role: "enter"
                                         target: container
                                     }
                                     SequentialAnimation {
                                         PauseAnimation {
                                             duration: Config.animationDuration(30)
                                         }
-                                        NumberAnimation {
-                                            duration: Config.animationDuration(180)
-                                            easing.type: Easing.OutCubic
+                                        Md3NumberAnimation {
                                             property: "contentReveal"
+                                            role: "enter"
                                             target: container
                                         }
                                     }
@@ -837,22 +834,19 @@ PanelWindow {
                                 to: "hidden"
 
                                 ParallelAnimation {
-                                    NumberAnimation {
-                                        duration: Config.animationDuration(120)
-                                        easing.type: Easing.InCubic
+                                    Md3NumberAnimation {
                                         property: "entryOpacity"
+                                        role: "exit"
                                         target: container
                                     }
-                                    NumberAnimation {
-                                        duration: Config.animationDuration(150)
-                                        easing.type: Easing.InCubic
+                                    Md3NumberAnimation {
                                         properties: "xOffset,yOffset"
+                                        role: "exit"
                                         target: container
                                     }
-                                    NumberAnimation {
-                                        duration: Config.animationDuration(90)
-                                        easing.type: Easing.InQuad
+                                    Md3NumberAnimation {
                                         property: "contentReveal"
+                                        role: "exit"
                                         target: container
                                     }
                                 }
@@ -926,8 +920,11 @@ PanelWindow {
                                         color: Config.md3.on_surface
                                         elide: Text.ElideRight
                                         font.family: Config.fontName
-                                        font.pixelSize: 16
+                                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                        font.pixelSize: Md3.typeScale.titleMedium.size
                                         font.weight: Font.DemiBold
+                                        lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                        lineHeightMode: Text.FixedHeight
                                         maximumLineCount: 1
                                         text: delegateWrapper.summary
                                         textFormat: Text.PlainText
@@ -939,11 +936,14 @@ PanelWindow {
 
                                         Layout.fillWidth: true
                                         Layout.maximumWidth: container.width - 145
-                                        color: Config.md3.on_surface_variant
+                                        color: Config.md3.on_surface
                                         elide: Text.ElideRight
                                         font.family: Config.fontName
-                                        font.pixelSize: 15
+                                        font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                        font.pixelSize: Md3.typeScale.bodyLarge.size
                                         font.weight: Font.Medium
+                                        lineHeight: Md3.typeScale.bodyLarge.lineHeight
+                                        lineHeightMode: Text.FixedHeight
                                         maximumLineCount: 3
                                         text: delegateWrapper.body
                                         textFormat: Text.PlainText
@@ -1053,12 +1053,12 @@ PanelWindow {
                                     delegateWrapper.dismissSwipe();
                             }
                         }
-                        NumberAnimation {
+                        Md3NumberAnimation {
                             id: swipeReturn
 
                             duration: Config.animationDuration(180)
-                            easing.type: Easing.OutCubic
                             property: "swipeOffset"
+                            role: "transform"
                             target: container
                             to: 0
 
@@ -1073,27 +1073,27 @@ PanelWindow {
                                 handleCloseImmediate(notificationId);
                             }
 
-                            NumberAnimation {
+                            Md3NumberAnimation {
                                 id: swipeTravel
 
                                 duration: Config.animationDuration(140)
-                                easing.type: Easing.OutCubic
                                 property: "swipeOffset"
+                                role: "exit"
                                 target: container
                                 to: container.width
                             }
                             ParallelAnimation {
-                                NumberAnimation {
+                                Md3NumberAnimation {
                                     duration: Config.animationDuration(container.swipeScale > 0 ? 140 : 0)
-                                    easing.type: Easing.InCubic
                                     property: "dismissOpacity"
+                                    role: "exit"
                                     target: container
                                     to: 0
                                 }
-                                NumberAnimation {
+                                Md3NumberAnimation {
                                     duration: Config.animationDuration(container.swipeScale > 0 ? 140 : 0)
-                                    easing.type: Easing.InCubic
                                     property: "dismissScale"
+                                    role: "exit"
                                     target: container
                                     to: 0.86
                                 }

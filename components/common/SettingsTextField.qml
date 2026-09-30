@@ -9,7 +9,7 @@ ColumnLayout {
     property string actionIcon: ""
     property alias echoMode: input.echoMode
     property bool editable: true
-    property int fieldHeight: 44
+    property int fieldHeight: 56
 
     // Customization aliases
     property alias horizontalAlignment: input.horizontalAlignment
@@ -17,43 +17,58 @@ ColumnLayout {
     property string label: ""
     property alias passwordCharacter: input.passwordCharacter
     property string placeholder: ""
+    property color placeholderColor: Config.alpha(Config.md3.on_surface_variant, 0.3)
+    property bool showLabel: true
     property alias text: input.text
     property alias verticalAlignment: input.verticalAlignment
 
     signal actionClicked
 
+    Layout.minimumWidth: 0
     spacing: 8
 
     Text {
+        Layout.fillWidth: true
+        Layout.minimumWidth: 0
         color: Config.alpha(Config.md3.on_surface, 0.85)
+        elide: Text.ElideRight
         font.family: Config.fontName
-        font.pixelSize: 14
-        font.weight: Font.DemiBold
+        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+        font.pixelSize: Md3.typeScale.labelLarge.size
+        font.weight: Md3.typeScale.labelLarge.emphasizedWeight
+        lineHeight: Md3.typeScale.labelLarge.lineHeight
+        lineHeightMode: Text.FixedHeight
         renderType: Text.NativeRendering
         text: root.label
-        visible: text !== ""
+        visible: root.showLabel && text !== ""
     }
     RowLayout {
         Layout.fillWidth: true
+        Layout.minimumWidth: 0
         spacing: 10
 
         Rectangle {
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             Layout.preferredHeight: root.fieldHeight
-            border.color: input.activeFocus ? Config.alpha(Config.md3.primary, 0.65) : "transparent"
+            border.color: input.activeFocus ? Config.alpha(Config.md3.primary, 0.52) : Config.alpha(Config.md3.outline, 0.22)
             border.width: 1
-            color: Config.alpha(Config.md3.on_surface, 0.05)
-            radius: 12
+            color: Config.md3.surface_container_low
+            radius: Md3.shape.medium
 
             Behavior on border.color {
                 ColorAnimation {
-                    duration: 150
+                    duration: Config.animationDuration(Md3.motion.short3)
                 }
             }
 
             TextInput {
                 id: input
 
+                Accessible.description: root.placeholder
+                Accessible.name: root.label !== "" ? root.label : root.placeholder
+                Accessible.role: Accessible.EditableText
+                activeFocusOnTab: root.editable
                 anchors.fill: parent
                 anchors.leftMargin: 16
                 anchors.rightMargin: 16
@@ -61,7 +76,8 @@ ColumnLayout {
                 color: Config.md3.on_surface
                 enabled: root.editable
                 font.family: Config.fontName
-                font.pixelSize: 14
+                font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyLarge.size
                 font.weight: Font.Medium
                 verticalAlignment: TextInput.AlignVCenter
             }
@@ -69,7 +85,7 @@ ColumnLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 16
                 anchors.rightMargin: 16
-                color: Config.alpha(Config.md3.on_surface, 0.38)
+                color: root.placeholderColor
                 elide: Text.ElideRight
                 font: input.font
                 renderType: Text.NativeRendering

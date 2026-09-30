@@ -21,6 +21,10 @@ Item {
     readonly property bool onScreen: visible && (Window.window?.visible ?? false)
     readonly property bool playing: MediaService.playing
     readonly property string title: MediaService.title
+    property real trackArtworkOpacity: 1
+    property real trackArtworkScale: 1
+    property real trackMetadataOffset: 0
+    property real trackMetadataOpacity: 1
 
     function syncCavaConsumer() {
         if (!componentReady || cavaConsumerActive === cavaConsumerAcquired)
@@ -62,6 +66,93 @@ Item {
     }
     onCavaConsumerActiveChanged: syncCavaConsumer()
 
+    Connections {
+        function onPostTrackChanged() {
+            trackChangeDebounce.restart();
+        }
+
+        enabled: !!root.activePlayer
+        target: root.activePlayer
+    }
+    Timer {
+        id: trackChangeDebounce
+
+        interval: 16
+
+        onTriggered: trackChangeAnimation.restart()
+    }
+    SequentialAnimation {
+        id: trackChangeAnimation
+
+        ParallelAnimation {
+            NumberAnimation {
+                duration: Config.animationDuration(90)
+                easing.type: Easing.InCubic
+                from: 1
+                property: "trackArtworkOpacity"
+                target: root
+                to: 0.08
+            }
+            NumberAnimation {
+                duration: Config.animationDuration(90)
+                easing.type: Easing.InCubic
+                from: 1
+                property: "trackArtworkScale"
+                target: root
+                to: 0.72
+            }
+            NumberAnimation {
+                duration: Config.animationDuration(80)
+                easing.type: Easing.InCubic
+                from: 1
+                property: "trackMetadataOpacity"
+                target: root
+                to: 0
+            }
+            NumberAnimation {
+                duration: Config.animationDuration(90)
+                easing.type: Easing.InCubic
+                from: 0
+                property: "trackMetadataOffset"
+                target: root
+                to: 6
+            }
+        }
+        ParallelAnimation {
+            NumberAnimation {
+                duration: Config.animationDuration(190)
+                easing.type: Easing.OutCubic
+                from: 0.08
+                property: "trackArtworkOpacity"
+                target: root
+                to: 1
+            }
+            NumberAnimation {
+                duration: Config.animationDuration(210)
+                easing.type: Easing.OutCubic
+                from: 0.72
+                property: "trackArtworkScale"
+                target: root
+                to: 1
+            }
+            NumberAnimation {
+                duration: Config.animationDuration(180)
+                easing.type: Easing.OutCubic
+                from: 0
+                property: "trackMetadataOpacity"
+                target: root
+                to: 1
+            }
+            NumberAnimation {
+                duration: Config.animationDuration(200)
+                easing.type: Easing.OutCubic
+                from: 6
+                property: "trackMetadataOffset"
+                target: root
+                to: 0
+            }
+        }
+    }
     RowLayout {
         id: playerContent
 
@@ -94,17 +185,23 @@ Item {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: 46
             Layout.preferredWidth: 46
-            scale: artworkMouse.pressed ? 0.9 : 1
+            opacity: root.trackArtworkOpacity
+            scale: (artworkMouse.pressed ? 0.9 : 1) * root.trackArtworkScale
 
             Behavior on scale {
+                enabled: !trackChangeAnimation.running
+
                 NumberAnimation {
-                    duration: 150
+                    duration: Config.animationDuration(150)
                     easing.type: Easing.OutCubic
                 }
             }
 
             Canvas {
                 id: visualizerCanvas
+
+                property var pointX: []
+                property var pointY: []
 
                 anchors.centerIn: parent
                 antialiasing: true
@@ -125,7 +222,10 @@ Item {
                     var cx = width / 2;
                     var cy = height / 2;
 
-                    var points = [];
+                    if (pointX.length !== numBars) {
+                        pointX = new Array(numBars);
+                        pointY = new Array(numBars);
+                    }
                     for (var i = 0; i < numBars; i++) {
                         var angle = (i / numBars) * Math.PI * 2 - Math.PI / 2;
                         var level = Number(bars[i] || 0) * CavaService.levelScale;
@@ -135,13 +235,11 @@ Item {
                             radius += 1.5 + visualLevel * 7;
                         }
 
-                        points.push({
-                            x: cx + Math.cos(angle) * radius,
-                            y: cy + Math.sin(angle) * radius
-                        });
+                        pointX[i] = cx + Math.cos(angle) * radius;
+                        pointY[i] = cy + Math.sin(angle) * radius;
                     }
 
-                    if (points.length < 2)
+                    if (pointX.length < 2)
                         return;
 
                     ctx.beginPath();
@@ -155,20 +253,17 @@ Item {
                     ctx.lineCap = "round";
                     ctx.lineJoin = "round";
 
-                    var pLast = points[numBars - 1];
-                    var p0 = points[0];
-                    var startX = (pLast.x + p0.x) / 2;
-                    var startY = (pLast.y + p0.y) / 2;
+                    var startX = (pointX[numBars - 1] + pointX[0]) / 2;
+                    var startY = (pointY[numBars - 1] + pointY[0]) / 2;
 
                     ctx.moveTo(startX, startY);
 
                     for (var i = 0; i < numBars; i++) {
-                        var pCurrent = points[i];
-                        var pNext = points[(i + 1) % numBars];
-                        var midX = (pCurrent.x + pNext.x) / 2;
-                        var midY = (pCurrent.y + pNext.y) / 2;
+                        var nextIndex = (i + 1) % numBars;
+                        var midX = (pointX[i] + pointX[nextIndex]) / 2;
+                        var midY = (pointY[i] + pointY[nextIndex]) / 2;
 
-                        ctx.quadraticCurveTo(pCurrent.x, pCurrent.y, midX, midY);
+                        ctx.quadraticCurveTo(pointX[i], pointY[i], midX, midY);
                     }
 
                     ctx.closePath();
@@ -321,11 +416,16 @@ Item {
 
             Layout.fillHeight: true
             Layout.fillWidth: true
-            opacity: 1 - Math.min(0.42, Math.abs(dragOffset) / 150)
+            opacity: (1 - Math.min(0.42, Math.abs(dragOffset) / 150)) * root.trackMetadataOpacity
 
-            transform: Translate {
-                x: metadata.dragOffset
-            }
+            transform: [
+                Translate {
+                    x: metadata.dragOffset
+                },
+                Translate {
+                    y: root.trackMetadataOffset
+                }
+            ]
 
             NumberAnimation {
                 id: metadataReturnAnimation

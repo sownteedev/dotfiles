@@ -1,5 +1,6 @@
 import "." as SettingsComponents
 import "../../"
+import ".."
 import QtQuick
 import Qt5Compat.GraphicalEffects
 import QtQuick.Layouts
@@ -13,9 +14,9 @@ Rectangle {
 
     signal keybindEdited(string oldHeader, string newKey)
 
-    color: Config.alpha(Config.md3.on_surface, 0.045)
+    color: Config.md3.surface_container_low
     implicitHeight: content.implicitHeight + 30
-    radius: 16
+    radius: Md3.shape.large
 
     ColumnLayout {
         id: content
@@ -33,26 +34,22 @@ Rectangle {
             Rectangle {
                 Layout.preferredHeight: 28
                 Layout.preferredWidth: 28
-                color: Config.alpha(Config.md3.on_surface, 0.08)
+                color: Config.md3.secondary_container
                 radius: 14
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 16
-                    layer.enabled: true
-                    source: Quickshell.iconPath(root.groupData.icon)
-                    width: 16
-
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.on_surface
-                    }
+                    color: Config.md3.on_secondary_container
+                    filled: true
+                    name: root.groupData.icon
+                    size: 16
                 }
             }
             Text {
                 Layout.fillWidth: true
                 color: Config.md3.on_surface
                 font.family: Config.fontName
-                font.pixelSize: 17
+                font.pixelSize: Md3.typography.titleMedium
                 font.weight: Font.DemiBold
                 text: root.groupData.name
             }
@@ -61,7 +58,7 @@ Rectangle {
             Layout.bottomMargin: 4
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Config.alpha(Config.md3.on_surface, 0.05)
+            color: Config.md3.outline_variant
         }
         Repeater {
             model: root.groupData.items || []
@@ -83,10 +80,10 @@ Rectangle {
                 }
                 Text {
                     Layout.fillWidth: true
-                    color: Config.alpha(Config.md3.on_surface, 0.78)
+                    color: Config.md3.on_surface_variant
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: Md3.typography.bodyMedium
                     font.weight: Font.Medium
                     text: modelData.description
                 }

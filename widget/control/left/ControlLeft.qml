@@ -19,9 +19,9 @@ PanelWindow {
 
     // Tab navigation - Top
     property int activeTopTab: 0
-    readonly property var bottomPages: ["Weather", "Music"]
-    readonly property var bottomTabIcons: ["weather-few-clouds-symbolic", "multimedia-audio-player-symbolic"]
-    readonly property var bottomTabLabels: ["Weather", "Music"]
+    readonly property var bottomPages: ["Stats", "Timers"]
+    readonly property var bottomTabIcons: ["utilities-system-monitor-symbolic", "preferences-system-time-symbolic"]
+    readonly property var bottomTabLabels: ["Stats", "Timer"]
     readonly property bool compact: Responsive.constrained(panelWidth, height - outerMargin * 2, 560, 760)
     readonly property real contentMargin: compact ? 14 : 20
     property bool destroyed: false
@@ -29,18 +29,18 @@ PanelWindow {
     property bool edgeDragging: false
     property bool edgeSnapAnimating: false
     property int edgeSnapDuration: 300
+    property bool effectsEnabled: false
+    readonly property bool effectsRunning: active && effectsEnabled && !edgeDragging && !edgeSnapAnimating
     readonly property real outerMargin: 10
     readonly property real panelWidth: Responsive.sidePanelWidth(width)
     property int previousBottomTab: 0
     property int previousTopTab: 0
-    readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09)
-    readonly property color sectionColor: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.66 : 0.46)
+    readonly property color sectionBorderColor: Config.md3.outline_variant
+    readonly property color sectionColor: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.92 : 0.82)
     readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
-    readonly property var topPages: ["Calendar", "Todo", "Timers"]
-    readonly property Item topPopupBackdropHost: topSection
-    readonly property real topPopupBackdropRadius: topSection.radius
-    readonly property var topTabIcons: ["x-office-calendar-symbolic", "checkbox-checked-symbolic", "preferences-system-time-symbolic"]
-    readonly property var topTabLabels: ["Calendar", "Todo", "Timer"]
+    readonly property var topPages: ["Weather", "Music"]
+    readonly property var topTabIcons: ["weather-few-clouds-symbolic", "multimedia-audio-player-symbolic"]
+    readonly property var topTabLabels: ["Weather", "Music"]
 
     signal dismissed
 
@@ -55,6 +55,8 @@ PanelWindow {
         if (active)
             return;
         slideAnim.stop();
+        effectsResumeTimer.stop();
+        effectsEnabled = false;
         edgeSnapAnimating = false;
         edgeDragProgress = 0;
         edgeDragging = true;
@@ -74,6 +76,9 @@ PanelWindow {
 
         if (!shouldOpen && releasedProgress <= 0.001) {
             popup.closedProgress = 1;
+            edgeSnapAnimating = false;
+            effectsEnabled = false;
+            effectsResumeTimer.stop();
             Qt.callLater(function () {
                 if (!active && !edgeDragging && !slideAnim.running)
                     dismissed();
@@ -83,14 +88,18 @@ PanelWindow {
         animatePopup(shouldOpen ? 0 : 1, edgeSnapDuration, Easing.InOutSine);
     }
     function hideControl() {
-        edgeSnapAnimating = false;
+        edgeSnapAnimating = true;
+        effectsEnabled = false;
+        effectsResumeTimer.stop();
         edgeDragging = false;
         edgeDragProgress = 0;
         active = false;
         animatePopup(1, 300, Easing.OutCubic);
     }
     function showControl() {
-        edgeSnapAnimating = false;
+        edgeSnapAnimating = true;
+        effectsEnabled = false;
+        effectsResumeTimer.stop();
         edgeDragging = false;
         edgeDragProgress = 0;
         active = true;
@@ -129,7 +138,7 @@ PanelWindow {
     visible: active || edgeDragging || slideAnim.running || popup.closedProgress < 0.999
 
     BackgroundEffect.blurRegion: Region {
-        item: Config.shellBlurControlLeftEnabled ? popup : null
+        item: Config.shellBlurControlLeftEnabled && controlLeftWindow.visible ? popup : null
         radius: popup.radius
     }
 
@@ -137,6 +146,7 @@ PanelWindow {
         StateManager.controlLeftPanel = controlLeftWindow;
     }
     Component.onDestruction: {
+        effectsResumeTimer.stop();
         destroyed = true;
         if (StateManager.controlLeftPanel === controlLeftWindow)
             StateManager.controlLeftPanel = null;
@@ -149,8 +159,20 @@ PanelWindow {
         onClicked: hideControl()
     }
     ShellShadow {
+        active: controlLeftWindow.visible
         cornerRadius: popup.radius
         target: popup
+    }
+    Timer {
+        id: effectsResumeTimer
+
+        interval: 56
+        repeat: false
+
+        onTriggered: {
+            if (controlLeftWindow.active && !controlLeftWindow.edgeDragging && !controlLeftWindow.edgeSnapAnimating)
+                controlLeftWindow.effectsEnabled = true;
+        }
     }
 
     // ─── Sliding Sidebar Container ───────────────────────────────────────────────
@@ -180,7 +202,9 @@ PanelWindow {
 
             onFinished: {
                 controlLeftWindow.edgeSnapAnimating = false;
-                if (!controlLeftWindow.active)
+                if (controlLeftWindow.active)
+                    effectsResumeTimer.restart();
+                else
                     controlLeftWindow.dismissed();
             }
         }
@@ -210,37 +234,23 @@ PanelWindow {
                 color: controlLeftWindow.sectionColor
                 radius: 18
 
-                AnimatedFireflies {
+                AnimatedWeather {
                     anchors.fill: parent
-                    color: Config.md3.tertiary
-                    running: controlLeftWindow.active && activeTopTab === 0
+                    running: controlLeftWindow.effectsRunning && activeTopTab === 0 && WeatherService.icon !== ""
                     visible: activeTopTab === 0
+                    weatherIcon: WeatherService.icon
                 }
-                AnimatedStars {
+                AnimatedWaves {
                     anchors.fill: parent
                     color: Config.md3.primary
-                    running: controlLeftWindow.active && activeTopTab === 1
+                    running: controlLeftWindow.effectsRunning && activeTopTab === 1
                     visible: activeTopTab === 1
                 }
-                AnimatedPulse {
-                    readonly property bool hasTimerGeometry: activeTopTab === 2 && timerLoader && timerLoader.status === Loader.Ready && timerLoader.item && typeof timerLoader.item.dialCenter !== "undefined" && typeof timerLoader.item.dialSize !== "undefined"
-                    readonly property point timerCenter: {
-                        if (!hasTimerGeometry)
-                            return Qt.point(width / 2, height / 2);
-                        timerLoader.x;
-                        timerLoader.y;
-                        return timerLoader.item.mapToItem(topSection, timerLoader.item.dialCenter.x, timerLoader.item.dialCenter.y);
-                    }
-                    readonly property var timerLoader: topPagesRepeater && topPagesRepeater.count > 2 ? topPagesRepeater.itemAt(2) : null
-
+                AnimatedBubbles {
                     anchors.fill: parent
-                    centerX: timerCenter.x
-                    centerY: timerCenter.y
-                    color: CountdownService.completed ? Config.md3.secondary : Config.md3.primary
-                    endRadius: Math.hypot(Math.max(centerX, width - centerX), Math.max(centerY, height - centerY)) + 12
-                    running: controlLeftWindow.active && activeTopTab === 2 && CountdownService.running
-                    startRadius: hasTimerGeometry ? timerLoader.item.dialSize / 2 - 20 : Math.min(width, height) * 0.3
-                    visible: activeTopTab === 2
+                    color: Config.md3.primary
+                    running: controlLeftWindow.effectsRunning && activeTopTab === 1
+                    visible: activeTopTab === 1
                 }
                 ColumnLayout {
                     anchors.fill: parent
@@ -295,20 +305,16 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     spacing: 10
 
-                                    IconImage {
+                                    Md3Icon {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        height: 26
-                                        layer.enabled: true
-                                        source: Quickshell.iconPath(topTabIcons[index])
-                                        width: 26
+                                        color: topTabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface_variant
+                                        filled: topTabBtn.isActive
+                                        name: topTabIcons[index]
+                                        size: 28
 
-                                        layer.effect: ColorOverlay {
-                                            color: topTabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface
-
-                                            Behavior on color {
-                                                ColorAnimation {
-                                                    duration: 150
-                                                }
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: Config.animationDuration(Md3.motion.short3)
                                             }
                                         }
                                     }
@@ -380,6 +386,8 @@ PanelWindow {
 
             // ── 2. Bottom Tab Content Box ─────────────────────────────────────────
             ClippingRectangle {
+                id: bottomSection
+
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
@@ -389,23 +397,26 @@ PanelWindow {
                 color: controlLeftWindow.sectionColor
                 radius: 18
 
-                AnimatedWeather {
+                AnimatedPulse {
+                    readonly property bool hasTimerGeometry: activeBottomTab === timerTabIndex && timerLoader && timerLoader.status === Loader.Ready && timerLoader.item && typeof timerLoader.item.dialCenter !== "undefined" && typeof timerLoader.item.dialSize !== "undefined"
+                    readonly property point timerCenter: {
+                        if (!hasTimerGeometry)
+                            return Qt.point(width / 2, height / 2);
+                        timerLoader.x;
+                        timerLoader.y;
+                        return timerLoader.item.mapToItem(bottomSection, timerLoader.item.dialCenter.x, timerLoader.item.dialCenter.y);
+                    }
+                    readonly property var timerLoader: timerTabIndex >= 0 && bottomPagesRepeater.count > timerTabIndex ? bottomPagesRepeater.itemAt(timerTabIndex) : null
+                    readonly property int timerTabIndex: controlLeftWindow.bottomPages.indexOf("Timers")
+
                     anchors.fill: parent
-                    running: controlLeftWindow.active && activeBottomTab === 0 && WeatherService.icon !== ""
-                    visible: activeBottomTab === 0
-                    weatherIcon: WeatherService.icon
-                }
-                AnimatedWaves {
-                    anchors.fill: parent
-                    color: Config.md3.primary
-                    running: controlLeftWindow.active && activeBottomTab === 1
-                    visible: activeBottomTab === 1
-                }
-                AnimatedBubbles {
-                    anchors.fill: parent
-                    color: Config.md3.primary
-                    running: controlLeftWindow.active && activeBottomTab === 1
-                    visible: activeBottomTab === 1
+                    centerX: timerCenter.x
+                    centerY: timerCenter.y
+                    color: CountdownService.completed ? Config.md3.secondary : Config.md3.primary
+                    endRadius: Math.hypot(Math.max(centerX, width - centerX), Math.max(centerY, height - centerY)) + 12
+                    running: controlLeftWindow.effectsRunning && activeBottomTab === timerTabIndex && CountdownService.running
+                    startRadius: hasTimerGeometry ? timerLoader.item.dialSize / 2 - 20 : Math.min(width, height) * 0.3
+                    visible: activeBottomTab === timerTabIndex
                 }
                 ColumnLayout {
                     anchors.fill: parent
@@ -460,20 +471,16 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     spacing: 10
 
-                                    IconImage {
+                                    Md3Icon {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        height: 26
-                                        layer.enabled: true
-                                        source: Quickshell.iconPath(bottomTabIcons[index])
-                                        width: 26
+                                        color: bottomTabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface_variant
+                                        filled: bottomTabBtn.isActive
+                                        name: bottomTabIcons[index]
+                                        size: 26
 
-                                        layer.effect: ColorOverlay {
-                                            color: bottomTabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface
-
-                                            Behavior on color {
-                                                ColorAnimation {
-                                                    duration: 150
-                                                }
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: Config.animationDuration(Md3.motion.short3)
                                             }
                                         }
                                     }
@@ -511,6 +518,8 @@ PanelWindow {
                         clip: true
 
                         Repeater {
+                            id: bottomPagesRepeater
+
                             model: bottomPages.length
 
                             delegate: Loader {

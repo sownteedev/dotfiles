@@ -2,16 +2,16 @@ import ".."
 import "../../"
 import QtQuick
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
-import Quickshell
-import Quickshell.Widgets
 
 Rectangle {
     id: root
 
     property color accentColor: Config.md3.primary
+    property real controlWidth: 156
     property string label: ""
     property string note: ""
+    property bool showDivider: false
+    readonly property bool stacked: width < 480
     property color valueBadgeColor: "transparent"
     property string valueText: ""
 
@@ -28,22 +28,18 @@ Rectangle {
     Accessible.name: qsTr("%1: %2").arg(label).arg(valueText)
     Accessible.role: Accessible.ComboBox
     Layout.fillWidth: true
-    activeFocusOnTab: enabled
-    border.color: activeFocus ? Config.alpha(accentColor, 0.7) : "transparent"
-    border.width: 1
+    Layout.minimumWidth: 0
+    activeFocusOnTab: false
+    border.width: 0
     color: "transparent"
-    implicitHeight: note === "" ? 52 : 62
-    opacity: enabled ? 1 : 0.45
-    radius: 10
+    implicitHeight: Math.max(56, row.implicitHeight + 24)
+    implicitWidth: 0
+    opacity: enabled ? 1 : Md3.state.disabledContent
+    radius: Md3.shape.medium
 
-    Behavior on border.color {
-        ColorAnimation {
-            duration: 130
-        }
-    }
     Behavior on opacity {
         NumberAnimation {
-            duration: 120
+            duration: Config.animationDuration(Md3.motion.short2)
         }
     }
 
@@ -55,58 +51,64 @@ Rectangle {
         }
     }
 
-    RowLayout {
-        anchors.fill: parent
-        anchors.leftMargin: 4
-        anchors.rightMargin: 4
-        spacing: 14
+    GridLayout {
+        id: row
 
-        ColumnLayout {
+        anchors.left: parent.left
+        anchors.leftMargin: Md3.spacing.xxs
+        anchors.right: parent.right
+        anchors.rightMargin: Md3.spacing.xxs
+        anchors.top: parent.top
+        anchors.topMargin: 12
+        columnSpacing: Md3.spacing.md
+        columns: root.stacked ? 1 : 2
+        rowSpacing: Md3.spacing.sm
+
+        SettingsLabelBlock {
+            id: labelBlock
+
             Layout.fillWidth: true
-            spacing: 2
-
-            Text {
-                Layout.fillWidth: true
-                color: Config.md3.on_surface
-                elide: Text.ElideRight
-                font.family: Config.fontName
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
-                renderType: Text.NativeRendering
-                text: root.label
-            }
-            Text {
-                Layout.fillWidth: true
-                color: Config.alpha(Config.md3.on_surface, 0.46)
-                elide: Text.ElideRight
-                font.family: Config.fontName
-                font.pixelSize: 12
-                renderType: Text.NativeRendering
-                text: root.note
-                visible: text !== ""
-            }
+            Layout.minimumWidth: 0
+            Layout.preferredWidth: 0
+            headline: root.label
+            supportingText: root.note
         }
         Rectangle {
             id: selectorButton
 
-            Layout.preferredHeight: 42
-            Layout.preferredWidth: 148
-            border.color: Config.alpha(root.activeFocus ? root.accentColor : Config.md3.on_surface, root.activeFocus ? 0.42 : 0.08)
+            readonly property bool pointerHovered: tileMouse.containsMouse && pointerPosition.x >= 0 && pointerPosition.x < width && pointerPosition.y >= 0 && pointerPosition.y < height
+            readonly property point pointerPosition: selectorButton.mapFromItem(tileMouse, tileMouse.mouseX, tileMouse.mouseY)
+
+            Layout.fillWidth: root.stacked
+            Layout.maximumWidth: root.stacked ? Infinity : root.controlWidth
+            Layout.minimumWidth: 0
+            Layout.preferredHeight: 44
+            Layout.preferredWidth: root.stacked ? 0 : root.controlWidth
+            border.color: pointerHovered ? Config.alpha(Config.md3.on_surface, 0.56) : Config.alpha(Config.md3.outline, 0.22)
             border.width: 1
-            color: tileMouse.pressed ? Config.alpha(root.accentColor, 0.17) : tileMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.045)
-            radius: 11
+            color: Config.md3.surface_container_low
+            radius: Md3.shape.medium
 
             Behavior on border.color {
                 ColorAnimation {
-                    duration: 130
-                }
-            }
-            Behavior on color {
-                ColorAnimation {
-                    duration: 130
+                    duration: Config.animationDuration(Md3.motion.short3)
                 }
             }
 
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1
+                color: Config.md3.on_surface
+                opacity: tileMouse.pressed && selectorButton.pointerHovered ? Md3.state.pressed : selectorButton.pointerHovered ? Md3.state.hover : 0
+                radius: Math.max(0, selectorButton.radius - 1)
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Config.animationDuration(Md3.motion.short2)
+                        easing.type: Md3.motion.standard
+                    }
+                }
+            }
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 13
@@ -125,24 +127,29 @@ Rectangle {
                     color: Config.alpha(Config.md3.on_surface, 0.78)
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 13
-                    font.weight: Font.DemiBold
+                    font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                    font.pixelSize: Md3.typeScale.labelLarge.size
+                    font.weight: Md3.typeScale.labelLarge.weight
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
                     text: root.valueText
                 }
-                IconImage {
+                Md3Icon {
                     Layout.preferredHeight: 16
                     Layout.preferredWidth: 16
-                    layer.enabled: true
-                    source: Quickshell.iconPath("pan-down-symbolic")
-
-                    layer.effect: ColorOverlay {
-                        color: Config.alpha(Config.md3.on_surface, 0.58)
-                    }
+                    color: Config.md3.on_surface_variant
+                    name: "expand_more"
+                    size: 18
                 }
             }
         }
+    }
+    Rectangle {
+        anchors.bottom: parent.bottom
+        color: Config.alpha(Config.md3.outline_variant, 0.45)
+        height: 1
+        visible: root.showDivider
+        width: parent.width
     }
     MouseArea {
         id: tileMouse
@@ -152,9 +159,6 @@ Rectangle {
         enabled: root.enabled
         hoverEnabled: true
 
-        onClicked: {
-            root.focus = false;
-            root.activate();
-        }
+        onClicked: root.activate()
     }
 }

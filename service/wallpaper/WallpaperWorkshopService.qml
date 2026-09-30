@@ -9,7 +9,7 @@ QtObject {
     id: root
 
     property string actionStatusMessage: ""
-    readonly property int activeFilterCount: (typeFilter === "all" ? 0 : 1) + (ageRatingFilter === "" ? 0 : 1) + (resolutionFilter === "" ? 0 : 1) + genreFilters.length + featureFilters.length
+    readonly property int activeFilterCount: (ageRatingFilter === "" ? 0 : 1) + (resolutionFilter === "" ? 0 : 1) + (sortMode === "trending" ? 0 : 1) + (trendingDays === 7 ? 0 : 1) + (matchAllTags ? 0 : 1) + (includeRecentVotesOnly ? 1 : 0) + (includeNsfw ? 1 : 0) + genreFilters.length + featureFilters.length
     property string ageRatingFilter: ""
     readonly property string browseErrorMessage: loginErrorMessage || downloadErrorMessage || searchErrorMessage
     property bool browseFiltersDirty: false
@@ -99,6 +99,8 @@ QtObject {
     property var genreFilters: []
     readonly property bool hasMore: results.count < totalResults
     readonly property string helperPath: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
+    property bool includeNsfw: false
+    property bool includeRecentVotesOnly: false
     property string installedLoadErrorMessage: ""
     property bool installedLoaded: false
     property Process installedProcess: Process {
@@ -195,6 +197,7 @@ QtObject {
     }
     readonly property string manageErrorMessage: loginErrorMessage || downloadErrorMessage || removeErrorMessage || installedLoadErrorMessage
     readonly property string manageStatusMessage: actionStatusMessage || installedStatusMessage
+    property bool matchAllTags: true
     property int page: 1
     property int panelConsumers: 0
     property var pendingSearchRequest: null
@@ -385,6 +388,7 @@ QtObject {
     property bool subscriptionRefreshPending: false
     property bool subscriptionsLoaded: false
     property int totalResults: 0
+    property int trendingDays: 7
     property string typeFilter: "all"
 
     signal downloadCompleted(string publishedFileId, string path, var modified, string purpose)
@@ -446,8 +450,12 @@ QtObject {
         ageRatingFilter = "";
         featureFilters = [];
         genreFilters = [];
+        includeNsfw = false;
+        includeRecentVotesOnly = false;
+        matchAllTags = true;
         resolutionFilter = "";
-        typeFilter = "all";
+        sortMode = "trending";
+        trendingDays = 7;
         markFiltersChanged();
         return true;
     }
@@ -571,10 +579,15 @@ QtObject {
 
         loginErrorCode = "";
         loginErrorMessage = "";
-        actionStatusMessage = qsTr("Opening SteamCMD login in Black Box…");
+        actionStatusMessage = qsTr("Opening SteamCMD login…");
         var loginCommand = shellQuote(helperPath) + " wallpaper-workshop-login " + shellQuote(username) + "; result=$?; print; if [ $result -eq 0 ]; then print -r -- 'SteamCMD login complete.'; else print -r -- \"SteamCMD login failed (exit $result).\"; fi; print -rn -- 'Press any key to close…'; read -rk 1; exit $result";
         var terminalCommand = "exec /usr/bin/zsh -c " + shellQuote(loginCommand);
-        loginTerminal.command = ["blackbox-terminal", "--command", terminalCommand];
+        var terminalArguments = DefaultAppsService.terminalCommand(terminalCommand);
+        if (terminalArguments.length === 0) {
+            loginErrorMessage = qsTr("No supported terminal is installed");
+            return false;
+        }
+        loginTerminal.command = terminalArguments;
         loginTerminal.launchPending = true;
         loginTerminal.running = true;
         return true;
@@ -628,7 +641,7 @@ QtObject {
         steamItemSubscribed = Boolean(item.subscribed);
         steamItemTitle = String(item.title || publishedFileId);
         actionStatusMessage = qsTr("Opening %1 in Steam…").arg(String(item.title || publishedFileId));
-        Quickshell.execDetached(["xdg-open", "steam://url/CommunityFilePage/" + publishedFileId]);
+        Quickshell.execDetached(DefaultAppsService.openUrl("steam://url/CommunityFilePage/" + publishedFileId));
         return true;
     }
     function parseResponse(output, errorOutput, fallbackMessage) {
@@ -843,13 +856,16 @@ QtObject {
         searchRequest.start("wallpaper.workshop.search", {
             "api_key": Config.steamWebApiKey.trim(),
             "excluded_tags": ["Application", "Web"],
+            "include_nsfw": includeNsfw,
+            "include_recent_votes_only": includeRecentVotesOnly,
             "legacy_workshop_root": Config.legacyWallpaperEngineWorkshopDir,
-            "match_all_tags": true,
+            "match_all_tags": matchAllTags,
             "page": page,
             "query": query,
             "required_tags": requiredTags(),
             "sort": sortMode,
             "steam_root": Config.steamDir,
+            "trending_days": trendingDays,
             "workshop_root": Config.wallpaperEngineWorkshopDir
         });
         return true;
@@ -866,12 +882,59 @@ QtObject {
         markFiltersChanged();
         return true;
     }
+    function setIncludeNsfw(enabled) {
+        var normalized = Boolean(enabled);
+        if (includeNsfw === normalized)
+            return false;
+
+        includeNsfw = normalized;
+        markFiltersChanged();
+        return true;
+    }
+    function setIncludeRecentVotesOnly(enabled) {
+        var normalized = Boolean(enabled);
+        if (includeRecentVotesOnly === normalized)
+            return false;
+
+        includeRecentVotesOnly = normalized;
+        markFiltersChanged();
+        return true;
+    }
+    function setMatchAllTags(enabled) {
+        var normalized = Boolean(enabled);
+        if (matchAllTags === normalized)
+            return false;
+
+        matchAllTags = normalized;
+        markFiltersChanged();
+        return true;
+    }
     function setResolutionFilter(filter) {
         var normalized = String(filter || "").trim();
         if (resolutionFilter === normalized)
             return false;
 
         resolutionFilter = normalized;
+        markFiltersChanged();
+        return true;
+    }
+    function setSortMode(mode) {
+        var normalized = String(mode || "trending");
+        if (["trending", "popular", "recent", "relevance", "subscribed", "votes_up", "played", "updated"].indexOf(normalized) < 0)
+            normalized = "trending";
+        if (sortMode === normalized)
+            return false;
+
+        sortMode = normalized;
+        markFiltersChanged();
+        return true;
+    }
+    function setTrendingDays(days) {
+        var normalized = Number(days) === 1 ? 1 : 7;
+        if (trendingDays === normalized)
+            return false;
+
+        trendingDays = normalized;
         markFiltersChanged();
         return true;
     }

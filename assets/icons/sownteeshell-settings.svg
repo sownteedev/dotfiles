@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>SownteeShell Settings</title>
+  <desc>A cream gear on a sage tile with a circular S signature at the bottom right.</desc>
+  <rect x="8" y="8" width="108" height="108" rx="30" fill="#b9cba5"/>
+  <rect x="9" y="9" width="106" height="106" rx="29" fill="none" stroke="#dce7cf" stroke-width="2"/>
+  <g fill="#f5f3e7">
+    <rect x="52" y="22" width="16" height="24" rx="5"/>
+    <rect x="52" y="22" width="16" height="24" rx="5" transform="rotate(45 60 58)"/>
+    <rect x="52" y="22" width="16" height="24" rx="5" transform="rotate(90 60 58)"/>
+    <rect x="52" y="22" width="16" height="24" rx="5" transform="rotate(135 60 58)"/>
+    <rect x="52" y="22" width="16" height="24" rx="5" transform="rotate(180 60 58)"/>
+    <rect x="52" y="22" width="16" height="24" rx="5" transform="rotate(225 60 58)"/>
+    <rect x="52" y="22" width="16" height="24" rx="5" transform="rotate(270 60 58)"/>
+    <rect x="52" y="22" width="16" height="24" rx="5" transform="rotate(315 60 58)"/>
+    <circle cx="60" cy="58" r="27"/>
+  </g>
+  <circle cx="60" cy="58" r="16" fill="#3a513e"/>
+  <circle cx="60" cy="58" r="8" fill="#b9cba5"/>
+  <circle cx="102" cy="102" r="22" fill="#293e30" stroke="#f5f3e7" stroke-width="4"/>
+  <path d="M110 94 C107 89 97 89 95 94 C91 103 113 99 109 109 C107 114 97 114 94 110" fill="none" stroke="#d8e8c3" stroke-width="4.5" stroke-linecap="round"/>
+</svg>

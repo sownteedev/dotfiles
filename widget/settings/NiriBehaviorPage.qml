@@ -500,9 +500,14 @@ ScrollView {
                     title: "Drag edge view scroll"
                     toggleVisible: false
 
-                    RowLayout {
+                    GridLayout {
+                        id: dndViewFields
+
                         Layout.fillWidth: true
-                        spacing: 12
+                        columnSpacing: Md3.spacing.sm
+                        columns: Responsive.columnsFor(width, 140, 3, 1, columnSpacing)
+                        rowSpacing: Md3.spacing.sm
+                        uniformCellWidths: true
 
                         SettingsTextField {
                             id: dndViewTriggerWidth
@@ -533,6 +538,7 @@ ScrollView {
                         SettingsTextField {
                             id: dndViewMaxSpeed
 
+                            Layout.columnSpan: dndViewFields.columns === 2 ? 2 : 1
                             Layout.fillWidth: true
                             Layout.preferredWidth: 1
                             label: "Maximum speed"
@@ -554,9 +560,14 @@ ScrollView {
                     title: "Drag edge workspace switch"
                     toggleVisible: false
 
-                    RowLayout {
+                    GridLayout {
+                        id: dndWorkspaceFields
+
                         Layout.fillWidth: true
-                        spacing: 12
+                        columnSpacing: Md3.spacing.sm
+                        columns: Responsive.columnsFor(width, 140, 3, 1, columnSpacing)
+                        rowSpacing: Md3.spacing.sm
+                        uniformCellWidths: true
 
                         SettingsTextField {
                             id: dndWorkspaceTriggerHeight
@@ -587,6 +598,7 @@ ScrollView {
                         SettingsTextField {
                             id: dndWorkspaceMaxSpeed
 
+                            Layout.columnSpan: dndWorkspaceFields.columns === 2 ? 2 : 1
                             Layout.fillWidth: true
                             Layout.preferredWidth: 1
                             label: "Maximum speed"

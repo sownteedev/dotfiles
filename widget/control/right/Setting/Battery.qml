@@ -250,11 +250,14 @@ Item {
 
                         Text {
                             Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.55)
+                            color: Config.md3.on_surface_variant
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
+                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                            font.weight: Md3.typeScale.bodyMedium.weight
+                            lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: BatteryService.deviceName
                         }
                         Text {
@@ -262,8 +265,11 @@ Item {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 14
-                            font.weight: Font.Medium
+                            font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyLarge.size
+                            font.weight: Md3.typeScale.bodyLarge.weight
+                            lineHeight: Md3.typeScale.bodyLarge.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: root.batteryStatusText
                         }
                     }
@@ -304,10 +310,13 @@ Item {
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    color: Config.alpha(Config.md3.on_surface, 0.68)
+                                    color: Config.md3.on_surface_variant
                                     font.family: Config.fontName
-                                    font.pixelSize: 11
-                                    font.weight: Font.DemiBold
+                                    font.letterSpacing: Md3.typeScale.labelMedium.letterSpacing
+                                    font.pixelSize: Md3.typeScale.labelMedium.size
+                                    font.weight: Md3.typeScale.labelMedium.weight
+                                    lineHeight: Md3.typeScale.labelMedium.lineHeight
+                                    lineHeightMode: Text.FixedHeight
                                     text: UPower.onBattery ? qsTr("Battery power") : qsTr("External power")
                                 }
                             }
@@ -372,15 +381,13 @@ Item {
                         anchors.margins: 12
                         spacing: 11
 
-                        IconImage {
+                        Md3Icon {
                             Layout.preferredHeight: 20
                             Layout.preferredWidth: 20
-                            layer.enabled: true
-                            source: Quickshell.iconPath("dialog-warning-symbolic")
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_error_container
-                            }
+                            color: Config.md3.on_error_container
+                            filled: true
+                            name: "dialog-warning-symbolic"
+                            size: 20
                         }
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -390,15 +397,22 @@ Item {
                                 Layout.fillWidth: true
                                 color: Config.md3.on_error_container
                                 font.family: Config.fontName
-                                font.pixelSize: 14
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
+                                font.weight: Font.DemiBold
+                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: qsTr("Battery health is reduced")
                             }
                             Text {
                                 Layout.fillWidth: true
                                 color: Config.alpha(Config.md3.on_error_container, 0.76)
                                 font.family: Config.fontName
-                                font.pixelSize: 12
+                                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodyMedium.size
+                                font.weight: Md3.typeScale.bodyMedium.weight
+                                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: qsTr("Usable capacity is %1 of the original design capacity.").arg(BatteryService.health)
                                 wrapMode: Text.Wrap
                             }
@@ -421,22 +435,23 @@ Item {
                         anchors.margins: 12
                         spacing: 11
 
-                        IconImage {
+                        Md3Icon {
                             Layout.preferredHeight: 20
                             Layout.preferredWidth: 20
-                            layer.enabled: true
-                            source: Quickshell.iconPath("speedometer-symbolic")
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_tertiary_container
-                            }
+                            color: Config.md3.on_tertiary_container
+                            filled: true
+                            name: "speedometer-symbolic"
+                            size: 20
                         }
                         Text {
                             Layout.fillWidth: true
                             color: Config.md3.on_tertiary_container
                             font.family: Config.fontName
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
+                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                            font.weight: Md3.typeScale.bodyMedium.weight
+                            lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: BatteryService.performanceDegradationText
                             wrapMode: Text.Wrap
                         }
@@ -520,7 +535,11 @@ Item {
                     Layout.fillWidth: true
                     color: Config.md3.error
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: BatteryService.batteryAwareError
                     visible: text !== ""
                     wrapMode: Text.Wrap
@@ -646,15 +665,22 @@ Item {
                                 Layout.fillWidth: true
                                 color: Config.md3.on_surface
                                 font.family: Config.fontName
-                                font.pixelSize: 14
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
                                 font.weight: Font.DemiBold
+                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: BatteryService.fullChargeOnceActive ? qsTr("Temporary full charge is active") : qsTr("Need maximum runtime?")
                             }
                             Text {
                                 Layout.fillWidth: true
-                                color: Config.alpha(Config.md3.on_surface, 0.48)
+                                color: Config.md3.on_surface_variant
                                 font.family: Config.fontName
-                                font.pixelSize: 12
+                                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodyMedium.size
+                                font.weight: Md3.typeScale.bodyMedium.weight
+                                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: BatteryService.fullChargeOnceActive ? qsTr("Previous limits restore automatically after unplugging") : UPower.onBattery ? qsTr("Connect the charger to enable a one-time full charge") : qsTr("Charge to 100%, then restore the current limits after unplugging")
                                 wrapMode: Text.Wrap
                             }
@@ -678,7 +704,11 @@ Item {
                     Layout.fillWidth: true
                     color: Config.md3.error
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: BatteryService.chargeCommandError
                     visible: text !== ""
                     wrapMode: Text.Wrap
@@ -758,7 +788,11 @@ Item {
                     Layout.fillWidth: true
                     color: Config.md3.error
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: root.policyThresholdsValid ? "" : qsTr("Critical level must be lower than the low-battery level")
                     visible: text !== ""
                     wrapMode: Text.Wrap
@@ -806,8 +840,11 @@ Item {
                     Text {
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 14
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
                         font.weight: Font.DemiBold
+                        lineHeight: Md3.typeScale.titleMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: qsTr("Current governor")
                     }
                     Item {
@@ -816,8 +853,11 @@ Item {
                     Text {
                         color: Config.md3.on_surface_variant
                         font.family: Config.fontName
-                        font.pixelSize: 14
-                        font.weight: Font.Medium
+                        font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyLarge.size
+                        font.weight: Md3.typeScale.bodyLarge.weight
+                        lineHeight: Md3.typeScale.bodyLarge.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: BatteryService.currentGovernor
                     }
                 }
@@ -908,11 +948,14 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                color: Config.alpha(Config.md3.on_surface, 0.48)
+                color: Config.md3.on_surface_variant
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 12
-                font.weight: Font.Medium
+                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyMedium.size
+                font.weight: Md3.typeScale.bodyMedium.weight
+                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                lineHeightMode: Text.FixedHeight
                 text: metric.label
             }
             Text {
@@ -920,8 +963,11 @@ Item {
                 color: metric.accentColor
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 15
-                font.weight: Font.Bold
+                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.titleMedium.size
+                font.weight: Font.DemiBold
+                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                lineHeightMode: Text.FixedHeight
                 text: metric.valueText
             }
         }

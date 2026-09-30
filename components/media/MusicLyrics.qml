@@ -18,6 +18,7 @@ Rectangle {
     readonly property bool hasSyncedLyrics: syncedLines.length > 0
     property bool instrumental: false
     property bool loading: false
+    property bool lookupFailed: false
     property bool lyricScrollAnimating: false
     property var lyricsCache: ({})
     readonly property int lyricsCacheLimit: 24
@@ -28,6 +29,9 @@ Rectangle {
     property string pendingRequestKey: ""
     property string plainLyrics: ""
     property var player: null
+    property bool previewPositioned: false
+    property int previewPrepareAttempts: 0
+    readonly property bool previewReady: !hasSyncedLyrics || previewPositioned
     property string processRequestKey: ""
     property string requestKey: ""
     property var syncedLines: []
@@ -42,7 +46,8 @@ Rectangle {
         lyricsSource = sourceName || "";
         loading = false;
         activeLineIndex = -1;
-        updateActiveLine();
+        previewPositioned = false;
+        preparePreview();
     }
     function bestRecord(records) {
         var best = null;
@@ -92,8 +97,10 @@ Rectangle {
             return;
 
         if (exitCode !== 0) {
-            if (completedKey === currentKey() && pendingRequestKey === "")
+            if (completedKey === currentKey() && pendingRequestKey === "") {
                 loading = false;
+                lookupFailed = true;
+            }
             return;
         }
 
@@ -122,6 +129,13 @@ Rectangle {
         if (completedKey === currentKey())
             applyLyrics(cacheEntry.plainLyrics, cacheEntry.syncedLyrics, cacheEntry.instrumental, cacheEntry.source);
     }
+    function lineTargetY(lineIndex) {
+        var lineHeight = 32;
+        var minimumY = syncedList.originY;
+        var maximumY = Math.max(minimumY, minimumY + syncedList.contentHeight - syncedList.height);
+        var centeredY = minimumY + lineIndex * (lineHeight + syncedList.spacing) - (syncedList.height - lineHeight) / 2;
+        return Math.max(minimumY, Math.min(maximumY, centeredY));
+    }
     function lookup() {
         requestKey = currentKey();
         pendingRequestKey = "";
@@ -129,10 +143,12 @@ Rectangle {
         if (lyricsProcess.running)
             lyricsProcess.running = false;
         loading = false;
+        lookupFailed = false;
         instrumental = false;
         plainLyrics = "";
         syncedLines = [];
         activeLineIndex = -1;
+        previewPositioned = false;
         lyricsSource = "";
         if (!player || !player.trackTitle)
             return;
@@ -174,6 +190,35 @@ Rectangle {
             return left.time - right.time;
         });
         return result;
+    }
+    function positionPreview() {
+        if (!hasSyncedLyrics) {
+            previewPositioned = true;
+            return;
+        }
+
+        syncedList.forceLayout();
+        var lineIndex = activeLineIndex >= 0 ? activeLineIndex : 0;
+        if (syncedList.height <= 0 || syncedList.count <= lineIndex || syncedList.contentHeight <= 0) {
+            ++previewPrepareAttempts;
+            if (previewPrepareAttempts < 8)
+                previewPositionTimer.restart();
+            return;
+        }
+
+        lyricScrollAnimation.stop();
+        syncedList.contentY = lineTargetY(lineIndex);
+        lyricScrollAnimating = false;
+        previewPositioned = true;
+    }
+    function preparePreview() {
+        previewPrepareAttempts = 0;
+        previewPositioned = !hasSyncedLyrics;
+        if (previewPositioned)
+            return;
+
+        updateActiveLine();
+        previewPositionTimer.restart();
     }
     function recordScore(record) {
         if (!record || (!record.plainLyrics && !record.syncedLyrics && !record.instrumental))
@@ -227,11 +272,7 @@ Rectangle {
         if (selectLine)
             activeLineIndex = lineIndex;
 
-        var lineHeight = 32;
-        var minimumY = syncedList.originY;
-        var maximumY = Math.max(minimumY, minimumY + syncedList.contentHeight - syncedList.height);
-        var centeredY = minimumY + lineIndex * (lineHeight + syncedList.spacing) - (syncedList.height - lineHeight) / 2;
-        var targetY = Math.max(minimumY, Math.min(maximumY, centeredY));
+        var targetY = lineTargetY(lineIndex);
         var distance = Math.abs(targetY - syncedList.contentY);
         if (distance < 0.5) {
             syncedList.contentY = targetY;
@@ -241,7 +282,7 @@ Rectangle {
 
         lyricScrollAnimation.from = syncedList.contentY;
         lyricScrollAnimation.to = targetY;
-        lyricScrollAnimation.duration = Config.animationDuration(Math.min(420, 180 + distance * 0.7));
+        lyricScrollAnimation.duration = Config.animationDuration(Math.min(260, 150 + distance * 0.35));
         lyricScrollAnimation.start();
     }
     function seekToLine(lineIndex) {
@@ -251,6 +292,34 @@ Rectangle {
         var targetPosition = Math.max(0, Number(syncedLines[lineIndex].time || 0));
         scrollToLine(lineIndex, true);
         player.position = targetPosition;
+    }
+    function smoothPlainScroll(delta) {
+        var minimumY = plainFlick.originY;
+        var maximumY = minimumY + Math.max(0, plainFlick.contentHeight - plainFlick.height);
+        var currentTarget = plainScrollAnimation.running ? plainScrollAnimation.to : plainFlick.contentY;
+        var targetY = Math.max(minimumY, Math.min(maximumY, currentTarget - delta));
+        if (Math.abs(targetY - plainFlick.contentY) < 0.5)
+            return;
+
+        plainScrollAnimation.stop();
+        plainScrollAnimation.from = plainFlick.contentY;
+        plainScrollAnimation.to = targetY;
+        plainScrollAnimation.start();
+    }
+    function smoothSyncedScroll(delta) {
+        var minimumY = syncedList.originY;
+        var maximumY = minimumY + Math.max(0, syncedList.contentHeight - syncedList.height);
+        var currentTarget = lyricScrollAnimation.running ? lyricScrollAnimation.to : syncedList.contentY;
+        var targetY = Math.max(minimumY, Math.min(maximumY, currentTarget - delta));
+        if (Math.abs(targetY - syncedList.contentY) < 0.5)
+            return;
+
+        lyricScrollAnimation.stop();
+        lyricScrollAnimating = true;
+        lyricScrollAnimation.from = syncedList.contentY;
+        lyricScrollAnimation.to = targetY;
+        lyricScrollAnimation.duration = Config.animationDuration(150);
+        lyricScrollAnimation.start();
     }
     function startPendingLookup() {
         if (lyricsProcess.running || pendingRequestKey === "" || pendingCommand.length === 0)
@@ -297,8 +366,18 @@ Rectangle {
             else
                 break;
         }
-        if (nextIndex !== activeLineIndex)
+        if (nextIndex !== activeLineIndex) {
             activeLineIndex = nextIndex;
+            if (followLyrics && nextIndex >= 0) {
+                if (!previewPositioned) {
+                    previewPositionTimer.restart();
+                } else {
+                    Qt.callLater(function () {
+                        root.scrollToLine(nextIndex, false);
+                    });
+                }
+            }
+        }
     }
 
     clip: true
@@ -307,6 +386,12 @@ Rectangle {
 
     Component.onCompleted: scheduleLookup()
     onPlayerChanged: scheduleLookup()
+    onVisibleChanged: {
+        if (visible)
+            Qt.callLater(preparePreview);
+        else
+            lyricScrollAnimation.stop();
+    }
 
     Connections {
         function onMetadataChanged() {
@@ -331,9 +416,17 @@ Rectangle {
         onTriggered: root.lookup()
     }
     Timer {
+        id: previewPositionTimer
+
+        interval: 16
+        repeat: false
+
+        onTriggered: root.positionPreview()
+    }
+    Timer {
         interval: 150
         repeat: true
-        running: root.hasSyncedLyrics && !!root.player && MediaService.playing
+        running: root.visible && root.hasSyncedLyrics && !!root.player && MediaService.playing
 
         onTriggered: root.updateActiveLine()
     }
@@ -357,14 +450,12 @@ Rectangle {
 
         anchors.fill: parent
         boundsBehavior: Flickable.StopAtBounds
-        cacheBuffer: 128
+        cacheBuffer: 64
         clip: true
-        currentIndex: root.followLyrics && !root.lyricScrollAnimating ? root.activeLineIndex : -1
-        highlightMoveDuration: 350
-        highlightRangeMode: root.followLyrics && !root.lyricScrollAnimating ? ListView.StrictlyEnforceRange : ListView.NoHighlightRange
-        model: root.syncedLines
-        preferredHighlightBegin: height / 2 - 16
-        preferredHighlightEnd: height / 2 + 16
+        currentIndex: -1
+        highlightRangeMode: ListView.NoHighlightRange
+        model: root.visible ? root.syncedLines : []
+        reuseItems: true
         spacing: 0
         visible: root.hasSyncedLyrics
 
@@ -376,64 +467,35 @@ Rectangle {
             height: 32
             width: syncedList.width
 
-            Item {
+            Text {
                 anchors.centerIn: parent
-                height: parent.height
+                color: index === root.activeLineIndex ? Config.md3.primary : Config.md3.on_surface
+                elide: Text.ElideRight
+                font.family: Config.fontName
+                font.pixelSize: 14
+                font.weight: index === root.activeLineIndex ? Font.Bold : Font.Medium
+                horizontalAlignment: Text.AlignHCenter
+                maximumLineCount: 1
+                opacity: index === root.activeLineIndex ? 1 : (distance === 1 ? 0.58 : 0.24)
+                scale: index === root.activeLineIndex ? (18.0 / 14.0) : 1
+                text: modelData.text
                 width: parent.width
 
-                Text {
-                    anchors.centerIn: parent
-                    color: Config.md3.on_surface
-                    elide: Text.ElideRight
-                    font.family: Config.fontName
-                    font.pixelSize: 14
-                    font.weight: Font.Medium
-                    horizontalAlignment: Text.AlignHCenter
-                    maximumLineCount: 1
-                    opacity: index === root.activeLineIndex ? 0.0 : (distance === 1 ? 0.58 : 0.24)
-                    scale: index === root.activeLineIndex ? (18.0 / 14.0) : 1.0
-                    text: modelData.text
-                    width: parent.width
-
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 350
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 350
-                            easing.type: Easing.OutCubic
-                        }
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Config.animationDuration(160)
                     }
                 }
-                Text {
-                    anchors.centerIn: parent
-                    color: Config.md3.primary
-                    elide: Text.ElideRight
-                    font.family: Config.fontName
-                    font.pixelSize: 18
-                    font.weight: Font.Bold
-                    horizontalAlignment: Text.AlignHCenter
-                    maximumLineCount: 1
-                    opacity: index === root.activeLineIndex ? 1.0 : 0.0
-                    renderType: Text.NativeRendering
-                    scale: index === root.activeLineIndex ? 1.0 : (14.0 / 18.0)
-                    text: modelData.text
-                    width: parent.width
-
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 350
-                            easing.type: Easing.OutCubic
-                        }
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Config.animationDuration(160)
+                        easing.type: Easing.OutCubic
                     }
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 350
-                            easing.type: Easing.OutCubic
-                        }
+                }
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: Config.animationDuration(180)
+                        easing.type: Easing.OutCubic
                     }
                 }
             }
@@ -446,6 +508,14 @@ Rectangle {
             }
         }
 
+        onContentHeightChanged: {
+            if (root.hasSyncedLyrics && !root.previewReady)
+                previewPositionTimer.restart();
+        }
+        onCountChanged: {
+            if (root.hasSyncedLyrics && !root.previewReady)
+                previewPositionTimer.restart();
+        }
         onDraggingChanged: {
             if (dragging) {
                 lyricScrollAnimation.stop();
@@ -460,13 +530,23 @@ Rectangle {
                     root.followLyrics = false;
             }
         }
+        onHeightChanged: {
+            if (root.hasSyncedLyrics && !root.previewReady)
+                previewPositionTimer.restart();
+        }
 
         WheelHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            target: null
+
             onWheel: event => {
-                lyricScrollAnimation.stop();
                 if (root.followLyrics)
                     root.followLyrics = false;
-                event.accepted = false;
+                var pixelDelta = event.pixelDelta.y;
+                var angleDelta = event.angleDelta.y;
+                var delta = pixelDelta !== 0 ? pixelDelta : (angleDelta / 120) * 72;
+                root.smoothSyncedScroll(delta);
+                event.accepted = true;
             }
         }
     }
@@ -501,6 +581,26 @@ Rectangle {
             width: plainFlick.width
             wrapMode: Text.Wrap
         }
+        WheelHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            target: null
+
+            onWheel: event => {
+                var pixelDelta = event.pixelDelta.y;
+                var angleDelta = event.angleDelta.y;
+                var delta = pixelDelta !== 0 ? pixelDelta : (angleDelta / 120) * 72;
+                root.smoothPlainScroll(delta);
+                event.accepted = true;
+            }
+        }
+    }
+    NumberAnimation {
+        id: plainScrollAnimation
+
+        duration: Config.animationDuration(150)
+        easing.type: Easing.OutCubic
+        property: "contentY"
+        target: plainFlick
     }
     Column {
         anchors.centerIn: parent
@@ -512,7 +612,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             fillMode: Image.PreserveAspectFit
             height: 70
-            playing: !root.hasLyrics && !root.loading
+            playing: root.visible && !root.hasLyrics && !root.loading
             source: "file://" + Config.sownteeshellDir + "/assets/kurukuru.gif"
             visible: !root.loading && !root.instrumental
         }

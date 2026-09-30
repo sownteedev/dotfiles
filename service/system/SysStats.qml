@@ -33,9 +33,9 @@ QtObject {
     property string networkInterface: ""
     property int pendingMemoryDetailsPid: -1
 
-    // Stats are only displayed inside ControlRight. The core daemon keeps no
-    // sampler while this panel is closed.
-    property bool pollingEnabled: false
+    // Stats on the left share a sampler with the right panel's uptime and
+    // Wi-Fi graph. Closing either panel must not stop the other's updates.
+    readonly property bool pollingEnabled: statsViewActive || rightPanelActive
     property double prevCpuIdle: 0
     property double prevCpuTotal: 0
     property var processMemoryDetails: null
@@ -47,8 +47,10 @@ QtObject {
     property var ramHistory: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     property string ramModelName: ""
     property string ramUsedText: ""
+    property bool rightPanelActive: false
     property var rxHistory: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     property bool statsInitialized: false
+    property bool statsViewActive: false
     property int terminatingPid: -1
     property string terminatingProcessName: ""
     property string terminationError: ""

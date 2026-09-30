@@ -17,7 +17,9 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 const SCAN_CACHE_VERSION: u32 = 2;
-const BACKDROP_CACHE_VERSION: &str = "backdrop-v5|resize15-blur3";
+const BACKDROP_CACHE_VERSION: &str = "backdrop";
+const BACKDROP_RESIZE: &str = "40%";
+const BACKDROP_BLUR: &str = "0x3.5";
 const MAX_BACKDROP_CACHE_BYTES: u64 = 96 * 1024 * 1024;
 const MAX_BACKDROP_CACHE_FILES: usize = 128;
 const PREVIEW_NAMES: &[&str] = &["preview.jpg", "preview.jpeg", "preview.png", "preview.gif"];
@@ -311,9 +313,9 @@ pub async fn ensure_backdrop(params: Value, cancellation: CancellationToken) -> 
     command.args([
         source_spec,
         "-resize".into(),
-        "15%".into(),
+        BACKDROP_RESIZE.into(),
         "-blur".into(),
-        "0x3".into(),
+        BACKDROP_BLUR.into(),
     ]);
     command.arg(&temporary);
     let outcome = command_output(command, cancellation, Duration::from_secs(30)).await;
@@ -370,7 +372,7 @@ fn prepare_backdrop(
     let identity = if stable_identity.is_empty() {
         let metadata = source.metadata()?;
         format!(
-            "{BACKDROP_CACHE_VERSION}|{}|{}|{}",
+            "{BACKDROP_CACHE_VERSION}|{BACKDROP_RESIZE}|{BACKDROP_BLUR}|{}|{}|{}",
             source
                 .canonicalize()
                 .unwrap_or_else(|_| source.clone())
@@ -379,7 +381,7 @@ fn prepare_backdrop(
             modified_millis(&metadata)
         )
     } else {
-        format!("{BACKDROP_CACHE_VERSION}|{stable_identity}")
+        format!("{BACKDROP_CACHE_VERSION}|{BACKDROP_RESIZE}|{BACKDROP_BLUR}|{stable_identity}")
     };
     let key = format!("{:x}", Sha256::digest(identity.as_bytes()));
     let target = cache_dir.join(format!("{key}.png"));

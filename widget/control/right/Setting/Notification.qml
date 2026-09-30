@@ -54,6 +54,38 @@ Item {
         state[key] = (state[key] || 12) + 12;
         renderedCounts = state;
     }
+    function syncGroups() {
+        syncRows(groupModel, NotificationHistory.notificationGroups, "appName");
+    }
+
+    // Keep delegate identities across history snapshots, including unchanged icons/loaders.
+    function syncRows(target, entries, keyRole) {
+        var wanted = {};
+        for (var i = 0; i < entries.length; ++i)
+            wanted["$" + String(entries[i][keyRole])] = true;
+        for (var oldIndex = target.count - 1; oldIndex >= 0; --oldIndex) {
+            if (!wanted["$" + target.get(oldIndex).stableKey])
+                target.remove(oldIndex);
+        }
+        for (var nextIndex = 0; nextIndex < entries.length; ++nextIndex) {
+            var key = String(entries[nextIndex][keyRole]);
+            var found = nextIndex;
+            while (found < target.count && target.get(found).stableKey !== key)
+                ++found;
+            var payload = JSON.stringify(entries[nextIndex]);
+            if (found === target.count) {
+                target.insert(nextIndex, {
+                    stableKey: key,
+                    payload: payload
+                });
+            } else {
+                if (found !== nextIndex)
+                    target.move(found, nextIndex, 1);
+                if (target.get(nextIndex).payload !== payload)
+                    target.setProperty(nextIndex, "payload", payload);
+            }
+        }
+    }
     function triggerClearAllAnimation() {
         var count = NotificationHistory.notificationGroups.length;
         if (count === 0)
@@ -62,7 +94,7 @@ Item {
         clearAllAnimationActive = true;
 
         // Cap the stagger so clearing a long history stays quick.
-        var exactAnimationDuration = Math.min(Math.max(0, count - 1), 7) * 55 + 160;
+        var exactAnimationDuration = Config.animationDuration(Math.min(Math.max(0, count - 1), 7) * 55) + Config.animationDuration(Md3.motion.short3) + 10;
 
         // The singleton timer survives closing Control Right or switching tabs,
         // so the requested clear cannot be cancelled with the page Loader.
@@ -73,6 +105,18 @@ Item {
 
     anchors.fill: parent
 
+    Component.onCompleted: syncGroups()
+
+    ListModel {
+        id: groupModel
+    }
+    Connections {
+        function onNotificationGroupsChanged() {
+            notificationPageRoot.syncGroups();
+        }
+
+        target: NotificationHistory
+    }
     Timer {
         interval: 60000
         repeat: true
@@ -106,32 +150,55 @@ Item {
                 bottomMargin: 6
                 cacheBuffer: 80
                 clip: true
-                model: NotificationHistory.notificationGroups
-                opacity: NotificationHistory.notifications.count > 0 ? 1 : 0
+                model: groupModel
+                opacity: groupModel.count > 0 ? 1 : 0
                 reuseItems: true
-                spacing: 10
+                spacing: 0
                 topMargin: 2
 
-                delegate: Rectangle {
+                delegate: Item {
                     id: groupItem
 
                     property string appName: modelData ? modelData.appName : "Notification"
+                    property bool compactRows: true
                     property bool expanded: notificationPageRoot.isGroupExpanded(appName)
                     property bool heightBehaviorEnabled: false
+                    required property int index
+                    property bool initialized: false
                     property bool isDismissing: false
                     property bool isGroup: notifCount > 1
+                    readonly property var modelData: JSON.parse(payload)
+                    readonly property real naturalCardHeight: cardColumn.implicitHeight + 20
                     property int notifCount: notifications.length
                     property var notifications: modelData ? modelData.notifications : []
+                    required property string payload
                     property bool pooled: false
                     property int renderedCount: notificationPageRoot.renderedCountFor(appName)
                     property real swipeOffset: 0
+                    // Include the inter-card gap in the same collapse, not a second removal step.
+                    readonly property real trailingGap: isDismissing ? 10 * Math.min(1, height / Math.max(1, naturalCardHeight + 10)) : 10
 
-                    border.color: controlRightWindow.sectionCardBorderColor
-                    border.width: 1
+                    function syncNotifications() {
+                        if (pooled)
+                            return;
+                        var nextCompact = notifications.length > 1 && !expanded;
+                        var limit = nextCompact ? 2 : renderedCount;
+                        // Backfilled rows and compact/detail changes resize the card once.
+                        // While a row is actively collapsing, its height drives the card directly.
+                        var collapsing = false;
+                        for (var i = 0; i < groupRepeater.count; ++i) {
+                            var row = groupRepeater.itemAt(i);
+                            if (row && row.isDismissing && row.height > 0.5)
+                                collapsing = true;
+                        }
+                        if (initialized && !collapsing)
+                            heightBehaviorEnabled = true;
+                        notificationPageRoot.syncRows(rowModel, notifications.slice(0, limit), "nid");
+                        compactRows = nextCompact;
+                    }
+
                     clip: true
-                    color: controlRightWindow.sectionCardColor
-                    height: isDismissing ? 0 : cardColumn.implicitHeight + 20
-                    radius: 16
+                    height: isDismissing ? 0 : naturalCardHeight + 10
                     visible: !groupItem.pooled
                     width: ListView.view.width
 
@@ -139,21 +206,15 @@ Item {
                         enabled: groupItem.heightBehaviorEnabled || groupItem.isDismissing
 
                         NumberAnimation {
-                            duration: 180
+                            duration: Config.animationDuration(180)
                             easing.type: Easing.OutCubic
-
-                            onRunningChanged: {
-                                if (!running) {
-                                    groupItem.heightBehaviorEnabled = false;
-                                }
-                            }
                         }
                     }
                     Behavior on swipeOffset {
                         enabled: !groupDrag.active
 
                         NumberAnimation {
-                            duration: 150
+                            duration: Config.animationDuration(Md3.motion.short3)
                             easing.type: Easing.OutCubic
                         }
                     }
@@ -161,6 +222,10 @@ Item {
                         x: groupItem.swipeOffset
                     }
 
+                    Component.onCompleted: {
+                        syncNotifications();
+                        initialized = true;
+                    }
                     ListView.onPooled: {
                         pooled = true;
                         clearStaggerTimer.stop();
@@ -175,12 +240,31 @@ Item {
                         swipeOffset = 0;
                         isDismissing = false;
                         heightBehaviorEnabled = false;
+                        initialized = false;
+                        syncNotifications();
+                        initialized = true;
                     }
+                    onExpandedChanged: Qt.callLater(syncNotifications)
+                    onNotificationsChanged: Qt.callLater(syncNotifications)
+                    onRenderedCountChanged: Qt.callLater(syncNotifications)
 
+                    ListModel {
+                        id: rowModel
+                    }
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        border.color: controlRightWindow.sectionCardBorderColor
+                        border.width: 1
+                        color: controlRightWindow.sectionCardColor
+                        height: Math.max(0, groupItem.height - groupItem.trailingGap)
+                        radius: 16
+                    }
                     Connections {
                         function onClearAllAnimationActiveChanged() {
                             if (!groupItem.pooled && notificationPageRoot.clearAllAnimationActive) {
-                                clearStaggerTimer.interval = Math.min(index, 7) * 55;
+                                clearStaggerTimer.interval = Config.animationDuration(Math.min(index, 7) * 55);
                                 clearStaggerTimer.start();
                             }
                         }
@@ -201,18 +285,18 @@ Item {
                     Timer {
                         id: groupSwipeCollapseTimer
 
-                        interval: 80
+                        interval: Math.max(1, Config.animationDuration(80))
 
                         onTriggered: {
-                            groupItem.isDismissing = true;
                             groupItem.heightBehaviorEnabled = true;
+                            groupItem.isDismissing = true;
                             groupDismissTimer.start();
                         }
                     }
                     Timer {
                         id: groupDismissTimer
 
-                        interval: 180
+                        interval: Math.max(1, Config.animationDuration(180)) + 16
 
                         onTriggered: {
                             var nids = [];
@@ -277,51 +361,94 @@ Item {
                                 color: Config.md3.on_surface
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 16
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
                                 font.weight: Font.DemiBold
+                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: groupItem.appName
                             }
 
                             // Expand/collapse badge (groups only)
                             Rectangle {
-                                Layout.preferredHeight: 26
-                                Layout.preferredWidth: badgeRow.implicitWidth + 16
-                                color: Config.alpha(Config.md3.primary, groupItem.expanded ? 0.18 : 0.10)
-                                radius: 13
+                                id: groupExpandButton
+
+                                readonly property color contentColor: groupItem.expanded ? Config.md3.on_secondary_container : Config.md3.on_surface
+
+                                function toggleExpanded() {
+                                    groupItem.heightBehaviorEnabled = true;
+                                    notificationPageRoot.setGroupExpanded(groupItem.appName, !groupItem.expanded);
+                                }
+
+                                Accessible.name: groupItem.expanded ? qsTr("Collapse %1 notifications").arg(groupItem.notifCount) : qsTr("Expand %1 notifications").arg(groupItem.notifCount)
+                                Accessible.role: Accessible.Button
+                                Layout.preferredHeight: Md3.spacing.xl
+                                Layout.preferredWidth: Math.max(Md3.spacing.xxl, badgeRow.implicitWidth + Md3.spacing.xs * 2)
+                                color: groupItem.expanded ? Config.md3.secondary_container : Config.md3.surface_container_high
+                                radius: Md3.shape.medium
                                 visible: groupItem.isGroup
 
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: Config.animationDuration(Md3.motion.short3)
+                                        easing.type: Md3.motion.standard
+                                    }
+                                }
+
+                                Accessible.onPressAction: toggleExpanded()
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: Config.alpha(groupExpandButton.contentColor, groupExpandMouse.pressed ? Md3.state.pressed : groupExpandMouse.containsMouse ? Md3.state.hover : 0)
+                                    radius: groupExpandButton.radius
+
+                                    Behavior on color {
+                                        ColorAnimation {
+                                            duration: Config.animationDuration(Md3.motion.short3)
+                                            easing.type: Md3.motion.standard
+                                        }
+                                    }
+                                }
                                 RowLayout {
                                     id: badgeRow
 
                                     anchors.centerIn: parent
-                                    spacing: 4
+                                    spacing: Md3.spacing.xxs
 
                                     Text {
-                                        color: Config.md3.primary
+                                        color: groupExpandButton.contentColor
                                         font.family: Config.fontName
-                                        font.pixelSize: 12
-                                        font.weight: Font.Bold
+                                        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                        font.pixelSize: Md3.typeScale.labelLarge.size
+                                        font.weight: Md3.typeScale.labelLarge.weight
+                                        lineHeight: Md3.typeScale.labelLarge.lineHeight
+                                        lineHeightMode: Text.FixedHeight
                                         text: groupItem.notifCount
                                     }
-                                    IconImage {
-                                        Layout.preferredHeight: 10
-                                        Layout.preferredWidth: 10
-                                        layer.enabled: true
-                                        source: groupItem.expanded ? Quickshell.iconPath("go-up-symbolic") : Quickshell.iconPath("go-down-symbolic")
+                                    Md3Icon {
+                                        Layout.preferredHeight: Md3.spacing.md
+                                        Layout.preferredWidth: Md3.spacing.md
+                                        color: groupExpandButton.contentColor
+                                        name: "expand_more"
+                                        rotation: groupItem.expanded ? 180 : 0
+                                        size: Md3.spacing.md
 
-                                        layer.effect: ColorOverlay {
-                                            color: Config.md3.primary
+                                        Behavior on rotation {
+                                            RotationAnimator {
+                                                duration: Config.animationDuration(Md3.motion.short3)
+                                                easing.type: Md3.motion.standard
+                                            }
                                         }
                                     }
                                 }
                                 MouseArea {
+                                    id: groupExpandMouse
+
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
 
-                                    onClicked: {
-                                        groupItem.heightBehaviorEnabled = true;
-                                        notificationPageRoot.setGroupExpanded(groupItem.appName, !groupItem.expanded);
-                                    }
+                                    onClicked: groupExpandButton.toggleExpanded()
                                 }
                             }
                         }
@@ -337,57 +464,66 @@ Item {
                         // Collapsed group: show first 2; Expanded or single: show all
                         Column {
                             Layout.fillWidth: true
-                            spacing: 3
+                            spacing: 0
 
                             Repeater {
                                 id: groupRepeater
 
-                                model: (groupItem.isGroup && !groupItem.expanded) ? groupItem.notifications.slice(0, 2) : groupItem.notifications.slice(0, groupItem.renderedCount)
+                                model: rowModel
 
                                 delegate: Item {
                                     id: notifItem
 
+                                    property bool collapseAnimationEnabled: false
+
                                     // compact = collapsed group rows; detail = single noti or expanded group
-                                    property bool compact: groupItem.isGroup && !groupItem.expanded
+                                    property bool compact: groupItem.compactRows
                                     required property int index
                                     property bool isDismissing: false
-                                    required property var modelData
+                                    readonly property var modelData: JSON.parse(payload)
+                                    required property string payload
                                     property real swipeOffset: 0
+
+                                    function beginDismiss() {
+                                        groupItem.heightBehaviorEnabled = false;
+                                        collapseAnimationEnabled = true;
+                                        isDismissing = true;
+                                        if (groupItem.notifCount === 1) {
+                                            groupItem.heightBehaviorEnabled = true;
+                                            groupItem.isDismissing = true;
+                                        }
+                                        dismissTimer.start();
+                                    }
 
                                     clip: true
                                     height: implicitHeight
                                     // KEY: use implicitHeight so parent ColumnLayout stacks correctly
-                                    implicitHeight: isDismissing ? 0 : rowLoader.implicitHeight + (compact ? 12 : 22)
+                                    implicitHeight: isDismissing ? 0 : rowLoader.implicitHeight + (compact ? 12 : 22) + (index < groupRepeater.count - 1 ? 3 : 0)
                                     opacity: isDismissing ? 0 : 1
                                     width: parent.width
 
                                     Behavior on implicitHeight {
-                                        enabled: notifItem.isDismissing || groupItem.heightBehaviorEnabled
+                                        enabled: notifItem.collapseAnimationEnabled
 
                                         NumberAnimation {
-                                            duration: 180
+                                            duration: Config.animationDuration(180)
                                             easing.type: Easing.OutCubic
                                         }
                                     }
                                     Behavior on opacity {
-                                        enabled: notifItem.isDismissing
+                                        enabled: notifItem.collapseAnimationEnabled
 
                                         NumberAnimation {
-                                            duration: 150
+                                            duration: Config.animationDuration(Md3.motion.short3)
                                         }
                                     }
                                     Behavior on swipeOffset {
                                         enabled: !swipeDrag.active
 
                                         NumberAnimation {
-                                            duration: 150
+                                            duration: Config.animationDuration(Md3.motion.short3)
                                             easing.type: Easing.OutCubic
                                         }
-                                    }
-
-                                    onModelDataChanged: {
-                                        isDismissing = false;
-                                        swipeOffset = 0;
                                     }
 
                                     DragHandler {
@@ -413,23 +549,16 @@ Item {
                                     Timer {
                                         id: swipeCollapseTimer
 
-                                        interval: 80
+                                        interval: Math.max(1, Config.animationDuration(80))
 
-                                        onTriggered: {
-                                            notifItem.isDismissing = true;
-                                            groupItem.heightBehaviorEnabled = true;
-                                            if (groupItem.notifCount === 1) {
-                                                groupItem.isDismissing = true;
-                                            }
-                                            dismissTimer.start();
-                                        }
+                                        onTriggered: notifItem.beginDismiss()
                                     }
                                     Timer {
                                         id: dismissTimer
 
-                                        interval: 180
+                                        interval: Math.max(1, Config.animationDuration(180)) + 16
 
-                                        onTriggered: NotificationHistory.dismiss(modelData.nid)
+                                        onTriggered: NotificationHistory.dismiss(notifItem.modelData.nid)
                                     }
                                     Loader {
                                         id: rowLoader
@@ -467,8 +596,11 @@ Item {
                                                 color: Config.md3.on_surface
                                                 elide: Text.ElideRight
                                                 font.family: Config.fontName
-                                                font.pixelSize: 15
+                                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                                font.pixelSize: Md3.typeScale.titleMedium.size
                                                 font.weight: Font.DemiBold
+                                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                                lineHeightMode: Text.FixedHeight
                                                 text: notifItem.modelData.summary || ""
                                                 textFormat: Text.PlainText
                                             }
@@ -477,8 +609,11 @@ Item {
                                                 color: Config.md3.on_surface_variant
                                                 elide: Text.ElideRight
                                                 font.family: Config.fontName
-                                                font.pixelSize: 14
-                                                font.weight: Font.Medium
+                                                font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                                font.pixelSize: Md3.typeScale.bodyLarge.size
+                                                font.weight: Md3.typeScale.bodyLarge.weight
+                                                lineHeight: Md3.typeScale.bodyLarge.lineHeight
+                                                lineHeightMode: Text.FixedHeight
                                                 text: notifItem.modelData.body || ""
                                                 textFormat: Text.PlainText
                                                 visible: text !== ""
@@ -519,16 +654,22 @@ Item {
                                                             color: Config.md3.on_surface
                                                             elide: Text.ElideRight
                                                             font.family: Config.fontName
-                                                            font.pixelSize: 16
+                                                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                                            font.pixelSize: Md3.typeScale.titleMedium.size
                                                             font.weight: Font.DemiBold
+                                                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                                            lineHeightMode: Text.FixedHeight
                                                             text: notifItem.modelData.summary || ""
                                                             textFormat: Text.PlainText
                                                         }
                                                         Text {
-                                                            color: Config.md3.outline
+                                                            color: Config.md3.on_surface_variant
                                                             font.family: Config.fontName
-                                                            font.pixelSize: 14
-                                                            font.weight: Font.Medium
+                                                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                                                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                                                            font.weight: Md3.typeScale.bodyMedium.weight
+                                                            lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                                                            lineHeightMode: Text.FixedHeight
                                                             text: notifItem.modelData.timestamp ? notificationPageRoot.formatRelativeTime(notifItem.modelData.timestamp, notificationPageRoot.currentTimeTick) : (notifItem.modelData.timeText || "now")
                                                         }
                                                     }
@@ -536,9 +677,11 @@ Item {
                                                         Layout.fillWidth: true
                                                         color: Config.md3.on_surface_variant
                                                         font.family: Config.fontName
-                                                        font.pixelSize: 14
-                                                        font.weight: Font.Medium
-                                                        lineHeight: 1.15
+                                                        font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                                        font.pixelSize: Md3.typeScale.bodyLarge.size
+                                                        font.weight: Md3.typeScale.bodyLarge.weight
+                                                        lineHeight: Md3.typeScale.bodyLarge.lineHeight
+                                                        lineHeightMode: Text.FixedHeight
                                                         text: notifItem.modelData.body || ""
                                                         textFormat: Text.PlainText
                                                         visible: text !== ""
@@ -585,11 +728,7 @@ Item {
 
                                                             onClicked: {
                                                                 modelData.invoke();
-                                                                notifItem.isDismissing = true;
-                                                                groupItem.heightBehaviorEnabled = true;
-                                                                if (groupItem.notifCount === 1)
-                                                                    groupItem.isDismissing = true;
-                                                                dismissTimer.start();
+                                                                notifItem.beginDismiss();
                                                             }
                                                         }
                                                     }
@@ -621,7 +760,7 @@ Item {
 
                                 Behavior on color {
                                     ColorAnimation {
-                                        duration: 120
+                                        duration: Config.animationDuration(120)
                                     }
                                 }
 
@@ -629,8 +768,11 @@ Item {
                                     anchors.centerIn: parent
                                     color: Config.md3.primary
                                     font.family: Config.fontName
-                                    font.pixelSize: 13
-                                    font.weight: Font.DemiBold
+                                    font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                    font.pixelSize: Md3.typeScale.labelLarge.size
+                                    font.weight: Md3.typeScale.labelLarge.weight
+                                    lineHeight: Md3.typeScale.labelLarge.lineHeight
+                                    lineHeightMode: Text.FixedHeight
                                     text: qsTr("Show %1 older notifications").arg(Math.min(12, groupItem.notifCount - groupItem.renderedCount))
                                 }
                                 MouseArea {
@@ -649,9 +791,30 @@ Item {
                         }
                     }
                 }
+                move: Transition {
+                    NumberAnimation {
+                        duration: Config.animationDuration(180)
+                        easing.type: Easing.OutCubic
+                        properties: "y"
+                    }
+                }
+                moveDisplaced: Transition {
+                    NumberAnimation {
+                        duration: Config.animationDuration(180)
+                        easing.type: Easing.OutCubic
+                        properties: "y"
+                    }
+                }
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: 200
+                        duration: Config.animationDuration(Md3.motion.short4)
+                    }
+                }
+                removeDisplaced: Transition {
+                    NumberAnimation {
+                        duration: Config.animationDuration(140)
+                        easing.type: Easing.OutCubic
+                        properties: "y"
                     }
                 }
             }
@@ -660,7 +823,7 @@ Item {
             ColumnLayout {
                 anchors.centerIn: parent
                 spacing: 12
-                visible: NotificationHistory.notifications.count === 0
+                visible: groupModel.count === 0
 
                 Rectangle {
                     Layout.alignment: Qt.AlignCenter
@@ -669,27 +832,23 @@ Item {
                     color: Config.alpha(Config.md3.primary, 0.09)
                     radius: 32
 
-                    IconImage {
-                        id: emptyNotificationIcon
-
+                    Md3Icon {
                         anchors.centerIn: parent
-                        implicitHeight: 28
-                        implicitWidth: 28
-                        source: Quickshell.iconPath("preferences-system-notifications-symbolic")
-                        visible: false
-                    }
-                    ColorOverlay {
-                        anchors.fill: emptyNotificationIcon
                         color: Config.alpha(Config.md3.primary, 0.65)
-                        source: emptyNotificationIcon
+                        filled: true
+                        name: "preferences-system-notifications-symbolic"
+                        size: 28
                     }
                 }
                 Text {
                     Layout.alignment: Qt.AlignCenter
                     color: Config.md3.on_surface_variant
                     font.family: Config.fontName
-                    font.pixelSize: 16
-                    font.weight: Font.DemiBold
+                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.titleMedium.size
+                    font.weight: Md3.typeScale.titleMedium.weight
+                    lineHeight: Md3.typeScale.titleMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: qsTr("No notifications")
                 }
             }
@@ -703,10 +862,13 @@ Item {
             visible: NotificationHistory.notifications.count > 0
 
             Text {
-                color: Config.alpha(Config.md3.on_surface, 0.4)
+                color: Config.md3.on_surface_variant
                 font.family: Config.fontName
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
+                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyMedium.size
+                font.weight: Md3.typeScale.bodyMedium.weight
+                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                lineHeightMode: Text.FixedHeight
                 text: NotificationHistory.notifications.count === 1 ? qsTr("1 notification") : qsTr("%1 notifications").arg(NotificationHistory.notifications.count)
             }
             Item {
@@ -721,25 +883,20 @@ Item {
 
                 Behavior on color {
                     ColorAnimation {
-                        duration: 120
+                        duration: Config.animationDuration(120)
                     }
                 }
                 Behavior on scale {
                     NumberAnimation {
-                        duration: 80
+                        duration: Config.animationDuration(80)
                     }
                 }
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 16
-                    layer.enabled: true
-                    source: Quickshell.iconPath("edit-clear-all-symbolic")
-                    width: 16
-
-                    layer.effect: ColorOverlay {
-                        color: clearHover.containsMouse ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.45)
-                    }
+                    color: clearHover.containsMouse ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.45)
+                    name: "edit-clear-all-symbolic"
+                    size: 20
                 }
                 MouseArea {
                     id: clearHover

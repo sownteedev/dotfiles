@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Widgets
 import "../../"
+import ".."
 import "../../service"
 
 Rectangle {
@@ -30,7 +31,7 @@ Rectangle {
     readonly property bool hasDetailedBattery: connected && isAirpods && BluetoothService.airpodsBatteryAvailable && detailedBattery.accurate === true && BluetoothService.normalizeAddress(detailedBattery.address) === BluetoothService.normalizeAddress(device.address)
     readonly property bool hasSecondaryContent: hasDetailedBattery || showStatus || showDeviceAddress
     readonly property string iconName: device ? String(device.icon || "") : ""
-    readonly property bool isAirpods: deviceName.toLowerCase().indexOf("airpods") !== -1
+    readonly property bool isAirpods: BluetoothService.isAirpodsDevice(device)
     property bool pairPending: false
     property bool pairedDevice: false
     readonly property bool remembered: pairedDevice || savedDevice
@@ -443,7 +444,7 @@ Rectangle {
             Layout.maximumWidth: 104
             Layout.preferredHeight: root.actionHeight
             Layout.preferredWidth: Math.min(Layout.maximumWidth, Math.max(66, primaryLabel.implicitWidth + 20))
-            activeFocusOnTab: true
+            activeFocusOnTab: false
             border.color: root.busy ? Config.alpha(Config.md3.tertiary, 0.28) : root.connected ? Config.alpha(Config.md3.on_surface, 0.13) : Config.alpha(Config.md3.primary, 0.26)
             border.width: 1
             color: root.busy ? Config.alpha(Config.md3.tertiary, 0.16) : root.connected ? Config.alpha(Config.md3.on_surface, primaryMouse.containsMouse ? 0.15 : 0.085) : Config.alpha(Config.md3.primary, primaryMouse.containsMouse ? 0.20 : 0.12)
@@ -509,7 +510,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: root.actionHeight
             Layout.preferredWidth: root.forgetArmed ? 82 : root.actionHeight
-            activeFocusOnTab: visible
+            activeFocusOnTab: false
             border.color: root.forgetArmed ? Config.alpha(Config.md3.error, 0.28) : Config.alpha(Config.md3.on_surface, 0.10)
             border.width: 1
             color: root.forgetArmed ? Config.alpha(Config.md3.error, forgetMouse.containsMouse ? 0.20 : 0.12) : Config.alpha(Config.md3.on_surface, forgetMouse.containsMouse ? 0.13 : 0.06)
@@ -542,23 +543,12 @@ Rectangle {
                 anchors.centerIn: parent
                 spacing: 6
 
-                Item {
+                Md3Icon {
                     anchors.verticalCenter: parent.verticalCenter
-                    height: 17
-                    width: 17
-
-                    IconImage {
-                        id: forgetIcon
-
-                        anchors.fill: parent
-                        source: Quickshell.iconPath(root.forgetArmed ? "user-trash-symbolic" : "view-more-horizontal-symbolic")
-                        visible: false
-                    }
-                    ColorOverlay {
-                        anchors.fill: forgetIcon
-                        color: root.forgetArmed ? Config.md3.error : Config.md3.on_surface_variant
-                        source: forgetIcon
-                    }
+                    color: root.forgetArmed ? Config.md3.error : Config.md3.on_surface_variant
+                    filled: root.forgetArmed
+                    name: root.forgetArmed ? "user-trash-symbolic" : "view-more-horizontal-symbolic"
+                    size: 17
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter

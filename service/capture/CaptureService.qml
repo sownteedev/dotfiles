@@ -249,6 +249,21 @@ QtObject {
     property int screenshotPrepareSession: -1
     property string screenshotPrepareSourcePath: ""
     property string screenshotPrepareTargetPath: ""
+    readonly property bool screenshotQrBusy: screenshotQrRequest.active
+    property var screenshotQrCodes: []
+    property string screenshotQrPath: ""
+    property CoreRequest screenshotQrRequest: CoreRequest {
+        onSucceeded: result => {
+            if (String(params.path || "") === root.screenshotPath)
+                root.screenshotQrCodes = result && result.ok && Array.isArray(result.codes) ? result.codes : [];
+        }
+    }
+    property Timer screenshotQrWatchdog: Timer {
+        interval: 10000
+        running: root.screenshotQrBusy
+
+        onTriggered: root.screenshotQrRequest.cancel()
+    }
     property double screenshotStartedAt: 0
     property Timer screenshotWatchdog: Timer {
         interval: 61500
@@ -334,6 +349,16 @@ QtObject {
 
         Quickshell.execDetached(["sh", "-c", "wl-copy --type \"$2\" < \"$1\"", "copy-screenshot", target, screenshotMimeType(target)]);
     }
+    function copyScreenshotQr(path, index, callback) {
+        var code = screenshotQrCode(path, index);
+        if (!code) {
+            callback(false);
+            return;
+        }
+        CoreService.sendRequest("clipboard.copyText", {
+            "text": code.text
+        }, result => callback(Boolean(result && result.ok)), message => callback(false), 7000);
+    }
     function dismissScreenshotEditor() {
         screenshotEditorVisible = false;
     }
@@ -402,16 +427,16 @@ QtObject {
     function openRecording() {
         var path = recording ? recordingPath : latestRecordingPath;
         if (path)
-            Quickshell.execDetached(["xdg-open", path]);
+            Quickshell.execDetached(DefaultAppsService.videoPlayerCommand(path));
         recordingSavedVisible = false;
     }
     function openRecordingFolder() {
-        Quickshell.execDetached(["xdg-open", recordingDir]);
+        Quickshell.execDetached(DefaultAppsService.fileManagerCommand(recordingDir));
         recordingSavedVisible = false;
     }
     function openScreenshot() {
         if (screenshotPath)
-            Quickshell.execDetached(["xdg-open", screenshotPath]);
+            Quickshell.execDetached(DefaultAppsService.imageViewerCommand(screenshotPath));
     }
     function openScreenshotEditor(screenName) {
         if (!screenshotPath)
@@ -425,7 +450,14 @@ QtObject {
         screenshotEditorVisible = true;
     }
     function openScreenshotFolder() {
-        Quickshell.execDetached(["xdg-open", screenshotDir]);
+        Quickshell.execDetached(DefaultAppsService.fileManagerCommand(screenshotDir));
+    }
+    function openScreenshotQr(path, index) {
+        var code = screenshotQrCode(path, index);
+        if (!code || !/^https?:\/\//i.test(String(code.url || "")))
+            return false;
+        Quickshell.execDetached(DefaultAppsService.openUrl(code.url));
+        return true;
     }
     function parseOutputName(text) {
         try {
@@ -509,6 +541,16 @@ QtObject {
         screenshotPath = path;
         screenshotEditorSession++;
     }
+    function scanScreenshotQr(path) {
+        screenshotQrRequest.cancel();
+        screenshotQrCodes = [];
+        screenshotQrPath = path;
+        if (path === "" || Config.captureScreenshotAction !== "notification")
+            return;
+        screenshotQrRequest.start("capture.qr.scan", {
+            "path": path
+        }, 10000);
+    }
     function screenshot() {
         // Niri does not emit a cancellation event for its screenshot overlay.
         // A second shortcut press therefore replaces any stale one-shot watcher.
@@ -534,6 +576,11 @@ QtObject {
         if (lowerPath.endsWith(".webp"))
             return "image/webp";
         return "image/png";
+    }
+    function screenshotQrCode(path, index) {
+        if (path !== screenshotPath || path !== screenshotQrPath || index < 0 || index >= screenshotQrCodes.length)
+            return null;
+        return screenshotQrCodes[index];
     }
     function searchScreenshotWithLens(path, width, height) {
         if (!path || reverseImageSearchProcess.running)
@@ -654,10 +701,12 @@ QtObject {
         Quickshell.execDetached(["mkdir", "-p", screenshotDir, recordingDir]);
     }
     Component.onDestruction: {
+        screenshotQrRequest.cancel();
         recordingCountdownTimer.stop();
         if (screenshotPrepareProcess.running)
             screenshotPrepareProcess.running = false;
         if (recorder.running)
             recorder.signal(2);
     }
+    onScreenshotPathChanged: scanScreenshotQr(screenshotPath)
 }

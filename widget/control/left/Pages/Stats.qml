@@ -8,9 +8,11 @@ Item {
     id: root
 
     property string expandedChart: ""
+    readonly property bool pageActive: controlLeftWindow.active && controlLeftWindow.bottomPages[controlLeftWindow.activeBottomTab] === "Stats"
 
     function syncProcessMode() {
-        SysStats.processMode = controlRightWindow.active ? expandedChart : "none";
+        SysStats.statsViewActive = pageActive;
+        SysStats.processMode = pageActive ? (expandedChart || "none") : "none";
     }
     function toggleProcessChart(chartName) {
         expandedChart = expandedChart === chartName ? "" : chartName;
@@ -18,23 +20,21 @@ Item {
 
     anchors.fill: parent
 
-    Component.onDestruction: SysStats.processMode = "none"
-    onExpandedChartChanged: syncProcessMode()
-
-    Connections {
-        function onActiveChanged() {
-            root.syncProcessMode();
-        }
-
-        target: controlRightWindow
+    Component.onCompleted: syncProcessMode()
+    Component.onDestruction: {
+        SysStats.processMode = "none";
+        SysStats.statsViewActive = false;
     }
+    onExpandedChartChanged: syncProcessMode()
+    onPageActiveChanged: syncProcessMode()
+
     SettingsPageTransition {
-        panelActive: controlRightWindow.active
+        panelActive: root.pageActive
         targetItem: root
     }
     Connections {
         function onStatsUpdated() {
-            if (!controlRightWindow.active || !root.visible)
+            if (!root.pageActive || !root.visible)
                 return;
             cpuChart.requestPaint();
             memoryChart.requestPaint();

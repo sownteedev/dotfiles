@@ -1,5 +1,6 @@
 import "../../"
 import "../../components"
+import "lunar.js" as Lunar
 import QtQuick
 import QtQuick.Layouts
 
@@ -168,8 +169,9 @@ Rectangle {
                             color: index >= 5 ? Config.md3.tertiary : Config.md3.on_surface_variant
                             font.capitalization: Font.AllUppercase
                             font.family: Config.fontName
-                            font.pixelSize: 11
-                            font.weight: Font.Bold
+                            font.letterSpacing: Md3.typeScale.labelMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.labelMedium.size
+                            font.weight: 600
                             text: Qt.formatDate(root.addDays(root.gridStart, index), "ddd")
                         }
                     }
@@ -200,13 +202,16 @@ Rectangle {
                     readonly property int eventSlotCapacity: Math.max(1, Math.min(4, Math.floor((height - 43) / 25)))
                     readonly property int extraEventCount: Math.max(0, dayEvents.length - visibleEvents.length)
                     required property int index
+                    readonly property var lunarDate: Lunar.getLunarDateForDate(modelData.date)
+                    readonly property string lunarLabel: lunarDate ? (lunarDate.day === 1 ? `${lunarDate.day}/${lunarDate.month}` : String(lunarDate.day)) : ""
+                    readonly property bool lunarSpecial: Boolean(lunarDate && (lunarDate.day === 1 || lunarDate.day === 15))
                     required property var modelData
                     readonly property bool selected: root.isSameDay(modelData.date, root.selectedDate)
                     readonly property bool today: root.isSameDay(modelData.date, root.now)
                     readonly property int visibleEventCount: dayEvents.length > eventSlotCapacity ? Math.max(0, eventSlotCapacity - 1) : Math.min(dayEvents.length, eventSlotCapacity)
                     readonly property var visibleEvents: dayEvents.slice(0, visibleEventCount)
 
-                    Accessible.name: Qt.formatDate(modelData.date, Qt.DefaultLocaleLongDate)
+                    Accessible.name: qsTr("%1, lunar %2").arg(Qt.formatDate(modelData.date, Qt.DefaultLocaleLongDate)).arg(dayCell.lunarLabel)
                     Accessible.role: Accessible.Button
                     color: selected ? Config.alpha(Config.md3.primary, Config.lightTheme ? 0.08 : 0.12) : dayMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.035) : "transparent"
                     height: monthGrid.height / 6
@@ -248,24 +253,44 @@ Rectangle {
                             });
                         }
                     }
-                    Rectangle {
-                        id: dateBadge
+                    Item {
+                        id: dateHeader
 
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
                         anchors.top: parent.top
                         anchors.topMargin: 5
-                        color: dayCell.today ? Config.md3.primary : dayCell.selected ? Config.alpha(Config.md3.primary, 0.16) : "transparent"
                         height: 28
-                        radius: 14
-                        width: 28
 
-                        Text {
+                        Row {
                             anchors.centerIn: parent
-                            color: dayCell.today ? Config.md3.on_primary : dayCell.modelData.inMonth ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.34)
-                            font.family: Config.fontName
-                            font.pixelSize: 12
-                            font.weight: dayCell.today || dayCell.selected ? Font.Bold : Font.Medium
-                            text: dayCell.modelData.date.getDate()
+                            spacing: 5
+
+                            Rectangle {
+                                color: dayCell.today ? Config.md3.primary : dayCell.selected ? Config.alpha(Config.md3.primary, 0.16) : "transparent"
+                                height: 28
+                                radius: 14
+                                width: 28
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    color: dayCell.today ? Config.md3.on_primary : dayCell.modelData.inMonth ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.34)
+                                    font.family: Config.fontName
+                                    font.letterSpacing: Md3.typeScale.labelMedium.letterSpacing
+                                    font.pixelSize: Md3.typeScale.labelMedium.size
+                                    font.weight: dayCell.today || dayCell.selected ? 600 : Md3.typeScale.labelMedium.weight
+                                    text: dayCell.modelData.date.getDate()
+                                }
+                            }
+                            Text {
+                                color: dayCell.lunarSpecial ? Config.md3.tertiary : dayCell.modelData.inMonth ? Config.md3.on_surface_variant : Config.alpha(Config.md3.on_surface_variant, 0.42)
+                                font.family: Config.fontName
+                                font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                                font.pixelSize: Math.max(10, Md3.typeScale.labelSmall.size - 1)
+                                font.weight: dayCell.lunarSpecial ? Font.DemiBold : Md3.typeScale.labelSmall.weight
+                                text: dayCell.lunarLabel
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
                     }
                     Column {
@@ -277,7 +302,7 @@ Rectangle {
                         anchors.leftMargin: 5
                         anchors.right: parent.right
                         anchors.rightMargin: 5
-                        anchors.top: dateBadge.bottom
+                        anchors.top: dateHeader.bottom
                         anchors.topMargin: 3
                         spacing: 2
 
@@ -326,21 +351,21 @@ Rectangle {
                                         radius: 5.5
                                         visible: eventChip.modelData.isTask === true
 
-                                        Text {
+                                        Md3Icon {
                                             anchors.centerIn: parent
                                             color: eventChip.accentColor
-                                            font.family: Config.fontName
-                                            font.pixelSize: 8
-                                            font.weight: Font.Black
-                                            text: "✓"
+                                            name: "checkmark-symbolic"
+                                            size: 9
                                             visible: eventChip.isCompletedTask
+                                            weight: 700
                                         }
                                     }
                                     Text {
                                         color: Config.alpha(Config.md3.on_surface, 0.7)
                                         font.family: Config.fontName
-                                        font.pixelSize: 11
-                                        font.weight: Font.Medium
+                                        font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                                        font.pixelSize: Md3.typeScale.labelSmall.size
+                                        font.weight: Md3.typeScale.labelSmall.weight
                                         text: root.formatEventTime(eventChip.modelData)
                                         visible: text !== "" && eventChip.width >= 125
                                     }
@@ -349,7 +374,8 @@ Rectangle {
                                         color: eventChip.isCompletedTask ? Config.alpha(Config.md3.on_surface, 0.58) : Config.md3.on_surface
                                         elide: Text.ElideRight
                                         font.family: Config.fontName
-                                        font.pixelSize: 12
+                                        font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                                        font.pixelSize: Md3.typeScale.bodySmall.size
                                         font.strikeout: eventChip.isCompletedTask
                                         font.weight: eventChip.isCompletedTask ? Font.Medium : Font.DemiBold
                                         text: eventChip.modelData.title || qsTr("Untitled event")
@@ -387,8 +413,9 @@ Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: Config.md3.on_surface_variant
                                 font.family: Config.fontName
-                                font.pixelSize: 10
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                                font.pixelSize: Md3.typeScale.labelSmall.size
+                                font.weight: 600
                                 text: qsTr("+%1 more").arg(dayCell.extraEventCount)
                             }
                             MouseArea {
@@ -408,7 +435,7 @@ Rectangle {
     }
     Item {
         anchors.fill: parent
-        visible: !root.available
+        visible: !root.available && !root.loading
         z: 20
 
         Rectangle {
@@ -430,17 +457,18 @@ Rectangle {
 
                 CalendarProviderIcon {
                     anchors.centerIn: parent
-                    height: 29
+                    height: 32
                     provider: "google"
                     tint: Config.md3.primary
-                    width: 29
+                    width: 32
                 }
             }
             Text {
                 color: Config.md3.on_surface
                 font.family: Config.fontName
-                font.pixelSize: 20
-                font.weight: Font.Bold
+                font.letterSpacing: Md3.typeScale.titleLarge.letterSpacing
+                font.pixelSize: Md3.typeScale.titleLarge.size
+                font.weight: 600
                 horizontalAlignment: Text.AlignHCenter
                 text: qsTr("Connect a calendar account")
                 width: parent.width
@@ -448,7 +476,9 @@ Rectangle {
             Text {
                 color: Config.md3.on_surface_variant
                 font.family: Config.fontName
-                font.pixelSize: 14
+                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyMedium.size
+                font.weight: Md3.typeScale.bodyMedium.weight
                 horizontalAlignment: Text.AlignHCenter
                 text: qsTr("Add Google, Microsoft 365, or iCloud from the sidebar. Every event appears in this shared calendar.")
                 width: parent.width
@@ -456,20 +486,9 @@ Rectangle {
             }
         }
     }
-    Item {
+    CalendarLoadingState {
         anchors.fill: parent
-        visible: root.available && root.loading && root.events.length === 0
+        visible: root.loading && root.events.length === 0
         z: 21
-
-        Rectangle {
-            anchors.fill: parent
-            color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.66 : 0.5)
-            radius: 22
-        }
-        LoadingIndicator {
-            anchors.centerIn: parent
-            height: 52
-            width: 52
-        }
     }
 }

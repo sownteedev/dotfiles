@@ -57,33 +57,20 @@ Item {
     ColumnLayout {
         id: content
 
-        anchors.left: parent.left
-        anchors.right: parent.right
-        spacing: 14
+        anchors.fill: parent
+        spacing: Md3.spacing.sm
 
-        ColumnLayout {
+        SettingsLabelBlock {
             Layout.fillWidth: true
-            spacing: 3
-
-            Text {
-                Layout.fillWidth: true
-                color: Config.md3.on_surface
-                font.family: Config.fontName
-                font.pixelSize: 19
-                font.weight: Font.DemiBold
-                text: root.title
-            }
-            Text {
-                Layout.fillWidth: true
-                color: Config.alpha(Config.md3.on_surface, 0.48)
-                font.family: Config.fontName
-                font.pixelSize: 12
-                text: root.description
-                wrapMode: Text.Wrap
-            }
+            emphasized: true
+            headline: root.title
+            headlineRole: "titleLarge"
+            supportingText: root.description
         }
         Rectangle {
+            Layout.fillHeight: true
             Layout.fillWidth: true
+            Layout.minimumHeight: 160
             Layout.preferredHeight: root.editorHeight
             border.color: editor.activeFocus ? Config.alpha(Config.md3.primary, 0.65) : Config.alpha(Config.md3.on_surface, 0.08)
             border.width: 1
@@ -111,7 +98,7 @@ Item {
 
                     color: Config.alpha(Config.md3.on_surface, 0.84)
                     font.family: "monospace"
-                    font.pixelSize: 14
+                    font.pixelSize: Md3.typeScale.bodyLarge.size
                     leftPadding: 10
                     rightPadding: 10
                     selectByKeyboard: true
@@ -126,10 +113,14 @@ Item {
         }
         Text {
             Layout.fillWidth: true
-            color: Config.alpha(Config.md3.on_surface, 0.4)
+            color: Config.md3.on_surface_variant
             font.family: Config.fontName
-            font.pixelSize: 11
+            font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+            font.pixelSize: Md3.typeScale.bodySmall.size
+            lineHeight: Md3.typeScale.bodySmall.lineHeight
+            lineHeightMode: Text.FixedHeight
             text: root.dirty ? "Unsaved changes · Apply or reset before switching files." : "Changes are validated before the live file is replaced."
+            wrapMode: Text.Wrap
         }
     }
 }

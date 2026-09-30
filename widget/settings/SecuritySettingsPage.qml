@@ -244,6 +244,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            headerOutside: true
             iconName: "system-lock-screen-symbolic"
             note: FaceAuthService.installed ? qsTr("Face unlock stays scoped to the SownteeShell lock screen; password fallback is always available") : qsTr("Howdy support is installed by the theme installer")
             title: qsTr("Unlock")
@@ -298,6 +299,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary
             compact: true
+            headerOutside: true
             iconName: "camera-web-symbolic"
             note: qsTr("The preview is loaded only while the test screen is open")
             title: qsTr("Camera")
@@ -320,9 +322,13 @@ Item {
 
                 Text {
                     Layout.fillWidth: true
-                    color: Config.alpha(Config.md3.on_surface_variant, 0.58)
+                    color: Config.md3.on_surface_variant
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: qsTr("Changing the Howdy camera requires administrator authorization")
                     wrapMode: Text.Wrap
                 }
@@ -343,6 +349,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
+            headerOutside: true
             iconName: "avatar-default-symbolic"
             note: qsTr("Add models for different lighting or appearance, then test recognition")
             title: qsTr("Face models")
@@ -406,7 +413,11 @@ Item {
                     anchors.margins: 11
                     color: FaceAuthService.statusSuccess ? Config.md3.primary : Config.md3.error
                     font.family: Config.fontName
-                    font.pixelSize: 13
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: FaceAuthService.statusMessage
                     wrapMode: Text.Wrap
                 }
@@ -448,35 +459,19 @@ Item {
                                 color: Config.alpha(Config.md3.tertiary, 0.15)
                                 radius: 12
 
-                                Text {
+                                Md3Icon {
                                     anchors.centerIn: parent
                                     color: Config.md3.tertiary
-                                    font.family: Config.fontName
-                                    font.pixelSize: 19
-                                    font.weight: Font.Bold
-                                    text: "◉"
+                                    name: "avatar-default-symbolic"
+                                    size: 24
                                 }
                             }
-                            ColumnLayout {
+                            SettingsLabelBlock {
                                 Layout.fillWidth: true
-                                spacing: 3
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.md3.on_surface
-                                    elide: Text.ElideRight
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.DemiBold
-                                    text: modelRow.modelData.label
-                                }
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.alpha(Config.md3.on_surface_variant, 0.58)
-                                    font.family: Config.fontName
-                                    font.pixelSize: 12
-                                    text: qsTr("%1 · ID %2").arg(root.modelDate(modelRow.modelData.time)).arg(modelRow.modelData.id)
-                                }
+                                emphasized: true
+                                headline: modelRow.modelData.label
+                                supportingMaximumLineCount: 1
+                                supportingText: qsTr("%1 · ID %2").arg(root.modelDate(modelRow.modelData.time)).arg(modelRow.modelData.id)
                             }
                             SettingsActionButton {
                                 enabled: !FaceAuthService.busy
@@ -501,8 +496,12 @@ Item {
                 Layout.fillWidth: true
                 color: Config.alpha(Config.md3.on_surface_variant, 0.62)
                 font.family: Config.fontName
-                font.pixelSize: 13
+                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyMedium.size
+                font.weight: Md3.typeScale.bodyMedium.weight
                 horizontalAlignment: Text.AlignHCenter
+                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                lineHeightMode: Text.FixedHeight
                 text: FaceAuthService.installed ? qsTr("No face models yet") : qsTr("Howdy support is missing")
                 visible: FaceAuthService.models.length === 0
             }
@@ -511,6 +510,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary
             compact: true
+            headerOutside: true
             iconName: "preferences-desktop-display-symbolic"
             note: qsTr("Boot login remains password-only; these options only choose the desktop session")
             title: qsTr("Greeter")
@@ -540,9 +540,13 @@ Item {
 
                 Text {
                     Layout.fillWidth: true
-                    color: root.greeterDeployMessage !== "" ? (root.greeterDeploySuccess ? Config.md3.primary : Config.md3.error) : Config.alpha(Config.md3.on_surface_variant, 0.58)
+                    color: root.greeterDeployMessage !== "" ? (root.greeterDeploySuccess ? Config.md3.primary : Config.md3.error) : Config.md3.on_surface_variant
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: root.greeterDeployMessage !== "" ? root.greeterDeployMessage : qsTr("Test greeter in a window or deploy files to /usr/share/sownteeshell/greeter")
                     wrapMode: Text.Wrap
                 }
@@ -565,9 +569,13 @@ Item {
             }
             Text {
                 Layout.fillWidth: true
-                color: GreeterSettingsService.errorMessage !== "" ? Config.md3.error : Config.alpha(Config.md3.on_surface_variant, 0.58)
+                color: GreeterSettingsService.errorMessage !== "" ? Config.md3.error : Config.md3.on_surface_variant
                 font.family: Config.fontName
-                font.pixelSize: 12
+                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyMedium.size
+                font.weight: Md3.typeScale.bodyMedium.weight
+                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                lineHeightMode: Text.FixedHeight
                 text: GreeterSettingsService.errorMessage || GreeterSettingsService.statusMessage
                 visible: text !== ""
                 wrapMode: Text.Wrap
@@ -577,6 +585,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            headerOutside: true
             iconName: "preferences-system-notifications-symbolic"
             note: qsTr("Control what appears before the session is authenticated")
             title: qsTr("Lock screen notifications")
@@ -610,6 +619,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.error
             compact: true
+            headerOutside: true
             iconName: "dialog-warning-symbolic"
             note: qsTr("RGB face recognition is convenient, not equivalent to a depth or infrared sensor")
             title: qsTr("Security note")
@@ -618,7 +628,11 @@ Item {
                 Layout.fillWidth: true
                 color: Config.alpha(Config.md3.on_surface_variant, 0.72)
                 font.family: Config.fontName
-                font.pixelSize: 13
+                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyMedium.size
+                font.weight: Md3.typeScale.bodyMedium.weight
+                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                lineHeightMode: Text.FixedHeight
                 text: qsTr("Face unlock may be fooled by a photo or video. Keep your password private and available. Successful and failed camera snapshots remain disabled.")
                 wrapMode: Text.Wrap
             }

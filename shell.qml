@@ -1,12 +1,13 @@
 //@ pragma UseQApplication
+//@ pragma Env QT_QPA_PLATFORMTHEME=generic
 //@ pragma Env QS_NO_RELOAD_POPUP=1
 //@ pragma DefaultEnv QSG_RENDER_LOOP=threaded
 //@ pragma DefaultEnv QT_QUICK_CONTROLS_STYLE=Basic
 //@ pragma DefaultEnv QT_QUICK_FLICKABLE_WHEEL_DECELERATION=10000
 //@ pragma DefaultEnv QS_DROP_EXPENSIVE_FONTS=1
-//@ pragma IconTheme WhiteSur
 
 import QtQuick
+import Native.ImageCache
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
@@ -26,7 +27,6 @@ ShellRoot {
     id: root
 
     readonly property bool batteryPolicyReady: BatteryService.policyReady
-    readonly property bool calendarDaemonReady: CalendarService.ready
     readonly property bool coreDaemonReady: CoreService.ready
     property var lazyOpenRequests: ({})
     readonly property bool profileImageSyncBusy: ProfileImageService.busy

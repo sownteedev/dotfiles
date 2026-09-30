@@ -1,5 +1,6 @@
 import "../../"
 import "../../components"
+import "lunar.js" as Lunar
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
@@ -13,6 +14,7 @@ Item {
     property var calendars: []
     property date displayMonth: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
     property string errorMessage: ""
+    property bool loading: false
     readonly property var monthDays: buildMonthDays()
     property date selectedDate: new Date()
     property var syncingAccounts: ({})
@@ -23,6 +25,7 @@ Item {
     signal calendarToggled(string calendarId, bool visible)
     signal connectRequested
     signal createRequested
+    signal createTaskRequested
     signal dateSelected(var value)
 
     function addDays(value, amount) {
@@ -95,10 +98,14 @@ Item {
 
             SettingsActionButton {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 48
-                iconName: "appointment-new-symbolic"
+                Layout.preferredHeight: 52
+                iconName: "list-add-symbolic"
+                iconSize: 24
                 primary: true
-                text: qsTr("Create event")
+                radius: Md3.shape.full
+                text: qsTr("Create")
+                textPixelSize: 16
+                textWeight: Font.DemiBold
 
                 onClicked: root.createRequested()
             }
@@ -126,13 +133,14 @@ Item {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.DemiBold
+                            font.letterSpacing: Md3.typeScale.titleSmall.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleSmall.size
+                            font.weight: 600
                             text: root.displayMonth.toLocaleString(Qt.locale(), "MMMM yyyy")
                         }
                         SettingsActionButton {
-                            Layout.preferredHeight: 30
-                            Layout.preferredWidth: 30
+                            Layout.preferredHeight: 32
+                            Layout.preferredWidth: 32
                             iconName: "go-previous-symbolic"
                             iconOnly: true
                             text: qsTr("Previous month")
@@ -140,8 +148,8 @@ Item {
                             onClicked: root.moveMonth(-1)
                         }
                         SettingsActionButton {
-                            Layout.preferredHeight: 30
-                            Layout.preferredWidth: 30
+                            Layout.preferredHeight: 32
+                            Layout.preferredWidth: 32
                             iconName: "go-next-symbolic"
                             iconOnly: true
                             text: qsTr("Next month")
@@ -169,8 +177,9 @@ Item {
 
                                 color: index >= 5 ? Config.md3.tertiary : Config.alpha(Config.md3.on_surface, 0.58)
                                 font.family: Config.fontName
-                                font.pixelSize: 10
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                                font.pixelSize: Md3.typeScale.labelSmall.size
+                                font.weight: 600
                                 height: 18
                                 horizontalAlignment: Text.AlignHCenter
                                 text: modelData
@@ -187,9 +196,14 @@ Item {
                                 required property int index
                                 readonly property bool isSelected: root.isSameDay(dayCell.value, root.selectedDate)
                                 readonly property bool isToday: root.isSameDay(dayCell.value, new Date())
+                                readonly property var lunarDate: Lunar.getLunarDateForDate(dayCell.value)
+                                readonly property string lunarLabel: lunarDate ? (lunarDate.day === 1 ? `${lunarDate.day}/${lunarDate.month}` : String(lunarDate.day)) : ""
+                                readonly property bool lunarSpecial: Boolean(lunarDate && (lunarDate.day === 1 || lunarDate.day === 15))
                                 required property var modelData
                                 readonly property date value: modelData.date
 
+                                Accessible.name: qsTr("%1, lunar %2").arg(Qt.formatDate(dayCell.value, Qt.DefaultLocaleLongDate)).arg(dayCell.lunarLabel)
+                                Accessible.role: Accessible.Button
                                 height: 31
                                 width: monthGrid.cellWidth
 
@@ -218,10 +232,22 @@ Item {
                                         anchors.centerIn: parent
                                         color: dayCell.isSelected ? Config.md3.on_primary : dayCell.isToday ? Config.md3.primary : dayCell.modelData.inMonth ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.3)
                                         font.family: Config.fontName
-                                        font.pixelSize: 11
-                                        font.weight: dayCell.isSelected || dayCell.isToday ? Font.Bold : Font.Medium
+                                        font.letterSpacing: Md3.typeScale.labelMedium.letterSpacing
+                                        font.pixelSize: Md3.typeScale.labelMedium.size
+                                        font.weight: dayCell.isSelected || dayCell.isToday ? 600 : Md3.typeScale.labelMedium.weight
                                         text: dayCell.value.getDate()
                                     }
+                                }
+                                Rectangle {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 5
+                                    anchors.top: parent.top
+                                    anchors.topMargin: 3
+                                    color: dayCell.lunarSpecial ? Config.md3.tertiary : "transparent"
+                                    height: 3
+                                    radius: 1.5
+                                    visible: dayCell.lunarSpecial
+                                    width: 3
                                 }
                                 MouseArea {
                                     id: dayMouse
@@ -249,22 +275,25 @@ Item {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 16
-                        font.weight: Font.DemiBold
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
+                        font.weight: 600
                         text: qsTr("Calendars")
                     }
                     Text {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface_variant
                         font.family: Config.fontName
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                        text: root.accounts.length === 1 ? qsTr("1 connected account") : qsTr("%1 connected accounts").arg(root.accounts.length)
+                        font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodySmall.size
+                        font.weight: Md3.typeScale.bodySmall.weight
+                        text: root.loading ? qsTr("Loading accounts…") : root.accounts.length === 1 ? qsTr("1 connected account") : qsTr("%1 connected accounts").arg(root.accounts.length)
                     }
                 }
                 SettingsActionButton {
                     Layout.preferredHeight: 38
                     Layout.preferredWidth: 38
+                    enabled: !root.loading
                     iconName: "contact-new-symbolic"
                     iconOnly: true
                     text: qsTr("Add calendar account")
@@ -289,6 +318,44 @@ Item {
                 }
             }
             Rectangle {
+                Accessible.ignored: true
+                Layout.fillWidth: true
+                color: Config.md3.surface_container_low
+                implicitHeight: 88
+                radius: 18
+                visible: root.loading && root.accounts.length === 0
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    Rectangle {
+                        Layout.preferredHeight: 36
+                        Layout.preferredWidth: 36
+                        color: Config.md3.surface_container_highest
+                        radius: 12
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 10
+                            color: Config.md3.surface_container_highest
+                            radius: 5
+                        }
+                        Rectangle {
+                            Layout.preferredHeight: 8
+                            Layout.preferredWidth: 72
+                            color: Config.md3.surface_container_high
+                            radius: 4
+                        }
+                    }
+                }
+            }
+            Rectangle {
                 Layout.fillWidth: true
                 border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.32 : 0.2)
                 border.width: 1
@@ -302,23 +369,22 @@ Item {
                     anchors.rightMargin: 14
                     spacing: 12
 
-                    IconImage {
+                    Md3Icon {
                         Layout.preferredHeight: 20
                         Layout.preferredWidth: 20
-                        layer.enabled: true
-                        source: Quickshell.iconPath("checkbox-checked-symbolic")
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.primary
-                        }
+                        color: Config.md3.primary
+                        filled: true
+                        name: "checkbox-checked-symbolic"
+                        size: 20
                     }
                     Text {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface
                         elide: Text.ElideRight
                         font.family: Config.fontName
-                        font.pixelSize: 13
-                        font.weight: Font.DemiBold
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
+                        font.weight: 600
                         text: qsTr("Local tasks")
                     }
                     ToggleSwitch {
@@ -341,7 +407,7 @@ Item {
                 color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.86 : 0.46)
                 implicitHeight: emptyContent.implicitHeight + 28
                 radius: 20
-                visible: root.accounts.length === 0
+                visible: root.accounts.length === 0 && !root.loading && root.errorMessage === ""
 
                 ColumnLayout {
                     id: emptyContent
@@ -357,24 +423,21 @@ Item {
                         color: Config.alpha(Config.md3.primary, 0.13)
                         radius: 15
 
-                        IconImage {
+                        Md3Icon {
                             anchors.centerIn: parent
-                            height: 23
-                            layer.enabled: true
-                            source: Quickshell.iconPath("internet-services-symbolic")
-                            width: 23
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.primary
-                            }
+                            color: Config.md3.primary
+                            filled: true
+                            name: "internet-services-symbolic"
+                            size: 24
                         }
                     }
                     Text {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 14
-                        font.weight: Font.DemiBold
+                        font.letterSpacing: Md3.typeScale.titleSmall.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleSmall.size
+                        font.weight: 600
                         horizontalAlignment: Text.AlignHCenter
                         text: qsTr("Bring every calendar together")
                     }
@@ -382,7 +445,9 @@ Item {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface_variant
                         font.family: Config.fontName
-                        font.pixelSize: 12
+                        font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodySmall.size
+                        font.weight: Md3.typeScale.bodySmall.weight
                         horizontalAlignment: Text.AlignHCenter
                         text: qsTr("Connect Google, Microsoft 365, or iCloud. Events stay in one timeline.")
                         wrapMode: Text.Wrap
@@ -401,8 +466,9 @@ Item {
                 Layout.fillWidth: true
                 color: Config.md3.error
                 font.family: Config.fontName
-                font.pixelSize: 11
-                font.weight: Font.Medium
+                font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                font.pixelSize: Md3.typeScale.bodySmall.size
+                font.weight: Md3.typeScale.bodySmall.weight
                 text: root.errorMessage
                 visible: text !== ""
                 wrapMode: Text.Wrap

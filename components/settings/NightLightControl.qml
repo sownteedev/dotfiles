@@ -10,6 +10,7 @@ Rectangle {
     id: root
 
     property color backgroundColor: Config.md3.surface_container
+    property color borderColor: Config.md3.outline_variant
     property bool dragging: false
     readonly property int maximumTemperature: 6500
     readonly property int minimumTemperature: 2500
@@ -23,7 +24,7 @@ Rectangle {
     signal temperatureRequested(int temperature)
     signal toggleRequested(bool enabled)
 
-    border.color: Config.alpha(Config.md3.on_surface, 0.06)
+    border.color: root.borderColor
     border.width: 1
     clip: true
     color: root.backgroundColor
@@ -61,16 +62,12 @@ Rectangle {
             radius: 20
             width: 40
 
-            IconImage {
+            Md3Icon {
                 anchors.centerIn: parent
-                height: 22
-                layer.enabled: true
-                source: Quickshell.iconPath("night-light-symbolic")
-                width: 22
-
-                layer.effect: ColorOverlay {
-                    color: root.nightLightEnabled ? '#e7844b' : Config.md3.primary
-                }
+                color: root.nightLightEnabled ? "#e7844b" : Config.md3.primary
+                filled: root.nightLightEnabled
+                name: "night-light-symbolic"
+                size: 22
             }
         }
         Column {
@@ -108,7 +105,6 @@ Rectangle {
             anchors.rightMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             checked: root.nightLightEnabled
-            checkedColor: "#ffad42"
             height: 26
             thumbCheckedColor: Config.md3.surface_container
             thumbMargin: 3

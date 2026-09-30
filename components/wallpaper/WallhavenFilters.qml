@@ -11,7 +11,7 @@ import Quickshell.Widgets
 Item {
     id: root
 
-    readonly property int activeFilterCount: (WallhavenService.categories === "111" ? 0 : 1) + (WallhavenService.purity === "111" ? 0 : 1) + (WallhavenService.atleast === "" && WallhavenService.resolutions === "" ? 0 : 1) + (WallhavenService.ratios === "" ? 0 : 1) + (WallhavenService.colors === "" ? 0 : 1) + (WallhavenService.sorting === "toplist" && WallhavenService.order === "desc" && WallhavenService.topRange === "1M" ? 0 : 1)
+    readonly property int activeFilterCount: (WallhavenService.categories === "111" ? 0 : 1) + (WallhavenService.purity === "110" ? 0 : 1) + (WallhavenService.atleast === "" && WallhavenService.resolutions === "" ? 0 : 1) + (WallhavenService.ratios === "" ? 0 : 1) + (WallhavenService.colors === "" ? 0 : 1) + (WallhavenService.sorting === "relevance" && WallhavenService.order === "desc" ? 0 : 1)
     readonly property var colorOptions: ["660000", "990000", "cc0000", "cc3333", "ea4c88", "993399", "663399", "333399", "0066cc", "0099cc", "66cccc", "77cc33", "669900", "336600", "666600", "999900", "cccc33", "ffff00", "ffcc33", "ff9900", "ff6600", "cc6633", "996633", "663300", "000000", "999999", "cccccc", "ffffff"]
     readonly property bool popupOpen: filterPopup.visible
     property Item popupParent: null
@@ -90,13 +90,13 @@ Item {
     }
     function resetFilters() {
         WallhavenService.categories = "111";
-        WallhavenService.purity = "111";
+        WallhavenService.purity = "110";
         WallhavenService.resolutionMode = "atleast";
         WallhavenService.atleast = "";
         WallhavenService.resolutions = "";
         WallhavenService.ratios = "";
         WallhavenService.colors = "";
-        WallhavenService.sorting = "toplist";
+        WallhavenService.sorting = "relevance";
         WallhavenService.order = "desc";
         WallhavenService.topRange = "1M";
         filterChanged();
@@ -143,7 +143,6 @@ Item {
     }
     function togglePopup() {
         filterPopup.open = !filterPopup.open;
-        filterButton.forceActiveFocus();
     }
 
     implicitHeight: 40
@@ -163,12 +162,18 @@ Item {
 
         Accessible.name: root.activeFilterCount > 0 ? qsTr("Wallhaven filters, %1 active").arg(root.activeFilterCount) : qsTr("Wallhaven filters")
         Accessible.role: Accessible.Button
-        activeFocusOnTab: true
+        activeFocusOnTab: false
         anchors.fill: parent
-        border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : Config.alpha(Config.md3.outline, 0.14)
+        border.color: filterMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.38) : Config.alpha(Config.md3.outline, 0.14)
         border.width: 1
         color: filterPopup.open || root.activeFilterCount > 0 ? Config.md3.secondary_container : (filterMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.035))
-        radius: 13
+        radius: Md3.shape.full
+
+        Behavior on color {
+            ColorAnimation {
+                duration: Config.animationDuration(Md3.motion.short2)
+            }
+        }
 
         Keys.onEscapePressed: root.closePopup()
         Keys.onReturnPressed: root.togglePopup()
@@ -268,6 +273,18 @@ Item {
             color: Config.md3.surface_container_high
             radius: 20
         }
+        WheelHandler {
+            blocking: true
+            target: null
+        }
+        MouseArea {
+            acceptedButtons: Qt.AllButtons
+            anchors.fill: parent
+            hoverEnabled: true
+            preventStealing: true
+
+            onWheel: event => event.accepted = true
+        }
         Item {
             id: popupHeader
 
@@ -364,10 +381,11 @@ Item {
                     SectionLabel {
                         text: qsTr("Categories")
                     }
-                    Flow {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 6
+                        columnSpacing: 6
+                        columns: 3
+                        rowSpacing: 6
 
                         Repeater {
                             model: [qsTr("General"), qsTr("Anime"), qsTr("People")]
@@ -376,6 +394,7 @@ Item {
                                 required property int index
                                 required property string modelData
 
+                                Layout.fillWidth: true
                                 label: modelData
                                 selected: root.bitEnabled(WallhavenService.categories, index)
 
@@ -386,10 +405,11 @@ Item {
                     SectionLabel {
                         text: qsTr("Purity")
                     }
-                    Flow {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 6
+                        columnSpacing: 6
+                        columns: 3
+                        rowSpacing: 6
 
                         Repeater {
                             model: [qsTr("SFW"), qsTr("Sketchy"), qsTr("NSFW")]
@@ -399,6 +419,7 @@ Item {
                                 required property int index
                                 required property string modelData
 
+                                Layout.fillWidth: true
                                 accentColor: index === 2 ? Config.md3.error_container : Config.md3.tertiary_container
                                 enabled: available
                                 label: modelData
@@ -451,10 +472,11 @@ Item {
                             }
                         }
                     }
-                    Flow {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 6
+                        columnSpacing: 6
+                        columns: 4
+                        rowSpacing: 6
 
                         Repeater {
                             model: root.resolutionOptions
@@ -462,6 +484,7 @@ Item {
                             delegate: FilterChip {
                                 required property string modelData
 
+                                Layout.fillWidth: true
                                 label: modelData.replace("x", " × ")
                                 selected: root.currentResolution() === modelData
 
@@ -523,12 +546,14 @@ Item {
                     SectionLabel {
                         text: qsTr("Aspect ratio")
                     }
-                    Flow {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 6
+                        columnSpacing: 6
+                        columns: 5
+                        rowSpacing: 6
 
                         FilterChip {
+                            Layout.fillWidth: true
                             label: qsTr("Any")
                             selected: WallhavenService.ratios === ""
 
@@ -543,6 +568,7 @@ Item {
                             delegate: FilterChip {
                                 required property string modelData
 
+                                Layout.fillWidth: true
                                 label: modelData.replace("x", " : ")
                                 selected: WallhavenService.ratios === modelData
 
@@ -556,11 +582,12 @@ Item {
                     SectionLabel {
                         text: qsTr("Dominant color")
                     }
-                    RowLayout {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 8
+                        spacing: 7
 
                         FilterChip {
+                            Layout.fillWidth: true
                             label: qsTr("Any")
                             selected: WallhavenService.colors === ""
 
@@ -569,10 +596,11 @@ Item {
                                 root.filterChanged();
                             }
                         }
-                        Flow {
+                        GridLayout {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: implicitHeight
-                            spacing: 5
+                            columnSpacing: 6
+                            columns: 7
+                            rowSpacing: 6
 
                             Repeater {
                                 model: root.colorOptions
@@ -580,6 +608,7 @@ Item {
                                 delegate: ColorSwatch {
                                     required property string modelData
 
+                                    Layout.fillWidth: true
                                     colorValue: modelData
                                     selected: WallhavenService.colors.toLowerCase() === modelData
 
@@ -602,10 +631,11 @@ Item {
                     x: dashboard.columnWidth + 12
                     y: resolutionCard.height + 12
 
-                    Flow {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 6
+                        columnSpacing: 6
+                        columns: 3
+                        rowSpacing: 6
 
                         Repeater {
                             model: root.sortingOptions
@@ -613,6 +643,7 @@ Item {
                             delegate: FilterChip {
                                 required property var modelData
 
+                                Layout.fillWidth: true
                                 label: modelData.label
                                 selected: WallhavenService.sorting === modelData.value
 
@@ -623,44 +654,49 @@ Item {
                             }
                         }
                     }
-                    RowLayout {
+                    MiniGroup {
                         Layout.fillWidth: true
-                        spacing: 7
 
                         SectionLabel {
-                            Layout.fillWidth: true
                             text: qsTr("Order")
                         }
-                        FilterChip {
-                            label: WallhavenService.order === "asc" ? qsTr("Ascending") : qsTr("Descending")
-                            selected: true
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
 
-                            onClicked: {
-                                WallhavenService.order = WallhavenService.order === "asc" ? "desc" : "asc";
-                                root.filterChanged();
+                            FilterChip {
+                                Layout.fillWidth: true
+                                label: WallhavenService.order === "asc" ? qsTr("Ascending") : qsTr("Descending")
+                                selected: true
+
+                                onClicked: {
+                                    WallhavenService.order = WallhavenService.order === "asc" ? "desc" : "asc";
+                                    root.filterChanged();
+                                }
                             }
-                        }
-                        IconButton {
-                            accessibleName: qsTr("Open hot wallpapers")
-                            iconName: "external-link-symbolic"
+                            IconButton {
+                                accessibleName: qsTr("Open hot wallpapers")
+                                iconName: "external-link-symbolic"
 
-                            onClicked: {
-                                root.closePopup();
-                                WallhavenService.openPage("https://wallhaven.cc/hot");
+                                onClicked: {
+                                    root.closePopup();
+                                    WallhavenService.openPage("https://wallhaven.cc/hot");
+                                }
                             }
                         }
                     }
-                    ColumnLayout {
+                    MiniGroup {
                         Layout.fillWidth: true
-                        spacing: 6
                         visible: WallhavenService.sorting === "toplist"
 
                         SectionLabel {
                             text: qsTr("Toplist period")
                         }
-                        RowLayout {
+                        GridLayout {
                             Layout.fillWidth: true
-                            spacing: 4
+                            columnSpacing: 4
+                            columns: 7
+                            rowSpacing: 4
 
                             Repeater {
                                 model: root.topRangeOptions
@@ -696,14 +732,14 @@ Item {
 
         Accessible.name: qsTr("Color %1").arg(colorValue)
         Accessible.role: Accessible.Button
-        activeFocusOnTab: true
-        border.color: selected || activeFocus ? Config.md3.primary : Config.alpha(Config.md3.outline, 0.28)
+        activeFocusOnTab: false
+        border.color: selected ? Config.md3.primary : swatchMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.62) : Config.alpha(Config.md3.outline, 0.28)
         border.width: selected ? 3 : 1
         color: "#" + colorValue
-        height: 28
+        implicitHeight: 28
+        implicitWidth: 28
         radius: 9
         scale: swatchMouse.containsMouse ? 1.08 : 1
-        width: 28
 
         Behavior on scale {
             ScaleAnimator {
@@ -760,23 +796,31 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 9
 
-                IconImage {
-                    Layout.preferredHeight: 17
-                    Layout.preferredWidth: 17
-                    layer.enabled: true
-                    source: Quickshell.iconPath(card.iconName, "preferences-other-symbolic")
+                Rectangle {
+                    Layout.preferredHeight: 28
+                    Layout.preferredWidth: 28
+                    color: Config.alpha(Config.md3.primary, 0.12)
+                    radius: 9
 
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.primary
+                    IconImage {
+                        anchors.centerIn: parent
+                        height: 15
+                        layer.enabled: true
+                        source: Quickshell.iconPath(card.iconName, "preferences-other-symbolic")
+                        width: 15
+
+                        layer.effect: ColorOverlay {
+                            color: Config.md3.primary
+                        }
                     }
                 }
                 Text {
                     Layout.fillWidth: true
                     color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 14
                     font.weight: Font.DemiBold
                     text: card.title
                 }
@@ -796,11 +840,12 @@ Item {
 
         Accessible.name: label
         Accessible.role: Accessible.Button
-        activeFocusOnTab: true
-        border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.74) : (selected ? Config.alpha(Config.md3.primary, 0.24) : Config.alpha(Config.md3.outline, 0.12))
+        Layout.preferredWidth: 0
+        activeFocusOnTab: false
+        border.color: selected ? Config.alpha(Config.md3.primary, 0.24) : chipMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.34) : Config.alpha(Config.md3.outline, 0.12)
         border.width: 1
         color: selected ? accentColor : (chipMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.025))
-        implicitHeight: compact ? 29 : 32
+        implicitHeight: compact ? 29 : 31
         implicitWidth: compact ? Math.max(38, chipLabel.implicitWidth + 16) : chipLabel.implicitWidth + 24
         opacity: enabled ? 1 : 0.38
         radius: compact ? 9 : 11
@@ -813,10 +858,13 @@ Item {
 
             anchors.centerIn: parent
             color: chip.selected ? chip.selectedTextColor : Config.md3.on_surface_variant
+            elide: Text.ElideRight
             font.family: Config.fontName
-            font.pixelSize: chip.compact ? 10 : 11
+            font.pixelSize: chip.compact ? 10 : 12
             font.weight: chip.selected ? Font.DemiBold : Font.Medium
+            horizontalAlignment: Text.AlignHCenter
             text: chip.label
+            width: Math.max(0, parent.width - 14)
         }
         MouseArea {
             id: chipMouse
@@ -841,7 +889,7 @@ Item {
 
         Accessible.name: accessibleName
         Accessible.role: Accessible.Button
-        activeFocusOnTab: true
+        activeFocusOnTab: false
         border.color: accent && enabled ? Config.alpha(Config.md3.secondary, 0.18) : "transparent"
         border.width: 1
         color: accent && enabled ? (headerMouse.containsMouse ? Config.md3.secondary_container : Config.alpha(Config.md3.secondary_container, 0.72)) : (headerMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent")
@@ -892,7 +940,7 @@ Item {
         Accessible.role: Accessible.Button
         Layout.preferredHeight: 32
         Layout.preferredWidth: 32
-        activeFocusOnTab: true
+        activeFocusOnTab: false
         color: iconMouse.containsMouse ? Config.md3.secondary_container : Config.alpha(Config.md3.on_surface, 0.045)
         opacity: enabled ? 1 : 0.35
         radius: 10
@@ -919,10 +967,30 @@ Item {
             onClicked: parent.clicked()
         }
     }
+    component MiniGroup: Rectangle {
+        id: miniGroup
+
+        default property alias groupContent: groupBody.data
+
+        Layout.preferredWidth: 0
+        border.color: Config.alpha(Config.md3.outline, 0.08)
+        border.width: 1
+        color: Config.alpha(Config.md3.on_surface, 0.025)
+        implicitHeight: groupBody.implicitHeight + 20
+        radius: 12
+
+        ColumnLayout {
+            id: groupBody
+
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 6
+        }
+    }
     component SectionLabel: Text {
         color: Config.md3.on_surface_variant
         font.family: Config.fontName
-        font.pixelSize: 11
+        font.pixelSize: 12
         font.weight: Font.DemiBold
     }
 }

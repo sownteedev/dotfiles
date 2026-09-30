@@ -604,544 +604,569 @@ ScrollView {
                 }
             }
         }
-        Item {
+        GridLayout {
+            id: layoutDecorationGrid
+
             Layout.fillWidth: true
-            implicitHeight: root.compactLayout ? tabIndicatorCard.y + tabIndicatorCard.height : Math.max(blurCard.y + blurCard.height, tabIndicatorCard.y + tabIndicatorCard.height)
+            Layout.minimumWidth: 0
+            Layout.preferredWidth: 1
+            columnSpacing: 16
+            columns: root.compactLayout ? 1 : 2
+            rowSpacing: 16
+            uniformCellWidths: true
 
-            SettingsExpandableCard {
-                id: borderCard
+            ColumnLayout {
+                id: layoutDecorationPrimaryColumn
 
-                accentColor: Config.md3.primary
-                anchors.left: parent.left
-                anchors.top: parent.top
-                iconName: "focus-windows-symbolic"
-                note: "Draw a configurable border around windows"
-                title: "Window border"
-                width: root.compactLayout ? parent.width : (parent.width - 16) / 2
+                Layout.alignment: Qt.AlignTop
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
+                spacing: 16
 
-                onToggled: checked => {
-                    return borderCard.checked = checked;
-                }
-
-                SettingsTextField {
-                    id: borderField
-
-                    Layout.fillWidth: true
-                    label: "Width"
-                    placeholder: "12"
-
-                    inputItem.validator: DoubleValidator {
-                        bottom: 0
-                        top: 64
-                    }
-                }
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 10
-                    columns: root.compactLayout ? 2 : 3
-                    rowSpacing: 10
-                    uniformCellWidths: true
-
-                    SettingsTextField {
-                        id: borderActiveColor
-
-                        Layout.fillWidth: true
-                        label: "Active"
-                    }
-                    SettingsTextField {
-                        id: borderInactiveColor
-
-                        Layout.fillWidth: true
-                        label: "Inactive"
-                    }
-                    SettingsTextField {
-                        id: borderUrgentColor
-
-                        Layout.fillWidth: true
-                        label: "Urgent"
-                    }
-                }
                 SettingsExpandableCard {
-                    id: borderGradientCard
+                    id: borderCard
 
+                    Layout.alignment: Qt.AlignTop
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 1
                     accentColor: Config.md3.primary
-                    iconName: "color-select-symbolic"
-                    note: "Gradient overrides the solid colors above"
-                    title: "Gradient colors"
+                    iconName: "focus-windows-symbolic"
+                    note: "Draw a configurable border around windows"
+                    title: "Window border"
 
                     onToggled: checked => {
-                        return borderGradientCard.checked = checked;
+                        return borderCard.checked = checked;
                     }
 
                     SettingsTextField {
-                        id: borderActiveGradient
-
-                        Layout.fillWidth: true
-                        label: "Active gradient"
-                    }
-                    SettingsTextField {
-                        id: borderInactiveGradient
-
-                        Layout.fillWidth: true
-                        label: "Inactive gradient"
-                    }
-                    SettingsTextField {
-                        id: borderUrgentGradient
-
-                        Layout.fillWidth: true
-                        label: "Urgent gradient"
-                    }
-                }
-            }
-            SettingsExpandableCard {
-                id: focusRingCard
-
-                accentColor: Config.md3.secondary
-                anchors.left: root.compactLayout ? parent.left : undefined
-                anchors.right: root.compactLayout ? undefined : parent.right
-                anchors.top: root.compactLayout ? borderCard.bottom : parent.top
-                anchors.topMargin: root.compactLayout ? 16 : 0
-                iconName: "focus-windows-symbolic"
-                note: "Highlight the currently focused window"
-                title: "Focus ring"
-                width: root.compactLayout ? parent.width : (parent.width - 16) / 2
-
-                onToggled: checked => {
-                    return focusRingCard.checked = checked;
-                }
-
-                SettingsTextField {
-                    id: focusRingWidth
-
-                    Layout.fillWidth: true
-                    label: "Width"
-
-                    inputItem.validator: DoubleValidator {
-                        bottom: 0
-                        top: 64
-                    }
-                }
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 10
-                    columns: root.compactLayout ? 2 : 3
-                    rowSpacing: 10
-                    uniformCellWidths: true
-
-                    SettingsTextField {
-                        id: focusRingActiveColor
-
-                        Layout.fillWidth: true
-                        label: "Active"
-                    }
-                    SettingsTextField {
-                        id: focusRingInactiveColor
-
-                        Layout.fillWidth: true
-                        label: "Inactive"
-                    }
-                    SettingsTextField {
-                        id: focusRingUrgentColor
-
-                        Layout.fillWidth: true
-                        label: "Urgent"
-                    }
-                }
-                SettingsExpandableCard {
-                    id: focusGradientCard
-
-                    Layout.fillWidth: true
-                    accentColor: Config.md3.secondary
-                    iconName: "color-select-symbolic"
-                    note: "Gradient overrides the solid colors above"
-                    title: "Gradient colors"
-
-                    onToggled: checked => {
-                        return focusGradientCard.checked = checked;
-                    }
-
-                    SettingsTextField {
-                        id: focusActiveGradient
-
-                        Layout.fillWidth: true
-                        label: "Active gradient"
-                    }
-                    SettingsTextField {
-                        id: focusInactiveGradient
-
-                        Layout.fillWidth: true
-                        label: "Inactive gradient"
-                    }
-                    SettingsTextField {
-                        id: focusUrgentGradient
-
-                        Layout.fillWidth: true
-                        label: "Urgent gradient"
-                    }
-                }
-            }
-            SettingsExpandableCard {
-                id: insertHintCard
-
-                accentColor: Config.md3.tertiary
-                anchors.left: parent.left
-                anchors.top: root.compactLayout ? focusRingCard.bottom : borderCard.bottom
-                anchors.topMargin: 16
-                iconName: "insert-object-symbolic"
-                note: "Show where a dragged window will be inserted"
-                title: "Drag insert hint"
-                width: root.compactLayout ? parent.width : (parent.width - 16) / 2
-
-                onToggled: checked => {
-                    return insertHintCard.checked = checked;
-                }
-
-                SettingsTextField {
-                    id: insertHintColor
-
-                    Layout.fillWidth: true
-                    label: "Hint color"
-                    placeholder: "#7fc8ff80"
-                }
-                SettingsExpandableCard {
-                    id: insertGradientCard
-
-                    Layout.fillWidth: true
-                    accentColor: Config.md3.tertiary
-                    iconName: "color-select-symbolic"
-                    note: "Gradient overrides the solid hint color"
-                    title: "Gradient"
-
-                    onToggled: checked => {
-                        return insertGradientCard.checked = checked;
-                    }
-
-                    SettingsTextField {
-                        id: insertHintGradient
-
-                        Layout.fillWidth: true
-                        label: "Gradient specification"
-                    }
-                }
-            }
-            SettingsExpandableCard {
-                id: blurCard
-
-                accentColor: Config.md3.primary
-                anchors.left: parent.left
-                anchors.top: insertHintCard.bottom
-                anchors.topMargin: 16
-                iconName: "weather-fog-symbolic"
-                note: "GPU blur quality and performance controls"
-                title: "Experimental blur"
-                width: root.compactLayout ? parent.width : (parent.width - 16) / 2
-
-                onToggled: checked => {
-                    return blurCard.checked = checked;
-                }
-
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 10
-                    columns: root.compactLayout ? 2 : 4
-                    rowSpacing: 10
-                    uniformCellWidths: true
-
-                    SettingsTextField {
-                        id: blurPasses
-
-                        Layout.fillWidth: true
-                        label: "Passes"
-
-                        inputItem.validator: IntValidator {
-                            bottom: 1
-                            top: 8
-                        }
-                    }
-                    SettingsTextField {
-                        id: blurOffset
-
-                        Layout.fillWidth: true
-                        label: "Offset"
-
-                        inputItem.validator: DoubleValidator {
-                            bottom: 0.1
-                            top: 10
-                        }
-                    }
-                    SettingsTextField {
-                        id: blurNoise
-
-                        Layout.fillWidth: true
-                        label: "Noise"
-
-                        inputItem.validator: DoubleValidator {
-                            bottom: 0
-                            top: 1
-                        }
-                    }
-                    SettingsTextField {
-                        id: blurSaturation
-
-                        Layout.fillWidth: true
-                        label: "Saturation"
-
-                        inputItem.validator: DoubleValidator {
-                            bottom: 0
-                            top: 5
-                        }
-                    }
-                }
-            }
-            SettingsExpandableCard {
-                id: shadowCard
-
-                accentColor: Config.md3.tertiary
-                anchors.left: root.compactLayout ? parent.left : undefined
-                anchors.right: root.compactLayout ? undefined : parent.right
-                anchors.top: root.compactLayout ? blurCard.bottom : focusRingCard.bottom
-                anchors.topMargin: 16
-                iconName: "preferences-desktop-effects-symbolic"
-                note: "Draw a configurable shadow behind windows"
-                title: "Window shadow"
-                width: root.compactLayout ? parent.width : (parent.width - 16) / 2
-
-                onToggled: checked => {
-                    return shadowCard.checked = checked;
-                }
-
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 10
-                    columns: 2
-                    rowSpacing: 10
-                    uniformCellWidths: true
-
-                    SettingsTextField {
-                        id: shadowSoftness
-
-                        Layout.fillWidth: true
-                        label: "Softness"
-                    }
-                    SettingsTextField {
-                        id: shadowSpread
-
-                        Layout.fillWidth: true
-                        label: "Spread"
-                    }
-                    SettingsTextField {
-                        id: shadowOffsetX
-
-                        Layout.fillWidth: true
-                        label: "Offset X"
-                    }
-                    SettingsTextField {
-                        id: shadowOffsetY
-
-                        Layout.fillWidth: true
-                        label: "Offset Y"
-                    }
-                }
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 10
-                    columns: 2
-                    rowSpacing: 10
-                    uniformCellWidths: true
-
-                    SettingsTextField {
-                        id: shadowColor
-
-                        Layout.fillWidth: true
-                        label: "Color"
-                    }
-                    SettingsTextField {
-                        id: shadowInactiveColor
-
-                        Layout.fillWidth: true
-                        label: "Inactive"
-                    }
-                }
-                SettingsToggleRow {
-                    id: shadowDrawBehind
-
-                    label: "Draw behind window"
-                    note: "Keep the shadow behind the complete window"
-
-                    onToggled: checked => {
-                        return shadowDrawBehind.checked = checked;
-                    }
-                }
-            }
-            SettingsExpandableCard {
-                id: tabIndicatorCard
-
-                accentColor: Config.md3.primary
-                anchors.left: root.compactLayout ? parent.left : undefined
-                anchors.right: root.compactLayout ? undefined : parent.right
-                anchors.top: shadowCard.bottom
-                anchors.topMargin: 16
-                iconName: "view-list-symbolic"
-                note: "Marker for tabs in a tabbed column"
-                title: "Tabbed column indicator"
-                width: root.compactLayout ? parent.width : (parent.width - 16) / 2
-
-                onToggled: checked => {
-                    return tabIndicatorCard.checked = checked;
-                }
-
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 10
-                    columns: 2
-                    rowSpacing: 10
-                    uniformCellWidths: true
-
-                    SettingsTextField {
-                        id: tabGap
-
-                        Layout.fillWidth: true
-                        label: "Outer gap"
-                    }
-                    SettingsTextField {
-                        id: tabWidth
+                        id: borderField
 
                         Layout.fillWidth: true
                         label: "Width"
-                    }
-                    SettingsTextField {
-                        id: tabGapsBetween
-
-                        Layout.fillWidth: true
-                        label: "Gap between tabs"
-                    }
-                    SettingsTextField {
-                        id: tabCornerRadius
-
-                        Layout.fillWidth: true
-                        label: "Corner radius"
-                    }
-                }
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 10
-                    columns: 2
-                    rowSpacing: 10
-                    uniformCellWidths: true
-
-                    SettingsTextField {
-                        id: tabLength
-
-                        Layout.fillWidth: true
-                        label: "Total length"
+                        placeholder: "12"
 
                         inputItem.validator: DoubleValidator {
-                            bottom: 0.05
-                            top: 1
+                            bottom: 0
+                            top: 64
                         }
                     }
-                    SettingsChoiceRow {
-                        id: tabPosition
-
+                    GridLayout {
                         Layout.fillWidth: true
-                        label: "Position"
-                        options: [
-                            {
-                                "label": "Left",
-                                "value": "left"
-                            },
-                            {
-                                "label": "Right",
-                                "value": "right"
-                            },
-                            {
-                                "label": "Top",
-                                "value": "top"
-                            },
-                            {
-                                "label": "Bottom",
-                                "value": "bottom"
-                            }
-                        ]
+                        columnSpacing: 10
+                        columns: root.compactLayout ? 2 : 3
+                        rowSpacing: 10
+                        uniformCellWidths: true
+
+                        SettingsTextField {
+                            id: borderActiveColor
+
+                            Layout.fillWidth: true
+                            label: "Active"
+                        }
+                        SettingsTextField {
+                            id: borderInactiveColor
+
+                            Layout.fillWidth: true
+                            label: "Inactive"
+                        }
+                        SettingsTextField {
+                            id: borderUrgentColor
+
+                            Layout.fillWidth: true
+                            label: "Urgent"
+                        }
                     }
-                }
-                GridLayout {
-                    Layout.fillWidth: true
-                    columnSpacing: 10
-                    columns: root.compactLayout ? 2 : 3
-                    rowSpacing: 10
-                    uniformCellWidths: true
-
-                    SettingsTextField {
-                        id: tabActiveColor
+                    SettingsExpandableCard {
+                        id: borderGradientCard
 
                         Layout.fillWidth: true
-                        label: "Active"
-                    }
-                    SettingsTextField {
-                        id: tabInactiveColor
+                        accentColor: Config.md3.primary
+                        iconName: "color-select-symbolic"
+                        note: "Gradient overrides the solid colors above"
+                        title: "Gradient colors"
 
-                        Layout.fillWidth: true
-                        label: "Inactive"
-                    }
-                    SettingsTextField {
-                        id: tabUrgentColor
+                        onToggled: checked => {
+                            return borderGradientCard.checked = checked;
+                        }
 
-                        Layout.fillWidth: true
-                        label: "Urgent"
+                        SettingsTextField {
+                            id: borderActiveGradient
+
+                            Layout.fillWidth: true
+                            label: "Active gradient"
+                        }
+                        SettingsTextField {
+                            id: borderInactiveGradient
+
+                            Layout.fillWidth: true
+                            label: "Inactive gradient"
+                        }
+                        SettingsTextField {
+                            id: borderUrgentGradient
+
+                            Layout.fillWidth: true
+                            label: "Urgent gradient"
+                        }
                     }
                 }
                 SettingsExpandableCard {
-                    id: tabGradientCard
+                    id: insertHintCard
 
+                    Layout.alignment: Qt.AlignTop
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 1
+                    accentColor: Config.md3.tertiary
+                    iconName: "insert-object-symbolic"
+                    note: "Show where a dragged window will be inserted"
+                    title: "Drag insert hint"
+
+                    onToggled: checked => {
+                        return insertHintCard.checked = checked;
+                    }
+
+                    SettingsTextField {
+                        id: insertHintColor
+
+                        Layout.fillWidth: true
+                        label: "Hint color"
+                        placeholder: "#7fc8ff80"
+                    }
+                    SettingsExpandableCard {
+                        id: insertGradientCard
+
+                        Layout.fillWidth: true
+                        accentColor: Config.md3.tertiary
+                        iconName: "color-select-symbolic"
+                        note: "Gradient overrides the solid hint color"
+                        title: "Gradient"
+
+                        onToggled: checked => {
+                            return insertGradientCard.checked = checked;
+                        }
+
+                        SettingsTextField {
+                            id: insertHintGradient
+
+                            Layout.fillWidth: true
+                            label: "Gradient specification"
+                        }
+                    }
+                }
+                SettingsExpandableCard {
+                    id: blurCard
+
+                    Layout.alignment: Qt.AlignTop
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 1
                     accentColor: Config.md3.primary
-                    iconName: "color-select-symbolic"
-                    note: "Gradient overrides the solid colors above"
-                    title: "Gradient colors"
+                    iconName: "weather-fog-symbolic"
+                    note: "GPU blur quality and performance controls"
+                    title: "Experimental blur"
 
                     onToggled: checked => {
-                        return tabGradientCard.checked = checked;
+                        return blurCard.checked = checked;
                     }
 
-                    SettingsTextField {
-                        id: tabActiveGradient
-
+                    GridLayout {
                         Layout.fillWidth: true
-                        label: "Active gradient"
-                    }
-                    SettingsTextField {
-                        id: tabInactiveGradient
+                        columnSpacing: 10
+                        columns: root.compactLayout ? 2 : 4
+                        rowSpacing: 10
+                        uniformCellWidths: true
 
-                        Layout.fillWidth: true
-                        label: "Inactive gradient"
-                    }
-                    SettingsTextField {
-                        id: tabUrgentGradient
+                        SettingsTextField {
+                            id: blurPasses
 
-                        Layout.fillWidth: true
-                        label: "Urgent gradient"
+                            Layout.fillWidth: true
+                            label: "Passes"
+
+                            inputItem.validator: IntValidator {
+                                bottom: 1
+                                top: 8
+                            }
+                        }
+                        SettingsTextField {
+                            id: blurOffset
+
+                            Layout.fillWidth: true
+                            label: "Offset"
+
+                            inputItem.validator: DoubleValidator {
+                                bottom: 0.1
+                                top: 10
+                            }
+                        }
+                        SettingsTextField {
+                            id: blurNoise
+
+                            Layout.fillWidth: true
+                            label: "Noise"
+
+                            inputItem.validator: DoubleValidator {
+                                bottom: 0
+                                top: 1
+                            }
+                        }
+                        SettingsTextField {
+                            id: blurSaturation
+
+                            Layout.fillWidth: true
+                            label: "Saturation"
+
+                            inputItem.validator: DoubleValidator {
+                                bottom: 0
+                                top: 5
+                            }
+                        }
                     }
                 }
-                SettingsToggleRow {
-                    id: tabHideSingle
+            }
+            ColumnLayout {
+                id: layoutDecorationSecondaryColumn
 
-                    label: "Hide with one tab"
-                    note: "Do not draw the indicator for a single tab"
+                Layout.alignment: Qt.AlignTop
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 1
+                spacing: 16
+
+                SettingsExpandableCard {
+                    id: focusRingCard
+
+                    Layout.alignment: Qt.AlignTop
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 1
+                    accentColor: Config.md3.secondary
+                    iconName: "focus-windows-symbolic"
+                    note: "Highlight the currently focused window"
+                    title: "Focus ring"
 
                     onToggled: checked => {
-                        return tabHideSingle.checked = checked;
+                        return focusRingCard.checked = checked;
+                    }
+
+                    SettingsTextField {
+                        id: focusRingWidth
+
+                        Layout.fillWidth: true
+                        label: "Width"
+
+                        inputItem.validator: DoubleValidator {
+                            bottom: 0
+                            top: 64
+                        }
+                    }
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columnSpacing: 10
+                        columns: root.compactLayout ? 2 : 3
+                        rowSpacing: 10
+                        uniformCellWidths: true
+
+                        SettingsTextField {
+                            id: focusRingActiveColor
+
+                            Layout.fillWidth: true
+                            label: "Active"
+                        }
+                        SettingsTextField {
+                            id: focusRingInactiveColor
+
+                            Layout.fillWidth: true
+                            label: "Inactive"
+                        }
+                        SettingsTextField {
+                            id: focusRingUrgentColor
+
+                            Layout.fillWidth: true
+                            label: "Urgent"
+                        }
+                    }
+                    SettingsExpandableCard {
+                        id: focusGradientCard
+
+                        Layout.fillWidth: true
+                        accentColor: Config.md3.secondary
+                        iconName: "color-select-symbolic"
+                        note: "Gradient overrides the solid colors above"
+                        title: "Gradient colors"
+
+                        onToggled: checked => {
+                            return focusGradientCard.checked = checked;
+                        }
+
+                        SettingsTextField {
+                            id: focusActiveGradient
+
+                            Layout.fillWidth: true
+                            label: "Active gradient"
+                        }
+                        SettingsTextField {
+                            id: focusInactiveGradient
+
+                            Layout.fillWidth: true
+                            label: "Inactive gradient"
+                        }
+                        SettingsTextField {
+                            id: focusUrgentGradient
+
+                            Layout.fillWidth: true
+                            label: "Urgent gradient"
+                        }
                     }
                 }
-                SettingsToggleRow {
-                    id: tabPlaceWithin
+                SettingsExpandableCard {
+                    id: shadowCard
 
-                    label: "Place inside column"
-                    note: "Keep the indicator within the column bounds"
+                    Layout.alignment: Qt.AlignTop
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 1
+                    accentColor: Config.md3.tertiary
+                    iconName: "preferences-desktop-effects-symbolic"
+                    note: "Draw a configurable shadow behind windows"
+                    title: "Window shadow"
 
                     onToggled: checked => {
-                        return tabPlaceWithin.checked = checked;
+                        return shadowCard.checked = checked;
+                    }
+
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columnSpacing: 10
+                        columns: root.compactLayout ? 1 : 2
+                        rowSpacing: 10
+                        uniformCellWidths: true
+
+                        SettingsTextField {
+                            id: shadowSoftness
+
+                            Layout.fillWidth: true
+                            label: "Softness"
+                        }
+                        SettingsTextField {
+                            id: shadowSpread
+
+                            Layout.fillWidth: true
+                            label: "Spread"
+                        }
+                        SettingsTextField {
+                            id: shadowOffsetX
+
+                            Layout.fillWidth: true
+                            label: "Offset X"
+                        }
+                        SettingsTextField {
+                            id: shadowOffsetY
+
+                            Layout.fillWidth: true
+                            label: "Offset Y"
+                        }
+                    }
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columnSpacing: 10
+                        columns: root.compactLayout ? 1 : 2
+                        rowSpacing: 10
+                        uniformCellWidths: true
+
+                        SettingsTextField {
+                            id: shadowColor
+
+                            Layout.fillWidth: true
+                            label: "Color"
+                        }
+                        SettingsTextField {
+                            id: shadowInactiveColor
+
+                            Layout.fillWidth: true
+                            label: "Inactive"
+                        }
+                    }
+                    SettingsToggleRow {
+                        id: shadowDrawBehind
+
+                        label: "Draw behind window"
+                        note: "Keep the shadow behind the complete window"
+
+                        onToggled: checked => {
+                            return shadowDrawBehind.checked = checked;
+                        }
+                    }
+                }
+                SettingsExpandableCard {
+                    id: tabIndicatorCard
+
+                    Layout.alignment: Qt.AlignTop
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 1
+                    accentColor: Config.md3.primary
+                    iconName: "view-list-symbolic"
+                    note: "Marker for tabs in a tabbed column"
+                    title: "Tabbed column indicator"
+
+                    onToggled: checked => {
+                        return tabIndicatorCard.checked = checked;
+                    }
+
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columnSpacing: 10
+                        columns: root.compactLayout ? 1 : 2
+                        rowSpacing: 10
+                        uniformCellWidths: true
+
+                        SettingsTextField {
+                            id: tabGap
+
+                            Layout.fillWidth: true
+                            label: "Outer gap"
+                        }
+                        SettingsTextField {
+                            id: tabWidth
+
+                            Layout.fillWidth: true
+                            label: "Width"
+                        }
+                        SettingsTextField {
+                            id: tabGapsBetween
+
+                            Layout.fillWidth: true
+                            label: "Gap between tabs"
+                        }
+                        SettingsTextField {
+                            id: tabCornerRadius
+
+                            Layout.fillWidth: true
+                            label: "Corner radius"
+                        }
+                    }
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columnSpacing: 10
+                        columns: root.compactLayout ? 1 : 2
+                        rowSpacing: 10
+                        uniformCellWidths: true
+
+                        SettingsTextField {
+                            id: tabLength
+
+                            Layout.fillWidth: true
+                            label: "Total length"
+
+                            inputItem.validator: DoubleValidator {
+                                bottom: 0.05
+                                top: 1
+                            }
+                        }
+                        SettingsChoiceRow {
+                            id: tabPosition
+
+                            Layout.fillWidth: true
+                            label: "Position"
+                            options: [
+                                {
+                                    "label": "Left",
+                                    "value": "left"
+                                },
+                                {
+                                    "label": "Right",
+                                    "value": "right"
+                                },
+                                {
+                                    "label": "Top",
+                                    "value": "top"
+                                },
+                                {
+                                    "label": "Bottom",
+                                    "value": "bottom"
+                                }
+                            ]
+                        }
+                    }
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columnSpacing: 10
+                        columns: root.compactLayout ? 2 : 3
+                        rowSpacing: 10
+                        uniformCellWidths: true
+
+                        SettingsTextField {
+                            id: tabActiveColor
+
+                            Layout.fillWidth: true
+                            label: "Active"
+                        }
+                        SettingsTextField {
+                            id: tabInactiveColor
+
+                            Layout.fillWidth: true
+                            label: "Inactive"
+                        }
+                        SettingsTextField {
+                            id: tabUrgentColor
+
+                            Layout.fillWidth: true
+                            label: "Urgent"
+                        }
+                    }
+                    SettingsExpandableCard {
+                        id: tabGradientCard
+
+                        Layout.fillWidth: true
+                        accentColor: Config.md3.primary
+                        iconName: "color-select-symbolic"
+                        note: "Gradient overrides the solid colors above"
+                        title: "Gradient colors"
+
+                        onToggled: checked => {
+                            return tabGradientCard.checked = checked;
+                        }
+
+                        SettingsTextField {
+                            id: tabActiveGradient
+
+                            Layout.fillWidth: true
+                            label: "Active gradient"
+                        }
+                        SettingsTextField {
+                            id: tabInactiveGradient
+
+                            Layout.fillWidth: true
+                            label: "Inactive gradient"
+                        }
+                        SettingsTextField {
+                            id: tabUrgentGradient
+
+                            Layout.fillWidth: true
+                            label: "Urgent gradient"
+                        }
+                    }
+                    SettingsToggleRow {
+                        id: tabHideSingle
+
+                        label: "Hide with one tab"
+                        note: "Do not draw the indicator for a single tab"
+
+                        onToggled: checked => {
+                            return tabHideSingle.checked = checked;
+                        }
+                    }
+                    SettingsToggleRow {
+                        id: tabPlaceWithin
+
+                        label: "Place inside column"
+                        note: "Keep the indicator within the column bounds"
+
+                        onToggled: checked => {
+                            return tabPlaceWithin.checked = checked;
+                        }
                     }
                 }
             }
@@ -1149,11 +1174,16 @@ ScrollView {
         SettingsExpandableCard {
             id: recentWindowsCard
 
+            Layout.alignment: Qt.AlignTop
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            Layout.preferredWidth: 1
             accentColor: Config.md3.secondary
-            detailsSpacing: 16
+            contentPadding: 16
+            detailsSpacing: 12
             iconName: "view-restore-symbolic"
-            note: "Timing, highlight, previews and four switcher shortcuts"
+            note: "Timing, appearance, previews and switcher shortcuts"
+            parent: layoutDecorationPrimaryColumn
             title: "Recent windows"
 
             onToggled: checked => {
@@ -1163,6 +1193,8 @@ ScrollView {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.secondary
+                compact: true
+                headerOutside: true
                 iconName: "preferences-system-time-symbolic"
                 note: "Controls how quickly the switcher opens and reacts"
                 title: "Timing"
@@ -1201,6 +1233,8 @@ ScrollView {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                compact: true
+                headerOutside: true
                 iconName: "color-select-symbolic"
                 note: "Appearance of the currently selected preview"
                 title: "Highlight"
@@ -1208,7 +1242,7 @@ ScrollView {
                 GridLayout {
                     Layout.fillWidth: true
                     columnSpacing: 16
-                    columns: root.compactLayout ? 2 : 4
+                    columns: root.compactLayout ? 1 : 2
                     rowSpacing: 12
                     uniformCellWidths: true
 
@@ -1253,6 +1287,8 @@ ScrollView {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.tertiary
+                compact: true
+                headerOutside: true
                 iconName: "video-display-symbolic"
                 note: "Limits preview size to keep the switcher responsive"
                 title: "Previews"
@@ -1291,6 +1327,8 @@ ScrollView {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.error
+                compact: true
+                headerOutside: true
                 iconName: "preferences-desktop-keyboard-shortcuts-symbolic"
                 note: "Click a shortcut and press a new combination; save it with Apply layout"
                 title: "Shortcuts"
@@ -1308,35 +1346,22 @@ ScrollView {
                         border.color: Config.alpha(Config.md3.on_surface, 0.055)
                         border.width: 1
                         color: Config.alpha(Config.md3.on_surface, 0.04)
-                        implicitHeight: recentBindRow.implicitHeight + 24
+                        implicitHeight: recentBindRow.implicitHeight + 20
                         radius: 12
 
                         RowLayout {
                             id: recentBindRow
 
                             anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 16
+                            anchors.margins: 10
+                            spacing: 12
 
-                            ColumnLayout {
+                            SettingsLabelBlock {
                                 Layout.fillWidth: true
-                                spacing: 5
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 13
-                                    font.weight: Font.DemiBold
-                                    text: (sameApp ? "Same application · " : "All applications · ") + (previous ? "Previous window" : "Next window")
-                                }
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.alpha(Config.md3.on_surface, 0.45)
-                                    font.family: Config.fontName
-                                    font.pixelSize: 11
-                                    text: sameApp ? "Matches the app ID of the initially focused window" : "Uses Niri's remembered initial window set"
-                                }
+                                Layout.minimumWidth: 0
+                                emphasized: true
+                                headline: (sameApp ? "Same application · " : "All applications · ") + (previous ? "Previous window" : "Next window")
+                                supportingText: sameApp ? "Matches the app ID of the initially focused window" : "Uses Niri's remembered initial window set"
                             }
                             EditableKeybindPill {
                                 id: recentBindKey
@@ -1353,10 +1378,6 @@ ScrollView {
                         }
                     }
                 }
-            }
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 10
             }
         }
     }

@@ -1,9 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
-import Quickshell
 import Quickshell.Io
-import Quickshell.Widgets
 import "../../../../" // for Config
 import "../../../../components"
 import "../../../../service"
@@ -26,6 +24,8 @@ Item {
     // KDL extra features (VRR, focus-at-startup)
     readonly property var kdlOptions: DisplayService.kdlOptions
     property bool monitorDragActive: false
+    property real popupAnchorWidth: 0
+    property real popupAnchorX: -1
     property var popupModel: []
     property bool popupOpen: false
     property bool popupOpenAbove: false
@@ -191,9 +191,11 @@ Item {
         displayPageRoot.activeDropdown = activeDropName;
         displayPageRoot.targetOutput = displayPageRoot.selectedOutputName;
 
-        var pHeight = model.length * 40 + 16;
+        var pHeight = Math.min(model.length * 40 + 16, Math.max(0, displayPageRoot.height - 24));
         var targetY = coords.y + row.height + 8;
-        if (targetY + pHeight > displayPageRoot.height) {
+        var spaceBelow = displayPageRoot.height - targetY - 12;
+        var spaceAbove = coords.y - 12;
+        if (spaceBelow < pHeight && spaceAbove > spaceBelow) {
             displayPageRoot.popupY = coords.y - pHeight - 8;
             displayPageRoot.popupOpenAbove = true;
         } else {
@@ -201,6 +203,8 @@ Item {
             displayPageRoot.popupOpenAbove = false;
         }
         displayPageRoot.popupX = coords.x;
+        displayPageRoot.popupAnchorWidth = Math.min(44, row.width);
+        displayPageRoot.popupAnchorX = coords.x + Math.max(0, row.width - displayPageRoot.popupAnchorWidth);
         displayPageRoot.popupWidth = row.width;
         displayPageRoot.popupOpen = true;
     }
@@ -381,8 +385,11 @@ Item {
                             Text {
                                 color: Config.md3.on_surface
                                 font.family: Config.fontName
-                                font.pixelSize: 14
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
                                 font.weight: Font.DemiBold
+                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: "Brightness" + (displayPageRoot.selectedOutputName !== "" ? " • " + displayPageRoot.selectedOutputName : "")
                             }
                             Item {
@@ -391,8 +398,11 @@ Item {
                             Text {
                                 color: DisplayBrightnessService.available ? Config.md3.primary : Config.md3.outline
                                 font.family: Config.fontName
-                                font.pixelSize: 13
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                font.pixelSize: Md3.typeScale.labelLarge.size
+                                font.weight: Md3.typeScale.labelLarge.weight
+                                lineHeight: Md3.typeScale.labelLarge.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: DisplayBrightnessService.available ? displayPageRoot.brightnessValue + "%" : "Unavailable"
                             }
                         }
@@ -412,6 +422,7 @@ Item {
             NightLightControl {
                 Layout.fillWidth: true
                 backgroundColor: controlRightWindow.sectionCardColor
+                borderColor: controlRightWindow.sectionCardBorderColor
                 nightLightEnabled: DisplayService.nightlightEnabled
                 temperature: DisplayService.nightlightTemperature
 
@@ -444,16 +455,11 @@ Item {
                         radius: 20
                         width: 40
 
-                        IconImage {
+                        Md3Icon {
                             anchors.centerIn: parent
-                            height: 22
-                            layer.enabled: true
-                            source: Quickshell.iconPath("dark-mode-symbolic")
-                            width: 22
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.primary
-                            }
+                            color: Config.md3.primary
+                            name: "dark-mode-symbolic"
+                            size: 22
                         }
                     }
                     Column {
@@ -467,8 +473,11 @@ Item {
                         Text {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 16
-                            font.weight: Font.Bold
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
+                            font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             renderType: Text.NativeRendering
                             text: "Dark Mode"
                             width: parent.width
@@ -477,8 +486,11 @@ Item {
                             color: Config.md3.on_surface_variant
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
+                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                            font.weight: Md3.typeScale.bodyMedium.weight
+                            lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             renderType: Text.NativeRendering
                             text: "Night mode for apps and system UI"
                             width: parent.width
@@ -519,8 +531,11 @@ Item {
                     Text {
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 15
-                        font.weight: Font.Bold
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
+                        font.weight: Font.DemiBold
+                        lineHeight: Md3.typeScale.titleMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: "Display Mode"
                     }
                     SettingsSegmentedControl {
@@ -559,7 +574,11 @@ Item {
                         color: DisplayService.displayModeError !== "" ? Config.md3.error : Config.md3.on_surface_variant
                         elide: Text.ElideRight
                         font.family: Config.fontName
-                        font.pixelSize: 12
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
+                        font.weight: Md3.typeScale.bodyMedium.weight
+                        lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: DisplayService.displayModeApplying ? "Applying display mode…" : DisplayService.displayModeError !== "" ? DisplayService.displayModeError : DisplayService.hasExternalOutput ? "Duplicate requires compositor mirroring support" : "Connect an external display to enable more modes"
                     }
                 }
@@ -579,7 +598,7 @@ Item {
 
                 Behavior on height {
                     NumberAnimation {
-                        duration: 220
+                        duration: Config.animationDuration(220)
                         easing.type: Easing.OutCubic
                     }
                 }
@@ -592,14 +611,21 @@ Item {
                     Text {
                         color: Config.md3.on_surface_variant
                         font.family: Config.fontName
-                        font.pixelSize: 13
-                        font.weight: Font.DemiBold
+                        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                        font.pixelSize: Md3.typeScale.labelLarge.size
+                        font.weight: Md3.typeScale.labelLarge.weight
+                        lineHeight: Md3.typeScale.labelLarge.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: "Display arrangement"
                     }
                     Text {
-                        color: Config.alpha(Config.md3.on_surface_variant, 0.72)
+                        color: Config.md3.on_surface_variant
                         font.family: Config.fontName
-                        font.pixelSize: 11
+                        font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodySmall.size
+                        font.weight: Md3.typeScale.bodySmall.weight
+                        lineHeight: Md3.typeScale.bodySmall.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: displayPageRoot.allOutputs.length > 1 ? "Drag a display left, right, above, or below" : "Drag displays to rearrange them"
                     }
                 }
@@ -739,17 +765,17 @@ Item {
 
                             Behavior on border.color {
                                 ColorAnimation {
-                                    duration: 150
+                                    duration: Config.animationDuration(Md3.motion.short3)
                                 }
                             }
                             Behavior on color {
                                 ColorAnimation {
-                                    duration: 150
+                                    duration: Config.animationDuration(Md3.motion.short3)
                                 }
                             }
                             Behavior on scale {
                                 NumberAnimation {
-                                    duration: 100
+                                    duration: Config.animationDuration(Md3.motion.short2)
                                 }
                             }
 
@@ -770,7 +796,11 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 color: monitorRect.isSelected ? Config.md3.on_surface : Config.md3.outline
                                 font.family: Config.fontName
-                                font.pixelSize: 12
+                                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodyMedium.size
+                                font.weight: Md3.typeScale.bodyMedium.weight
+                                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: modelData.name
                                 visible: parent.height > 50
                             }
@@ -836,8 +866,11 @@ Item {
                         anchors.centerIn: parent
                         color: Config.md3.on_surface_variant
                         font.family: Config.fontName
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
+                        font.weight: Md3.typeScale.bodyMedium.weight
+                        lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: "Reset"
                     }
                     MouseArea {
@@ -861,8 +894,11 @@ Item {
                         anchors.centerIn: parent
                         color: Config.md3.on_primary
                         font.family: Config.fontName
-                        font.pixelSize: 13
-                        font.weight: Font.Bold
+                        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                        font.pixelSize: Md3.typeScale.labelLarge.size
+                        font.weight: Md3.typeScale.labelLarge.weight
+                        lineHeight: Md3.typeScale.labelLarge.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: "Apply"
                     }
                     MouseArea {
@@ -905,16 +941,11 @@ Item {
                         color: Config.alpha(Config.md3.primary, 0.14)
                         radius: 14
 
-                        IconImage {
+                        Md3Icon {
                             anchors.centerIn: parent
-                            height: 24
-                            layer.enabled: true
-                            source: Quickshell.iconPath("video-display-symbolic")
-                            width: 24
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.primary
-                            }
+                            color: Config.md3.primary
+                            name: "video-display-symbolic"
+                            size: 24
                         }
                     }
                     ColumnLayout {
@@ -927,17 +958,23 @@ Item {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 17
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: qsTr("Display Configuration")
                         }
                         Text {
                             Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.52)
+                            color: Config.md3.on_surface_variant
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
+                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                            font.weight: Md3.typeScale.bodyMedium.weight
+                            lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: {
                                 var outData = activeOutputCard.activeOutputData;
                                 if (!outData)
@@ -965,8 +1002,11 @@ Item {
                             anchors.centerIn: parent
                             color: Config.md3.primary
                             font.family: Config.fontName
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
+                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                            font.weight: Md3.typeScale.bodyMedium.weight
+                            lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: displayPageRoot.selectedOutputName
                         }
                     }
@@ -1194,15 +1234,15 @@ Item {
                                     Accessible.name: qsTr("Focus at Startup")
                                     Accessible.role: Accessible.CheckBox
                                     Layout.fillWidth: true
-                                    activeFocusOnTab: true
+                                    activeFocusOnTab: false
                                     border.width: 0
-                                    color: focusRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : focusRowMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
+                                    color: focusRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : focusRowMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
                                     implicitHeight: 58
                                     radius: 13
 
                                     Behavior on color {
                                         ColorAnimation {
-                                            duration: 130
+                                            duration: Config.animationDuration(130)
                                         }
                                     }
 
@@ -1228,16 +1268,11 @@ Item {
                                             color: Config.alpha(Config.md3.secondary, 0.14)
                                             radius: 11
 
-                                            IconImage {
+                                            Md3Icon {
                                                 anchors.centerIn: parent
-                                                height: 19
-                                                layer.enabled: true
-                                                source: Quickshell.iconPath("go-home-symbolic")
-                                                width: 19
-
-                                                layer.effect: ColorOverlay {
-                                                    color: Config.md3.secondary
-                                                }
+                                                color: Config.md3.secondary
+                                                name: "go-home-symbolic"
+                                                size: 19
                                             }
                                         }
                                         Text {
@@ -1245,8 +1280,11 @@ Item {
                                             color: Config.md3.on_surface
                                             elide: Text.ElideRight
                                             font.family: Config.fontName
-                                            font.pixelSize: 14
+                                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                            font.pixelSize: Md3.typeScale.titleMedium.size
                                             font.weight: Font.DemiBold
+                                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                            lineHeightMode: Text.FixedHeight
                                             text: qsTr("Focus at Startup")
                                         }
                                         ToggleSwitch {
@@ -1262,10 +1300,7 @@ Item {
                                         cursorShape: Qt.PointingHandCursor
                                         hoverEnabled: true
 
-                                        onClicked: {
-                                            focusRow.forceActiveFocus();
-                                            focusRow.requestToggle();
-                                        }
+                                        onClicked: focusRow.requestToggle()
                                     }
                                 }
                                 Rectangle {
@@ -1288,7 +1323,6 @@ Item {
                                     function activate() {
                                         if (!isVrrSupported)
                                             return;
-                                        forceActiveFocus();
                                         displayPageRoot.openPopup(vrrRow, "vrr", [
                                             {
                                                 "label": qsTr("Off"),
@@ -1308,21 +1342,21 @@ Item {
                                     Accessible.name: qsTr("Variable Refresh Rate: %1").arg(displayPageRoot.getVrrModeLabel(displayPageRoot.getVrrMode(displayPageRoot.selectedOutputName)))
                                     Accessible.role: Accessible.ComboBox
                                     Layout.fillWidth: true
-                                    activeFocusOnTab: isVrrSupported
+                                    activeFocusOnTab: false
                                     border.width: 0
-                                    color: vrrRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : vrrRowMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
+                                    color: vrrRowMouse.pressed ? Config.alpha(Config.md3.primary, 0.14) : vrrRowMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.08) : "transparent"
                                     implicitHeight: 58
                                     opacity: isVrrSupported ? 1 : 0.48
                                     radius: 13
 
                                     Behavior on color {
                                         ColorAnimation {
-                                            duration: 130
+                                            duration: Config.animationDuration(130)
                                         }
                                     }
                                     Behavior on opacity {
                                         NumberAnimation {
-                                            duration: 120
+                                            duration: Config.animationDuration(120)
                                         }
                                     }
 
@@ -1346,16 +1380,11 @@ Item {
                                             color: Config.alpha(Config.md3.tertiary, 0.14)
                                             radius: 11
 
-                                            IconImage {
+                                            Md3Icon {
                                                 anchors.centerIn: parent
-                                                height: 19
-                                                layer.enabled: true
-                                                source: Quickshell.iconPath("view-refresh-symbolic")
-                                                width: 19
-
-                                                layer.effect: ColorOverlay {
-                                                    color: Config.md3.tertiary
-                                                }
+                                                color: Config.md3.tertiary
+                                                name: "view-refresh-symbolic"
+                                                size: 19
                                             }
                                         }
                                         ColumnLayout {
@@ -1367,36 +1396,43 @@ Item {
                                                 color: Config.md3.on_surface
                                                 elide: Text.ElideRight
                                                 font.family: Config.fontName
-                                                font.pixelSize: 14
+                                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                                font.pixelSize: Md3.typeScale.titleMedium.size
                                                 font.weight: Font.DemiBold
+                                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                                lineHeightMode: Text.FixedHeight
                                                 text: qsTr("Variable Refresh Rate")
                                             }
                                             Text {
                                                 Layout.fillWidth: true
-                                                color: Config.alpha(Config.md3.on_surface, 0.48)
+                                                color: Config.md3.on_surface_variant
                                                 elide: Text.ElideRight
                                                 font.family: Config.fontName
-                                                font.pixelSize: 11
+                                                font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                                                font.pixelSize: Md3.typeScale.bodySmall.size
+                                                font.weight: Md3.typeScale.bodySmall.weight
+                                                lineHeight: Md3.typeScale.bodySmall.lineHeight
+                                                lineHeightMode: Text.FixedHeight
                                                 text: vrrRow.isVrrSupported ? qsTr("Adaptive refresh behavior") : qsTr("Not supported by this display")
                                             }
                                         }
                                         Text {
                                             color: vrrRow.isVrrSupported ? Config.md3.primary : Config.md3.outline
                                             font.family: Config.fontName
-                                            font.pixelSize: 13
-                                            font.weight: Font.DemiBold
+                                            font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                            font.pixelSize: Md3.typeScale.labelLarge.size
+                                            font.weight: Md3.typeScale.labelLarge.weight
+                                            lineHeight: Md3.typeScale.labelLarge.lineHeight
+                                            lineHeightMode: Text.FixedHeight
                                             text: displayPageRoot.getVrrModeLabel(displayPageRoot.getVrrMode(displayPageRoot.selectedOutputName))
                                         }
-                                        IconImage {
+                                        Md3Icon {
                                             Layout.preferredHeight: 16
                                             Layout.preferredWidth: 16
-                                            layer.enabled: true
-                                            source: Quickshell.iconPath("pan-down-symbolic")
+                                            color: Config.alpha(Config.md3.on_surface, 0.52)
+                                            name: "pan-down-symbolic"
+                                            size: 16
                                             visible: vrrRow.isVrrSupported
-
-                                            layer.effect: ColorOverlay {
-                                                color: Config.alpha(Config.md3.on_surface, 0.52)
-                                            }
                                         }
                                     }
                                     MouseArea {
@@ -1428,15 +1464,12 @@ Item {
                         anchors.rightMargin: 12
                         spacing: 12
 
-                        IconImage {
+                        Md3Icon {
                             Layout.preferredHeight: 24
                             Layout.preferredWidth: 24
-                            layer.enabled: true
-                            source: Quickshell.iconPath("video-display-symbolic")
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.primary
-                            }
+                            color: Config.md3.primary
+                            name: "video-display-symbolic"
+                            size: 24
                         }
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -1445,8 +1478,11 @@ Item {
                             Text {
                                 color: Config.md3.on_surface
                                 font.family: Config.fontName
-                                font.pixelSize: 14
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
                                 font.weight: Font.DemiBold
+                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: "Sunshine streaming display"
                             }
                             Text {
@@ -1454,7 +1490,11 @@ Item {
                                 color: Config.md3.outline
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 11
+                                font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodySmall.size
+                                font.weight: Md3.typeScale.bodySmall.weight
+                                lineHeight: Md3.typeScale.bodySmall.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: DisplayService.sunshineStatusOutput === displayPageRoot.selectedOutputName ? DisplayService.sunshineStatus : "Switch Sunshine encoder and capture to " + displayPageRoot.selectedOutputName
                             }
                         }
@@ -1470,8 +1510,11 @@ Item {
                                 anchors.centerIn: parent
                                 color: parent.enabled ? Config.md3.on_primary : Config.md3.on_surface_variant
                                 font.family: Config.fontName
-                                font.pixelSize: 12
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodyMedium.size
+                                font.weight: Md3.typeScale.bodyMedium.weight
+                                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: DisplayService.sunshineBusy ? "Applying…" : "Use display"
                             }
                             MouseArea {
@@ -1490,6 +1533,8 @@ Item {
         }
     }
     SelectPopup {
+        anchorWidth: displayPageRoot.popupAnchorWidth
+        anchorX: displayPageRoot.popupAnchorX
         anchors.fill: parent
         itemActive: item => displayPageRoot.popupItemChecked(item)
         model: displayPageRoot.popupModel

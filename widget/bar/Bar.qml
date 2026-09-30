@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland
 import "../../"
+import "../../components" as Components
 import "../../service"
 
 PanelWindow {
@@ -185,14 +186,12 @@ PanelWindow {
 
                             onClicked: QuickSettingsService.setCaffeineEnabled(false)
 
-                            IconImage {
+                            Components.Md3Icon {
                                 anchors.fill: parent
-                                layer.enabled: true
-                                source: Quickshell.iconPath("caffeine-cup-full-symbolic")
-
-                                layer.effect: ColorOverlay {
-                                    color: Config.md3.primary
-                                }
+                                color: Config.md3.primary
+                                filled: true
+                                name: "caffeine-cup-full-symbolic"
+                                size: 22
                             }
                         }
                         Wifi {

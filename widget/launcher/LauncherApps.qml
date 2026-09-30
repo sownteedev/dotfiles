@@ -434,24 +434,21 @@ Item {
                         ParallelAnimation {
                             id: entryAnim
 
-                            NumberAnimation {
-                                duration: Config.animationDuration(250)
-                                easing.type: Easing.OutQuad
+                            Md3NumberAnimation {
                                 property: "opacity"
+                                role: "enter"
                                 target: delegateRoot
                                 to: 1
                             }
-                            NumberAnimation {
-                                duration: Config.animationDuration(350)
-                                easing.type: Easing.OutBack
+                            Md3NumberAnimation {
                                 property: "scale"
+                                role: "spatial"
                                 target: delegateRoot
                                 to: 1
                             }
-                            NumberAnimation {
-                                duration: Config.animationDuration(350)
-                                easing.type: Easing.OutBack
+                            Md3NumberAnimation {
                                 property: "y"
+                                role: "spatial"
                                 target: entryTranslate
                                 to: 0
                             }
@@ -484,19 +481,18 @@ Item {
                             scale: gridMouse.drag.active ? 1.08 : (dropTarget.containsDrag ? 1.04 : (gridMouse.pressed ? 0.95 : (gridMouse.containsMouse ? 1.02 : 1)))
 
                             Behavior on color {
-                                ColorAnimation {
-                                    duration: Config.animationDuration(120)
+                                Md3ColorAnimation {
+                                    role: "state"
                                 }
                             }
                             Behavior on opacity {
-                                NumberAnimation {
-                                    duration: Config.animationDuration(100)
+                                Md3NumberAnimation {
+                                    role: "state"
                                 }
                             }
                             Behavior on scale {
-                                NumberAnimation {
-                                    duration: Config.animationDuration(150)
-                                    easing.type: Easing.OutQuad
+                                Md3NumberAnimation {
+                                    role: "spatial"
                                 }
                             }
                             transform: Translate {
@@ -699,8 +695,8 @@ Item {
     NumberAnimation {
         id: pageAnimation
 
-        duration: Config.animationDuration(240)
-        easing.type: Easing.OutCubic
+        duration: Config.animationDuration(Md3.motion.containerTransform)
+        easing.type: Md3.motion.transformEasing
         property: "contentX"
         target: pager
     }
@@ -752,14 +748,13 @@ Item {
                     width: dotHitArea.index === appsGrid.visiblePage ? 24 : 8
 
                     Behavior on color {
-                        ColorAnimation {
-                            duration: Config.animationDuration(160)
+                        Md3ColorAnimation {
+                            role: "state"
                         }
                     }
                     Behavior on width {
-                        NumberAnimation {
-                            duration: Config.animationDuration(180)
-                            easing.type: Easing.OutCubic
+                        Md3NumberAnimation {
+                            role: "transform"
                         }
                     }
                 }

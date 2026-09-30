@@ -2105,13 +2105,6 @@ FloatingWindow {
         });
     }
     function scaledAnnotationShape(shape, scaleFactor, targetCenterX, targetCenterY) {
-        function scaledX(value) {
-            return nextCenterX + (Number(value || 0) - centerX) * scale;
-        }
-        function scaledY(value) {
-            return nextCenterY + (Number(value || 0) - centerY) * scale;
-        }
-
         var result = copyShape(shape);
         var bounds = rawShapeBounds(shape);
         var centerX = (bounds.minX + bounds.maxX) / 2;
@@ -2119,6 +2112,14 @@ FloatingWindow {
         var nextCenterX = targetCenterX === undefined ? centerX : Number(targetCenterX);
         var nextCenterY = targetCenterY === undefined ? centerY : Number(targetCenterY);
         var scale = Math.max(0.1, Math.min(8, Number(scaleFactor || 1)));
+
+        function scaledX(value) {
+            return nextCenterX + (Number(value || 0) - centerX) * scale;
+        }
+        function scaledY(value) {
+            return nextCenterY + (Number(value || 0) - centerY) * scale;
+        }
+
         result.startX = scaledX(shape.startX);
         result.startY = scaledY(shape.startY);
         result.endX = scaledX(shape.endX);
@@ -3346,6 +3347,8 @@ FloatingWindow {
                             anchors.fill: parent
                             shapeData: modelData
                             sourceItem: baseImageSurface
+                            sourceLive: root.imageCompositeLive
+                            sourceRevision: root.imageCompositeRevision
                         }
                     }
                     Canvas {
@@ -3410,6 +3413,7 @@ FloatingWindow {
                             "calloutHeight": 0
                         }
                         sourceItem: baseImageSurface
+                        sourceLive: true
                         visible: root.currentShape !== null && root.currentShape.tool === "callout" && Number(root.currentShape.calloutWidth || 0) > 0 && !root.renderingOutput
                     }
                     MouseArea {

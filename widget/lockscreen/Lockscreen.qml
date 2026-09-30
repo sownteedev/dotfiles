@@ -23,10 +23,11 @@ Scope {
     property bool cavaConsumerAcquired: false
     readonly property bool clock24h: settingValue("clock24h", true)
     // Time
-    property int curH: new Date().getHours()
-    property int curM: new Date().getMinutes()
-    property int curMS: new Date().getMilliseconds()
-    property int curS: new Date().getSeconds()
+    readonly property real clockStartLocalMS: {
+        var now = new Date();
+        return (now.getHours() * 3.6e+06) + (now.getMinutes() * 60000) + (now.getSeconds() * 1000) + now.getMilliseconds();
+    }
+    readonly property int curH: Math.floor(localTimeMS / 3.6e+06) % 24
     readonly property bool enableWindup: true
     // Reading text() with blockLoading forces the PAM service decision to be
     // made before PamContext starts. The file may also contain a password-only
@@ -37,7 +38,7 @@ Scope {
     // Fonts
     readonly property string fontName: settingValue("fontName", "Inter Variable")
     property bool isWindup: false
-    readonly property real localTimeMS: (curH * 3.6e+06) + (curM * 60000) + (curS * 1000) + curMS
+    readonly property real localTimeMS: (clockStartLocalMS + clockFrame.elapsedTime * 1000) % 8.64e+07
     readonly property QtObject lockscreenColors: QtObject {
         readonly property color background: Config.md3.background
         readonly property color backgroundOverlay: Config.alpha(Config.md3.background, 0.62)
@@ -232,18 +233,10 @@ Scope {
                 root.loadWallpaperState();
         }
     }
-    Timer {
-        interval: 16
-        repeat: true
-        running: true
+    FrameAnimation {
+        id: clockFrame
 
-        onTriggered: {
-            var d = new Date();
-            root.curH = d.getHours();
-            root.curM = d.getMinutes();
-            root.curS = d.getSeconds();
-            root.curMS = d.getMilliseconds();
-        }
+        running: true
     }
     WlSessionLock {
         id: sessionLock
@@ -515,7 +508,7 @@ Scope {
                                     color: root.clockLabelColor(spotlight)
                                     font.family: root.fontName
                                     font.pixelSize: 22 * container.s
-                                    font.weight: Font.DemiBold
+                                    font.weight: Font.Black
                                     rotation: disp * 180 / Math.PI
                                     scale: 1 + 0.25 * spotlight
                                     text: String(index).padStart(2, '0')
@@ -565,7 +558,7 @@ Scope {
                                     color: root.clockLabelColor(spotlight)
                                     font.family: root.fontName
                                     font.pixelSize: 18 * container.s
-                                    font.weight: Font.DemiBold
+                                    font.weight: Font.Black
                                     rotation: disp * 180 / Math.PI
                                     scale: 1 + 0.25 * spotlight
                                     text: String(index).padStart(2, '0')

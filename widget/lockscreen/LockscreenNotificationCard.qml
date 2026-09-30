@@ -24,6 +24,7 @@ Item {
     property bool swipeEnabled: true
     property real swipeOffset: 0
     property bool tapEnabled: false
+    readonly property real textScale: scaleFactor * (2 / 3)
     readonly property string titleText: summary !== "" ? summary : appName
 
     signal tapped
@@ -152,8 +153,11 @@ Item {
                         anchors.centerIn: parent
                         color: Config.md3.on_primary
                         font.family: Config.fontName
-                        font.pixelSize: 7.5 * root.scaleFactor
-                        font.weight: Font.Bold
+                        font.letterSpacing: Md3.typeScale.labelMedium.letterSpacing * root.textScale
+                        font.pixelSize: Md3.typeScale.labelMedium.size * root.textScale
+                        font.weight: Md3.typeScale.labelMedium.weight
+                        lineHeight: Md3.typeScale.labelMedium.lineHeight * root.textScale
+                        lineHeightMode: Text.FixedHeight
                         text: root.groupCount > 99 ? "99+" : String(root.groupCount)
                     }
                 }
@@ -168,17 +172,24 @@ Item {
                     color: Config.md3.on_surface
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 9.5 * root.scaleFactor
+                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing * root.textScale
+                    font.pixelSize: Md3.typeScale.titleMedium.size * root.textScale
                     font.weight: Font.DemiBold
+                    lineHeight: Md3.typeScale.titleMedium.lineHeight * root.textScale
+                    lineHeightMode: Text.FixedHeight
                     text: root.titleText
                     textFormat: Text.PlainText
                     width: parent.width
                 }
                 Text {
-                    color: Config.alpha(Config.md3.on_surface_variant, 0.8)
+                    color: Config.md3.on_surface_variant
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 8 * root.scaleFactor
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing * root.textScale
+                    font.pixelSize: Md3.typeScale.bodyMedium.size * root.textScale
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight * root.textScale
+                    lineHeightMode: Text.FixedHeight
                     text: root.descriptionText
                     textFormat: Text.PlainText
                     visible: text !== ""

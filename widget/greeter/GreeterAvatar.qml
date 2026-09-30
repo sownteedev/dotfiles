@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import Qt5Compat.GraphicalEffects
 import QtQuick
 
@@ -7,18 +9,18 @@ Rectangle {
     property string sourcePath: GreeterProfile.sourcePath
 
     Accessible.ignored: true
-    border.color: GreeterTheme.withAlpha(GreeterTheme.primary, 0.42)
-    border.width: 1
-    color: GreeterTheme.withAlpha(GreeterTheme.primaryContainer, 0.82)
-    implicitHeight: 92
-    implicitWidth: 92
+    border.color: GreeterTheme.withAlpha(GreeterTheme.primary, 0.72)
+    border.width: 2.5
+    color: GreeterTheme.withAlpha(GreeterTheme.primaryContainer, 0.85)
+    implicitHeight: 76
+    implicitWidth: 76
     radius: Math.min(width, height) / 2
 
     Text {
         anchors.centerIn: parent
         color: GreeterTheme.primaryContainerText
         font.family: "Symbols Nerd Font"
-        font.pixelSize: Math.round(Math.min(root.width, root.height) * 0.38)
+        font.pixelSize: Math.round(Math.min(root.width, root.height) * 0.42)
         text: "󰀄"
         visible: avatar.status !== Image.Ready
     }

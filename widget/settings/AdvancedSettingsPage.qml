@@ -73,6 +73,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary
             compact: true
+            headerOutside: true
             iconName: "applications-system-symbolic"
             note: "Reduce rendering work without changing the visual hierarchy"
             title: "Motion and performance"
@@ -127,6 +128,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            headerOutside: true
             iconName: "audio-volume-high-symbolic"
             note: "On-screen feedback for hardware controls"
             title: "OSD and audio"
@@ -140,9 +142,11 @@ Item {
                 onToggled: value => checked = value
             }
             GridLayout {
+                id: osdControlsGrid
+
                 Layout.fillWidth: true
                 columnSpacing: 12
-                columns: width >= 860 ? 3 : width >= 500 ? 2 : 1
+                columns: width >= 620 ? 2 : 1
                 enabled: osdToggle.checked
                 opacity: enabled ? 1 : 0.45
                 rowSpacing: 12
@@ -175,6 +179,7 @@ Item {
                 SettingsChoiceRow {
                     id: osdPositionChoice
 
+                    Layout.columnSpan: osdControlsGrid.columns
                     Layout.fillWidth: true
                     label: "Position"
                     options: [
@@ -228,6 +233,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
+            headerOutside: true
             iconName: "system-run-symbolic"
             note: DiagnosticsService.busy ? "Checking the local system…" : "Required tools should be available; optional tools only affect their matching feature"
             title: "Dependencies"
@@ -278,6 +284,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.error
             compact: true
+            headerOutside: true
             iconName: "user-trash-symbolic"
             note: "Only generated previews and backdrops are removed; downloaded wallpapers stay installed"
             title: "Cache"
@@ -301,26 +308,12 @@ Item {
                         anchors.rightMargin: 8
                         spacing: 12
 
-                        ColumnLayout {
+                        SettingsLabelBlock {
                             Layout.fillWidth: true
-                            spacing: 2
-
-                            Text {
-                                Layout.fillWidth: true
-                                color: Config.md3.on_surface
-                                font.family: Config.fontName
-                                font.pixelSize: 14
-                                font.weight: Font.DemiBold
-                                text: cacheRow.modelData.label || cacheRow.modelData.scope
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                color: Config.alpha(Config.md3.on_surface, 0.44)
-                                elide: Text.ElideMiddle
-                                font.family: Config.fontName
-                                font.pixelSize: 11
-                                text: DiagnosticsService.formatBytes(cacheRow.modelData.bytes) + "  ·  " + cacheRow.modelData.path
-                            }
+                            emphasized: true
+                            headline: cacheRow.modelData.label || cacheRow.modelData.scope
+                            supportingMaximumLineCount: 1
+                            supportingText: DiagnosticsService.formatBytes(cacheRow.modelData.bytes) + "  ·  " + cacheRow.modelData.path
                         }
                         SettingsActionButton {
                             enabled: !DiagnosticsService.busy

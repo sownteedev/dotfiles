@@ -22,63 +22,48 @@ Rectangle {
     Accessible.role: Accessible.Slider
     Layout.fillWidth: true
     color: "transparent"
-    implicitHeight: note === "" ? 72 : 86
-    opacity: enabled ? 1 : 0.45
-    radius: 11
+    implicitHeight: Math.max(80, labelBlock.implicitHeight + 31)
+    opacity: enabled ? 1 : Md3.state.disabledContent
+    radius: Md3.shape.medium
 
     Behavior on opacity {
         OpacityAnimator {
-            duration: Config.animationDuration(120)
+            duration: Config.animationDuration(Md3.motion.short2)
         }
     }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: 4
-        anchors.rightMargin: 4
-        spacing: 7
+        anchors.leftMargin: Md3.spacing.xxs
+        anchors.rightMargin: Md3.spacing.xxs
+        spacing: Md3.spacing.xs
 
         RowLayout {
             Layout.fillWidth: true
             spacing: 12
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
+            SettingsLabelBlock {
+                id: labelBlock
 
-                Text {
-                    Layout.fillWidth: true
-                    color: Config.md3.on_surface
-                    elide: Text.ElideRight
-                    font.family: Config.fontName
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                    text: root.label
-                }
-                Text {
-                    Layout.fillWidth: true
-                    color: Config.alpha(Config.md3.on_surface, 0.46)
-                    elide: Text.ElideRight
-                    font.family: Config.fontName
-                    font.pixelSize: 12
-                    text: root.note
-                    visible: text !== ""
-                }
+                Layout.fillWidth: true
+                headline: root.label
+                supportingText: root.note
             }
             Rectangle {
-                color: Config.alpha(root.accentColor, 0.13)
-                implicitHeight: 30
+                Layout.alignment: Qt.AlignTop
+                color: Config.md3.secondary_container
+                implicitHeight: 32
                 implicitWidth: valueLabel.implicitWidth + 18
-                radius: 9
+                radius: Md3.shape.full
 
                 Text {
                     id: valueLabel
 
                     anchors.centerIn: parent
-                    color: root.accentColor
+                    color: Config.md3.on_secondary_container
                     font.family: Config.fontName
-                    font.pixelSize: 13
-                    font.weight: Font.DemiBold
+                    font.pixelSize: Md3.typography.labelMedium
+                    font.weight: Font.Medium
                     text: root.valueText
                 }
             }
@@ -97,8 +82,8 @@ Rectangle {
             value: root.value
 
             background: Rectangle {
-                color: Config.alpha(Config.md3.on_surface, 0.11)
-                height: 6
+                color: Config.md3.surface_container_highest
+                height: 8
                 radius: height / 2
                 width: slider.availableWidth
                 x: slider.leftPadding
@@ -112,10 +97,10 @@ Rectangle {
                 }
             }
             handle: Rectangle {
-                border.color: Config.alpha(Config.md3.surface, 0.7)
-                border.width: 2
+                border.color: Config.md3.surface
+                border.width: 3
                 color: root.accentColor
-                implicitHeight: slider.pressed ? 20 : 18
+                implicitHeight: slider.pressed ? 24 : 20
                 implicitWidth: implicitHeight
                 radius: width / 2
                 x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
@@ -123,7 +108,7 @@ Rectangle {
 
                 Behavior on implicitHeight {
                     NumberAnimation {
-                        duration: Config.animationDuration(100)
+                        duration: Config.animationDuration(Md3.motion.short2)
                     }
                 }
             }

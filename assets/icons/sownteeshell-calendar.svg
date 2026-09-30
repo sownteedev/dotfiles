@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>SownteeShell Calendar</title>
+  <desc>A cream calendar with a sage header and a circular S signature at the bottom right.</desc>
+  <rect x="8" y="8" width="108" height="108" rx="30" fill="#e6e9d9"/>
+  <rect x="9" y="9" width="106" height="106" rx="29" fill="none" stroke="#f5f3e7" stroke-width="2"/>
+  <rect x="25" y="27" width="74" height="73" rx="15" fill="#f9f8f0"/>
+  <path d="M40 27 H84 Q99 27 99 42 V49 H25 V42 Q25 27 40 27Z" fill="#668363"/>
+  <path d="M43 24 V34 M81 24 V34" fill="none" stroke="#344b38" stroke-width="6" stroke-linecap="round"/>
+  <g fill="#526c50">
+    <rect x="38" y="59" width="11" height="11" rx="3"/>
+    <rect x="56" y="59" width="11" height="11" rx="3"/>
+    <rect x="74" y="59" width="11" height="11" rx="3"/>
+    <rect x="38" y="77" width="11" height="11" rx="3"/>
+  </g>
+  <rect x="54" y="75" width="15" height="15" rx="5" fill="#b9cba5"/>
+  <circle cx="102" cy="102" r="22" fill="#293e30" stroke="#f5f3e7" stroke-width="4"/>
+  <path d="M110 94 C107 89 97 89 95 94 C91 103 113 99 109 109 C107 114 97 114 94 110" fill="none" stroke="#d8e8c3" stroke-width="4.5" stroke-linecap="round"/>
+</svg>

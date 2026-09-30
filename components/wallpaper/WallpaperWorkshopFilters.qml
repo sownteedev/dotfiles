@@ -88,6 +88,40 @@ Item {
             "value": "Other Resolution"
         }
     ]
+    readonly property var sortOptions: [
+        {
+            "label": qsTr("Trending"),
+            "value": "trending"
+        },
+        {
+            "label": qsTr("Popular"),
+            "value": "popular"
+        },
+        {
+            "label": qsTr("Newest"),
+            "value": "recent"
+        },
+        {
+            "label": qsTr("Relevance"),
+            "value": "relevance"
+        },
+        {
+            "label": qsTr("Most subscribed"),
+            "value": "subscribed"
+        },
+        {
+            "label": qsTr("Votes up"),
+            "value": "votes_up"
+        },
+        {
+            "label": qsTr("Most played"),
+            "value": "played"
+        },
+        {
+            "label": qsTr("Last updated"),
+            "value": "updated"
+        }
+    ]
 
     signal searchRequested
 
@@ -141,13 +175,19 @@ Item {
         };
         return labels[value] || value;
     }
+    function sortLabel(mode) {
+        for (var index = 0; index < sortOptions.length; ++index) {
+            if (sortOptions[index].value === mode)
+                return sortOptions[index].label;
+        }
+        return qsTr("Trending");
+    }
     function togglePopup() {
         filterPopup.open = !filterPopup.open;
-        filterButton.forceActiveFocus();
     }
 
     implicitHeight: 40
-    implicitWidth: 190
+    implicitWidth: 320
     z: filterPopup.visible ? 240 : 0
 
     onInstalledModeChanged: closePopup()
@@ -165,12 +205,35 @@ Item {
         spacing: 6
 
         Rectangle {
+            id: typeContainer
+
+            readonly property int selectedIndex: WallpaperWorkshopService.typeFilter === "video" ? 1 : (WallpaperWorkshopService.typeFilter === "scene" ? 2 : 0)
+
             Layout.fillHeight: true
             Layout.fillWidth: true
             color: Config.alpha(Config.md3.on_surface, 0.035)
-            radius: 13
+            radius: Md3.shape.full
 
+            Rectangle {
+                id: typeIndicator
+
+                color: Config.md3.primary_container
+                height: parent.height - 6
+                radius: Md3.shape.full
+                width: Math.max(0, (parent.width - 10) / 3)
+                x: 3 + typeContainer.selectedIndex * (width + 2)
+                y: 3
+
+                Behavior on x {
+                    XAnimator {
+                        duration: 190
+                        easing.type: Easing.OutCubic
+                    }
+                }
+            }
             RowLayout {
+                id: typeRow
+
                 anchors.fill: parent
                 anchors.margins: 3
                 spacing: 2
@@ -204,11 +267,17 @@ Item {
                         Accessible.role: Accessible.Button
                         Layout.fillHeight: true
                         Layout.fillWidth: true
-                        activeFocusOnTab: true
-                        border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
-                        border.width: 1
-                        color: selected ? Config.md3.primary_container : (typeMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : "transparent")
-                        radius: 10
+                        activeFocusOnTab: false
+                        border.color: "transparent"
+                        border.width: 0
+                        color: typeMouse.pressed ? Config.alpha(selected ? Config.md3.on_primary_container : Config.md3.on_surface, 0.12) : (typeMouse.containsMouse ? Config.alpha(selected ? Config.md3.on_primary_container : Config.md3.on_surface, 0.08) : "transparent")
+                        radius: Md3.shape.full
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(Md3.motion.short2)
+                            }
+                        }
 
                         Keys.onReturnPressed: typeMouse.activate()
                         Keys.onSpacePressed: typeMouse.activate()
@@ -222,6 +291,12 @@ Item {
 
                             layer.effect: ColorOverlay {
                                 color: typeButton.selected ? Config.md3.on_primary_container : Config.md3.on_surface_variant
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: 140
+                                    }
+                                }
                             }
                         }
                         MouseArea {
@@ -245,51 +320,118 @@ Item {
         Rectangle {
             id: filterButton
 
-            Accessible.name: WallpaperWorkshopService.activeFilterCount > 0 ? qsTr("Workshop filters, %1 active").arg(WallpaperWorkshopService.activeFilterCount) : qsTr("Workshop filters")
+            readonly property bool active: filterPopup.open || WallpaperWorkshopService.activeFilterCount > 0
+            readonly property color contentColor: active ? Config.md3.on_secondary_container : (filterMouse.containsMouse ? Config.md3.on_surface : Config.md3.on_surface_variant)
+
+            Accessible.name: WallpaperWorkshopService.activeFilterCount > 0 ? qsTr("Workshop filters, sorted by %1, %2 active").arg(root.sortLabel(WallpaperWorkshopService.sortMode)).arg(WallpaperWorkshopService.activeFilterCount) : qsTr("Workshop filters, sorted by %1").arg(root.sortLabel(WallpaperWorkshopService.sortMode))
             Accessible.role: Accessible.Button
             Layout.fillHeight: true
-            Layout.preferredWidth: 40
-            activeFocusOnTab: true
-            border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : Config.alpha(Config.md3.outline, 0.18)
+            Layout.preferredWidth: 154
+            activeFocusOnTab: false
+            border.color: filterMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.38) : (active ? Config.alpha(Config.md3.secondary, 0.24) : Config.alpha(Config.md3.outline, 0.18))
             border.width: 1
-            color: filterPopup.open || WallpaperWorkshopService.activeFilterCount > 0 ? Config.md3.secondary_container : (filterMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.035))
-            radius: 13
+            color: active ? Config.md3.secondary_container : Config.alpha(Config.md3.on_surface, 0.035)
+            radius: Md3.shape.full
+
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: Config.animationDuration(Md3.motion.short2)
+                }
+            }
+            Behavior on color {
+                ColorAnimation {
+                    duration: Config.animationDuration(Md3.motion.short2)
+                }
+            }
 
             Keys.onEscapePressed: root.closePopup()
             Keys.onReturnPressed: root.togglePopup()
             Keys.onSpacePressed: root.togglePopup()
 
-            IconImage {
-                anchors.centerIn: parent
-                height: 17
-                layer.enabled: true
-                source: Quickshell.iconPath("view-filter-symbolic", "preferences-other-symbolic")
-                width: 17
+            Rectangle {
+                anchors.fill: parent
+                color: filterMouse.pressed ? Config.alpha(filterButton.active ? Config.md3.on_secondary_container : Config.md3.on_surface, 0.12) : (filterMouse.containsMouse ? Config.alpha(filterButton.active ? Config.md3.on_secondary_container : Config.md3.on_surface, 0.08) : "transparent")
+                radius: parent.radius
 
-                layer.effect: ColorOverlay {
-                    color: filterPopup.open || WallpaperWorkshopService.activeFilterCount > 0 ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Config.animationDuration(Md3.motion.short2)
+                    }
                 }
             }
-            Rectangle {
-                anchors.right: parent.right
-                anchors.rightMargin: -3
-                anchors.top: parent.top
-                anchors.topMargin: -3
-                color: Config.md3.primary
-                height: 18
-                radius: 9
-                visible: WallpaperWorkshopService.activeFilterCount > 0
-                width: Math.max(18, countLabel.implicitWidth + 8)
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 11
+                anchors.rightMargin: 10
+                spacing: 6
 
+                Md3Icon {
+                    Layout.alignment: Qt.AlignVCenter
+                    color: filterButton.contentColor
+                    name: "view-filter-symbolic"
+                    size: 16
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Config.animationDuration(Md3.motion.short2)
+                        }
+                    }
+                }
                 Text {
-                    id: countLabel
+                    id: sortLabelText
 
-                    anchors.centerIn: parent
-                    color: Config.md3.on_primary
+                    Layout.fillWidth: true
+                    color: filterButton.contentColor
+                    elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 10
-                    font.weight: Font.Bold
-                    text: WallpaperWorkshopService.activeFilterCount
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    text: root.sortLabel(WallpaperWorkshopService.sortMode)
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Config.animationDuration(Md3.motion.short2)
+                        }
+                    }
+                }
+                Rectangle {
+                    id: filterBadge
+
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredHeight: 18
+                    Layout.preferredWidth: WallpaperWorkshopService.activeFilterCount > 9 ? 24 : 18
+                    color: Config.md3.primary
+                    opacity: WallpaperWorkshopService.activeFilterCount > 0 ? 1 : 0
+                    radius: 9
+                    visible: opacity > 0
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Config.animationDuration(Md3.motion.short2)
+                        }
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        color: Config.md3.on_primary
+                        font.family: Config.fontName
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        text: WallpaperWorkshopService.activeFilterCount
+                    }
+                }
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    color: filterButton.contentColor
+                    font.family: Config.fontName
+                    font.pixelSize: 13
+                    text: filterPopup.open ? "⌃" : "⌄"
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Config.animationDuration(Md3.motion.short2)
+                        }
+                    }
                 }
             }
             MouseArea {
@@ -354,6 +496,18 @@ Item {
             color: Config.md3.surface_container_high
             radius: 20
         }
+        WheelHandler {
+            blocking: true
+            target: null
+        }
+        MouseArea {
+            acceptedButtons: Qt.AllButtons
+            anchors.fill: parent
+            hoverEnabled: true
+            preventStealing: true
+
+            onWheel: event => event.accepted = true
+        }
         Item {
             id: popupHeader
 
@@ -383,7 +537,7 @@ Item {
                     color: Config.md3.on_surface_variant
                     font.family: Config.fontName
                     font.pixelSize: 11
-                    text: WallpaperWorkshopService.activeFilterCount > 0 ? qsTr("%1 active filters").arg(WallpaperWorkshopService.activeFilterCount) : qsTr("Showing the complete catalog")
+                    text: WallpaperWorkshopService.activeFilterCount > 0 ? qsTr("%1 active filters").arg(WallpaperWorkshopService.activeFilterCount) : qsTr("Safe catalog · Trending this week")
                 }
             }
             Row {
@@ -441,6 +595,153 @@ Item {
                 width: filterFlickable.width - 8
 
                 FilterCard {
+                    id: discoveryCard
+
+                    height: implicitHeight
+                    iconName: "view-sort-descending-symbolic"
+                    title: qsTr("Discovery")
+                    width: dashboard.width
+                    x: 0
+                    y: 0
+
+                    SectionLabel {
+                        Layout.fillWidth: true
+                        text: qsTr("Sort by")
+                    }
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columnSpacing: 6
+                        columns: 4
+                        rowSpacing: 6
+
+                        Repeater {
+                            model: root.sortOptions
+
+                            delegate: FilterChip {
+                                required property var modelData
+
+                                Layout.fillWidth: true
+                                label: modelData.label
+                                selected: WallpaperWorkshopService.sortMode === modelData.value
+
+                                onClicked: {
+                                    if (WallpaperWorkshopService.setSortMode(modelData.value))
+                                        root.filterChanged();
+                                }
+                            }
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 18
+
+                        MiniGroup {
+                            Layout.fillWidth: true
+
+                            SectionLabel {
+                                Layout.fillWidth: true
+                                text: qsTr("Tag matching")
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 5
+
+                                FilterChip {
+                                    Layout.fillWidth: true
+                                    label: qsTr("Match all")
+                                    selected: WallpaperWorkshopService.matchAllTags
+
+                                    onClicked: {
+                                        if (WallpaperWorkshopService.setMatchAllTags(true))
+                                            root.filterChanged();
+                                    }
+                                }
+                                FilterChip {
+                                    Layout.fillWidth: true
+                                    label: qsTr("Match any")
+                                    selected: !WallpaperWorkshopService.matchAllTags
+
+                                    onClicked: {
+                                        if (WallpaperWorkshopService.setMatchAllTags(false))
+                                            root.filterChanged();
+                                    }
+                                }
+                            }
+                        }
+                        MiniGroup {
+                            Layout.fillWidth: true
+                            opacity: WallpaperWorkshopService.sortMode === "trending" ? 1 : 0.42
+
+                            SectionLabel {
+                                Layout.fillWidth: true
+                                text: qsTr("Trending window")
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 5
+
+                                FilterChip {
+                                    Layout.fillWidth: true
+                                    enabled: WallpaperWorkshopService.sortMode === "trending"
+                                    label: qsTr("1 day")
+                                    selected: WallpaperWorkshopService.trendingDays === 1
+
+                                    onClicked: {
+                                        if (WallpaperWorkshopService.setTrendingDays(1))
+                                            root.filterChanged();
+                                    }
+                                }
+                                FilterChip {
+                                    Layout.fillWidth: true
+                                    enabled: WallpaperWorkshopService.sortMode === "trending"
+                                    label: qsTr("7 days")
+                                    selected: WallpaperWorkshopService.trendingDays === 7
+
+                                    onClicked: {
+                                        if (WallpaperWorkshopService.setTrendingDays(7))
+                                            root.filterChanged();
+                                    }
+                                }
+                            }
+                        }
+                        MiniGroup {
+                            Layout.fillWidth: true
+
+                            SectionLabel {
+                                Layout.fillWidth: true
+                                text: qsTr("Content")
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 5
+
+                                FilterChip {
+                                    Layout.fillWidth: true
+                                    accentColor: Config.md3.error_container
+                                    label: qsTr("Include NSFW")
+                                    selected: WallpaperWorkshopService.includeNsfw
+                                    selectedTextColor: Config.md3.on_error_container
+
+                                    onClicked: {
+                                        if (WallpaperWorkshopService.setIncludeNsfw(!WallpaperWorkshopService.includeNsfw))
+                                            root.filterChanged();
+                                    }
+                                }
+                                FilterChip {
+                                    Layout.fillWidth: true
+                                    label: qsTr("Recent votes")
+                                    selected: WallpaperWorkshopService.includeRecentVotesOnly
+
+                                    onClicked: {
+                                        if (WallpaperWorkshopService.setIncludeRecentVotesOnly(!WallpaperWorkshopService.includeRecentVotesOnly))
+                                            root.filterChanged();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                FilterCard {
                     id: ageCard
 
                     height: implicitHeight
@@ -448,12 +749,13 @@ Item {
                     title: qsTr("Age rating")
                     width: dashboard.columnWidth
                     x: 0
-                    y: 0
+                    y: discoveryCard.height + 12
 
-                    Flow {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 6
+                        columnSpacing: 6
+                        columns: 4
+                        rowSpacing: 6
 
                         Repeater {
                             model: root.ageOptions
@@ -461,6 +763,7 @@ Item {
                             delegate: FilterChip {
                                 required property var modelData
 
+                                Layout.fillWidth: true
                                 accentColor: modelData.value === "Mature" ? Config.md3.error_container : Config.md3.primary_container
                                 label: modelData.label
                                 selected: WallpaperWorkshopService.ageRatingFilter === modelData.value
@@ -482,12 +785,13 @@ Item {
                     title: qsTr("Resolution")
                     width: dashboard.columnWidth
                     x: dashboard.columnWidth + 12
-                    y: 0
+                    y: discoveryCard.height + 12
 
-                    Flow {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 6
+                        columnSpacing: 6
+                        columns: 4
+                        rowSpacing: 6
 
                         Repeater {
                             model: root.resolutionOptions
@@ -495,6 +799,7 @@ Item {
                             delegate: FilterChip {
                                 required property var modelData
 
+                                Layout.fillWidth: true
                                 compact: modelData.value !== "" && modelData.value !== "Dynamic Resolution"
                                 label: modelData.label
                                 selected: WallpaperWorkshopService.resolutionFilter === modelData.value
@@ -515,12 +820,13 @@ Item {
                     title: qsTr("Features")
                     width: dashboard.columnWidth
                     x: dashboard.columnWidth + 12
-                    y: resolutionCard.height + 12
+                    y: resolutionCard.y + resolutionCard.height + 12
 
-                    Flow {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 6
+                        columnSpacing: 6
+                        columns: 3
+                        rowSpacing: 6
 
                         Repeater {
                             model: root.featureOptions
@@ -528,6 +834,7 @@ Item {
                             delegate: FilterChip {
                                 required property string modelData
 
+                                Layout.fillWidth: true
                                 label: root.featureLabel(modelData)
                                 selected: WallpaperWorkshopService.containsFilter(WallpaperWorkshopService.featureFilters, modelData)
 
@@ -547,12 +854,13 @@ Item {
                     title: qsTr("Genres")
                     width: dashboard.columnWidth
                     x: 0
-                    y: ageCard.height + 12
+                    y: ageCard.y + ageCard.height + 12
 
-                    Flow {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 6
+                        columnSpacing: 6
+                        columns: 4
+                        rowSpacing: 6
 
                         Repeater {
                             model: root.genreOptions
@@ -560,6 +868,7 @@ Item {
                             delegate: FilterChip {
                                 required property string modelData
 
+                                Layout.fillWidth: true
                                 label: root.genreLabel(modelData)
                                 selected: WallpaperWorkshopService.containsFilter(WallpaperWorkshopService.genreFilters, modelData)
 
@@ -597,23 +906,31 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 9
 
-                IconImage {
-                    Layout.preferredHeight: 17
-                    Layout.preferredWidth: 17
-                    layer.enabled: true
-                    source: Quickshell.iconPath(card.iconName, "preferences-other-symbolic")
+                Rectangle {
+                    Layout.preferredHeight: 28
+                    Layout.preferredWidth: 28
+                    color: Config.alpha(Config.md3.primary, 0.12)
+                    radius: 9
 
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.primary
+                    IconImage {
+                        anchors.centerIn: parent
+                        height: 15
+                        layer.enabled: true
+                        source: Quickshell.iconPath(card.iconName, "preferences-other-symbolic")
+                        width: 15
+
+                        layer.effect: ColorOverlay {
+                            color: Config.md3.primary
+                        }
                     }
                 }
                 Text {
                     Layout.fillWidth: true
                     color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 14
                     font.weight: Font.DemiBold
                     text: card.title
                 }
@@ -633,11 +950,12 @@ Item {
 
         Accessible.name: label
         Accessible.role: Accessible.Button
-        activeFocusOnTab: true
-        border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.74) : (selected ? Config.alpha(Config.md3.primary, 0.24) : Config.alpha(Config.md3.outline, 0.12))
+        Layout.preferredWidth: 0
+        activeFocusOnTab: false
+        border.color: selected ? Config.alpha(Config.md3.primary, 0.24) : chipMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.34) : Config.alpha(Config.md3.outline, 0.12)
         border.width: 1
         color: selected ? accentColor : (chipMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.025))
-        implicitHeight: compact ? 29 : 32
+        implicitHeight: compact ? 29 : 31
         implicitWidth: compact ? chipLabel.implicitWidth + 18 : chipLabel.implicitWidth + 24
         radius: compact ? 9 : 11
 
@@ -649,10 +967,13 @@ Item {
 
             anchors.centerIn: parent
             color: chip.selected ? chip.selectedTextColor : Config.md3.on_surface_variant
+            elide: Text.ElideRight
             font.family: Config.fontName
-            font.pixelSize: chip.compact ? 10 : 11
+            font.pixelSize: chip.compact ? 10 : 12
             font.weight: chip.selected ? Font.DemiBold : Font.Medium
+            horizontalAlignment: Text.AlignHCenter
             text: chip.label
+            width: Math.max(0, parent.width - 14)
         }
         MouseArea {
             id: chipMouse
@@ -676,7 +997,7 @@ Item {
 
         Accessible.name: accessibleName
         Accessible.role: Accessible.Button
-        activeFocusOnTab: true
+        activeFocusOnTab: false
         border.color: accent && enabled ? Config.alpha(Config.md3.secondary, 0.18) : "transparent"
         border.width: 1
         color: accent && enabled ? (headerMouse.containsMouse ? Config.md3.secondary_container : Config.alpha(Config.md3.secondary_container, 0.72)) : (headerMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent")
@@ -716,5 +1037,31 @@ Item {
 
             onClicked: parent.clicked()
         }
+    }
+    component MiniGroup: Rectangle {
+        id: miniGroup
+
+        default property alias groupContent: groupBody.data
+
+        Layout.preferredWidth: 0
+        border.color: Config.alpha(Config.md3.outline, 0.08)
+        border.width: 1
+        color: Config.alpha(Config.md3.on_surface, 0.025)
+        implicitHeight: groupBody.implicitHeight + 20
+        radius: 12
+
+        ColumnLayout {
+            id: groupBody
+
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 6
+        }
+    }
+    component SectionLabel: Text {
+        color: Config.md3.on_surface_variant
+        font.family: Config.fontName
+        font.pixelSize: 12
+        font.weight: Font.DemiBold
     }
 }

@@ -172,6 +172,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            headerOutside: true
             iconName: "preferences-system-notifications-symbolic"
             note: "Popup placement and lifetime on the currently focused output"
             title: "Popups"
@@ -253,6 +254,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
+            headerOutside: true
             iconName: "preferences-system-time-symbolic"
             note: qsTr("Used when an application does not request its own popup lifetime")
             title: qsTr("Notification timeouts")
@@ -283,6 +285,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary
             compact: true
+            headerOutside: true
             iconName: "notifications-disabled-symbolic"
             note: "Schedule adds to manual Do Not Disturb; it does not overwrite the quick toggle"
             title: "Do Not Disturb"
@@ -328,6 +331,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.tertiary
             compact: true
+            headerOutside: true
             iconName: "document-properties-symbolic"
             note: "Use comma-separated application names; matching is case-insensitive"
             title: "History and application rules"

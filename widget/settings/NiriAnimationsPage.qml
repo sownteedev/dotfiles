@@ -60,87 +60,44 @@ ScrollView {
     ColumnLayout {
         id: content
 
-        spacing: 14
+        spacing: Md3.spacing.md
         width: root.contentWidth
 
-        Rectangle {
+        SettingsSectionCard {
             Layout.fillWidth: true
-            color: Config.alpha(Config.md3.on_surface, 0.04)
-            implicitHeight: globalContent.implicitHeight + 36
-            radius: 16
+            accentColor: Config.md3.secondary
+            headerOutside: true
+            iconName: "media-playback-start-symbolic"
+            title: qsTr("Animation engine")
 
-            ColumnLayout {
-                id: globalContent
+            SettingsToggleRow {
+                id: animationToggle
 
-                anchors.left: parent.left
-                anchors.margins: 18
-                anchors.right: parent.right
-                anchors.top: parent.top
-                spacing: 16
+                enabled: !SettingsHubService.busy
+                label: qsTr("Enable Niri animations")
+                note: qsTr("A global switch for every compositor animation")
 
-                Text {
-                    Layout.fillWidth: true
-                    color: Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: 18
-                    font.weight: Font.DemiBold
-                    text: "Animation engine"
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 18
+                onToggled: checked => animationToggle.checked = checked
+            }
+            SettingsTextField {
+                id: slowdownField
 
-                    ColumnLayout {
-                        Layout.alignment: Qt.AlignVCenter
-                        spacing: 4
-
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                            text: "Enable Niri animations"
-                        }
-                        Text {
-                            color: Config.alpha(Config.md3.on_surface, 0.5)
-                            font.family: Config.fontName
-                            font.pixelSize: 11
-                            text: "A global switch for every compositor animation"
-                        }
-                    }
-                    Item {
-                        Layout.fillWidth: true
-                    }
-                    ToggleSwitch {
-                        id: animationToggle
-
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        accessibleName: "Enable Niri animations"
-                        enabled: !SettingsHubService.busy
-
-                        onToggled: checked => {
-                            animationToggle.checked = checked;
-                        }
-                    }
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    SettingsTextField {
-                        id: slowdownField
-
-                        Layout.fillWidth: true
-                        label: "Speed multiplier"
-                        placeholder: "1.0"
-                    }
-                }
-                Text {
-                    Layout.fillWidth: true
-                    color: root.slowdownValid ? Config.alpha(Config.md3.on_surface, 0.42) : Config.md3.error
-                    font.family: Config.fontName
-                    font.pixelSize: 11
-                    text: root.slowdownValid ? "1.0 is normal. Larger values make animations slower." : "Enter a value from 0.05 to 10."
-                }
+                Layout.fillWidth: true
+                label: qsTr("Speed multiplier")
+                placeholder: "1.0"
+            }
+            Text {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                color: root.slowdownValid ? Config.md3.on_surface_variant : Config.md3.error
+                font.family: Config.fontName
+                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyMedium.size
+                font.weight: Md3.typeScale.bodyMedium.weight
+                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                lineHeightMode: Text.FixedHeight
+                text: root.slowdownValid ? qsTr("1.0 is normal. Larger values make animations slower.") : qsTr("Enter a value from 0.05 to 10.")
+                wrapMode: Text.Wrap
             }
         }
         GridLayout {
@@ -163,37 +120,22 @@ ScrollView {
 
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
-                    color: Config.alpha(Config.md3.on_surface, 0.04)
-                    implicitHeight: 82
-                    radius: 15
+                    color: Config.md3.surface_container_low
+                    implicitHeight: Math.max(80, animationLabel.implicitHeight + 2 * Md3.spacing.md)
+                    radius: Md3.shape.large
 
                     RowLayout {
                         anchors.fill: parent
                         anchors.leftMargin: 16
                         anchors.rightMargin: 16
-                        spacing: 14
+                        spacing: Md3.spacing.md
 
-                        ColumnLayout {
+                        SettingsLabelBlock {
+                            id: animationLabel
+
                             Layout.fillWidth: true
-                            spacing: 4
-
-                            Text {
-                                Layout.fillWidth: true
-                                color: Config.md3.on_surface
-                                elide: Text.ElideRight
-                                font.family: Config.fontName
-                                font.pixelSize: 13
-                                font.weight: Font.DemiBold
-                                text: String(animationCard.modelData.name).replace(/-/g, " ")
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                color: Config.alpha(Config.md3.on_surface, 0.46)
-                                elide: Text.ElideRight
-                                font.family: "monospace"
-                                font.pixelSize: 11
-                                text: animationCard.modelData.spec || "Uses Niri defaults"
-                            }
+                            headline: String(animationCard.modelData.name).replace(/-/g, " ")
+                            supportingText: animationCard.modelData.spec || qsTr("Uses Niri defaults")
                         }
                         ToggleSwitch {
                             accessibleName: "Toggle " + animationCard.modelData.name

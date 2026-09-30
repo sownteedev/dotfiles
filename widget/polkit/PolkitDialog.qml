@@ -239,16 +239,12 @@ PanelWindow {
                         color: Config.md3.primary_container
                         radius: 17
 
-                        IconImage {
+                        Md3Icon {
                             anchors.centerIn: parent
-                            implicitHeight: 27
-                            implicitWidth: 27
-                            layer.enabled: true
-                            source: Quickshell.iconPath(root.flow && root.flow.iconName ? root.flow.iconName : "dialog-password-symbolic")
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_primary_container
-                            }
+                            color: Config.md3.on_primary_container
+                            filled: true
+                            name: root.flow && root.flow.iconName ? root.flow.iconName : "dialog-password-symbolic"
+                            size: 27
                         }
                     }
                     ColumnLayout {
@@ -315,16 +311,11 @@ PanelWindow {
                             font.weight: Font.DemiBold
                             text: root.flow && root.flow.selectedIdentity ? root.flow.selectedIdentity.displayName : qsTr("Current user")
                         }
-                        IconImage {
-                            implicitHeight: 18
-                            implicitWidth: 18
-                            layer.enabled: true
-                            source: Quickshell.iconPath("go-next-symbolic")
+                        Md3Icon {
+                            color: Config.md3.on_surface_variant
+                            name: "go-next-symbolic"
+                            size: 18
                             visible: root.flow && root.flow.identities && root.flow.identities.length > 1
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface_variant
-                            }
                         }
                     }
                     MouseArea {
@@ -389,17 +380,11 @@ PanelWindow {
                                 anchors.rightMargin: 12
                                 spacing: 11
 
-                                IconImage {
-                                    id: passwordIcon
-
-                                    implicitHeight: 20
-                                    implicitWidth: 20
-                                    layer.enabled: true
-                                    source: Quickshell.iconPath(root.passwordHasError ? "dialog-error-symbolic" : "changes-prevent-symbolic")
-
-                                    layer.effect: ColorOverlay {
-                                        color: root.passwordHasError ? Config.md3.error : passwordInput.activeFocus || root.submitPending ? Config.md3.primary : Config.md3.on_surface_variant
-                                    }
+                                Md3Icon {
+                                    color: root.passwordHasError ? Config.md3.error : passwordInput.activeFocus || root.submitPending ? Config.md3.primary : Config.md3.on_surface_variant
+                                    filled: root.passwordHasError || passwordInput.activeFocus
+                                    name: root.passwordHasError ? "dialog-error-symbolic" : "changes-prevent-symbolic"
+                                    size: 20
                                 }
                                 Item {
                                     Layout.fillHeight: true
@@ -570,16 +555,12 @@ PanelWindow {
                                 visible: root.submitPending
                                 width: 18
                             }
-                            IconImage {
-                                implicitHeight: 17
-                                implicitWidth: 17
-                                layer.enabled: true
-                                source: Quickshell.iconPath("object-locked-symbolic")
+                            Md3Icon {
+                                color: Config.md3.background
+                                filled: true
+                                name: "object-locked-symbolic"
+                                size: 17
                                 visible: !root.submitPending
-
-                                layer.effect: ColorOverlay {
-                                    color: Config.md3.background
-                                }
                             }
                             Text {
                                 color: Config.md3.background

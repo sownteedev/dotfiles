@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
+import ".."
 import "../../"
 
 Item {
@@ -36,8 +37,8 @@ Item {
             Accessible.role: Accessible.Button
             Layout.fillHeight: true
             Layout.preferredWidth: 50
-            activeFocusOnTab: available
-            border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : Config.alpha(Config.md3.outline, 0.14)
+            activeFocusOnTab: false
+            border.color: resetArea.containsMouse && available ? Config.alpha(Config.md3.on_surface, 0.34) : Config.alpha(Config.md3.outline, 0.14)
             border.width: 1
             color: resetArea.pressed && available ? Config.md3.surface_container_highest : resetArea.containsMouse && available ? Config.md3.surface_container_high : Config.alpha(Config.md3.surface_container, 0.65)
             enabled: available
@@ -69,16 +70,11 @@ Item {
                 }
             }
 
-            IconImage {
+            Md3Icon {
                 anchors.centerIn: parent
-                height: 19
-                layer.enabled: true
-                source: Quickshell.iconPath("view-refresh-symbolic")
-                width: 19
-
-                layer.effect: ColorOverlay {
-                    color: Config.md3.on_surface_variant
-                }
+                color: Config.md3.on_surface_variant
+                name: "view-refresh-symbolic"
+                size: 22
             }
             MouseArea {
                 id: resetArea
@@ -88,10 +84,7 @@ Item {
                 enabled: resetButton.available
                 hoverEnabled: true
 
-                onClicked: {
-                    resetButton.forceActiveFocus();
-                    root.resetRequested();
-                }
+                onClicked: root.resetRequested()
             }
         }
         Rectangle {
@@ -101,9 +94,9 @@ Item {
             Accessible.role: Accessible.Button
             Layout.fillHeight: true
             Layout.fillWidth: true
-            activeFocusOnTab: !root.preparing
-            border.color: activeFocus ? Config.alpha(root.actionForeground, 0.72) : "transparent"
-            border.width: 1
+            activeFocusOnTab: false
+            border.color: "transparent"
+            border.width: 0
             color: root.actionBackground
             enabled: !root.preparing
             radius: height / 2
@@ -148,16 +141,12 @@ Item {
                 anchors.centerIn: parent
                 spacing: 9
 
-                IconImage {
+                Md3Icon {
                     anchors.verticalCenter: parent.verticalCenter
-                    height: 17
-                    layer.enabled: true
-                    source: Quickshell.iconPath(root.preparing ? "preferences-system-time-symbolic" : root.completed ? "view-refresh-symbolic" : root.running ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")
-                    width: 17
-
-                    layer.effect: ColorOverlay {
-                        color: root.actionForeground
-                    }
+                    color: root.actionForeground
+                    filled: root.running || root.completed
+                    name: root.preparing ? "preferences-system-time-symbolic" : root.completed ? "view-refresh-symbolic" : root.running ? "media-playback-pause-symbolic" : "media-playback-start-symbolic"
+                    size: 21
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -176,10 +165,7 @@ Item {
                 enabled: actionButton.enabled
                 hoverEnabled: true
 
-                onClicked: {
-                    actionButton.forceActiveFocus();
-                    root.toggleRequested();
-                }
+                onClicked: root.toggleRequested()
             }
         }
     }

@@ -41,13 +41,13 @@ Rectangle {
     }
     function resetFilters() {
         WallhavenService.categories = "111";
-        WallhavenService.purity = "111";
+        WallhavenService.purity = "110";
         WallhavenService.resolutionMode = "atleast";
         WallhavenService.atleast = "";
         WallhavenService.resolutions = "";
         WallhavenService.ratios = "";
         WallhavenService.colors = "";
-        WallhavenService.sorting = "toplist";
+        WallhavenService.sorting = "relevance";
         WallhavenService.order = "desc";
         WallhavenService.topRange = "1M";
         scheduleSearch();

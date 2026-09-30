@@ -1,22 +1,23 @@
 import QtQuick
+import "../../"
 
 // Shared controller for page enter/exit animations.
 QtObject {
     id: root
 
-    property int duration: 250
+    property int duration: Md3.motion.medium1
     property ParallelAnimation enterAnimation: ParallelAnimation {
-        NumberAnimation {
-            duration: root.duration
-            easing.type: Easing.OutQuad
+        Md3NumberAnimation {
+            duration: Config.animationDuration(root.duration)
             property: "opacity"
+            role: "enter"
             target: root.targetItem
             to: 1
         }
-        NumberAnimation {
-            duration: root.duration
-            easing.type: Easing.OutQuad
+        Md3NumberAnimation {
+            duration: Config.animationDuration(root.duration)
             property: "scale"
+            role: "enter"
             target: root.targetItem
             to: 1
         }

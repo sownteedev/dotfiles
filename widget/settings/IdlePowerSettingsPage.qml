@@ -398,6 +398,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            headerOutside: true
             iconName: "preferences-system-power-symbolic"
             note: qsTr("swayidle controls idle timing while Quickshell renders dim and lockscreen actions")
             title: qsTr("Idle policy")
@@ -437,26 +438,11 @@ Item {
                             }
                         }
                     }
-                    ColumnLayout {
+                    SettingsLabelBlock {
                         Layout.fillWidth: true
-                        spacing: 2
-
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                            text: root.policyStatusTitle
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.md3.on_surface_variant
-                            elide: Text.ElideRight
-                            font.family: Config.fontName
-                            font.pixelSize: 12
-                            text: root.policyStatusNote
-                        }
+                        emphasized: true
+                        headline: root.policyStatusTitle
+                        supportingText: root.policyStatusNote
                     }
                     SettingsActionButton {
                         iconName: "view-refresh-symbolic"
@@ -518,6 +504,7 @@ Item {
             accentColor: Config.md3.secondary
             compact: true
             enabled: root.idleEnabled
+            headerOutside: true
             iconName: "preferences-system-time-symbolic"
             note: qsTr("Choose when the session locks, powers off the display, and sleeps")
             title: qsTr("Idle schedule")
@@ -569,7 +556,11 @@ Item {
                     anchors.margins: 10
                     color: Config.md3.error
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: root.orderWarningText()
                     wrapMode: Text.Wrap
                 }
@@ -629,6 +620,7 @@ Item {
             accentColor: Config.md3.tertiary
             compact: true
             enabled: root.idleEnabled
+            headerOutside: true
             iconName: "display-brightness-symbolic"
             note: qsTr("Tune the transition before display-off and how applications may keep the session awake")
             title: qsTr("Dimming & activity")
@@ -667,6 +659,7 @@ Item {
             Layout.fillWidth: true
             accentColor: Config.md3.primary
             compact: true
+            headerOutside: true
             iconName: "media-playback-pause-symbolic"
             note: QuickSettingsService.caffeineEnabled ? root.policyStatusNote : qsTr("Choose how long the quick Caffeine toggle remains active")
             title: qsTr("Caffeine")

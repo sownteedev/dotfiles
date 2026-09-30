@@ -1,10 +1,7 @@
 import "../../"
 import ".."
-import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
-import Quickshell.Widgets
 
 Rectangle {
     id: root
@@ -28,67 +25,44 @@ Rectangle {
     Accessible.role: Accessible.Grouping
     Layout.alignment: Qt.AlignTop
     Layout.fillWidth: true
-    color: Config.alpha(Config.md3.on_surface, 0.045)
-    implicitHeight: body.implicitHeight + 28
-    radius: 20
+    color: Config.md3.surface_container_low
+    implicitHeight: body.implicitHeight + 2 * Md3.spacing.md
+    radius: Md3.shape.large
 
     ColumnLayout {
         id: body
 
         anchors.left: parent.left
-        anchors.leftMargin: 18
+        anchors.leftMargin: Md3.spacing.md + Md3.spacing.xxs
         anchors.right: parent.right
-        anchors.rightMargin: 18
+        anchors.rightMargin: Md3.spacing.md + Md3.spacing.xxs
         anchors.top: parent.top
-        anchors.topMargin: 14
-        spacing: 12
+        anchors.topMargin: Md3.spacing.md
+        spacing: Md3.spacing.md
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 12
+            spacing: Md3.spacing.sm
 
             Rectangle {
-                Layout.preferredHeight: 42
-                Layout.preferredWidth: 42
+                Layout.preferredHeight: 44
+                Layout.preferredWidth: 44
                 color: Config.alpha(root.accentColor, 0.14)
-                radius: 13
+                radius: Md3.shape.medium
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 21
-                    layer.enabled: true
-                    source: Quickshell.iconPath(root.iconName)
-                    width: 21
-
-                    layer.effect: ColorOverlay {
-                        color: root.accentColor
-                    }
+                    color: root.accentColor
+                    filled: true
+                    name: root.iconName
+                    size: 24
                 }
             }
-            ColumnLayout {
+            SettingsLabelBlock {
                 Layout.fillWidth: true
-                spacing: 2
-
-                Text {
-                    Layout.fillWidth: true
-                    color: Config.md3.on_surface
-                    elide: Text.ElideRight
-                    font.family: Config.fontName
-                    font.pixelSize: 16
-                    font.weight: Font.DemiBold
-                    renderType: Text.NativeRendering
-                    text: root.title
-                }
-                Text {
-                    Layout.fillWidth: true
-                    color: Config.alpha(Config.md3.on_surface, 0.46)
-                    elide: Text.ElideRight
-                    font.family: Config.fontName
-                    font.pixelSize: 12
-                    renderType: Text.NativeRendering
-                    text: root.note
-                    visible: text !== ""
-                }
+                emphasized: true
+                headline: root.title
+                supportingText: root.note
             }
             Rectangle {
                 Accessible.name: root.statusText
@@ -96,41 +70,19 @@ Rectangle {
                 Layout.preferredHeight: 38
                 Layout.preferredWidth: 38
                 color: Config.alpha(root.statusColor, 0.14)
-                radius: 12
+                radius: Md3.shape.full
                 visible: root.statusIcon !== ""
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 19
-                    layer.enabled: true
-                    source: Quickshell.iconPath(root.statusIcon)
-                    width: 19
-
-                    layer.effect: ColorOverlay {
-                        color: root.statusColor
-                    }
+                    color: root.statusColor
+                    filled: true
+                    name: root.statusIcon
+                    size: 20
                 }
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.bottom
-                    anchors.topMargin: 7
-                    color: Config.md3.surface_container_high
-                    height: 30
-                    radius: 9
+                Md3ToolTip {
+                    text: root.statusText
                     visible: statusMouse.containsMouse && root.statusText !== ""
-                    width: statusTooltip.implicitWidth + 18
-                    z: 20
-
-                    Text {
-                        id: statusTooltip
-
-                        anchors.centerIn: parent
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 12
-                        font.weight: Font.Medium
-                        text: root.statusText
-                    }
                 }
                 MouseArea {
                     id: statusMouse

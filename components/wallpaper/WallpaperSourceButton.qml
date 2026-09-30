@@ -15,10 +15,10 @@ Rectangle {
 
     Accessible.name: label
     Accessible.role: Accessible.Button
-    activeFocusOnTab: true
-    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.7) : Config.alpha(Config.md3.on_surface, 0.12)
+    activeFocusOnTab: false
+    border.color: sourceMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.34) : Config.alpha(Config.md3.on_surface, 0.12)
     border.width: 1
-    color: sourceMouse.pressed ? Config.md3.primary_container : (sourceMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.primary_container, 0.72) : Config.alpha(Config.md3.surface, 0.88))
+    color: sourceMouse.pressed ? Config.md3.primary_container : (sourceMouse.containsMouse ? Config.alpha(Config.md3.primary_container, 0.72) : Config.alpha(Config.md3.surface, 0.88))
     implicitHeight: 44
     implicitWidth: Math.max(112, content.implicitWidth + 28)
     radius: height / 2
@@ -52,12 +52,12 @@ Rectangle {
             width: 17
 
             layer.effect: ColorOverlay {
-                color: sourceMouse.containsMouse || root.activeFocus ? Config.md3.on_primary_container : Config.md3.on_surface_variant
+                color: sourceMouse.containsMouse ? Config.md3.on_primary_container : Config.md3.on_surface_variant
             }
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            color: sourceMouse.containsMouse || root.activeFocus ? Config.md3.on_primary_container : Config.md3.on_surface_variant
+            color: sourceMouse.containsMouse ? Config.md3.on_primary_container : Config.md3.on_surface_variant
             font.family: Config.fontName
             font.pixelSize: 11
             font.weight: Font.DemiBold

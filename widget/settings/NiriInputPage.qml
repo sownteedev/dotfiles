@@ -148,7 +148,8 @@ ScrollView {
                                     clip: true
                                     color: activeFocus ? inputCard.accentColor : Config.alpha(Config.md3.on_surface, 0.76)
                                     font.family: Config.fontName
-                                    font.pixelSize: 14
+                                    font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                    font.pixelSize: Md3.typeScale.bodyLarge.size
                                     selectByMouse: true
                                     text: modelData.text
                                     verticalAlignment: TextInput.AlignVCenter

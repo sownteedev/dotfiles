@@ -242,6 +242,7 @@ Item {
                 Layout.columnSpan: content.columns
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                headerOutside: true
                 iconName: "folder-symbolic"
                 note: "The screenshot path is also written to Niri so the watcher stays in sync"
                 title: "Storage"
@@ -279,6 +280,7 @@ Item {
             SettingsSectionCard {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
+                headerOutside: true
                 iconName: "camera-photo-symbolic"
                 note: qsTr("Choose what happens after capture and how images are exported")
                 title: qsTr("Screenshot")
@@ -380,6 +382,7 @@ Item {
                 Layout.fillWidth: true
                 accentColor: Config.md3.primary
                 compact: true
+                headerOutside: true
                 iconName: "media-record-symbolic"
                 note: qsTr("Capture area, encoding and recording behavior")
                 title: qsTr("Recording")
@@ -421,26 +424,11 @@ Item {
                                     color: Config.md3.primary
                                     radius: 2
                                 }
-                                ColumnLayout {
+                                SettingsLabelBlock {
                                     Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        color: Config.md3.on_surface
-                                        font.family: Config.fontName
-                                        font.pixelSize: 14
-                                        font.weight: Font.DemiBold
-                                        text: qsTr("Capture")
-                                    }
-                                    Text {
-                                        Layout.fillWidth: true
-                                        color: Config.alpha(Config.md3.on_surface, 0.46)
-                                        elide: Text.ElideRight
-                                        font.family: Config.fontName
-                                        font.pixelSize: 11
-                                        text: qsTr("Area and start delay")
-                                    }
+                                    emphasized: true
+                                    headline: qsTr("Capture")
+                                    supportingText: qsTr("Area and start delay")
                                 }
                             }
                             SettingsChoiceRow {
@@ -513,26 +501,11 @@ Item {
                                     color: Config.md3.secondary
                                     radius: 2
                                 }
-                                ColumnLayout {
+                                SettingsLabelBlock {
                                     Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        color: Config.md3.on_surface
-                                        font.family: Config.fontName
-                                        font.pixelSize: 14
-                                        font.weight: Font.DemiBold
-                                        text: qsTr("Encoding")
-                                    }
-                                    Text {
-                                        Layout.fillWidth: true
-                                        color: Config.alpha(Config.md3.on_surface, 0.46)
-                                        elide: Text.ElideRight
-                                        font.family: Config.fontName
-                                        font.pixelSize: 11
-                                        text: qsTr("Frame rate, codec and quality")
-                                    }
+                                    emphasized: true
+                                    headline: qsTr("Encoding")
+                                    supportingText: qsTr("Frame rate, codec and quality")
                                 }
                             }
                             SettingsTextField {
@@ -614,26 +587,11 @@ Item {
                                     color: Config.md3.tertiary
                                     radius: 2
                                 }
-                                ColumnLayout {
+                                SettingsLabelBlock {
                                     Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        color: Config.md3.on_surface
-                                        font.family: Config.fontName
-                                        font.pixelSize: 14
-                                        font.weight: Font.DemiBold
-                                        text: qsTr("Behavior")
-                                    }
-                                    Text {
-                                        Layout.fillWidth: true
-                                        color: Config.alpha(Config.md3.on_surface, 0.46)
-                                        elide: Text.ElideRight
-                                        font.family: Config.fontName
-                                        font.pixelSize: 11
-                                        text: qsTr("Cursor, microphone and clipboard")
-                                    }
+                                    emphasized: true
+                                    headline: qsTr("Behavior")
+                                    supportingText: qsTr("Cursor, microphone and clipboard")
                                 }
                             }
                             GridLayout {

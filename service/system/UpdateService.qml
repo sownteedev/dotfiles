@@ -180,16 +180,23 @@ QtObject {
         if (!available || busy)
             return;
 
-        activeUpgradeResultPath = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/sownteeshell-update-result-" + Date.now();
+        var resultPath = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/sownteeshell-update-result-" + Date.now();
+        var upgradeCommand = "exec " + shellQuote(Config.sownteeshellDir + "/scripts/system/package-updates.sh") + " upgrade " + shellQuote(resultPath);
+        var terminalCommand = "exec /usr/bin/zsh -c " + shellQuote(upgradeCommand);
+        var terminalArguments = DefaultAppsService.terminalCommand(terminalCommand);
+        if (terminalArguments.length === 0) {
+            error = qsTr("No supported terminal is installed");
+            return;
+        }
+
+        activeUpgradeResultPath = resultPath;
         upgradePollMisses = 0;
         upgradeResultReceived = false;
         upgradeResultText = "";
         upgradeTerminalExited = false;
         upgrading = true;
         error = "";
-        var upgradeCommand = "exec " + shellQuote(Config.sownteeshellDir + "/scripts/system/package-updates.sh") + " upgrade " + shellQuote(activeUpgradeResultPath);
-        var terminalCommand = "exec /usr/bin/zsh -c " + shellQuote(upgradeCommand);
-        upgradeTerminal.command = ["blackbox-terminal", "--command", terminalCommand];
+        upgradeTerminal.command = terminalArguments;
         upgradeTerminal.running = true;
         upgradeWatchdog.restart();
         upgradePollTimer.restart();

@@ -121,14 +121,16 @@ Item {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 16
-                        font.weight: Font.DemiBold
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
+                        font.weight: Md3.typeScale.titleMedium.emphasizedWeight
                         text: qsTr("Choose duration")
                     }
                     Text {
                         color: Config.md3.on_surface_variant
                         font.family: Config.fontName
-                        font.pixelSize: 12
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
                         text: root.rangeText
                     }
                 }
@@ -178,7 +180,8 @@ Item {
                                 color: presetButton.active ? root.accentColor : Config.md3.on_surface
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 13
+                                font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                font.pixelSize: Md3.typeScale.labelLarge.size
                                 font.weight: presetButton.active ? Font.DemiBold : Font.Medium
                                 horizontalAlignment: Text.AlignHCenter
                                 text: presetButton.modelData.label

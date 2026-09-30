@@ -27,22 +27,24 @@ Rectangle {
     Accessible.name: label
     Accessible.role: Accessible.CheckBox
     Layout.fillWidth: true
-    activeFocusOnTab: enabled
-    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.7) : "transparent"
-    border.width: 1
+    Layout.minimumWidth: 0
+    activeFocusOnTab: false
+    border.color: "transparent"
+    border.width: 0
     color: "transparent"
-    implicitHeight: note === "" ? 50 : 60
-    opacity: enabled ? 1 : 0.45
-    radius: 10
+    implicitHeight: Math.max(56, labelBlock.implicitHeight + 24)
+    implicitWidth: 0
+    opacity: enabled ? 1 : Md3.state.disabledContent
+    radius: Md3.shape.medium
 
     Behavior on border.color {
         ColorAnimation {
-            duration: 130
+            duration: Config.animationDuration(Md3.motion.short3)
         }
     }
     Behavior on opacity {
         NumberAnimation {
-            duration: 120
+            duration: Config.animationDuration(Md3.motion.short2)
         }
     }
 
@@ -57,40 +59,31 @@ Rectangle {
     }
 
     RowLayout {
+        Layout.minimumWidth: 0
         anchors.fill: parent
-        anchors.leftMargin: 4
-        anchors.rightMargin: 4
-        spacing: 16
+        anchors.leftMargin: Md3.spacing.xxs
+        anchors.rightMargin: Md3.spacing.xxs
+        spacing: Md3.spacing.md
 
-        ColumnLayout {
+        SettingsLabelBlock {
+            id: labelBlock
+
             Layout.fillWidth: true
-            spacing: 2
-
-            Text {
-                Layout.fillWidth: true
-                color: Config.md3.on_surface
-                elide: Text.ElideRight
-                font.family: Config.fontName
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
-                renderType: Text.NativeRendering
-                text: root.label
-            }
-            Text {
-                Layout.fillWidth: true
-                color: Config.alpha(Config.md3.on_surface, 0.46)
-                elide: Text.ElideRight
-                font.family: Config.fontName
-                font.pixelSize: 12
-                renderType: Text.NativeRendering
-                text: root.note
-                visible: text !== ""
-            }
+            Layout.minimumWidth: 0
+            headline: root.label
+            supportingText: root.note
         }
         ToggleSwitch {
+            id: toggleControl
+
             Accessible.ignored: true
             checked: root.checked
+            hovered: {
+                var pointer = toggleControl.mapFromItem(tileMouse, tileMouse.mouseX, tileMouse.mouseY);
+                return tileMouse.containsMouse && pointer.x >= 0 && pointer.x < toggleControl.width && pointer.y >= 0 && pointer.y < toggleControl.height;
+            }
             interactive: false
+            pressed: tileMouse.pressed && hovered
         }
     }
     MouseArea {

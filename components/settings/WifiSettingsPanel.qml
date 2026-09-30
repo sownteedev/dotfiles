@@ -328,16 +328,12 @@ Item {
                         opacity: enabled ? 1 : 0.45
                         radius: 13
 
-                        IconImage {
+                        Md3Icon {
                             anchors.centerIn: parent
-                            height: 18
-                            layer.enabled: true
-                            source: Quickshell.iconPath("user-trash-symbolic")
-                            width: 18
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.error
-                            }
+                            color: Config.md3.error
+                            filled: true
+                            name: "user-trash-symbolic"
+                            size: 18
                         }
                         MouseArea {
                             id: forgetPointer
@@ -371,16 +367,12 @@ Item {
                                 visible: root.applying
                                 width: 17
                             }
-                            IconImage {
-                                height: 17
-                                layer.enabled: true
-                                source: Quickshell.iconPath("document-save-symbolic")
+                            Md3Icon {
+                                color: Config.md3.on_primary
+                                filled: true
+                                name: "document-save-symbolic"
+                                size: 17
                                 visible: !root.applying
-                                width: 17
-
-                                layer.effect: ColorOverlay {
-                                    color: Config.md3.on_primary
-                                }
                             }
                         }
                         MouseArea {
@@ -422,15 +414,11 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 10
 
-                    IconImage {
-                        height: 18
-                        layer.enabled: true
-                        source: Quickshell.iconPath("dialog-error-symbolic")
-                        width: 18
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_error_container
-                        }
+                    Md3Icon {
+                        color: Config.md3.on_error_container
+                        filled: true
+                        name: "dialog-error-symbolic"
+                        size: 18
                     }
                     Text {
                         Layout.fillWidth: true
@@ -708,19 +696,15 @@ Item {
                                 color: ipv6HeaderMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.045)
                                 radius: 12
 
-                                IconImage {
+                                Md3Icon {
                                     id: ipv6ExpandIcon
 
                                     anchors.centerIn: parent
-                                    height: 20
-                                    layer.enabled: true
+                                    color: Config.md3.on_surface_variant
+                                    name: "pan-down-symbolic"
                                     rotation: root.ipv6Expanded ? 180 : 0
-                                    source: Quickshell.iconPath("pan-down-symbolic")
-                                    width: 20
+                                    size: 20
 
-                                    layer.effect: ColorOverlay {
-                                        color: Config.md3.on_surface_variant
-                                    }
                                     Behavior on rotation {
                                         NumberAnimation {
                                             duration: 180
@@ -949,16 +933,12 @@ Item {
                         color: Config.alpha(Config.md3.tertiary_container, 0.90)
                         radius: 13
 
-                        IconImage {
+                        Md3Icon {
                             anchors.centerIn: parent
-                            height: 21
-                            layer.enabled: true
-                            source: Quickshell.iconPath("network-wireless-symbolic")
-                            width: 21
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_tertiary_container
-                            }
+                            color: Config.md3.on_tertiary_container
+                            filled: true
+                            name: "network-wireless-symbolic"
+                            size: 21
                         }
                     }
                     ColumnLayout {

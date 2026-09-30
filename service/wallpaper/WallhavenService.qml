@@ -271,7 +271,7 @@ QtObject {
     property string order: "desc"
     property int page: 1
     property int panelConsumers: 0
-    property string purity: "111"
+    property string purity: "110"
     property string query: ""
     property string ratios: ""
     property string removeErrorMessage: ""
@@ -378,7 +378,7 @@ QtObject {
     property string seed: ""
     property string selectedCollectionId: ""
     property string selectedCollectionLabel: ""
-    property string sorting: "toplist"
+    property string sorting: "relevance"
     property string statusMessage: ""
     property string topRange: "1M"
     property int totalResults: 0
@@ -576,7 +576,7 @@ QtObject {
         if (target.indexOf("https://wallhaven.cc/") !== 0)
             return false;
 
-        Quickshell.execDetached(["xdg-open", target]);
+        Quickshell.execDetached(DefaultAppsService.openUrl(target));
         return true;
     }
     function parseResponse(output, errorOutput, fallbackMessage) {
@@ -744,7 +744,8 @@ QtObject {
         query = String(searchText || "").trim();
         // page belongs to the displayed results, not the in-flight request.
         var targetPage = Math.max(1, Number(requestedPage || 1));
-        sorting = String(requestedSorting || sorting || "toplist");
+        sorting = String(requestedSorting || sorting || "relevance");
+        var requestSorting = query === "" && sorting === "relevance" ? "toplist" : sorting;
         if (preserveRandomSeed !== true)
             seed = "";
 
@@ -769,7 +770,7 @@ QtObject {
             "ratios": ratios,
             "resolutions": resolutionMode === "exact" ? resolutions : "",
             "seed": sorting === "random" ? seed : "",
-            "sorting": sorting,
+            "sorting": requestSorting,
             "top_range": topRange,
             "wallpaper_dir": Config.wallhavenCacheFolder
         });

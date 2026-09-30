@@ -71,6 +71,13 @@ Item {
             return qsTr("Connect to iCloud Calendar securely with an Apple app-specific password.");
         return qsTr("Connect through Google OAuth and keep all selected calendars in one timeline.");
     }
+    function providerIconSource(value) {
+        if (value === "microsoft")
+            return "file://" + Config.sownteeshellDir + "/assets/icons/calendar-microsoft.svg";
+        if (value === "icloud")
+            return "file://" + Config.sownteeshellDir + "/assets/icons/calendar-icloud.svg";
+        return Quickshell.iconPath("goa-account-google-symbolic", "x-office-calendar-symbolic");
+    }
     function providerLabel(value) {
         if (value === "microsoft")
             return qsTr("Microsoft 365");
@@ -137,9 +144,8 @@ Item {
     z: 90
 
     Behavior on opacity {
-        NumberAnimation {
-            duration: Config.animationDuration(160)
-            easing.type: Easing.OutQuad
+        Md3NumberAnimation {
+            role: opened ? "enter" : "exit"
         }
     }
 
@@ -171,16 +177,22 @@ Item {
         border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.42 : 0.24)
         border.width: 1
         color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.995 : 0.985)
-        height: Math.min(root.provider === "icloud" ? 700 : 570, parent.height - 32)
-        radius: 26
+        height: Math.min(root.provider === "icloud" ? 704 : 590, parent.height - 32)
+        radius: Md3.shape.extraLarge
         scale: root.opened ? 1 : 0.96
         transformOrigin: Item.Center
         width: Math.min(600, parent.width - 32)
 
+        Behavior on height {
+            enabled: root.opened
+
+            Md3NumberAnimation {
+                role: "spatial"
+            }
+        }
         Behavior on scale {
-            NumberAnimation {
-                duration: Config.animationDuration(190)
-                easing.type: Easing.OutCubic
+            Md3NumberAnimation {
+                role: opened ? "spatial" : "exit"
             }
         }
 
@@ -195,41 +207,53 @@ Item {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 16
+            anchors.margins: Md3.spacing.md
+            spacing: Md3.spacing.md
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 11
+                Layout.preferredHeight: 58
+                spacing: 14
 
                 Rectangle {
-                    Layout.preferredHeight: 48
-                    Layout.preferredWidth: 48
-                    color: Config.md3.primary_container
-                    radius: 16
+                    Layout.preferredHeight: 46
+                    Layout.preferredWidth: 46
+                    color: Config.alpha(root.providerColor(root.provider), 0.16)
+                    radius: 14
 
-                    IconImage {
+                    Behavior on color {
+                        Md3ColorAnimation {
+                            role: "state"
+                        }
+                    }
+
+                    Md3Icon {
                         anchors.centerIn: parent
-                        height: 25
-                        layer.enabled: true
-                        source: Quickshell.iconPath("appointment-new-symbolic")
-                        width: 25
+                        color: root.providerColor(root.provider)
+                        filled: true
+                        name: "appointment-new-symbolic"
+                        size: 24
 
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_primary_container
+                        Behavior on color {
+                            Md3ColorAnimation {
+                                role: "state"
+                            }
                         }
                     }
                 }
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 1
+                    spacing: 2
 
                     Text {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface
                         font.family: Config.fontName
+                        font.letterSpacing: Md3.typeScale.titleLarge.letterSpacing
                         font.pixelSize: 20
-                        font.weight: Font.DemiBold
+                        font.weight: 600
+                        lineHeight: Md3.typeScale.titleLarge.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: qsTr("Add calendar account")
                     }
                     Text {
@@ -237,7 +261,11 @@ Item {
                         color: Config.md3.on_surface_variant
                         elide: Text.ElideRight
                         font.family: Config.fontName
-                        font.pixelSize: 13
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
+                        font.weight: Font.Normal
+                        lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: qsTr("All connected calendars appear in the same timeline")
                     }
                 }
@@ -252,86 +280,39 @@ Item {
                     onClicked: root.close()
                 }
             }
-            Rectangle {
+            SettingsSegmentedControl {
+                id: providerSelector
+
+                Accessible.name: qsTr("Calendar provider")
                 Layout.fillWidth: true
-                Layout.preferredHeight: 60
-                color: Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.72 : 0.5)
-                radius: 18
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    spacing: 4
-
-                    Repeater {
-                        model: ["google", "microsoft", "icloud"]
-
-                        Rectangle {
-                            id: providerButton
-
-                            required property string modelData
-                            readonly property bool selected: root.provider === modelData
-
-                            Accessible.name: root.providerLabel(modelData)
-                            Accessible.role: Accessible.Button
-                            Layout.fillHeight: true
-                            Layout.fillWidth: true
-                            activeFocusOnTab: true
-                            border.color: selected ? Config.alpha(Config.md3.primary, 0.42) : activeFocus ? Config.alpha(Config.md3.primary, 0.58) : "transparent"
-                            border.width: 1
-                            color: selected ? Config.md3.primary_container : providerMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.on_surface, 0.075) : "transparent"
-                            radius: 14
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: Config.animationDuration(120)
-                                }
-                            }
-
-                            Keys.onReturnPressed: event => {
-                                root.provider = modelData;
-                                event.accepted = true;
-                            }
-                            Keys.onSpacePressed: event => {
-                                root.provider = modelData;
-                                event.accepted = true;
-                            }
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 9
-
-                                CalendarProviderIcon {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    height: 21
-                                    provider: providerButton.modelData
-                                    tint: providerButton.selected ? Config.md3.on_primary_container : Config.md3.on_surface_variant
-                                    width: 21
-                                }
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: providerButton.selected ? Config.md3.on_primary_container : Config.md3.on_surface_variant
-                                    font.family: Config.fontName
-                                    font.pixelSize: 13
-                                    font.weight: Font.DemiBold
-                                    text: root.providerLabel(providerButton.modelData)
-                                }
-                            }
-                            MouseArea {
-                                id: providerMouse
-
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                hoverEnabled: true
-
-                                onClicked: {
-                                    providerButton.forceActiveFocus();
-                                    root.provider = providerButton.modelData;
-                                }
-                            }
-                        }
+                Layout.preferredHeight: 56
+                backgroundColor: Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.72 : 0.5)
+                fontPixelSize: Md3.typeScale.labelLarge.size
+                iconSize: 20
+                minimumSegmentWidth: 0
+                options: [
+                    {
+                        "iconSource": root.providerIconSource("google"),
+                        "label": root.providerLabel("google"),
+                        "value": "google"
+                    },
+                    {
+                        "iconSource": root.providerIconSource("microsoft"),
+                        "label": root.providerLabel("microsoft"),
+                        "value": "microsoft"
+                    },
+                    {
+                        "iconSource": root.providerIconSource("icloud"),
+                        "label": root.providerLabel("icloud"),
+                        "value": "icloud"
                     }
-                }
+                ]
+                selectedValue: root.provider
+                selectionColor: root.providerContainerColor(root.provider)
+                selectionContentColor: root.providerOnContainerColor(root.provider)
+                showOptionIcons: true
+
+                onSelected: value => root.provider = value
             }
             ColumnLayout {
                 Layout.fillWidth: true
@@ -341,15 +322,22 @@ Item {
                     Layout.fillWidth: true
                     color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 16
+                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.titleMedium.size
                     font.weight: Font.DemiBold
+                    lineHeight: Md3.typeScale.titleMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: root.providerSetupTitle(root.provider)
                 }
                 Text {
                     Layout.fillWidth: true
                     color: Config.md3.on_surface_variant
                     font.family: Config.fontName
-                    font.pixelSize: 12
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: root.providerDescription(root.provider)
                     wrapMode: Text.Wrap
                 }
@@ -376,7 +364,7 @@ Item {
                 Layout.fillWidth: true
                 color: Config.alpha(Config.md3.error_container, 0.72)
                 implicitHeight: errorContent.implicitHeight + 18
-                radius: 14
+                radius: Md3.shape.large
                 visible: root.errorMessage !== ""
 
                 RowLayout {
@@ -386,22 +374,23 @@ Item {
                     anchors.margins: 9
                     spacing: 9
 
-                    IconImage {
+                    Md3Icon {
                         Layout.preferredHeight: 18
                         Layout.preferredWidth: 18
-                        layer.enabled: true
-                        source: Quickshell.iconPath("dialog-warning-symbolic")
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_error_container
-                        }
+                        color: Config.md3.on_error_container
+                        filled: true
+                        name: "dialog-warning-symbolic"
+                        size: 18
                     }
                     Text {
                         Layout.fillWidth: true
                         color: Config.md3.on_error_container
                         font.family: Config.fontName
-                        font.pixelSize: 12
-                        font.weight: Font.Medium
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
+                        font.weight: Md3.typeScale.bodyMedium.weight
+                        lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: root.errorMessage
                         wrapMode: Text.Wrap
                     }
@@ -422,7 +411,7 @@ Item {
                     iconName: "external-link-symbolic"
                     text: root.providerSetupAction(root.provider)
 
-                    onClicked: Qt.openUrlExternally(root.providerSetupUrl(root.provider))
+                    onClicked: Quickshell.execDetached(DefaultAppsService.openUrl(root.providerSetupUrl(root.provider)))
                 }
                 Item {
                     Layout.fillWidth: true
@@ -484,22 +473,20 @@ Item {
                 Layout.fillWidth: true
                 color: Config.alpha(root.providerContainerColor(root.provider), Config.lightTheme ? 0.72 : 0.56)
                 implicitHeight: oauthNote.implicitHeight + 26
-                radius: 16
+                radius: Md3.shape.large
 
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: 12
                     spacing: 10
 
-                    IconImage {
+                    Md3Icon {
                         Layout.preferredHeight: 20
                         Layout.preferredWidth: 20
-                        layer.enabled: true
-                        source: Quickshell.iconPath("dialog-information-symbolic")
-
-                        layer.effect: ColorOverlay {
-                            color: root.providerOnContainerColor(root.provider)
-                        }
+                        color: root.providerOnContainerColor(root.provider)
+                        filled: true
+                        name: "dialog-information-symbolic"
+                        size: 20
                     }
                     Text {
                         id: oauthNote
@@ -507,7 +494,11 @@ Item {
                         Layout.fillWidth: true
                         color: root.providerOnContainerColor(root.provider)
                         font.family: Config.fontName
-                        font.pixelSize: 12
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
+                        font.weight: Md3.typeScale.bodyMedium.weight
+                        lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: root.provider === "microsoft" ? qsTr("The app requests calendar read and write access for the selected Microsoft account.") : qsTr("The app requests calendar event access and read-only calendar-list access.")
                         wrapMode: Text.Wrap
                     }
@@ -543,8 +534,11 @@ Item {
                 Layout.topMargin: 4
                 color: Config.md3.on_surface_variant
                 font.family: Config.fontName
-                font.pixelSize: 13
-                font.weight: Font.DemiBold
+                font.letterSpacing: Md3.typeScale.titleSmall.letterSpacing
+                font.pixelSize: Md3.typeScale.titleSmall.size
+                font.weight: Md3.typeScale.titleSmall.weight
+                lineHeight: Md3.typeScale.titleSmall.lineHeight
+                lineHeightMode: Text.FixedHeight
                 text: qsTr("Optional details")
             }
             AccountField {
@@ -577,14 +571,14 @@ Item {
     component AccountField: FormTextField {
         backgroundColor: Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.72 : 0.38)
         fieldHeight: 52
-        fieldRadius: 14
+        fieldRadius: Md3.shape.large
         focusedBorderColor: Config.alpha(root.providerColor(root.provider), 0.68)
-        inputFontPixelSize: 14
+        inputFontPixelSize: Md3.typeScale.bodyLarge.size
         inputFontWeight: Font.Medium
-        labelFontPixelSize: 13
-        labelFontWeight: Font.DemiBold
+        labelFontPixelSize: Md3.typeScale.labelLarge.size
+        labelFontWeight: Md3.typeScale.labelLarge.emphasizedWeight
         normalBorderColor: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.38 : 0.24)
-        placeholderFontPixelSize: 14
+        placeholderFontPixelSize: Md3.typeScale.bodyLarge.size
         placeholderFontWeight: Font.Medium
     }
 }

@@ -10,6 +10,7 @@ QtObject {
     property string activeWindowId: ""
     property var activeWindowsByOutput: ({})
     property int activeWorkspaceId: -1
+    property var activeWorkspaceIdByOutput: ({})
     property Timer debounceTimer: Timer {
         interval: 50
         repeat: false
@@ -96,6 +97,38 @@ QtObject {
     property var workspaceIdByWindow: ({})
     property var workspaces: []
 
+    function applyFocusedWindow(windowId, rememberOverviewSelection) {
+        var id = String(windowId || "");
+        if (id === "")
+            return false;
+
+        if (rememberOverviewSelection)
+            root.overviewWindowId = id;
+        var source = root.workspaces || [];
+        for (var workspaceIndex = 0; workspaceIndex < source.length; workspaceIndex++) {
+            var workspace = source[workspaceIndex];
+            var windows = workspace.windows || [];
+            for (var windowIndex = 0; windowIndex < windows.length; windowIndex++) {
+                var window = windows[windowIndex];
+                if (String(window.id) !== id)
+                    continue;
+
+                root.activeWindowId = id;
+                root.activeWorkspaceId = workspace.id;
+                if (workspace.output !== "") {
+                    var activeByOutput = Object.assign({}, root.activeWindowByOutput || {});
+                    activeByOutput[workspace.output] = root.windowSummary(window);
+                    root.activeWindowByOutput = activeByOutput;
+                    var activeWorkspaceByOutput = Object.assign({}, root.activeWorkspaceIdByOutput || {});
+                    activeWorkspaceByOutput[workspace.output] = workspace.id;
+                    root.activeWorkspaceIdByOutput = activeWorkspaceByOutput;
+                    root.focusedOutputName = workspace.output;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
     function beginTransientMoveFocusGuard() {
         transientMoveFocusGuard = true;
         transientMoveFocusTimer.restart();
@@ -158,8 +191,20 @@ QtObject {
                 root.overviewOpen = event.OverviewOpenedOrClosed.is_open === true;
                 if (!root.overviewOpen)
                     root.overviewWindowId = "";
-            } else if (root.overviewOpen && event.WindowFocusChanged && event.WindowFocusChanged.id !== null && event.WindowFocusChanged.id !== undefined) {
-                root.selectOverviewWindow(event.WindowFocusChanged.id);
+            } else if (event.WorkspaceActivated && !root.transientMoveFocusGuard) {
+                var activatedId = Number(event.WorkspaceActivated.id);
+                var activatedOutput = root.workspaceOutputForId(activatedId);
+                if (!isNaN(activatedId) && activatedOutput !== "") {
+                    var activeIds = Object.assign({}, root.activeWorkspaceIdByOutput || {});
+                    activeIds[activatedOutput] = activatedId;
+                    root.activeWorkspaceIdByOutput = activeIds;
+                    if (event.WorkspaceActivated.focused === true) {
+                        root.activeWorkspaceId = activatedId;
+                        root.focusedOutputName = activatedOutput;
+                    }
+                }
+            } else if (event.WindowFocusChanged && event.WindowFocusChanged.id !== null && event.WindowFocusChanged.id !== undefined && !root.transientMoveFocusGuard) {
+                root.applyFocusedWindow(event.WindowFocusChanged.id, root.overviewOpen);
             } else if (root.overviewOpen && event.WindowOpenedOrChanged && event.WindowOpenedOrChanged.window) {
                 var changedWindow = event.WindowOpenedOrChanged.window;
                 if (changedWindow.is_focused || changedWindow.workspace_id === null)
@@ -268,12 +313,15 @@ QtObject {
             }
             var outputSet = {};
             var newOutputNames = [];
+            var newActiveWorkspaceIdByOutput = {};
             for (var outputIndex = 0; outputIndex < wsList.length; outputIndex++) {
                 var outputName = String(wsList[outputIndex].output || "");
                 if (outputName !== "" && !outputSet[outputName]) {
                     outputSet[outputName] = true;
                     newOutputNames.push(outputName);
                 }
+                if (outputName !== "" && wsList[outputIndex].is_active)
+                    newActiveWorkspaceIdByOutput[outputName] = wsList[outputIndex].id;
             }
             newOutputNames.sort();
             var floatingData = data.floating || {};
@@ -418,7 +466,7 @@ QtObject {
             var needsRebuild = root.workspaces.length !== processed.length;
             if (!needsRebuild) {
                 for (var n = 0; n < processed.length && !needsRebuild; n++) {
-                    if (root.workspaces[n].id !== processed[n].id || root.workspaces[n].idx !== processed[n].idx || root.workspaces[n].active_window_id !== processed[n].active_window_id || root.workspaces[n].output !== processed[n].output || root.workspaces[n].name !== processed[n].name || root.workspaces[n].windows.length !== processed[n].windows.length) {
+                    if (root.workspaces[n].id !== processed[n].id || root.workspaces[n].idx !== processed[n].idx || root.workspaces[n].output !== processed[n].output || root.workspaces[n].name !== processed[n].name || root.workspaces[n].windows.length !== processed[n].windows.length) {
                         needsRebuild = true;
                         break;
                     }
@@ -433,6 +481,8 @@ QtObject {
             if (!root.transientMoveFocusGuard) {
                 root.activeWindowId = newActiveWindowId;
                 root.activeWorkspaceId = newActiveWorkspaceId;
+                if (JSON.stringify(root.activeWorkspaceIdByOutput) !== JSON.stringify(newActiveWorkspaceIdByOutput))
+                    root.activeWorkspaceIdByOutput = newActiveWorkspaceIdByOutput;
                 if (JSON.stringify(root.activeWindowByOutput) !== JSON.stringify(newActiveWindowByOutput))
                     root.activeWindowByOutput = newActiveWindowByOutput;
                 if (JSON.stringify(root.activeWindowsByOutput) !== JSON.stringify(newActiveWindowsByOutput))
@@ -459,31 +509,7 @@ QtObject {
         queryData.running = true;
     }
     function selectOverviewWindow(windowId) {
-        var id = String(windowId || "");
-        if (id === "")
-            return;
-
-        root.overviewWindowId = id;
-        var source = root.workspaces || [];
-        for (var workspaceIndex = 0; workspaceIndex < source.length; workspaceIndex++) {
-            var workspace = source[workspaceIndex];
-            var windows = workspace.windows || [];
-            for (var windowIndex = 0; windowIndex < windows.length; windowIndex++) {
-                var window = windows[windowIndex];
-                if (String(window.id) !== id)
-                    continue;
-
-                root.activeWindowId = id;
-                root.activeWorkspaceId = workspace.id;
-                if (workspace.output !== "") {
-                    var activeByOutput = Object.assign({}, root.activeWindowByOutput || {});
-                    activeByOutput[workspace.output] = root.windowSummary(window);
-                    root.activeWindowByOutput = activeByOutput;
-                    root.focusedOutputName = workspace.output;
-                }
-                return;
-            }
-        }
+        root.applyFocusedWindow(windowId, true);
     }
     function shellWindowDisplayName(windowData) {
         var kind = shellWindowKind(windowData);
@@ -535,6 +561,14 @@ QtObject {
             "app_id": String(window.app_id || ""),
             "title": String(window.title || "")
         };
+    }
+    function workspaceOutputForId(workspaceId) {
+        var source = root.workspaces || [];
+        for (var index = 0; index < source.length; index++) {
+            if (Number(source[index].id) === Number(workspaceId))
+                return String(source[index].output || "");
+        }
+        return "";
     }
     function workspaceReference(workspace) {
         var name = String(workspace && workspace.name || "");

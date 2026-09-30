@@ -36,6 +36,11 @@ struct RestoreParams {
     entry_id: String,
 }
 
+#[derive(Deserialize)]
+struct CopyTextParams {
+    text: String,
+}
+
 impl ClipboardBackend {
     pub fn new(jobs: JobRegistry, data_dir: PathBuf) -> Self {
         Self {
@@ -53,6 +58,10 @@ impl ClipboardBackend {
         let job = self.jobs.begin(job_id.as_deref());
         let cancellation = job.cancellation();
         let result = match method {
+            "clipboard.copyText" => {
+                let params: CopyTextParams = serde_json::from_value(params)?;
+                copy_text(&params.text, cancellation).await
+            }
             "clipboard.restore" => {
                 let params: RestoreParams =
                     serde_json::from_value(params).context("decode clipboard restore request")?;
@@ -94,6 +103,24 @@ impl ClipboardBackend {
             Err(error) => json!({"ok": false, "message": error.to_string()}),
         }))
     }
+}
+
+async fn copy_text(text: &str, cancellation: tokio_util::sync::CancellationToken) -> Result<Value> {
+    anyhow::ensure!(
+        text.len() <= 64 * 1024 && !text.contains('\0'),
+        "Invalid clipboard text"
+    );
+    let wl_copy = command_path("wl-copy").context("wl-copy is unavailable")?;
+    let status = run_bounded_input_status(
+        &wl_copy,
+        &["--type", "text/plain;charset=utf-8"],
+        text.as_bytes(),
+        Duration::from_secs(5),
+        cancellation,
+    )
+    .await?;
+    anyhow::ensure!(status.success(), "Could not copy text to the clipboard");
+    Ok(json!({"ok": true}))
 }
 
 #[derive(Deserialize)]

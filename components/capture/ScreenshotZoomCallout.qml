@@ -17,6 +17,8 @@ Item {
     readonly property real sourceHeight: Math.max(1, Math.abs(shapeData.endY - shapeData.startY))
     required property Item sourceItem
     readonly property real sourceLeft: Math.min(shapeData.startX, shapeData.endX) + offsetX
+    property bool sourceLive: false
+    property int sourceRevision: 0
     readonly property real sourceTop: Math.min(shapeData.startY, shapeData.endY) + offsetY
     readonly property real sourceWidth: Math.max(1, Math.abs(shapeData.endX - shapeData.startX))
     readonly property real transformBottom: Math.max(sourceTop + sourceHeight, calloutY + calloutHeight)
@@ -34,6 +36,15 @@ Item {
         angle: Number(root.shapeData.rotation || 0)
         origin.x: root.transformCenterX
         origin.y: root.transformCenterY
+    }
+
+    onSourceLiveChanged: {
+        if (!sourceLive)
+            zoomTexture.scheduleUpdate();
+    }
+    onSourceRevisionChanged: {
+        if (!zoomTexture.live)
+            zoomTexture.scheduleUpdate();
     }
 
     Shape {
@@ -82,7 +93,7 @@ Item {
             id: zoomTexture
 
             anchors.fill: parent
-            live: true
+            live: root.sourceLive
             mipmap: false
             smooth: true
             sourceItem: root.sourceItem

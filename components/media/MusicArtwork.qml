@@ -9,9 +9,12 @@ import Quickshell.Io
 Item {
     id: root
 
+    property real artworkOpacity: 1
+    property string artworkSource: ""
     property bool cavaConsumerAcquired: false
     readonly property bool cavaConsumerActive: player !== null && onScreen
     property bool componentReady: false
+    property bool hasReadyArtwork: false
     readonly property bool onScreen: visible && (Window.window?.visible ?? false)
     property var player: null
     readonly property bool playing: MediaService.playing
@@ -20,6 +23,24 @@ Item {
     // Calculate sizes to leave room for visualizer
     readonly property real visualizerPadding: 80
 
+    function syncArtworkSource() {
+        var nextSource = root.player && root.player.trackArtUrl ? String(root.player.trackArtUrl) : "";
+        if (nextSource.length > 0) {
+            artworkClearTimer.stop();
+            if (root.artworkSource !== nextSource)
+                root.artworkSource = nextSource;
+            return;
+        }
+
+        if (!root.artworkSource) {
+            root.hasReadyArtwork = false;
+            return;
+        }
+
+        // MPRIS can briefly publish an empty art URL while replacing metadata.
+        // Keep the current artwork during that gap instead of flashing the fallback.
+        artworkClearTimer.restart();
+    }
     function syncCavaConsumer() {
         if (!componentReady || cavaConsumerActive === cavaConsumerAcquired)
             return;
@@ -46,6 +67,7 @@ Item {
 
     Component.onCompleted: {
         componentReady = true;
+        syncArtworkSource();
         syncCavaConsumer();
     }
     Component.onDestruction: {
@@ -56,6 +78,35 @@ Item {
         }
     }
     onCavaConsumerActiveChanged: syncCavaConsumer()
+    onPlayerChanged: syncArtworkSource()
+
+    Connections {
+        function onPostTrackChanged() {
+            root.syncArtworkSource();
+        }
+        function onTrackArtUrlChanged() {
+            root.syncArtworkSource();
+        }
+
+        target: root.player
+    }
+    Timer {
+        id: artworkClearTimer
+
+        interval: 350
+        repeat: false
+
+        onTriggered: {
+            var currentSource = root.player && root.player.trackArtUrl ? String(root.player.trackArtUrl) : "";
+            if (currentSource.length > 0) {
+                root.syncArtworkSource();
+                return;
+            }
+
+            root.hasReadyArtwork = false;
+            root.artworkSource = "";
+        }
+    }
 
     // Visualizer Ring — reads from shared CavaService (no local cava process)
     Item {
@@ -71,6 +122,9 @@ Item {
 
         Canvas {
             id: visualizerCanvas
+
+            property var pointX: []
+            property var pointY: []
 
             anchors.centerIn: parent
             antialiasing: true
@@ -91,19 +145,20 @@ Item {
                 var baseRadius = (visualizerRing.width / 2) + 4;
                 var maxAmplitude = (visualizerPadding / 2) + 10;
 
-                var points = [];
+                if (pointX.length !== numBars) {
+                    pointX = new Array(numBars);
+                    pointY = new Array(numBars);
+                }
                 for (var i = 0; i < numBars; i++) {
                     var angle = (i / numBars) * Math.PI * 2 - Math.PI / 2;
                     var rawLevel = (rawBars.length > i) ? Number(rawBars[i] || 0) * CavaService.levelScale : 0;
                     var level = Math.min(1.2, Math.pow(rawLevel, 0.6) * 1.5);
                     var radius = baseRadius + (level * maxAmplitude);
-                    points.push({
-                        x: cx + Math.cos(angle) * radius,
-                        y: cy + Math.sin(angle) * radius
-                    });
+                    pointX[i] = cx + Math.cos(angle) * radius;
+                    pointY[i] = cy + Math.sin(angle) * radius;
                 }
 
-                if (points.length < 2)
+                if (pointX.length < 2)
                     return;
 
                 ctx.beginPath();
@@ -117,20 +172,17 @@ Item {
                 ctx.lineCap = "round";
                 ctx.lineJoin = "round";
 
-                var pLast = points[numBars - 1];
-                var p0 = points[0];
-                var startX = (pLast.x + p0.x) / 2;
-                var startY = (pLast.y + p0.y) / 2;
+                var startX = (pointX[numBars - 1] + pointX[0]) / 2;
+                var startY = (pointY[numBars - 1] + pointY[0]) / 2;
 
                 ctx.moveTo(startX, startY);
 
                 for (var i = 0; i < numBars; i++) {
-                    var pCurrent = points[i];
-                    var pNext = points[(i + 1) % numBars];
-                    var midX = (pCurrent.x + pNext.x) / 2;
-                    var midY = (pCurrent.y + pNext.y) / 2;
+                    var nextIndex = (i + 1) % numBars;
+                    var midX = (pointX[i] + pointX[nextIndex]) / 2;
+                    var midY = (pointY[i] + pointY[nextIndex]) / 2;
 
-                    ctx.quadraticCurveTo(pCurrent.x, pCurrent.y, midX, midY);
+                    ctx.quadraticCurveTo(pointX[i], pointY[i], midX, midY);
                 }
 
                 ctx.closePath();
@@ -202,6 +254,7 @@ Item {
 
             anchors.centerIn: parent
             height: width
+            opacity: root.artworkOpacity
             radius: width / 2
             width: parent.width * 0.65 // Artwork covers the inner part of the vinyl
 
@@ -212,13 +265,19 @@ Item {
                 asynchronous: true
                 cache: true
                 fillMode: Image.PreserveAspectCrop
-                source: root.player && root.player.trackArtUrl ? root.player.trackArtUrl : ""
+                retainWhileLoading: true
+                source: root.artworkSource
                 sourceSize: Qt.size(Math.max(320, width * 2), Math.max(320, height * 2))
+
+                onStatusChanged: {
+                    if (status === Image.Ready)
+                        root.hasReadyArtwork = true;
+                }
             }
             Rectangle {
                 anchors.fill: parent
                 color: Config.md3.surface_container
-                visible: artworkImage.status !== Image.Ready
+                visible: !root.hasReadyArtwork && artworkImage.status !== Image.Loading && artworkImage.status !== Image.Ready
 
                 IconImage {
                     anchors.centerIn: parent

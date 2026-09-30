@@ -37,7 +37,7 @@ Item {
             "favorites": qsTr("Most favorited"),
             "toplist": qsTr("Toplist")
         };
-        return labels[WallhavenService.sorting] || qsTr("Toplist");
+        return labels[WallhavenService.sorting] || qsTr("Relevance");
     }
     function toggleBit(propertyName, index) {
         var value = String(WallhavenService[propertyName] || "000");
@@ -183,7 +183,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: implicitWidth
                 Layout.preferredHeight: 34
-                active: WallhavenService.sorting !== "toplist" || WallhavenService.topRange !== "1M"
+                active: WallhavenService.sorting !== "relevance"
                 expanded: root.openMenu === "sort"
                 fontPixelSize: 12
                 label: root.sortLabel()
@@ -196,11 +196,11 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 Layout.preferredHeight: 34
                 Layout.preferredWidth: 38
-                activeFocusOnTab: true
-                border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
-                border.width: 1
-                color: orderMouse.containsMouse || activeFocus ? Config.md3.secondary_container : "transparent"
-                radius: 9
+                activeFocusOnTab: false
+                border.color: "transparent"
+                border.width: 0
+                color: orderMouse.containsMouse ? Config.md3.secondary_container : "transparent"
+                radius: Md3.shape.full
 
                 Keys.onReturnPressed: root.toggleOrder()
                 Keys.onSpacePressed: root.toggleOrder()

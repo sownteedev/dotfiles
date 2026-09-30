@@ -217,34 +217,19 @@ FocusScope {
                         color: Config.alpha(Config.md3.primary, 0.16)
                         radius: 14
 
-                        Text {
+                        Md3Icon {
                             anchors.centerIn: parent
                             color: Config.md3.primary
-                            font.family: "Symbols Nerd Font"
-                            font.pixelSize: 22
-                            text: "󰄀"
+                            name: "videocam"
+                            size: 24
                         }
                     }
-                    ColumnLayout {
+                    SettingsLabelBlock {
                         Layout.fillWidth: true
-                        spacing: 2
-
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 20
-                            font.weight: Font.DemiBold
-                            text: qsTr("Camera preview")
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface_variant, 0.72)
-                            font.family: Config.fontName
-                            font.pixelSize: 13
-                            text: qsTr("Check framing, select the camera used by Howdy, then test recognition")
-                            wrapMode: Text.Wrap
-                        }
+                        emphasized: true
+                        headline: qsTr("Camera preview")
+                        headlineRole: "titleLarge"
+                        supportingText: qsTr("Check framing, select the camera used by Howdy, then test recognition")
                     }
                     SettingsActionButton {
                         iconName: "window-close-symbolic"
@@ -272,19 +257,19 @@ FocusScope {
                         spacing: 8
                         visible: root.cameraOptions.length === 0 || !root.selectedOption || root.selectedOption.mediaIndex < 0 || previewCamera.error !== Camera.NoError
 
-                        Text {
+                        Md3Icon {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            color: Config.alpha(Config.md3.on_surface_variant, 0.72)
-                            font.family: "Symbols Nerd Font"
-                            font.pixelSize: 38
-                            text: "󰄀"
+                            color: Config.md3.on_surface_variant
+                            name: "videocam"
+                            size: 40
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             color: Config.md3.on_surface_variant
                             font.family: Config.fontName
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
+                            font.weight: Md3.typeScale.titleMedium.emphasizedWeight
                             text: previewCamera.errorString || (root.cameraOptions.length === 0 ? qsTr("No camera detected") : qsTr("Preview is unavailable for this device"))
                         }
                     }
@@ -331,10 +316,13 @@ FocusScope {
 
                     Text {
                         Layout.fillWidth: true
-                        color: FaceAuthService.statusSuccess ? Config.alpha(Config.md3.on_surface_variant, 0.72) : Config.md3.error
+                        color: FaceAuthService.statusSuccess ? Config.md3.on_surface_variant : Config.md3.error
                         elide: Text.ElideRight
                         font.family: Config.fontName
-                        font.pixelSize: 13
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
+                        lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: FaceAuthService.busy ? FaceAuthService.statusMessage : FaceAuthService.statusMessage
                     }
                     SettingsActionButton {

@@ -7,3 +7,4 @@ CalendarProviderIcon 1.0 CalendarProviderIcon.qml
 CalendarSidebar 1.0 CalendarSidebar.qml
 CalendarWeekView 1.0 CalendarWeekView.qml
 CalendarIcsDialog 1.0 CalendarIcsDialog.qml
+CalendarLoadingState 1.0 CalendarLoadingState.qml

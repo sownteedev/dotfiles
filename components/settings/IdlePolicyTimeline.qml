@@ -118,16 +118,12 @@ Rectangle {
                             color: Config.alpha(root.accentColor, 0.14)
                             radius: 10
 
-                            IconImage {
+                            Md3Icon {
                                 anchors.centerIn: parent
-                                height: 17
-                                layer.enabled: true
-                                source: Quickshell.iconPath(stepTile.modelData.icon)
-                                width: 17
-
-                                layer.effect: ColorOverlay {
-                                    color: root.accentColor
-                                }
+                                color: root.accentColor
+                                filled: true
+                                name: stepTile.modelData.icon
+                                size: 17
                             }
                         }
                         ColumnLayout {

@@ -280,8 +280,8 @@ Item {
                     Accessible.role: Accessible.Button
                     Layout.preferredHeight: 30
                     Layout.preferredWidth: 58
-                    activeFocusOnTab: true
-                    border.color: Config.alpha(Config.md3.tertiary, activeFocus ? 0.68 : 0.30)
+                    activeFocusOnTab: false
+                    border.color: Config.alpha(Config.md3.tertiary, angleModeMouse.containsMouse ? 0.52 : 0.30)
                     border.width: 1
                     color: angleModeMouse.containsMouse ? Config.alpha(Config.md3.tertiary, 0.18) : Config.alpha(Config.md3.tertiary, 0.10)
                     radius: 10
@@ -317,10 +317,7 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true
 
-                        onClicked: {
-                            angleModeButton.forceActiveFocus();
-                            calcRoot.toggleAngleMode();
-                        }
+                        onClicked: calcRoot.toggleAngleMode()
                     }
                 }
             }
@@ -416,8 +413,8 @@ Item {
                     Accessible.role: Accessible.Button
                     Layout.preferredHeight: 30
                     Layout.preferredWidth: 38
-                    activeFocusOnTab: calcRoot.hasResult
-                    border.color: Config.alpha(Config.md3.primary, activeFocus ? 0.72 : 0.26)
+                    activeFocusOnTab: false
+                    border.color: Config.alpha(Config.md3.primary, copyMouse.containsMouse ? 0.52 : 0.26)
                     border.width: 1
                     color: calcRoot.copied ? Config.md3.primary : copyMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.19) : Config.alpha(Config.md3.primary, 0.11)
                     enabled: calcRoot.hasResult
@@ -472,10 +469,7 @@ Item {
                         enabled: calcRoot.hasResult
                         hoverEnabled: true
 
-                        onClicked: {
-                            copyButton.forceActiveFocus();
-                            calcRoot.copyResult();
-                        }
+                        onClicked: calcRoot.copyResult()
                     }
                 }
             }

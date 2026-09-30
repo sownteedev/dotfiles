@@ -10,6 +10,7 @@ import Quickshell.Widgets
 ColumnLayout {
     id: root
 
+    property int fieldHeight: 56
     readonly property var filteredFonts: {
         var query = searchInput.text.trim().toLowerCase();
         if (query === "")
@@ -27,6 +28,7 @@ ColumnLayout {
     property bool fontFamiliesLoaded: false
     property string label: ""
     property string placeholder: ""
+    property bool showLabel: true
     property string text: ""
 
     function ensureFontFamilies() {
@@ -66,16 +68,23 @@ ColumnLayout {
         pickerPopup.close();
     }
 
-    spacing: 8
+    Layout.minimumWidth: 0
+    spacing: Md3.spacing.xs
 
     Text {
+        Layout.fillWidth: true
+        Layout.minimumWidth: 0
         color: Config.alpha(Config.md3.on_surface, 0.85)
+        elide: Text.ElideRight
         font.family: Config.fontName
-        font.pixelSize: 14
-        font.weight: Font.DemiBold
+        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+        font.pixelSize: Md3.typeScale.labelLarge.size
+        font.weight: Md3.typeScale.labelLarge.emphasizedWeight
+        lineHeight: Md3.typeScale.labelLarge.lineHeight
+        lineHeightMode: Text.FixedHeight
         renderType: Text.NativeRendering
         text: root.label
-        visible: text !== ""
+        visible: root.showLabel && text !== ""
     }
     Rectangle {
         id: fieldFrame
@@ -83,21 +92,17 @@ ColumnLayout {
         Accessible.name: root.label + ": " + root.text
         Accessible.role: Accessible.ComboBox
         Layout.fillWidth: true
-        Layout.preferredHeight: 44
-        activeFocusOnTab: root.enabled
-        border.color: activeFocus || pickerPopup.visible ? Config.alpha(Config.md3.primary, 0.7) : "transparent"
+        Layout.minimumWidth: 0
+        Layout.preferredHeight: root.fieldHeight
+        activeFocusOnTab: false
+        border.color: fieldMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.56) : Config.alpha(Config.md3.outline, 0.22)
         border.width: 1
-        color: fieldMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.075) : Config.alpha(Config.md3.on_surface, 0.05)
-        radius: 12
+        color: Config.md3.surface_container_low
+        radius: Md3.shape.medium
 
         Behavior on border.color {
             ColorAnimation {
-                duration: 150
-            }
-        }
-        Behavior on color {
-            ColorAnimation {
-                duration: 150
+                duration: Config.animationDuration(Md3.motion.short3)
             }
         }
 
@@ -109,34 +114,44 @@ ColumnLayout {
             }
         }
 
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 1
+            color: Config.md3.on_surface
+            opacity: fieldMouse.pressed ? Md3.state.pressed : fieldMouse.containsMouse ? Md3.state.hover : 0
+            radius: Math.max(0, fieldFrame.radius - 1)
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Config.animationDuration(Md3.motion.short2)
+                    easing.type: Md3.motion.standard
+                }
+            }
+        }
         Text {
             anchors.left: parent.left
             anchors.leftMargin: 16
             anchors.right: caretIcon.left
             anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
-            color: root.text === "" ? Config.alpha(Config.md3.on_surface, 0.38) : Config.md3.on_surface
+            color: root.text === "" ? Config.alpha(Config.md3.on_surface_variant, 0.3) : Config.md3.on_surface
             elide: Text.ElideRight
             font.family: root.text === "" ? Config.fontName : root.text
-            font.pixelSize: 14
+            font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+            font.pixelSize: Md3.typeScale.bodyLarge.size
             font.weight: Font.Medium
             renderType: Text.NativeRendering
             text: root.text === "" ? root.placeholder : root.text
         }
-        IconImage {
+        Md3Icon {
             id: caretIcon
 
             anchors.right: parent.right
             anchors.rightMargin: 15
             anchors.verticalCenter: parent.verticalCenter
-            height: 16
-            layer.enabled: true
-            source: Quickshell.iconPath("pan-down-symbolic")
-            width: 16
-
-            layer.effect: ColorOverlay {
-                color: Config.alpha(Config.md3.on_surface, 0.58)
-            }
+            color: Config.md3.on_surface_variant
+            name: "expand_more"
+            size: 18
         }
         MouseArea {
             id: fieldMouse
@@ -146,10 +161,7 @@ ColumnLayout {
             enabled: root.enabled
             hoverEnabled: true
 
-            onClicked: {
-                fieldFrame.forceActiveFocus();
-                root.openPicker();
-            }
+            onClicked: root.openPicker()
         }
     }
     Popup {
@@ -157,7 +169,8 @@ ColumnLayout {
 
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         focus: true
-        height: 400
+        height: Math.min(400, Overlay.overlay ? Math.max(0, Overlay.overlay.height - 2 * margins) : 400)
+        margins: Md3.spacing.sm
         padding: 8
         width: Math.min(520, root.width)
         x: 0
@@ -213,6 +226,7 @@ ColumnLayout {
                     anchors.right: parent.right
                     anchors.rightMargin: 12
                     anchors.top: parent.top
+                    clip: true
                     color: Config.md3.on_surface
                     font.family: Config.fontName
                     font.pixelSize: 14
@@ -359,7 +373,6 @@ ColumnLayout {
             }
         }
 
-        onClosed: fieldFrame.forceActiveFocus()
         onOpened: {
             searchInput.forceActiveFocus();
             root.positionSelectedFont();

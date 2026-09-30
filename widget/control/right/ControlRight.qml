@@ -23,9 +23,9 @@ PanelWindow {
     property int activeTab: 0
     readonly property bool airplaneEnabled: QuickSettingsService.airplaneEnabled
     readonly property bool bluetoothEnabled: QuickSettingsService.bluetoothEnabled
-    readonly property var bottomPages: ["Stats", "Battery", "Display"]
-    readonly property var bottomTabIcons: ["utilities-system-monitor-symbolic", "battery-symbolic", "video-display-symbolic"]
-    readonly property var bottomTabLabels: ["Stats", "Battery", "Display"]
+    readonly property var bottomPages: ["Display", "Battery", "Volume"]
+    readonly property var bottomTabIcons: ["video-display-symbolic", "battery-symbolic", "audio-volume-high-symbolic"]
+    readonly property var bottomTabLabels: ["Display", "Battery", "Volume"]
     readonly property bool caffeineEnabled: QuickSettingsService.caffeineEnabled
     readonly property bool compact: Responsive.constrained(panelWidth, height - outerMargin * 2, 560, 760)
     readonly property real contentMargin: compact ? 14 : 20
@@ -33,18 +33,20 @@ PanelWindow {
     property bool edgeDragging: false
     property bool edgeSnapAnimating: false
     property int edgeSnapDuration: 300
+    property bool effectsEnabled: false
+    readonly property bool effectsRunning: active && effectsEnabled && !edgeDragging && !edgeSnapAnimating
     readonly property real outerMargin: 10
-    readonly property var pages: ["Notification", "Wifi", "Bluetooth", "Volume"]
+    readonly property var pages: ["Notification", "Wifi", "Bluetooth"]
     readonly property real panelWidth: Responsive.sidePanelWidth(width)
     property int previousBottomTab: 0
     property int previousTab: 0
-    readonly property color sectionBorderColor: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.14 : 0.11)
-    readonly property color sectionCardBorderColor: Config.alpha(Config.md3.on_surface, Config.lightTheme ? 0.12 : 0.09)
-    readonly property color sectionCardColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.64 : 0.30)
-    readonly property color sectionColor: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.72 : 0.54)
+    readonly property color sectionBorderColor: Config.md3.outline_variant
+    readonly property color sectionCardBorderColor: Config.alpha(Config.md3.outline_variant, 0.72)
+    readonly property color sectionCardColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.92 : 0.76)
+    readonly property color sectionColor: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.94 : 0.84)
     readonly property bool sideBySideSections: panelWidth >= 560 && height - outerMargin * 2 < 760
-    readonly property var tabIcons: ["preferences-system-notifications-symbolic", "network-wireless-symbolic", "bluetooth-symbolic", "audio-volume-high-symbolic"]
-    readonly property var tabLabels: ["Notifications", "Wi-Fi", "Bluetooth", "Volume"]
+    readonly property var tabIcons: ["preferences-system-notifications-symbolic", "network-wireless-symbolic", "bluetooth-symbolic"]
+    readonly property var tabLabels: ["Notifications", "Wi-Fi", "Bluetooth"]
     readonly property bool tailscaleEnabled: QuickSettingsService.tailscaleEnabled
     readonly property bool warpEnabled: QuickSettingsService.warpEnabled
     readonly property bool wifiEnabled: QuickSettingsService.wifiEnabled
@@ -65,6 +67,8 @@ PanelWindow {
         if (active)
             return;
         slideAnim.stop();
+        effectsResumeTimer.stop();
+        effectsEnabled = false;
         edgeSnapAnimating = false;
         edgeDragProgress = 0;
         edgeDragging = true;
@@ -89,6 +93,9 @@ PanelWindow {
 
         if (!shouldOpen && releasedProgress <= 0.001) {
             popup.closedProgress = 1;
+            edgeSnapAnimating = false;
+            effectsEnabled = false;
+            effectsResumeTimer.stop();
             Qt.callLater(function () {
                 if (!active && !edgeDragging && !slideAnim.running)
                     dismissed();
@@ -98,7 +105,9 @@ PanelWindow {
         animatePopup(shouldOpen ? 0 : 1, edgeSnapDuration, Easing.InOutSine);
     }
     function hideControl() {
-        edgeSnapAnimating = false;
+        edgeSnapAnimating = true;
+        effectsEnabled = false;
+        effectsResumeTimer.stop();
         edgeDragging = false;
         edgeDragProgress = 0;
         active = false;
@@ -123,7 +132,9 @@ PanelWindow {
         QuickSettingsService.runAction(cmd);
     }
     function showControl() {
-        edgeSnapAnimating = false;
+        edgeSnapAnimating = true;
+        effectsEnabled = false;
+        effectsResumeTimer.stop();
         edgeDragging = false;
         edgeDragProgress = 0;
         active = true;
@@ -152,7 +163,7 @@ PanelWindow {
         popup.closedProgress = 1 - edgeDragProgress;
     }
     function updateStatsPolling() {
-        SysStats.pollingEnabled = active && (activeBottomTab === 0 || activeTab === 1);
+        SysStats.rightPanelActive = active;
     }
 
     WlrLayershell.namespace: "sownteeshell-control-right"
@@ -167,7 +178,7 @@ PanelWindow {
     visible: active || edgeDragging || slideAnim.running || popup.closedProgress < 0.999
 
     BackgroundEffect.blurRegion: Region {
-        item: Config.shellBlurControlRightEnabled ? popup : null
+        item: Config.shellBlurControlRightEnabled && controlRightWindow.visible ? popup : null
         radius: popup.radius
     }
 
@@ -179,22 +190,25 @@ PanelWindow {
         QuickSettingsService.active = active;
     }
     Component.onDestruction: {
-        SysStats.pollingEnabled = false;
+        effectsResumeTimer.stop();
+        SysStats.rightPanelActive = false;
         QuickSettingsService.active = false;
         if (wifiQrPopupOpen)
             WifiService.clearQrCode();
         if (StateManager.controlPanel === controlRightWindow)
             StateManager.controlPanel = null;
     }
-    onActiveBottomTabChanged: updateStatsPolling()
     onActiveChanged: {
         updateStatsPolling();
         QuickSettingsService.active = active;
+        if (!active) {
+            effectsEnabled = false;
+            effectsResumeTimer.stop();
+        }
         if (!active && wifiQrPopupOpen)
             closeWifiQrCode();
     }
     onActiveTabChanged: {
-        updateStatsPolling();
         if (activeTab !== 1 && wifiQrPopupOpen)
             closeWifiQrCode();
     }
@@ -206,8 +220,20 @@ PanelWindow {
         onClicked: hideControl()
     }
     ShellShadow {
+        active: controlRightWindow.visible
         cornerRadius: popup.radius
         target: popup
+    }
+    Timer {
+        id: effectsResumeTimer
+
+        interval: 56
+        repeat: false
+
+        onTriggered: {
+            if (controlRightWindow.active && !controlRightWindow.edgeDragging && !controlRightWindow.edgeSnapAnimating)
+                controlRightWindow.effectsEnabled = true;
+        }
     }
 
     // ─── Sliding Sidebar Container ───────────────────────────────────────────────
@@ -238,7 +264,9 @@ PanelWindow {
 
             onFinished: {
                 controlRightWindow.edgeSnapAnimating = false;
-                if (!controlRightWindow.active)
+                if (controlRightWindow.active)
+                    effectsResumeTimer.restart();
+                else
                     controlRightWindow.dismissed();
             }
         }
@@ -246,7 +274,7 @@ PanelWindow {
             anchors.fill: parent
             bubbleCount: 35
             color: Config.alpha(Config.md3.primary, 0.6)
-            running: controlRightWindow.active
+            running: controlRightWindow.effectsRunning
         }
         MouseArea {
             anchors.fill: parent
@@ -309,36 +337,42 @@ PanelWindow {
                         x: quickToggleRow.implicitWidth <= quickToggleViewport.width ? (quickToggleViewport.width - quickToggleRow.implicitWidth) / 2 : 0
 
                         Button {
+                            accessibleName: qsTr("Wi-Fi")
                             active: wifiEnabled
-                            iconGlyph: wifiEnabled ? "󰤨" : "󰤭"
+                            iconName: wifiEnabled ? "wifi" : "wifi_off"
 
                             onClicked: QuickSettingsService.setWifiEnabled(!wifiEnabled)
                         }
                         Button {
+                            accessibleName: qsTr("Bluetooth")
                             active: bluetoothEnabled
                             iconName: "bluetooth-symbolic"
 
                             onClicked: QuickSettingsService.setBluetoothEnabled(!bluetoothEnabled)
                         }
                         Button {
+                            accessibleName: qsTr("Airplane mode")
                             active: airplaneEnabled
                             iconName: "airplane-mode-symbolic"
 
                             onClicked: QuickSettingsService.setAirplaneEnabled(!airplaneEnabled)
                         }
                         Button {
+                            accessibleName: qsTr("Do not disturb")
                             active: QuickSettingsService.effectiveDndActive
                             iconName: "notifications-disabled-symbolic"
 
                             onClicked: QuickSettingsService.toggleDnd()
                         }
                         Button {
+                            accessibleName: qsTr("Keep awake")
                             active: caffeineEnabled
                             iconName: caffeineEnabled ? "caffeine-cup-full-symbolic" : "caffeine-cup-empty-symbolic"
 
                             onClicked: QuickSettingsService.setCaffeineEnabled(!caffeineEnabled)
                         }
                         Button {
+                            accessibleName: qsTr("Tailscale")
                             active: tailscaleEnabled
                             activeColor: Config.md3.primary
                             iconName: "file://" + Config.sownteeshellDir + "/assets/icons/tailscale.svg"
@@ -346,6 +380,7 @@ PanelWindow {
                             onClicked: QuickSettingsService.setTailscaleEnabled(!tailscaleEnabled)
                         }
                         Button {
+                            accessibleName: qsTr("Cloudflare WARP")
                             active: warpEnabled
                             iconName: warpEnabled ? "file://" + Config.sownteeshellDir + "/assets/icons/cloudflare-active.svg" : "file://" + Config.sownteeshellDir + "/assets/icons/cloudflare.svg"
 
@@ -398,12 +433,12 @@ PanelWindow {
 
                                 Behavior on color {
                                     ColorAnimation {
-                                        duration: 150
+                                        duration: Config.animationDuration(Md3.motion.short3)
                                     }
                                 }
                                 Behavior on width {
                                     NumberAnimation {
-                                        duration: 150
+                                        duration: Config.animationDuration(Md3.motion.short3)
                                         easing.type: Easing.OutQuad
                                     }
                                 }
@@ -431,21 +466,17 @@ PanelWindow {
                                         visible: index === 1
                                         width: 26
                                     }
-                                    IconImage {
+                                    Md3Icon {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        height: 26
-                                        layer.enabled: true
-                                        source: Quickshell.iconPath(tabIcons[index])
+                                        color: tabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface_variant
+                                        filled: tabBtn.isActive
+                                        name: tabIcons[index]
+                                        size: 26
                                         visible: index !== 1
-                                        width: 26
 
-                                        layer.effect: ColorOverlay {
-                                            color: tabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface
-
-                                            Behavior on color {
-                                                ColorAnimation {
-                                                    duration: 150
-                                                }
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: Config.animationDuration(Md3.motion.short3)
                                             }
                                         }
                                     }
@@ -498,13 +529,13 @@ PanelWindow {
 
                                 Behavior on opacity {
                                     NumberAnimation {
-                                        duration: 220
+                                        duration: Config.animationDuration(220)
                                         easing.type: index === activeTab ? Easing.OutQuad : Easing.InQuad
                                     }
                                 }
                                 Behavior on x {
                                     NumberAnimation {
-                                        duration: 320
+                                        duration: Config.animationDuration(320)
                                         easing.type: Easing.OutCubic
                                     }
                                 }
@@ -576,12 +607,12 @@ PanelWindow {
 
                                 Behavior on color {
                                     ColorAnimation {
-                                        duration: 150
+                                        duration: Config.animationDuration(Md3.motion.short3)
                                     }
                                 }
                                 Behavior on width {
                                     NumberAnimation {
-                                        duration: 150
+                                        duration: Config.animationDuration(Md3.motion.short3)
                                         easing.type: Easing.OutQuad
                                     }
                                 }
@@ -599,20 +630,16 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     spacing: 10
 
-                                    IconImage {
+                                    Md3Icon {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        height: 26
-                                        layer.enabled: true
-                                        source: Quickshell.iconPath(bottomTabIcons[index])
-                                        width: 26
+                                        color: bottomTabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface_variant
+                                        filled: bottomTabBtn.isActive
+                                        name: bottomTabIcons[index]
+                                        size: 26
 
-                                        layer.effect: ColorOverlay {
-                                            color: bottomTabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface
-
-                                            Behavior on color {
-                                                ColorAnimation {
-                                                    duration: 150
-                                                }
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: Config.animationDuration(Md3.motion.short3)
                                             }
                                         }
                                     }
@@ -665,13 +692,13 @@ PanelWindow {
 
                                 Behavior on opacity {
                                     NumberAnimation {
-                                        duration: 220
+                                        duration: Config.animationDuration(220)
                                         easing.type: index === activeBottomTab ? Easing.OutQuad : Easing.InQuad
                                     }
                                 }
                                 Behavior on x {
                                     NumberAnimation {
-                                        duration: 320
+                                        duration: Config.animationDuration(320)
                                         easing.type: Easing.OutCubic
                                     }
                                 }

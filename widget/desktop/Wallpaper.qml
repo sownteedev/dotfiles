@@ -15,11 +15,13 @@ PanelWindow {
     property int commitRippleGeneration: -1
     readonly property real commitRippleTargetScale: Math.max(1, Math.sqrt(width * width + height * height) * 1.08 / commitRippleDiameter)
     property string currentWall: ""
+    property bool decodeAtScreenSize: true
     property Item displayedImage: null
     readonly property int imageFillMode: Config.wallpaperScalingMode === "fit" ? Image.PreserveAspectFit : (Config.wallpaperScalingMode === "stretch" ? Image.Stretch : Image.PreserveAspectCrop)
     property bool isTransitionPending: WallpaperService.isTransitionPending
     property bool isVideoWallpaper: allowVideoFade && WallpaperService.currentMode === "video"
     property Item outgoingImage: null
+    property color overlayColor: "transparent"
     readonly property bool pendingStaticTransition: allowVideoFade && WallpaperService.staticTransitionPending && WallpaperService.currentMode === "static"
     readonly property int previewCoverDuration: Math.max(220, Math.min(300, Config.wallpaperTransitionDuration))
     property bool previewCoverTransition: false
@@ -139,8 +141,8 @@ PanelWindow {
                 return;
             }
             previewCoverTransition = false;
-            displayedImage.opacity = 1;
-            reportVideoCoverReady(image);
+            displayedImage.opacity = 0;
+            initialRevealAnimation.restart();
             return;
         }
 
@@ -317,6 +319,12 @@ PanelWindow {
         anchors.fill: parent
     }
     Rectangle {
+        anchors.fill: parent
+        color: wallpaperWindow.overlayColor
+        visible: color.a > 0
+        z: 90
+    }
+    Rectangle {
         id: commitRipple
 
         anchors.centerIn: parent
@@ -370,7 +378,7 @@ PanelWindow {
             layer.enabled: false
             opacity: 0
             source: sourceKey
-            sourceSize: Qt.size(Math.ceil(wallpaperWindow.width * Screen.devicePixelRatio), Math.ceil(wallpaperWindow.height * Screen.devicePixelRatio))
+            sourceSize: wallpaperWindow.decodeAtScreenSize ? Qt.size(Math.ceil(wallpaperWindow.width * Screen.devicePixelRatio), Math.ceil(wallpaperWindow.height * Screen.devicePixelRatio)) : Qt.size(0, 0)
 
             onStatusChanged: wallpaperWindow.imageStatusChanged(directImage, status)
         }

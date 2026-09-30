@@ -328,9 +328,9 @@ Item {
                 Accessible.role: Accessible.Button
                 Layout.preferredHeight: 36
                 Layout.preferredWidth: 36
-                activeFocusOnTab: visible
-                border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
-                border.width: 1
+                activeFocusOnTab: false
+                border.color: "transparent"
+                border.width: 0
                 color: openMouse.pressed ? Config.md3.secondary_container : (openMouse.containsMouse ? Config.alpha(Config.md3.secondary_container, 0.72) : Config.alpha(Config.md3.on_surface, 0.06))
                 radius: 12
                 visible: String(root.wallpaper.url || "") !== ""
@@ -372,9 +372,9 @@ Item {
                 Accessible.role: Accessible.Button
                 Layout.preferredHeight: 36
                 Layout.preferredWidth: 36
-                activeFocusOnTab: visible
-                border.color: activeFocus ? Config.alpha(Config.md3.error, 0.68) : "transparent"
-                border.width: 1
+                activeFocusOnTab: false
+                border.color: "transparent"
+                border.width: 0
                 color: deleteMouse.pressed ? Config.md3.error : (deleteMouse.containsMouse || root.deleteArmed ? Config.md3.error_container : Config.alpha(Config.md3.on_surface, 0.06))
                 enabled: !root.removing
                 opacity: enabled ? 1 : 0.5
@@ -427,15 +427,15 @@ Item {
             Rectangle {
                 id: primaryAction
 
-                readonly property bool emphasized: primaryMouse.containsMouse || primaryMouse.pressed || activeFocus
+                readonly property bool emphasized: primaryMouse.containsMouse || primaryMouse.pressed
 
                 Accessible.name: root.downloading ? qsTr("Cancel download") : qsTr("Choose wallpaper destination")
                 Accessible.role: Accessible.Button
                 Layout.preferredHeight: 36
                 Layout.preferredWidth: 36
-                activeFocusOnTab: true
-                border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.72) : "transparent"
-                border.width: 1
+                activeFocusOnTab: false
+                border.color: "transparent"
+                border.width: 0
                 color: primaryMouse.pressed ? Config.md3.primary_container : (primaryAction.emphasized ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
                 enabled: !root.removing && !root.downloadBlocked && (!root.cancelling || root.downloading)
                 opacity: enabled ? 1 : 0.42

@@ -77,8 +77,8 @@ Rectangle {
                 Accessible.role: Accessible.CheckBox
                 Layout.preferredHeight: 40
                 Layout.preferredWidth: 40
-                activeFocusOnTab: true
-                border.color: activeFocus ? Config.alpha(root.providerColor, 0.78) : Config.alpha(root.providerColor, 0.12)
+                activeFocusOnTab: false
+                border.color: accountToggleMouse.containsMouse ? Config.alpha(root.providerColor, 0.46) : Config.alpha(root.providerColor, 0.12)
                 border.width: 1
                 color: accountToggleMouse.containsMouse ? Config.alpha(root.providerColor, 0.2) : Config.alpha(root.providerColor, 0.13)
                 radius: 13
@@ -100,10 +100,10 @@ Rectangle {
 
                 CalendarProviderIcon {
                     anchors.centerIn: parent
-                    height: 21
+                    height: 20
                     provider: String(root.account.provider || "")
                     tint: root.providerColor
-                    width: 21
+                    width: 20
                 }
                 Rectangle {
                     anchors.bottom: parent.bottom
@@ -117,14 +117,22 @@ Rectangle {
                     radius: 8.5
                     width: 17
 
+                    Md3Icon {
+                        anchors.centerIn: parent
+                        color: root.providerOnColor(String(root.account.provider || ""))
+                        name: "checkmark-symbolic"
+                        size: 12
+                        visible: root.allVisible
+                        weight: 700
+                    }
                     Text {
                         anchors.centerIn: parent
                         color: root.providerOnColor(String(root.account.provider || ""))
                         font.family: Config.fontName
-                        font.pixelSize: root.partiallyVisible ? 12 : 10
-                        font.weight: Font.Black
-                        text: root.partiallyVisible ? "−" : "✓"
-                        visible: root.allVisible || root.partiallyVisible
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        text: "−"
+                        visible: root.partiallyVisible
                     }
                 }
                 MouseArea {
@@ -134,10 +142,7 @@ Rectangle {
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
 
-                    onClicked: {
-                        accountToggle.forceActiveFocus();
-                        root.accountVisibilityRequested(String(root.account.id || ""), !root.allVisible);
-                    }
+                    onClicked: root.accountVisibilityRequested(String(root.account.id || ""), !root.allVisible)
                 }
             }
             Text {
@@ -145,26 +150,43 @@ Rectangle {
                 color: Config.md3.on_surface
                 elide: Text.ElideRight
                 font.family: Config.fontName
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
+                font.letterSpacing: Md3.typeScale.titleSmall.letterSpacing
+                font.pixelSize: Md3.typeScale.titleSmall.size
+                font.weight: 600
                 text: String(root.account.displayName || root.account.email || root.providerLabel(String(root.account.provider || "")))
             }
-            SettingsActionButton {
+            Item {
                 Layout.preferredHeight: 32
                 Layout.preferredWidth: 32
-                enabled: !root.loading
-                iconName: root.removeArmed ? "dialog-warning-symbolic" : "user-trash-symbolic"
-                iconOnly: true
-                text: root.removeArmed ? qsTr("Click again to remove") : qsTr("Remove account")
 
-                onClicked: {
-                    if (root.removeArmed) {
-                        root.removeArmed = false;
-                        removeArmTimer.stop();
-                        root.accountRemoveRequested(String(root.account.id || ""));
-                    } else {
-                        root.removeArmed = true;
-                        removeArmTimer.restart();
+                AnimatedSpinner {
+                    Accessible.name: qsTr("Syncing %1").arg(String(root.account.displayName || root.account.email || root.providerLabel(String(root.account.provider || ""))))
+                    Accessible.role: Accessible.Indicator
+                    anchors.centerIn: parent
+                    color: root.providerColor
+                    height: 20
+                    lineWidth: 2.2
+                    running: root.loading && visible
+                    visible: root.loading
+                    width: 20
+                }
+                SettingsActionButton {
+                    anchors.fill: parent
+                    enabled: !root.loading
+                    iconName: root.removeArmed ? "dialog-warning-symbolic" : "user-trash-symbolic"
+                    iconOnly: true
+                    text: root.removeArmed ? qsTr("Click again to remove") : qsTr("Remove account")
+                    visible: !root.loading
+
+                    onClicked: {
+                        if (root.removeArmed) {
+                            root.removeArmed = false;
+                            removeArmTimer.stop();
+                            root.accountRemoveRequested(String(root.account.id || ""));
+                        } else {
+                            root.removeArmed = true;
+                            removeArmTimer.restart();
+                        }
                     }
                 }
             }
@@ -191,8 +213,8 @@ Rectangle {
                     Accessible.name: String(modelData.name || qsTr("Calendar"))
                     Accessible.role: Accessible.CheckBox
                     Layout.fillWidth: true
-                    activeFocusOnTab: true
-                    color: calendarMouse.containsMouse || activeFocus ? Config.alpha(Config.md3.on_surface, 0.055) : "transparent"
+                    activeFocusOnTab: false
+                    color: calendarMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.055) : "transparent"
                     implicitHeight: 40
                     radius: 12
 
@@ -225,14 +247,13 @@ Rectangle {
                             color: calendarRow.checked ? calendarRow.accentColor : "transparent"
                             radius: 6
 
-                            Text {
+                            Md3Icon {
                                 anchors.centerIn: parent
                                 color: Config.md3.on_primary
-                                font.family: Config.fontName
-                                font.pixelSize: 11
-                                font.weight: Font.Black
-                                text: "✓"
+                                name: "checkmark-symbolic"
+                                size: 14
                                 visible: calendarRow.checked
+                                weight: 700
                             }
                         }
                         Text {
@@ -240,20 +261,18 @@ Rectangle {
                             color: calendarRow.checked ? Config.md3.on_surface : Config.alpha(Config.md3.on_surface, 0.48)
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
+                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                            font.weight: Md3.typeScale.bodyMedium.weight
                             text: String(calendarRow.modelData.name || qsTr("Calendar"))
                         }
-                        IconImage {
-                            Layout.preferredHeight: 14
-                            Layout.preferredWidth: 14
-                            layer.enabled: true
-                            source: Quickshell.iconPath("changes-prevent-symbolic")
+                        Md3Icon {
+                            Layout.preferredHeight: 16
+                            Layout.preferredWidth: 16
+                            color: Config.md3.on_surface_variant
+                            name: "changes-prevent-symbolic"
+                            size: 16
                             visible: calendarRow.modelData.readOnly === true && !calendarRow.modelData.isTaskList
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface_variant
-                            }
                         }
                     }
                     MouseArea {
@@ -263,10 +282,7 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true
 
-                        onClicked: {
-                            calendarRow.forceActiveFocus();
-                            root.calendarVisibilityRequested(String(calendarRow.modelData.id || ""), !calendarRow.checked);
-                        }
+                        onClicked: root.calendarVisibilityRequested(String(calendarRow.modelData.id || ""), !calendarRow.checked)
                     }
                 }
             }
@@ -276,8 +292,10 @@ Rectangle {
                 Layout.rightMargin: 8
                 color: Config.md3.on_surface_variant
                 font.family: Config.fontName
-                font.pixelSize: 11
-                text: qsTr("No calendars were found for this account.")
+                font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                font.pixelSize: Md3.typeScale.bodySmall.size
+                font.weight: Md3.typeScale.bodySmall.weight
+                text: root.loading ? qsTr("Syncing calendars…") : qsTr("No calendars were found for this account.")
                 visible: root.calendars.length === 0
                 wrapMode: Text.Wrap
             }

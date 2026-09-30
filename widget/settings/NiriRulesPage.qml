@@ -36,9 +36,11 @@ Item {
             spacing: 8
 
             delegate: Rectangle {
+                id: fileTab
+
                 required property int index
 
-                color: root.activeFile === index ? Config.alpha(Config.md3.primary, 0.2) : (fileMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.045))
+                color: root.activeFile === fileTab.index ? Config.alpha(Config.md3.primary, 0.2) : (fileMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.045))
                 height: 42
                 radius: 12
                 width: fileLabel.implicitWidth + 32
@@ -53,21 +55,22 @@ Item {
                     id: fileLabel
 
                     anchors.centerIn: parent
-                    color: root.activeFile === index ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.72)
+                    color: root.activeFile === fileTab.index ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.72)
                     font.family: Config.fontName
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                    text: root.fileLabels[index]
+                    font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                    font.pixelSize: Md3.typeScale.labelLarge.size
+                    font.weight: root.activeFile === fileTab.index ? Md3.typeScale.labelLarge.emphasizedWeight : Md3.typeScale.labelLarge.weight
+                    text: root.fileLabels[fileTab.index]
                 }
                 MouseArea {
                     id: fileMouse
 
                     anchors.fill: parent
                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    enabled: root.activeFile === index || !editor.dirty
+                    enabled: root.activeFile === fileTab.index || !editor.dirty
                     hoverEnabled: true
 
-                    onClicked: root.activeFile = index
+                    onClicked: root.activeFile = fileTab.index
                 }
             }
         }
@@ -77,7 +80,6 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
             description: "Full source editor for settings that do not map cleanly to simple controls."
-            editorHeight: Math.max(180, height - 104)
             fileName: root.fileNames[root.activeFile]
             title: root.fileLabels[root.activeFile] + " · " + fileName
         }

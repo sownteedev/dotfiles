@@ -26,8 +26,8 @@ Rectangle {
 
     Accessible.name: actionText + ", " + shortcutKeys.join(" plus ")
     Accessible.role: Accessible.Button
-    activeFocusOnTab: enabled
-    border.color: activeFocus ? Config.alpha(tone === "primary" ? Config.md3.on_primary : tone === "error" ? Config.md3.error : Config.md3.primary, 0.74) : Config.alpha(Config.md3.outline_variant, tone === "neutral" ? 0.2 : 0.12)
+    activeFocusOnTab: false
+    border.color: pointer.containsMouse ? Config.alpha(foregroundColor, 0.34) : Config.alpha(Config.md3.outline_variant, tone === "neutral" ? 0.2 : 0.12)
     border.width: 1
     color: backgroundColor()
     implicitHeight: 40
@@ -154,9 +154,6 @@ Rectangle {
         enabled: root.enabled
         hoverEnabled: true
 
-        onClicked: {
-            root.forceActiveFocus(Qt.MouseFocusReason);
-            root.clicked();
-        }
+        onClicked: root.clicked()
     }
 }

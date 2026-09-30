@@ -6,6 +6,8 @@ Item {
     id: root
 
     property color accentColor: Config.md3.primary
+    property real anchorWidth: 0
+    property real anchorX: -1
     property var itemActive: function (item) {
         return false;
     }
@@ -41,33 +43,32 @@ Item {
     signal itemSelected(var item)
 
     function positionCurrentItem() {
-        Qt.callLater(function () {
-            if (!root.opened || popupItems.count === 0)
-                return;
+        if (!root.opened || popupItems.count === 0)
+            return;
 
-            const values = root.model || [];
-            let activeIndex = -1;
-            for (let i = 0; i < values.length; ++i) {
-                if (root.itemVisible(values[i]) && root.itemActive(values[i])) {
-                    activeIndex = i;
-                    break;
-                }
+        popupItems.forceLayout();
+        const values = root.model || [];
+        let activeIndex = -1;
+        for (let i = 0; i < values.length; ++i) {
+            if (root.itemVisible(values[i]) && root.itemActive(values[i])) {
+                activeIndex = i;
+                break;
             }
+        }
 
-            if (activeIndex >= 0)
-                popupItems.positionViewAtIndex(activeIndex, ListView.Center);
-            else
-                popupItems.positionViewAtBeginning();
-        });
+        popupItems.currentIndex = activeIndex;
+        if (activeIndex >= 0)
+            popupItems.positionViewAtIndex(activeIndex, ListView.Center);
+        else
+            popupItems.positionViewAtBeginning();
     }
 
     opacity: opened ? 1 : 0
-    visible: opacity > 0
+    visible: opened || opacity > 0
 
     Behavior on opacity {
-        NumberAnimation {
-            duration: root.opened ? 150 : 110
-            easing.type: Easing.OutQuad
+        Md3OpacityAnimator {
+            role: root.opened ? "enter" : "exit"
         }
     }
 
@@ -86,31 +87,20 @@ Item {
         onPressed: root.dismissed()
     }
     Item {
-        anchors.fill: parent
+        height: parent.height
+        width: parent.width
+        y: root.opened ? 0 : (root.openAbove ? Md3.spacing.xs : -Md3.spacing.xs)
 
-        transform: Scale {
-            origin.x: popupCard.x + popupCard.width - 32
-            origin.y: root.openAbove ? popupCard.y + popupCard.height : popupCard.y
-            xScale: root.opened ? 1 : 0.85
-            yScale: root.opened ? 1 : 0.85
-
-            Behavior on xScale {
-                NumberAnimation {
-                    duration: 350
-                    easing.type: Easing.OutBack
-                }
-            }
-            Behavior on yScale {
-                NumberAnimation {
-                    duration: 350
-                    easing.type: Easing.OutBack
-                }
+        Behavior on y {
+            Md3NumberAnimation {
+                role: root.opened ? "enter" : "exit"
             }
         }
 
         ShellShadow {
-            active: root.opened
+            active: root.visible
             cornerRadius: popupCard.radius
+            level: 2
             opacity: root.shadowOpacity
             target: popupCard
         }
@@ -119,11 +109,11 @@ Item {
 
             readonly property real desiredHeight: root.visibleItemCount * root.rowHeight + 16
 
-            border.color: Config.alpha(Config.md3.on_surface, 0.08)
+            border.color: Config.alpha(Config.md3.outline_variant, 0.48)
             border.width: 1
-            color: Config.md3.surface_container
+            color: Config.md3.surface_container_high
             height: Responsive.fit(desiredHeight, root.maxPopupHeight, root.rowHeight + 16)
-            radius: 12
+            radius: Md3.shape.large
             width: Responsive.fit(root.popupWidth, root.width - root.rightMargin - 12, 180)
             x: Math.max(0, root.width - width - root.rightMargin)
             y: Math.max(12, Math.min(root.popupY, root.height - height - 12))
@@ -132,7 +122,7 @@ Item {
                 id: popupItems
 
                 anchors.fill: parent
-                anchors.margins: 8
+                anchors.margins: Md3.spacing.xs
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
                 model: root.model
@@ -146,12 +136,28 @@ Item {
                     required property var modelData
                     readonly property bool selected: root.itemActive(modelData)
 
-                    color: rowMouse.containsMouse ? Config.md3.surface_container_high : "transparent"
+                    Accessible.checked: selected
+                    Accessible.name: root.itemLabel(modelData)
+                    Accessible.role: Accessible.MenuItem
+                    color: selected ? Config.md3.secondary_container : "transparent"
                     height: included ? root.rowHeight : 0
-                    radius: 8
+                    radius: Md3.shape.medium
                     visible: included
                     width: ListView.view.width
 
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: 1
+                        color: row.selected ? Config.md3.on_secondary_container : Config.md3.on_surface
+                        opacity: rowMouse.pressed ? Md3.state.pressed : rowMouse.containsMouse ? Md3.state.hover : 0
+                        radius: Math.max(0, row.radius - 1)
+
+                        Behavior on opacity {
+                            Md3NumberAnimation {
+                                role: "state"
+                            }
+                        }
+                    }
                     Rectangle {
                         id: colorDot
 
@@ -170,24 +176,24 @@ Item {
                         anchors.right: checkmark.left
                         anchors.rightMargin: 8
                         anchors.verticalCenter: parent.verticalCenter
-                        color: row.selected ? root.accentColor : Config.md3.on_surface
+                        color: row.selected ? Config.md3.on_secondary_container : Config.md3.on_surface
                         elide: Text.ElideRight
                         font.family: Config.fontName
-                        font.pixelSize: 14
-                        font.weight: row.selected ? Font.Bold : Font.Medium
+                        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                        font.pixelSize: Md3.typeScale.labelLarge.size
+                        font.weight: row.selected ? Font.DemiBold : Md3.typeScale.labelLarge.weight
                         text: root.itemLabel(row.modelData)
                     }
-                    Text {
+                    Md3Icon {
                         id: checkmark
 
                         anchors.right: parent.right
                         anchors.rightMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
-                        color: root.accentColor
-                        font.family: Config.fontName
-                        font.pixelSize: 14
-                        font.weight: Font.Bold
-                        text: "✓"
+                        color: row.selected ? Config.md3.on_secondary_container : root.accentColor
+                        filled: true
+                        name: "checkmark-symbolic"
+                        size: 18
                         visible: row.selected
                     }
                     MouseArea {
@@ -202,24 +208,29 @@ Item {
                 }
             }
         }
+        // Keep the small pointer from the previous popup design.  When an
+        // anchor is supplied, point it at the trigger instead of using a
+        // hard-coded position near the popup's right edge.
         Rectangle {
             id: caret
 
-            border.color: Config.alpha(Config.md3.on_surface, 0.08)
-            border.width: 1
-            color: Config.md3.surface_container
-            height: 12
+            readonly property real centerX: root.anchorX >= 0 && root.anchorWidth > 0 ? root.anchorX + root.anchorWidth / 2 : popupCard.x + popupCard.width - 32
+
+            color: Config.md3.surface_container_high
+            height: 8
             rotation: 45
-            width: 12
-            x: popupCard.x + popupCard.width - 32 - width / 2
+            width: 8
+            x: Math.max(popupCard.x + 16, Math.min(popupCard.x + popupCard.width - 16, centerX)) - width / 2
             y: root.openAbove ? popupCard.y + popupCard.height - height / 2 : popupCard.y - height / 2
+            z: 0
         }
         Rectangle {
-            color: Config.md3.surface_container
-            height: 10
-            width: 20
+            color: Config.md3.surface_container_high
+            height: 8
+            width: 16
             x: caret.x - 4
             y: root.openAbove ? popupCard.y + popupCard.height - height : popupCard.y
+            z: 1
         }
     }
 }

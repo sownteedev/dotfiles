@@ -5,13 +5,21 @@ Rectangle {
     id: root
 
     property string accessibleName: ""
+    property bool animationsReady: false
     property bool checked: false
     property color checkedColor: Config.md3.primary
+    property bool hovered: false
     property bool interactive: true
+    property bool pressed: false
     property color thumbCheckedColor: Config.md3.on_primary
-    property real thumbMargin: 2
+    property real thumbMargin: Math.max(2, Math.round(root.height / 8))
+    property real thumbSize: Math.max(8, Math.min(root.height - root.thumbMargin * 2, root.width / 2))
+    readonly property real thumbTravel: Math.max(0, root.width - root.thumbSize - root.thumbMargin * 2)
     property color thumbUncheckedColor: Config.md3.outline
-    property color uncheckedColor: Config.md3.surface_container_high
+    property real thumbUncheckedScale: 2 / 3
+    property real trackHeight: 32
+    property real trackWidth: 52
+    property color uncheckedColor: Config.md3.surface_container_highest
 
     signal toggled(bool checked)
 
@@ -23,32 +31,41 @@ Rectangle {
     Accessible.checked: checked
     Accessible.name: accessibleName
     Accessible.role: Accessible.CheckBox
-    activeFocusOnTab: enabled && interactive
-    border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.75) : Config.alpha(Config.md3.on_surface, 0.1)
-    border.width: 1
+    activeFocusOnTab: false
+    border.color: checked ? "transparent" : hovered || switchMouse.containsMouse ? Config.md3.on_surface_variant : Config.md3.outline
+    border.width: 2
     color: checked ? checkedColor : uncheckedColor
-    implicitHeight: 20
-    implicitWidth: 40
-    opacity: enabled ? 1 : 0.42
-    radius: height / 2
+    implicitHeight: trackHeight
+    implicitWidth: trackWidth
+    opacity: enabled ? 1 : Md3.state.disabledContent
+    radius: Md3.shape.full
 
     Behavior on border.color {
-        ColorAnimation {
-            duration: 150
+        enabled: root.animationsReady
+
+        Md3ColorAnimation {
+            role: "state"
         }
     }
     Behavior on color {
-        ColorAnimation {
-            duration: 150
+        enabled: root.animationsReady
+
+        Md3ColorAnimation {
+            role: "state"
         }
     }
     Behavior on opacity {
-        NumberAnimation {
-            duration: 120
+        enabled: root.animationsReady
+
+        Md3NumberAnimation {
+            role: "state"
         }
     }
 
     Accessible.onPressAction: requestToggle()
+    Component.onCompleted: Qt.callLater(function () {
+        root.animationsReady = true;
+    })
     Keys.onReturnPressed: event => {
         requestToggle();
         event.accepted = true;
@@ -59,33 +76,72 @@ Rectangle {
     }
 
     Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        color: root.checked ? root.thumbCheckedColor : root.thumbUncheckedColor
-        height: width
-        radius: width / 2
-        width: parent.height - root.thumbMargin * 2
-        x: root.checked ? root.width - width - root.thumbMargin : root.thumbMargin
+        anchors.fill: parent
+        color: root.checked ? Config.md3.on_primary : Config.md3.on_surface
+        opacity: root.pressed || switchMouse.pressed ? Md3.state.pressed : root.hovered || switchMouse.containsMouse ? Md3.state.hover : 0
+        radius: root.radius
 
         Behavior on color {
-            ColorAnimation {
-                duration: 150
+            enabled: root.animationsReady
+
+            Md3ColorAnimation {
+                role: "state"
             }
         }
+        Behavior on opacity {
+            enabled: root.animationsReady
+
+            Md3NumberAnimation {
+                role: "state"
+            }
+        }
+    }
+    Item {
+        id: thumbSlot
+
+        anchors.verticalCenter: parent.verticalCenter
+        height: root.thumbSize
+        width: root.thumbSize
+        x: root.thumbMargin + (root.checked ? root.thumbTravel : 0)
+
         Behavior on x {
-            NumberAnimation {
-                duration: 150
-                easing.type: Easing.OutQuad
+            enabled: root.animationsReady
+
+            Md3NumberAnimation {
+                role: "transform"
+            }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            color: root.checked ? root.thumbCheckedColor : root.thumbUncheckedColor
+            radius: Md3.shape.full
+            scale: root.checked ? 1 : root.thumbUncheckedScale
+
+            Behavior on color {
+                enabled: root.animationsReady
+
+                Md3ColorAnimation {
+                    role: "state"
+                }
+            }
+            Behavior on scale {
+                enabled: root.animationsReady
+
+                Md3NumberAnimation {
+                    role: "microSpatial"
+                }
             }
         }
     }
     MouseArea {
+        id: switchMouse
+
         anchors.fill: parent
         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         enabled: root.enabled && root.interactive
+        hoverEnabled: true
 
-        onClicked: {
-            root.forceActiveFocus();
-            root.requestToggle();
-        }
+        onClicked: root.requestToggle()
     }
 }

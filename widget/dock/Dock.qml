@@ -40,6 +40,8 @@ PanelWindow {
     readonly property bool revealRequested: dockHover.hovered || revealHover.hovered || dragActive || pinActionEntryId !== "" || previewShown || previewShowTimer.running || windowPreview.hovered
     property int runningAppCount: 0
     readonly property bool showAllAppsSeparator: pinnedAppCount > 0 && runningAppCount === 0
+    property bool startupDeadlineElapsed: false
+    property bool startupReady: false
     property real surfaceBottomMargin: autoHidden ? -74 : 12
     readonly property bool themeReady: ThemeService.hasAppliedTheme || (ThemeService.themeFileResolved && !Config.matugenEnabled)
 
@@ -165,6 +167,19 @@ PanelWindow {
         else
             previewShowTimer.restart();
     }
+    function revealAfterStartup() {
+        if (startupReady || !themeReady)
+            return;
+
+        syncDockModel();
+        startupReady = true;
+        if (Config.shellReducedMotion) {
+            dockSurface.opacity = 1;
+            dockSurface.scale = 1;
+        } else {
+            startupRevealAnimation.restart();
+        }
+    }
     function runningEntries() {
         var availableById = {};
         for (var availableIndex = 0; availableIndex < desktopApplications.length; ++availableIndex) {
@@ -231,6 +246,12 @@ PanelWindow {
             }
         }
         return entries;
+    }
+    function scheduleStartupReveal() {
+        var inputsReady = desktopApplications.length > 0 && (WorkspaceService.workspaces || []).length > 0;
+        if (startupReady || !themeReady || (!inputsReady && !startupDeadlineElapsed))
+            return;
+        startupRevealTimer.restart();
     }
     function syncDockModel() {
         if (dragActive) {
@@ -324,6 +345,7 @@ PanelWindow {
         }
         pinnedAppCount = pinned.length;
         runningAppCount = stableRunning.length;
+        scheduleStartupReveal();
     }
     function updateAutoHide() {
         if (!dockObstructed || revealRequested) {
@@ -416,7 +438,7 @@ PanelWindow {
 
     BackgroundEffect.blurRegion: Region {
         Region {
-            item: Config.shellBlurDockEnabled && dockWindow.themeReady ? dockSurface : null
+            item: Config.shellBlurDockEnabled && dockSurface.visible ? dockSurface : null
             radius: dockSurface.radius
         }
         Region {
@@ -426,7 +448,7 @@ PanelWindow {
     }
     mask: Region {
         Region {
-            item: dockWindow.themeReady ? dockSurface : null
+            item: dockSurface.visible ? dockSurface : null
             radius: dockSurface.radius
         }
         Region {
@@ -438,30 +460,37 @@ PanelWindow {
         }
     }
     Behavior on surfaceBottomMargin {
-        NumberAnimation {
-            duration: dockWindow.themeReady ? Config.animationDuration(dockWindow.autoHidden ? 210 : 260) : 0
-            easing.type: dockWindow.autoHidden ? Easing.InCubic : Easing.OutBack
+        Md3NumberAnimation {
+            duration: dockWindow.themeReady && dockWindow.startupReady ? Config.animationDuration(dockWindow.autoHidden ? Md3.motion.componentExit : Md3.motion.containerTransform) : 0
+            role: dockWindow.autoHidden ? "exit" : "spatial"
         }
     }
 
     Component.onCompleted: {
         syncDockModel();
         updateAutoHide();
+        scheduleStartupReveal();
     }
-    onDesktopApplicationsChanged: requestDockModelSync()
+    onDesktopApplicationsChanged: {
+        requestDockModelSync();
+        scheduleStartupReveal();
+    }
     onDockObstructedChanged: updateAutoHide()
     onPreviewWindowsChanged: {
         if (previewWindows.length === 0)
             previewShown = false;
     }
     onRevealRequestedChanged: updateAutoHide()
+    onThemeReadyChanged: scheduleStartupReveal()
 
     Connections {
         function onPinnedEntriesChanged() {
             dockWindow.requestDockModelSync();
+            dockWindow.scheduleStartupReveal();
         }
         function onPinnedIdsChanged() {
             dockWindow.requestDockModelSync();
+            dockWindow.scheduleStartupReveal();
         }
 
         target: DockService
@@ -469,6 +498,7 @@ PanelWindow {
     Connections {
         function onWorkspacesChanged() {
             dockWindow.requestDockModelSync();
+            dockWindow.scheduleStartupReveal();
         }
 
         target: WorkspaceService
@@ -479,10 +509,27 @@ PanelWindow {
     Timer {
         id: modelSyncTimer
 
-        interval: 0
+        interval: 16
         repeat: false
 
         onTriggered: dockWindow.syncDockModel()
+    }
+    Timer {
+        id: startupRevealTimer
+
+        interval: 140
+        repeat: false
+
+        onTriggered: dockWindow.revealAfterStartup()
+    }
+    Timer {
+        interval: 700
+        running: true
+
+        onTriggered: {
+            dockWindow.startupDeadlineElapsed = true;
+            dockWindow.scheduleStartupReveal();
+        }
     }
     Timer {
         id: hideTimer
@@ -526,9 +573,30 @@ PanelWindow {
         }
     }
     ShellShadow {
-        active: dockWindow.visible && dockWindow.themeReady
+        active: dockWindow.visible && dockSurface.visible
         cornerRadius: dockSurface.radius
         target: dockSurface
+    }
+    ParallelAnimation {
+        id: startupRevealAnimation
+
+        onFinished: {
+            dockSurface.opacity = 1;
+            dockSurface.scale = 1;
+        }
+
+        Md3OpacityAnimator {
+            from: 0
+            role: "enter"
+            target: dockSurface
+            to: 1
+        }
+        Md3ScaleAnimator {
+            from: 0.97
+            role: "enter"
+            target: dockSurface
+            to: 1
+        }
     }
     Rectangle {
         id: dockSurface
@@ -540,14 +608,16 @@ PanelWindow {
         border.width: 1
         color: Config.shellBlurDockEnabled ? Config.alpha(Config.md3.surface_container, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.surface_container
         height: 70
+        opacity: 0
         radius: 20
-        visible: dockWindow.themeReady
+        scale: 0.97
+        visible: dockWindow.themeReady && dockWindow.startupReady
         width: Math.min(dockWindow.width - 32, dockWindow.desiredSurfaceWidth)
 
         Behavior on width {
-            NumberAnimation {
-                duration: dockWindow.themeReady ? Config.animationDuration(220) : 0
-                easing.type: Easing.OutCubic
+            Md3NumberAnimation {
+                duration: dockWindow.themeReady && dockWindow.startupReady ? Config.animationDuration(Md3.motion.containerTransform) : 0
+                role: "transform"
             }
         }
 
@@ -670,18 +740,12 @@ PanelWindow {
                             }
                         }
 
-                        IconImage {
+                        SownteeAppIcon {
                             anchors.centerIn: parent
-                            height: appButton.settingsWindowEntry ? 35 : 40
-                            layer.enabled: appButton.shellWindowEntry
-                            mipmap: true
-                            smooth: true
-                            source: Quickshell.iconPath(appButton.iconName || "application-x-executable")
+                            height: 40
+                            kind: appButton.shellWindowEntry ? (appButton.settingsWindowEntry ? "settings" : "calendar") : ""
+                            source: Quickshell.iconPath(appButton.iconName || "application-x-executable", "application-x-executable")
                             width: height
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface
-                            }
                         }
                     }
                     Row {
@@ -862,7 +926,7 @@ PanelWindow {
                 }
                 displaced: Transition {
                     NumberAnimation {
-                        duration: Config.animationDuration(180)
+                        duration: dockWindow.startupReady ? Config.animationDuration(180) : 0
                         easing.type: Easing.OutCubic
                         properties: "x,y"
                     }
@@ -943,7 +1007,7 @@ PanelWindow {
         anchors.bottomMargin: 12
         height: implicitHeight
         iconName: dockWindow.previewIconName
-        isMonochrome: dockWindow.isShellWindowEntryId(dockWindow.previewEntryId)
+        shellKind: dockWindow.isShellWindowEntryId(dockWindow.previewEntryId) ? (dockWindow.normalizedAppId(dockWindow.previewEntryId) === "sownteeshell-settings" ? "settings" : "calendar") : ""
         shown: dockWindow.previewShown && dockWindow.previewWindows.length > 0
         width: Math.min(implicitWidth, Math.max(0, dockWindow.width - 32))
         windows: dockWindow.previewWindows

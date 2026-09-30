@@ -32,8 +32,8 @@ Item {
 
                     Accessible.name: qsTr("Color %1").arg(modelData)
                     Accessible.role: Accessible.Button
-                    activeFocusOnTab: true
-                    border.color: selected ? Config.md3.primary : Config.alpha(Config.md3.outline, 0.22)
+                    activeFocusOnTab: false
+                    border.color: selected ? Config.md3.primary : swatchMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.62) : Config.alpha(Config.md3.outline, 0.22)
                     border.width: selected ? 3 : 1
                     color: "#" + modelData
                     height: 30

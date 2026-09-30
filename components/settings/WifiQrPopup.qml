@@ -130,16 +130,12 @@ FocusScope {
                         color: Config.alpha(Config.md3.primary, 0.14)
                         radius: 13
 
-                        IconImage {
+                        Md3Icon {
                             anchors.centerIn: parent
-                            height: 22
-                            layer.enabled: true
-                            source: Quickshell.iconPath("qrscanner-symbolic")
-                            width: 22
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.primary
-                            }
+                            color: Config.md3.primary
+                            filled: true
+                            name: "qrscanner-symbolic"
+                            size: 22
                         }
                     }
                     ColumnLayout {

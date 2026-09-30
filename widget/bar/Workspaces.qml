@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Widgets
 import "../../"
 import "../../service"
+import "../../components"
 
 RowLayout {
     id: root
@@ -158,7 +159,7 @@ RowLayout {
     function workspaceDataMatches(previous, current) {
         if (!previous || !current)
             return false;
-        if (Number(previous.id) !== Number(current.id) || Number(previous.idx) !== Number(current.idx) || String(previous.output || "") !== String(current.output || "") || String(previous.name || "") !== String(current.name || "") || String(previous.active_window_id || "") !== String(current.active_window_id || "") || !!previous.is_active !== !!current.is_active || !!previous.is_focused !== !!current.is_focused)
+        if (Number(previous.id) !== Number(current.id) || Number(previous.idx) !== Number(current.idx) || String(previous.output || "") !== String(current.output || "") || String(previous.name || "") !== String(current.name || ""))
             return false;
 
         var previousWindows = previous.windows || [];
@@ -224,6 +225,10 @@ RowLayout {
             property real expansionProgress: expanded ? 1 : 0
             readonly property bool hasWindows: displayWindows.length > 0
             property bool inLayout: false
+            readonly property bool isActiveWorkspace: {
+                var activeId = WorkspaceService.activeWorkspaceIdByOutput[workspaceOutput];
+                return activeId === undefined || activeId === null ? workspaceData.is_active === true : Number(workspaceId) === Number(activeId);
+            }
             required property bool pendingRemoval
             required property var workspaceData
             readonly property int workspaceId: workspaceData.id
@@ -297,7 +302,7 @@ RowLayout {
 
                 border.color: dropArea.containsDrag ? Config.md3.surface_container_highest : "transparent"
                 border.width: 1
-                color: dropArea.containsDrag ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.8 : 0.6) : (wsButton.workspaceData.is_active ? Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.7 : 0.5) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.7 : 0.5))
+                color: dropArea.containsDrag ? Config.alpha(Config.md3.surface_container_high, Config.lightTheme ? 0.8 : 0.6) : (wsButton.isActiveWorkspace ? Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.7 : 0.5) : Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.7 : 0.5))
                 height: 38
                 radius: 7
                 scale: dropArea.containsDrag ? 1.05 : 1.0
@@ -630,21 +635,18 @@ RowLayout {
                                     }
                                 }
 
-                                IconImage {
+                                SownteeAppIcon {
                                     id: windowIcon
 
-                                    height: winIconItem.shellWindowKind === "settings" ? (root.compact ? 19 : 21) : (root.compact ? 22 : 25)
-                                    layer.enabled: winIconItem.shellWindow
+                                    Layout.preferredHeight: root.compact ? 22 : 25
+                                    Layout.preferredWidth: root.compact ? 22 : 25
+                                    kind: winIconItem.shellWindowKind
                                     scale: (winIconMouseArea.containsMouse && !winIconMouseArea.drag.active) ? 1.15 : 1.0
                                     source: {
                                         root.desktopEntriesRevision;
                                         return root.getWindowIcon(modelData);
                                     }
-                                    width: height
 
-                                    layer.effect: ColorOverlay {
-                                        color: Config.md3.on_surface
-                                    }
                                     Behavior on scale {
                                         NumberAnimation {
                                             duration: 150

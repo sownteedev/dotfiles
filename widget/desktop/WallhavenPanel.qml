@@ -17,7 +17,7 @@ Rectangle {
     property int contentTransitionDirection: 1
     property string deleteArmedId: ""
     readonly property string footerStatus: actionError || resultError || GreeterBackgroundService.statusMessage || (installedMode ? WallhavenService.installedStatusMessage : WallhavenService.statusMessage)
-    readonly property int gridColumns: Math.max(1, Math.min(4, Math.floor((browser.width - 48) / 270)))
+    readonly property int gridColumns: Math.max(1, Math.min(4, Math.floor((browser.width - 56) / 250)))
     readonly property bool installedMode: activeTab === "installed"
     readonly property bool nsfwVisible: Config.wallhavenApiKey.trim() !== "" && Config.wallhavenShowNsfw
     property bool open: false
@@ -214,11 +214,11 @@ Rectangle {
         id: browser
 
         anchors.centerIn: parent
-        border.color: Config.alpha(Config.md3.outline, 0.14)
+        border.color: Config.alpha(Config.md3.outline_variant, 0.34)
         border.width: 1
-        color: Config.alpha(Config.md3.surface_container, 0.97)
+        color: Config.alpha(Config.md3.surface_container_low, 0.98)
         height: Math.min(parent.height - 40, 920)
-        radius: 32
+        radius: Md3.shape.extraLarge
         scale: root.open ? 1 : 0.975
         width: Math.min(parent.width - 40, 1500)
 
@@ -238,25 +238,26 @@ Rectangle {
         }
         Rectangle {
             anchors.right: parent.right
-            anchors.rightMargin: 24
+            anchors.rightMargin: 28
             anchors.top: parent.top
-            anchors.topMargin: 24
-            color: closeMouse.containsMouse ? Config.md3.surface_container_highest : Config.alpha(Config.md3.on_surface, 0.055)
-            height: 38
-            radius: 13
-            width: 38
+            anchors.topMargin: 28
+            color: closeMouse.containsMouse ? Config.alpha(Config.md3.on_surface, Md3.state.hover) : Config.alpha(Config.md3.on_surface, 0.05)
+            height: 40
+            radius: Md3.shape.full
+            width: 40
             z: 20
 
-            IconImage {
-                anchors.centerIn: parent
-                height: 15
-                layer.enabled: true
-                source: Quickshell.iconPath("window-close-symbolic")
-                width: 15
-
-                layer.effect: ColorOverlay {
-                    color: Config.md3.on_surface
+            Behavior on color {
+                ColorAnimation {
+                    duration: Config.animationDuration(Md3.motion.short2)
                 }
+            }
+
+            Md3Icon {
+                anchors.centerIn: parent
+                color: Config.md3.on_surface_variant
+                name: "window-close-symbolic"
+                size: 18
             }
             MouseArea {
                 id: closeMouse
@@ -270,8 +271,8 @@ Rectangle {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 24
-            spacing: 14
+            anchors.margins: Md3.spacing.xl
+            spacing: Md3.spacing.md
 
             RowLayout {
                 Layout.fillWidth: true
@@ -279,21 +280,16 @@ Rectangle {
                 spacing: 14
 
                 Rectangle {
-                    Layout.preferredHeight: 48
-                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 52
+                    Layout.preferredWidth: 52
                     color: Config.md3.primary_container
-                    radius: 16
+                    radius: Md3.shape.largeIncreased
 
-                    IconImage {
+                    Md3Icon {
                         anchors.centerIn: parent
-                        height: 23
-                        layer.enabled: true
-                        source: Quickshell.iconPath("preferences-desktop-wallpaper-symbolic", "image-x-generic-symbolic")
-                        width: 23
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_primary_container
-                        }
+                        color: Config.md3.on_primary_container
+                        name: "preferences-desktop-wallpaper-symbolic"
+                        size: 25
                     }
                 }
                 ColumnLayout {
@@ -329,18 +325,18 @@ Rectangle {
                     readonly property int selectedIndex: root.activeTab === "browse" ? 0 : (root.activeTab === "collections" ? 1 : 2)
 
                     Layout.preferredHeight: 40
-                    Layout.preferredWidth: 320
+                    Layout.preferredWidth: 390
                     border.color: Config.alpha(Config.md3.outline, 0.08)
                     border.width: 1
                     color: Config.alpha(Config.md3.on_surface, 0.03)
-                    radius: 13
+                    radius: Md3.shape.full
 
                     Rectangle {
                         id: primaryTabIndicator
 
                         color: Config.md3.primary_container
                         height: parent.height - 8
-                        radius: 10
+                        radius: Md3.shape.full
                         width: (parent.width - 8 - 12) / 3
                         x: 4 + primaryTabs.selectedIndex * (width + 6)
                         y: 4
@@ -385,7 +381,7 @@ Rectangle {
                                 Layout.fillHeight: true
                                 Layout.fillWidth: true
                                 color: !selected && tabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.07) : "transparent"
-                                radius: 11
+                                radius: Md3.shape.full
 
                                 Behavior on color {
                                     ColorAnimation {
@@ -461,13 +457,13 @@ Rectangle {
                     Accessible.role: Accessible.Button
                     Layout.preferredHeight: 40
                     Layout.preferredWidth: 40
-                    activeFocusOnTab: visible && enabled
+                    activeFocusOnTab: false
                     border.color: Config.alpha(Config.wallhavenShowNsfw ? Config.md3.error : Config.md3.outline, 0.22)
                     border.width: 1
                     color: Config.wallhavenShowNsfw ? Config.md3.error_container : (nsfwMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.035))
                     enabled: nsfwAvailable
                     opacity: enabled ? 1 : 0.38
-                    radius: 13
+                    radius: Md3.shape.full
                     visible: root.activeTab === "browse" && Config.wallhavenApiKey.trim() !== ""
 
                     Behavior on border.color {
@@ -484,22 +480,11 @@ Rectangle {
                     Keys.onReturnPressed: root.setNsfwVisible(!Config.wallhavenShowNsfw)
                     Keys.onSpacePressed: root.setNsfwVisible(!Config.wallhavenShowNsfw)
 
-                    IconImage {
+                    Md3Icon {
                         anchors.centerIn: parent
-                        height: 17
-                        layer.enabled: true
-                        source: Quickshell.iconPath(Config.wallhavenShowNsfw ? "view-reveal-symbolic" : "view-conceal-symbolic")
-                        width: 17
-
-                        layer.effect: ColorOverlay {
-                            color: Config.wallhavenShowNsfw ? Config.md3.on_error_container : Config.md3.on_surface_variant
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 140
-                                }
-                            }
-                        }
+                        color: Config.wallhavenShowNsfw ? Config.md3.on_error_container : Config.md3.on_surface_variant
+                        name: Config.wallhavenShowNsfw ? "view-reveal-symbolic" : "view-conceal-symbolic"
+                        size: 20
                     }
                     MouseArea {
                         id: nsfwMouse
@@ -522,22 +507,28 @@ Rectangle {
                         Accessible.role: Accessible.Button
                         Layout.preferredHeight: 36
                         Layout.preferredWidth: 36
-                        activeFocusOnTab: visible && enabled
-                        border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
-                        border.width: 1
-                        color: previousMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
+                        activeFocusOnTab: false
+                        border.color: "transparent"
+                        border.width: 0
+                        color: previousMouse.containsMouse ? Config.alpha(Config.md3.on_surface, Md3.state.hover) : Config.alpha(Config.md3.on_surface, 0.05)
                         enabled: !root.resultLoading && (root.collectionsMode ? WallhavenService.collectionPage > 1 : WallhavenService.page > 1)
                         opacity: enabled ? 1 : 0.35
-                        radius: 12
+                        radius: Md3.shape.full
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(Md3.motion.short2)
+                            }
+                        }
 
                         Keys.onReturnPressed: root.goToPreviousPage()
                         Keys.onSpacePressed: root.goToPreviousPage()
 
-                        Text {
+                        Md3Icon {
                             anchors.centerIn: parent
-                            color: Config.md3.on_surface
-                            font.pixelSize: 18
-                            text: "‹"
+                            color: Config.md3.on_surface_variant
+                            name: "go-previous-symbolic"
+                            size: 18
                         }
                         MouseArea {
                             id: previousMouse
@@ -552,9 +543,9 @@ Rectangle {
                     }
                     Rectangle {
                         Layout.preferredHeight: 36
-                        Layout.preferredWidth: pageLabel.implicitWidth + 20
-                        color: Config.alpha(Config.md3.on_surface, 0.045)
-                        radius: 12
+                        Layout.preferredWidth: pageLabel.implicitWidth + 24
+                        color: Config.alpha(Config.md3.on_surface, 0.05)
+                        radius: Md3.shape.full
 
                         Text {
                             id: pageLabel
@@ -572,22 +563,28 @@ Rectangle {
                         Accessible.role: Accessible.Button
                         Layout.preferredHeight: 36
                         Layout.preferredWidth: 36
-                        activeFocusOnTab: visible && enabled
-                        border.color: activeFocus ? Config.alpha(Config.md3.primary, 0.68) : "transparent"
-                        border.width: 1
-                        color: nextMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : Config.alpha(Config.md3.on_surface, 0.06)
+                        activeFocusOnTab: false
+                        border.color: "transparent"
+                        border.width: 0
+                        color: nextMouse.containsMouse ? Config.alpha(Config.md3.on_surface, Md3.state.hover) : Config.alpha(Config.md3.on_surface, 0.05)
                         enabled: !root.resultLoading && (root.collectionsMode ? WallhavenService.collectionPage < WallhavenService.collectionLastPage : WallhavenService.page < WallhavenService.lastPage)
                         opacity: enabled ? 1 : 0.35
-                        radius: 12
+                        radius: Md3.shape.full
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(Md3.motion.short2)
+                            }
+                        }
 
                         Keys.onReturnPressed: root.goToNextPage()
                         Keys.onSpacePressed: root.goToNextPage()
 
-                        Text {
+                        Md3Icon {
                             anchors.centerIn: parent
-                            color: Config.md3.on_surface
-                            font.pixelSize: 18
-                            text: "›"
+                            color: Config.md3.on_surface_variant
+                            name: "go-next-symbolic"
+                            size: 18
                         }
                         MouseArea {
                             id: nextMouse
@@ -613,7 +610,7 @@ Rectangle {
                     Layout.preferredHeight: 28
                     Layout.preferredWidth: Math.max(28, collectionCountLabel.implicitWidth + 14)
                     color: Config.md3.primary_container
-                    radius: 9
+                    radius: Md3.shape.full
                     visible: root.collectionsMode || root.installedMode
 
                     Text {
@@ -630,18 +627,18 @@ Rectangle {
             }
             RowLayout {
                 Layout.fillWidth: true
-                Layout.maximumHeight: 44
-                Layout.minimumHeight: 44
-                Layout.preferredHeight: 44
+                Layout.maximumHeight: 34
+                Layout.minimumHeight: 34
+                Layout.preferredHeight: 34
                 spacing: 10
                 visible: root.collectionsMode && WallhavenService.accountConfigured && WallhavenService.collections.count > 1
 
                 Flickable {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.fillWidth: true
-                    Layout.maximumHeight: 40
-                    Layout.minimumHeight: 40
-                    Layout.preferredHeight: 40
+                    Layout.maximumHeight: 32
+                    Layout.minimumHeight: 32
+                    Layout.preferredHeight: 32
                     clip: true
                     contentHeight: height
                     contentWidth: collectionRow.implicitWidth
@@ -651,7 +648,7 @@ Rectangle {
                         id: collectionRow
 
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 7
+                        spacing: 6
 
                         Repeater {
                             model: WallhavenService.collections
@@ -664,13 +661,13 @@ Rectangle {
 
                                 Accessible.name: qsTr("Open collection %1").arg(String(model.label || qsTr("Collection")))
                                 Accessible.role: Accessible.Button
-                                activeFocusOnTab: true
-                                border.color: activeFocus ? Config.md3.primary : (selected ? Config.alpha(Config.md3.secondary, 0.34) : Config.alpha(Config.md3.outline, 0.12))
-                                border.width: activeFocus ? 2 : 1
+                                activeFocusOnTab: false
+                                border.color: selected ? Config.alpha(Config.md3.secondary, 0.34) : collectionMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.34) : Config.alpha(Config.md3.outline, 0.12)
+                                border.width: 1
                                 color: selected ? Config.md3.secondary_container : (collectionMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.045))
-                                height: 40
-                                radius: 13
-                                width: collectionChipContent.implicitWidth + 26
+                                height: 30
+                                radius: Md3.shape.full
+                                width: collectionChipContent.implicitWidth + 20
 
                                 Behavior on color {
                                     ColorAnimation {
@@ -768,7 +765,7 @@ Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         color: settingsMouse.containsMouse ? Config.md3.primary : Config.md3.primary_container
                         height: 40
-                        radius: 13
+                        radius: Md3.shape.full
                         width: settingsLabel.implicitWidth + 26
 
                         Text {
@@ -823,7 +820,7 @@ Rectangle {
                 Column {
                     anchors.centerIn: parent
                     spacing: 6
-                    visible: !root.resultInitialLoading && !root.resultHasItems && root.resultError === "" && !(root.collectionsMode && !WallhavenService.accountConfigured)
+                    visible: !root.resultInitialLoading && !root.resultHasItems && root.resultError === "" && !(root.collectionsMode && !WallhavenService.accountConfigured) && (root.installedMode || root.collectionsMode || WallhavenService.query !== "")
 
                     IconImage {
                         anchors.horizontalCenter: parent.horizontalCenter

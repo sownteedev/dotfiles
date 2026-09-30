@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Widgets
 import "../../"
+import "../../components" as Components
 
 MouseArea {
     id: root
@@ -110,23 +111,16 @@ MouseArea {
                 }
             }
 
-            IconImage {
-                id: bluetoothIcon
-
+            Components.Md3Icon {
                 anchors.centerIn: parent
-                implicitHeight: 22
-                implicitWidth: 22
-                source: Quickshell.iconPath(root.iconName)
-                visible: false
-            }
-            ColorOverlay {
-                anchors.fill: bluetoothIcon
                 color: root.iconColor
-                source: bluetoothIcon
+                filled: root.connected
+                name: root.iconName
+                size: 22
 
                 Behavior on color {
                     ColorAnimation {
-                        duration: 180
+                        duration: Config.animationDuration(Md3.motion.short3)
                     }
                 }
             }

@@ -2,9 +2,7 @@ AnimatedWaves 1.0 animate/AnimatedWaves.qml
 AnimatedBubbles 1.0 animate/AnimatedBubbles.qml
 AnimatedWeather 1.0 animate/AnimatedWeather.qml
 AnimatedPulse 1.0 animate/AnimatedPulse.qml
-AnimatedStars 1.0 animate/AnimatedStars.qml
 AnimatedConfetti 1.0 animate/AnimatedConfetti.qml
-AnimatedFireflies 1.0 animate/AnimatedFireflies.qml
 AnimatedRays 1.0 animate/AnimatedRays.qml
 AnimatedSpinner 1.0 animate/AnimatedSpinner.qml
 AnimatedLiquid 1.0 animate/AnimatedLiquid.qml
@@ -15,6 +13,10 @@ CachingImage 1.0 common/CachingImage.qml
 AppActionPopup 1.0 common/AppActionPopup.qml
 CustomVolumeSlider 1.0 common/CustomVolumeSlider.qml
 FormTextField 1.0 common/FormTextField.qml
+Md3Icon 1.0 common/Md3Icon.qml
+SownteeAppIcon 1.0 common/SownteeAppIcon.qml
+Md3IconButton 1.0 common/Md3IconButton.qml
+Md3ToolTip 1.0 common/Md3ToolTip.qml
 ProcessManager 1.0 common/ProcessManager.qml
 ProfileAvatar 1.0 common/ProfileAvatar.qml
 ScopedPopupBackdrop 1.0 common/ScopedPopupBackdrop.qml
@@ -28,6 +30,7 @@ SettingsTextField 1.0 common/SettingsTextField.qml
 SettingsFontPicker 1.0 settings/SettingsFontPicker.qml
 IdlePolicyTimeline 1.0 settings/IdlePolicyTimeline.qml
 SettingsIntegrationCard 1.0 settings/SettingsIntegrationCard.qml
+SettingsLabelBlock 1.0 settings/SettingsLabelBlock.qml
 StatChart 1.0 common/StatChart.qml
 ToggleSwitch 1.0 common/ToggleSwitch.qml
 EdgeTrigger 1.0 common/EdgeTrigger.qml
@@ -53,6 +56,7 @@ SettingsNavButton 1.0 settings/SettingsNavButton.qml
 SettingsPageContent 1.0 settings/SettingsPageContent.qml
 SettingsSearch 1.0 settings/SettingsSearch.qml
 SettingsSelectRow 1.0 settings/SettingsSelectRow.qml
+SettingsControlRow 1.0 settings/SettingsControlRow.qml
 SettingsSelectField 1.0 settings/SettingsSelectField.qml
 SettingsDurationPopup 1.0 settings/SettingsDurationPopup.qml
 SettingsSegmentedControl 1.0 settings/SettingsSegmentedControl.qml
@@ -77,16 +81,16 @@ WallhavenSearchBar 1.0 wallpaper/WallhavenSearchBar.qml
 WallhavenSortPopup 1.0 wallpaper/WallhavenSortPopup.qml
 WallpaperSourceButton 1.0 wallpaper/WallpaperSourceButton.qml
 WallpaperDestinationPopup 1.0 wallpaper/WallpaperDestinationPopup.qml
+WallpaperScenePropertiesPopup 1.0 wallpaper/WallpaperScenePropertiesPopup.qml
+WallpaperScenePropertyRow 1.0 wallpaper/WallpaperScenePropertyRow.qml
 WallpaperWorkshopFilters 1.0 wallpaper/WallpaperWorkshopFilters.qml
 
-CalendarEventEditor 1.0 productivity/CalendarEventEditor.qml
-CalendarTaskCard 1.0 productivity/CalendarTaskCard.qml
-ProductivityEmptyState 1.0 productivity/ProductivityEmptyState.qml
 
 MusicArtwork 1.0 media/MusicArtwork.qml
 MusicEmptyState 1.0 media/MusicEmptyState.qml
 MusicLyrics 1.0 media/MusicLyrics.qml
 MusicProgress 1.0 media/MusicProgress.qml
+MusicVolumeControl 1.0 media/MusicVolumeControl.qml
 
 ImageFilePicker 1.0 capture/ImageFilePicker.qml
 PixelateRegion 1.0 capture/PixelateRegion.qml
@@ -96,6 +100,7 @@ ScreenshotEditorToolbar 1.0 capture/ScreenshotEditorToolbar.qml
 ScreenshotImageLayer 1.0 capture/ScreenshotImageLayer.qml
 ScreenshotImageSelection 1.0 capture/ScreenshotImageSelection.qml
 ScreenshotLayersPanel 1.0 capture/ScreenshotLayersPanel.qml
+ScreenshotQrPanel 1.0 capture/ScreenshotQrPanel.qml
 ScreenshotMagnifierLoupe 1.0 capture/ScreenshotMagnifierLoupe.qml
 ScreenshotOpacitySlider 1.0 capture/ScreenshotOpacitySlider.qml
 ScreenshotShortcutButton 1.0 capture/ScreenshotShortcutButton.qml

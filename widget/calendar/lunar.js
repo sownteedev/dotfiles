@@ -189,3 +189,24 @@ const isLunarSpecial = (d, m, y) => {
     const lunar = solarToLunar(d, m + 1, y);
     return lunar.day === 1 || lunar.day === 15;
 };
+const getLunarDateForDate = (date, timeZone = 7) => {
+    if (!date || isNaN(date.getTime()))
+        return null;
+    return solarToLunar(date.getDate(), date.getMonth() + 1, date.getFullYear(), timeZone);
+};
+const getLunarDisplayForDate = (date, timeZone = 7) => {
+    const lunar = getLunarDateForDate(date, timeZone);
+    if (!lunar)
+        return "";
+    return lunar.day === 1 ? `${lunar.day}/${lunar.month}` : String(lunar.day);
+};
+const isLunarSpecialForDate = (date, timeZone = 7) => {
+    const lunar = getLunarDateForDate(date, timeZone);
+    return Boolean(lunar && (lunar.day === 1 || lunar.day === 15));
+};
+const getLunarFullString = (date, timeZone = 7) => {
+    const lunar = getLunarDateForDate(date, timeZone);
+    if (!lunar)
+        return "";
+    return `${lunar.day}/${lunar.month}${lunar.leap ? " (leap)" : ""}`;
+};

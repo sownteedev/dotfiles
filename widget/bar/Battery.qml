@@ -342,7 +342,7 @@ Item {
         color: foreground
         font.family: Config.fontName
         font.pixelSize: 9
-        font.weight: Font.DemiBold
+        font.weight: Font.Bold
         horizontalAlignment: Text.AlignHCenter
         renderType: Text.NativeRendering
         text: (root.activelyCharging ? "⚡" : "") + root.boundedPercentage.toString()

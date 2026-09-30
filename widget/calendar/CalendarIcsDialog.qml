@@ -158,7 +158,7 @@ Item {
         border.width: 1
         color: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.98 : 0.96)
         height: Math.min(580, Math.max(500, root.height - 40))
-        radius: 26
+        radius: Md3.shape.extraLarge
         scale: root.opened ? 1 : 0.96
         transformOrigin: Item.Center
         width: Math.min(540, parent.width - 36)
@@ -200,18 +200,14 @@ Item {
                 Layout.preferredHeight: 44
                 Layout.preferredWidth: 44
                 color: Config.alpha(root.calendarColor(), 0.16)
-                radius: 14
+                radius: Md3.shape.large
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 23
-                    layer.enabled: true
-                    source: Quickshell.iconPath("document-import-symbolic")
-                    width: 23
-
-                    layer.effect: ColorOverlay {
-                        color: root.calendarColor()
-                    }
+                    color: root.calendarColor()
+                    filled: true
+                    name: "document-import-symbolic"
+                    size: 23
                 }
             }
             ColumnLayout {
@@ -223,8 +219,11 @@ Item {
                     color: Config.md3.on_surface
                     elide: Text.ElideRight
                     font.family: Config.fontName
-                    font.pixelSize: 19
-                    font.weight: Font.Bold
+                    font.letterSpacing: Md3.typeScale.titleLarge.letterSpacing
+                    font.pixelSize: Md3.typeScale.titleLarge.size
+                    font.weight: Font.DemiBold
+                    lineHeight: Md3.typeScale.titleLarge.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: qsTr("Import iCalendar")
                 }
                 Text {
@@ -232,7 +231,11 @@ Item {
                     color: Config.md3.on_surface_variant
                     elide: Text.ElideMiddle
                     font.family: Config.fontName
-                    font.pixelSize: 13
+                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                    font.weight: Md3.typeScale.bodyMedium.weight
+                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: root.summary.fileName || root.filePath.split("/").pop()
                 }
             }
@@ -280,8 +283,11 @@ Item {
                 Text {
                     color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 13
+                    font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                    font.pixelSize: Md3.typeScale.labelLarge.size
                     font.weight: Font.DemiBold
+                    lineHeight: Md3.typeScale.labelLarge.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: qsTr("Calendar")
                 }
                 Rectangle {
@@ -292,7 +298,7 @@ Item {
                     border.color: Config.alpha(Config.md3.on_surface, 0.08)
                     border.width: 1
                     color: calMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.075) : Config.alpha(Config.md3.surface, Config.lightTheme ? 0.7 : 0.24)
-                    radius: 14
+                    radius: Md3.shape.large
 
                     Behavior on color {
                         ColorAnimation {
@@ -318,8 +324,11 @@ Item {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: root.selectedCalendar ? root.selectedCalendar.name : qsTr("No writable calendar")
                         }
                         Item {
@@ -330,23 +339,24 @@ Item {
 
                             Layout.maximumWidth: parent ? Math.max(100, parent.width * 0.44) : 180
                             Layout.preferredWidth: parent ? Math.min(implicitWidth, parent.width * 0.44) : implicitWidth
-                            color: Config.alpha(Config.md3.on_surface, 0.50)
+                            color: Config.md3.on_surface_variant
                             elide: Text.ElideMiddle
                             font.family: Config.fontName
-                            font.pixelSize: 12
+                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                            font.weight: Md3.typeScale.bodyMedium.weight
                             horizontalAlignment: Text.AlignRight
+                            lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: acc ? (acc.email || acc.displayName) : ""
                             visible: text !== ""
                         }
-                        IconImage {
+                        Md3Icon {
                             Layout.preferredHeight: 16
                             Layout.preferredWidth: 16
-                            layer.enabled: true
-                            source: Quickshell.iconPath("pan-down-symbolic")
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface_variant
-                            }
+                            color: Config.md3.on_surface_variant
+                            name: "pan-down-symbolic"
+                            size: 16
                         }
                     }
                     MouseArea {
@@ -372,7 +382,7 @@ Item {
                 border.color: Config.alpha(Config.md3.on_surface, 0.07)
                 border.width: 1
                 color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.7 : 0.24)
-                radius: 14
+                radius: Md3.shape.large
 
                 RowLayout {
                     anchors.fill: parent
@@ -380,22 +390,23 @@ Item {
                     anchors.rightMargin: 15
                     spacing: 12
 
-                    IconImage {
+                    Md3Icon {
                         Layout.preferredHeight: 18
                         Layout.preferredWidth: 18
-                        layer.enabled: true
-                        source: Quickshell.iconPath("x-office-calendar-symbolic")
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.primary
-                        }
+                        color: Config.md3.primary
+                        filled: true
+                        name: "x-office-calendar-symbolic"
+                        size: 18
                     }
                     Text {
                         Layout.fillWidth: true
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
+                        font.weight: Md3.typeScale.bodyMedium.weight
+                        lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: qsTr("%n event(s) ready to import", "", root.summary.totalEvents)
                     }
                     Rectangle {
@@ -410,8 +421,11 @@ Item {
                             anchors.centerIn: parent
                             color: Config.md3.primary
                             font.family: Config.fontName
-                            font.pixelSize: 11
-                            font.weight: Font.Bold
+                            font.letterSpacing: Md3.typeScale.labelMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.labelMedium.size
+                            font.weight: Md3.typeScale.labelMedium.weight
+                            lineHeight: Md3.typeScale.labelMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: qsTr("%1 events").arg(root.summary.totalEvents)
                         }
                     }
@@ -431,17 +445,24 @@ Item {
                     Text {
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 13
+                        font.letterSpacing: Md3.typeScale.titleSmall.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleSmall.size
                         font.weight: Font.DemiBold
+                        lineHeight: Md3.typeScale.titleSmall.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: qsTr("Events preview")
                     }
                     Item {
                         Layout.fillWidth: true
                     }
                     Text {
-                        color: Config.alpha(Config.md3.on_surface, 0.45)
+                        color: Config.md3.on_surface_variant
                         font.family: Config.fontName
-                        font.pixelSize: 11
+                        font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodySmall.size
+                        font.weight: Md3.typeScale.bodySmall.weight
+                        lineHeight: Md3.typeScale.bodySmall.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: root.summary.totalEvents > root.summary.eventsPreview.length ? qsTr("First %1 events").arg(root.summary.eventsPreview.length) : ""
                         visible: text !== ""
                     }
@@ -454,7 +475,7 @@ Item {
                     border.width: 1
                     clip: true
                     color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.7 : 0.24)
-                    radius: 14
+                    radius: Md3.shape.large
 
                     ListView {
                         id: eventPreviewList
@@ -488,8 +509,11 @@ Item {
                                         anchors.centerIn: parent
                                         color: Config.md3.primary
                                         font.family: Config.fontName
-                                        font.pixelSize: 11
-                                        font.weight: Font.DemiBold
+                                        font.letterSpacing: Md3.typeScale.labelMedium.letterSpacing
+                                        font.pixelSize: Md3.typeScale.labelMedium.size
+                                        font.weight: Md3.typeScale.labelMedium.weight
+                                        lineHeight: Md3.typeScale.labelMedium.lineHeight
+                                        lineHeightMode: Text.FixedHeight
                                         text: root.formatEventDateTime(modelData)
                                     }
                                 }
@@ -498,16 +522,23 @@ Item {
                                     color: Config.md3.on_surface
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
-                                    font.pixelSize: 13
-                                    font.weight: Font.Medium
+                                    font.letterSpacing: Md3.typeScale.titleSmall.letterSpacing
+                                    font.pixelSize: Md3.typeScale.titleSmall.size
+                                    font.weight: Md3.typeScale.titleSmall.weight
+                                    lineHeight: Md3.typeScale.titleSmall.lineHeight
+                                    lineHeightMode: Text.FixedHeight
                                     text: modelData.title || qsTr("Untitled")
                                 }
                                 Text {
                                     Layout.maximumWidth: 130
-                                    color: Config.alpha(Config.md3.on_surface, 0.42)
+                                    color: Config.md3.on_surface_variant
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
-                                    font.pixelSize: 11
+                                    font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                                    font.pixelSize: Md3.typeScale.bodySmall.size
+                                    font.weight: Md3.typeScale.bodySmall.weight
+                                    lineHeight: Md3.typeScale.bodySmall.lineHeight
+                                    lineHeightMode: Text.FixedHeight
                                     text: modelData.location || ""
                                     visible: text !== ""
                                 }
@@ -533,8 +564,11 @@ Item {
                 Layout.fillWidth: true
                 color: Config.md3.error
                 font.family: Config.fontName
-                font.pixelSize: 12
-                font.weight: Font.Medium
+                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyMedium.size
+                font.weight: Md3.typeScale.bodyMedium.weight
+                lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                lineHeightMode: Text.FixedHeight
                 text: root.errorMessage
                 visible: root.errorMessage !== ""
                 wrapMode: Text.Wrap

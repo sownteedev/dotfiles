@@ -1,10 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Qt5Compat.GraphicalEffects
-import Quickshell
-import Quickshell.Widgets
 import "../../"
+import "../../components"
 
 MouseArea {
     id: rootButton
@@ -18,6 +16,8 @@ MouseArea {
 
     signal triggered
 
+    Accessible.name: label
+    Accessible.role: Accessible.Button
     cursorShape: Qt.PointingHandCursor
     height: 70
     hoverEnabled: true
@@ -28,18 +28,16 @@ MouseArea {
     Behavior on opacity {
         SequentialAnimation {
             PauseAnimation {
-                duration: rootButton.menuOpen ? rootButton.actionIndex * 20 : 0
+                duration: Config.animationDuration(rootButton.menuOpen ? rootButton.actionIndex * 20 : 0)
             }
-            NumberAnimation {
-                duration: rootButton.menuOpen ? 190 : 90
-                easing.type: Easing.OutCubic
+            Md3NumberAnimation {
+                role: rootButton.menuOpen ? "enter" : "exit"
             }
         }
     }
     Behavior on scale {
-        NumberAnimation {
-            duration: rootButton.pressed ? 65 : 170
-            easing.type: rootButton.pressed ? Easing.OutQuad : Easing.OutCubic
+        Md3NumberAnimation {
+            role: rootButton.pressed ? "state" : "spatial"
         }
     }
     transform: Translate {
@@ -48,41 +46,39 @@ MouseArea {
         Behavior on y {
             SequentialAnimation {
                 PauseAnimation {
-                    duration: rootButton.menuOpen ? rootButton.actionIndex * 20 : 0
+                    duration: Config.animationDuration(rootButton.menuOpen ? rootButton.actionIndex * 20 : 0)
                 }
-                NumberAnimation {
-                    duration: rootButton.menuOpen ? 280 : 120
-                    easing.overshoot: 1.08
-                    easing.type: rootButton.menuOpen ? Easing.OutBack : Easing.InCubic
+                Md3NumberAnimation {
+                    role: rootButton.menuOpen ? "spatial" : "exit"
                 }
             }
         }
     }
 
+    Accessible.onPressAction: {
+        if (rootButton.enabled && rootButton.menuOpen)
+            rootButton.triggered();
+    }
     onClicked: triggered()
 
-    IconImage {
+    Md3Icon {
         id: icon
 
         anchors.centerIn: parent
-        height: 36
-        layer.enabled: true
+        color: rootButton.active ? rootButton.accent : Config.md3.on_surface_variant
+        filled: rootButton.active
+        name: rootButton.iconName
         opacity: rootButton.active ? 1 : (rootButton.containsMouse ? 0.96 : 0.68)
-        source: Quickshell.iconPath(rootButton.iconName)
-        width: 36
+        size: 38
 
-        layer.effect: ColorOverlay {
-            color: rootButton.active ? rootButton.accent : Config.md3.on_surface_variant
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: 200
-                }
+        Behavior on color {
+            Md3ColorAnimation {
+                role: "state"
             }
         }
         Behavior on opacity {
-            NumberAnimation {
-                duration: Config.animationDuration(140)
+            Md3NumberAnimation {
+                role: "state"
             }
         }
     }

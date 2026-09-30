@@ -15,7 +15,7 @@ Rectangle {
     property int contentTransitionDirection: 1
     property string deleteArmedId: ""
     readonly property int filteredResultCount: installedMode ? WallpaperWorkshopService.filteredInstalledResults.count : WallpaperWorkshopService.filteredResults.count
-    readonly property int gridColumns: Math.max(1, Math.min(4, Math.floor((browser.width - 48) / 280)))
+    readonly property int gridColumns: Math.max(1, Math.min(4, Math.floor((browser.width - 56) / 250)))
     readonly property bool installedMode: activeTab === "installed"
     property bool open: false
     readonly property string panelErrorMessage: installedMode ? WallpaperWorkshopService.manageErrorMessage : WallpaperWorkshopService.browseErrorMessage
@@ -148,11 +148,11 @@ Rectangle {
         id: browser
 
         anchors.centerIn: parent
-        border.color: Config.alpha(Config.md3.outline, 0.14)
+        border.color: Config.alpha(Config.md3.outline_variant, 0.34)
         border.width: 1
-        color: Config.alpha(Config.md3.surface_container, 0.97)
+        color: Config.alpha(Config.md3.surface_container_low, 0.98)
         height: Math.min(parent.height - 40, 920)
-        radius: 32
+        radius: Md3.shape.extraLarge
         scale: root.open ? 1 : 0.975
         width: Math.min(parent.width - 40, 1500)
 
@@ -170,29 +170,24 @@ Rectangle {
         }
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 24
-            spacing: 14
+            anchors.margins: Md3.spacing.xl
+            spacing: Md3.spacing.md
 
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 14
 
                 Rectangle {
-                    Layout.preferredHeight: 48
-                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 52
+                    Layout.preferredWidth: 52
                     color: Config.md3.primary_container
-                    radius: 16
+                    radius: Md3.shape.largeIncreased
 
-                    IconImage {
+                    Md3Icon {
                         anchors.centerIn: parent
-                        height: 24
-                        layer.enabled: true
-                        source: Quickshell.iconPath("steam-symbolic")
-                        width: 24
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_primary_container
-                        }
+                        color: Config.md3.on_primary_container
+                        name: "steam-symbolic"
+                        size: 25
                     }
                 }
                 ColumnLayout {
@@ -211,26 +206,27 @@ Rectangle {
                         color: GreeterBackgroundService.errorMessage !== "" ? Config.md3.error : Config.md3.on_surface_variant
                         elide: Text.ElideRight
                         font.family: Config.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 14
                         text: root.panelStatusText !== "" ? root.panelStatusText : qsTr("Browse and manage Steam Workshop wallpapers")
                     }
                 }
                 Rectangle {
-                    Layout.preferredHeight: 38
-                    Layout.preferredWidth: 38
-                    color: closeMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.10) : Config.alpha(Config.md3.on_surface, 0.055)
-                    radius: 13
+                    Layout.preferredHeight: 40
+                    Layout.preferredWidth: 40
+                    color: closeMouse.containsMouse ? Config.alpha(Config.md3.on_surface, Md3.state.hover) : Config.alpha(Config.md3.on_surface, 0.05)
+                    radius: Md3.shape.full
 
-                    IconImage {
-                        anchors.centerIn: parent
-                        height: 16
-                        layer.enabled: true
-                        source: Quickshell.iconPath("window-close-symbolic")
-                        width: 16
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_surface
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Config.animationDuration(Md3.motion.short2)
                         }
+                    }
+
+                    Md3Icon {
+                        anchors.centerIn: parent
+                        color: Config.md3.on_surface_variant
+                        name: "window-close-symbolic"
+                        size: 18
                     }
                     MouseArea {
                         id: closeMouse
@@ -296,7 +292,7 @@ Rectangle {
                         color: loginMouse.pressed ? Config.alpha(Config.md3.on_tertiary_container, 0.16) : (loginMouse.containsMouse ? Config.alpha(Config.md3.on_tertiary_container, 0.11) : Config.md3.tertiary)
                         enabled: !WallpaperWorkshopService.loginRunning
                         opacity: enabled ? 1 : 0.65
-                        radius: 14
+                        radius: Md3.shape.full
                         visible: WallpaperWorkshopService.loginRequired
 
                         Row {
@@ -354,18 +350,18 @@ Rectangle {
                     id: primaryTabs
 
                     Layout.preferredHeight: 40
-                    Layout.preferredWidth: 236
+                    Layout.preferredWidth: 240
                     border.color: Config.alpha(Config.md3.outline, 0.08)
                     border.width: 1
                     color: Config.alpha(Config.md3.on_surface, 0.03)
-                    radius: 15
+                    radius: Md3.shape.full
 
                     Rectangle {
                         id: primaryTabIndicator
 
                         color: Config.md3.primary_container
                         height: parent.height - 8
-                        radius: 12
+                        radius: Md3.shape.full
                         width: (parent.width - 8 - 6) / 2
                         x: 4 + (root.installedMode ? width + 6 : 0)
                         y: 4
@@ -405,7 +401,7 @@ Rectangle {
                                 Layout.fillHeight: true
                                 Layout.fillWidth: true
                                 color: !selected && tabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : "transparent"
-                                radius: 12
+                                radius: Md3.shape.full
 
                                 Behavior on color {
                                     ColorAnimation {
@@ -469,7 +465,7 @@ Rectangle {
                     border.color: searchInput.activeFocus ? Config.alpha(Config.md3.primary, 0.52) : Config.alpha(Config.md3.outline, 0.1)
                     border.width: 1
                     color: searchInput.activeFocus ? Config.alpha(Config.md3.primary_container, 0.18) : Config.alpha(Config.md3.on_surface, 0.025)
-                    radius: 13
+                    radius: Md3.shape.full
                     visible: !root.installedMode && WallpaperWorkshopService.configured
 
                     IconImage {
@@ -496,7 +492,7 @@ Rectangle {
                         anchors.top: parent.top
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 14
                         selectByMouse: true
                         verticalAlignment: TextInput.AlignVCenter
 
@@ -518,10 +514,10 @@ Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                         color: searchMouse.pressed ? Config.md3.primary_container : (searchMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent")
                         enabled: !WallpaperWorkshopService.searching
-                        height: 30
+                        height: 36
                         opacity: enabled ? 1 : 0.45
-                        radius: 10
-                        width: 30
+                        radius: Md3.shape.full
+                        width: 36
 
                         IconImage {
                             anchors.centerIn: parent
@@ -554,7 +550,7 @@ Rectangle {
                     id: workshopFilters
 
                     Layout.preferredHeight: 40
-                    Layout.preferredWidth: 190
+                    Layout.preferredWidth: 320
                     installedMode: root.installedMode
                     popupParent: browser
                     visible: root.installedMode || WallpaperWorkshopService.configured
@@ -565,15 +561,15 @@ Rectangle {
                     }
                 }
                 Rectangle {
-                    Accessible.name: Config.wallpaperWorkshopShowNsfw ? qsTr("Hide NSFW Workshop previews") : qsTr("Show NSFW Workshop previews")
+                    Accessible.name: Config.wallpaperWorkshopShowNsfw ? qsTr("Blur NSFW Workshop previews") : qsTr("Show NSFW Workshop previews")
                     Accessible.role: Accessible.Button
                     Layout.preferredHeight: 40
                     Layout.preferredWidth: 40
-                    activeFocusOnTab: true
+                    activeFocusOnTab: false
                     border.color: Config.alpha(Config.wallpaperWorkshopShowNsfw ? Config.md3.error : Config.md3.outline, 0.22)
                     border.width: 1
                     color: Config.wallpaperWorkshopShowNsfw ? Config.md3.error_container : (nsfwMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.035))
-                    radius: 13
+                    radius: Md3.shape.full
                     visible: !root.installedMode && WallpaperWorkshopService.configured
 
                     Behavior on border.color {
@@ -590,22 +586,11 @@ Rectangle {
                     Keys.onReturnPressed: root.setNsfwVisible(!Config.wallpaperWorkshopShowNsfw)
                     Keys.onSpacePressed: root.setNsfwVisible(!Config.wallpaperWorkshopShowNsfw)
 
-                    IconImage {
+                    Md3Icon {
                         anchors.centerIn: parent
-                        height: 17
-                        layer.enabled: true
-                        source: Quickshell.iconPath(Config.wallpaperWorkshopShowNsfw ? "view-reveal-symbolic" : "view-conceal-symbolic")
-                        width: 17
-
-                        layer.effect: ColorOverlay {
-                            color: Config.wallpaperWorkshopShowNsfw ? Config.md3.on_error_container : Config.md3.on_surface_variant
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 140
-                                }
-                            }
-                        }
+                        color: Config.wallpaperWorkshopShowNsfw ? Config.md3.on_error_container : Config.md3.on_surface_variant
+                        name: Config.wallpaperWorkshopShowNsfw ? "view-reveal-symbolic" : "view-conceal-symbolic"
+                        size: 20
                     }
                     MouseArea {
                         id: nsfwMouse
@@ -615,99 +600,6 @@ Rectangle {
                         hoverEnabled: true
 
                         onClicked: root.setNsfwVisible(!Config.wallpaperWorkshopShowNsfw)
-                    }
-                }
-                Rectangle {
-                    id: sortTabs
-
-                    readonly property int selectedIndex: WallpaperWorkshopService.sortMode === "popular" ? 1 : (WallpaperWorkshopService.sortMode === "recent" ? 2 : 0)
-
-                    Layout.preferredHeight: 40
-                    Layout.preferredWidth: 260
-                    color: Config.alpha(Config.md3.on_surface, 0.035)
-                    radius: 13
-                    visible: !root.installedMode && WallpaperWorkshopService.configured
-
-                    Rectangle {
-                        id: sortTabIndicator
-
-                        color: Config.md3.secondary_container
-                        height: parent.height - 6
-                        radius: 11
-                        width: (parent.width - 10) / 3
-                        x: 3 + sortTabs.selectedIndex * (width + 2)
-                        y: 3
-
-                        Behavior on x {
-                            XAnimator {
-                                duration: 170
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-                    }
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 3
-                        spacing: 2
-
-                        Repeater {
-                            model: [
-                                {
-                                    "label": qsTr("Trending"),
-                                    "value": "trending"
-                                },
-                                {
-                                    "label": qsTr("Popular"),
-                                    "value": "popular"
-                                },
-                                {
-                                    "label": qsTr("Newest"),
-                                    "value": "recent"
-                                }
-                            ]
-
-                            delegate: Rectangle {
-                                id: sortChip
-
-                                required property var modelData
-                                readonly property bool selected: WallpaperWorkshopService.sortMode === modelData.value
-
-                                Layout.fillHeight: true
-                                Layout.fillWidth: true
-                                color: !selected && sortMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.07) : "transparent"
-                                radius: 11
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 110
-                                    }
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    color: sortChip.selected ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
-                                    font.family: Config.fontName
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    text: sortChip.modelData.label
-
-                                    Behavior on color {
-                                        ColorAnimation {
-                                            duration: 130
-                                        }
-                                    }
-                                }
-                                MouseArea {
-                                    id: sortMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    onClicked: WallpaperWorkshopService.search(searchInput.text, 1, sortChip.modelData.value)
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -808,6 +700,7 @@ Rectangle {
                                 WallpaperWorkshopService.removeInstalled(item);
                             }
                             onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
+                            onPropertiesRequested: (item, anchorItem) => scenePropertiesPopup.openFor(item, anchorItem)
                             onSubscribeRequested: item => WallpaperWorkshopService.openInSteam(item)
                         }
                     }
@@ -839,6 +732,12 @@ Rectangle {
                         }
                     }
                 }
+            }
+            WallpaperScenePropertiesPopup {
+                id: scenePropertiesPopup
+
+                parent: root
+                z: 1000
             }
             ParallelAnimation {
                 id: contentTransition

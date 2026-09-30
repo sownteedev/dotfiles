@@ -1038,6 +1038,7 @@ PanelWindow {
 
                 CachingImage {
                     anchors.fill: parent
+                    cache: false
                     cacheKey: String(delegateRoot.fileModified) + "-" + String(delegateRoot.thumbnailRevision)
                     fillMode: Image.PreserveAspectCrop
                     path: {

@@ -316,6 +316,11 @@ QtObject {
             finishAction();
         }
     }
+    function isAirpodsDevice(device) {
+        if (!device)
+            return false;
+        return /air[\s-]*pods?/i.test(String(device.name || "")) || /air[\s-]*pods?/i.test(String(device.deviceName || ""));
+    }
     function isNearby(address) {
         var revision = nearbyRevision;
         return nearbyAddresses[normalizeAddress(address)] === true;

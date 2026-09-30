@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Widgets
 import Qt5Compat.GraphicalEffects
 import "../../"
+import "../../components" as Components
 import "../../service"
 
 MouseArea {
@@ -23,21 +24,16 @@ MouseArea {
         height: 23
         width: 23
 
-        IconImage {
-            id: icon
-
+        Components.Md3Icon {
             anchors.fill: parent
-            source: Quickshell.iconPath("bell-outline-symbolic")
-            visible: false
-        }
-        ColorOverlay {
-            anchors.fill: icon
             color: root.containsMouse ? Config.md3.error : Config.md3.on_surface
-            source: icon
+            filled: NotificationHistory.notifications.count > 0
+            name: "bell-outline-symbolic"
+            size: 23
 
             Behavior on color {
                 ColorAnimation {
-                    duration: 150
+                    duration: Config.animationDuration(Md3.motion.short3)
                 }
             }
         }

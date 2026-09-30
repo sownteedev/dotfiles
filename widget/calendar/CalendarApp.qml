@@ -18,6 +18,7 @@ FloatingWindow {
     readonly property bool compactHeader: width < 1120
     readonly property var hiddenCalendars: buildHiddenCalendars()
     property bool icsParseBusy: false
+    readonly property bool initialLoading: !CalendarService.initialLoaded && CalendarService.lastError === ""
     property bool pendingCreateAfterConnect: false
     property date pendingCreateDate: new Date()
     property int pendingCreateEndMinutes: 11 * 60
@@ -163,6 +164,7 @@ FloatingWindow {
         acquireCalendarService();
         blurAcquireTimer.restart();
         panel.forceActiveFocus();
+        Qt.callLater(root.scrollCurrentWeekToWorkingHours);
     }
     function openEventEditor(eventData, anchorRect) {
         editorUnloadTimer.stop();
@@ -188,6 +190,14 @@ FloatingWindow {
         Qt.callLater(function () {
             if (eventEditorLoader.status === Loader.Ready)
                 eventEditorLoader.item.openNew(value, startMinutes, endMinutes, anchorRect);
+        });
+    }
+    function openNewTaskEditor() {
+        editorUnloadTimer.stop();
+        eventEditorLoader.active = true;
+        Qt.callLater(function () {
+            if (eventEditorLoader.status === Loader.Ready && eventEditorLoader.item)
+                eventEditorLoader.item.openNewTask(root.selectedDate);
         });
     }
     function releaseCalendarService() {
@@ -231,7 +241,7 @@ FloatingWindow {
     function showToday() {
         selectedDate = new Date();
         weekStart = beginningOfWeek(selectedDate);
-        scrollCurrentWeekToWorkingHours();
+        Qt.callLater(root.scrollCurrentWeekToWorkingHours);
     }
     function toggleCalendar(calendarId, visible) {
         CalendarService.setCalendarVisible(calendarId, visible);
@@ -239,6 +249,8 @@ FloatingWindow {
     function toggleViewMode() {
         clearCurrentViewSelection();
         viewMode = viewMode === "week" ? "month" : "week";
+        if (viewMode === "week")
+            Qt.callLater(root.scrollCurrentWeekToWorkingHours);
     }
 
     color: "transparent"
@@ -253,9 +265,8 @@ FloatingWindow {
         radius: panel.radius
     }
     Behavior on sidebarReveal {
-        NumberAnimation {
-            duration: Config.animationDuration(220)
-            easing.type: root.sidebarExpanded ? Easing.OutCubic : Easing.InCubic
+        Md3NumberAnimation {
+            role: "transform"
         }
     }
 
@@ -404,8 +415,6 @@ FloatingWindow {
         id: panel
 
         anchors.fill: parent
-        border.color: Config.alpha(Config.md3.on_surface, 0.08)
-        border.width: 1
         clip: true
         color: Config.shellBlurSettingsEnabled && !root.maximized ? Config.alpha(Config.md3.background, Config.lightTheme ? Config.shellBlurPanelOpacityLight : Config.shellBlurPanelOpacityDark) : Config.md3.background
         focus: true
@@ -414,15 +423,13 @@ FloatingWindow {
         scale: root.active ? 1 : 0.975
 
         Behavior on opacity {
-            NumberAnimation {
-                duration: Config.animationDuration(170)
-                easing.type: Easing.OutQuad
+            Md3NumberAnimation {
+                role: "state"
             }
         }
         Behavior on scale {
-            NumberAnimation {
-                duration: Config.animationDuration(210)
-                easing.type: Easing.OutCubic
+            Md3NumberAnimation {
+                role: "spatial"
             }
         }
 
@@ -493,8 +500,9 @@ FloatingWindow {
                                 color: Config.md3.primary
                                 font.capitalization: Font.AllUppercase
                                 font.family: Config.fontName
-                                font.pixelSize: 9
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                                font.pixelSize: Md3.typeScale.labelSmall.size
+                                font.weight: 600
                                 horizontalAlignment: Text.AlignHCenter
                                 text: Qt.formatDate(new Date(), "MMM")
                                 width: parent.width
@@ -502,8 +510,9 @@ FloatingWindow {
                             Text {
                                 color: Config.md3.primary
                                 font.family: Config.fontName
-                                font.pixelSize: 16
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
+                                font.weight: 600
                                 horizontalAlignment: Text.AlignHCenter
                                 text: new Date().getDate()
                                 width: parent.width
@@ -514,8 +523,9 @@ FloatingWindow {
                         Layout.alignment: Qt.AlignVCenter
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 18
-                        font.weight: Font.Bold
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
+                        font.weight: 600
                         text: qsTr("Calendar")
                         verticalAlignment: Text.AlignVCenter
                         visible: !root.compactHeader
@@ -563,8 +573,9 @@ FloatingWindow {
                         color: Config.md3.on_surface
                         elide: Text.ElideRight
                         font.family: Config.fontName
-                        font.pixelSize: root.compactHeader ? 16 : 18
-                        font.weight: Font.DemiBold
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
+                        font.weight: Md3.typeScale.titleMedium.weight
                         text: root.formatPeriodRange()
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -661,6 +672,7 @@ FloatingWindow {
                         anchors.top: parent.top
                         calendars: CalendarService.calendars
                         errorMessage: CalendarService.lastError
+                        loading: root.initialLoading
                         selectedDate: root.selectedDate
                         syncingAccounts: CalendarService.syncingAccounts
                         weekStart: root.weekStart
@@ -671,6 +683,7 @@ FloatingWindow {
                         onCalendarToggled: (calendarId, visible) => root.toggleCalendar(calendarId, visible)
                         onConnectRequested: accountDialog.open()
                         onCreateRequested: root.createAtSelectedTime()
+                        onCreateTaskRequested: root.openNewTaskEditor()
                         onDateSelected: value => root.selectDate(value)
                     }
                 }
@@ -705,7 +718,7 @@ FloatingWindow {
                 available: CalendarService.authenticated || CalendarService.calendarAppEvents.length > 0
                 events: CalendarService.calendarAppEvents
                 hiddenCalendars: root.hiddenCalendars
-                loading: CalendarService.isLoading
+                loading: root.initialLoading
                 selectedDate: root.selectedDate
                 weekStart: root.weekStart
 
@@ -721,7 +734,7 @@ FloatingWindow {
                 available: CalendarService.authenticated || CalendarService.calendarAppEvents.length > 0
                 events: CalendarService.calendarAppEvents
                 hiddenCalendars: root.hiddenCalendars
-                loading: CalendarService.isLoading
+                loading: root.initialLoading
                 monthDate: root.selectedDate
                 selectedDate: root.selectedDate
 

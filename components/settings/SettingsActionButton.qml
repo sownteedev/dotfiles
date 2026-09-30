@@ -1,43 +1,42 @@
 import "../../"
 import ".."
-import Qt5Compat.GraphicalEffects
 import QtQuick
-import QtQuick.Controls.Basic
-import Quickshell
-import Quickshell.Widgets
 
 Rectangle {
     id: root
 
     property string iconName: ""
     property bool iconOnly: false
+    property int iconSize: 20
     property bool primary: false
     property bool spinning: false
     property string text: ""
+    property int textPixelSize: Md3.typeScale.labelLarge.size
+    property int textWeight: Md3.typeScale.labelLarge.weight
     property string tooltipText: ""
 
     signal clicked
 
-    Accessible.name: text
+    Accessible.name: tooltipText !== "" ? tooltipText : text
     Accessible.role: Accessible.Button
-    activeFocusOnTab: enabled
-    border.color: activeFocus ? Config.alpha(primary ? Config.md3.on_primary : Config.md3.primary, 0.72) : "transparent"
+    activeFocusOnTab: false
+    border.color: "transparent"
     border.width: 1
-    color: primary ? (mouse.containsMouse ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary) : (mouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.055))
-    implicitHeight: 44
+    color: primary ? Config.md3.primary : Config.md3.surface_container_high
+    implicitHeight: 48
     implicitWidth: iconOnly ? implicitHeight : content.implicitWidth + 34
-    opacity: enabled ? 1 : 0.42
-    radius: 13
+    opacity: enabled ? 1 : Md3.state.disabledContent
+    radius: iconOnly ? Md3.shape.full : Md3.shape.large
     z: mouse.containsMouse ? 1 : 0
 
     Behavior on color {
-        ColorAnimation {
-            duration: 140
+        Md3ColorAnimation {
+            role: "state"
         }
     }
     Behavior on opacity {
-        NumberAnimation {
-            duration: 120
+        Md3NumberAnimation {
+            role: "state"
         }
     }
 
@@ -54,52 +53,57 @@ Rectangle {
         event.accepted = true;
     }
 
+    Rectangle {
+        anchors.fill: parent
+        color: Config.alpha(root.primary ? Config.md3.on_primary : Config.md3.on_surface, mouse.pressed ? Md3.state.pressed : mouse.containsMouse ? Md3.state.hover : 0)
+        radius: root.radius
+
+        Behavior on color {
+            Md3ColorAnimation {
+                role: "state"
+            }
+        }
+    }
     Row {
         id: content
 
         anchors.centerIn: parent
-        spacing: 10
+        spacing: Math.max(10, Math.round(root.iconSize * 0.5))
 
         Item {
             id: iconSlot
 
             anchors.verticalCenter: parent.verticalCenter
-            height: 19
+            height: root.iconSize
             visible: root.spinning || (root.iconName !== "")
-            width: 19
+            width: root.iconSize
 
-            IconImage {
-                id: actionIcon
-
+            Md3Icon {
                 anchors.centerIn: parent
-                height: 19
-                layer.enabled: visible
-                source: root.iconName === "" ? "" : Quickshell.iconPath(root.iconName)
+                color: root.primary ? Config.md3.on_primary : Config.md3.on_surface_variant
+                name: root.iconName
+                size: root.iconSize
                 visible: !root.spinning && root.iconName !== ""
-                width: 19
-
-                layer.effect: ColorOverlay {
-                    color: root.primary ? Config.md3.on_primary : Config.md3.on_surface
-                }
             }
             AnimatedSpinner {
                 id: actionSpinner
 
                 anchors.centerIn: parent
                 color: root.primary ? Config.md3.on_primary : Config.md3.primary
-                height: 18
+                height: Math.max(18, root.iconSize - 2)
                 lineWidth: 2.2
                 running: root.spinning && root.visible
                 visible: root.spinning
-                width: 18
+                width: Math.max(18, root.iconSize - 2)
             }
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            color: root.primary ? Config.md3.on_primary : Config.md3.on_surface
+            color: root.primary ? Config.md3.on_primary : Config.md3.on_surface_variant
             font.family: Config.fontName
-            font.pixelSize: 15
-            font.weight: Font.DemiBold
+            font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+            font.pixelSize: root.textPixelSize
+            font.weight: root.textWeight
             text: root.text
             visible: !root.iconOnly && text !== ""
         }
@@ -112,39 +116,14 @@ Rectangle {
         enabled: root.enabled
         hoverEnabled: true
 
-        onClicked: {
-            root.forceActiveFocus();
-            root.clicked();
-        }
+        onClicked: root.clicked()
     }
-    ToolTip {
+    Md3ToolTip {
         id: actionToolTip
 
-        bottomPadding: 8
-        delay: 320
-        leftPadding: 11
-        margins: 8
-        popupType: Popup.Item
-        rightPadding: 11
         text: root.tooltipText !== "" ? root.tooltipText : root.text
-        timeout: 3200
-        topPadding: 8
         visible: (root.iconOnly || root.tooltipText !== "") && mouse.containsMouse && actionToolTip.text !== ""
         x: Math.round((root.width - width) / 2)
-        y: root.height + 7
-
-        background: Rectangle {
-            border.color: Config.alpha(Config.md3.on_surface, 0.08)
-            border.width: 1
-            color: Config.md3.surface_container_highest
-            radius: 10
-        }
-        contentItem: Text {
-            color: Config.md3.on_surface
-            font.family: Config.fontName
-            font.pixelSize: 12
-            font.weight: Font.Medium
-            text: actionToolTip.text
-        }
+        y: root.height + Md3.spacing.xs
     }
 }

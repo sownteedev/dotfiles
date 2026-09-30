@@ -21,6 +21,7 @@ singleton DisplayHotplugService 1.0 system/DisplayHotplugService.qml
 singleton DisplayService 1.0 system/DisplayService.qml
 singleton DisplayBrightnessService 1.0 system/DisplayBrightnessService.qml
 singleton DockService 1.0 system/DockService.qml
+singleton DefaultAppsService 1.0 system/DefaultAppsService.qml
 singleton FaceAuthService 1.0 system/FaceAuthService.qml
 singleton GreeterSettingsService 1.0 system/GreeterSettingsService.qml
 singleton IdleDimService 1.0 system/IdleDimService.qml

@@ -59,9 +59,9 @@ PanelWindow {
     function getVolumeIcon(val, muted) {
         if (muted)
             return "audio-volume-muted-symbolic";
-        if (val >= 0.7)
+        if (val >= 0.67)
             return "audio-volume-high-symbolic";
-        if (val >= 0.3)
+        if (val >= 0.34)
             return "audio-volume-medium-symbolic";
         if (val > 0)
             return "audio-volume-low-symbolic";
@@ -199,25 +199,22 @@ PanelWindow {
                     from: "hidden"
                     to: "visible"
 
-                    NumberAnimation {
-                        duration: Config.animationDuration(250)
-                        easing.type: Easing.OutQuad
+                    Md3NumberAnimation {
                         properties: "opacity"
+                        role: "enter"
                     }
-                    NumberAnimation {
-                        duration: Config.animationDuration(400)
-                        easing.type: Easing.OutBack
+                    Md3NumberAnimation {
                         properties: "yOffset, popScale"
+                        role: "spatial"
                     }
                 },
                 Transition {
                     from: "visible"
                     to: "hidden"
 
-                    NumberAnimation {
-                        duration: Config.animationDuration(150)
-                        easing.type: Easing.OutQuad
+                    Md3NumberAnimation {
                         properties: "opacity, yOffset, popScale"
+                        role: "exit"
                     }
                 }
             ]
@@ -242,16 +239,12 @@ PanelWindow {
                         implicitHeight: 25
                         implicitWidth: 25
 
-                        IconImage {
-                            id: sliderIcon
-
+                        Md3Icon {
                             anchors.fill: parent
-                            layer.enabled: true
-                            source: activeIcon !== "" ? Quickshell.iconPath(activeIcon) : ""
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.on_surface
-                            }
+                            color: Config.md3.on_surface
+                            filled: true
+                            name: activeIcon
+                            size: 25
                         }
                     }
                     ColumnLayout {
@@ -355,16 +348,12 @@ PanelWindow {
                         height: 30
                         width: 30
 
-                        IconImage {
-                            id: muteIcon
-
+                        Md3Icon {
                             anchors.fill: parent
-                            layer.enabled: true
-                            source: Quickshell.iconPath(muteIconName)
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.error
-                            }
+                            color: Config.md3.error
+                            filled: true
+                            name: muteIconName
+                            size: 30
                         }
                     }
                 }

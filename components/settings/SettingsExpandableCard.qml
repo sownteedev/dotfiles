@@ -24,19 +24,12 @@ Rectangle {
 
     signal toggled(bool checked)
 
+    Layout.minimumWidth: 0
     clip: true
-    color: Config.alpha(Config.md3.on_surface, 0.04)
+    color: Config.md3.surface_container_low
     implicitHeight: content.implicitHeight + root.contentPadding * 2
-    radius: 18
-
-    Behavior on implicitHeight {
-        enabled: root.heightAnimationEnabled && root.heightAnimationReady
-
-        NumberAnimation {
-            duration: 180
-            easing.type: Easing.OutCubic
-        }
-    }
+    implicitWidth: 0
+    radius: Md3.shape.large
 
     Component.onCompleted: heightAnimationReady = true
 
@@ -47,53 +40,36 @@ Rectangle {
         anchors.margins: root.contentPadding
         anchors.right: parent.right
         anchors.top: parent.top
-        spacing: root.expanded && details.children.length > 0 ? 20 : 0
+        spacing: 0
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 15
+            Layout.minimumWidth: 0
+            Layout.preferredWidth: 0
+            spacing: Md3.spacing.sm
 
             Rectangle {
                 Layout.alignment: Qt.AlignVCenter
-                Layout.preferredHeight: 42
-                Layout.preferredWidth: 42
+                Layout.preferredHeight: 44
+                Layout.preferredWidth: 44
                 color: Config.alpha(root.accentColor, 0.14)
-                radius: 13
+                radius: Md3.shape.medium
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 21
-                    layer.enabled: true
-                    source: Quickshell.iconPath(root.iconName)
-                    width: 21
-
-                    layer.effect: ColorOverlay {
-                        color: root.accentColor
-                    }
+                    color: root.accentColor
+                    filled: root.checked
+                    name: root.iconName
+                    size: 24
                 }
             }
-            ColumnLayout {
+            SettingsLabelBlock {
                 Layout.alignment: Qt.AlignVCenter
                 Layout.fillWidth: true
-                spacing: 4
-
-                Text {
-                    Layout.fillWidth: true
-                    color: Config.md3.on_surface
-                    font.family: Config.fontName
-                    font.pixelSize: 17
-                    font.weight: Font.DemiBold
-                    text: root.title
-                }
-                Text {
-                    Layout.fillWidth: true
-                    color: Config.alpha(Config.md3.on_surface, 0.45)
-                    font.family: Config.fontName
-                    font.pixelSize: 11
-                    text: root.note
-                    visible: text !== ""
-                    wrapMode: Text.Wrap
-                }
+                Layout.minimumWidth: 0
+                emphasized: true
+                headline: root.title
+                supportingText: root.note
             }
             ToggleSwitch {
                 accessibleName: root.title
@@ -105,18 +81,47 @@ Rectangle {
                 }
             }
         }
-        ColumnLayout {
-            id: details
+        Item {
+            id: detailsViewport
 
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            Layout.preferredHeight: implicitHeight
+            Layout.preferredWidth: 0
+            clip: true
             enabled: root.expanded
-            opacity: root.expanded ? 1 : 0
-            spacing: root.detailsSpacing
-            visible: opacity > 0
+            implicitHeight: root.expanded && details.children.length > 0 ? details.implicitHeight + 20 : 0
 
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 150
+            Behavior on implicitHeight {
+                enabled: root.heightAnimationEnabled && root.heightAnimationReady
+
+                Md3NumberAnimation {
+                    role: "transform"
+                }
+            }
+
+            ColumnLayout {
+                id: details
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                opacity: root.expanded ? 1 : 0
+                spacing: root.detailsSpacing
+                y: 20
+
+                Behavior on opacity {
+                    Md3NumberAnimation {
+                        role: "state"
+                    }
+                }
+                transform: Translate {
+                    y: root.expanded ? 0 : -6
+
+                    Behavior on y {
+                        Md3NumberAnimation {
+                            role: "transform"
+                        }
+                    }
                 }
             }
         }

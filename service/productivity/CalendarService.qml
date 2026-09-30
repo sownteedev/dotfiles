@@ -77,6 +77,13 @@ QtObject {
     readonly property string daemonUnit: "sownteeshell-calendar.service"
     property bool eventActionBusy: false
     property int fetchInFlight: 0
+    property Timer idleReleaseTimer: Timer {
+        interval: 30000
+        repeat: false
+
+        onTriggered: root.releaseIdleData()
+    }
+    property bool idleReleased: false
     property bool initialLoaded: false
     readonly property bool isLoading: fetchInFlight > 0 || syncBusy || accountActionBusy
     property string lastError: ""
@@ -190,8 +197,16 @@ QtObject {
     signal eventActionFinished(string operation, bool success, string message)
 
     function acquire() {
+        idleReleaseTimer.stop();
+        idleReleased = false;
         activeConsumers += 1;
         ensureRunning();
+        if (requestSocket.connected) {
+            if (!subscriptionSocket.connected)
+                subscriptionSocket.connected = true;
+            if (!initialLoaded)
+                fetchAll();
+        }
     }
     function addGoogle(clientId, clientSecret, callback) {
         if (accountActionBusy)
@@ -509,6 +524,10 @@ QtObject {
         if (!requestSocket.connected) {
             failPendingRequests(qsTr("Calendar backend disconnected."));
             initialLoaded = false;
+            if (idleReleased && activeConsumers === 0) {
+                daemonStatus = "idle";
+                return;
+            }
             daemonStatus = "connecting";
             ensureRunning();
             return;
@@ -696,6 +715,40 @@ QtObject {
     }
     function release() {
         activeConsumers = Math.max(0, activeConsumers - 1);
+        if (activeConsumers === 0)
+            idleReleaseTimer.restart();
+    }
+    function releaseIdleData() {
+        if (activeConsumers > 0)
+            return;
+        if (fetchInFlight > 0 || accountActionBusy || eventActionBusy || Object.keys(pendingRequests).length > 0) {
+            idleReleaseTimer.restart();
+            return;
+        }
+
+        refreshDebounce.stop();
+        connectionRetry.stop();
+        daemonRestart.stop();
+        daemonStartDelay.stop();
+        subscriptionRetry.stop();
+        idleReleased = true;
+        if (subscriptionSocket.connected)
+            subscriptionSocket.connected = false;
+        if (requestSocket.connected)
+            requestSocket.connected = false;
+        subscribed = false;
+        refreshPending = false;
+        initialLoaded = false;
+        syncBusy = false;
+        syncingAccounts = ({});
+        accounts = [];
+        calendars = [];
+        rawEvents = [];
+        allEvents = [];
+        taskSnapshots = [];
+        taskEvents = [];
+        lastError = "";
+        daemonStatus = "idle";
     }
     function removeAccount(accountId, callback) {
         if (accountActionBusy)
@@ -722,6 +775,8 @@ QtObject {
             subscriptionSocket.connected = false;
         if (requestSocket.connected)
             requestSocket.connected = false;
+        if (idleReleased && activeConsumers === 0)
+            return;
         connectionRetry.restart();
     }
     function sendRequest(method, params, success, failure) {
@@ -857,11 +912,8 @@ QtObject {
         }, result => finishEventAction("update", true, "", callback), message => finishEventAction("update", false, message, callback));
     }
 
-    Component.onCompleted: {
-        ensureRunning();
-        requestSocket.connected = true;
-    }
     Component.onDestruction: {
+        idleReleaseTimer.stop();
         requestSocket.connected = false;
         subscriptionSocket.connected = false;
         systemdStarter.running = false;

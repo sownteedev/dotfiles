@@ -298,6 +298,21 @@ QtObject {
             root.processNextProjectResolution();
         }
     }
+    property var propertyOverrides: ({})
+    property FileView propertyOverridesFile: FileView {
+        atomicWrites: true
+        blockLoading: true
+        blockWrites: true
+        path: Config.cacheRoot + "/wallpaper-engine-properties.json"
+        printErrors: false
+        watchChanges: false
+
+        onLoadedChanged: {
+            if (loaded)
+                root.loadPropertyOverrides(text());
+        }
+        onSaveFailed: error => console.warn("[EngineWallpaperService] Could not save scene properties:", error)
+    }
     property string readyFramePath: ""
     property Process readyProbe: Process {
         onExited: (exitCode, exitStatus) => {
@@ -493,6 +508,14 @@ QtObject {
         // Invalid startup frames no longer block the short live-renderer grace.
         var screenshotDelayFrames = Math.max(24, Math.round(WallpaperPlaybackPolicy.targetFps * 0.8));
         var args = ["linux-wallpaperengine", "--silent", "--fps", String(WallpaperPlaybackPolicy.targetFps), "--layer", "background", "--no-fullscreen-pause", "--screenshot", readyFramePath, "--screenshot-delay", String(screenshotDelayFrames), "--assets-dir", Config.wallpaperEngineAssetsDir];
+        var overrides = propertyValues(startedPath);
+        var propertyNames = Object.keys(overrides).sort();
+        for (var propertyIndex = 0; propertyIndex < propertyNames.length; ++propertyIndex) {
+            var propertyName = propertyNames[propertyIndex];
+            if (!/^[A-Za-z0-9_.-]{1,128}$/.test(propertyName))
+                continue;
+            args.push("--set-property", propertyName + "=" + propertyArgumentValue(overrides[propertyName]));
+        }
         for (var i = 0; i < Quickshell.screens.length; ++i) {
             args.push("--screen-root", Quickshell.screens[i].name, "--bg", startedPath, "--scaling", root.wallpaperEngineScalingMode(), "--clamp", "border");
         }
@@ -502,6 +525,15 @@ QtObject {
         player.command = ["sh", "-c", "mkdir -p \"$1\"; rm -f \"$3\"; printf '%s' \"$$\" > \"$2\"; shift 3; exec \"$@\"", "engine-wallpaper-player", cacheDir, pidPath, readyFramePath].concat(args);
         player.running = true;
         pidFile.reload();
+    }
+    function loadPropertyOverrides(rawText) {
+        try {
+            var parsed = JSON.parse(String(rawText || "{}"));
+            propertyOverrides = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : ({});
+        } catch (error) {
+            console.warn("[EngineWallpaperService] Ignoring invalid scene property state:", error);
+            propertyOverrides = ({});
+        }
     }
     function markReady(path, framePath) {
         if (playbackReadyState || !path || path !== startedPath)
@@ -632,6 +664,22 @@ QtObject {
         }
         return null;
     }
+    function propertyArgumentValue(value) {
+        if (typeof value === "boolean")
+            return value ? "1" : "0";
+        return String(value);
+    }
+    function propertyKey(path) {
+        var normalized = String(path || "").replace(/[\\/]+$/, "");
+        var parts = normalized.split(/[\\/]/);
+        var directoryName = parts.length > 0 ? parts[parts.length - 1] : "";
+        return /^\d+$/.test(directoryName) ? directoryName : (normalized === "" ? "" : WallpaperService.stableHash("scene-properties|" + normalized));
+    }
+    function propertyValues(path) {
+        var key = propertyKey(path);
+        var values = key !== "" ? propertyOverrides[key] : null;
+        return values && typeof values === "object" && !Array.isArray(values) ? Object.assign({}, values) : ({});
+    }
     function refresh() {
         checkAvailability();
         scan();
@@ -739,6 +787,21 @@ QtObject {
         rendererRestartLaunching = false;
         playbackReadyState = false;
         player.running = false;
+    }
+    function savePropertyValues(path, values) {
+        var key = propertyKey(path);
+        if (key === "")
+            return;
+        var next = Object.assign({}, propertyOverrides);
+        var normalized = values && typeof values === "object" && !Array.isArray(values) ? Object.assign({}, values) : ({});
+        if (Object.keys(normalized).length > 0)
+            next[key] = normalized;
+        else
+            delete next[key];
+        propertyOverrides = next;
+        propertyOverridesFile.setText(JSON.stringify(next) + "\n");
+        if (String(desiredPath) === String(path) && player.running)
+            restartRenderer();
     }
     function scan() {
         if (!browsing)

@@ -115,7 +115,7 @@ PanelWindow {
     Timer {
         id: closeTimer
 
-        interval: 220
+        interval: Math.max(1, Config.animationDuration(220))
 
         onTriggered: {
             powerWindow.visible = false;
@@ -131,7 +131,7 @@ PanelWindow {
     Timer {
         id: revealActiveActionTimer
 
-        interval: 280
+        interval: Math.max(1, Config.animationDuration(280))
         repeat: false
 
         onTriggered: powerWindow.revealActiveAction()
@@ -156,9 +156,8 @@ PanelWindow {
         opacity: powerWindow.menuOpen ? 1 : 0
 
         Behavior on opacity {
-            NumberAnimation {
-                duration: powerWindow.menuOpen ? 190 : 150
-                easing.type: Easing.OutCubic
+            Md3NumberAnimation {
+                role: powerWindow.menuOpen ? "enter" : "exit"
             }
         }
 
@@ -178,8 +177,8 @@ PanelWindow {
             color: Config.alpha(Config.md3.scrim, powerWindow.menuOpen ? 0.16 : 0)
 
             Behavior on color {
-                ColorAnimation {
-                    duration: 180
+                Md3ColorAnimation {
+                    role: "state"
                 }
             }
 
@@ -198,18 +197,16 @@ PanelWindow {
             width: popup.width
 
             Behavior on scale {
-                NumberAnimation {
-                    duration: powerWindow.menuOpen ? 240 : 140
-                    easing.type: powerWindow.menuOpen ? Easing.OutCubic : Easing.InCubic
+                Md3NumberAnimation {
+                    role: powerWindow.menuOpen ? "spatial" : "exit"
                 }
             }
             transform: Translate {
                 y: powerWindow.menuOpen ? 0 : 8
 
                 Behavior on y {
-                    NumberAnimation {
-                        duration: powerWindow.menuOpen ? 240 : 140
-                        easing.type: powerWindow.menuOpen ? Easing.OutCubic : Easing.InCubic
+                    Md3NumberAnimation {
+                        role: powerWindow.menuOpen ? "transform" : "exit"
                     }
                 }
             }

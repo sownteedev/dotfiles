@@ -8,6 +8,7 @@ import Quickshell.Widgets
 Item {
     id: buttonRoot
 
+    property string accessibleName: ""
     property bool active: false
     property color activeColor: Config.md3.primary
     property string iconFontFamily: "Material Design Icons Desktop"
@@ -16,8 +17,17 @@ Item {
 
     signal clicked
 
+    Accessible.checkable: true
+    Accessible.checked: active
+    Accessible.name: accessibleName
+    Accessible.role: Accessible.Button
     height: 54
     width: 54
+
+    Accessible.onPressAction: {
+        if (buttonRoot.enabled)
+            buttonRoot.clicked();
+    }
 
     ShellShadow {
         componentShadow: true
@@ -29,28 +39,32 @@ Item {
         id: btnRect
 
         anchors.fill: parent
-        color: buttonRoot.active ? "transparent" : (mouseArea.pressed ? Config.alpha(Config.md3.on_surface, 0.2) : (mouseArea.containsMouse ? Config.alpha(Config.md3.on_surface, 0.14) : Config.alpha(Config.md3.on_surface, 0.09)))
-        radius: buttonRoot.active ? 16 : 27
+        color: buttonRoot.active ? "transparent" : Config.md3.surface_container_high
+        radius: Math.min(width / 2, height / 2, buttonRoot.active ? Md3.shape.large : Md3.shape.full)
         scale: mouseArea.pressed ? 0.93 : 1.0
 
         Behavior on color {
-            ColorAnimation {
-                duration: 150
+            Md3ColorAnimation {
+                role: "state"
             }
         }
         Behavior on radius {
-            NumberAnimation {
-                duration: 250
-                easing.type: Easing.OutBack
+            Md3NumberAnimation {
+                role: "transform"
             }
         }
         Behavior on scale {
-            NumberAnimation {
-                duration: 100
-                easing.type: Easing.OutQuad
+            Md3NumberAnimation {
+                role: "microSpatial"
             }
         }
 
+        Rectangle {
+            anchors.fill: parent
+            color: Config.alpha(Config.md3.on_surface, mouseArea.pressed ? Md3.state.pressed : mouseArea.containsMouse ? Md3.state.hover : 0)
+            radius: parent.radius
+            visible: !buttonRoot.active
+        }
         Item {
             anchors.fill: parent
             layer.enabled: true
@@ -65,8 +79,8 @@ Item {
                 color: buttonRoot.active ? (mouseArea.pressed ? Config.alpha(buttonRoot.activeColor, 0.2) : (mouseArea.containsMouse ? Config.alpha(buttonRoot.activeColor, 0.15) : Config.alpha(buttonRoot.activeColor, 0.1))) : "transparent"
 
                 Behavior on color {
-                    ColorAnimation {
-                        duration: 150
+                    Md3ColorAnimation {
+                        role: "state"
                     }
                 }
             }
@@ -84,33 +98,19 @@ Item {
             radius: btnRect.radius
             visible: false
         }
-        IconImage {
+        Md3Icon {
             id: iconImg
 
             anchors.centerIn: parent
-            height: 24
-            layer.enabled: true
-            source: {
-                var n = buttonRoot.iconName;
-                if (!n)
-                    return "";
-
-                if (n.startsWith("file://") || n.startsWith("/"))
-                    return n;
-
-                var p = Quickshell.iconPath(n);
-                return p !== "" ? p : "";
-            }
+            color: buttonRoot.active ? Config.md3.on_primary : Config.md3.on_surface
+            filled: buttonRoot.active
+            name: buttonRoot.iconName
+            size: 26
             visible: buttonRoot.iconGlyph === ""
-            width: 24
 
-            layer.effect: ColorOverlay {
-                color: buttonRoot.active ? Config.md3.on_primary : Config.md3.on_surface
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 150
-                    }
+            Behavior on color {
+                Md3ColorAnimation {
+                    role: "state"
                 }
             }
         }
@@ -124,8 +124,8 @@ Item {
             visible: buttonRoot.iconGlyph !== ""
 
             Behavior on color {
-                ColorAnimation {
-                    duration: 150
+                Md3ColorAnimation {
+                    role: "state"
                 }
             }
         }

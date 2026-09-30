@@ -81,16 +81,11 @@ Popup {
                     }
                 }
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 18
-                    layer.enabled: true
-                    source: Quickshell.iconPath("go-previous-symbolic")
-                    width: 18
-
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.on_surface
-                    }
+                    color: Config.md3.on_surface
+                    name: "go-previous-symbolic"
+                    size: 18
                 }
                 MouseArea {
                     id: previousArea
@@ -131,16 +126,11 @@ Popup {
                     }
                 }
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 18
-                    layer.enabled: true
-                    source: Quickshell.iconPath("go-next-symbolic")
-                    width: 18
-
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.on_surface
-                    }
+                    color: Config.md3.on_surface
+                    name: "go-next-symbolic"
+                    size: 18
                 }
                 MouseArea {
                     id: nextArea
@@ -185,8 +175,12 @@ Popup {
 
             delegate: Item {
                 readonly property bool inCurrentMonth: model.month === monthGrid.month
+                required property var model
                 readonly property bool selected: root.selectedDate !== "" && root.formatDate(model.date) === root.selectedDate
                 readonly property bool today: root.isSameDate(model.date, new Date())
+
+                implicitHeight: Math.max(0, (monthGrid.availableHeight - monthGrid.spacing * 5) / 6)
+                implicitWidth: Math.max(0, (monthGrid.availableWidth - monthGrid.spacing * 6) / 7)
 
                 Rectangle {
                     anchors.centerIn: parent

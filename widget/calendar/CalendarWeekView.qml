@@ -1,5 +1,6 @@
 import "../../"
 import "../../components"
+import "lunar.js" as Lunar
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import Quickshell
@@ -235,7 +236,14 @@ Item {
         return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
     }
     function scrollToWorkingHours() {
-        timelineFlickable.contentY = Math.max(0, Math.min(timelineFlickable.contentHeight - timelineFlickable.height, hourHeight * 7 - 24));
+        if (!timelineFlickable || timelineFlickable.height <= 0 || timelineFlickable.contentHeight <= 0)
+            return;
+        var currentMinutes = root.now.getHours() * 60 + root.now.getMinutes();
+        var currentTimeY = currentMinutes / 60 * root.hourHeight;
+        var viewportAnchor = Math.max(96, Math.min(220, timelineFlickable.height * 0.34));
+        var maximumContentY = Math.max(0, timelineFlickable.contentHeight - timelineFlickable.height);
+        timelineFlickable.cancelFlick();
+        timelineFlickable.contentY = Math.max(0, Math.min(maximumContentY, currentTimeY - viewportAnchor));
     }
     function snappedMinutesForY(value, allowDayEnd) {
         var maximum = allowDayEnd ? 23 * 60 + 59 : 23 * 60 + 45;
@@ -335,8 +343,9 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         color: Config.alpha(Config.md3.on_surface, 0.5)
                         font.family: Config.fontName
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
+                        font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                        font.pixelSize: Md3.typeScale.labelSmall.size
+                        font.weight: 600
                         text: Qt.formatDateTime(root.now, "t")
                     }
                 }
@@ -347,22 +356,28 @@ Item {
                         id: dayHeader
 
                         required property int index
+                        readonly property var lunarDate: Lunar.getLunarDateForDate(dayHeader.value)
+                        readonly property string lunarLabel: lunarDate ? (lunarDate.day === 1 ? `${lunarDate.day}/${lunarDate.month}` : String(lunarDate.day)) : ""
+                        readonly property bool lunarSpecial: Boolean(lunarDate && (lunarDate.day === 1 || lunarDate.day === 15))
                         readonly property date value: root.addDays(root.weekStart, index)
 
+                        Accessible.name: qsTr("%1, lunar %2").arg(Qt.formatDate(dayHeader.value, Qt.DefaultLocaleLongDate)).arg(dayHeader.lunarLabel)
+                        Accessible.role: Accessible.Button
                         height: dayHeaderRow.height
                         width: Math.max(0, (dayHeaderRow.width - root.timeGutterWidth) / 7)
 
                         Column {
                             anchors.centerIn: parent
-                            spacing: 4
+                            spacing: 2
 
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 color: dayHeader.index >= 5 ? Config.md3.tertiary : Config.md3.on_surface_variant
                                 font.capitalization: Font.AllUppercase
                                 font.family: Config.fontName
-                                font.pixelSize: 12
-                                font.weight: Font.DemiBold
+                                font.letterSpacing: Md3.typeScale.labelMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.labelMedium.size
+                                font.weight: 600
                                 text: Qt.formatDate(dayHeader.value, "ddd")
                             }
                             Rectangle {
@@ -376,10 +391,20 @@ Item {
                                     anchors.centerIn: parent
                                     color: root.isSameDay(dayHeader.value, root.now) ? Config.md3.on_primary : Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 18
-                                    font.weight: root.isSameDay(dayHeader.value, root.now) ? Font.Bold : Font.DemiBold
+                                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                    font.pixelSize: Md3.typeScale.titleMedium.size
+                                    font.weight: root.isSameDay(dayHeader.value, root.now) ? 700 : 600
                                     text: dayHeader.value.getDate()
                                 }
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: dayHeader.lunarSpecial ? Config.md3.tertiary : Config.md3.on_surface_variant
+                                font.family: Config.fontName
+                                font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                                font.pixelSize: Math.max(10, Md3.typeScale.labelSmall.size - 1)
+                                font.weight: dayHeader.lunarSpecial ? Font.DemiBold : Md3.typeScale.labelSmall.weight
+                                text: dayHeader.lunarLabel
                             }
                         }
                         MouseArea {
@@ -407,7 +432,9 @@ Item {
                         anchors.topMargin: 8
                         color: Config.alpha(Config.md3.on_surface, 0.5)
                         font.family: Config.fontName
-                        font.pixelSize: 11
+                        font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodySmall.size
+                        font.weight: Md3.typeScale.bodySmall.weight
                         text: qsTr("all-day")
                     }
                 }
@@ -465,7 +492,8 @@ Item {
                                     color: allDayCard.isCompletedTask ? Config.alpha(Config.md3.on_surface, 0.58) : Config.md3.on_surface
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
-                                    font.pixelSize: 12
+                                    font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                                    font.pixelSize: Md3.typeScale.bodySmall.size
                                     font.strikeout: allDayCard.isCompletedTask
                                     font.weight: allDayCard.isCompletedTask ? Font.Medium : Font.Bold
                                     text: allDayCard.modelData.eventData.title || qsTr("Untitled event")
@@ -483,14 +511,13 @@ Item {
                                     visible: allDayCard.modelData.eventData.isTask === true
                                     width: 13
 
-                                    Text {
+                                    Md3Icon {
                                         anchors.centerIn: parent
                                         color: allDayCard.accentColor
-                                        font.family: Config.fontName
-                                        font.pixelSize: 9
-                                        font.weight: Font.Black
-                                        text: "✓"
+                                        name: "checkmark-symbolic"
+                                        size: 10
                                         visible: allDayCard.isCompletedTask
+                                        weight: 700
                                     }
                                 }
                                 MouseArea {
@@ -689,8 +716,9 @@ Item {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: selectionCard.height < 46 ? 12 : 13
-                            font.weight: Font.Bold
+                            font.letterSpacing: selectionCard.height < 46 ? Md3.typeScale.bodySmall.letterSpacing : Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: selectionCard.height < 46 ? Md3.typeScale.bodySmall.size : Md3.typeScale.bodyMedium.size
+                            font.weight: 600
                             text: qsTr("Untitled event")
                             width: parent.width
                         }
@@ -698,8 +726,9 @@ Item {
                             color: Config.alpha(Config.md3.on_surface, 0.7)
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
+                            font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodySmall.size
+                            font.weight: 600
                             text: root.formatMinutes(root.selectionStartMinutes) + "–" + root.formatMinutes(root.selectionEndMinutes)
                             visible: selectionCard.height >= 48
                             width: parent.width
@@ -729,7 +758,9 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             color: Config.alpha(Config.md3.on_surface, 0.52)
                             font.family: Config.fontName
-                            font.pixelSize: 11
+                            font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
+                            font.pixelSize: Md3.typeScale.labelSmall.size
+                            font.weight: Md3.typeScale.labelSmall.weight
                             text: index > 0 && index < 24 ? String(index).padStart(2, "0") + ":00" : ""
                         }
                     }
@@ -809,8 +840,9 @@ Item {
                                 color: Config.md3.on_surface
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: eventCard.height < 48 ? 12 : 14
-                                font.weight: Font.Bold
+                                font.letterSpacing: eventCard.height < 48 ? Md3.typeScale.bodySmall.letterSpacing : Md3.typeScale.bodyMedium.letterSpacing
+                                font.pixelSize: eventCard.height < 48 ? Md3.typeScale.bodySmall.size : Md3.typeScale.bodyMedium.size
+                                font.weight: 600
                                 maximumLineCount: eventCard.height >= 76 ? 2 : 1
                                 text: eventCard.modelData.eventData.title || qsTr("Untitled event")
                                 width: parent.width
@@ -820,8 +852,9 @@ Item {
                                 color: Config.alpha(Config.md3.on_surface, 0.68)
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 12
-                                font.weight: Font.DemiBold
+                                font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodySmall.size
+                                font.weight: 600
                                 text: root.formatEventTime(eventCard.modelData.eventData)
                                 visible: eventCard.height >= 50
                                 width: parent.width
@@ -830,8 +863,9 @@ Item {
                                 color: Config.alpha(Config.md3.on_surface, 0.58)
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 12
-                                font.weight: Font.Medium
+                                font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodySmall.size
+                                font.weight: Md3.typeScale.bodySmall.weight
                                 text: eventCard.modelData.eventData.location || ""
                                 visible: eventCard.height >= 84 && text !== ""
                                 width: parent.width
@@ -840,7 +874,9 @@ Item {
                                 color: Config.alpha(Config.md3.on_surface, 0.62)
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 12
+                                font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodySmall.size
+                                font.weight: Md3.typeScale.bodySmall.weight
                                 maximumLineCount: 2
                                 text: eventCard.modelData.eventData.description || ""
                                 visible: eventCard.height >= 118 && text !== ""
@@ -873,7 +909,7 @@ Item {
     }
     Item {
         anchors.fill: parent
-        visible: !root.available
+        visible: !root.available && !root.loading
         z: 20
 
         Rectangle {
@@ -893,23 +929,20 @@ Item {
                 radius: 19
                 width: 58
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 29
-                    layer.enabled: true
-                    source: Quickshell.iconPath("x-office-calendar-symbolic")
-                    width: 29
-
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.primary
-                    }
+                    color: Config.md3.primary
+                    filled: true
+                    name: "x-office-calendar-symbolic"
+                    size: 32
                 }
             }
             Text {
                 color: Config.md3.on_surface
                 font.family: Config.fontName
-                font.pixelSize: 20
-                font.weight: Font.Bold
+                font.letterSpacing: Md3.typeScale.titleLarge.letterSpacing
+                font.pixelSize: Md3.typeScale.titleLarge.size
+                font.weight: 600
                 horizontalAlignment: Text.AlignHCenter
                 text: qsTr("Connect a calendar account")
                 width: parent.width
@@ -917,7 +950,9 @@ Item {
             Text {
                 color: Config.md3.on_surface_variant
                 font.family: Config.fontName
-                font.pixelSize: 14
+                font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.bodyMedium.size
+                font.weight: Md3.typeScale.bodyMedium.weight
                 horizontalAlignment: Text.AlignHCenter
                 text: qsTr("Add Google, Microsoft 365, or iCloud from the sidebar. Every event appears in this shared timeline.")
                 width: parent.width
@@ -925,20 +960,9 @@ Item {
             }
         }
     }
-    Item {
+    CalendarLoadingState {
         anchors.fill: parent
-        visible: root.available && root.loading && root.events.length === 0
+        visible: root.loading && root.events.length === 0
         z: 21
-
-        Rectangle {
-            anchors.fill: parent
-            color: Config.alpha(Config.md3.surface, Config.lightTheme ? 0.66 : 0.5)
-            radius: 22
-        }
-        LoadingIndicator {
-            anchors.centerIn: parent
-            height: 52
-            width: 52
-        }
     }
 }

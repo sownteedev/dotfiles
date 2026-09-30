@@ -24,6 +24,9 @@ PanelWindow {
     property var notificationObject: null
     property var pendingNotification: null
     property string previewPath: ""
+    readonly property var qrCodes: previewPath !== "" && previewPath === CaptureService.screenshotQrPath ? CaptureService.screenshotQrCodes : []
+    property bool qrExpanded: false
+    readonly property bool qrScanning: previewPath !== "" && previewPath === CaptureService.screenshotQrPath && CaptureService.screenshotQrBusy
     readonly property bool screenshotPathReady: previewPath !== ""
     readonly property bool screenshotPreviewFailed: screenshotPathReady && screenshotPreview.status === Image.Error
     readonly property bool screenshotReady: screenshotPathReady && screenshotPreview.status === Image.Ready
@@ -132,14 +135,20 @@ PanelWindow {
         if (empty)
             idle();
     }
+    function resumeAutoClose() {
+        if (!active || qrExpanded || qrScanning || qrPanel.copyBusy || toastHover.hovered || swipeDrag.active)
+            autoCloseTimer.stop();
+        else
+            autoCloseTimer.restart();
+    }
     function revealToast() {
         pendingShowTimer.stop();
         pendingNotification = null;
         active = false;
         visible = true;
-        autoCloseTimer.restart();
         Qt.callLater(function () {
             root.active = true;
+            root.resumeAutoClose();
         });
     }
     function showNotification(notification, alreadyRetained) {
@@ -153,6 +162,7 @@ PanelWindow {
         }
         removeTimer.stop();
         toast.swipeOffset = 0;
+        qrExpanded = false;
         previewPath = CaptureService.screenshotPath;
         if (notificationObject !== notification) {
             if (!alreadyRetained)
@@ -203,6 +213,14 @@ PanelWindow {
         if (notification)
             NotificationHistory.releasePopup(notificationId, notification);
     }
+    onPreviewPathChanged: qrExpanded = false
+    onQrCodesChanged: {
+        if (qrCodes.length === 0)
+            qrExpanded = false;
+        resumeAutoClose();
+    }
+    onQrExpandedChanged: resumeAutoClose()
+    onQrScanningChanged: resumeAutoClose()
 
     Connections {
         function onDndActiveChanged() {
@@ -229,7 +247,7 @@ PanelWindow {
     Timer {
         id: autoCloseTimer
 
-        interval: 3000
+        interval: root.qrCodes.length > 0 ? 8000 : 3000
         repeat: false
 
         onTriggered: root.closeToast()
@@ -386,12 +404,7 @@ PanelWindow {
         HoverHandler {
             id: toastHover
 
-            onHoveredChanged: {
-                if (hovered)
-                    autoCloseTimer.stop();
-                else if (root.active)
-                    autoCloseTimer.restart();
-            }
+            onHoveredChanged: root.resumeAutoClose()
         }
         DragHandler {
             id: swipeDrag
@@ -412,8 +425,7 @@ PanelWindow {
                     swipeDismissTimer.restart();
                 } else {
                     toast.swipeOffset = 0;
-                    if (root.active && !toastHover.hovered)
-                        autoCloseTimer.restart();
+                    root.resumeAutoClose();
                 }
             }
             onTranslationChanged: toast.swipeOffset = Math.max(0, translation.x)
@@ -446,12 +458,21 @@ PanelWindow {
                     border.color: previewArea.containsMouse ? Config.alpha(Config.md3.primary, 0.72) : Config.alpha(Config.md3.outline_variant, 0.3)
                     border.width: 1
                     color: Config.shellBlurNotificationEnabled ? Config.alpha(Config.md3.surface_container_lowest, root.blurSurfaceOpacity) : Config.md3.surface_container_lowest
+                    enabled: !root.qrExpanded && root.active
+                    opacity: root.qrExpanded ? 0 : 1
                     radius: 12
                     scale: previewArea.pressed ? 0.985 : 1
+                    visible: opacity > 0
 
                     Behavior on border.color {
                         ColorAnimation {
                             duration: 140
+                        }
+                    }
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Config.animationDuration(Md3.motion.short3)
+                            easing.type: Easing.OutCubic
                         }
                     }
                     Behavior on scale {
@@ -518,6 +539,63 @@ PanelWindow {
                             CaptureService.openScreenshot();
                         })
                     }
+                    SettingsActionButton {
+                        anchors.bottom: parent.bottom
+                        anchors.margins: 10
+                        anchors.right: parent.right
+                        height: 36
+                        iconName: "qrscanner-symbolic"
+                        primary: true
+                        radius: height / 2
+                        text: root.qrCodes.length === 1 ? qsTr("View QR") : qsTr("%1 QR codes").arg(root.qrCodes.length)
+                        visible: root.qrCodes.length > 0
+
+                        onClicked: root.qrExpanded = true
+                    }
+                }
+                ScreenshotQrPanel {
+                    id: qrPanel
+
+                    anchors.fill: parent
+                    codes: root.qrCodes
+                    opacity: root.qrExpanded ? 1 : 0
+                    visible: opacity > 0
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Config.animationDuration(Md3.motion.short3)
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+
+                    onBackRequested: {
+                        if (root.active)
+                            root.qrExpanded = false;
+                    }
+                    onCopyBusyChanged: root.resumeAutoClose()
+                    onCopyRequested: index => {
+                        if (!root.active)
+                            return;
+                        var path = root.previewPath;
+                        copyBusy = true;
+                        copyFailed = false;
+                        CaptureService.copyScreenshotQr(path, index, success => {
+                            if (!root || root.previewPath !== path)
+                                return;
+                            qrPanel.copyBusy = false;
+                            qrPanel.copyFailed = !success;
+                            if (success)
+                                qrPanel.copiedIndex = index;
+                        });
+                    }
+                    onOpenRequested: index => {
+                        if (!root.active || !root.screenshotReady)
+                            return;
+                        var path = root.previewPath;
+                        root.finishAction(function () {
+                            CaptureService.openScreenshotQr(path, index);
+                        }, true);
+                    }
                 }
             }
             Rectangle {
@@ -562,16 +640,24 @@ PanelWindow {
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: root.summary
                             textFormat: Text.PlainText
                         }
                         Text {
                             Layout.fillWidth: true
-                            color: Config.md3.on_surface_variant
+                            color: Config.md3.on_surface
+                            elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 13
+                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                            font.weight: Md3.typeScale.bodyMedium.weight
+                            lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             maximumLineCount: 2
                             text: root.body
                             textFormat: Text.PlainText

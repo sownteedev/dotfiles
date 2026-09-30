@@ -4,6 +4,7 @@ import "../../service"
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
 
 Item {
     id: root
@@ -33,7 +34,7 @@ Item {
         };
     }
     function refreshIntegrations() {
-        GoogleService.checkAuthentication();
+        CalendarService.ensureRunning();
         EngineWallpaperService.checkAvailability();
         SettingsHubService.refresh();
     }
@@ -58,9 +59,11 @@ Item {
     }
 
     Component.onCompleted: {
+        CalendarService.acquire();
         syncFields();
         Qt.callLater(root.refreshIntegrations);
     }
+    Component.onDestruction: CalendarService.release()
 
     Connections {
         function onQuickshellSettingsChanged() {
@@ -153,7 +156,11 @@ Item {
                         Layout.fillWidth: true
                         color: WeatherService.locationDetectionError ? Config.md3.error : Config.alpha(Config.md3.on_surface, 0.58)
                         font.family: Config.fontName
-                        font.pixelSize: 12
+                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.bodyMedium.size
+                        font.weight: Md3.typeScale.bodyMedium.weight
+                        lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: WeatherService.locationDetectionStatus
                         visible: text !== ""
                         wrapMode: Text.Wrap
@@ -188,7 +195,7 @@ Item {
                 statusText: klipyApiKeyField.text !== "" ? qsTr("Configured") : qsTr("Setup required")
                 title: qsTr("KLIPY")
 
-                onActionClicked: Qt.openUrlExternally("https://partner.klipy.com")
+                onActionClicked: Quickshell.execDetached(DefaultAppsService.openUrl("https://partner.klipy.com"))
 
                 SettingsTextField {
                     id: klipyApiKeyField

@@ -1,9 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Networking
-import Quickshell.Widgets
 import "../../../../" // for Config
 import "../../../../service"
 import "../../../../components"
@@ -147,24 +145,22 @@ Item {
                             visible: WifiService.connectionType !== "ethernet"
                             width: 26
                         }
-                        IconImage {
-                            height: 26
-                            layer.enabled: true
-                            source: Quickshell.iconPath(WifiService.iconName)
+                        Md3Icon {
+                            color: Config.md3.primary
+                            name: WifiService.iconName
+                            size: 26
                             visible: WifiService.connectionType === "ethernet"
-                            width: 26
-
-                            layer.effect: ColorOverlay {
-                                color: Config.md3.primary
-                            }
                         }
                         Text {
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             elide: Text.ElideRight
                             font.family: Config.fontName
-                            font.pixelSize: 16
-                            font.weight: Font.Bold
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
+                            font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             text: wifiPageRoot.connectionName
                         }
                         Rectangle {
@@ -204,8 +200,11 @@ Item {
                         Text {
                             color: Config.md3.on_surface_variant
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             renderType: Text.NativeRendering
                             text: "Frequency:"
                             visible: wifiPageRoot.connectionType !== "ethernet"
@@ -214,9 +213,12 @@ Item {
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignRight
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             renderType: Text.NativeRendering
                             text: wifiPageRoot.activeFreq
                             visible: wifiPageRoot.connectionType !== "ethernet"
@@ -224,8 +226,11 @@ Item {
                         Text {
                             color: Config.md3.on_surface_variant
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             renderType: Text.NativeRendering
                             text: "Bandwidth:"
                             visible: wifiPageRoot.connectionType !== "ethernet"
@@ -234,9 +239,12 @@ Item {
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignRight
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             renderType: Text.NativeRendering
                             text: wifiPageRoot.activeBandwidth
                             visible: wifiPageRoot.connectionType !== "ethernet"
@@ -244,8 +252,11 @@ Item {
                         Text {
                             color: Config.md3.on_surface_variant
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             renderType: Text.NativeRendering
                             text: "IP Address:"
                         }
@@ -253,9 +264,12 @@ Item {
                             Layout.fillWidth: true
                             color: Config.md3.on_surface
                             font.family: Config.fontName
-                            font.pixelSize: 15
+                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.titleMedium.size
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignRight
+                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                            lineHeightMode: Text.FixedHeight
                             renderType: Text.NativeRendering
                             text: wifiPageRoot.activeIp
                         }
@@ -309,8 +323,11 @@ Item {
                                     Layout.fillWidth: true
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 14
-                                    font.weight: Font.Bold
+                                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                    font.pixelSize: Md3.typeScale.titleMedium.size
+                                    font.weight: Font.DemiBold
+                                    lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                    lineHeightMode: Text.FixedHeight
                                     text: WifiService.connectivityText
                                 }
                                 Text {
@@ -318,7 +335,11 @@ Item {
                                     color: Config.md3.on_surface_variant
                                     elide: Text.ElideRight
                                     font.family: Config.fontName
-                                    font.pixelSize: 12
+                                    font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                                    font.pixelSize: Md3.typeScale.bodyMedium.size
+                                    font.weight: Md3.typeScale.bodyMedium.weight
+                                    lineHeight: Md3.typeScale.bodyMedium.lineHeight
+                                    lineHeightMode: Text.FixedHeight
                                     text: WifiService.captivePortal ? "Open the network login page" : "The network is connected but Internet access is restricted"
                                 }
                             }
@@ -330,7 +351,7 @@ Item {
 
                                 Behavior on color {
                                     ColorAnimation {
-                                        duration: 140
+                                        duration: Config.animationDuration(140)
                                     }
                                 }
 
@@ -340,8 +361,11 @@ Item {
                                     anchors.centerIn: parent
                                     color: Config.md3.on_surface
                                     font.family: Config.fontName
-                                    font.pixelSize: 13
-                                    font.weight: Font.DemiBold
+                                    font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                    font.pixelSize: Md3.typeScale.labelLarge.size
+                                    font.weight: Md3.typeScale.labelLarge.weight
+                                    lineHeight: Md3.typeScale.labelLarge.lineHeight
+                                    lineHeightMode: Text.FixedHeight
                                     text: WifiService.captivePortal ? "Sign in" : "Check again"
                                 }
                                 MouseArea {
@@ -368,8 +392,11 @@ Item {
             Text {
                 color: Config.md3.on_surface
                 font.family: Config.fontName
-                font.pixelSize: 16
-                font.weight: Font.Bold
+                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                font.pixelSize: Md3.typeScale.titleMedium.size
+                font.weight: Font.DemiBold
+                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                lineHeightMode: Text.FixedHeight
                 text: "Available Networks"
             }
 

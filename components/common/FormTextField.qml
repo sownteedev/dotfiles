@@ -5,28 +5,28 @@ import "../../"
 ColumnLayout {
     id: root
 
-    property color backgroundColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.6 : 0.24)
+    property color backgroundColor: Config.md3.surface_container_low
     property int echoMode: TextInput.Normal
     readonly property bool editing: inputItem ? inputItem.activeFocus : false
-    property int fieldHeight: multiline ? 100 : 50
-    property real fieldRadius: 12
-    property color focusedBorderColor: Config.alpha(Config.md3.primary, 0.55)
+    property int fieldHeight: multiline ? 112 : 56
+    property real fieldRadius: Md3.shape.medium
+    property color focusedBorderColor: Config.alpha(Config.md3.primary, 0.52)
     property int horizontalAlignment: Text.AlignLeft
     property string inputFontFamily: Config.fontName
     property int inputFontPixelSize: 15
-    property int inputFontWeight: Font.DemiBold
+    property int inputFontWeight: Font.Medium
     readonly property var inputItem: editorLoader.item
     property int inputMethodHints: Qt.ImhNone
     property string label: ""
     property color labelColor: Config.md3.on_surface
     property string labelFontFamily: Config.fontName
-    property int labelFontPixelSize: 16
-    property int labelFontWeight: Font.Bold
+    property int labelFontPixelSize: 14
+    property int labelFontWeight: Font.DemiBold
     property int maximumLength: -1
     property bool multiline: false
-    property color normalBorderColor: Config.alpha(Config.md3.on_surface, 0.06)
+    property color normalBorderColor: Config.alpha(Config.md3.outline, 0.22)
     property string placeholder: ""
-    property color placeholderColor: Config.md3.outline
+    property color placeholderColor: Config.alpha(Config.md3.on_surface_variant, 0.45)
     property string placeholderFontFamily: inputFontFamily
     property int placeholderFontPixelSize: inputFontPixelSize
     property int placeholderFontWeight: inputFontWeight
@@ -48,12 +48,13 @@ ColumnLayout {
             inputItem.text = text;
     }
 
-    opacity: enabled ? 1 : 0.5
-    spacing: 6
+    Layout.minimumWidth: 0
+    opacity: enabled ? 1 : Md3.state.disabledContent
+    spacing: Md3.spacing.xs
 
     Behavior on opacity {
         NumberAnimation {
-            duration: 120
+            duration: Config.animationDuration(Md3.motion.short2)
         }
     }
 
@@ -61,10 +62,15 @@ ColumnLayout {
     onTextChanged: syncEditorText()
 
     Text {
+        Layout.fillWidth: true
+        Layout.minimumWidth: 0
         color: root.labelColor
+        elide: Text.ElideRight
         font.family: root.labelFontFamily
+        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
         font.pixelSize: root.labelFontPixelSize
         font.weight: root.labelFontWeight
+        renderType: Text.NativeRendering
         text: root.label
         visible: text !== ""
     }
@@ -78,7 +84,7 @@ ColumnLayout {
 
         Behavior on border.color {
             ColorAnimation {
-                duration: 150
+                duration: Config.animationDuration(Md3.motion.short3)
             }
         }
 
@@ -87,8 +93,8 @@ ColumnLayout {
 
             anchors.bottomMargin: root.multiline ? 15 : 10
             anchors.fill: parent
-            anchors.leftMargin: 20
-            anchors.rightMargin: 20
+            anchors.leftMargin: 16
+            anchors.rightMargin: 16
             anchors.topMargin: root.multiline ? 15 : 10
             sourceComponent: root.multiline ? multilineEditor : singleLineEditor
 
@@ -97,10 +103,13 @@ ColumnLayout {
         Text {
             anchors.fill: editorLoader
             color: root.placeholderColor
+            elide: root.multiline ? Text.ElideNone : Text.ElideRight
             font.family: root.placeholderFontFamily
+            font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
             font.pixelSize: root.placeholderFontPixelSize
             font.weight: root.placeholderFontWeight
             horizontalAlignment: root.horizontalAlignment
+            renderType: Text.NativeRendering
             text: root.placeholder
             verticalAlignment: root.verticalAlignment
             visible: root.text === ""
@@ -118,10 +127,15 @@ ColumnLayout {
         id: singleLineEditor
 
         TextInput {
+            Accessible.description: root.placeholder
+            Accessible.name: root.label !== "" ? root.label : root.placeholder
+            Accessible.role: Accessible.EditableText
+            activeFocusOnTab: !root.readOnly
             clip: true
             color: root.textColor
             echoMode: root.echoMode
             font.family: root.inputFontFamily
+            font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
             font.pixelSize: root.inputFontPixelSize
             font.weight: root.inputFontWeight
             horizontalAlignment: root.horizontalAlignment
@@ -143,8 +157,13 @@ ColumnLayout {
         id: multilineEditor
 
         TextEdit {
+            Accessible.description: root.placeholder
+            Accessible.name: root.label !== "" ? root.label : root.placeholder
+            Accessible.role: Accessible.EditableText
+            activeFocusOnTab: !root.readOnly
             color: root.textColor
             font.family: root.inputFontFamily
+            font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
             font.pixelSize: root.inputFontPixelSize
             font.weight: root.inputFontWeight
             horizontalAlignment: root.horizontalAlignment

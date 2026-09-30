@@ -883,6 +883,14 @@ fn quickshell_snapshot(paths: &SettingsPaths, config_source: &str) -> Value {
         "captureRecordingDirPath",
         "wallpaperEngineAssetsDirPath",
         "wallpaperEngineWorkshopDirPath",
+        "defaultAudioPlayer",
+        "defaultBrowser",
+        "defaultDocumentViewer",
+        "defaultEditor",
+        "defaultFileManager",
+        "defaultImageViewer",
+        "defaultTerminal",
+        "defaultVideoPlayer",
     ] {
         let fallback = settings
             .get(name)

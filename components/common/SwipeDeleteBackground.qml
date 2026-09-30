@@ -1,4 +1,5 @@
 import "../.."
+import ".."
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import Quickshell
@@ -66,16 +67,12 @@ Item {
                     }
                 }
 
-                IconImage {
+                Md3Icon {
                     anchors.centerIn: parent
-                    height: 20
-                    layer.enabled: true
-                    source: Quickshell.iconPath("user-trash-symbolic")
-                    width: 20
-
-                    layer.effect: ColorOverlay {
-                        color: Config.md3.on_error
-                    }
+                    color: Config.md3.on_error
+                    filled: root.armed
+                    name: "user-trash-symbolic"
+                    size: 22
                 }
             }
             Text {

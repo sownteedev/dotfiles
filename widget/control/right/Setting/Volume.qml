@@ -14,12 +14,20 @@ Item {
     readonly property int appStreamCount: AudioService.appStreamCount
     property bool inputDropOpen: false
     property bool outputDropOpen: false
+    property real popupAnchorWidth: 0
+    property real popupAnchorX: -1
     property bool popupIsSink: true
     property var popupModel: []
     property bool popupOpen: false
     property bool popupOpenAbove: false
+    property real popupRightMargin: 12
     property var popupTargetStream: null
+    property real popupWidth: 260
     property real popupY: 0
+    readonly property real sliderControlInset: 12
+    readonly property real sliderControlSpacing: 8
+    readonly property real sliderIconContainerSize: 32
+    readonly property real sliderIconSize: 20
 
     function closeDevicePopup() {
         popupOpen = false;
@@ -68,11 +76,16 @@ Item {
                 ++visibleCount;
         }
 
-        var popupHeight = visibleCount * 46 + 16;
+        var popupHeight = Math.min(visibleCount * 46 + 16, Math.max(0, height - 24));
         var position = button.mapToItem(volumePageRoot, 0, 0);
         var belowY = position.y + button.height + 8;
-        popupOpenAbove = belowY + popupHeight > height;
+        var spaceBelow = height - belowY - 12;
+        var spaceAbove = position.y - 12;
+        popupOpenAbove = spaceBelow < popupHeight && spaceAbove > spaceBelow;
         popupY = popupOpenAbove ? position.y - popupHeight - 8 : belowY;
+        popupAnchorWidth = Math.min(44, button.width);
+        popupAnchorX = position.x + Math.max(0, button.width - popupAnchorWidth);
+        popupRightMargin = Math.max(12, width - position.x - button.width);
         popupModel = devices;
         popupIsSink = isSink;
         popupTargetStream = stream;
@@ -108,18 +121,25 @@ Item {
                 Text {
                     color: Config.md3.on_surface
                     font.family: Config.fontName
-                    font.pixelSize: 16
-                    font.weight: Font.Bold
+                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                    font.pixelSize: Md3.typeScale.titleMedium.size
+                    font.weight: Font.DemiBold
+                    lineHeight: Md3.typeScale.titleMedium.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: "Applications"
                 }
 
                 // Empty state message
                 Text {
                     Layout.fillWidth: true
-                    color: Config.alpha(Config.md3.on_surface, 0.35)
+                    color: Config.md3.on_surface_variant
                     font.family: Config.fontName
-                    font.pixelSize: 14
+                    font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                    font.pixelSize: Md3.typeScale.bodyLarge.size
+                    font.weight: Md3.typeScale.bodyLarge.weight
                     horizontalAlignment: Text.AlignHCenter
+                    lineHeight: Md3.typeScale.bodyLarge.lineHeight
+                    lineHeightMode: Text.FixedHeight
                     text: "No active audio applications"
                     visible: volumePageRoot.appStreamCount === 0
                 }
@@ -187,8 +207,11 @@ Item {
                                         color: Config.md3.on_surface
                                         elide: Text.ElideRight
                                         font.family: Config.fontName
-                                        font.pixelSize: 15
-                                        font.weight: Font.Medium
+                                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                        font.pixelSize: Md3.typeScale.titleMedium.size
+                                        font.weight: Md3.typeScale.titleMedium.weight
+                                        lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                        lineHeightMode: Text.FixedHeight
                                         text: modelData ? (modelData.description || modelData.name || "App Stream") : ""
                                     }
 
@@ -206,17 +229,17 @@ Item {
 
                                         Behavior on border.color {
                                             ColorAnimation {
-                                                duration: 120
+                                                duration: Config.animationDuration(120)
                                             }
                                         }
                                         Behavior on color {
                                             ColorAnimation {
-                                                duration: 120
+                                                duration: Config.animationDuration(120)
                                             }
                                         }
                                         Behavior on scale {
                                             NumberAnimation {
-                                                duration: 80
+                                                duration: Config.animationDuration(80)
                                             }
                                         }
 
@@ -231,23 +254,21 @@ Item {
                                                 color: Config.md3.on_surface
                                                 elide: Text.ElideRight
                                                 font.family: Config.fontName
-                                                font.pixelSize: 15
+                                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                                font.pixelSize: Md3.typeScale.titleMedium.size
                                                 font.weight: Font.DemiBold
+                                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                                lineHeightMode: Text.FixedHeight
                                                 text: {
                                                     var isOut = AudioService.isPlaybackStream(modelData);
                                                     var dev = AudioService.streamTargetDevice(modelData, isOut);
                                                     return dev ? (dev.description || dev.name) : (isOut ? "Default Output" : "Default Input");
                                                 }
                                             }
-                                            IconImage {
-                                                height: 12
-                                                layer.enabled: true
-                                                source: Quickshell.iconPath("pan-down-symbolic")
-                                                width: 12
-
-                                                layer.effect: ColorOverlay {
-                                                    color: Config.md3.outline
-                                                }
+                                            Md3Icon {
+                                                color: Config.md3.outline
+                                                name: "pan-down-symbolic"
+                                                size: 12
                                             }
                                         }
                                         MouseArea {
@@ -275,38 +296,23 @@ Item {
 
                                     RowLayout {
                                         anchors.fill: parent
-                                        anchors.leftMargin: 20
+                                        anchors.leftMargin: volumePageRoot.sliderControlInset
                                         anchors.rightMargin: 20
-                                        spacing: 10
+                                        spacing: volumePageRoot.sliderControlSpacing
 
                                         // Mute/Unmute speaker icon button on the left
-                                        Rectangle {
-                                            color: "transparent"
-                                            height: 24
-                                            width: 24
+                                        Md3IconButton {
+                                            Accessible.name: checked ? qsTr("Unmute application") : qsTr("Mute application")
+                                            Layout.preferredHeight: 40
+                                            Layout.preferredWidth: 40
+                                            checkable: true
+                                            checked: enabled && modelData.audio.muted
+                                            containerSize: volumePageRoot.sliderIconContainerSize
+                                            enabled: !!modelData && !!modelData.audio
+                                            iconName: !modelData || !modelData.audio || modelData.audio.muted ? "audio-volume-muted-symbolic" : modelData.audio.volume > 0.6 ? "audio-volume-high-symbolic" : modelData.audio.volume > 0.3 ? "audio-volume-medium-symbolic" : "audio-volume-low-symbolic"
+                                            iconSize: volumePageRoot.sliderIconSize
 
-                                            IconImage {
-                                                anchors.centerIn: parent
-                                                height: 22
-                                                layer.enabled: true
-                                                source: Quickshell.iconPath(!modelData || !modelData.audio || modelData.audio.muted ? "audio-volume-muted-symbolic" : modelData.audio.volume > 0.6 ? "audio-volume-high-symbolic" : modelData.audio.volume > 0.3 ? "audio-volume-medium-symbolic" : "audio-volume-low-symbolic")
-                                                width: 22
-
-                                                layer.effect: ColorOverlay {
-                                                    color: modelData && modelData.audio && !modelData.audio.muted ? Config.md3.primary : Config.md3.on_surface_variant
-                                                }
-                                            }
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                hoverEnabled: true
-
-                                                onClicked: {
-                                                    if (modelData && modelData.audio) {
-                                                        modelData.audio.muted = !modelData.audio.muted;
-                                                    }
-                                                }
-                                            }
+                                            onClicked: modelData.audio.muted = !modelData.audio.muted
                                         }
 
                                         // Slider in the middle
@@ -329,8 +335,11 @@ Item {
                                         Text {
                                             color: (modelData && modelData.audio && !modelData.audio.muted) ? Config.md3.primary : Config.md3.on_surface_variant
                                             font.family: Config.fontName
-                                            font.pixelSize: 15
-                                            font.weight: Font.Bold
+                                            font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                            font.pixelSize: Md3.typeScale.titleMedium.size
+                                            font.weight: Font.DemiBold
+                                            lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                            lineHeightMode: Text.FixedHeight
                                             text: (modelData && modelData.audio) ? Math.round(modelData.audio.volume * 100) + "%" : "0%"
                                         }
                                     }
@@ -355,8 +364,11 @@ Item {
                     Text {
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 16
-                        font.weight: Font.Bold
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
+                        font.weight: Font.DemiBold
+                        lineHeight: Md3.typeScale.titleMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: "Output Devices"
                     }
 
@@ -374,17 +386,17 @@ Item {
 
                         Behavior on border.color {
                             ColorAnimation {
-                                duration: 120
+                                duration: Config.animationDuration(120)
                             }
                         }
                         Behavior on color {
                             ColorAnimation {
-                                duration: 120
+                                duration: Config.animationDuration(120)
                             }
                         }
                         Behavior on scale {
                             NumberAnimation {
-                                duration: 80
+                                duration: Config.animationDuration(80)
                             }
                         }
 
@@ -399,23 +411,22 @@ Item {
                                 color: Config.md3.on_surface
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 15
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
                                 font.weight: Font.DemiBold
+                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: Pipewire.defaultAudioSink ? (Pipewire.defaultAudioSink.description || Pipewire.defaultAudioSink.name || "Unknown device") : "No output device"
                             }
-                            IconImage {
-                                height: 16
-                                layer.enabled: true
+                            Md3Icon {
+                                color: Config.md3.on_surface_variant
+                                name: "pan-down-symbolic"
                                 rotation: volumePageRoot.outputDropOpen ? 180 : 0
-                                source: Quickshell.iconPath("pan-down-symbolic")
-                                width: 16
+                                size: 16
 
-                                layer.effect: ColorOverlay {
-                                    color: Config.md3.on_surface_variant
-                                }
                                 Behavior on rotation {
                                     NumberAnimation {
-                                        duration: 150
+                                        duration: Config.animationDuration(Md3.motion.short3)
                                     }
                                 }
                             }
@@ -444,40 +455,23 @@ Item {
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.leftMargin: 20
+                            anchors.leftMargin: volumePageRoot.sliderControlInset
                             anchors.rightMargin: 20
-                            spacing: 12
+                            spacing: volumePageRoot.sliderControlSpacing
 
                             // Mute toggle button
-                            Rectangle {
-                                color: "transparent"
-                                height: 24
-                                width: 24
+                            Md3IconButton {
+                                Accessible.name: checked ? qsTr("Unmute speaker") : qsTr("Mute speaker")
+                                Layout.preferredHeight: 40
+                                Layout.preferredWidth: 40
+                                checkable: true
+                                checked: enabled && Pipewire.defaultAudioSink.audio.muted
+                                containerSize: volumePageRoot.sliderIconContainerSize
+                                enabled: !!Pipewire.defaultAudioSink && !!Pipewire.defaultAudioSink.audio
+                                iconName: !Pipewire.defaultAudioSink || Pipewire.defaultAudioSink.audio.muted ? "audio-volume-muted-symbolic" : Pipewire.defaultAudioSink.audio.volume > 0.6 ? "audio-volume-high-symbolic" : Pipewire.defaultAudioSink.audio.volume > 0.3 ? "audio-volume-medium-symbolic" : "audio-volume-low-symbolic"
+                                iconSize: volumePageRoot.sliderIconSize
 
-                                IconImage {
-                                    anchors.centerIn: parent
-                                    height: 22
-                                    layer.enabled: true
-                                    source: Quickshell.iconPath(!Pipewire.defaultAudioSink || Pipewire.defaultAudioSink.audio.muted ? "audio-volume-muted-symbolic" : Pipewire.defaultAudioSink.audio.volume > 0.6 ? "audio-volume-high-symbolic" : Pipewire.defaultAudioSink.audio.volume > 0.3 ? "audio-volume-medium-symbolic" : "audio-volume-low-symbolic")
-                                    width: 22
-
-                                    layer.effect: ColorOverlay {
-                                        color: Pipewire.defaultAudioSink && !Pipewire.defaultAudioSink.audio.muted ? Config.md3.primary : Config.md3.on_surface_variant
-                                    }
-                                }
-                                MouseArea {
-                                    id: speakerMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    onClicked: {
-                                        if (Pipewire.defaultAudioSink) {
-                                            Pipewire.defaultAudioSink.audio.muted = !Pipewire.defaultAudioSink.audio.muted;
-                                        }
-                                    }
-                                }
+                                onClicked: Pipewire.defaultAudioSink.audio.muted = !Pipewire.defaultAudioSink.audio.muted
                             }
                             CustomVolumeSlider {
                                 Layout.fillWidth: true
@@ -512,8 +506,11 @@ Item {
                             Text {
                                 color: (Pipewire.defaultAudioSink && !Pipewire.defaultAudioSink.audio.muted) ? Config.md3.primary : Config.md3.on_surface_variant
                                 font.family: Config.fontName
-                                font.pixelSize: 15
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
+                                font.weight: Font.DemiBold
+                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: {
                                     if (!Pipewire.defaultAudioSink || !Pipewire.defaultAudioSink.audio)
                                         return "0%";
@@ -530,8 +527,11 @@ Item {
                         Layout.topMargin: 4
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 14
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
                         font.weight: Font.DemiBold
+                        lineHeight: Md3.typeScale.titleMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: "Balance"
                         visible: Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.audio && Pipewire.defaultAudioSink.audio.volumes && Pipewire.defaultAudioSink.audio.volumes.length >= 2
                     }
@@ -553,10 +553,13 @@ Item {
                             spacing: 12
 
                             Text {
-                                color: Config.alpha(Config.md3.on_surface, 0.6)
+                                color: Config.md3.on_surface_variant
                                 font.family: Config.fontName
-                                font.pixelSize: 14
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                font.pixelSize: Md3.typeScale.labelLarge.size
+                                font.weight: Md3.typeScale.labelLarge.weight
+                                lineHeight: Md3.typeScale.labelLarge.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: "L"
                             }
                             CustomVolumeSlider {
@@ -610,10 +613,13 @@ Item {
                                 }
                             }
                             Text {
-                                color: Config.alpha(Config.md3.on_surface, 0.6)
+                                color: Config.md3.on_surface_variant
                                 font.family: Config.fontName
-                                font.pixelSize: 14
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                font.pixelSize: Md3.typeScale.labelLarge.size
+                                font.weight: Md3.typeScale.labelLarge.weight
+                                lineHeight: Md3.typeScale.labelLarge.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: "R"
                             }
                         }
@@ -635,8 +641,11 @@ Item {
                     Text {
                         color: Config.md3.on_surface
                         font.family: Config.fontName
-                        font.pixelSize: 16
-                        font.weight: Font.Bold
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
+                        font.weight: Font.DemiBold
+                        lineHeight: Md3.typeScale.titleMedium.lineHeight
+                        lineHeightMode: Text.FixedHeight
                         text: "Input Devices"
                     }
 
@@ -654,17 +663,17 @@ Item {
 
                         Behavior on border.color {
                             ColorAnimation {
-                                duration: 120
+                                duration: Config.animationDuration(120)
                             }
                         }
                         Behavior on color {
                             ColorAnimation {
-                                duration: 120
+                                duration: Config.animationDuration(120)
                             }
                         }
                         Behavior on scale {
                             NumberAnimation {
-                                duration: 80
+                                duration: Config.animationDuration(80)
                             }
                         }
 
@@ -679,23 +688,22 @@ Item {
                                 color: Config.md3.on_surface
                                 elide: Text.ElideRight
                                 font.family: Config.fontName
-                                font.pixelSize: 15
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
                                 font.weight: Font.DemiBold
+                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: Pipewire.defaultAudioSource ? (Pipewire.defaultAudioSource.description || Pipewire.defaultAudioSource.name || "Unknown device") : "No input device"
                             }
-                            IconImage {
-                                height: 16
-                                layer.enabled: true
+                            Md3Icon {
+                                color: Config.md3.on_surface_variant
+                                name: "pan-down-symbolic"
                                 rotation: volumePageRoot.inputDropOpen ? 180 : 0
-                                source: Quickshell.iconPath("pan-down-symbolic")
-                                width: 16
+                                size: 16
 
-                                layer.effect: ColorOverlay {
-                                    color: Config.md3.on_surface_variant
-                                }
                                 Behavior on rotation {
                                     NumberAnimation {
-                                        duration: 150
+                                        duration: Config.animationDuration(Md3.motion.short3)
                                     }
                                 }
                             }
@@ -724,40 +732,23 @@ Item {
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.leftMargin: 20
+                            anchors.leftMargin: volumePageRoot.sliderControlInset
                             anchors.rightMargin: 20
-                            spacing: 12
+                            spacing: volumePageRoot.sliderControlSpacing
 
                             // Microphone Mute toggle button
-                            Rectangle {
-                                color: "transparent"
-                                height: 24
-                                width: 24
+                            Md3IconButton {
+                                Accessible.name: checked ? qsTr("Unmute microphone") : qsTr("Mute microphone")
+                                Layout.preferredHeight: 40
+                                Layout.preferredWidth: 40
+                                checkable: true
+                                checked: enabled && Pipewire.defaultAudioSource.audio.muted
+                                containerSize: volumePageRoot.sliderIconContainerSize
+                                enabled: !!Pipewire.defaultAudioSource && !!Pipewire.defaultAudioSource.audio
+                                iconName: !Pipewire.defaultAudioSource || Pipewire.defaultAudioSource.audio.muted ? "microphone-sensitivity-muted-symbolic" : "audio-input-microphone-symbolic"
+                                iconSize: volumePageRoot.sliderIconSize
 
-                                IconImage {
-                                    anchors.centerIn: parent
-                                    height: 22
-                                    layer.enabled: true
-                                    source: Quickshell.iconPath(!Pipewire.defaultAudioSource || Pipewire.defaultAudioSource.audio.muted ? "microphone-sensitivity-muted-symbolic" : "audio-input-microphone-symbolic")
-                                    width: 22
-
-                                    layer.effect: ColorOverlay {
-                                        color: Pipewire.defaultAudioSource && !Pipewire.defaultAudioSource.audio.muted ? Config.md3.secondary : Config.md3.on_surface_variant
-                                    }
-                                }
-                                MouseArea {
-                                    id: micMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    onClicked: {
-                                        if (Pipewire.defaultAudioSource) {
-                                            Pipewire.defaultAudioSource.audio.muted = !Pipewire.defaultAudioSource.audio.muted;
-                                        }
-                                    }
-                                }
+                                onClicked: Pipewire.defaultAudioSource.audio.muted = !Pipewire.defaultAudioSource.audio.muted
                             }
                             CustomVolumeSlider {
                                 Layout.fillWidth: true
@@ -774,8 +765,11 @@ Item {
                             Text {
                                 color: (Pipewire.defaultAudioSource && !Pipewire.defaultAudioSource.audio.muted) ? Config.md3.secondary : Config.md3.on_surface_variant
                                 font.family: Config.fontName
-                                font.pixelSize: 15
-                                font.weight: Font.Bold
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: Md3.typeScale.titleMedium.size
+                                font.weight: Font.DemiBold
+                                lineHeight: Md3.typeScale.titleMedium.lineHeight
+                                lineHeightMode: Text.FixedHeight
                                 text: Pipewire.defaultAudioSource ? Math.round(Pipewire.defaultAudioSource.audio.volume * 100) + "%" : "0%"
                             }
                         }
@@ -791,6 +785,8 @@ Item {
     }
     SelectPopup {
         accentColor: volumePageRoot.popupIsSink ? Config.md3.primary : Config.md3.secondary
+        anchorWidth: volumePageRoot.popupAnchorWidth
+        anchorX: volumePageRoot.popupAnchorX
         anchors.fill: parent
         itemActive: device => volumePageRoot.popupDeviceActive(device)
         itemLabel: device => device ? AudioService.cleanDeviceName(device.description || device.name || "Device") : ""
@@ -798,7 +794,9 @@ Item {
         model: volumePageRoot.popupModel
         openAbove: volumePageRoot.popupOpenAbove
         opened: volumePageRoot.popupOpen
+        popupWidth: volumePageRoot.popupWidth
         popupY: volumePageRoot.popupY
+        rightMargin: volumePageRoot.popupRightMargin
         shadowOpacity: 0.5
 
         onDismissed: {

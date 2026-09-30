@@ -33,14 +33,15 @@ sockets using newline-delimited JSON.
 
 - system, process, battery, charging, application, and package telemetry;
 - clipboard history, persistent favorites and restoration, diagnostics, updates,
-  Wi-Fi QR generation, and display integration for Niri, DDC/CI, and Sunshine;
+  Wi-Fi QR generation, screenshot QR decoding, and display integration for Niri, DDC/CI, and Sunshine;
 - transactional Niri and SownteeShell settings, synchronized GTK 3/4 and Qt 5/6
   appearance (`settings.gtk.apply`, `settings.general.apply`: application themes, icons,
   cursor theme & size synchronized with Niri, interface typography, Kvantum/Fusion widget styles,
-  color schemes, standard dialogs, and XSettings broadcast), and greetd profile, session,
-  background, and palette synchronization;
-- Weather, Emoji/Unicode, KLIPY, Wallhaven, Steam Workshop, Wallpaper Engine,
-  preview generation, and bounded media caches.
+  color schemes, standard dialogs, and XSettings broadcast), default applications resolution,
+  and greetd profile, session, background, and palette synchronization;
+- Weather, Emoji/Unicode, KLIPY, Wallhaven, Steam Workshop, Wallpaper Engine
+  project metadata and Scene property extraction, preview generation, and
+  bounded media caches.
 
 The default socket is:
 
@@ -68,7 +69,22 @@ command output, and caches. Long-running renderers, SteamCMD, FFmpeg,
 ImageMagick, Matugen, and privileged system commands remain separate processes
 by design.
 
+For installed Wallpaper Engine Scene projects, Core extracts supported entries
+from `general.properties` in `project.json`. The shell builds the settings UI
+from that metadata, stores only per-project overrides under
+`$XDG_CACHE_HOME/sownteeshell/wallpaper-engine-properties.json`, and supplies
+them as `--set-property` arguments when starting or restarting
+`linux-wallpaperengine`; resetting a Scene removes its overrides without
+modifying the original project.
+
 Run `sownteeshell ipc methods core` for its IPC methods and parameters.
+
+`capture.qr.scan` accepts an absolute image `path` and uses local `zbarimg`
+(`zbar`) with cancellation, an 8-second timeout, bounded output, and a 64 MiB
+input-file limit. It returns deduplicated `codes` with `text`, `url`, and `host`;
+only explicit HTTP/HTTPS links without embedded credentials receive an open
+action. Images and QR content are not uploaded or persisted by this operation.
+`clipboard.copyText` copies UTF-8 text through `wl-copy` only on user request.
 
 ## Calendar daemon
 
@@ -78,7 +94,7 @@ Run `sownteeshell ipc methods core` for its IPC methods and parameters.
 - Microsoft Calendar through Microsoft Graph OAuth;
 - iCloud Calendar through CalDAV and an app-specific password;
 - Google Tasks from all connected Google accounts and task lists, with cached
-  snapshots, account-scoped mutations, and shared updates for Todo and Calendar;
+  snapshots, account-scoped mutations, and live updates in SownteeShell Calendar;
 - account and calendar visibility, event create/update/delete, iCalendar (`.ics` / `.ical`)
   parsing and batch import (`events.parseIcs`, `events.importIcs`), background
   synchronization, and live change subscriptions;
@@ -92,8 +108,8 @@ The previous Core Tasks backend and separate Tasks sign-in are no longer used.
 Local tasks stay on this device and are never uploaded automatically.
 
 `tasks.list` returns per-account cached tasks and lists, including tasks without a
-due date. Calendar renders unfinished dated tasks in the all-day lane; Todo keeps
-the complete task lists. `tasks.setVisible` only changes Calendar visibility.
+due date. Calendar renders dated tasks in the all-day lane; tasks without a due
+date remain available through `tasks.list`. `tasks.setVisible` only changes Calendar visibility.
 Task refresh failures preserve the previous complete snapshot and report a
 per-account error without stopping event synchronization. See `sownteeshell ipc
 methods calendar` for the task methods and their required account/list identifiers.

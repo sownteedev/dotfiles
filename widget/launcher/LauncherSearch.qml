@@ -1,6 +1,7 @@
 import "../../"
 import "../../components"
 import "../../components/animate" as Animate
+import "../../service"
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Controls
@@ -10,8 +11,6 @@ import Quickshell.Widgets
 
 // Unified search results list (Apps + Files).
 Item {
-    // We now rely on ListView's highlightRangeMode to scroll smoothly!
-
     id: searchRoot
 
     // Combine apps and file results into a single list, or output clipboard history/file search
@@ -31,6 +30,7 @@ Item {
 
         if (isFileMode)
             return filesSearch.displayModel;
+
         // Default mode: ONLY show apps (saving CPU/IO from file search!)
         var appList = [];
         var apps = searchResults;
@@ -73,6 +73,9 @@ Item {
         "7z": "package-x-generic-symbolic",
         "rar": "package-x-generic-symbolic"
     }
+    property var heldResults: []
+    property bool holdingResults: false
+    property bool hoverSuppressed: false
     readonly property bool isCalculatorMode: Config.launcherCalculatorEnabled && query.toLowerCase().startsWith(Config.launcherCalculatorPrefix.toLowerCase() + " ")
     readonly property bool isClipboardMode: Config.launcherClipboardEnabled && query.toLowerCase().startsWith(Config.launcherClipboardPrefix.toLowerCase() + " ")
     readonly property bool isEmojiMode: Config.launcherEmojiEnabled && query.toLowerCase().startsWith(Config.launcherEmojiPrefix.toLowerCase() + " ")
@@ -83,6 +86,7 @@ Item {
     readonly property bool providerEmpty: (isFileMode || isClipboardMode || isEmojiMode) && !providerLoading && combinedResults.length === 0
     readonly property bool providerLoading: isFileMode ? filesSearch.loading : isClipboardMode ? clipboardSearch.loading : isEmojiMode ? emojiLoader.loading : false
     property string query: ""
+    readonly property var renderedResults: combinedResults.length > 0 ? combinedResults : (holdingResults ? heldResults : [])
     // List of apps matching query
     readonly property var searchResults: {
         var apps = DesktopEntries.applications.values;
@@ -125,8 +129,14 @@ Item {
     }
     property int selectedIndex: 0
 
+    signal collapseRequested
     signal resultLaunched
+    signal resultsRestored
 
+    function clearHeldResults() {
+        holdingResults = false;
+        heldResults = [];
+    }
     function fuzzyScore(text, pattern) {
         var source = String(text || "").toLowerCase();
         var needle = String(pattern || "").toLowerCase();
@@ -137,6 +147,7 @@ Item {
             var found = source.indexOf(needle.charAt(i), cursor);
             if (found < 0)
                 return -1;
+
             score += found === previous + 1 ? 0 : found - cursor + 1;
             previous = found;
             cursor = found + 1;
@@ -173,44 +184,58 @@ Item {
             else if (item.type === "app")
                 item.data.execute();
             else if (item.type === "folder")
-                openInNeovide(item.data.path);
+                openFolder(item.data.path);
             else if (item.type === "file")
-                Quickshell.execDetached(["gio", "open", item.data.path]);
+                Quickshell.execDetached(DefaultAppsService.fileCommand(item.data.path));
             searchRoot.resultLaunched();
         }
     }
-    function openInNeovide(path) {
-        Quickshell.execDetached(["neovide", path]);
+    function openFolder(path) {
+        Quickshell.execDetached(DefaultAppsService.fileManagerCommand(path));
     }
     function selectNext() {
-        if (combinedResults.length > 0) {
-            selectedIndex = (selectedIndex + 1) % combinedResults.length;
-            wheelScrollAnimation.stop();
-            searchList.positionViewAtIndex(selectedIndex, ListView.Contain);
-        }
+        selectRelative(1);
     }
     function selectPrev() {
-        if (combinedResults.length > 0) {
-            selectedIndex = (selectedIndex - 1 + combinedResults.length) % combinedResults.length;
-            wheelScrollAnimation.stop();
-            searchList.positionViewAtIndex(selectedIndex, ListView.Contain);
-        }
+        selectRelative(-1);
+    }
+    function selectRelative(step) {
+        if (combinedResults.length === 0)
+            return;
+
+        var nextIndex = (selectedIndex + step + combinedResults.length) % combinedResults.length;
+        wheelScrollAnimation.stop();
+        selectedIndex = nextIndex;
     }
 
     clip: true
     // Auto-fit height: show up to 5 items (apps + files + clipboards), scroll for more
-    implicitHeight: Math.min(combinedResults.length, 5) * (80 + 12) - (combinedResults.length > 0 ? 12 : 0)
+    implicitHeight: Math.min(renderedResults.length, 5) * (80 + 12) - (renderedResults.length > 0 ? 12 : 0)
 
     onCombinedResultsChanged: {
+        var providerMode = isCalculatorMode || isClipboardMode || isEmojiMode || isFileMode || isGifMode || isStickerMode;
+        if (combinedResults.length > 0) {
+            var wasHoldingResults = holdingResults;
+            heldResults = combinedResults;
+            holdingResults = false;
+            if (wasHoldingResults)
+                resultsRestored();
+        } else if (!providerMode && heldResults.length > 0 && !holdingResults) {
+            holdingResults = true;
+            collapseRequested();
+        } else if (providerMode) {
+            clearHeldResults();
+            resultsRestored();
+        }
         if (_suppressIndexReset)
             return;
+
         if (combinedResults.length === 0) {
             selectedIndex = 0;
             return;
         }
-        if (selectedIndex >= combinedResults.length) {
+        if (selectedIndex >= combinedResults.length)
             selectedIndex = Math.max(0, combinedResults.length - 1);
-        }
     }
     onQueryChanged: {
         selectedIndex = 0;
@@ -219,6 +244,14 @@ Item {
     }
     onSelectedIndexChanged: {}
 
+    Timer {
+        id: hoverReleaseTimer
+
+        interval: Math.max(1, Config.animationDuration(260))
+        repeat: false
+
+        onTriggered: searchRoot.hoverSuppressed = false
+    }
     Loader {
         id: filesSearch
 
@@ -255,6 +288,7 @@ Item {
             var savedY = searchList.contentY;
             if (item)
                 item["removeFile"](path);
+
             // updateResults() fires synchronously via onFileResultsChanged
             // and replaces displayModel.  Set selectedIndex *after* the new
             // model is in place so the ListView picks up the right position.
@@ -277,11 +311,12 @@ Item {
                 var entry = fileResults[i];
                 if (!entry)
                     continue;
+
                 var path = entry.path ? entry.path : String(entry);
                 var kind = entry.kind ? entry.kind : "file";
                 var name = entry.name ? entry.name : path.substring(path.lastIndexOf("/") + 1);
                 var cachedItem = _resultCache[path];
-                if (!cachedItem || cachedItem.data.name !== name || cachedItem.type !== kind) {
+                if (!cachedItem || cachedItem.data.name !== name || cachedItem.type !== kind)
                     cachedItem = {
                         "type": kind,
                         "data": {
@@ -289,7 +324,7 @@ Item {
                             "name": name
                         }
                     };
-                }
+
                 nextCache[path] = cachedItem;
                 nextResults.push(cachedItem);
             }
@@ -385,7 +420,6 @@ Item {
             var maximumY = minimumY + Math.max(0, searchList.contentHeight - searchList.height);
             var currentTarget = wheelScrollAnimation.running ? wheelScrollAnimation.to : searchList.contentY;
             var targetY = Math.max(minimumY, Math.min(maximumY, currentTarget - delta));
-
             if (Math.abs(targetY - searchList.contentY) < 0.5)
                 return;
 
@@ -399,9 +433,12 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         currentIndex: searchRoot.selectedIndex
-        highlightFollowsCurrentItem: false
-        highlightRangeMode: ListView.NoHighlightRange
-        model: searchRoot.combinedResults
+        highlightFollowsCurrentItem: true
+        highlightMoveDuration: searchRoot._suppressIndexReset ? 0 : Config.animationDuration(220)
+        highlightRangeMode: ListView.ApplyRange
+        model: searchRoot.renderedResults
+        preferredHighlightBegin: 0
+        preferredHighlightEnd: Math.max(0, searchList.height - 92)
         spacing: 0
 
         delegate: Item {
@@ -425,11 +462,14 @@ Item {
             function characterSubtitle() {
                 if (!isEmoji || !itemData)
                     return "";
+
                 var label = isUnicode ? (itemData.category || qsTr("Unicode")) : qsTr("Emoji");
                 if (isUnicode && itemData.codepoint)
                     label += " · " + itemData.codepoint;
+
                 if (itemData.keywords)
                     label += " · " + itemData.keywords;
+
                 return label;
             }
             function requestClipboardPreview() {
@@ -452,6 +492,8 @@ Item {
 
                 deletingPath = itemData.path;
                 isDeleting = true;
+                searchRoot.hoverSuppressed = true;
+                hoverReleaseTimer.restart();
                 swipeContent.x = card.width + 20;
                 Quickshell.execDetached(["gio", "trash", deletingPath]);
                 deleteAnimation.start();
@@ -524,7 +566,7 @@ Item {
                 Rectangle {
                     id: swipeContent
 
-                    color: listMouse.containsMouse && !delegateRoot.isSelected ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
+                    color: listMouse.containsMouse && !delegateRoot.isSelected && !searchRoot.hoverSuppressed ? Config.alpha(Config.md3.on_surface, 0.1) : "transparent"
                     height: parent.height
                     radius: 28
                     width: parent.width
@@ -559,13 +601,15 @@ Item {
                                 if (isClipboard) {
                                     if (clipData.isFileImage)
                                         return "file://" + clipData.sourcePath;
+
                                     return (clipData.isImage || clipData.isVideo) ? clipboardSearch.previewPath(clipData.id) : "";
                                 }
-
                                 if (!isFile)
                                     return "";
+
                                 if (isImageFile(itemData.name))
                                     return "file://" + itemData.path;
+
                                 return isVideoFile(itemData.name) ? filesSearch.videoPreviewSource(itemData.path) : "";
                             }
                             readonly property bool isImagePreview: {
@@ -588,13 +632,25 @@ Item {
                                 visible: !iconContainer.isImagePreview && !isEmoji
 
                                 Behavior on border.color {
-                                    ColorAnimation {
-                                        duration: 160
+                                    SequentialAnimation {
+                                        PauseAnimation {
+                                            duration: Config.animationDuration(40)
+                                        }
+                                        ColorAnimation {
+                                            duration: Config.animationDuration(180)
+                                            easing.type: Easing.OutCubic
+                                        }
                                     }
                                 }
                                 Behavior on color {
-                                    ColorAnimation {
-                                        duration: 160
+                                    SequentialAnimation {
+                                        PauseAnimation {
+                                            duration: Config.animationDuration(40)
+                                        }
+                                        ColorAnimation {
+                                            duration: Config.animationDuration(180)
+                                            easing.type: Easing.OutCubic
+                                        }
                                     }
                                 }
 
@@ -609,8 +665,14 @@ Item {
                                     radius: parent.radius - parent.border.width
 
                                     Behavior on tintAlpha {
-                                        NumberAnimation {
-                                            duration: Config.animationDuration(160)
+                                        SequentialAnimation {
+                                            PauseAnimation {
+                                                duration: Config.animationDuration(40)
+                                            }
+                                            NumberAnimation {
+                                                duration: Config.animationDuration(180)
+                                                easing.type: Easing.OutCubic
+                                            }
                                         }
                                     }
                                 }
@@ -635,8 +697,14 @@ Item {
                                 visible: standardIcon.visible && !isApp
 
                                 Behavior on color {
-                                    ColorAnimation {
-                                        duration: 160
+                                    SequentialAnimation {
+                                        PauseAnimation {
+                                            duration: Config.animationDuration(40)
+                                        }
+                                        ColorAnimation {
+                                            duration: Config.animationDuration(180)
+                                            easing.type: Easing.OutCubic
+                                        }
                                     }
                                 }
                             }
@@ -719,7 +787,7 @@ Item {
                     drag.target: isFile ? swipeContent : null
                     drag.threshold: 10
                     enabled: !delegateRoot.isDeleting
-                    hoverEnabled: true
+                    hoverEnabled: !searchRoot.hoverSuppressed
 
                     onClicked: {
                         if (isFile && swipeContent.x > 10) {
@@ -734,18 +802,10 @@ Item {
                         else if (isApp)
                             itemData.execute();
                         else if (isFolder)
-                            openInNeovide(itemData.path);
+                            openFolder(itemData.path);
                         else
-                            Quickshell.execDetached(["gio", "open", itemData.path]);
+                            Quickshell.execDetached(DefaultAppsService.fileCommand(itemData.path));
                         searchRoot.resultLaunched();
-                    }
-                    onEntered: {
-                        if (!delegateRoot.isDeleting)
-                            searchRoot.selectedIndex = index;
-                    }
-                    onPositionChanged: {
-                        if (!delegateRoot.isDeleting && searchRoot.selectedIndex !== index)
-                            searchRoot.selectedIndex = index;
                     }
                     onReleased: {
                         if (isFile) {
@@ -827,20 +887,8 @@ Item {
         highlight: Item {
             readonly property var curItem: searchList.currentItem
 
-            height: curItem ? curItem.height : 0
             visible: searchRoot.combinedResults.length > 0 && curItem && !curItem.isDeleting
-            width: searchList.width
-            y: curItem ? curItem.y : 0
             z: 0
-
-            Behavior on y {
-                enabled: !searchRoot._suppressIndexReset
-
-                NumberAnimation {
-                    duration: Config.animationDuration(200)
-                    easing.type: Easing.OutCubic
-                }
-            }
 
             Rectangle {
                 color: curItem ? Config.alpha(curItem.accentColor, 0.13) : Config.alpha(Config.md3.primary, 0.13)
@@ -850,8 +898,14 @@ Item {
                 x: searchList.cardInset
 
                 Behavior on color {
-                    ColorAnimation {
-                        duration: 150
+                    SequentialAnimation {
+                        PauseAnimation {
+                            duration: Config.animationDuration(40)
+                        }
+                        ColorAnimation {
+                            duration: Config.animationDuration(180)
+                            easing.type: Easing.OutCubic
+                        }
                     }
                 }
 
@@ -865,8 +919,14 @@ Item {
                     width: 3
 
                     Behavior on color {
-                        ColorAnimation {
-                            duration: 150
+                        SequentialAnimation {
+                            PauseAnimation {
+                                duration: Config.animationDuration(40)
+                            }
+                            ColorAnimation {
+                                duration: Config.animationDuration(180)
+                                easing.type: Easing.OutCubic
+                            }
                         }
                     }
                 }
