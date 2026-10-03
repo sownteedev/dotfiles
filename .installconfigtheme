@@ -115,7 +115,7 @@ install_shell_runtime() {
         qt6-avif-image-plugin qt6-5compat qt6-imageformats geoclue
         libnotify inotify-tools libcanberra cava cliphist
         python-gobject xdg-desktop-portal xdg-desktop-portal-gtk
-        slurp wl-clipboard wtype hyprpicker gpu-screen-recorder ffmpeg imagemagick
+        slurp wl-clipboard wtype hyprpicker gpu-screen-recorder ffmpeg imagemagick zbar
         mesa libva-utils
         jq pciutils ddcutil matugen-bin rustup
     )
@@ -301,7 +301,7 @@ write_gtk_bookmarks() {
 install_dotfiles() {
     # Font
     red_echo "[*] Installing fonts..."
-    retry sudo pacman -S --needed --noconfirm inter-font otf-geist-mono-nerd noto-fonts noto-fonts-cjk noto-fonts-emoji noto-fonts-extra ttf-nerd-fonts-symbols ttf-dejavu
+    retry sudo pacman -S --needed --noconfirm inter-font otf-geist-mono-nerd noto-fonts noto-fonts-cjk noto-fonts-emoji noto-fonts-extra ttf-material-symbols-variable ttf-nerd-fonts-symbols ttf-dejavu
     run_yay nerd-fonts-sf-mono-ligatures ttf-ms-fonts otf-takao ttf-rubik-vf
     run_yay apple-fonts --mflags "--skipinteg"
     blue_echo "[*] Copy fonts ..."
@@ -378,7 +378,8 @@ install_shell_environment() {
     install_shell_runtime
     run_yay wl-gammarelay-rs swayidle
     run_yay fcitx5 fcitx5-lotus-bin fcitx5-configtool fcitx5-gtk fcitx5-qt
-    sudo systemctl enable --now fcitx5-lotus-server@$(whoami).service
+    sudo systemctl enable --now fcitx5-lotus-server@$(whoami).service || (sudo systemd-sysusers && sudo systemctl enable --now fcitx5-lotus-server@$(whoami).service)
+    sudo modprobe uinput
     mkdir -p ~/.config/fcitx5/conf
     printf 'Mode="Uinput (Slow)"\nFixUinputWithAck=True\nDoubleSpaceToPeriod=True\nUseLotusIcons=False' > ~/.config/fcitx5/conf/lotus.conf
     safe_link "$DOTFILES_DIR/.config/niri" "$HOME/.config/niri"
@@ -406,6 +407,7 @@ install_shell_environment() {
     gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark'
     gsettings set org.gnome.desktop.interface icon-theme 'WhiteSur'
     gsettings set org.gnome.desktop.interface cursor-theme 'Dark_Cursor'
+    gsettings set org.gnome.desktop.interface cursor-size 24
     gsettings set org.gnome.desktop.interface font-name 'SF Pro Text 10.5'
 
     cd ~
@@ -671,11 +673,10 @@ patch_desktop_entry() {
 
 patch_wayland_flags() {
     local target_dir="$HOME/.local/share/applications"
-    local base_flags="--test-type --ozone-platform-hint=wayland --ignore-gpu-blocklist --enable-wayland-ime --disable-gpu-sandbox --password-store=gnome-libsecret"
     # local brave_flags="--ozone-platform-hint=wayland --enable-wayland-ime --password-store=gnome-libsecret"
-    local electron_flags="$base_flags --gtk-version=4"
+    local electron_flags="--ozone-platform-hint=auto --enable-wayland-ime --wayland-text-input-version=3 --password-store=gnome-libsecret --disable-gpu-sandbox"
     local -a electron_apps=(
-        code.desktop postman.desktop vesktop.desktop
+        com.microsoft.VSCode.desktop postman.desktop vesktop.desktop
     )
     # local -a brave_apps=(brave-browser.desktop)
     local app
@@ -791,6 +792,11 @@ install_workspace() {
     # flatpak override --user --env=XMODIFIERS=@im=fcitx com.usebottles.bottles
     # flatpak override --user --env=GTK_IM_MODULE=fcitx com.usebottles.bottles
     # --disable-gpu-compositing --disable-smooth-scrolling
+
+    # Install Zolaaaaaa
+    retry sudo pacman -S --needed --noconfirm lib32-glu lib32-libjpeg-turbo
+    retry yay -S --needed --noconfirm lib32-v4l-utils
+    retry yay -S --needed --noconfirm zalo-for-linux-bin
 
     green_echo "[*] Environment setup complete."
     sleep 3 && clear
