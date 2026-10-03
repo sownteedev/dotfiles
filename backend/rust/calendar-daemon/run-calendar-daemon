@@ -62,6 +62,18 @@ stop_stale_daemon() {
     fi
 }
 
+installed_binary="${HOME}/.local/lib/sownteeshell/sownteeshell-calendar-daemon"
+
+sync_installed_binary() {
+    [ -d "$(dirname -- "$installed_binary")" ] || return 0
+    if [ ! -f "$installed_binary" ] || ! cmp -s "$binary" "$installed_binary"; then
+        install -Dm755 "$binary" "$installed_binary"
+        if daemon_is_systemd_managed; then
+            systemctl --user restart "$systemd_unit" 2>/dev/null || true
+        fi
+    fi
+}
+
 needs_build() {
     [ ! -x "$binary" ] && return 0
     [ "$manifest" -nt "$binary" ] && return 0
@@ -84,8 +96,17 @@ if needs_build; then
     exec 9>&-
 fi
 
+if [ -x "$binary" ]; then
+    sync_installed_binary
+fi
+
 if daemon_is_running; then
-    if daemon_uses_current_binary || daemon_is_systemd_managed; then
+    if daemon_uses_current_binary; then
+        if [ "$serve_mode" -eq 1 ]; then
+            exit 0
+        fi
+    elif daemon_is_systemd_managed; then
+        sync_installed_binary
         if [ "$serve_mode" -eq 1 ]; then
             exit 0
         fi

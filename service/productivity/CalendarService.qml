@@ -208,6 +208,9 @@ QtObject {
                 fetchAll();
         }
     }
+    function addDays(value, count) {
+        return new Date(value.getFullYear(), value.getMonth(), value.getDate() + count);
+    }
     function addGoogle(clientId, clientSecret, callback) {
         if (accountActionBusy)
             return;
@@ -297,22 +300,23 @@ QtObject {
         calendars = nextCalendars;
         rebuildDecoratedData();
     }
-    function buildEventDraft(title, date, startTime, endTime, allDay, location, description) {
-        var parts = localDateParts(date);
-        if (!parts) {
+    function buildEventDraft(title, startDate, endDate, startTime, endTime, allDay, location, description, recurrence, reminderMinutes, availability, visibility, useDefaultReminder) {
+        var startParts = localDateParts(startDate);
+        var endParts = localDateParts(endDate || startDate);
+        if (!startParts || !endParts) {
             lastError = qsTr("The event date is invalid.");
             return null;
         }
         var start;
         var end;
         if (allDay === true) {
-            start = new Date(Date.UTC(parts[0], parts[1], parts[2]));
-            end = new Date(Date.UTC(parts[0], parts[1], parts[2] + 1));
+            start = new Date(Date.UTC(startParts[0], startParts[1], startParts[2]));
+            end = new Date(Date.UTC(endParts[0], endParts[1], endParts[2] + 1));
         } else {
-            var startParts = String(startTime || "00:00").split(":");
-            var endParts = String(endTime || "01:00").split(":");
-            start = new Date(parts[0], parts[1], parts[2], Number(startParts[0] || 0), Number(startParts[1] || 0));
-            end = new Date(parts[0], parts[1], parts[2], Number(endParts[0] || 0), Number(endParts[1] || 0));
+            var startClock = String(startTime || "00:00").split(":");
+            var endClock = String(endTime || "01:00").split(":");
+            start = new Date(startParts[0], startParts[1], startParts[2], Number(startClock[0] || 0), Number(startClock[1] || 0));
+            end = new Date(endParts[0], endParts[1], endParts[2], Number(endClock[0] || 0), Number(endClock[1] || 0));
         }
         if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
             lastError = qsTr("The event time range is invalid.");
@@ -324,7 +328,12 @@ QtObject {
             "location": String(location || "").trim(),
             "start": start.toISOString(),
             "end": end.toISOString(),
-            "allDay": allDay === true
+            "allDay": allDay === true,
+            "recurrence": Array.isArray(recurrence) ? recurrence : [],
+            "reminderMinutes": reminderMinutes !== null && reminderMinutes !== undefined && Number(reminderMinutes) >= 0 ? Math.floor(Number(reminderMinutes)) : null,
+            "useDefaultReminder": useDefaultReminder === true,
+            "availability": availability === "free" ? "free" : "busy",
+            "visibility": ["default", "public", "private"].indexOf(visibility) >= 0 ? visibility : "default"
         };
     }
     function buildLocalTaskEvents(sourceTasks) {
@@ -371,10 +380,10 @@ QtObject {
         }
         return result;
     }
-    function createEvent(calendarId, title, date, startTime, endTime, allDay, location, description, callback) {
+    function createEvent(calendarId, title, startDate, endDate, startTime, endTime, allDay, location, description, recurrence, reminderMinutes, callback, availability, visibility, useDefaultReminder) {
         if (eventActionBusy)
             return;
-        var draft = buildEventDraft(title, date, startTime, endTime, allDay, location, description);
+        var draft = buildEventDraft(title, startDate, endDate, startTime, endTime, allDay, location, description, recurrence, reminderMinutes, availability, visibility, useDefaultReminder);
         if (!draft) {
             if (callback)
                 callback(false, lastError);
@@ -408,6 +417,157 @@ QtObject {
         if (systemdStarter.running || daemonStartDelay.running || daemonRestart.running)
             return;
         systemdStarter.running = true;
+    }
+    function eventOccursOnDay(eventData, targetDay) {
+        if (!eventData || !targetDay)
+            return false;
+        var eventStart = eventData.allDay ? parseDateOnly(eventData.start) : new Date(eventData.start);
+        var eventEnd = eventData.allDay ? parseDateOnly(eventData.end) : new Date(eventData.end);
+        if (isNaN(eventStart.getTime()))
+            return false;
+        if (isNaN(eventEnd.getTime()) || eventEnd <= eventStart)
+            eventEnd = eventData.allDay ? addDays(eventStart, 1) : new Date(eventStart.getTime() + 3600000);
+
+        var firstDay = startOfDay(eventStart);
+        var curDay = startOfDay(targetDay);
+        if (curDay < firstDay)
+            return false;
+
+        var type = eventRecurrenceType(eventData);
+        if (type === "none") {
+            var lastDayExclusive = eventData.allDay ? startOfDay(eventEnd) : addDays(startOfDay(new Date(eventEnd.getTime() - 1)), 1);
+            if (lastDayExclusive <= firstDay)
+                lastDayExclusive = addDays(firstDay, 1);
+            return curDay >= firstDay && curDay < lastDayExclusive;
+        }
+
+        var ruleStr = recurrenceRuleText(eventData.recurrence);
+        var untilMatch = ruleStr.match(/UNTIL=([0-9]{8})/);
+        if (untilMatch) {
+            var rawUntil = untilMatch[1];
+            var untilYear = Number(rawUntil.slice(0, 4));
+            var untilMonth = Number(rawUntil.slice(4, 6)) - 1;
+            var untilDate = Number(rawUntil.slice(6, 8));
+            var untilDay = new Date(untilYear, untilMonth, untilDate);
+            if (curDay > untilDay)
+                return false;
+        }
+
+        var intervalMatch = ruleStr.match(/INTERVAL=([0-9]+)/);
+        var interval = intervalMatch ? Math.max(1, parseInt(intervalMatch[1], 10)) : 1;
+        var countMatch = ruleStr.match(/COUNT=([0-9]+)/);
+        var byDayMatch = ruleStr.match(/BYDAY=([^;]+)/);
+        var byDays = byDayMatch ? byDayMatch[1].split(",") : [];
+        if (countMatch) {
+            var occurrenceIndex = 0;
+            var scan = new Date(firstDay);
+            while (scan <= curDay) {
+                var scanDiffDays = Math.round((scan.getTime() - firstDay.getTime()) / 86400000);
+                var scanMatches = false;
+                if (type === "daily")
+                    scanMatches = scanDiffDays % interval === 0;
+                else if (type === "weekly") {
+                    var scanWeekDiff = Math.floor(scanDiffDays / 7);
+                    var scanDayCode = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][scan.getDay()];
+                    scanMatches = scanWeekDiff % interval === 0 && (byDays.length === 0 ? scan.getDay() === firstDay.getDay() : byDays.indexOf(scanDayCode) >= 0);
+                } else if (type === "monthly") {
+                    var scanMonthDiff = (scan.getFullYear() - firstDay.getFullYear()) * 12 + scan.getMonth() - firstDay.getMonth();
+                    var scanLastDay = new Date(scan.getFullYear(), scan.getMonth() + 1, 0).getDate();
+                    scanMatches = scanMonthDiff >= 0 && scanMonthDiff % interval === 0 && scan.getDate() === Math.min(firstDay.getDate(), scanLastDay);
+                } else if (type === "yearly") {
+                    scanMatches = (scan.getFullYear() - firstDay.getFullYear()) % interval === 0 && scan.getMonth() === firstDay.getMonth() && scan.getDate() === firstDay.getDate();
+                }
+                if (scanMatches)
+                    occurrenceIndex++;
+                scan = addDays(scan, 1);
+            }
+            if (occurrenceIndex > Number(countMatch[1]))
+                return false;
+        }
+
+        if (type === "daily") {
+            if (interval > 1) {
+                var diffDays = Math.round((curDay.getTime() - firstDay.getTime()) / 86400000);
+                return diffDays % interval === 0;
+            }
+            return true;
+        }
+        if (type === "weekly") {
+            var dayCode = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][curDay.getDay()];
+            if (byDays.length > 0 ? byDays.indexOf(dayCode) < 0 : curDay.getDay() !== firstDay.getDay())
+                return false;
+            if (interval > 1) {
+                var diffWeeks = Math.round((curDay.getTime() - firstDay.getTime()) / (7 * 86400000));
+                return diffWeeks % interval === 0;
+            }
+            return true;
+        }
+        if (type === "monthly") {
+            var targetMonthLastDay = new Date(curDay.getFullYear(), curDay.getMonth() + 1, 0).getDate();
+            var expectedDay = Math.min(firstDay.getDate(), targetMonthLastDay);
+            if (curDay.getDate() !== expectedDay)
+                return false;
+            if (interval > 1) {
+                var diffMonths = (curDay.getFullYear() - firstDay.getFullYear()) * 12 + (curDay.getMonth() - firstDay.getMonth());
+                return diffMonths % interval === 0;
+            }
+            return true;
+        }
+        if (type === "yearly") {
+            if (curDay.getMonth() !== firstDay.getMonth() || curDay.getDate() !== firstDay.getDate())
+                return false;
+            if (interval > 1) {
+                var diffYears = curDay.getFullYear() - firstDay.getFullYear();
+                return diffYears % interval === 0;
+            }
+            return true;
+        }
+        return false;
+    }
+    function eventRecurrenceType(eventData) {
+        if (!eventData)
+            return "none";
+        var recurrence = eventData.recurrence;
+        var first = recurrenceRuleText(recurrence);
+        if (recurrence && typeof recurrence === "object" && recurrence.pattern) {
+            var patternType = String(recurrence.pattern.type || "");
+            if (patternType === "daily")
+                return "daily";
+            if (patternType === "weekly")
+                return "weekly";
+            if (patternType === "absoluteMonthly" || patternType === "relativeMonthly")
+                return "monthly";
+            if (patternType === "absoluteYearly" || patternType === "relativeYearly")
+                return "yearly";
+        }
+
+        first = first.trim();
+        if (first.charAt(0) === "{") {
+            try {
+                var parsed = JSON.parse(first);
+                var graphType = parsed.pattern ? parsed.pattern.type : "";
+                if (graphType === "daily")
+                    return "daily";
+                if (graphType === "weekly")
+                    return "weekly";
+                if (graphType === "absoluteMonthly" || graphType === "relativeMonthly")
+                    return "monthly";
+                if (graphType === "absoluteYearly" || graphType === "relativeYearly")
+                    return "yearly";
+            } catch (error) {
+                return "none";
+            }
+        }
+        var normalized = first.toUpperCase().replace(/^RRULE:/, "");
+        if (normalized.indexOf("FREQ=DAILY") >= 0)
+            return "daily";
+        if (normalized.indexOf("FREQ=WEEKLY") >= 0)
+            return "weekly";
+        if (normalized.indexOf("FREQ=MONTHLY") >= 0)
+            return "monthly";
+        if (normalized.indexOf("FREQ=YEARLY") >= 0)
+            return "yearly";
+        return "none";
     }
     function failPendingRequests(message) {
         var pending = pendingRequests;
@@ -482,25 +642,14 @@ QtObject {
             Qt.callLater(fetchAll);
     }
     function getEventsForDate(day, month, year) {
-        var targetLocalStart = new Date(year, month, day);
-        var targetLocalEnd = new Date(year, month, day + 1);
-        var targetUtcStart = new Date(Date.UTC(year, month, day));
-        var targetUtcEnd = new Date(Date.UTC(year, month, day + 1));
+        var targetDay = new Date(year, month, day);
         var result = [];
         for (var index = 0; index < allEvents.length; ++index) {
             var event = allEvents[index];
             var calendar = calendarById(event.calendarId);
             if (!calendar || calendar.visible === false)
                 continue;
-            var start = new Date(event.start);
-            var end = new Date(event.end);
-            if (isNaN(start.getTime()))
-                continue;
-            if (isNaN(end.getTime()) || end <= start)
-                end = new Date(start.getTime() + 3600000);
-            var rangeStart = event.allDay === true ? targetUtcStart : targetLocalStart;
-            var rangeEnd = event.allDay === true ? targetUtcEnd : targetLocalEnd;
-            if (start < rangeEnd && end > rangeStart)
+            if (eventOccursOnDay(event, targetDay))
                 result.push(event);
         }
         return result;
@@ -610,6 +759,14 @@ QtObject {
             return null;
         return [Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])];
     }
+    function parseDateOnly(value) {
+        var raw = String(value || "");
+        var parts = raw.slice(0, 10).split("-");
+        if (parts.length === 3)
+            return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        var parsed = new Date(raw);
+        return isNaN(parsed.getTime()) ? new Date() : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    }
     function parseIcs(filePath, callback) {
         sendRequest("events.parseIcs", {
             "filePath": String(filePath || "").trim()
@@ -712,6 +869,22 @@ QtObject {
             }));
         }
         allEvents = decoratedEvents;
+    }
+    function recurrenceRuleText(value) {
+        if (value === null || value === undefined)
+            return "";
+        if (typeof value === "string")
+            return value;
+        if (typeof value !== "object" || value.pattern)
+            return "";
+
+        // Repeater delegates expose a QML list as an object rather than a JS
+        // Array.  Keep reading its length/index so recurring events remain
+        // recurring after the event passes through a calendar delegate.
+        var length = Number(value.length);
+        if (isFinite(length) && length > 0 && value[0] !== undefined)
+            return String(value[0]);
+        return value[0] === undefined ? "" : String(value[0]);
     }
     function release() {
         activeConsumers = Math.max(0, activeConsumers - 1);
@@ -844,6 +1017,9 @@ QtObject {
         daemonStatus = "starting";
         daemonProcess.running = true;
     }
+    function startOfDay(value) {
+        return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    }
     function syncNow(accountId) {
         if (syncBusy)
             return;
@@ -896,10 +1072,10 @@ QtObject {
         var hashSlot = hash % 360;
         return String(Qt.hsla(hashSlot / 360.0, 0.78, 0.60, 1.0));
     }
-    function updateEvent(calendarId, eventId, title, date, startTime, endTime, allDay, location, description, callback) {
+    function updateEvent(calendarId, eventId, title, startDate, endDate, startTime, endTime, allDay, location, description, recurrence, reminderMinutes, callback, availability, visibility, useDefaultReminder) {
         if (eventActionBusy)
             return;
-        var draft = buildEventDraft(title, date, startTime, endTime, allDay, location, description);
+        var draft = buildEventDraft(title, startDate, endDate, startTime, endTime, allDay, location, description, recurrence, reminderMinutes, availability, visibility, useDefaultReminder);
         if (!draft) {
             if (callback)
                 callback(false, lastError);
@@ -909,7 +1085,13 @@ QtObject {
         sendRequest("events.update", {
             "eventId": String(eventId || ""),
             "event": draft
-        }, result => finishEventAction("update", true, "", callback), message => finishEventAction("update", false, message, callback));
+        }, result => {
+            if (result && result.id) {
+                rawEvents = rawEvents.map(event => event.id === result.id ? result : event);
+                rebuildDecoratedData();
+            }
+            finishEventAction("update", true, "", callback);
+        }, message => finishEventAction("update", false, message, callback));
     }
 
     Component.onDestruction: {

@@ -136,8 +136,10 @@ impl SyncService {
 
         let mut synced = 0;
         for mut calendar in calendars {
-            let supports_cursor = account.provider == ProviderKind::Google
-                || (account.provider == ProviderKind::Microsoft && calendar.primary);
+            // Microsoft is synced from `/events` so recurring series masters are
+            // preserved.  Its old calendarView delta cursor is not compatible
+            // with that representation, therefore only Google uses cursors here.
+            let supports_cursor = account.provider == ProviderKind::Google;
             let window_is_covered = if supports_cursor && !calendar.sync_token.is_empty() {
                 let calendar_id = calendar.id.clone();
                 self.database

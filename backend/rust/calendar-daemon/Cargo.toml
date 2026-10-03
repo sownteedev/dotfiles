@@ -9,6 +9,8 @@ anyhow = "1.0"
 async-trait = "0.1"
 base64 = "0.22"
 chrono = { version = "0.4", features = ["clock", "serde"] }
+chrono-tz = "0.10"
+iana-time-zone = "0.1"
 icalendar = { version = "0.17.13", features = ["chrono-tz", "parser"] }
 quick-xml = "0.42.0"
 reqwest = { version = "0.13.4", default-features = false, features = ["form", "json", "query", "rustls"] }

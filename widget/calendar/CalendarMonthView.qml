@@ -1,5 +1,6 @@
 import "../../"
 import "../../components"
+import "../../service"
 import "lunar.js" as Lunar
 import QtQuick
 import QtQuick.Layouts
@@ -57,15 +58,35 @@ Rectangle {
             var lastDayExclusive = eventData.allDay ? startOfDay(eventEnd) : addDays(startOfDay(new Date(eventEnd.getTime() - 1)), 1);
             if (lastDayExclusive <= firstDay)
                 lastDayExclusive = addDays(firstDay, 1);
+            var occurrenceSpanDays = Math.max(1, Math.round((lastDayExclusive.getTime() - firstDay.getTime()) / 86400000));
             if (firstDay < rangeStart)
                 firstDay = rangeStart;
             if (lastDayExclusive > rangeEnd)
                 lastDayExclusive = rangeEnd;
 
-            for (var cursor = firstDay; cursor < lastDayExclusive; cursor = addDays(cursor, 1)) {
-                var key = dateKey(cursor);
-                if (result[key])
-                    result[key].push(eventData);
+            var type = CalendarService.eventRecurrenceType(eventData);
+            if (type === "none") {
+                for (var cursor = firstDay; cursor < lastDayExclusive; cursor = addDays(cursor, 1)) {
+                    var key = dateKey(cursor);
+                    if (result[key])
+                        result[key].push(eventData);
+                }
+            } else {
+                for (var occurrenceOffset = -occurrenceSpanDays; occurrenceOffset < 42; ++occurrenceOffset) {
+                    var occurrenceDay = addDays(rangeStart, occurrenceOffset);
+                    if (!CalendarService.eventOccursOnDay(eventData, occurrenceDay))
+                        continue;
+
+                    var occurrenceEnd = addDays(occurrenceDay, occurrenceSpanDays);
+                    for (var cursor = rangeStart; cursor < rangeEnd; cursor = addDays(cursor, 1)) {
+                        var dayEnd = addDays(cursor, 1);
+                        if (occurrenceDay < dayEnd && occurrenceEnd > cursor) {
+                            var key = dateKey(cursor);
+                            if (result[key])
+                                result[key].push(eventData);
+                        }
+                    }
+                }
             }
         }
 

@@ -62,9 +62,9 @@ Item {
 
         anchors.fill: parent
         anchors.margins: 8
-        border.color: cardMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.42) : Config.alpha(Config.md3.outline, 0.12)
+        border.color: cardHover.hovered ? Config.alpha(Config.md3.primary, 0.42) : Config.alpha(Config.md3.outline, 0.12)
         border.width: 1
-        color: cardMouse.containsMouse ? Config.md3.surface_container_high : Config.md3.surface_container_low
+        color: cardHover.hovered ? Config.md3.surface_container_high : Config.md3.surface_container_low
         radius: 20
 
         Behavior on border.color {
@@ -493,6 +493,9 @@ Item {
                     onClicked: root.triggerPrimaryAction()
                 }
             }
+        }
+        HoverHandler {
+            id: cardHover
         }
         MouseArea {
             id: cardMouse

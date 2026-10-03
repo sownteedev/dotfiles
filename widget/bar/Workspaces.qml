@@ -26,6 +26,8 @@ RowLayout {
     }
     property string outputName: ""
     readonly property string windowDragMimeType: "application/x-sownteeshell-window"
+    readonly property int windowEnterDuration: Config.animationDuration(220)
+    readonly property int windowExitDuration: Config.animationDuration(320)
     readonly property real workspaceGap: compact ? 10 : 18
     readonly property var workspaces: WorkspaceService.workspaces
 
@@ -220,6 +222,7 @@ RowLayout {
         delegate: Rectangle {
             id: wsButton
 
+            property real closingWidth: 0
             readonly property var displayWindows: root.workspaceDisplayWindows(workspaceData.windows)
             property bool expanded: false
             property real expansionProgress: expanded ? 1 : 0
@@ -230,28 +233,94 @@ RowLayout {
                 return activeId === undefined || activeId === null ? workspaceData.is_active === true : Number(workspaceId) === Number(activeId);
             }
             required property bool pendingRemoval
+            property bool windowModelReady: false
             required property var workspaceData
             readonly property int workspaceId: workspaceData.id
             readonly property int workspaceIdx: workspaceData.idx
             readonly property string workspaceOutput: workspaceData.output
 
+            function finishWindowEntry(windowId) {
+                for (var index = 0; index < windowModel.count; index++) {
+                    var entry = windowModel.get(index);
+                    if (String(entry.windowData.id || "") === String(windowId) && entry.windowEntering) {
+                        windowModel.setProperty(index, "windowEntering", false);
+                        return;
+                    }
+                }
+            }
+            function removeWindowModelEntry(windowId) {
+                for (var index = 0; index < windowModel.count; index++) {
+                    var entry = windowModel.get(index);
+                    if (String(entry.windowData.id || "") === String(windowId) && entry.windowPendingRemoval) {
+                        windowModel.remove(index);
+                        return;
+                    }
+                }
+            }
+            function syncWindowModel() {
+                var nextWindows = wsButton.displayWindows || [];
+                var animateInsertions = windowModelReady;
+                var nextIds = {};
+                for (var nextIndex = 0; nextIndex < nextWindows.length; nextIndex++)
+                    nextIds[String(nextWindows[nextIndex].id)] = true;
+
+                for (var removeIndex = 0; removeIndex < windowModel.count; removeIndex++) {
+                    var existing = windowModel.get(removeIndex);
+                    var existingId = String(existing.windowData.id || "");
+                    if (!nextIds[existingId] && !existing.windowPendingRemoval)
+                        windowModel.setProperty(removeIndex, "windowPendingRemoval", true);
+                }
+
+                var insertionIndex = 0;
+                for (var targetIndex = 0; targetIndex < nextWindows.length; targetIndex++) {
+                    // Keep exiting icons in their slots while surviving icons close the gap.
+                    while (insertionIndex < windowModel.count && windowModel.get(insertionIndex).windowPendingRemoval && !nextIds[String(windowModel.get(insertionIndex).windowData.id)])
+                        insertionIndex++;
+                    var targetWindow = nextWindows[targetIndex];
+                    var targetId = String(targetWindow.id || "");
+                    var currentIndex = -1;
+                    for (var modelIndex = 0; modelIndex < windowModel.count; modelIndex++) {
+                        if (String(windowModel.get(modelIndex).windowData.id || "") === targetId) {
+                            currentIndex = modelIndex;
+                            break;
+                        }
+                    }
+
+                    if (currentIndex < 0) {
+                        windowModel.insert(insertionIndex, {
+                            "windowData": targetWindow,
+                            "windowPendingRemoval": false,
+                            "windowEntering": animateInsertions
+                        });
+                    } else {
+                        if (currentIndex !== insertionIndex)
+                            windowModel.move(currentIndex, insertionIndex, 1);
+                        if (WorkspaceService.windowMetadataChanged(windowModel.get(insertionIndex).windowData, targetWindow))
+                            windowModel.setProperty(insertionIndex, "windowData", targetWindow);
+                        windowModel.setProperty(insertionIndex, "windowPendingRemoval", false);
+                    }
+                    insertionIndex++;
+                }
+                windowModelReady = true;
+            }
+
             border.width: 0
             color: "transparent"
             implicitHeight: 38
-            implicitWidth: (wsLayout.implicitWidth + 30 + root.workspaceGap) * expansionProgress
+            implicitWidth: (hasWindows ? wsLayout.implicitWidth + 30 + root.workspaceGap : closingWidth) * expansionProgress
             opacity: expanded ? 1 : 0
             scale: expanded ? 1 : 0.82
             visible: inLayout
 
             Behavior on expansionProgress {
                 NumberAnimation {
-                    duration: 260
+                    duration: expanded ? 260 : root.windowExitDuration
                     easing.type: Easing.OutCubic
                 }
             }
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 180
+                    duration: expanded ? 180 : root.windowExitDuration
                 }
             }
             Behavior on scale {
@@ -262,6 +331,7 @@ RowLayout {
             }
 
             Component.onCompleted: {
+                syncWindowModel();
                 if (hasWindows) {
                     inLayout = true;
                     Qt.callLater(function () {
@@ -270,6 +340,7 @@ RowLayout {
                     });
                 }
             }
+            onDisplayWindowsChanged: syncWindowModel()
             onHasWindowsChanged: {
                 if (hasWindows) {
                     collapseTimer.stop();
@@ -279,15 +350,17 @@ RowLayout {
                             wsButton.expanded = true;
                     });
                 } else {
+                    closingWidth = width / Math.max(0.001, expansionProgress);
                     expanded = false;
                     collapseTimer.restart();
                 }
             }
+            onWorkspaceDataChanged: syncWindowModel()
 
             Timer {
                 id: collapseTimer
 
-                interval: 270
+                interval: root.windowExitDuration + 20
 
                 onTriggered: {
                     if (!wsButton.hasWindows) {
@@ -343,6 +416,11 @@ RowLayout {
                 }
                 onEntered: drag => root.acceptWindowDrag(drag)
             }
+            ListModel {
+                id: windowModel
+
+                dynamicRoles: true
+            }
             MouseArea {
                 anchors.fill: workspaceSurface
 
@@ -354,7 +432,7 @@ RowLayout {
                 id: wsLayout
 
                 anchors.centerIn: workspaceSurface
-                spacing: root.compact ? 8 : 12
+                spacing: 0
 
                 // Workspace ID/Index
                 Text {
@@ -367,22 +445,79 @@ RowLayout {
 
                 // Window list inside workspace (flat, no inner pills)
                 RowLayout {
-                    spacing: root.compact ? 6 : 10
-                    visible: wsButton.displayWindows.length > 0
+                    spacing: 0
+                    visible: windowModel.count > 0
 
                     Repeater {
-                        model: wsButton.displayWindows
+                        model: windowModel
 
                         delegate: Item {
                             id: winIconItem
 
+                            property real closingIconWidth: 0
+                            property real enterProgress: 1
+                            property real exitProgress: 1
+                            readonly property real iconGap: index === 0 ? (root.compact ? 8 : 12) : (root.compact ? 6 : 10)
+                            required property int index
+                            readonly property var modelData: windowData
                             readonly property bool shellWindow: shellWindowKind !== ""
                             readonly property string shellWindowKind: WorkspaceService.shellWindowKind(modelData)
+                            required property var windowData
+                            required property bool windowEntering
+                            required property bool windowPendingRemoval
 
+                            enabled: !windowPendingRemoval
                             implicitHeight: 22
-                            implicitWidth: winIconLayout.implicitWidth
+                            implicitWidth: (windowPendingRemoval ? closingIconWidth : winIconLayout.implicitWidth + iconGap) * exitProgress * enterProgress
+                            opacity: exitProgress * enterProgress
+                            scale: 0.82 + 0.18 * (exitProgress * enterProgress)
                             z: winIconMouseArea.drag.active ? 9999 : 1
 
+                            Behavior on exitProgress {
+                                NumberAnimation {
+                                    duration: root.windowExitDuration
+                                    easing.type: Easing.InOutCubic
+                                }
+                            }
+                            Behavior on x {
+                                enabled: wsButton.windowModelReady && !winIconMouseArea.drag.active
+
+                                NumberAnimation {
+                                    duration: root.windowEnterDuration
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
+
+                            Component.onCompleted: {
+                                if (windowEntering) {
+                                    enterProgress = 0;
+                                    enterAnimation.restart();
+                                }
+                            }
+                            onWindowPendingRemovalChanged: {
+                                if (windowPendingRemoval)
+                                    closingIconWidth = winIconLayout.implicitWidth + iconGap;
+                                exitProgress = windowPendingRemoval ? 0 : 1;
+                            }
+
+                            NumberAnimation {
+                                id: enterAnimation
+
+                                duration: root.windowEnterDuration
+                                easing.type: Easing.OutCubic
+                                property: "enterProgress"
+                                target: winIconItem
+                                to: 1
+
+                                onFinished: wsButton.finishWindowEntry(String(winIconItem.modelData.id || ""))
+                            }
+                            Timer {
+                                interval: root.windowExitDuration + 10
+                                repeat: false
+                                running: winIconItem.windowPendingRemoval
+
+                                onTriggered: wsButton.removeWindowModelEntry(String(modelData.id || ""))
+                            }
                             DropArea {
                                 id: iconDropArea
 
@@ -602,7 +737,7 @@ RowLayout {
                                 scale: dragProxy.returningToSource ? dragProxy.returnScale : (winIconMouseArea.drag.active ? 1.25 : (iconDropArea.containsDrag ? 0.85 : 1.0))
                                 spacing: 0
                                 visible: !dragProxy.sourceHidden
-                                x: dragProxy.x
+                                x: dragProxy.x + winIconItem.iconGap
                                 y: (winIconMouseArea.drag.active || dragProxy.returningToSource) ? dragProxy.y : (winIconMouseArea.containsMouse ? -5 : 0)
 
                                 Behavior on opacity {

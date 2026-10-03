@@ -95,11 +95,22 @@ action. Images and QR content are not uploaded or persisted by this operation.
 - iCloud Calendar through CalDAV and an app-specific password;
 - Google Tasks from all connected Google accounts and task lists, with cached
   snapshots, account-scoped mutations, and live updates in SownteeShell Calendar;
-- account and calendar visibility, event create/update/delete, iCalendar (`.ics` / `.ical`)
-  parsing and batch import (`events.parseIcs`, `events.importIcs`), background
-  synchronization, and live change subscriptions;
-- local SQLite persistence and deduplicated desktop reminders 30 minutes
-  before an event.
+- account enable/disable and account-level visibility, calendar visibility, provider
+  metadata, writable/read-only detection, and per-account sync status/error state;
+- event create/update/delete with title, local start/end date-time, all-day spans,
+  location, description, recurrence, availability, visibility, and reminder fields;
+- daily, weekly, monthly, and yearly RRULE handling, including intervals, weekly
+  `BYDAY`, monthly `BYMONTHDAY`, and `COUNT`/`UNTIL` termination (monthly rules
+  retain the event's start day with `BYMONTHDAY`);
+- iCalendar (`.ics` / `.ical`) parsing and batch import through
+  `events.parseIcs` and `events.importIcs`, with event, recurrence, and supported
+  `VALARM` reminder data round-tripped into the selected writable calendar;
+- background synchronization, manual account/all-account refresh, live change
+  notifications, cached event-range queries, and resilient refresh behavior;
+- local SQLite persistence and one cloud-synchronized reminder per event. The
+  reminder is written to the selected provider (Google Calendar popup,
+  Microsoft Graph reminder, or CalDAV/iCloud `VALARM`); the daemon no longer
+  runs a separate local reminder scheduler or creates multiple reminders.
 
 Google Tasks uses the Calendar account's OAuth credentials. Existing Google
 connections need to grant the additional Tasks scope by reconnecting in Calendar;
@@ -113,6 +124,43 @@ date remain available through `tasks.list`. `tasks.setVisible` only changes Cale
 Task refresh failures preserve the previous complete snapshot and report a
 per-account error without stopping event synchronization. See `sownteeshell ipc
 methods calendar` for the task methods and their required account/list identifiers.
+
+Google Tasks mutations are account- and list-scoped. The Calendar task editor can
+create, update, complete, and delete Google Tasks after selecting the Google account
+and task list; it can also create and edit device-only Local Tasks. Local Tasks are
+not sent to Google, Microsoft, iCloud, or the calendar daemon. Dated tasks are
+exposed to the Calendar UI as all-day entries, while tasks without a due date remain
+available only in the task list.
+
+The Calendar UI consumes these calendar IPC methods:
+
+```text
+accounts.list
+accounts.google.add
+accounts.microsoft.add
+accounts.icloud.add
+accounts.remove
+accounts.setEnabled
+calendars.list
+calendars.setVisible
+events.list
+events.create
+events.update
+events.delete
+events.parseIcs
+events.importIcs
+tasks.list
+tasks.setVisible
+tasks.google.refresh
+tasks.google.create
+tasks.google.update
+tasks.google.delete
+```
+
+Moving or resizing an event in the Week view is implemented as a normal
+`events.update` request. The UI restricts that gesture to editable, timed,
+non-recurring events; recurring series, all-day entries, tasks, and read-only
+calendars must be edited through their respective editor/provider rules.
 
 The default socket and database are:
 

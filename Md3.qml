@@ -221,7 +221,9 @@ QtObject {
             "window-new-symbolic": "open_in_new",
             "window-restore-symbolic": "fullscreen_exit",
             "x-office-calendar-symbolic": "calendar_month",
-            "zoom-fit-best-symbolic": "fit_screen"
+            "zoom-fit-best-symbolic": "fit_screen",
+            "zoom-in-symbolic": "zoom_in",
+            "zoom-out-symbolic": "zoom_out"
         })
     // Generated from the Material Symbols Rounded codepoint catalog. Qt does
     // not shape the font's ligature names reliably, so render the glyphs by
@@ -274,7 +276,9 @@ QtObject {
             "desktop_windows": 0xe30c,
             "edit_document": 0xf88c,
             "error": 0xf8b6,
+            "event": 0xe878,
             "event_available": 0xe614,
+            "event_note": 0xe616,
             "expand_more": 0xe5cf,
             "fiber_manual_record": 0xe061,
             "file_open": 0xeaf3,
@@ -310,6 +314,7 @@ QtObject {
             "language": 0xea07,
             "laptop_mac": 0xe320,
             "link": 0xe250,
+            "location_on": 0xe0c8,
             "lock": 0xe899,
             "logout": 0xe9ba,
             "lyrics": 0xec0b,
@@ -329,6 +334,7 @@ QtObject {
             "network_wifi_2_bar": 0xebd6,
             "network_wifi_3_bar": 0xebe1,
             "nightlight": 0xf03d,
+            "notes": 0xe26c,
             "notifications": 0xe7f5,
             "notifications_off": 0xe7f6,
             "open_in_new": 0xe89e,
@@ -342,6 +348,7 @@ QtObject {
             "person_add": 0xea4d,
             "photo_camera": 0xe412,
             "pin_drop": 0xe55e,
+            "place": 0xe55f,
             "play_arrow": 0xe037,
             "power_settings_new": 0xf8c7,
             "progress_activity": 0xe9d0,
@@ -409,13 +416,17 @@ QtObject {
             "wifi": 0xe63e,
             "wifi_off": 0xe648,
             "wifi_password": 0xeb6b,
-            "wifi_tethering": 0xe1e2
+            "wifi_tethering": 0xe1e2,
+            "zoom_in": 0xe8ff,
+            "zoom_out": 0xe900
         })
     readonly property var iconFallbackAliases: ({
             "check": "checkmark-symbolic",
             "chevron_right": "go-next-symbolic",
             "close": "window-close-symbolic",
             "expand_more": "go-down-symbolic",
+            "notes": "document-properties-symbolic",
+            "place": "mark-location-symbolic",
             "repeat_one": "media-playlist-repeat-symbolic",
             "search": "system-search-symbolic"
         })

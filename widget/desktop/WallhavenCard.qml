@@ -67,7 +67,6 @@ Item {
         border.width: 1
         color: cardHover.hovered ? Config.md3.surface_container_high : Config.md3.surface_container_low
         radius: 20
-        scale: cardHover.hovered ? 1.006 : 1
 
         Behavior on border.color {
             ColorAnimation {
@@ -77,12 +76,6 @@ Item {
         Behavior on color {
             ColorAnimation {
                 duration: 140
-            }
-        }
-        Behavior on scale {
-            ScaleAnimator {
-                duration: 150
-                easing.type: Easing.OutCubic
             }
         }
 

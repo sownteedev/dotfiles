@@ -1,12 +1,11 @@
 mod config;
-pub(crate) mod ics;
 mod database;
+pub(crate) mod ics;
 mod ipc;
 mod keyring;
 mod model;
 mod oauth;
 mod providers;
-mod reminder;
 mod scheduler;
 mod sync;
 mod tasks;
@@ -16,7 +15,6 @@ use crate::database::Database;
 use crate::ipc::IpcServer;
 use crate::keyring::Keyring;
 use crate::providers::ProviderRegistry;
-use crate::reminder::ReminderScheduler;
 use crate::scheduler::Scheduler;
 use crate::sync::SyncService;
 use anyhow::{Context, Result, bail};
@@ -82,8 +80,6 @@ async fn serve() -> Result<()> {
 
     let scheduler = Scheduler::new(runtime.sync.clone(), runtime.config.sync_interval);
     let scheduler_task = tokio::spawn(scheduler.run(shutdown_rx.clone()));
-    let reminder = ReminderScheduler::new(runtime.database.clone());
-    let reminder_task = tokio::spawn(reminder.run(shutdown_rx.clone()));
     let server = IpcServer::new(
         runtime.config.clone(),
         runtime.database,
@@ -111,9 +107,6 @@ async fn serve() -> Result<()> {
     scheduler_task
         .await
         .context("calendar scheduler task panicked")?;
-    reminder_task
-        .await
-        .context("calendar reminder task panicked")?;
     result
 }
 

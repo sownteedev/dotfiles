@@ -678,8 +678,16 @@ impl IpcServer {
         let now = Utc::now();
         let default_past_days = self.config.sync_past_days.max(365);
         let default_future_days = self.config.sync_future_days.max(730);
-        let from = parse_optional_time(parameters.from, now - Duration::days(default_past_days), "from")?;
-        let to = parse_optional_time(parameters.to, now + Duration::days(default_future_days), "to")?;
+        let from = parse_optional_time(
+            parameters.from,
+            now - Duration::days(default_past_days),
+            "from",
+        )?;
+        let to = parse_optional_time(
+            parameters.to,
+            now + Duration::days(default_future_days),
+            "to",
+        )?;
         if from > to {
             return Err(RpcError::invalid_params("events.list requires from <= to"));
         }
@@ -777,15 +785,15 @@ impl IpcServer {
 
     async fn parse_ics(&self, parameters: ParseIcsParams) -> RpcResult<Value> {
         let path = std::path::PathBuf::from(&parameters.file_path);
-        let (summary, _) = crate::ics::parse_ics_file(&path)
-            .map_err(|err| RpcError::backend(err.to_string()))?;
+        let (summary, _) =
+            crate::ics::parse_ics_file(&path).map_err(|err| RpcError::backend(err.to_string()))?;
         Ok(json!(summary))
     }
 
     async fn import_ics(&self, parameters: ImportIcsParams) -> RpcResult<Value> {
         let path = std::path::PathBuf::from(&parameters.file_path);
-        let (_, drafts) = crate::ics::parse_ics_file(&path)
-            .map_err(|err| RpcError::backend(err.to_string()))?;
+        let (_, drafts) =
+            crate::ics::parse_ics_file(&path).map_err(|err| RpcError::backend(err.to_string()))?;
 
         let (account, calendar) = self.writable_calendar(&parameters.calendar_id).await?;
         let provider = self.providers.get(account.provider);
@@ -1384,6 +1392,9 @@ fn validate_event_draft(mut draft: EventDraft) -> RpcResult<EventDraft> {
         return Err(RpcError::invalid_params(
             "event end must be later than its start",
         ));
+    }
+    if draft.preferences.reminder_minutes.is_some_and(|minutes| !(0..=40320).contains(&minutes)) {
+        return Err(RpcError::invalid_params("reminder must be between 0 and 40320 minutes before start"));
     }
     Ok(draft)
 }

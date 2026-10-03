@@ -21,9 +21,11 @@ FloatingWindow {
     readonly property bool initialLoading: !CalendarService.initialLoaded && CalendarService.lastError === ""
     property bool pendingCreateAfterConnect: false
     property date pendingCreateDate: new Date()
+    property date pendingCreateEndDate: new Date()
     property int pendingCreateEndMinutes: 11 * 60
     property int pendingCreateStartMinutes: 10 * 60
     property var pendingEditorAnchor: null
+    property var pendingEventMove: null
     property date selectedDate: new Date()
     property bool serviceAcquired: false
     readonly property real sidebarContentWidth: width < 1160 ? 244 : 280
@@ -31,6 +33,8 @@ FloatingWindow {
     property real sidebarReveal: sidebarExpanded ? 1 : 0
     readonly property real sidebarWidth: sidebarContentWidth * sidebarReveal
     property string viewMode: "week"
+    readonly property var visibleEvents: pendingEventMove ? CalendarService.calendarAppEvents.map(event => event.id === pendingEventMove.id ? pendingEventMove : event) : CalendarService.calendarAppEvents
+    property real weekHourHeight: 56
     property date weekStart: beginningOfWeek(new Date())
 
     signal dismissed
@@ -153,6 +157,27 @@ FloatingWindow {
     function isSameDay(first, second) {
         return first.getDate() === second.getDate() && first.getMonth() === second.getMonth() && first.getFullYear() === second.getFullYear();
     }
+    function moveEvent(eventData, dayDelta, minuteDelta) {
+        if (!eventData || CalendarService.eventActionBusy || pendingEventMove || eventData.readOnly === true || eventData.isTask === true || eventData.allDay === true || CalendarService.eventRecurrenceType(eventData) !== "none")
+            return;
+        var start = new Date(eventData.start);
+        var end = new Date(eventData.end);
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start)
+            return;
+        var duration = end.getTime() - start.getTime();
+        start.setDate(start.getDate() + dayDelta);
+        start.setMinutes(start.getMinutes() + minuteDelta);
+        end = new Date(start.getTime() + duration);
+        pendingEventMove = Object.assign({}, eventData, {
+            "start": start.toISOString(),
+            "end": end.toISOString()
+        });
+        CalendarService.updateEvent(eventData.calendarId, eventData.id, eventData.title || "", start, end, Qt.formatTime(start, "HH:mm"), Qt.formatTime(end, "HH:mm"), false, eventData.location || "", eventData.description || "", [], eventData.reminderMinutes, function (success, message) {
+            root.pendingEventMove = null;
+            if (!success)
+                CalendarService.lastError = message;
+        }, eventData.availability, eventData.visibility, eventData.useDefaultReminder);
+    }
     function openCalendar() {
         var targetScreen = StateManager.resolvePanelScreen();
         if (targetScreen)
@@ -184,12 +209,12 @@ FloatingWindow {
             "filters": [qsTr("iCalendar files (*.ics, *.ical) | *.ics *.ical")]
         });
     }
-    function openNewEditor(value, startMinutes, endMinutes, anchorRect) {
+    function openNewEditor(value, startMinutes, endMinutes, anchorRect, endValue) {
         editorUnloadTimer.stop();
         eventEditorLoader.active = true;
         Qt.callLater(function () {
             if (eventEditorLoader.status === Loader.Ready)
-                eventEditorLoader.item.openNew(value, startMinutes, endMinutes, anchorRect);
+                eventEditorLoader.item.openNew(value, startMinutes, endMinutes, anchorRect, endValue);
         });
     }
     function openNewTaskEditor() {
@@ -206,10 +231,16 @@ FloatingWindow {
         CalendarService.release();
         serviceAcquired = false;
     }
-    function requestCreate(value, startMinutes, endMinutes, anchorRect) {
+    function requestCreate(value, startMinutes, endMinutes, anchorRect, endValue) {
         pendingCreateDate = new Date(value.getFullYear(), value.getMonth(), value.getDate());
+        var requestedEndDate = endValue && typeof endValue.getTime === "function" && !isNaN(endValue.getTime()) ? endValue : pendingCreateDate;
+        pendingCreateEndDate = new Date(requestedEndDate.getFullYear(), requestedEndDate.getMonth(), requestedEndDate.getDate());
+        if (pendingCreateEndDate.getTime() < pendingCreateDate.getTime())
+            pendingCreateEndDate = new Date(pendingCreateDate);
         pendingCreateStartMinutes = Math.max(0, Math.min(23 * 60 + 45, Number(startMinutes || 0)));
-        pendingCreateEndMinutes = Math.max(pendingCreateStartMinutes + 1, Math.min(23 * 60 + 59, Number(endMinutes || pendingCreateStartMinutes + 60)));
+        var requestedEndMinutes = endMinutes === undefined || endMinutes === null ? pendingCreateStartMinutes + 60 : Number(endMinutes);
+        var minimumEndMinutes = isSameDay(pendingCreateDate, pendingCreateEndDate) ? pendingCreateStartMinutes + 1 : 0;
+        pendingCreateEndMinutes = Math.max(minimumEndMinutes, Math.min(23 * 60 + 59, requestedEndMinutes));
         pendingEditorAnchor = anchorRect || null;
         selectedDate = pendingCreateDate;
         if (!CalendarService.authenticated || !hasWritableCalendar()) {
@@ -217,7 +248,28 @@ FloatingWindow {
             accountDialog.open();
             return;
         }
-        openNewEditor(pendingCreateDate, pendingCreateStartMinutes, pendingCreateEndMinutes, pendingEditorAnchor);
+        openNewEditor(pendingCreateDate, pendingCreateStartMinutes, pendingCreateEndMinutes, pendingEditorAnchor, pendingCreateEndDate);
+    }
+    function resizeEvent(eventData, startDeltaMinutes, endDeltaMinutes) {
+        if (!eventData || CalendarService.eventActionBusy || pendingEventMove || eventData.readOnly === true || eventData.isTask === true || eventData.allDay === true || CalendarService.eventRecurrenceType(eventData) !== "none")
+            return;
+        var start = new Date(eventData.start);
+        var end = new Date(eventData.end);
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start)
+            return;
+        start.setMinutes(start.getMinutes() + Number(startDeltaMinutes || 0));
+        end.setMinutes(end.getMinutes() + Number(endDeltaMinutes || 0));
+        if (end <= start)
+            return;
+        pendingEventMove = Object.assign({}, eventData, {
+            "start": start.toISOString(),
+            "end": end.toISOString()
+        });
+        CalendarService.updateEvent(eventData.calendarId, eventData.id, eventData.title || "", start, end, Qt.formatTime(start, "HH:mm"), Qt.formatTime(end, "HH:mm"), false, eventData.location || "", eventData.description || "", [], eventData.reminderMinutes, function (success, message) {
+            root.pendingEventMove = null;
+            if (!success)
+                CalendarService.lastError = message;
+        }, eventData.availability, eventData.visibility, eventData.useDefaultReminder);
     }
     function scrollCurrentWeekToWorkingHours() {
         if (viewMode !== "week" || calendarViewLoader.status !== Loader.Ready || !calendarViewLoader.item)
@@ -251,6 +303,9 @@ FloatingWindow {
         viewMode = viewMode === "week" ? "month" : "week";
         if (viewMode === "week")
             Qt.callLater(root.scrollCurrentWeekToWorkingHours);
+    }
+    function zoomWeekTimeline(step) {
+        weekHourHeight = Math.max(36, Math.min(112, Math.round(weekHourHeight + step * 8)));
     }
 
     color: "transparent"
@@ -309,7 +364,7 @@ FloatingWindow {
         function onAccountAdded(accountId) {
             if (root.pendingCreateAfterConnect) {
                 root.pendingCreateAfterConnect = false;
-                root.openNewEditor(root.pendingCreateDate, root.pendingCreateStartMinutes, root.pendingCreateEndMinutes, root.pendingEditorAnchor);
+                root.openNewEditor(root.pendingCreateDate, root.pendingCreateStartMinutes, root.pendingCreateEndMinutes, root.pendingEditorAnchor, root.pendingCreateEndDate);
             }
         }
 
@@ -440,6 +495,8 @@ FloatingWindow {
                 eventEditorLoader.item.close();
             else if (accountDialog.opened)
                 accountDialog.close();
+            else if (calendarViewLoader.status === Loader.Ready && calendarViewLoader.item.eventDragging === true)
+                calendarViewLoader.item.cancelEventDrag();
             else
                 root.closeCalendar();
             event.accepted = true;
@@ -615,6 +672,32 @@ FloatingWindow {
                     SettingsActionButton {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
+                        Layout.preferredWidth: 40
+                        enabled: root.weekHourHeight > 36
+                        iconName: "zoom-out-symbolic"
+                        iconOnly: true
+                        text: qsTr("Zoom out")
+                        tooltipText: qsTr("Smaller timeline hour height")
+                        visible: root.viewMode === "week"
+
+                        onClicked: root.zoomWeekTimeline(-1)
+                    }
+                    SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: 40
+                        enabled: root.weekHourHeight < 112
+                        iconName: "zoom-in-symbolic"
+                        iconOnly: true
+                        text: qsTr("Zoom in")
+                        tooltipText: qsTr("Larger timeline hour height")
+                        visible: root.viewMode === "week"
+
+                        onClicked: root.zoomWeekTimeline(1)
+                    }
+                    SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 40
                         Layout.preferredWidth: root.compactHeader ? 40 : implicitWidth
                         iconName: root.viewMode === "month" ? "view-calendar-month" : "view-calendar-week"
                         iconOnly: root.compactHeader
@@ -716,15 +799,23 @@ FloatingWindow {
 
             CalendarWeekView {
                 available: CalendarService.authenticated || CalendarService.calendarAppEvents.length > 0
-                events: CalendarService.calendarAppEvents
+                events: root.visibleEvents
                 hiddenCalendars: root.hiddenCalendars
+                hourHeight: root.weekHourHeight
                 loading: root.initialLoading
+                moveBusy: CalendarService.eventActionBusy || root.pendingEventMove !== null
                 selectedDate: root.selectedDate
                 weekStart: root.weekStart
 
                 onDaySelected: value => root.selectDate(value)
                 onEventClicked: (eventData, anchorRect) => root.openEventEditor(eventData, root.editorAnchorFromView(anchorRect))
-                onRangeSelected: (value, startMinutes, endMinutes, anchorRect) => root.requestCreate(value, startMinutes, endMinutes, root.editorAnchorFromView(anchorRect))
+                onEventMoveRequested: (eventData, dayDelta, minuteDelta) => root.moveEvent(eventData, dayDelta, minuteDelta)
+                onEventResizeRequested: (eventData, startDeltaMinutes, endDeltaMinutes) => root.resizeEvent(eventData, startDeltaMinutes, endDeltaMinutes)
+                onHourHeightChanged: {
+                    if (hourHeight !== root.weekHourHeight)
+                        root.weekHourHeight = hourHeight;
+                }
+                onRangeSelected: (value, endValue, startMinutes, endMinutes, anchorRect) => root.requestCreate(value, startMinutes, endMinutes, root.editorAnchorFromView(anchorRect), endValue)
             }
         }
         Component {

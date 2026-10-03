@@ -4,14 +4,14 @@ use super::{
 };
 use crate::keyring::Keyring;
 use crate::model::{
-    Account, Calendar, CalendarEvent, EventChange, EventDraft, ProviderKind, RemoteCalendar,
-    SyncBatch,
+    Account, Calendar, CalendarEvent, EventChange, EventDraft, EventPreferences, ProviderKind,
+    RemoteCalendar, SyncBatch,
 };
 use anyhow::{Context, anyhow};
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use icalendar::{
-    Calendar as ICalendar, CalendarDateTime, Component, DatePerhapsTime, Event as IEvent, EventLike,
+    Alarm, Calendar as ICalendar, CalendarDateTime, Component, DatePerhapsTime, Event as IEvent, EventLike,
 };
 use quick_xml::Reader;
 use quick_xml::events::Event as XmlEvent;
@@ -224,6 +224,7 @@ impl CalendarProvider for CalDavProvider {
                     description: response.description,
                     color: normalize_color(&response.color),
                     time_zone: String::new(),
+                    default_reminder_minutes: None,
                     primary: false,
                     read_only: false,
                 }
@@ -301,7 +302,9 @@ impl CalendarProvider for CalDavProvider {
             end: draft.end,
             all_day: draft.all_day,
             status: "confirmed".to_string(),
-            recurrence: Vec::new(),
+            recurrence: draft.recurrence.clone(),
+
+            preferences: draft.preferences.clone(),
             raw_payload,
             created_at: now,
             updated_at: now,
@@ -337,7 +340,9 @@ impl CalendarProvider for CalDavProvider {
             end: draft.end,
             all_day: draft.all_day,
             status: "confirmed".to_string(),
-            recurrence: event.recurrence.clone(),
+            recurrence: draft.recurrence.clone(),
+
+            preferences: draft.preferences.clone(),
             raw_payload,
             created_at: event.created_at,
             updated_at: Utc::now(),
@@ -383,6 +388,29 @@ fn build_ical_event(uid: &str, draft: &EventDraft) -> String {
             .ends(draft.end.date_naive());
     } else {
         event.starts(draft.start).ends(draft.end);
+    }
+    if let Some(rule) = draft.recurrence.first() {
+        let value = rule.strip_prefix("RRULE:").unwrap_or(rule).trim();
+        if !value.is_empty() {
+            event.add_property("RRULE", value);
+        }
+    }
+    if draft.preferences.availability == "free" {
+        event.add_property("TRANSP", "TRANSPARENT");
+    } else {
+        event.add_property("TRANSP", "OPAQUE");
+    }
+    match draft.preferences.visibility.as_str() {
+        "private" => {
+            event.add_property("CLASS", "PRIVATE");
+        }
+        "public" => {
+            event.add_property("CLASS", "PUBLIC");
+        }
+        _ => {}
+    }
+    if let Some(minutes) = draft.preferences.reminder_minutes {
+        event.alarm(Alarm::display(&draft.title, -chrono::Duration::minutes(minutes)));
     }
     let mut calendar = ICalendar::new();
     calendar.push(event.done());
@@ -575,6 +603,32 @@ fn parse_ical_resource(
             all_day,
             status,
             recurrence,
+
+            preferences: EventPreferences {
+                use_default_reminder: false,
+                reminder_minutes: crate::ics::event_reminder_minutes(event, start, end),
+                availability: if event
+                    .property_value("TRANSP")
+                    .unwrap_or("OPAQUE")
+                    .eq_ignore_ascii_case("TRANSPARENT")
+                {
+                    "free".to_string()
+                } else {
+                    "busy".to_string()
+                },
+                visibility: {
+                    let class = event.property_value("CLASS").unwrap_or("");
+                    if class.eq_ignore_ascii_case("PRIVATE")
+                        || class.eq_ignore_ascii_case("CONFIDENTIAL")
+                    {
+                        "private".to_string()
+                    } else if class.eq_ignore_ascii_case("PUBLIC") {
+                        "public".to_string()
+                    } else {
+                        "default".to_string()
+                    }
+                },
+            },
             raw_payload: event.to_string(),
             created_at: now,
             updated_at: now,
@@ -617,6 +671,26 @@ pub fn default_icloud_endpoint() -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn single_valarm_and_monthly_rule_round_trip() {
+        for minutes in [Some(0), Some(15), Some(1440), None] {
+            for all_day in [false, true] {
+                let draft: EventDraft = serde_json::from_value(serde_json::json!({
+                    "title": "Monthly test", "start": "2026-10-04T00:00:00Z",
+                    "end": "2026-10-05T00:00:00Z", "allDay": all_day,
+                    "recurrence": ["RRULE:FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=4"],
+                    "reminderMinutes": minutes
+                })).unwrap();
+                let payload = build_ical_event("test", &draft);
+                assert_eq!(payload.matches("BEGIN:VALARM").count(), usize::from(minutes.is_some()));
+                let events = parse_ical_resource("calendar", "/test.ics", "etag", &payload).unwrap();
+                let EventChange::Upsert(event) = &events[0] else { panic!("expected event"); };
+                assert_eq!(event.preferences.reminder_minutes, minutes, "{payload}");
+                assert_eq!(event.recurrence, vec!["FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=4"]);
+            }
+        }
+    }
 
     #[test]
     fn parses_dav_properties() {

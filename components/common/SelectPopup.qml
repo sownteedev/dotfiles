@@ -202,8 +202,12 @@ Item {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true
+                        preventStealing: true
 
-                        onClicked: root.itemSelected(row.modelData)
+                        onClicked: {
+                            root.itemSelected(row.modelData);
+                            mouse.accepted = true;
+                        }
                     }
                 }
             }

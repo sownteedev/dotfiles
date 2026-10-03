@@ -10,12 +10,17 @@ Item {
 
     property bool allDay: false
     property var anchorRect: null
+    property bool availabilityPopupOpen: false
+    property real availabilityPopupY: 0
+    property string availabilityType: "busy"
     property string calendarId: ""
     property bool calendarPopupOpen: false
     property real calendarPopupY: 0
+    property string datePickerTarget: "start"
     property string description: ""
     property string endTime: "11:00"
     property date eventDate: new Date()
+    property date eventEndDate: new Date()
     property string eventId: ""
     property bool eventReadOnly: false
     property string eventTitle: ""
@@ -23,6 +28,21 @@ Item {
     readonly property bool isTask: taskData !== null || taskCreateMode
     property string location: ""
     property bool opened: false
+    property bool recurrenceAdvancedPopupOpen: false
+    property real recurrenceAdvancedPopupY: 0
+    property int recurrenceCount: 1
+    property bool recurrenceEndPopupOpen: false
+    property string recurrenceEndType: "none"
+    property int recurrenceInterval: 1
+    property bool recurrencePopupOpen: false
+    property real recurrencePopupY: 0
+    property string recurrenceType: "none"
+    property date recurrenceUntilDate: new Date()
+    property var recurrenceWeekdays: []
+    property int reminderMinutes: -1
+    property bool reminderPopupOpen: false
+    property real reminderPopupY: 0
+    property bool reminderUserSelected: false
     property string startTime: "10:00"
     property string taskAccountId: ""
     property bool taskBusy: false
@@ -37,11 +57,55 @@ Item {
     property bool taskListPopupOpen: false
     property real taskListPopupY: 0
     property string taskSource: "local"
-    readonly property bool validTimeRange: isTask || allDay || minutesForTime(endTime) > minutesForTime(startTime)
+    property bool useDefaultReminder: false
+    readonly property bool validTimeRange: {
+        if (isTask)
+            return true;
+        if (allDay)
+            return eventEndDate.getTime() >= eventDate.getTime();
+        if (eventEndDate.getTime() > eventDate.getTime())
+            return true;
+        return eventEndDate.getTime() === eventDate.getTime() && minutesForTime(endTime) > minutesForTime(startTime);
+    }
+    property bool visibilityPopupOpen: false
+    property real visibilityPopupY: 0
+    property string visibilityType: "default"
     readonly property var writableCalendars: buildWritableCalendars()
 
     signal closed
 
+    function applyCalendarDefaultReminder() {
+        var calendar = CalendarService.calendarById(calendarId);
+        if (calendar && calendar.provider === "google") {
+            reminderMinutes = reminderMinutesFromEvent(calendar.defaultReminderMinutes);
+            useDefaultReminder = false;
+        } else {
+            reminderMinutes = -1;
+            useDefaultReminder = false;
+        }
+    }
+    function availabilityLabel() {
+        var options = availabilityOptions();
+        for (var i = 0; i < options.length; ++i) {
+            if (String(options[i].id) === availabilityType)
+                return options[i].label;
+        }
+        return options[0].label;
+    }
+    function availabilityOptions() {
+        return [
+            {
+                "id": "busy",
+                "label": qsTr("Busy"),
+                "description": qsTr("Show this time as unavailable")
+            },
+            {
+                "id": "free",
+                "label": qsTr("Free"),
+                "description": qsTr("Keep this time available")
+            }
+        ];
+    }
     function buildTaskDestinationOptions() {
         var options = [
             {
@@ -154,16 +218,28 @@ Item {
         if (modeSegment)
             modeSegment.animationsReady = false;
         calendarPopupOpen = false;
+        recurrencePopupOpen = false;
+        reminderPopupOpen = false;
+        recurrenceAdvancedPopupOpen = false;
+        recurrenceEndPopupOpen = false;
+        availabilityPopupOpen = false;
+        visibilityPopupOpen = false;
         taskDestinationPopupOpen = false;
         taskListPopupOpen = false;
         opened = false;
         closed();
     }
     function dateForApi() {
-        return eventDate.getFullYear() + "-" + String(eventDate.getMonth() + 1).padStart(2, "0") + "-" + String(eventDate.getDate()).padStart(2, "0");
+        return dateForValue(eventDate);
     }
     function dateForPicker() {
-        return String(eventDate.getDate()).padStart(2, "0") + "/" + String(eventDate.getMonth() + 1).padStart(2, "0") + "/" + eventDate.getFullYear();
+        return dateForPickerValue(eventDate);
+    }
+    function dateForPickerValue(value) {
+        return String(value.getDate()).padStart(2, "0") + "/" + String(value.getMonth() + 1).padStart(2, "0") + "/" + value.getFullYear();
+    }
+    function dateForValue(value) {
+        return value.getFullYear() + "-" + String(value.getMonth() + 1).padStart(2, "0") + "-" + String(value.getDate()).padStart(2, "0");
     }
     function defaultCalendarId() {
         for (var i = 0; i < writableCalendars.length; ++i) {
@@ -182,6 +258,10 @@ Item {
         }
         CalendarService.deleteEvent(calendarId, eventId);
         close();
+    }
+    function ensureWeeklyWeekday() {
+        if (recurrenceType === "weekly" && recurrenceWeekdays.length === 0)
+            recurrenceWeekdays = [weekdayCodeForDate(eventDate)];
     }
     function formatTime(value) {
         return String(value.getHours()).padStart(2, "0") + ":" + String(value.getMinutes()).padStart(2, "0");
@@ -208,6 +288,25 @@ Item {
 
         return Number(parts[0]) * 60 + Number(parts[1]);
     }
+    function openAvailabilityPopup(sourceItem) {
+        if (!sourceItem)
+            return;
+        var position = sourceItem.mapToItem(root, 0, sourceItem.height + Md3.spacing.xs);
+        availabilityPopupY = position.y;
+        availabilityPopupOpen = true;
+        visibilityPopupOpen = false;
+        recurrencePopupOpen = false;
+        recurrenceAdvancedPopupOpen = false;
+        reminderPopupOpen = false;
+    }
+    function openDatePicker(target) {
+        datePickerTarget = target;
+        var value = target === "end" ? eventEndDate : target === "recurrenceUntil" ? recurrenceUntilDate : eventDate;
+        datePicker.selectedDate = dateForPickerValue(value);
+        datePicker.currentMonth = value.getMonth();
+        datePicker.currentYear = value.getFullYear();
+        datePicker.open();
+    }
     function openEvent(eventData, editorAnchor) {
         if (!eventData || taskBusy)
             return;
@@ -218,6 +317,12 @@ Item {
         taskDestinationPopupOpen = false;
         taskListPopupOpen = false;
         calendarPopupOpen = false;
+        recurrencePopupOpen = false;
+        reminderPopupOpen = false;
+        recurrenceAdvancedPopupOpen = false;
+        recurrenceEndPopupOpen = false;
+        availabilityPopupOpen = false;
+        visibilityPopupOpen = false;
         taskData = eventData.isTask ? eventData : null;
         taskError = "";
         anchorRect = editorAnchor || null;
@@ -228,17 +333,32 @@ Item {
         description = String(eventData.description || "");
         location = String(eventData.location || "");
         allDay = eventData.allDay === true;
+        recurrenceType = recurrenceTypeFromEvent(eventData.recurrence);
+        reminderMinutes = reminderMinutesFromEvent(eventData.reminderMinutes);
+        useDefaultReminder = eventData.useDefaultReminder === true;
+        reminderUserSelected = true;
+        availabilityType = eventData.availability === "free" ? "free" : "busy";
+        visibilityType = ["default", "public", "private"].indexOf(eventData.visibility) >= 0 ? eventData.visibility : "default";
+        recurrenceInterval = recurrenceIntervalFromRule(eventData.recurrence);
+        recurrenceWeekdays = recurrenceWeekdaysFromRule(eventData.recurrence);
+        recurrenceEndType = recurrenceEndFromRule(eventData.recurrence);
         if (allDay) {
             eventDate = parseApiDate(eventData.start);
+            var allDayEnd = parseApiDate(eventData.end);
+            eventEndDate = new Date(allDayEnd.getFullYear(), allDayEnd.getMonth(), allDayEnd.getDate() - 1);
             startTime = "10:00";
             endTime = "11:00";
         } else {
             var start = new Date(eventData.start);
             var end = new Date(eventData.end);
             eventDate = isNaN(start.getTime()) ? new Date() : new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            eventEndDate = isNaN(end.getTime()) ? new Date(eventDate) : new Date(end.getFullYear(), end.getMonth(), end.getDate());
             startTime = isNaN(start.getTime()) ? "10:00" : formatTime(start);
             endTime = isNaN(end.getTime()) ? "11:00" : formatTime(end);
         }
+        if (eventEndDate.getTime() < eventDate.getTime())
+            eventEndDate = new Date(eventDate);
+        ensureWeeklyWeekday();
         syncTextFields();
         formFlickable.contentY = 0;
         opened = true;
@@ -246,7 +366,7 @@ Item {
             titleField.forceActiveFocus();
         });
     }
-    function openNew(value, selectedStartMinutes, selectedEndMinutes, editorAnchor) {
+    function openNew(value, selectedStartMinutes, selectedEndMinutes, editorAnchor, selectedEndDate) {
         if (taskBusy)
             return;
         if (modeSegment)
@@ -255,6 +375,12 @@ Item {
         taskDestinationPopupOpen = false;
         taskListPopupOpen = false;
         calendarPopupOpen = false;
+        recurrencePopupOpen = false;
+        reminderPopupOpen = false;
+        recurrenceAdvancedPopupOpen = false;
+        recurrenceEndPopupOpen = false;
+        availabilityPopupOpen = false;
+        visibilityPopupOpen = false;
         taskData = null;
         taskError = "";
         anchorRect = editorAnchor || null;
@@ -266,8 +392,25 @@ Item {
         location = "";
         allDay = false;
         eventDate = value && !isNaN(value.getTime()) ? new Date(value.getFullYear(), value.getMonth(), value.getDate()) : new Date();
+        eventEndDate = selectedEndDate && typeof selectedEndDate.getTime === "function" && !isNaN(selectedEndDate.getTime()) ? new Date(selectedEndDate.getFullYear(), selectedEndDate.getMonth(), selectedEndDate.getDate()) : new Date(eventDate);
+        if (eventEndDate.getTime() < eventDate.getTime())
+            eventEndDate = new Date(eventDate);
+        recurrenceType = "none";
+        reminderMinutes = -1;
+        availabilityType = "busy";
+        visibilityType = "default";
+        recurrenceInterval = 1;
+        recurrenceWeekdays = [];
+        recurrenceEndType = "none";
+        recurrenceCount = 1;
+        useDefaultReminder = false;
+        reminderUserSelected = false;
+        applyCalendarDefaultReminder();
+        recurrenceUntilDate = new Date(eventDate);
         var startMinutes = Math.max(0, Math.min(23 * 60 + 45, Number(selectedStartMinutes || 0)));
-        var endMinutes = Math.max(startMinutes + 1, Math.min(23 * 60 + 59, Number(selectedEndMinutes || startMinutes + 60)));
+        var requestedEndMinutes = selectedEndMinutes === undefined || selectedEndMinutes === null ? startMinutes + 60 : Number(selectedEndMinutes);
+        var minimumEndMinutes = eventEndDate.getTime() === eventDate.getTime() ? startMinutes + 1 : 0;
+        var endMinutes = Math.max(minimumEndMinutes, Math.min(23 * 60 + 59, requestedEndMinutes));
         startTime = timeForMinutes(startMinutes);
         endTime = timeForMinutes(endMinutes);
         syncTextFields();
@@ -280,9 +423,17 @@ Item {
     function openNewTask(value) {
         if (taskBusy)
             return;
+        useDefaultReminder = false;
+        reminderUserSelected = false;
         if (modeSegment)
             modeSegment.animationsReady = false;
         calendarPopupOpen = false;
+        recurrencePopupOpen = false;
+        reminderPopupOpen = false;
+        recurrenceAdvancedPopupOpen = false;
+        recurrenceEndPopupOpen = false;
+        availabilityPopupOpen = false;
+        visibilityPopupOpen = false;
         taskDestinationPopupOpen = false;
         taskListPopupOpen = false;
         taskData = null;
@@ -300,6 +451,9 @@ Item {
         location = "";
         allDay = true;
         eventDate = value && !isNaN(value.getTime()) ? new Date(value.getFullYear(), value.getMonth(), value.getDate()) : new Date();
+        eventEndDate = new Date(eventDate);
+        recurrenceType = "none";
+        reminderMinutes = -1;
         startTime = "00:00";
         endTime = "23:59";
         syncTextFields();
@@ -308,6 +462,42 @@ Item {
         Qt.callLater(function () {
             titleField.forceActiveFocus();
         });
+    }
+    function openRecurrenceAdvancedPopup(sourceItem) {
+        if (!sourceItem || recurrenceType === "none")
+            return;
+        ensureWeeklyWeekday();
+        var position = sourceItem.mapToItem(root, 0, sourceItem.height + Md3.spacing.xs);
+        recurrenceAdvancedPopupY = position.y;
+        recurrencePopupOpen = false;
+        reminderPopupOpen = false;
+        availabilityPopupOpen = false;
+        visibilityPopupOpen = false;
+        recurrenceAdvancedPopupOpen = true;
+        recurrenceEndPopupOpen = false;
+    }
+    function openRecurrencePopup(sourceItem) {
+        if (!sourceItem)
+            return;
+        var position = sourceItem.mapToItem(root, 0, sourceItem.height + Md3.spacing.xs);
+        recurrencePopupY = position.y;
+        recurrencePopupOpen = true;
+        reminderPopupOpen = false;
+        recurrenceAdvancedPopupOpen = false;
+        recurrenceEndPopupOpen = false;
+        availabilityPopupOpen = false;
+        visibilityPopupOpen = false;
+    }
+    function openReminderPopup(sourceItem) {
+        if (!sourceItem)
+            return;
+        var position = sourceItem.mapToItem(root, 0, sourceItem.height + Md3.spacing.xs);
+        reminderPopupY = position.y;
+        reminderPopupOpen = true;
+        recurrencePopupOpen = false;
+        recurrenceAdvancedPopupOpen = false;
+        availabilityPopupOpen = false;
+        visibilityPopupOpen = false;
     }
     function openTaskDestinationPopup(sourceItem) {
         if (!sourceItem)
@@ -327,6 +517,17 @@ Item {
         taskDestinationPopupOpen = false;
         calendarPopupOpen = false;
     }
+    function openVisibilityPopup(sourceItem) {
+        if (!sourceItem)
+            return;
+        var position = sourceItem.mapToItem(root, 0, sourceItem.height + Md3.spacing.xs);
+        visibilityPopupY = position.y;
+        visibilityPopupOpen = true;
+        availabilityPopupOpen = false;
+        recurrencePopupOpen = false;
+        recurrenceAdvancedPopupOpen = false;
+        reminderPopupOpen = false;
+    }
     function parseApiDate(value) {
         var parts = String(value || "").slice(0, 10).split("-");
         if (parts.length !== 3)
@@ -340,6 +541,227 @@ Item {
             return eventDate;
 
         return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+    }
+    function recurrenceAdvancedLabel() {
+        if (recurrenceType === "none")
+            return qsTr("Choose a repeat pattern first");
+        var unit = recurrenceType === "daily" ? qsTr("day") : recurrenceType === "weekly" ? qsTr("week") : recurrenceType === "monthly" ? qsTr("month") : qsTr("year");
+        var text = qsTr("Every %1 %2").arg(recurrenceInterval).arg(unit + (recurrenceInterval === 1 ? "" : "s"));
+        if (recurrenceType === "monthly")
+            text += qsTr(" · on day %1").arg(eventDate.getDate());
+        if (recurrenceEndType === "count")
+            text += qsTr(" · %1 times").arg(recurrenceCount);
+        else if (recurrenceEndType === "until")
+            text += qsTr(" · until %1").arg(dateForPickerValue(recurrenceUntilDate));
+        return text;
+    }
+    function recurrenceEndFromRule(value) {
+        var text = recurrenceRuleText(value);
+        var count = text.match(/COUNT=(\d+)/i);
+        if (count) {
+            recurrenceCount = Math.max(1, Number(count[1]));
+            return "count";
+        }
+        var until = text.match(/UNTIL=(\d{8})/i);
+        if (until) {
+            recurrenceUntilDate = new Date(Number(until[1].slice(0, 4)), Number(until[1].slice(4, 6)) - 1, Number(until[1].slice(6, 8)));
+            return "until";
+        }
+        return "none";
+    }
+    function recurrenceEndOptions() {
+        return [
+            {
+                "id": "none",
+                "label": qsTr("Never")
+            },
+            {
+                "id": "count",
+                "label": qsTr("After a number of times")
+            },
+            {
+                "id": "until",
+                "label": qsTr("On a date")
+            }
+        ];
+    }
+    function recurrenceIntervalFromRule(value) {
+        var match = recurrenceRuleText(value).match(/INTERVAL=(\d+)/i);
+        return match ? Math.max(1, Number(match[1])) : 1;
+    }
+    function recurrenceLabel() {
+        var options = recurrenceOptions();
+        for (var i = 0; i < options.length; ++i) {
+            if (options[i].id === recurrenceType)
+                return options[i].label;
+        }
+        return options[0].label;
+    }
+    function recurrenceOptions() {
+        return [
+            {
+                "id": "none",
+                "label": qsTr("Does not repeat")
+            },
+            {
+                "id": "daily",
+                "label": qsTr("Daily")
+            },
+            {
+                "id": "weekly",
+                "label": qsTr("Weekly")
+            },
+            {
+                "id": "monthly",
+                "label": qsTr("Monthly")
+            },
+            {
+                "id": "yearly",
+                "label": qsTr("Yearly")
+            },
+            {
+                "id": "advanced",
+                "label": qsTr("Customize…")
+            }
+        ];
+    }
+    function recurrenceRule() {
+        if (recurrenceType === "none")
+            return [];
+        var frequency = recurrenceType.toUpperCase();
+        var rule = "RRULE:FREQ=" + frequency;
+        if (recurrenceInterval > 1)
+            rule += ";INTERVAL=" + Math.max(1, recurrenceInterval);
+        if (recurrenceType === "weekly" && recurrenceWeekdays.length > 0)
+            rule += ";BYDAY=" + recurrenceWeekdays.join(",");
+        if (recurrenceType === "monthly")
+            rule += ";BYMONTHDAY=" + eventDate.getDate();
+        if (recurrenceEndType === "count")
+            rule += ";COUNT=" + Math.max(1, recurrenceCount);
+        else if (recurrenceEndType === "until")
+            rule += ";UNTIL=" + dateForValue(recurrenceUntilDate).replace(/-/g, "") + "T235959Z";
+        return [rule];
+    }
+    function recurrenceRuleText(value) {
+        if (value === null || value === undefined)
+            return "";
+        if (typeof value === "string")
+            return value;
+        if (typeof value !== "object" || value.pattern)
+            return "";
+
+        // A JS array becomes a QQmlListProperty/QJSValue-like object when it
+        // travels through a Repeater model.  In that case Array.isArray() is
+        // false even though length and numeric indexes are still available.
+        var length = Number(value.length);
+        if (isFinite(length) && length > 0 && value[0] !== undefined)
+            return String(value[0]);
+        return value[0] === undefined ? "" : String(value[0]);
+    }
+    function recurrenceTypeFromEvent(value) {
+        var first = recurrenceRuleText(value);
+        if (value && typeof value === "object" && value.pattern) {
+            var patternType = String(value.pattern.type || "");
+            if (patternType === "daily")
+                return "daily";
+            if (patternType === "weekly")
+                return "weekly";
+            if (patternType === "absoluteMonthly" || patternType === "relativeMonthly")
+                return "monthly";
+            if (patternType === "absoluteYearly" || patternType === "relativeYearly")
+                return "yearly";
+        }
+        first = first.trim();
+        if (first.charAt(0) === "{") {
+            try {
+                var parsed = JSON.parse(first);
+                var graphType = parsed.pattern ? parsed.pattern.type : "";
+                if (graphType === "daily")
+                    return "daily";
+                if (graphType === "weekly")
+                    return "weekly";
+                if (graphType === "absoluteMonthly" || graphType === "relativeMonthly")
+                    return "monthly";
+                if (graphType === "absoluteYearly" || graphType === "relativeYearly")
+                    return "yearly";
+            } catch (error) {
+                return "none";
+            }
+        }
+        var normalized = first.toUpperCase().replace(/^RRULE:/, "");
+        if (normalized.indexOf("FREQ=DAILY") >= 0)
+            return "daily";
+        if (normalized.indexOf("FREQ=WEEKLY") >= 0)
+            return "weekly";
+        if (normalized.indexOf("FREQ=MONTHLY") >= 0)
+            return "monthly";
+        if (normalized.indexOf("FREQ=YEARLY") >= 0)
+            return "yearly";
+        return "none";
+    }
+    function recurrenceWeekdaysFromRule(value) {
+        var match = recurrenceRuleText(value).match(/BYDAY=([^;]+)/i);
+        return match ? match[1].split(",") : [];
+    }
+    function reminderLabel() {
+        if (reminderMinutes < 0)
+            return qsTr("No reminder");
+        var options = reminderOptions();
+        for (var i = 0; i < options.length; ++i)
+            if (options[i].minutes === reminderMinutes)
+                return options[i].label;
+        return qsTr("%1 minutes before").arg(reminderMinutes);
+    }
+    function reminderMinutesFromEvent(value) {
+        if (value === null || value === undefined || value === "")
+            return -1;
+        var number = Number(value);
+        return isFinite(number) && number >= 0 ? number : -1;
+    }
+    function reminderOptions() {
+        var options = [
+            {
+                "id": "none",
+                "minutes": -1,
+                "label": qsTr("No reminder")
+            },
+            {
+                "id": "start",
+                "minutes": 0,
+                "label": qsTr("At start time")
+            },
+            {
+                "id": "5",
+                "minutes": 5,
+                "label": qsTr("5 minutes before")
+            },
+            {
+                "id": "10",
+                "minutes": 10,
+                "label": qsTr("10 minutes before")
+            },
+            {
+                "id": "15",
+                "minutes": 15,
+                "label": qsTr("15 minutes before")
+            },
+            {
+                "id": "30",
+                "minutes": 30,
+                "label": qsTr("30 minutes before")
+            },
+            {
+                "id": "60",
+                "minutes": 60,
+                "label": qsTr("1 hour before")
+            },
+            {
+                "id": "1440",
+                "minutes": 1440,
+                "label": qsTr("1 day before")
+            }
+        ];
+        return options;
     }
     function save() {
         if (isNewTask) {
@@ -383,10 +805,49 @@ Item {
             calendarId = defaultCalendarId();
 
         if (eventId !== "")
-            CalendarService.updateEvent(calendarId, eventId, eventTitle.trim(), dateForApi(), startTime, endTime, allDay, location.trim(), description.trim());
+            CalendarService.updateEvent(calendarId, eventId, eventTitle.trim(), eventDate, eventEndDate, startTime, endTime, allDay, location.trim(), description.trim(), recurrenceRule(), reminderMinutes, null, availabilityType, visibilityType, useDefaultReminder);
         else
-            CalendarService.createEvent(calendarId, eventTitle.trim(), dateForApi(), startTime, endTime, allDay, location.trim(), description.trim());
+            CalendarService.createEvent(calendarId, eventTitle.trim(), eventDate, eventEndDate, startTime, endTime, allDay, location.trim(), description.trim(), recurrenceRule(), reminderMinutes, null, availabilityType, visibilityType, useDefaultReminder);
         close();
+    }
+    function selectAvailability(item) {
+        if (!item)
+            return;
+        availabilityType = String(item.id || "busy") === "free" ? "free" : "busy";
+        availabilityPopupOpen = false;
+    }
+    function selectRecurrence(item) {
+        if (!item)
+            return;
+        var selected = String(item.id || "none");
+        if (selected === "advanced") {
+            recurrencePopupOpen = false;
+            Qt.callLater(function () {
+                if (root.recurrenceType !== "none")
+                    root.openRecurrenceAdvancedPopup(recurrenceAdvancedField);
+            });
+            return;
+        }
+        recurrenceType = selected;
+        if (recurrenceType === "none")
+            recurrenceAdvancedPopupOpen = false;
+        else
+            ensureWeeklyWeekday();
+        recurrencePopupOpen = false;
+        if (recurrenceType !== "none") {
+            Qt.callLater(function () {
+                if (root.opened && root.recurrenceType !== "none")
+                    root.openRecurrenceAdvancedPopup(recurrenceAdvancedField);
+            });
+        }
+    }
+    function selectReminder(item) {
+        if (!item)
+            return;
+        reminderMinutes = Number(item.minutes);
+        useDefaultReminder = false;
+        reminderUserSelected = true;
+        reminderPopupOpen = false;
     }
     function selectTaskDestination(item) {
         if (!item)
@@ -415,10 +876,22 @@ Item {
         taskListPopupOpen = false;
         taskError = "";
     }
+    function selectVisibility(item) {
+        if (!item)
+            return;
+        var value = String(item.id || "default");
+        visibilityType = ["default", "public", "private"].indexOf(value) >= 0 ? value : "default";
+        visibilityPopupOpen = false;
+    }
     function setEditorMode(mode) {
         if (taskBusy)
             return;
         calendarPopupOpen = false;
+        recurrencePopupOpen = false;
+        reminderPopupOpen = false;
+        recurrenceAdvancedPopupOpen = false;
+        availabilityPopupOpen = false;
+        visibilityPopupOpen = false;
         taskDestinationPopupOpen = false;
         taskListPopupOpen = false;
         taskError = "";
@@ -427,6 +900,10 @@ Item {
             taskCreateMode = true;
             taskData = null;
             allDay = true;
+            recurrenceType = "none";
+            reminderMinutes = -1;
+            useDefaultReminder = false;
+            reminderUserSelected = false;
             if (taskSource === "google") {
                 if (!taskAccountId && GoogleService.accounts.length > 0)
                     taskAccountId = GoogleService.accounts[0].id;
@@ -438,8 +915,11 @@ Item {
             taskCreateMode = false;
             taskData = null;
             allDay = false;
+            if (eventEndDate.getTime() < eventDate.getTime())
+                eventEndDate = new Date(eventDate);
             if (!calendarId)
                 calendarId = defaultCalendarId();
+            applyCalendarDefaultReminder();
         }
     }
     function syncTextFields() {
@@ -467,6 +947,15 @@ Item {
         var minutes = Math.max(0, Math.min(23 * 60 + 59, Number(value || 0)));
         return String(Math.floor(minutes / 60)).padStart(2, "0") + ":" + String(minutes % 60).padStart(2, "0");
     }
+    function toggleRecurrenceWeekday(day) {
+        var next = recurrenceWeekdays.slice();
+        var index = next.indexOf(day);
+        if (index >= 0)
+            next.splice(index, 1);
+        else
+            next.push(day);
+        recurrenceWeekdays = next;
+    }
     function verticalPosition(cardHeight) {
         var margin = 16;
         if (!anchorRect)
@@ -474,6 +963,39 @@ Item {
 
         var targetY = Number(anchorRect.y || 0) - 18;
         return Math.max(margin, Math.min(height - cardHeight - margin, targetY));
+    }
+    function visibilityLabel() {
+        var options = visibilityOptions();
+        for (var i = 0; i < options.length; ++i) {
+            if (String(options[i].id) === visibilityType)
+                return options[i].label;
+        }
+        return options[0].label;
+    }
+    function visibilityOptions() {
+        return [
+            {
+                "id": "default",
+                "label": qsTr("Default"),
+                "description": qsTr("Use the calendar's default visibility")
+            },
+            {
+                "id": "public",
+                "label": qsTr("Public"),
+                "description": qsTr("Anyone with access can see the details")
+            },
+            {
+                "id": "private",
+                "label": qsTr("Private"),
+                "description": qsTr("Only you can see the details")
+            }
+        ];
+    }
+    function weekdayCodeForDate(value) {
+        if (!value || isNaN(value.getTime()))
+            return "MO";
+        // JavaScript Date uses Sunday=0, while RRULE uses MO..SU.
+        return ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][value.getDay()];
     }
 
     enabled: opened
@@ -487,6 +1009,10 @@ Item {
         }
     }
 
+    onOpenedChanged: {
+        if (opened && eventId === "" && !isTask && !reminderUserSelected)
+            Qt.callLater(applyCalendarDefaultReminder);
+    }
     onTaskListOptionsChanged: {
         if (isNewTask && taskSource === "google") {
             if (taskListOptions.length > 0 && !taskListOptions.some(item => item.id === taskListId))
@@ -494,12 +1020,21 @@ Item {
         }
     }
 
+    Connections {
+        function onCalendarsChanged() {
+            if (root.opened && root.eventId === "" && !root.isTask && !root.reminderUserSelected)
+                root.applyCalendarDefaultReminder();
+        }
+
+        target: CalendarService
+    }
     WheelHandler {
         blocking: true
         target: null
     }
     MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
 
         onClicked: root.close()
         onWheel: event => event.accepted = true
@@ -543,6 +1078,7 @@ Item {
         }
         MouseArea {
             anchors.fill: parent
+            hoverEnabled: true
 
             onWheel: event => event.accepted = true
         }
@@ -856,114 +1392,34 @@ Item {
                         renderType: Text.NativeRendering
                         text: root.isTask ? qsTr("Due date") : qsTr("Date")
                     }
-                    Rectangle {
-                        id: dateField
+                    CalendarDateField {
+                        accessibleDescription: root.isTask ? qsTr("Choose task due date") : qsTr("Choose event date")
+                        value: root.eventDate
 
-                        function activate() {
-                            datePicker.selectedDate = root.dateForPicker();
-                            datePicker.currentMonth = root.eventDate.getMonth();
-                            datePicker.currentYear = root.eventDate.getFullYear();
-                            datePicker.open();
-                        }
+                        onClicked: root.openDatePicker("start")
+                    }
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: Md3.spacing.xs
+                    visible: !root.isTask
 
-                        Accessible.description: root.isTask ? qsTr("Choose task due date") : qsTr("Choose event date")
-                        Accessible.name: qsTr("%1, %2 lunar").arg(root.eventDate.toLocaleDateString(Qt.locale(), Locale.LongFormat)).arg(Lunar.getLunarFullString(root.eventDate))
-                        Accessible.role: Accessible.Button
+                    Text {
                         Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                        Layout.preferredHeight: 56
-                        activeFocusOnTab: false
-                        border.color: dateMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.56) : Config.alpha(Config.md3.outline, 0.22)
-                        border.width: 1
-                        color: Config.md3.surface_container_low
-                        radius: Md3.shape.medium
+                        color: Config.md3.on_surface
+                        elide: Text.ElideRight
+                        font.family: Config.fontName
+                        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        renderType: Text.NativeRendering
+                        text: qsTr("End date")
+                    }
+                    CalendarDateField {
+                        accessibleDescription: qsTr("Choose event end date")
+                        value: root.eventEndDate
 
-                        Behavior on border.color {
-                            ColorAnimation {
-                                duration: Config.animationDuration(Md3.motion.short3)
-                            }
-                        }
-
-                        Accessible.onPressAction: activate()
-                        Keys.onPressed: event => {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space || event.key === Qt.Key_Down) {
-                                activate();
-                                event.accepted = true;
-                            }
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            anchors.margins: 1
-                            color: Config.md3.on_surface
-                            opacity: dateMouse.pressed ? Md3.state.pressed : dateMouse.containsMouse ? Md3.state.hover : 0
-                            radius: Math.max(0, dateField.radius - 1)
-
-                            Behavior on opacity {
-                                NumberAnimation {
-                                    duration: Config.animationDuration(Md3.motion.short2)
-                                    easing.type: Md3.motion.standard
-                                }
-                            }
-                        }
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 16
-                            anchors.rightMargin: 15
-                            spacing: Md3.spacing.sm
-
-                            Md3Icon {
-                                Layout.preferredHeight: 22
-                                Layout.preferredWidth: 22
-                                color: Config.md3.primary
-                                name: "calendar_month"
-                                size: 22
-                            }
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: 0
-                                spacing: 0
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.md3.on_surface
-                                    elide: Text.ElideRight
-                                    font.family: Config.fontName
-                                    font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
-                                    font.pixelSize: 15
-                                    font.weight: Font.Medium
-                                    renderType: Text.NativeRendering
-                                    text: root.eventDate.toLocaleDateString(Qt.locale(), Locale.LongFormat)
-                                }
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.md3.on_surface_variant
-                                    elide: Text.ElideRight
-                                    font.family: Config.fontName
-                                    font.letterSpacing: Md3.typeScale.labelSmall.letterSpacing
-                                    font.pixelSize: Md3.typeScale.labelSmall.size
-                                    font.weight: Md3.typeScale.labelSmall.weight
-                                    renderType: Text.NativeRendering
-                                    text: qsTr("%1 lunar").arg(Lunar.getLunarFullString(root.eventDate))
-                                }
-                            }
-                            Md3Icon {
-                                Layout.preferredHeight: 20
-                                Layout.preferredWidth: 20
-                                color: Config.md3.on_surface_variant
-                                name: "expand_more"
-                                size: 20
-                            }
-                        }
-                        MouseArea {
-                            id: dateMouse
-
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-
-                            onClicked: dateField.activate()
-                        }
+                        onClicked: root.openDatePicker("end")
                     }
                 }
                 Rectangle {
@@ -1192,8 +1648,77 @@ Item {
                     font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
                     font.pixelSize: Md3.typeScale.bodySmall.size
                     font.weight: 600
-                    text: qsTr("End time must be later than start time.")
+                    text: qsTr("End date and time must be later than the start.")
                     visible: !root.validTimeRange && !root.isTask
+                }
+                SettingsSelectField {
+                    id: recurrenceField
+
+                    Layout.fillWidth: true
+                    label: qsTr("Repeat")
+                    labelFontPixelSize: 14
+                    labelFontWeight: Font.DemiBold
+                    valueFontPixelSize: 15
+                    valueText: root.recurrenceLabel()
+                    visible: !root.isTask
+
+                    onClicked: sourceItem => root.openRecurrencePopup(sourceItem)
+                }
+                SettingsSelectField {
+                    id: recurrenceAdvancedField
+
+                    Layout.fillWidth: true
+                    label: qsTr("Repeat options")
+                    labelFontPixelSize: 14
+                    labelFontWeight: Font.DemiBold
+                    valueFontPixelSize: 15
+                    valueText: root.recurrenceAdvancedLabel()
+                    visible: !root.isTask && root.recurrenceType !== "none"
+
+                    onClicked: sourceItem => root.openRecurrenceAdvancedPopup(sourceItem)
+                }
+                SettingsSelectField {
+                    id: reminderField
+
+                    Layout.fillWidth: true
+                    label: qsTr("Reminder")
+                    labelFontPixelSize: 14
+                    labelFontWeight: Font.DemiBold
+                    valueFontPixelSize: 15
+                    valueText: root.reminderLabel()
+                    visible: !root.isTask
+
+                    onClicked: sourceItem => root.openReminderPopup(sourceItem)
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    visible: !root.isTask
+
+                    SettingsSelectField {
+                        id: availabilityField
+
+                        Layout.fillWidth: true
+                        label: qsTr("Show as")
+                        labelFontPixelSize: 14
+                        labelFontWeight: Font.DemiBold
+                        valueFontPixelSize: 15
+                        valueText: root.availabilityLabel()
+
+                        onClicked: sourceItem => root.openAvailabilityPopup(sourceItem)
+                    }
+                    SettingsSelectField {
+                        id: visibilityField
+
+                        Layout.fillWidth: true
+                        label: qsTr("Visibility")
+                        labelFontPixelSize: 14
+                        labelFontWeight: Font.DemiBold
+                        valueFontPixelSize: 15
+                        valueText: root.visibilityLabel()
+
+                        onClicked: sourceItem => root.openVisibilityPopup(sourceItem)
+                    }
                 }
                 FormTextField {
                     id: locationField
@@ -1386,7 +1911,740 @@ Item {
         onDismissed: root.calendarPopupOpen = false
         onItemSelected: calendar => {
             root.calendarId = String(calendar.id || "");
+            if (!root.isTask && (!root.reminderUserSelected || root.useDefaultReminder))
+                root.applyCalendarDefaultReminder();
             root.calendarPopupOpen = false;
+        }
+    }
+    SelectPopup {
+        id: recurrencePopup
+
+        anchors.fill: parent
+        itemActive: option => option && String(option.id || "none") === root.recurrenceType
+        itemLabel: option => option && option.label ? option.label : ""
+        itemVisible: option => option && String(option.id || "") !== "advanced" || root.recurrenceType !== "none"
+        model: root.recurrenceOptions()
+        opened: root.recurrencePopupOpen
+        popupWidth: 280
+        popupY: root.recurrencePopupY
+        rightMargin: Math.max(12, root.width - editorCard.x - editorCard.width + 8)
+        shadowOpacity: 0.5
+        z: 60
+
+        onDismissed: root.recurrencePopupOpen = false
+        onItemSelected: option => root.selectRecurrence(option)
+    }
+    SelectPopup {
+        id: reminderPopup
+
+        anchors.fill: parent
+        itemActive: option => option && Number(option.minutes) === root.reminderMinutes
+        itemLabel: option => {
+            if (!option)
+                return "";
+            return option.label || "";
+        }
+        model: root.reminderOptions()
+        opened: root.reminderPopupOpen
+        popupWidth: 280
+        popupY: root.reminderPopupY
+        rightMargin: Math.max(12, root.width - editorCard.x - editorCard.width + 8)
+        shadowOpacity: 0.5
+        z: 60
+
+        onDismissed: root.reminderPopupOpen = false
+        onItemSelected: option => root.selectReminder(option)
+    }
+    SelectPopup {
+        id: availabilityPopup
+
+        anchors.fill: parent
+        itemActive: option => option && String(option.id || "busy") === root.availabilityType
+        itemLabel: option => option && option.label ? option.label : ""
+        model: root.availabilityOptions()
+        opened: root.availabilityPopupOpen
+        popupWidth: 300
+        popupY: root.availabilityPopupY
+        rightMargin: Math.max(12, root.width - editorCard.x - editorCard.width + 8)
+        shadowOpacity: 0.5
+        z: 60
+
+        onDismissed: root.availabilityPopupOpen = false
+        onItemSelected: option => root.selectAvailability(option)
+    }
+    SelectPopup {
+        id: visibilityPopup
+
+        anchors.fill: parent
+        itemActive: option => option && String(option.id || "default") === root.visibilityType
+        itemLabel: option => option && option.label ? option.label : ""
+        model: root.visibilityOptions()
+        opened: root.visibilityPopupOpen
+        popupWidth: 320
+        popupY: root.visibilityPopupY
+        rightMargin: Math.max(12, root.width - editorCard.x - editorCard.width + 8)
+        shadowOpacity: 0.5
+        z: 60
+
+        onDismissed: root.visibilityPopupOpen = false
+        onItemSelected: option => root.selectVisibility(option)
+    }
+    Item {
+        id: recurrenceAdvancedPopup
+
+        anchors.fill: parent
+        enabled: root.recurrenceAdvancedPopupOpen
+        visible: root.recurrenceAdvancedPopupOpen
+        z: 65
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+
+            onClicked: root.recurrenceAdvancedPopupOpen = false
+            onWheel: event => event.accepted = true
+        }
+        Rectangle {
+            id: recurrenceAdvancedCard
+
+            color: Config.md3.surface_container_high
+            height: Math.min(advancedColumn.implicitHeight + advancedTitleText.implicitHeight + advancedFooterRow.implicitHeight + Md3.spacing.lg * 2 + Md3.spacing.md * 2, root.height - 32)
+            radius: Md3.shape.extraLarge
+            width: Math.min(380, root.width - 24)
+            x: Math.max(12, Math.min(root.width - width - 12, editorCard.x + editorCard.width - width))
+            y: Math.max(12, Math.min(root.height - height - 12, root.recurrenceAdvancedPopupY))
+
+            ShellShadow {
+                active: root.recurrenceAdvancedPopupOpen
+                componentShadow: true
+                cornerRadius: recurrenceAdvancedCard.radius
+                target: recurrenceAdvancedCard
+            }
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+
+                onClicked: event => event.accepted = true
+                onWheel: event => event.accepted = true
+            }
+            ColumnLayout {
+                id: advancedOuterColumn
+
+                anchors.fill: parent
+                anchors.margins: Md3.spacing.lg
+                spacing: 0
+
+                // ── Title ──
+                Text {
+                    id: advancedTitleText
+
+                    Layout.bottomMargin: Md3.spacing.md
+                    Layout.fillWidth: true
+                    color: Config.md3.on_surface
+                    font.family: Config.fontName
+                    font.letterSpacing: Md3.typeScale.titleLarge.letterSpacing
+                    font.pixelSize: Md3.typeScale.titleLarge.size
+                    font.weight: Md3.typeScale.titleLarge.emphasizedWeight
+                    text: qsTr("Custom recurrence")
+                }
+
+                // ── Scrollable content ──
+                Flickable {
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    contentHeight: advancedColumn.implicitHeight
+                    contentWidth: width
+                    flickableDirection: Flickable.VerticalFlick
+                    interactive: contentHeight > height
+
+                    ColumnLayout {
+                        id: advancedColumn
+
+                        spacing: Md3.spacing.md
+                        width: parent.width
+
+                        // ── Repeat every ──
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Md3.spacing.sm
+
+                            Md3Icon {
+                                Layout.alignment: Qt.AlignVCenter
+                                color: Config.md3.on_surface_variant
+                                name: "repeat"
+                                size: 20
+                            }
+                            Text {
+                                Layout.alignment: Qt.AlignVCenter
+                                color: Config.md3.on_surface
+                                font.family: Config.fontName
+                                font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                font.pixelSize: 16
+                                font.weight: Font.DemiBold
+                                text: qsTr("Repeat every")
+                            }
+                            Rectangle {
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.preferredHeight: 44
+                                Layout.preferredWidth: 64
+                                border.color: intervalInput.activeFocus ? Config.md3.primary : Config.alpha(Config.md3.outline, 0.22)
+                                border.width: intervalInput.activeFocus ? 2 : 1
+                                color: Config.md3.surface_container_low
+                                radius: Md3.shape.medium
+
+                                Behavior on border.color {
+                                    ColorAnimation {
+                                        duration: Config.animationDuration(Md3.motion.short2)
+                                    }
+                                }
+
+                                TextInput {
+                                    id: intervalInput
+
+                                    anchors.fill: parent
+                                    anchors.margins: Md3.spacing.sm
+                                    clip: true
+                                    color: Config.md3.on_surface
+                                    font.family: Config.fontName
+                                    font.pixelSize: Md3.typeScale.bodyLarge.size
+                                    horizontalAlignment: Text.AlignHCenter
+                                    inputMethodHints: Qt.ImhDigitsOnly
+                                    maximumLength: 3
+                                    text: String(root.recurrenceInterval)
+                                    verticalAlignment: Text.AlignVCenter
+
+                                    validator: IntValidator {
+                                        bottom: 1
+                                        top: 999
+                                    }
+
+                                    onEditingFinished: root.recurrenceInterval = Math.max(1, Number(text || 1))
+                                }
+                            }
+                            Text {
+                                Layout.alignment: Qt.AlignVCenter
+                                color: Config.md3.on_surface_variant
+                                font.family: Config.fontName
+                                font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodyLarge.size
+                                text: {
+                                    if (root.recurrenceType === "daily")
+                                        return root.recurrenceInterval === 1 ? qsTr("day") : qsTr("days");
+                                    if (root.recurrenceType === "weekly")
+                                        return root.recurrenceInterval === 1 ? qsTr("week") : qsTr("weeks");
+                                    if (root.recurrenceType === "monthly")
+                                        return root.recurrenceInterval === 1 ? qsTr("month") : qsTr("months");
+                                    return root.recurrenceInterval === 1 ? qsTr("year") : qsTr("years");
+                                }
+                            }
+                            Text {
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.fillWidth: true
+                                color: Config.md3.on_surface_variant
+                                font.family: Config.fontName
+                                font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                font.pixelSize: Md3.typeScale.bodyLarge.size
+                                text: qsTr("on day %1").arg(root.eventDate.getDate())
+                                visible: root.recurrenceType === "monthly"
+                            }
+                        }
+
+                        // ── Repeat on (weekly only) ──
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: Md3.spacing.sm
+                            visible: root.recurrenceType === "weekly"
+
+                            RowLayout {
+                                Layout.fillWidth: true
+
+                                Md3Icon {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    color: Config.md3.on_surface_variant
+                                    name: "calendar_month"
+                                    size: 22
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    color: Config.md3.on_surface
+                                    font.family: Config.fontName
+                                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                    font.pixelSize: 16
+                                    font.weight: Font.DemiBold
+                                    text: qsTr("Repeat on")
+                                }
+                            }
+                            Row {
+                                Layout.fillWidth: true
+                                spacing: Md3.spacing.xs
+
+                                Repeater {
+                                    model: [
+                                        {
+                                            "id": "MO",
+                                            "label": qsTr("M")
+                                        },
+                                        {
+                                            "id": "TU",
+                                            "label": qsTr("T")
+                                        },
+                                        {
+                                            "id": "WE",
+                                            "label": qsTr("W")
+                                        },
+                                        {
+                                            "id": "TH",
+                                            "label": qsTr("T")
+                                        },
+                                        {
+                                            "id": "FR",
+                                            "label": qsTr("F")
+                                        },
+                                        {
+                                            "id": "SA",
+                                            "label": qsTr("S")
+                                        },
+                                        {
+                                            "id": "SU",
+                                            "label": qsTr("S")
+                                        }
+                                    ]
+
+                                    delegate: Rectangle {
+                                        id: dayPill
+
+                                        required property var modelData
+                                        property bool selected: root.recurrenceWeekdays.indexOf(modelData.id) >= 0
+
+                                        color: selected ? Config.md3.primary : "transparent"
+                                        height: 36
+                                        radius: Md3.shape.full
+                                        width: 36
+
+                                        Behavior on color {
+                                            Md3ColorAnimation {
+                                                role: "state"
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            border.color: dayPill.selected ? "transparent" : Config.alpha(Config.md3.outline, 0.38)
+                                            border.width: 1
+                                            color: "transparent"
+                                            radius: parent.radius
+                                        }
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            color: Config.alpha(dayPill.selected ? Config.md3.on_primary : Config.md3.on_surface, dayMouse.pressed ? Md3.state.pressed : dayMouse.containsMouse ? Md3.state.hover : 0)
+                                            radius: parent.radius
+
+                                            Behavior on color {
+                                                Md3ColorAnimation {
+                                                    role: "state"
+                                                }
+                                            }
+                                        }
+                                        Text {
+                                            anchors.centerIn: parent
+                                            color: dayPill.selected ? Config.md3.on_primary : Config.md3.on_surface
+                                            font.family: Config.fontName
+                                            font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                            font.pixelSize: Md3.typeScale.labelLarge.size
+                                            font.weight: Md3.typeScale.labelLarge.weight
+                                            text: dayPill.modelData.label
+
+                                            Behavior on color {
+                                                Md3ColorAnimation {
+                                                    role: "state"
+                                                }
+                                            }
+                                        }
+                                        MouseArea {
+                                            id: dayMouse
+
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            hoverEnabled: true
+
+                                            onClicked: root.toggleRecurrenceWeekday(dayPill.modelData.id)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Separator ──
+                        Rectangle {
+                            Layout.bottomMargin: Md3.spacing.xxs
+                            Layout.fillWidth: true
+                            Layout.topMargin: Md3.spacing.xxs
+                            color: Config.alpha(Config.md3.outline_variant, 0.28)
+                            implicitHeight: 1
+                        }
+
+                        // ── Ends ──
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: Md3.spacing.sm
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 44
+
+                                Md3Icon {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    color: Config.md3.on_surface_variant
+                                    name: "schedule"
+                                    size: 22
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    color: Config.md3.on_surface
+                                    font.family: Config.fontName
+                                    font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                                    font.pixelSize: 16
+                                    font.weight: Font.DemiBold
+                                    text: qsTr("Ends")
+                                }
+                            }
+
+                            // Never
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 44
+                                spacing: Md3.spacing.sm
+
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.preferredHeight: 20
+                                    Layout.preferredWidth: 20
+                                    border.color: root.recurrenceEndType === "none" ? Config.md3.primary : Config.md3.outline
+                                    border.width: 2
+                                    color: "transparent"
+                                    radius: 10
+
+                                    Behavior on border.color {
+                                        Md3ColorAnimation {
+                                            role: "state"
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        color: Config.md3.primary
+                                        height: 10
+                                        radius: 5
+                                        scale: root.recurrenceEndType === "none" ? 1 : 0
+                                        width: 10
+
+                                        Behavior on scale {
+                                            NumberAnimation {
+                                                duration: Config.animationDuration(Md3.motion.short3)
+                                                easing.type: Md3.motion.standard
+                                            }
+                                        }
+                                    }
+                                    MouseArea {
+                                        anchors.centerIn: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        height: 40
+                                        width: 40
+
+                                        onClicked: root.recurrenceEndType = "none"
+                                    }
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    color: Config.md3.on_surface
+                                    font.family: Config.fontName
+                                    font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                    font.pixelSize: 15
+                                    text: qsTr("Never")
+                                    verticalAlignment: Text.AlignVCenter
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+
+                                        onClicked: root.recurrenceEndType = "none"
+                                    }
+                                }
+                            }
+
+                            // On date
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 44
+                                spacing: Md3.spacing.sm
+
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.preferredHeight: 20
+                                    Layout.preferredWidth: 20
+                                    border.color: root.recurrenceEndType === "until" ? Config.md3.primary : Config.md3.outline
+                                    border.width: 2
+                                    color: "transparent"
+                                    radius: 10
+
+                                    Behavior on border.color {
+                                        Md3ColorAnimation {
+                                            role: "state"
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        color: Config.md3.primary
+                                        height: 10
+                                        radius: 5
+                                        scale: root.recurrenceEndType === "until" ? 1 : 0
+                                        width: 10
+
+                                        Behavior on scale {
+                                            NumberAnimation {
+                                                duration: Config.animationDuration(Md3.motion.short3)
+                                                easing.type: Md3.motion.standard
+                                            }
+                                        }
+                                    }
+                                    MouseArea {
+                                        anchors.centerIn: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        height: 40
+                                        width: 40
+
+                                        onClicked: {
+                                            root.recurrenceEndType = "until";
+                                            root.openDatePicker("recurrenceUntil");
+                                        }
+                                    }
+                                }
+                                Text {
+                                    color: Config.md3.on_surface
+                                    font.family: Config.fontName
+                                    font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                    font.pixelSize: 15
+                                    text: qsTr("On date")
+                                    verticalAlignment: Text.AlignVCenter
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+
+                                        onClicked: {
+                                            root.recurrenceEndType = "until";
+                                            root.openDatePicker("recurrenceUntil");
+                                        }
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 40
+                                    border.color: datePillMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.56) : Config.alpha(Config.md3.outline, 0.22)
+                                    border.width: 1
+                                    color: Config.md3.surface_container_low
+                                    enabled: root.recurrenceEndType === "until"
+                                    opacity: enabled ? 1 : Md3.state.disabledContent
+                                    radius: Md3.shape.full
+
+                                    Behavior on border.color {
+                                        ColorAnimation {
+                                            duration: Config.animationDuration(Md3.motion.short2)
+                                        }
+                                    }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        color: Config.md3.on_surface
+                                        font.family: Config.fontName
+                                        font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
+                                        font.pixelSize: Md3.typeScale.labelLarge.size
+                                        font.weight: Md3.typeScale.labelLarge.weight
+                                        text: root.dateForPickerValue(root.recurrenceUntilDate)
+                                    }
+                                    MouseArea {
+                                        id: datePillMouse
+
+                                        anchors.fill: parent
+                                        cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                        enabled: parent.enabled
+                                        hoverEnabled: true
+
+                                        onClicked: root.openDatePicker("recurrenceUntil")
+                                    }
+                                }
+                            }
+
+                            // After N occurrences
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 44
+                                spacing: Md3.spacing.sm
+
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.preferredHeight: 20
+                                    Layout.preferredWidth: 20
+                                    border.color: root.recurrenceEndType === "count" ? Config.md3.primary : Config.md3.outline
+                                    border.width: 2
+                                    color: "transparent"
+                                    radius: 10
+
+                                    Behavior on border.color {
+                                        Md3ColorAnimation {
+                                            role: "state"
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        color: Config.md3.primary
+                                        height: 10
+                                        radius: 5
+                                        scale: root.recurrenceEndType === "count" ? 1 : 0
+                                        width: 10
+
+                                        Behavior on scale {
+                                            NumberAnimation {
+                                                duration: Config.animationDuration(Md3.motion.short3)
+                                                easing.type: Md3.motion.standard
+                                            }
+                                        }
+                                    }
+                                    MouseArea {
+                                        anchors.centerIn: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        height: 40
+                                        width: 40
+
+                                        onClicked: root.recurrenceEndType = "count"
+                                    }
+                                }
+                                Text {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    color: Config.md3.on_surface
+                                    font.family: Config.fontName
+                                    font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                    font.pixelSize: 15
+                                    text: qsTr("After")
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+
+                                        onClicked: root.recurrenceEndType = "count"
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.preferredHeight: 40
+                                    Layout.preferredWidth: 64
+                                    border.color: countInput.activeFocus ? Config.md3.primary : Config.alpha(Config.md3.outline, 0.22)
+                                    border.width: countInput.activeFocus ? 2 : 1
+                                    color: Config.md3.surface_container_low
+                                    enabled: root.recurrenceEndType === "count"
+                                    opacity: enabled ? 1 : Md3.state.disabledContent
+                                    radius: Md3.shape.medium
+
+                                    Behavior on border.color {
+                                        ColorAnimation {
+                                            duration: Config.animationDuration(Md3.motion.short2)
+                                        }
+                                    }
+
+                                    TextInput {
+                                        id: countInput
+
+                                        anchors.fill: parent
+                                        anchors.margins: Md3.spacing.xs
+                                        clip: true
+                                        color: Config.md3.on_surface
+                                        enabled: parent.enabled
+                                        font.family: Config.fontName
+                                        font.pixelSize: Md3.typeScale.bodyLarge.size
+                                        horizontalAlignment: Text.AlignHCenter
+                                        inputMethodHints: Qt.ImhDigitsOnly
+                                        maximumLength: 4
+                                        text: String(root.recurrenceCount)
+                                        verticalAlignment: Text.AlignVCenter
+
+                                        validator: IntValidator {
+                                            bottom: 1
+                                            top: 9999
+                                        }
+
+                                        onEditingFinished: root.recurrenceCount = Math.max(1, Number(text || 1))
+                                    }
+                                }
+                                Text {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.fillWidth: true
+                                    color: Config.md3.on_surface_variant
+                                    font.family: Config.fontName
+                                    font.letterSpacing: Md3.typeScale.bodyLarge.letterSpacing
+                                    font.pixelSize: Md3.typeScale.bodyLarge.size
+                                    text: qsTr("occurrences")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── Footer: Cancel + Done ──
+                RowLayout {
+                    id: advancedFooterRow
+
+                    Layout.fillWidth: true
+                    Layout.topMargin: Md3.spacing.md
+                    spacing: Md3.spacing.xs
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                    SettingsActionButton {
+                        text: qsTr("Cancel")
+                        textPixelSize: Md3.typeScale.labelLarge.size
+                        textWeight: Md3.typeScale.labelLarge.weight
+
+                        onClicked: root.recurrenceAdvancedPopupOpen = false
+                    }
+                    SettingsActionButton {
+                        primary: true
+                        text: qsTr("Done")
+                        textPixelSize: Md3.typeScale.labelLarge.size
+                        textWeight: Md3.typeScale.labelLarge.emphasizedWeight
+
+                        onClicked: root.recurrenceAdvancedPopupOpen = false
+                    }
+                }
+            }
+        }
+    }
+    SelectPopup {
+        id: endPopup
+
+        anchors.fill: parent
+        itemActive: option => option && String(option.id || "none") === root.recurrenceEndType
+        itemLabel: option => option && option.label ? option.label : ""
+        model: root.recurrenceEndOptions()
+        opened: root.recurrenceEndPopupOpen
+        popupWidth: 300
+        popupY: root.recurrenceAdvancedPopupY + 136
+        rightMargin: Math.max(12, root.width - recurrenceAdvancedCard.x - recurrenceAdvancedCard.width + 8)
+        shadowOpacity: 0.5
+        z: 70
+
+        onDismissed: root.recurrenceEndPopupOpen = false
+        onItemSelected: option => {
+            if (!option)
+                return;
+            root.recurrenceEndType = String(option.id || "none");
+            root.recurrenceEndPopupOpen = false;
+            if (root.recurrenceEndType === "until")
+                root.openDatePicker("recurrenceUntil");
         }
     }
     DatePickerPopup {
@@ -1396,7 +2654,16 @@ Item {
         placementParent: editorCard
 
         onDateSelected: value => {
-            return root.eventDate = root.parsePickerDate(value);
+            var selected = root.parsePickerDate(value);
+            if (root.datePickerTarget === "recurrenceUntil") {
+                root.recurrenceUntilDate = selected;
+            } else if (root.datePickerTarget === "end") {
+                root.eventEndDate = selected;
+            } else {
+                root.eventDate = selected;
+                if (root.eventEndDate.getTime() < selected.getTime())
+                    root.eventEndDate = new Date(selected);
+            }
         }
     }
     ClockTimePicker {

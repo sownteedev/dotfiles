@@ -1,6 +1,7 @@
 CalendarApp 1.0 CalendarApp.qml
 CalendarAccountCard 1.0 CalendarAccountCard.qml
 CalendarAccountDialog 1.0 CalendarAccountDialog.qml
+CalendarDateField 1.0 CalendarDateField.qml
 CalendarEventEditor 1.0 CalendarEventEditor.qml
 CalendarMonthView 1.0 CalendarMonthView.qml
 CalendarProviderIcon 1.0 CalendarProviderIcon.qml

@@ -16,6 +16,9 @@ use uuid::Uuid;
 const INITIAL_MIGRATION: &str = include_str!("../migrations/001_initial.sql");
 const EVENT_REMINDERS_MIGRATION: &str = include_str!("../migrations/002_event_reminders.sql");
 const GOOGLE_TASK: &str = include_str!("../migrations/003_google_tasks.sql");
+const LOCAL_EVENT_REMINDERS_MIGRATION: &str =
+    include_str!("../migrations/004_local_event_reminders.sql");
+const CALENDAR_DEFAULTS_MIGRATION: &str = include_str!("../migrations/006_calendar_defaults.sql");
 
 #[derive(Clone)]
 pub struct Database {
@@ -42,6 +45,26 @@ impl Database {
         connection.execute_batch(INITIAL_MIGRATION)?;
         connection.execute_batch(EVENT_REMINDERS_MIGRATION)?;
         connection.execute_batch(GOOGLE_TASK)?;
+        ensure_local_event_reminder_column(&connection)?;
+        connection.execute_batch(LOCAL_EVENT_REMINDERS_MIGRATION)?;
+        if !connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = 5)",
+            [],
+            |row| row.get::<_, bool>(0),
+        )? {
+            connection.execute_batch(concat!(
+                "BEGIN;\n",
+                include_str!("../migrations/005_event_options.sql"),
+                "\nCOMMIT;"
+            ))?;
+        }
+        if !connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = 6)",
+            [],
+            |row| row.get::<_, bool>(0),
+        )? {
+            connection.execute_batch(CALENDAR_DEFAULTS_MIGRATION)?;
+        }
 
         fs::set_permissions(path, fs::Permissions::from_mode(0o600))
             .with_context(|| format!("set database permissions {}", path.display()))?;
@@ -202,13 +225,14 @@ impl Database {
                 r#"
                 INSERT INTO calendars(
                     id, account_id, remote_id, name, description, color, time_zone, is_primary,
-                    read_only, visible, sync_token, created_at, updated_at
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1, '', ?10, ?10)
+                    default_reminder_minutes, read_only, visible, sync_token, created_at, updated_at
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 1, '', ?11, ?11)
                 ON CONFLICT(account_id, remote_id) DO UPDATE SET
                     name = excluded.name,
                     description = excluded.description,
                     color = excluded.color,
                     time_zone = excluded.time_zone,
+                    default_reminder_minutes = excluded.default_reminder_minutes,
                     is_primary = excluded.is_primary,
                     read_only = excluded.read_only,
                     updated_at = excluded.updated_at
@@ -222,6 +246,7 @@ impl Database {
                     calendar.color,
                     calendar.time_zone,
                     calendar.primary,
+                    calendar.default_reminder_minutes,
                     calendar.read_only,
                     now,
                 ],
@@ -257,7 +282,7 @@ impl Database {
         let sql = if account_id.is_some() {
             r#"
             SELECT id, account_id, remote_id, name, description, color, time_zone, is_primary,
-                   read_only, visible, sync_token, created_at, updated_at
+                   default_reminder_minutes, read_only, visible, sync_token, created_at, updated_at
             FROM calendars
             WHERE account_id = ?1
             ORDER BY name COLLATE NOCASE
@@ -265,7 +290,7 @@ impl Database {
         } else {
             r#"
             SELECT id, account_id, remote_id, name, description, color, time_zone, is_primary,
-                   read_only, visible, sync_token, created_at, updated_at
+                   default_reminder_minutes, read_only, visible, sync_token, created_at, updated_at
             FROM calendars
             ORDER BY name COLLATE NOCASE
             "#
@@ -288,7 +313,7 @@ impl Database {
             .query_row(
                 r#"
                 SELECT id, account_id, remote_id, name, description, color, time_zone, is_primary,
-                       read_only, visible, sync_token, created_at, updated_at
+                       default_reminder_minutes, read_only, visible, sync_token, created_at, updated_at
                 FROM calendars
                 WHERE id = ?1
                 "#,
@@ -313,8 +338,8 @@ impl Database {
             .query_row(
                 r#"
                 SELECT id, calendar_id, remote_id, uid, etag, title, description, location,
-                       start_at, end_at, all_day, status, recurrence_json, raw_payload,
-                       created_at, updated_at
+                       start_at, end_at, all_day, status, recurrence_json, local_reminder_minutes, raw_payload,
+                       created_at, updated_at, preferences_json
                 FROM events
                 WHERE id = ?1
                 "#,
@@ -342,11 +367,11 @@ impl Database {
             r#"
             INSERT INTO events(
                 id, calendar_id, remote_id, uid, etag, title, description, location,
-                start_at, end_at, all_day, status, recurrence_json, raw_payload,
-                created_at, updated_at
+                start_at, end_at, all_day, status, recurrence_json, local_reminder_minutes, raw_payload,
+                created_at, updated_at, preferences_json
             ) VALUES (
                 ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8,
-                ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16
+                ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18
             )
             ON CONFLICT(calendar_id, remote_id) DO UPDATE SET
                 uid = excluded.uid,
@@ -359,6 +384,8 @@ impl Database {
                 all_day = excluded.all_day,
                 status = excluded.status,
                 recurrence_json = excluded.recurrence_json,
+                local_reminder_minutes = excluded.local_reminder_minutes,
+                preferences_json = excluded.preferences_json,
                 raw_payload = excluded.raw_payload,
                 updated_at = excluded.updated_at
             "#,
@@ -376,9 +403,11 @@ impl Database {
                 stored.all_day,
                 stored.status,
                 serde_json::to_string(&stored.recurrence)?,
+                Option::<i64>::None,
                 stored.raw_payload,
                 format_time(stored.created_at),
                 format_time(stored.updated_at),
+                serde_json::to_string(&stored.preferences)?,
             ],
         )?;
         Ok(stored)
@@ -426,7 +455,10 @@ impl Database {
     pub fn prune_events_before(&self, calendar_id: &str, cutoff: DateTime<Utc>) -> Result<usize> {
         let connection = self.connection()?;
         Ok(connection.execute(
-            "DELETE FROM events WHERE calendar_id = ?1 AND end_at < ?2",
+            "DELETE FROM events
+             WHERE calendar_id = ?1
+               AND end_at < ?2
+               AND recurrence_json = '[]'",
             params![calendar_id, format_time(cutoff)],
         )?)
     }
@@ -451,11 +483,11 @@ impl Database {
                         r#"
                         INSERT INTO events(
                             id, calendar_id, remote_id, uid, etag, title, description, location,
-                            start_at, end_at, all_day, status, recurrence_json, raw_payload,
-                            created_at, updated_at
+                            start_at, end_at, all_day, status, recurrence_json, local_reminder_minutes,
+                            raw_payload, created_at, updated_at, preferences_json
                         ) VALUES (
                             ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8,
-                            ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16
+                            ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18
                         )
                         ON CONFLICT(calendar_id, remote_id) DO UPDATE SET
                             uid = excluded.uid,
@@ -468,6 +500,8 @@ impl Database {
                             all_day = excluded.all_day,
                             status = excluded.status,
                             recurrence_json = excluded.recurrence_json,
+                            preferences_json = excluded.preferences_json,
+                            local_reminder_minutes = NULL,
                             raw_payload = excluded.raw_payload,
                             updated_at = excluded.updated_at
                         "#,
@@ -485,9 +519,11 @@ impl Database {
                             event.all_day,
                             event.status,
                             serde_json::to_string(&event.recurrence)?,
+                            Option::<i64>::None,
                             event.raw_payload,
                             format_time(event.created_at),
                             format_time(event.updated_at),
+                            serde_json::to_string(&event.preferences)?,
                         ],
                     )?;
                 }
@@ -574,7 +610,10 @@ impl Database {
         visible_only: bool,
     ) -> Result<Vec<CalendarEvent>> {
         let connection = self.connection()?;
-        let mut conditions = vec!["events.end_at >= ?1", "events.start_at <= ?2"];
+        let mut conditions = vec![
+            "(events.end_at >= ?1 OR events.recurrence_json != '[]')",
+            "events.start_at <= ?2",
+        ];
         if calendar_id.is_some() {
             conditions.push("events.calendar_id = ?3");
         }
@@ -586,7 +625,8 @@ impl Database {
             SELECT events.id, events.calendar_id, events.remote_id, events.uid, events.etag,
                    events.title, events.description, events.location, events.start_at,
                    events.end_at, events.all_day, events.status, events.recurrence_json,
-                   events.raw_payload, events.created_at, events.updated_at
+                   events.local_reminder_minutes, events.raw_payload, events.created_at,
+                   events.updated_at, events.preferences_json
             FROM events
             JOIN calendars ON calendars.id = events.calendar_id
             WHERE {}
@@ -608,68 +648,6 @@ impl Database {
         Ok(events)
     }
 
-    pub fn pending_event_reminders(
-        &self,
-        now: DateTime<Utc>,
-        reminder_cutoff: DateTime<Utc>,
-    ) -> Result<Vec<CalendarEvent>> {
-        let connection = self.connection()?;
-        let mut statement = connection.prepare(
-            r#"
-            SELECT events.id, events.calendar_id, events.remote_id, events.uid, events.etag,
-                   events.title, events.description, events.location, events.start_at,
-                   events.end_at, events.all_day, events.status, events.recurrence_json,
-                   events.raw_payload, events.created_at, events.updated_at
-            FROM events
-            JOIN calendars ON calendars.id = events.calendar_id
-            JOIN accounts ON accounts.id = calendars.account_id
-            WHERE accounts.enabled = 1
-              AND events.all_day = 0
-              AND LOWER(events.status) NOT IN ('cancelled', 'canceled')
-              AND events.start_at > ?1
-              AND events.start_at <= ?2
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM event_reminders
-                  WHERE event_reminders.event_id = events.id
-                    AND event_reminders.event_start_at = events.start_at
-              )
-            ORDER BY events.start_at, events.end_at
-            "#,
-        )?;
-        let rows = statement.query_map(
-            params![format_time(now), format_time(reminder_cutoff)],
-            event_from_row,
-        )?;
-        rows.collect::<rusqlite::Result<Vec<_>>>()
-            .map_err(Into::into)
-    }
-
-    pub fn mark_event_reminder_sent(
-        &self,
-        event_id: &str,
-        event_start: DateTime<Utc>,
-        notified_at: DateTime<Utc>,
-    ) -> Result<()> {
-        let connection = self.connection()?;
-        connection.execute(
-            r#"
-            INSERT OR IGNORE INTO event_reminders(event_id, event_start_at, notified_at)
-            VALUES (?1, ?2, ?3)
-            "#,
-            params![event_id, format_time(event_start), format_time(notified_at)],
-        )?;
-        Ok(())
-    }
-
-    pub fn prune_event_reminders_before(&self, cutoff: DateTime<Utc>) -> Result<usize> {
-        let connection = self.connection()?;
-        Ok(connection.execute(
-            "DELETE FROM event_reminders WHERE event_start_at < ?1",
-            [format_time(cutoff)],
-        )?)
-    }
-
     pub fn counts(&self) -> Result<(u64, u64, u64)> {
         let connection = self.connection()?;
         let accounts: i64 =
@@ -686,6 +664,23 @@ impl Database {
             events.try_into().context("event count was negative")?,
         ))
     }
+}
+
+fn ensure_local_event_reminder_column(connection: &Connection) -> Result<()> {
+    let mut statement = connection.prepare("PRAGMA table_info(events)")?;
+    let columns = statement
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    if !columns
+        .iter()
+        .any(|column| column == "local_reminder_minutes")
+    {
+        connection.execute(
+            "ALTER TABLE events ADD COLUMN local_reminder_minutes INTEGER",
+            [],
+        )?;
+    }
+    Ok(())
 }
 
 fn account_from_row(row: &Row<'_>) -> rusqlite::Result<Account> {
@@ -720,11 +715,12 @@ fn calendar_from_row(row: &Row<'_>) -> rusqlite::Result<Calendar> {
         color: row.get(5)?,
         time_zone: row.get(6)?,
         primary: row.get(7)?,
-        read_only: row.get(8)?,
-        visible: row.get(9)?,
-        sync_token: row.get(10)?,
-        created_at: parse_time(&row.get::<_, String>(11)?).map_err(to_sql_error)?,
-        updated_at: parse_time(&row.get::<_, String>(12)?).map_err(to_sql_error)?,
+        default_reminder_minutes: row.get(8)?,
+        read_only: row.get(9)?,
+        visible: row.get(10)?,
+        sync_token: row.get(11)?,
+        created_at: parse_time(&row.get::<_, String>(12)?).map_err(to_sql_error)?,
+        updated_at: parse_time(&row.get::<_, String>(13)?).map_err(to_sql_error)?,
     })
 }
 
@@ -744,9 +740,12 @@ fn event_from_row(row: &Row<'_>) -> rusqlite::Result<CalendarEvent> {
         all_day: row.get(10)?,
         status: row.get(11)?,
         recurrence: serde_json::from_str(&recurrence).map_err(to_sql_error)?,
-        raw_payload: row.get(13)?,
-        created_at: parse_time(&row.get::<_, String>(14)?).map_err(to_sql_error)?,
-        updated_at: parse_time(&row.get::<_, String>(15)?).map_err(to_sql_error)?,
+
+        // Do not reinterpret legacy local alarms as synced provider reminders.
+        preferences: serde_json::from_str(&row.get::<_, String>(17)?).map_err(to_sql_error)?,
+        raw_payload: row.get(14)?,
+        created_at: parse_time(&row.get::<_, String>(15)?).map_err(to_sql_error)?,
+        updated_at: parse_time(&row.get::<_, String>(16)?).map_err(to_sql_error)?,
     })
 }
 
@@ -809,6 +808,7 @@ mod tests {
                     description: String::new(),
                     color: "#4285f4".to_string(),
                     time_zone: "UTC".to_string(),
+                    default_reminder_minutes: Some(30),
                     primary: true,
                     read_only: false,
                 }],
@@ -829,6 +829,8 @@ mod tests {
             all_day: false,
             status: "confirmed".to_string(),
             recurrence: Vec::new(),
+
+            preferences: Default::default(),
             raw_payload: String::new(),
             created_at: now,
             updated_at: now,
@@ -900,19 +902,6 @@ mod tests {
                 .len(),
             1
         );
-        let reminders = database
-            .pending_event_reminders(now, now + chrono::Duration::minutes(30))
-            .expect("list pending reminders");
-        assert_eq!(reminders.len(), 1);
-        database
-            .mark_event_reminder_sent(&event_id, reminders[0].start, now)
-            .expect("mark reminder sent");
-        assert!(
-            database
-                .pending_event_reminders(now, now + chrono::Duration::minutes(30))
-                .expect("list reminders after marking")
-                .is_empty()
-        );
         assert!(database.delete_event(&event_id).expect("delete event"));
         assert!(
             database
@@ -920,6 +909,75 @@ mod tests {
                 .expect("read deletion")
                 .is_none()
         );
+
+        drop(database);
+        fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn reopens_database_with_local_reminder_migration() {
+        let (database, path) = test_database();
+        drop(database);
+        let reopened = Database::open(&path).expect("reopen database");
+        let connection = reopened.connection().expect("lock database");
+        let has_column: bool = connection
+            .prepare("PRAGMA table_info(events)")
+            .expect("inspect events schema")
+            .query_map([], |row| row.get::<_, String>(1))
+            .expect("read events schema")
+            .any(|column| column.as_deref() == Ok("local_reminder_minutes"));
+        assert!(has_column);
+        drop(connection);
+        drop(reopened);
+        fs::remove_file(path).ok();
+    }
+    #[test]
+    fn past_recurring_event_is_included_in_future_window() {
+        let (database, path) = test_database();
+        database.upsert_account(&account()).expect("store account");
+        let calendars = database
+            .reconcile_calendars(
+                "google:test",
+                &[RemoteCalendar {
+                    remote_id: "primary".to_string(),
+                    name: "Primary".to_string(),
+                    description: String::new(),
+                    color: "#4285f4".to_string(),
+                    time_zone: "UTC".to_string(),
+                    default_reminder_minutes: None,
+                    primary: true,
+                    read_only: false,
+                }],
+            )
+            .expect("store calendar");
+        let now = Utc::now();
+        let past_start = now - chrono::Duration::days(100);
+        let recurring = CalendarEvent {
+            id: Uuid::new_v4().to_string(),
+            calendar_id: calendars[0].id.clone(),
+            remote_id: "rec-1".to_string(),
+            uid: "rec-1@example.com".to_string(),
+            etag: "etag".to_string(),
+            title: "Daily Standup".to_string(),
+            description: String::new(),
+            location: String::new(),
+            start: past_start,
+            end: past_start + chrono::Duration::hours(1),
+            all_day: false,
+            status: "confirmed".to_string(),
+            recurrence: vec!["RRULE:FREQ=DAILY".to_string()],
+
+            preferences: Default::default(),
+            raw_payload: String::new(),
+            created_at: past_start,
+            updated_at: past_start,
+        };
+        database.upsert_event(&recurring).expect("upsert recurring");
+        let events = database
+            .list_events(now, now + chrono::Duration::days(7), None, true)
+            .expect("list events");
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].title, "Daily Standup");
 
         drop(database);
         fs::remove_file(path).ok();

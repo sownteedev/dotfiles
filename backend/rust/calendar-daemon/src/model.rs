@@ -67,6 +67,7 @@ pub struct Calendar {
     pub description: String,
     pub color: String,
     pub time_zone: String,
+    pub default_reminder_minutes: Option<i64>,
     pub primary: bool,
     pub read_only: bool,
     pub visible: bool,
@@ -92,6 +93,8 @@ pub struct CalendarEvent {
     pub all_day: bool,
     pub status: String,
     pub recurrence: Vec<String>,
+    #[serde(flatten)]
+    pub preferences: EventPreferences,
     #[serde(skip_serializing)]
     pub raw_payload: String,
     pub created_at: DateTime<Utc>,
@@ -110,6 +113,30 @@ pub struct EventDraft {
     pub end: DateTime<Utc>,
     #[serde(default)]
     pub all_day: bool,
+    #[serde(default)]
+    pub recurrence: Vec<String>,
+    #[serde(flatten)]
+    pub preferences: EventPreferences,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct EventPreferences {
+    pub reminder_minutes: Option<i64>,
+    pub use_default_reminder: bool,
+    pub availability: String,
+    pub visibility: String,
+}
+
+impl Default for EventPreferences {
+    fn default() -> Self {
+        Self {
+            reminder_minutes: None,
+            use_default_reminder: false,
+            availability: "busy".into(),
+            visibility: "default".into(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -119,6 +146,7 @@ pub struct RemoteCalendar {
     pub description: String,
     pub color: String,
     pub time_zone: String,
+    pub default_reminder_minutes: Option<i64>,
     pub primary: bool,
     pub read_only: bool,
 }

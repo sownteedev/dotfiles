@@ -1693,6 +1693,8 @@ dependencies = [
  "async-trait",
  "base64",
  "chrono",
+ "chrono-tz",
+ "iana-time-zone",
  "icalendar",
  "quick-xml",
  "reqwest",

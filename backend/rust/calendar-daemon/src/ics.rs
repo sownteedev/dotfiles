@@ -1,9 +1,7 @@
 use crate::model::EventDraft;
 use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Duration, NaiveDate, TimeZone, Utc};
-use icalendar::{
-    Calendar as ICalendar, CalendarDateTime, Component, DatePerhapsTime, EventLike,
-};
+use icalendar::{Calendar as ICalendar, CalendarDateTime, Component, DatePerhapsTime, EventLike};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -38,7 +36,10 @@ pub fn parse_ics_file(path: &Path) -> Result<(ParsedIcsSummary, Vec<EventDraft>)
     parse_ics_content(&content, &file_name)
 }
 
-pub fn parse_ics_content(content: &str, file_name: &str) -> Result<(ParsedIcsSummary, Vec<EventDraft>)> {
+pub fn parse_ics_content(
+    content: &str,
+    file_name: &str,
+) -> Result<(ParsedIcsSummary, Vec<EventDraft>)> {
     let calendar: ICalendar = content
         .parse()
         .map_err(|err: String| anyhow!("parse iCalendar content: {err}"))?;
@@ -101,6 +102,12 @@ pub fn parse_ics_content(content: &str, file_name: &str) -> Result<(ParsedIcsSum
             start,
             end: effective_end,
             all_day,
+            recurrence: Vec::new(),
+
+            preferences: crate::model::EventPreferences {
+                reminder_minutes: event_reminder_minutes(event, start, effective_end),
+                ..Default::default()
+            },
         });
     }
 
@@ -154,6 +161,94 @@ pub fn ical_time(value: DatePerhapsTime) -> Result<(DateTime<Utc>, bool)> {
             }
         }
     }
+}
+
+pub fn event_reminder_minutes<C: Component>(
+    event: &C,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+) -> Option<i64> {
+    event
+        .components()
+        .iter()
+        .filter(|component| component.component_kind().eq_ignore_ascii_case("VALARM"))
+        .filter(|alarm| matches!(alarm.property_value("ACTION"), Some("DISPLAY" | "AUDIO")))
+        .filter_map(|alarm| {
+            let trigger_value = alarm.property_value("TRIGGER")?;
+
+            // `icalendar` does not consistently convert duration triggers back
+            // from parsed properties (for example `TRIGGER:-PT900S`). Parse the
+            // duration form directly so reminders round-trip across CalDAV/iCloud.
+            if let Some(duration_minutes) = parse_ical_trigger_minutes(trigger_value) {
+                return (duration_minutes <= 0).then_some(-duration_minutes);
+            }
+
+            use icalendar::{Related, Trigger};
+            let trigger = Trigger::try_from(alarm.properties().get("TRIGGER")?).ok()?;
+            let when = match trigger {
+                Trigger::Duration(duration, related) => {
+                    let base = if related == Some(Related::End) { end } else { start };
+                    base.checked_add_signed(duration)?
+                }
+                Trigger::DateTime(value) => ical_time(DatePerhapsTime::DateTime(value)).ok()?.0,
+            };
+            let seconds = (start - when).num_seconds();
+            // The common editor supports whole minutes before start only.
+            (seconds >= 0 && seconds % 60 == 0).then_some(seconds / 60)
+        })
+        .min()
+}
+
+/// Parse the duration form of an iCalendar TRIGGER into signed minutes.
+///
+/// The sign is preserved: `-PT15M` returns `-15`, while `PT15M` returns `15`.
+/// Only whole minutes are accepted because the common event editor stores
+/// reminder offsets in minutes.
+fn parse_ical_trigger_minutes(value: &str) -> Option<i64> {
+    let value = value.trim();
+    let (sign, value) = match value.as_bytes().first().copied() {
+        Some(b'-') => (-1_i64, &value[1..]),
+        Some(b'+') => (1_i64, &value[1..]),
+        _ => (1_i64, value),
+    };
+    let value = value.strip_prefix('P')?;
+
+    let mut minutes = 0_i64;
+    let mut number = String::new();
+    let mut in_time = false;
+    let mut saw_component = false;
+
+    for character in value.chars() {
+        if character.is_ascii_digit() {
+            number.push(character);
+            continue;
+        }
+
+        if character == 'T' {
+            if !number.is_empty() {
+                return None;
+            }
+            in_time = true;
+            continue;
+        }
+
+        if number.is_empty() {
+            return None;
+        }
+        let amount = number.parse::<i64>().ok()?;
+        number.clear();
+
+        minutes += match character {
+            'D' if !in_time => amount.checked_mul(24 * 60)?,
+            'H' if in_time => amount.checked_mul(60)?,
+            'M' if in_time => amount,
+            'S' if in_time && amount % 60 == 0 => amount / 60,
+            _ => return None,
+        };
+        saw_component = true;
+    }
+
+    (number.is_empty() && saw_component).then_some(sign * minutes)
 }
 
 pub fn utc_midnight(date: NaiveDate) -> DateTime<Utc> {

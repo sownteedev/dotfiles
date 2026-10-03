@@ -42,8 +42,17 @@ The visual layer uses shared MD3 typography, shape, spacing, state, motion, and 
 ### Panels, productivity, and system control
 
 - **Left panel** with Weather and Music tabs above Stats and Timer: OpenWeather forecasts with GeoClue location detection, MPRIS media controls with decoded artwork frame retention to eliminate loading blackouts, inline volume slider, expandable synced lyrics with playback position seeking, live CPU/RAM/GPU charts, grouped process management, RSS/PSS memory details, and countdown timers.
-- A standalone, responsive **SownteeShell Calendar** with week and month views, Vietnamese lunar calendar display, auto-scroll to the current hour on open, drag-to-create events, iCalendar (`.ics`) file import with preview and destination calendar selection, and dated Google/Local tasks in the all-day lane. Edit or complete tasks in place, with per-account calendar/Tasks filters and a separate Local Tasks toggle.
-- Calendar sync for **Google, Microsoft, and iCloud**, backed by a dedicated Rust daemon with a local SQLite cache, background and manual sync, Secret Service credentials, and critical notifications 30 minutes before events.
+- A standalone, responsive **SownteeShell Calendar** with:
+  - Week and month views, Vietnamese lunar dates, a current-time indicator, and automatic scrolling to the current hour when the week view opens.
+  - Drag-to-create events across one or multiple days, with 15-minute snapping and local start/end validation.
+  - Direct manipulation of existing timed events: drag an editable non-recurring event to another day or time, or drag its top/bottom edge to change the start/end time. All-day, task, read-only, and recurring entries remain editor-only to avoid changing the wrong occurrence or series.
+  - Week timeline zoom controls with Zoom in/Zoom out buttons and `Ctrl` + mouse wheel; normal wheel scrolling continues to scroll the timeline.
+  - Event editing for title, start/end dates and times, all-day mode, destination calendar, location, description, recurrence, one provider-synchronized reminder, availability (`Busy`/`Free`), and visibility (`Default`/`Public`/`Private`).
+  - Daily, weekly, monthly, and yearly recurrence, weekly weekday selection, interval values, and recurrence termination by date or count. Monthly rules preserve the event's start day with `BYMONTHDAY`.
+  - iCalendar (`.ics`/`.ical`) parsing, preview, and import into a selected writable calendar, including supported event details, recurrence, and reminder data.
+  - Google Tasks from every connected Google account and task list, with account/list colors, account and list selection when creating a task, inline editing/completion, and dated tasks rendered in the all-day lane. Local Tasks remain device-only and can be shown or hidden independently.
+  - Sidebar account and calendar visibility controls, per-provider status/error feedback, manual sync, and automatic background synchronization.
+- Calendar sync for **Google, Microsoft, and iCloud/CalDAV**, backed by a dedicated Rust daemon with a local SQLite cache, Secret Service credentials, provider-aware event options, live refresh, and one provider-synchronized reminder per event.
 - **Right panel** with Notifications, Wi-Fi, and Bluetooth tabs above Display, Battery, and Volume. Includes advanced IPv4/IPv6 profiles, Wi-Fi QR sharing, AirPods L/R/Case battery data, and a PipeWire per-application mixer with peak meters and device routing.
 - **Display control** with drag-and-drop arrangement, orientation, mode, resolution, refresh rate, scale, startup focus, VRR (`Off`, `On`, `On Demand`), internal/external display presets, DDC/CI brightness, and Sunshine output selection.
 - **System telemetry** with battery health and supported charge thresholds, power profiles, `auto-cpufreq`, Arch/AUR/Flatpak updates, live CPU/RAM/GPU charts, grouped process management, and RSS/PSS memory details.
