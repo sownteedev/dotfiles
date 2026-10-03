@@ -1,6 +1,6 @@
 cursor {
 	xcursor-theme "Dark_Cursor"
-    xcursor-size 25
+    xcursor-size 24
     // hide-when-typing
     // hide-after-inactive-ms 1000
 }

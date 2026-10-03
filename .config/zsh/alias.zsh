@@ -91,6 +91,20 @@ alias dotpush='git add . && git commit -m ":>" && git push'
 alias syncfont='sudo fc-cache -fv'
 
 cleanarch() {
+    local root_device home_device available_value reclaimed_human
+    local -i available_before=0 available_after=0 reclaimed_kib=0
+
+    root_device=$(command stat -c '%d' / 2>/dev/null)
+    home_device=$(command stat -c '%d' "$HOME" 2>/dev/null)
+
+    available_value=$(command df -Pk / 2>/dev/null | awk 'NR == 2 { print $4 }')
+    [[ "$available_value" == <-> ]] && (( available_before += available_value ))
+
+    if [[ -n "$home_device" && "$home_device" != "$root_device" ]]; then
+        available_value=$(command df -Pk "$HOME" 2>/dev/null | awk 'NR == 2 { print $4 }')
+        [[ "$available_value" == <-> ]] && (( available_before += available_value ))
+    fi
+
     print -r -- "Removing orphan packages..."
 
     local -a orphans
@@ -120,7 +134,27 @@ cleanarch() {
     print -r -- "Cleaning old journal logs..."
     sudo journalctl --rotate --vacuum-time=14d || return 1
 
+    available_value=$(command df -Pk / 2>/dev/null | awk 'NR == 2 { print $4 }')
+    [[ "$available_value" == <-> ]] && (( available_after += available_value ))
+
+    if [[ -n "$home_device" && "$home_device" != "$root_device" ]]; then
+        available_value=$(command df -Pk "$HOME" 2>/dev/null | awk 'NR == 2 { print $4 }')
+        [[ "$available_value" == <-> ]] && (( available_after += available_value ))
+    fi
+
+    (( reclaimed_kib = available_after - available_before ))
+    if (( reclaimed_kib > 0 )); then
+        if (( $+commands[numfmt] )); then
+            reclaimed_human=$(numfmt --from-unit=1024 --to=iec-i --suffix=B "$reclaimed_kib")
+        else
+            reclaimed_human="${reclaimed_kib} KiB"
+        fi
+    else
+        reclaimed_human="0 B"
+    fi
+
     print -r -- "Arch cleanup completed."
+    print -r -- "Disk space reclaimed: $reclaimed_human"
 }
 
 bindkey '^e' "autosuggest-accept"

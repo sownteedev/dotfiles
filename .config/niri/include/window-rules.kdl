@@ -28,8 +28,8 @@ window-rule {
 window-rule {
     match title="^SownteeShell Calendar$"
     open-floating true
-    default-column-width { proportion 0.90; }
-    default-window-height { proportion 0.88; }
+    default-column-width { proportion 0.8; }
+    default-window-height { proportion 0.75; }
     geometry-corner-radius 26
     clip-to-geometry true
     background-effect {
@@ -59,6 +59,12 @@ window-rule {
 // Telegram Media Viewer
 window-rule {
     match app-id=r"^org\.telegram\.desktop$" title="^Media viewer$"
+    open-floating true
+}
+
+// Zalo Photo
+window-rule {
+    match app-id=r"^zalo$" title="^Zalo Photo$"
     open-floating true
 }
 

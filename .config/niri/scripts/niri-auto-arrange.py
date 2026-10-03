@@ -7,6 +7,7 @@ import math
 import os
 import re
 import subprocess
+import sys
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,26 +36,29 @@ def get_outputs():
     return run_json("niri", "msg", "-j", "outputs", fallback={})
 
 
-def get_protected_app_patterns():
+def get_protected_rules():
+    if SCRIPT_DIR not in sys.path:
+        sys.path.insert(0, SCRIPT_DIR)
     try:
-        result = subprocess.run(
-            [TOGGLE_SCRIPT, "--get-protected-patterns"],
-            capture_output=True,
-            check=False,
-            text=True,
-        )
+        import importlib
+        daemon = importlib.import_module("niri-floating-daemon")
+        return daemon.get_protected_rules()
+    except Exception:
         patterns = []
-        for line in result.stdout.splitlines():
-            pattern = line.strip()
-            if not pattern:
-                continue
-            try:
-                patterns.append(re.compile(pattern))
-            except re.error as error:
-                print(f"Ignoring unsupported app-id pattern {pattern!r}: {error}")
-        return patterns
-    except OSError:
-        return []
+        try:
+            result = subprocess.run(
+                [TOGGLE_SCRIPT, "--get-protected-patterns"],
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            for line in result.stdout.splitlines():
+                p = line.strip()
+                if p:
+                    patterns.append(re.compile(p))
+        except Exception:
+            pass
+        return [{"app_id": p, "title": None} for p in patterns]
 
 
 def focus_key(window):
@@ -66,18 +70,25 @@ def focus_key(window):
     )
 
 
-def is_protected_app(app_id, protected_patterns):
-    return any(pattern.search(app_id) for pattern in protected_patterns)
+def is_protected_window(window, protected_rules):
+    app_id = window.get("app_id") or ""
+    title = window.get("title") or ""
+    for r in protected_rules:
+        app_match = True if r.get("app_id") is None else bool(r["app_id"].search(app_id))
+        title_match = True if r.get("title") is None else bool(r["title"].search(title))
+        if app_match and title_match:
+            return True
+    return False
 
 
-def get_windows(workspace_id, protected_patterns):
+def get_windows(workspace_id, protected_rules):
     windows = run_json("niri", "msg", "-j", "windows", fallback=[])
     arranged = [
         window
         for window in windows
         if window.get("workspace_id") == workspace_id
         and window.get("is_floating")
-        and not is_protected_app(window.get("app_id") or "", protected_patterns)
+        and not is_protected_window(window, protected_rules)
     ]
     # Keep the cascade order stable without changing the user's current focus.
     arranged.sort(key=focus_key)
@@ -214,7 +225,7 @@ def main():
     logical = output.get("logical") or {}
     monitor_width = int(logical.get("width") or 1920)
     monitor_height = int(logical.get("height") or 1080)
-    windows = get_windows(workspace["id"], get_protected_app_patterns())
+    windows = get_windows(workspace["id"], get_protected_rules())
     if not windows:
         return 0
 

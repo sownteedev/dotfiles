@@ -15,9 +15,12 @@ get_workspace_data() {
         '[.[] | select(.workspace_id == $workspace_id)]'
 }
 
-# Return app-id regular expressions from app-level open-floating rules. Rules
-# that also match a title are window-specific and must not protect the whole app.
+# Return app-id regular expressions from app-level open-floating rules.
 get_protected_app_patterns() {
+    if [ -x "$SCRIPT_DIR/niri-floating-daemon.py" ]; then
+        python3 "$SCRIPT_DIR/niri-floating-daemon.py" --get-protected-patterns
+        return
+    fi
     if [ ! -f "$CONFIG_FILE" ]; then
         return 0
     fi
@@ -27,14 +30,13 @@ get_protected_app_patterns() {
         in_window_rule = 0
         depth = 0
         has_open_floating = 0
-        has_title_match = 0
         delete app_patterns
         app_count = 0
     }
     function add_app_pattern(pattern) {
-        if (pattern ~ /^r#".*"#$/) {
-            sub(/^r#"/, "", pattern)
-            sub(/"#[[:space:]]*$/, "", pattern)
+        if (pattern ~ /^r#*".*"#*$/) {
+            sub(/^r#*"/, "", pattern)
+            sub(/"#*[[:space:]]*$/, "", pattern)
         } else if (pattern ~ /^".*"$/) {
             sub(/^"/, "", pattern)
             sub(/"[[:space:]]*$/, "", pattern)
@@ -49,7 +51,7 @@ get_protected_app_patterns() {
         }
     }
     function flush_rule_if_needed(    i) {
-        if (in_window_rule && has_open_floating && !has_title_match) {
+        if (in_window_rule && has_open_floating) {
             for (i = 1; i <= app_count; i++) print app_patterns[i]
         }
     }
@@ -61,13 +63,11 @@ get_protected_app_patterns() {
             in_window_rule = 1
             depth = 1
             if (line ~ /open-floating[[:space:]]+true/ && line !~ /managed-by-toggle-floating-workspace/) has_open_floating = 1
-            if (line ~ /title=/) has_title_match = 1
             process_app_patterns_from_line(line)
             next
         }
         if (in_window_rule) {
             if (line ~ /open-floating[[:space:]]+true/ && line !~ /managed-by-toggle-floating-workspace/) has_open_floating = 1
-            if (line ~ /title=/) has_title_match = 1
             process_app_patterns_from_line(line)
             depth += gsub(/\{/, "{", line) - gsub(/\}/, "}", line)
             if (depth <= 0) {
@@ -181,35 +181,61 @@ toggle_floating_workspace() {
         target_windows_floating="true"
     fi
 
-    local protected_patterns=()
-    mapfile -t protected_patterns < <(get_protected_app_patterns)
     local window_ids=()
     local changed_window_ids=()
     declare -A original_floating=()
     local action=""
     local action_failed=false
 
-    while IFS=$'\t' read -r window_id is_floating app_id; do
-        [ -z "$window_id" ] && continue
-        if matches_protected_app "$app_id" "${protected_patterns[@]}"; then
-            continue
-        fi
+    local toggleable_windows=""
+    if [ -x "$SCRIPT_DIR/niri-floating-daemon.py" ]; then
+        toggleable_windows=$(python3 "$SCRIPT_DIR/niri-floating-daemon.py" --filter-toggleable <<< "$workspace_data" 2>/dev/null || true)
+    fi
 
-        window_ids+=("$window_id")
-        original_floating["$window_id"]=$is_floating
-        if [ "$target_windows_floating" = "true" ]; then
-            action="move-window-to-floating"
-        else
-            action="move-window-to-tiling"
-        fi
+    if [ -n "$toggleable_windows" ] || [ "$workspace_data" = "[]" ]; then
+        while IFS=$'\t' read -r window_id is_floating; do
+            [ -z "$window_id" ] && continue
 
-        if niri msg action "$action" --id "$window_id" >/dev/null; then
-            changed_window_ids+=("$window_id")
-        else
-            action_failed=true
-            break
-        fi
-    done <<< "$(jq -r '.[] | [.id, .is_floating, (.app_id // "")] | @tsv' <<< "$workspace_data")"
+            window_ids+=("$window_id")
+            original_floating["$window_id"]=$is_floating
+            if [ "$target_windows_floating" = "true" ]; then
+                action="move-window-to-floating"
+            else
+                action="move-window-to-tiling"
+            fi
+
+            if niri msg action "$action" --id "$window_id" >/dev/null; then
+                changed_window_ids+=("$window_id")
+            else
+                action_failed=true
+                break
+            fi
+        done <<< "$toggleable_windows"
+    else
+        local protected_patterns=()
+        mapfile -t protected_patterns < <(get_protected_app_patterns)
+        while IFS=$'\t' read -r window_id is_floating app_id; do
+            [ -z "$window_id" ] && continue
+            if matches_protected_app "$app_id" "${protected_patterns[@]}"; then
+                continue
+            fi
+
+            window_ids+=("$window_id")
+            original_floating["$window_id"]=$is_floating
+            if [ "$target_windows_floating" = "true" ]; then
+                action="move-window-to-floating"
+            else
+                action="move-window-to-tiling"
+            fi
+
+            if niri msg action "$action" --id "$window_id" >/dev/null; then
+                changed_window_ids+=("$window_id")
+            else
+                action_failed=true
+                break
+            fi
+        done <<< "$(jq -r '.[] | [.id, .is_floating, (.app_id // "")] | @tsv' <<< "$workspace_data")"
+    fi
 
     if [ "$action_failed" = "true" ]; then
         restore_changed_windows
