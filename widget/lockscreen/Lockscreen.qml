@@ -23,10 +23,7 @@ Scope {
     property bool cavaConsumerAcquired: false
     readonly property bool clock24h: settingValue("clock24h", true)
     // Time
-    readonly property real clockStartLocalMS: {
-        var now = new Date();
-        return (now.getHours() * 3.6e+06) + (now.getMinutes() * 60000) + (now.getSeconds() * 1000) + now.getMilliseconds();
-    }
+    property date clockDate: new Date()
     readonly property int curH: Math.floor(localTimeMS / 3.6e+06) % 24
     readonly property bool enableWindup: true
     // Reading text() with blockLoading forces the PAM service decision to be
@@ -38,7 +35,7 @@ Scope {
     // Fonts
     readonly property string fontName: settingValue("fontName", "Inter Variable")
     property bool isWindup: false
-    readonly property real localTimeMS: (clockStartLocalMS + clockFrame.elapsedTime * 1000) % 8.64e+07
+    property real localTimeMS: 0
     readonly property QtObject lockscreenColors: QtObject {
         readonly property color background: Config.md3.background
         readonly property color backgroundOverlay: Config.alpha(Config.md3.background, 0.62)
@@ -125,6 +122,14 @@ Scope {
         }
         return false;
     }
+    function refreshClock() {
+        // Animation elapsed time excludes sleep; sample wall time on every rendered frame.
+        var now = new Date();
+        localTimeMS = now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000 + now.getMilliseconds();
+        // Only notify the date labels when the calendar day changes.
+        if (now.getDate() !== clockDate.getDate() || now.getMonth() !== clockDate.getMonth() || now.getFullYear() !== clockDate.getFullYear())
+            clockDate = now;
+    }
     function refreshLockscreenWeather() {
         if (String(Config.apiWeather || "").trim() === "" || String(Config.latLon || "").trim() === "")
             return;
@@ -173,6 +178,7 @@ Scope {
     }
 
     Component.onCompleted: {
+        refreshClock();
         StateManager.sessionLocked = true;
         acquireLockscreenCava();
         refreshLockscreenWeather();
@@ -237,6 +243,8 @@ Scope {
         id: clockFrame
 
         running: true
+
+        onTriggered: root.refreshClock()
     }
     WlSessionLock {
         id: sessionLock
@@ -596,7 +604,7 @@ Scope {
                                     font.letterSpacing: 2 * container.s
                                     font.pixelSize: 20 * container.s
                                     font.weight: Font.DemiBold
-                                    text: Qt.formatDate(new Date(), "dd MMMM yyyy").toUpperCase()
+                                    text: Qt.formatDate(root.clockDate, "dd MMMM yyyy").toUpperCase()
                                 }
                                 Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
@@ -639,7 +647,7 @@ Scope {
                                 font.letterSpacing: 5 * container.s
                                 font.pixelSize: 70 * container.s
                                 font.weight: Font.Black
-                                text: Qt.formatDate(new Date(), "dddd").toUpperCase()
+                                text: Qt.formatDate(root.clockDate, "dddd").toUpperCase()
                             }
                         }
                     }

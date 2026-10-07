@@ -185,6 +185,13 @@ Item {
             layoutArea.updateLayoutGeometry();
         }
     }
+    function modeTarget(value) {
+        if (value === "primary")
+            return DisplayService.primaryOutputName;
+        if (value === "secondary")
+            return DisplayService.secondaryOutputName;
+        return displayPageRoot.selectedOutputName;
+    }
     function openPopup(row, activeDropName, model) {
         var coords = row.mapToItem(displayPageRoot, 0, 0);
         displayPageRoot.popupModel = model;
@@ -208,6 +215,30 @@ Item {
         displayPageRoot.popupWidth = row.width;
         displayPageRoot.popupOpen = true;
     }
+    function openPrimaryOutputPopup(outputName, sourceItem) {
+        var coords = sourceItem.mapToItem(displayPageRoot, 0, 0);
+        var menuWidth = 208;
+        var menuHeight = 56;
+        var targetY = coords.y + sourceItem.height + 8;
+        var spaceBelow = displayPageRoot.height - targetY - 12;
+        var spaceAbove = coords.y - 12;
+
+        displayPageRoot.activeDropdown = "primaryOutput";
+        displayPageRoot.targetOutput = outputName;
+        displayPageRoot.popupModel = [
+            {
+                "label": DisplayService.primaryOutputName === outputName ? qsTr("Primary display") : qsTr("Set as primary"),
+                "value": outputName
+            }
+        ];
+        displayPageRoot.popupWidth = menuWidth;
+        displayPageRoot.popupX = Math.max(12, Math.min(coords.x, displayPageRoot.width - menuWidth - 12));
+        displayPageRoot.popupAnchorX = coords.x + sourceItem.width / 2;
+        displayPageRoot.popupAnchorWidth = 1;
+        displayPageRoot.popupOpenAbove = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+        displayPageRoot.popupY = displayPageRoot.popupOpenAbove ? coords.y - menuHeight - 8 : targetY;
+        displayPageRoot.popupOpen = true;
+    }
     function outputByName(name) {
         for (var i = 0; i < allOutputs.length; ++i) {
             if (allOutputs[i].name === name)
@@ -215,7 +246,32 @@ Item {
         }
         return null;
     }
+    function outputLabel(name) {
+        var output = outputByName(name);
+        if (!output)
+            return name || qsTr("Not selected");
+        var modelName = String(output.model || output.make || "").trim();
+        return String(output.name || name) + (modelName !== "" ? " — " + modelName : "");
+    }
+    function outputSelectionOptions() {
+        var result = [];
+        for (var i = 0; i < allOutputs.length; ++i) {
+            var output = allOutputs[i];
+            if (output && output.name)
+                result.push({
+                    "label": outputLabel(String(output.name)),
+                    "value": String(output.name)
+                });
+        }
+        return result;
+    }
     function popupItemChecked(item) {
+        if (activeDropdown === "mirrorScaling")
+            return DisplayService.mirrorScaling === item.value;
+        if (activeDropdown === "mirrorSource")
+            return DisplayService.mirrorSourceName === item.value;
+        if (activeDropdown === "primaryOutput")
+            return DisplayService.primaryOutputName === item.value;
         var output = outputByName(targetOutput);
         if (!output || !item)
             return false;
@@ -264,6 +320,21 @@ Item {
     function selectPopupItem(item) {
         if (!item)
             return;
+        if (activeDropdown === "mirrorScaling") {
+            DisplayService.setMirrorScaling(item.value);
+            popupOpen = false;
+            return;
+        }
+        if (activeDropdown === "mirrorSource") {
+            DisplayService.setMirrorSource(item.value);
+            popupOpen = false;
+            return;
+        }
+        if (activeDropdown === "primaryOutput") {
+            DisplayService.setPrimaryOutput(item.value);
+            popupOpen = false;
+            return;
+        }
         var output = outputByName(targetOutput);
         var value = item.value;
         if (activeDropdown === "transform" || activeDropdown === "scale") {
@@ -503,11 +574,6 @@ Item {
                         anchors.rightMargin: 16
                         anchors.verticalCenter: parent.verticalCenter
                         checked: DisplayService.darkmodeEnabled
-                        height: 26
-                        thumbCheckedColor: Config.md3.surface_container
-                        thumbMargin: 3
-                        thumbUncheckedColor: Config.md3.on_surface
-                        width: 48
 
                         onToggled: checked => DisplayService.setDarkmodeEnabled(checked)
                     }
@@ -516,14 +582,25 @@ Item {
 
             // 4. Windows-style display modes
             Rectangle {
+                id: displayModeCard
+
                 Layout.fillWidth: true
                 border.color: controlRightWindow.sectionCardBorderColor
                 border.width: 1
                 color: controlRightWindow.sectionCardColor
-                height: 118
+                implicitHeight: displayModeLayout.implicitHeight + 28
                 radius: 14
 
+                Behavior on implicitHeight {
+                    NumberAnimation {
+                        duration: Config.animationDuration(Md3.motion.medium2)
+                        easing.type: Md3.motion.standard
+                    }
+                }
+
                 ColumnLayout {
+                    id: displayModeLayout
+
                     anchors.fill: parent
                     anchors.margins: 14
                     spacing: 8
@@ -542,32 +619,39 @@ Item {
                         Layout.fillWidth: true
                         accessibleName: "Display mode"
                         backgroundColor: Config.alpha(Config.md3.on_surface, 0.07)
-                        enabled: !DisplayService.displayModeApplying
+                        enabled: !DisplayService.displayModeApplying && !DisplayService.displayConfirmationPending
                         options: [
                             {
-                                label: "Internal only",
-                                value: "internal",
-                                enabled: DisplayService.hasInternalOutput
+                                label: DisplayService.hasInternalOutput ? "Internal only" : "PC screen only",
+                                value: DisplayService.hasInternalOutput ? "internal" : "primary",
+                                enabled: DisplayService.hasInternalOutput || displayPageRoot.allOutputs.length > 0
                             },
                             {
                                 label: "Duplicate",
                                 value: "duplicate",
-                                enabled: false
+                                enabled: DisplayService.hasMultipleOutputs && DisplayService.mirrorAvailable
                             },
                             {
                                 label: "Extend",
                                 value: "extend",
-                                enabled: DisplayService.hasInternalOutput && DisplayService.hasExternalOutput
+                                enabled: DisplayService.canExtend
                             },
                             {
-                                label: "External only",
-                                value: "external",
-                                enabled: DisplayService.hasExternalOutput
+                                label: DisplayService.hasInternalOutput ? "External only" : "Second screen only",
+                                value: DisplayService.hasInternalOutput ? "external" : "secondary",
+                                enabled: DisplayService.hasInternalOutput ? DisplayService.hasExternalOutput : DisplayService.canExtend
                             }
                         ]
                         selectedValue: DisplayService.displayMode
 
-                        onSelected: value => DisplayService.applyDisplayMode(value, displayPageRoot.selectedOutputName)
+                        onSelected: value => DisplayService.applyDisplayMode(value, displayPageRoot.modeTarget(value))
+                    }
+                    Loader {
+                        Layout.fillWidth: true
+                        active: DisplayService.displayMode === "duplicate"
+                        asynchronous: false
+                        sourceComponent: displayDuplicatePanelComponent
+                        visible: active
                     }
                     Text {
                         Layout.fillWidth: true
@@ -579,7 +663,130 @@ Item {
                         font.weight: Md3.typeScale.bodyMedium.weight
                         lineHeight: Md3.typeScale.bodyMedium.lineHeight
                         lineHeightMode: Text.FixedHeight
-                        text: DisplayService.displayModeApplying ? "Applying display mode…" : DisplayService.displayModeError !== "" ? DisplayService.displayModeError : DisplayService.hasExternalOutput ? "Duplicate requires compositor mirroring support" : "Connect an external display to enable more modes"
+                        text: DisplayService.displayModeApplying ? "Applying display mode…" : DisplayService.displayModeError !== "" ? DisplayService.displayModeError : DisplayService.displayMode === "duplicate" ? "Software mirror is active" : !DisplayService.mirrorAvailable ? "Install wl-mirror to enable Duplicate" : !DisplayService.hasMultipleOutputs ? "Connect at least two displays to enable Duplicate" : "Select a display mode"
+                    }
+                }
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                border.color: Config.alpha(Config.md3.primary, 0.42)
+                border.width: 1
+                color: Config.alpha(Config.md3.primary_container, 0.72)
+                implicitHeight: confirmationLayout.implicitHeight + 24
+                radius: 14
+                visible: DisplayService.displayConfirmationPending
+
+                ColumnLayout {
+                    id: confirmationLayout
+
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 10
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        Md3Icon {
+                            Layout.preferredHeight: 24
+                            Layout.preferredWidth: 24
+                            color: Config.md3.primary
+                            name: "dialog-information-symbolic"
+                            size: 24
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            Text {
+                                Layout.fillWidth: true
+                                color: Config.md3.on_primary_container
+                                font.family: Config.fontName
+                                font.pixelSize: Md3.typeScale.titleMedium.size
+                                font.weight: Font.DemiBold
+                                text: qsTr("Keep these display changes?")
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                color: Config.alpha(Config.md3.on_primary_container, 0.82)
+                                font.family: Config.fontName
+                                font.pixelSize: Md3.typeScale.bodyMedium.size
+                                text: qsTr("Reverting automatically in %1 seconds").arg(DisplayService.displayConfirmationSeconds)
+                            }
+                        }
+                    }
+                    RowLayout {
+                        Layout.alignment: Qt.AlignRight
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Rectangle {
+                            Layout.preferredHeight: 36
+                            Layout.preferredWidth: revertLabel.implicitWidth + 28
+                            border.color: Config.alpha(Config.md3.on_primary_container, 0.28)
+                            border.width: 1
+                            color: "transparent"
+                            radius: 18
+
+                            Text {
+                                id: revertLabel
+
+                                anchors.centerIn: parent
+                                color: Config.md3.on_primary_container
+                                font.family: Config.fontName
+                                font.pixelSize: Md3.typeScale.labelLarge.size
+                                font.weight: Md3.typeScale.labelLarge.weight
+                                text: qsTr("Revert")
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+
+                                onClicked: DisplayService.revertDisplayChanges()
+                            }
+                        }
+                        Rectangle {
+                            Layout.preferredHeight: 36
+                            Layout.preferredWidth: keepLabel.implicitWidth + 28
+                            color: Config.md3.primary
+                            radius: 18
+
+                            Text {
+                                id: keepLabel
+
+                                anchors.centerIn: parent
+                                color: Config.md3.on_primary
+                                font.family: Config.fontName
+                                font.pixelSize: Md3.typeScale.labelLarge.size
+                                font.weight: Md3.typeScale.labelLarge.weight
+                                text: qsTr("Keep changes")
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+
+                                onClicked: DisplayService.confirmDisplayChanges()
+                            }
+                        }
+                    }
+                }
+            }
+            Component {
+                id: displayDuplicatePanelComponent
+
+                DisplayDuplicatePanel {
+                    onScalingActivated: sourceItem => displayPageRoot.openPopup(sourceItem, "mirrorScaling", [
+                            {
+                                "label": qsTr("Fit"),
+                                "value": "fit"
+                            },
+                            {
+                                "label": qsTr("Fill"),
+                                "value": "cover"
+                            }
+                        ])
+                    onSourceActivated: sourceItem => {
+                        displayPageRoot.openPopup(sourceItem, "mirrorSource", displayPageRoot.outputSelectionOptions());
                     }
                 }
             }
@@ -740,6 +947,7 @@ Item {
                             property real dragX: 0
                             property real dragY: 0
                             property bool isDragging: false
+                            readonly property bool isPrimary: DisplayService.primaryOutputName === modelData.name
                             property bool isSelected: displayPageRoot.selectedOutputName === modelData.name
                             property var log: modelData.logical || {
                                 x: 0,
@@ -789,6 +997,33 @@ Item {
                                 text: (index + 1).toString()
                             }
 
+                            // Primary display badge. This is intentionally separate from
+                            // the selected border so choosing a screen does not change the
+                            // persisted primary-display state.
+                            Rectangle {
+                                id: primaryBadge
+
+                                Accessible.name: qsTr("Primary display")
+                                Accessible.role: Accessible.Indicator
+                                anchors.right: parent.right
+                                anchors.rightMargin: 6
+                                anchors.top: parent.top
+                                anchors.topMargin: 6
+                                color: Config.md3.primary_container
+                                height: 24
+                                radius: 12
+                                visible: monitorRect.isPrimary && parent.width >= 30 && parent.height >= 30
+                                width: 24
+
+                                Md3Icon {
+                                    anchors.centerIn: parent
+                                    color: Config.md3.on_primary_container
+                                    filled: true
+                                    name: "go-home-symbolic"
+                                    size: 16
+                                }
+                            }
+
                             // Sub-label showing monitor name
                             Text {
                                 anchors.bottom: parent.bottom
@@ -805,8 +1040,10 @@ Item {
                                 visible: parent.height > 50
                             }
                             MouseArea {
+                                acceptedButtons: Qt.LeftButton | Qt.RightButton
                                 anchors.fill: parent
-                                cursorShape: monitorRect.isDragging ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                                cursorShape: DisplayService.displayConfirmationPending ? Qt.ArrowCursor : monitorRect.isDragging ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                                enabled: !DisplayService.displayConfirmationPending
                                 preventStealing: true
 
                                 onCanceled: {
@@ -822,6 +1059,13 @@ Item {
                                     }
                                 }
                                 onPressed: mouse => {
+                                    if (mouse.button === Qt.RightButton) {
+                                        displayPageRoot.monitorDragActive = false;
+                                        monitorRect.isDragging = false;
+                                        displayPageRoot.openPrimaryOutputPopup(modelData.name, monitorRect);
+                                        mouse.accepted = true;
+                                        return;
+                                    }
                                     displayPageRoot.monitorDragActive = true;
                                     monitorRect.isDragging = true;
                                     monitorRect.startX = mouse.x;
@@ -927,6 +1171,7 @@ Item {
                 }
 
                 Layout.fillWidth: true
+                enabled: !DisplayService.displayConfirmationPending
                 spacing: 8
                 visible: displayPageRoot.selectedOutputName !== ""
 
@@ -1038,6 +1283,7 @@ Item {
                             DisplaySettingTile {
                                 id: orientRow
 
+                                containerColor: displayControlsCard.color
                                 iconName: "object-rotate-right-symbolic"
                                 label: qsTr("Orientation")
                                 value: displayPageRoot.getTransformLabel(activeOutputCard.activeOutputData && activeOutputCard.activeOutputData.logical ? activeOutputCard.activeOutputData.logical.transform : "Normal")
@@ -1066,6 +1312,7 @@ Item {
                             DisplaySettingTile {
                                 id: resRow
 
+                                containerColor: displayControlsCard.color
                                 iconName: "video-display-symbolic"
                                 label: qsTr("Resolution")
                                 value: {
@@ -1120,6 +1367,7 @@ Item {
                             DisplaySettingTile {
                                 id: rateRow
 
+                                containerColor: displayControlsCard.color
                                 iconName: "speedometer-symbolic"
                                 label: qsTr("Refresh Rate")
                                 value: {
@@ -1177,6 +1425,7 @@ Item {
                             DisplaySettingTile {
                                 id: scaleRow
 
+                                containerColor: displayControlsCard.color
                                 iconName: "zoom-fit-best-symbolic"
                                 label: qsTr("Scale")
                                 value: {
@@ -1206,6 +1455,8 @@ Item {
                             }
                         }
                         Rectangle {
+                            id: displayControlsCard
+
                             Layout.fillWidth: true
                             border.color: Config.alpha(Config.md3.on_surface, 0.07)
                             border.width: 1

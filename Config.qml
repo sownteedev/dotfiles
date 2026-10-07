@@ -59,6 +59,7 @@ QtObject {
     property alias defaultTerminal: runtimeSettings.defaultTerminal
     property alias defaultVideoPlayer: runtimeSettings.defaultVideoPlayer
     readonly property string defaultWallpaper: dotfilesDir + "/.walls/flower-plant-petal.jpg"
+    property alias displayMainOutput: runtimeSettings.displayMainOutput
     readonly property string dotfilesDir: dotfilesRoot + "/dotf"
     readonly property string dotfilesRoot: homeDir + "/Dotfiles"
     property alias fontName: runtimeSettings.fontName
@@ -240,6 +241,7 @@ QtObject {
             property string defaultImageViewer: "system"
             property string defaultTerminal: "blackbox-terminal"
             property string defaultVideoPlayer: "system"
+            property string displayMainOutput: ""
             property string fontName: "Inter Variable"
             property string greeterDefaultSession: "niri"
             property bool greeterRememberLastSession: false

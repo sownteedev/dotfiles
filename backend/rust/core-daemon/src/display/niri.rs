@@ -150,8 +150,8 @@ async fn apply_mode_inner(params: &ModeParams, cancellation: CancellationToken) 
             Ok(target.clone())
         }
         "extend" => {
-            if internal.is_empty() || external.is_empty() {
-                bail!("Extend requires an internal and an external display");
+            if names.len() < 2 {
+                bail!("Extend requires at least two displays");
             }
             for name in &names {
                 set_output(name, true, cancellation.clone()).await?;
@@ -163,6 +163,19 @@ async fn apply_mode_inner(params: &ModeParams, cancellation: CancellationToken) 
                 bail!("No external display is connected");
             }
             let target = preferred_external(&external, &params.preferred_external);
+            set_output(&target, true, cancellation.clone()).await?;
+            for name in &names {
+                if name != &target {
+                    set_output(name, false, cancellation.clone()).await?;
+                }
+            }
+            Ok(target)
+        }
+        "primary" | "secondary" => {
+            if names.is_empty() {
+                bail!("No display is connected");
+            }
+            let target = preferred_external(&names, &params.preferred_external);
             set_output(&target, true, cancellation.clone()).await?;
             for name in &names {
                 if name != &target {

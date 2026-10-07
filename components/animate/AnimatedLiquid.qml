@@ -11,7 +11,7 @@ Item {
 
     Behavior on fillProgress {
         NumberAnimation {
-            duration: 600
+            duration: Config.animationDuration(600)
             easing.type: Easing.InOutQuad
         }
     }

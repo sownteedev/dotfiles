@@ -60,20 +60,8 @@ Item {
         {
             "label": qsTr("Don't change"),
             "value": "unchanged"
-        },
-        {
-            "label": qsTr("Power Saver"),
-            "value": "power-saver"
-        },
-        {
-            "label": qsTr("Balanced"),
-            "value": "balanced"
-        },
-        {
-            "label": qsTr("Performance"),
-            "value": "performance"
         }
-    ]
+    ].concat(BatteryService.powerProfileOptions)
     property bool profilePopupOpen: false
     property bool profilePopupOpenAbove: false
     property real profilePopupRightMargin: 12
@@ -224,6 +212,7 @@ Item {
                 compact: true
                 radius: 14
                 showHeader: false
+                visible: BatteryService.hasBattery
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -419,6 +408,18 @@ Item {
                         }
                     }
                 }
+            }
+            SettingsSectionCard {
+                accentColor: Config.md3.tertiary
+                border.color: controlRightWindow.sectionCardBorderColor
+                border.width: 1
+                color: controlRightWindow.sectionCardColor
+                compact: true
+                iconName: "power-profile-balanced-symbolic"
+                note: !BatteryService.powerProfilesAvailable ? qsTr("Power modes are unavailable. Check that power-profiles-daemon is installed and running.") : BatteryService.hasBattery ? qsTr("Choose how performance changes with the power source") : qsTr("Balance performance and energy use on this computer")
+                radius: 14
+                title: qsTr("Power profiles & saving")
+
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: degradationContent.implicitHeight + 24
@@ -426,7 +427,7 @@ Item {
                     border.width: 1
                     color: Config.alpha(Config.md3.tertiary_container, 0.72)
                     radius: 12
-                    visible: BatteryService.performanceDegraded
+                    visible: BatteryService.powerProfilesAvailable && BatteryService.performanceDegraded
 
                     RowLayout {
                         id: degradationContent
@@ -457,38 +458,13 @@ Item {
                         }
                     }
                 }
-            }
-            SettingsSectionCard {
-                accentColor: Config.md3.tertiary
-                border.color: controlRightWindow.sectionCardBorderColor
-                border.width: 1
-                color: controlRightWindow.sectionCardColor
-                compact: true
-                iconName: "power-profile-balanced-symbolic"
-                note: qsTr("Choose how performance changes with the power source")
-                radius: 14
-                title: qsTr("Power profiles & saving")
-                visible: BatteryService.powerProfilesAvailable
-
                 SettingsChoiceRow {
                     Layout.fillWidth: true
                     label: qsTr("Power mode")
                     note: qsTr("Choose the current performance and energy profile")
-                    options: [
-                        {
-                            "label": qsTr("Saver"),
-                            "value": "power-saver"
-                        },
-                        {
-                            "label": qsTr("Balanced"),
-                            "value": "balanced"
-                        },
-                        {
-                            "label": qsTr("Performance"),
-                            "value": "performance"
-                        }
-                    ]
+                    options: BatteryService.powerProfileOptions
                     value: root.activeProfile
+                    visible: BatteryService.powerProfilesAvailable
 
                     onSelected: value => {
                         return BatteryService.selectPowerProfile(value);
@@ -499,6 +475,7 @@ Item {
                     label: qsTr("Automatic Power Saver")
                     note: qsTr("Use Power Saver when battery reaches %1% or lower").arg(BatteryService.lowBatteryThreshold)
                     updateCheckedInternally: false
+                    visible: BatteryService.hasBattery && BatteryService.powerProfilesAvailable
 
                     onToggled: checked => {
                         return BatteryService.autoPowerSaverEnabled = checked;
@@ -506,9 +483,10 @@ Item {
                 }
                 SettingsSelectRow {
                     accentColor: Config.md3.tertiary
-                    label: qsTr("Profile when plugged in")
-                    note: qsTr("Apply after connecting external power")
+                    label: BatteryService.hasBattery ? qsTr("Profile when plugged in") : qsTr("Startup power mode")
+                    note: BatteryService.hasBattery ? qsTr("Apply after connecting external power") : qsTr("Apply when SownteeShell starts; keep the current mode with Don't change")
                     valueText: root.profilePolicyLabel(BatteryService.pluggedInPowerProfile)
+                    visible: BatteryService.powerProfilesAvailable
 
                     onClicked: sourceItem => root.openProfilePopup(sourceItem, "plugged-in")
                 }
@@ -517,6 +495,7 @@ Item {
                     label: qsTr("Profile on battery")
                     note: qsTr("Apply after disconnecting external power")
                     valueText: root.profilePolicyLabel(BatteryService.batteryPowerProfile)
+                    visible: BatteryService.hasBattery && BatteryService.powerProfilesAvailable
 
                     onClicked: sourceItem => root.openProfilePopup(sourceItem, "battery")
                 }
@@ -526,6 +505,7 @@ Item {
                     label: qsTr("Battery-aware performance")
                     note: qsTr("Let power-profiles-daemon adapt supported actions to battery state")
                     updateCheckedInternally: false
+                    visible: BatteryService.hasBattery && BatteryService.powerProfilesAvailable && BatteryService.batteryAwareAvailable
 
                     onToggled: checked => {
                         return BatteryService.setBatteryAwareEnabled(checked);
@@ -541,7 +521,7 @@ Item {
                     lineHeight: Md3.typeScale.bodyMedium.lineHeight
                     lineHeightMode: Text.FixedHeight
                     text: BatteryService.batteryAwareError
-                    visible: text !== ""
+                    visible: BatteryService.hasBattery && text !== ""
                     wrapMode: Text.Wrap
                 }
             }
@@ -555,6 +535,7 @@ Item {
                 note: BatteryService.chargeThresholdSupported ? qsTr("Current limits: %1% → %2%").arg(BatteryService.chargeStartThreshold).arg(BatteryService.chargeEndThreshold) : qsTr("Charging thresholds are not supported by this battery")
                 radius: 14
                 title: qsTr("Charging limits")
+                visible: BatteryService.hasBattery && BatteryService.chargeThresholdSupported
 
                 SettingsChoiceRow {
                     Layout.fillWidth: true
@@ -724,6 +705,7 @@ Item {
                 note: qsTr("Optional actions when the remaining charge becomes low")
                 radius: 14
                 title: qsTr("Low battery automation")
+                visible: BatteryService.hasBattery
 
                 SettingsToggleTile {
                     checked: BatteryService.lowBatteryNotificationEnabled

@@ -105,11 +105,6 @@ Rectangle {
             anchors.rightMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             checked: root.nightLightEnabled
-            height: 26
-            thumbCheckedColor: Config.md3.surface_container
-            thumbMargin: 3
-            thumbUncheckedColor: Config.md3.on_surface
-            width: 48
 
             onToggled: checked => root.toggleRequested(checked)
         }

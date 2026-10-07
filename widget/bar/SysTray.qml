@@ -117,6 +117,8 @@ RowLayout {
                             return;
                         if (typeof entry.sendOpened === "function")
                             entry.sendOpened();
+                        if (typeof entry.updateLayout === "function")
+                            entry.updateLayout();
                         menuStack = menuStack.concat([entry]);
                     }
                     function returnToParentMenu() {
@@ -149,6 +151,15 @@ RowLayout {
                             menuPopup.closeMenu();
                     }
 
+                    // Keep the root menu handle referenced for the entire lifetime of this popup.
+                    // Otherwise, switching menuOpener.menu to a submenu QsMenuEntry unreferences
+                    // rootMenu (DBusMenuHandle), causing Quickshell to delete the underlying
+                    // DBusMenu instance and destroy all child items.
+                    QsMenuOpener {
+                        id: rootMenuKeepAlive
+
+                        menu: menuPopup.rootMenu
+                    }
                     QsMenuOpener {
                         id: menuOpener
 

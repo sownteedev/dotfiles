@@ -25,7 +25,12 @@ Rectangle {
         var base = Qt.color(baseColor);
         var overlay = Qt.color(overlayColor);
         var ratio = Math.max(0, Math.min(1, amount));
-        return Qt.rgba(base.r + (overlay.r - base.r) * ratio, base.g + (overlay.g - base.g) * ratio, base.b + (overlay.b - base.b) * ratio, 1);
+        var overlayAlpha = overlay.a * ratio;
+        var alpha = overlayAlpha + base.a * (1 - overlayAlpha);
+        if (alpha <= 0)
+            return Qt.rgba(0, 0, 0, 0);
+        var baseWeight = base.a * (1 - overlayAlpha);
+        return Qt.rgba((overlay.r * overlayAlpha + base.r * baseWeight) / alpha, (overlay.g * overlayAlpha + base.g * baseWeight) / alpha, (overlay.b * overlayAlpha + base.b * baseWeight) / alpha, alpha);
     }
 
     Accessible.name: qsTr("%1: %2").arg(label).arg(value)

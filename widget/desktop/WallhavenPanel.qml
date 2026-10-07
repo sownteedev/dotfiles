@@ -66,11 +66,16 @@ Rectangle {
         WallhavenService.search(wallhavenSearch.text, page || 1, WallhavenService.sorting, preserveRandomSeed === true);
     }
     function positionResultViewAtBeginning() {
-        resultGrid.cancelFlick();
-        resultGrid.currentIndex = -1;
-        resultGrid.forceLayout();
-        resultGrid.positionViewAtBeginning();
-        resultGrid.contentY = resultGrid.originY;
+        var tabIndex = activeTab === "browse" ? 0 : (collectionsMode ? 1 : 2);
+        var loader = resultViews.itemAt(tabIndex);
+        if (!loader || loader.status !== Loader.Ready)
+            return;
+        var view = loader.item;
+        view.cancelFlick();
+        view.currentIndex = -1;
+        view.forceLayout();
+        view.positionViewAtBeginning();
+        view.contentY = view.originY;
     }
     function resetResultView() {
         positionResultViewAtBeginning();
@@ -99,9 +104,9 @@ Rectangle {
         var oldIndex = activeTab === "browse" ? 0 : (activeTab === "collections" ? 1 : 2);
         var newIndex = tab === "browse" ? 0 : (tab === "collections" ? 1 : 2);
         contentTransitionDirection = newIndex > oldIndex ? 1 : -1;
+        resultViewResetTimer.stop();
         activeTab = tab;
         deleteArmedId = "";
-        resetResultView();
         if (collectionsMode) {
             WallhavenService.loadCollections(false);
         } else if (installedMode) {
@@ -849,51 +854,71 @@ Rectangle {
                         text: root.installedMode ? qsTr("Downloaded wallpapers will appear here") : (root.collectionsMode ? qsTr("Choose another collection or refresh") : qsTr("Try another query or resolution filter"))
                     }
                 }
-                GridView {
-                    id: resultGrid
+                Repeater {
+                    id: resultViews
 
-                    anchors.fill: parent
-                    cacheBuffer: cellHeight
-                    cellHeight: cellWidth * 0.67
-                    cellWidth: width / root.gridColumns
-                    clip: true
-                    model: root.resultModel
-                    reuseItems: false
-                    visible: root.resultHasItems
+                    model: ["browse", "collections", "installed"]
 
-                    delegate: WallhavenCard {
-                        required property var model
+                    delegate: Loader {
+                        id: tabViewLoader
 
-                        blurNsfw: !root.nsfwVisible
-                        cancelling: WallhavenService.downloadCancelRequested && WallhavenService.downloadingId === String(model.id || "")
-                        deleteArmed: root.deleteArmedId === String(model.id || "")
-                        downloadBlocked: WallhavenService.downloading && WallhavenService.downloadingId !== String(model.id || "")
-                        downloading: WallhavenService.downloadingId === String(model.id || "")
-                        greetdBusy: GreeterBackgroundService.busy
-                        height: resultGrid.cellHeight
-                        inUse: String(WallpaperService.currentWallpaper || "") === String(model.path || "")
-                        installedMode: root.installedMode
-                        removing: WallhavenService.removingId === String(model.id || "")
-                        wallpaper: model
-                        width: resultGrid.cellWidth
+                        required property string modelData
+                        readonly property bool selected: root.activeTab === modelData
+                        property bool visited: false
 
-                        onApplyRequested: (path, modified) => {
-                            return root.applyRequested(path, modified);
+                        // Retain only visited grids until the owning panel is destroyed.
+                        active: selected || visited
+                        anchors.fill: parent
+                        visible: selected
+
+                        sourceComponent: GridView {
+                            id: resultGrid
+
+                            cacheBuffer: cellHeight
+                            cellHeight: cellWidth * 0.67
+                            cellWidth: width / root.gridColumns
+                            clip: true
+                            model: tabViewLoader.modelData === "installed" ? WallhavenService.installedResults : (tabViewLoader.modelData === "collections" ? WallhavenService.collectionResults : WallhavenService.results)
+                            reuseItems: false
+
+                            delegate: WallhavenCard {
+                                required property var model
+
+                                blurNsfw: !root.nsfwVisible
+                                cancelling: WallhavenService.downloadCancelRequested && WallhavenService.downloadingId === String(model.id || "")
+                                deleteArmed: root.deleteArmedId === String(model.id || "")
+                                downloadBlocked: WallhavenService.downloading && WallhavenService.downloadingId !== String(model.id || "")
+                                downloading: WallhavenService.downloadingId === String(model.id || "")
+                                greetdBusy: GreeterBackgroundService.busy
+                                height: resultGrid.cellHeight
+                                inUse: String(WallpaperService.currentWallpaper || "") === String(model.path || "")
+                                installedMode: tabViewLoader.modelData === "installed"
+                                removing: WallhavenService.removingId === String(model.id || "")
+                                wallpaper: model
+                                width: resultGrid.cellWidth
+
+                                onApplyRequested: (path, modified) => root.applyRequested(path, modified)
+                                onArmDeleteRequested: wallpaperId => {
+                                    root.deleteArmedId = wallpaperId;
+                                    deleteArmTimer.restart();
+                                }
+                                onCancelDownloadRequested: WallhavenService.cancelDownload()
+                                onDeleteRequested: item => {
+                                    root.deleteArmedId = "";
+                                    deleteArmTimer.stop();
+                                    WallhavenService.removeInstalled(item);
+                                }
+                                onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
+                                onOpenRequested: url => WallhavenService.openPage(url)
+                            }
+
+                            onVisibleChanged: {
+                                if (!visible)
+                                    cancelFlick();
+                            }
                         }
-                        onArmDeleteRequested: wallpaperId => {
-                            root.deleteArmedId = wallpaperId;
-                            deleteArmTimer.restart();
-                        }
-                        onCancelDownloadRequested: WallhavenService.cancelDownload()
-                        onDeleteRequested: item => {
-                            root.deleteArmedId = "";
-                            deleteArmTimer.stop();
-                            WallhavenService.removeInstalled(item);
-                        }
-                        onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
-                        onOpenRequested: url => {
-                            return WallhavenService.openPage(url);
-                        }
+
+                        onLoaded: visited = true
                     }
                 }
             }

@@ -146,7 +146,7 @@ QtObject {
     readonly property bool idlePolicyApplying: idleControlProcess.running || idleSyncPending
     property string idlePolicyError: ""
     property bool idlePolicyReady: false
-    readonly property string idleProfileName: Config.idleSeparatePowerProfiles ? (usingBatteryIdleProfile ? qsTr("Battery") : qsTr("Plugged in")) : qsTr("Shared")
+    readonly property string idleProfileName: !BatteryService.hasBattery ? qsTr("Default") : Config.idleSeparatePowerProfiles ? (usingBatteryIdleProfile ? qsTr("Battery") : qsTr("Plugged in")) : qsTr("Shared")
     property bool idleSyncPending: false
     property Timer idleSyncTimer: Timer {
         interval: 250

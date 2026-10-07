@@ -57,6 +57,11 @@ Item {
         destinationPopup.openFor(primaryAction);
     }
 
+    onVisibleChanged: {
+        if (!visible)
+            destinationPopup.close();
+    }
+
     ClippingRectangle {
         id: card
 

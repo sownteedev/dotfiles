@@ -28,7 +28,7 @@ Item {
     Timer {
         interval: 40
         repeat: true
-        running: root.running && root.visible && root.width > 0 && root.height > 0
+        running: root.running && !Config.shellReducedMotion && !Config.shellLowPowerMode && root.visible && root.width > 0 && root.height > 0
 
         onTriggered: {
             var b = root.bubbles;

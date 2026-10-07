@@ -556,7 +556,7 @@ QtObject {
         }
         installedReloadPending = false;
         installedLoadErrorMessage = "";
-        installedStatusMessage = qsTr("Loading installed wallpapers…");
+        installedStatusMessage = installedResults.count === 0 ? qsTr("Loading installed wallpapers…") : "";
         installedProcess.requestJson = JSON.stringify({
             "legacy_workshop_root": Config.legacyWallpaperEngineWorkshopDir,
             "steam_root": Config.steamDir,

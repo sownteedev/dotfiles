@@ -82,7 +82,7 @@ Item {
                 {
                     title: qsTr("Idle & Power"),
                     subtitle: qsTr("Timeouts, suspend and Caffeine"),
-                    icon: "preferences-system-power-symbolic",
+                    icon: "power-profile-balanced-symbolic",
                     page: 2,
                     section: 1
                 }

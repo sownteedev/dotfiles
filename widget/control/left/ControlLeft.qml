@@ -258,90 +258,19 @@ PanelWindow {
                     spacing: controlLeftWindow.compact ? 12 : 20
                     z: 1
 
-                    RowLayout {
+                    ControlTabBar {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
-                        spacing: controlLeftWindow.compact ? 10 : 20
+                        compact: controlLeftWindow.compact
+                        currentIndex: controlLeftWindow.activeTopTab
+                        enabled: controlLeftWindow.active && !controlLeftWindow.edgeDragging
+                        hideLabelWhenCompact: false
+                        iconSize: 28
+                        icons: controlLeftWindow.topTabIcons
+                        labels: controlLeftWindow.topTabLabels
+                        motionDuration: Config.animationDuration(150)
 
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Repeater {
-                            model: topPages.length
-
-                            delegate: Rectangle {
-                                id: topTabBtn
-
-                                property bool isActive: (index === activeTopTab)
-
-                                Layout.preferredWidth: width
-                                color: isActive ? Config.md3.primary : (topTabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.06) : "transparent")
-                                height: 40
-                                radius: 22
-                                width: isActive ? (topTabInnerRow.implicitWidth + 36) : 44
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 150
-                                    }
-                                }
-                                Behavior on width {
-                                    NumberAnimation {
-                                        duration: 150
-                                        easing.type: Easing.OutQuad
-                                    }
-                                }
-
-                                ShellShadow {
-                                    active: topTabBtn.isActive
-                                    componentShadow: true
-                                    cornerRadius: parent.radius
-                                    target: parent
-                                    z: -1
-                                }
-                                Row {
-                                    id: topTabInnerRow
-
-                                    anchors.centerIn: parent
-                                    spacing: 10
-
-                                    Md3Icon {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: topTabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface_variant
-                                        filled: topTabBtn.isActive
-                                        name: topTabIcons[index]
-                                        size: 28
-
-                                        Behavior on color {
-                                            ColorAnimation {
-                                                duration: Config.animationDuration(Md3.motion.short3)
-                                            }
-                                        }
-                                    }
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: Config.md3.on_primary
-                                        font.family: Config.fontName
-                                        font.pixelSize: 15
-                                        font.weight: Font.DemiBold
-                                        text: topTabLabels[index]
-                                        visible: topTabBtn.isActive
-                                    }
-                                }
-                                MouseArea {
-                                    id: topTabMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    onClicked: switchTopTab(index)
-                                }
-                            }
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
+                        onRequested: index => controlLeftWindow.switchTopTab(index)
                     }
                     // Content page with slide animation
                     Item {
@@ -424,90 +353,19 @@ PanelWindow {
                     spacing: controlLeftWindow.compact ? 12 : 20
                     z: 1
 
-                    RowLayout {
+                    ControlTabBar {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
-                        spacing: controlLeftWindow.compact ? 10 : 20
+                        compact: controlLeftWindow.compact
+                        currentIndex: controlLeftWindow.activeBottomTab
+                        enabled: controlLeftWindow.active && !controlLeftWindow.edgeDragging
+                        hideLabelWhenCompact: false
+                        iconSize: 26
+                        icons: controlLeftWindow.bottomTabIcons
+                        labels: controlLeftWindow.bottomTabLabels
+                        motionDuration: Config.animationDuration(150)
 
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Repeater {
-                            model: bottomPages.length
-
-                            delegate: Rectangle {
-                                id: bottomTabBtn
-
-                                property bool isActive: (index === activeBottomTab)
-
-                                Layout.preferredWidth: width
-                                color: isActive ? Config.md3.primary : (bottomTabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.06) : "transparent")
-                                height: 40
-                                radius: 22
-                                width: isActive ? (bottomTabInnerRow.implicitWidth + 36) : 44
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 150
-                                    }
-                                }
-                                Behavior on width {
-                                    NumberAnimation {
-                                        duration: 150
-                                        easing.type: Easing.OutQuad
-                                    }
-                                }
-
-                                ShellShadow {
-                                    active: bottomTabBtn.isActive
-                                    componentShadow: true
-                                    cornerRadius: parent.radius
-                                    target: parent
-                                    z: -1
-                                }
-                                Row {
-                                    id: bottomTabInnerRow
-
-                                    anchors.centerIn: parent
-                                    spacing: 10
-
-                                    Md3Icon {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: bottomTabBtn.isActive ? Config.md3.on_primary : Config.md3.on_surface_variant
-                                        filled: bottomTabBtn.isActive
-                                        name: bottomTabIcons[index]
-                                        size: 26
-
-                                        Behavior on color {
-                                            ColorAnimation {
-                                                duration: Config.animationDuration(Md3.motion.short3)
-                                            }
-                                        }
-                                    }
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: Config.md3.on_primary
-                                        font.family: Config.fontName
-                                        font.pixelSize: 15
-                                        font.weight: Font.DemiBold
-                                        text: bottomTabLabels[index]
-                                        visible: bottomTabBtn.isActive
-                                    }
-                                }
-                                MouseArea {
-                                    id: bottomTabMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    onClicked: switchBottomTab(index)
-                                }
-                            }
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
+                        onRequested: index => controlLeftWindow.switchBottomTab(index)
                     }
                     // Content page with slide animation
                     Item {

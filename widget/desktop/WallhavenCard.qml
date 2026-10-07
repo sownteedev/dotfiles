@@ -58,6 +58,11 @@ Item {
             destinationPopup.openFor(primaryAction);
     }
 
+    onVisibleChanged: {
+        if (!visible)
+            destinationPopup.close();
+    }
+
     ClippingRectangle {
         id: card
 
@@ -324,19 +329,26 @@ Item {
                 activeFocusOnTab: false
                 border.color: "transparent"
                 border.width: 0
-                color: openMouse.pressed ? Config.md3.secondary_container : (openMouse.containsMouse ? Config.alpha(Config.md3.secondary_container, 0.72) : Config.alpha(Config.md3.on_surface, 0.06))
+                color: Config.alpha(Config.md3.on_surface, 0.06)
                 radius: 12
                 visible: String(root.wallpaper.url || "") !== ""
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 120
-                    }
-                }
 
                 Keys.onReturnPressed: root.openRequested(String(root.wallpaper.url || ""))
                 Keys.onSpacePressed: root.openRequested(String(root.wallpaper.url || ""))
 
+                Rectangle {
+                    anchors.fill: parent
+                    color: Config.md3.secondary_container
+                    opacity: openMouse.pressed ? 1 : (openMouse.containsMouse ? 0.72 : 0)
+                    radius: openAction.radius
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Config.animationDuration(120)
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
                 IconImage {
                     anchors.centerIn: parent
                     height: 18
@@ -346,6 +358,13 @@ Item {
 
                     layer.effect: ColorOverlay {
                         color: openMouse.containsMouse ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Config.animationDuration(120)
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                     }
                 }
                 MouseArea {

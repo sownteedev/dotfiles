@@ -889,6 +889,7 @@ fn quickshell_snapshot(paths: &SettingsPaths, config_source: &str) -> Value {
         "defaultEditor",
         "defaultFileManager",
         "defaultImageViewer",
+        "displayMainOutput",
         "defaultTerminal",
         "defaultVideoPlayer",
     ] {

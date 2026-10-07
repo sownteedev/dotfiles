@@ -78,7 +78,7 @@ Core methods (80):
   Displays
     display.ddc.get                       [read] output
     display.ddc.set                       [write] output, value, bus?, maximum?
-    display.niri.mode                     [write] mode = internal|extend|external,
+    display.niri.mode                     [write] mode = internal|primary|secondary|extend|external,
                                                    preferredExternal?
     display.niri.options                  [read] configPath
     display.niri.persist                  [write] configPath, outputs

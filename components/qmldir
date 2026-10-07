@@ -24,6 +24,8 @@ SelectPopup 1.0 common/SelectPopup.qml
 ShellShadow 1.0 common/ShellShadow.qml
 SlimScrollBar 1.0 common/SlimScrollBar.qml
 SwipeDeleteBackground 1.0 common/SwipeDeleteBackground.qml
+ControlTabBar 1.0 common/ControlTabBar.qml
+TabSwipeNavigation 1.0 common/TabSwipeNavigation.qml
 WifiSignalIcon 1.0 common/WifiSignalIcon.qml
 SettingsPageTransition 1.0 common/SettingsPageTransition.qml
 SettingsTextField 1.0 common/SettingsTextField.qml
@@ -45,6 +47,7 @@ TimerDurationPicker 1.0 datetime/TimerDurationPicker.qml
 BluetoothDeviceRow 1.0 settings/BluetoothDeviceRow.qml
 EditableKeybindPill 1.0 settings/EditableKeybindPill.qml
 DisplaySettingTile 1.0 settings/DisplaySettingTile.qml
+DisplayDuplicatePanel 1.0 settings/DisplayDuplicatePanel.qml
 KeybindCard 1.0 settings/KeybindCard.qml
 NightLightControl 1.0 settings/NightLightControl.qml
 NiriConfigEditor 1.0 settings/NiriConfigEditor.qml

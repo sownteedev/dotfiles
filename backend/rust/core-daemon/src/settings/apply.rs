@@ -2054,6 +2054,7 @@ fn sanitize_quickshell(paths: &SettingsPaths, payload: &Value) -> Result<Map<Str
         "defaultEditor",
         "defaultFileManager",
         "defaultImageViewer",
+        "displayMainOutput",
         "defaultTerminal",
         "defaultVideoPlayer",
         "notificationBlockedApps",

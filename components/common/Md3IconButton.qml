@@ -10,6 +10,8 @@ Item {
     property real containerSize: 40
     property string containerStyle: "standard"
     readonly property color contentColor: {
+        if (useCustomColors)
+            return enabled ? customContentColor : Config.alpha(customContentColor, Md3.state.disabledContent);
         if (!enabled)
             return Config.alpha(Config.md3.on_surface, Md3.state.disabledContent);
         if (containerStyle === "filled")
@@ -18,10 +20,14 @@ Item {
             return Config.md3.on_secondary_container;
         return Config.md3.on_surface_variant;
     }
+    property color customContainerColor: "transparent"
+    property color customContentColor: "transparent"
     property bool filledWhenChecked: true
     property string iconName: ""
     property real iconSize: 24
     readonly property color restingContainerColor: {
+        if (useCustomColors)
+            return enabled ? customContainerColor : Config.alpha(customContainerColor, Md3.state.disabledContainer);
         if (!enabled)
             return Config.alpha(Config.md3.on_surface, Md3.state.disabledContainer);
         if (containerStyle === "filled")
@@ -31,6 +37,7 @@ Item {
         return "transparent";
     }
     property string tooltipText: ""
+    property bool useCustomColors: false
 
     signal clicked
 

@@ -12,9 +12,9 @@ Item {
 
     property bool applying: false
     property bool autoConnect: true
-    readonly property real bodyFontSize: 14
-    readonly property color cardColor: Config.alpha(Config.md3.surface_container, Config.lightTheme ? 0.76 : 0.36)
-    readonly property color cardOutlineColor: Config.alpha(Config.md3.outline, Config.lightTheme ? 0.18 : 0.13)
+    readonly property real bodyFontSize: Md3.typeScale.bodyLarge.size
+    readonly property color cardColor: Config.md3.surface_container
+    readonly property color cardOutlineColor: Config.alpha(Config.md3.outline_variant, 0.20)
     property real closeSwipeOffset: 0
     readonly property real closeSwipeThreshold: Math.min(120, width * 0.24)
     property string ipMethod: "auto"
@@ -25,8 +25,7 @@ Item {
     property string networkSsid: ""
     property bool opened: false
     property string saveError: ""
-    readonly property real supportingFontSize: 13
-    readonly property real titleFontSize: 17
+    readonly property real supportingFontSize: Md3.typeScale.labelLarge.size
 
     signal applyRequested(string ssid, var settings)
     signal forgetRequested(string ssid)
@@ -263,7 +262,7 @@ Item {
         ColumnLayout {
             id: panelContent
 
-            spacing: 16
+            spacing: 8
             width: settingsFlick.width
             x: 0
 
@@ -296,94 +295,45 @@ Item {
                             width: 25
                         }
                     }
-                    ColumnLayout {
+                    SettingsLabelBlock {
                         Layout.fillWidth: true
-                        spacing: 2
-
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.md3.on_surface
-                            elide: Text.ElideRight
-                            font.family: Config.fontName
-                            font.pixelSize: root.titleFontSize
-                            font.weight: Font.Bold
-                            text: root.networkSsid
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.58)
-                            elide: Text.ElideRight
-                            font.family: Config.fontName
-                            font.pixelSize: root.supportingFontSize
-                            text: root.applying ? "Saving profile and reconnecting…" : "Saved Wi-Fi network"
-                        }
+                        emphasized: true
+                        headline: root.networkSsid
+                        supportingText: root.applying ? "Saving profile and reconnecting…" : "Saved Wi-Fi network"
                     }
-                    Rectangle {
-                        Layout.preferredHeight: 42
-                        Layout.preferredWidth: 42
-                        border.color: Config.alpha(Config.md3.error, 0.18)
-                        border.width: 1
-                        color: forgetPointer.containsMouse ? Config.alpha(Config.md3.error, 0.18) : Config.alpha(Config.md3.error, 0.08)
+                    Md3IconButton {
+                        Layout.preferredHeight: 48
+                        Layout.preferredWidth: 48
+                        customContainerColor: Config.alpha(Config.md3.error, 0.08)
+                        customContentColor: Config.md3.error
                         enabled: !root.applying
-                        opacity: enabled ? 1 : 0.45
-                        radius: 13
+                        iconName: "user-trash-symbolic"
+                        tooltipText: "Forget network"
+                        useCustomColors: true
 
-                        Md3Icon {
-                            anchors.centerIn: parent
-                            color: Config.md3.error
-                            filled: true
-                            name: "user-trash-symbolic"
-                            size: 18
-                        }
-                        MouseArea {
-                            id: forgetPointer
-
-                            anchors.fill: parent
-                            cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            enabled: parent.enabled
-                            hoverEnabled: true
-
-                            onClicked: {
-                                root.forgetRequested(root.networkSsid);
-                                root.close();
-                            }
+                        onClicked: {
+                            root.forgetRequested(root.networkSsid);
+                            root.close();
                         }
                     }
-                    Rectangle {
-                        Layout.preferredHeight: 42
-                        Layout.preferredWidth: 42
-                        color: root.applying ? Config.alpha(Config.md3.primary, 0.68) : savePointer.containsMouse ? Qt.lighter(Config.md3.primary, 1.08) : Config.md3.primary
-                        radius: 13
+                    Md3IconButton {
+                        Layout.preferredHeight: 48
+                        Layout.preferredWidth: 48
+                        containerStyle: "filled"
+                        enabled: !root.applying
+                        iconName: root.applying ? "" : "document-save-symbolic"
+                        tooltipText: "Save network"
 
-                        RowLayout {
+                        onClicked: root.validateAndApply()
+
+                        AnimatedSpinner {
                             anchors.centerIn: parent
-                            spacing: 8
-
-                            AnimatedSpinner {
-                                color: Config.md3.on_primary
-                                height: 17
-                                lineWidth: 2
-                                running: root.applying
-                                visible: root.applying
-                                width: 17
-                            }
-                            Md3Icon {
-                                color: Config.md3.on_primary
-                                filled: true
-                                name: "document-save-symbolic"
-                                size: 17
-                                visible: !root.applying
-                            }
-                        }
-                        MouseArea {
-                            id: savePointer
-
-                            anchors.fill: parent
-                            cursorShape: root.applying ? Qt.ArrowCursor : Qt.PointingHandCursor
-                            enabled: !root.applying
-                            hoverEnabled: true
-
-                            onClicked: root.validateAndApply()
+                            color: Config.md3.on_primary
+                            height: 24
+                            lineWidth: 2
+                            running: root.applying
+                            visible: root.applying
+                            width: 24
                         }
                     }
                 }
@@ -435,14 +385,17 @@ Item {
                 border.color: root.cardOutlineColor
                 border.width: 1
                 color: root.cardColor
-                implicitHeight: ipv4Content.implicitHeight + 36
+                implicitHeight: ipv4Content.implicitHeight + 24
                 radius: 18
 
                 ColumnLayout {
                     id: ipv4Content
 
+                    anchors.bottomMargin: 12
                     anchors.fill: parent
-                    anchors.margins: 18
+                    anchors.leftMargin: 18
+                    anchors.rightMargin: 18
+                    anchors.topMargin: 12
                     spacing: 0
 
                     RowLayout {
@@ -450,39 +403,25 @@ Item {
                         spacing: 12
 
                         Rectangle {
-                            Layout.preferredHeight: 38
-                            Layout.preferredWidth: 38
-                            color: Config.md3.primary_container
-                            radius: 12
+                            Layout.preferredHeight: 44
+                            Layout.preferredWidth: 44
+                            color: Config.alpha(Config.md3.secondary, 0.14)
+                            radius: Md3.shape.medium
 
                             Text {
                                 anchors.centerIn: parent
-                                color: Config.md3.on_primary_container
+                                color: Config.md3.secondary
                                 font.family: Config.fontName
-                                font.pixelSize: 18
-                                font.weight: Font.Black
+                                font.pixelSize: 24
+                                font.weight: Font.Medium
                                 text: "4"
                             }
                         }
-                        ColumnLayout {
+                        SettingsLabelBlock {
                             Layout.fillWidth: true
-                            spacing: 2
-
-                            Text {
-                                color: Config.md3.on_surface
-                                font.family: Config.fontName
-                                font.pixelSize: root.titleFontSize
-                                font.weight: Font.Bold
-                                text: "IPv4"
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                color: Config.alpha(Config.md3.on_surface, 0.58)
-                                elide: Text.ElideRight
-                                font.family: Config.fontName
-                                font.pixelSize: root.supportingFontSize
-                                text: root.ipMethod === "auto" ? "Address and gateway are assigned by DHCP" : "Use a fixed address for this network"
-                            }
+                            emphasized: true
+                            headline: "IPv4"
+                            supportingText: root.ipMethod === "auto" ? "Address and gateway are assigned by DHCP" : "Use a fixed address for this network"
                         }
                     }
                     ColumnLayout {
@@ -490,19 +429,16 @@ Item {
                         Layout.topMargin: 16
                         spacing: 8
 
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 15
-                            font.weight: Font.DemiBold
-                            text: "IP assignment"
+                        SettingsLabelBlock {
+                            Layout.fillWidth: true
+                            headline: "IP assignment"
                         }
                         SettingsSegmentedControl {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 44
                             backgroundColor: Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.70 : 0.46)
                             enabled: !root.applying
-                            fontPixelSize: 15
+                            fontPixelSize: root.supportingFontSize
                             options: [
                                 {
                                     "label": "Automatic (DHCP)",
@@ -533,34 +469,16 @@ Item {
                             anchors.rightMargin: 16
                             spacing: 16
 
-                            ColumnLayout {
+                            SettingsLabelBlock {
                                 Layout.fillWidth: true
-                                spacing: 2
-
-                                Text {
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.Bold
-                                    text: "DNS assignment"
-                                }
-                                Text {
-                                    color: Config.alpha(Config.md3.on_surface, 0.58)
-                                    font.family: Config.fontName
-                                    font.pixelSize: root.supportingFontSize
-                                    text: root.ipv4AutomaticDns ? "Automatic (from DHCP)" : "Custom servers below"
-                                }
+                                headline: "DNS assignment"
+                                supportingText: root.ipv4AutomaticDns ? "Automatic (from DHCP)" : "Custom servers below"
                             }
                             ToggleSwitch {
                                 Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                                Layout.maximumWidth: 40
-                                Layout.minimumWidth: 40
-                                Layout.preferredWidth: 40
                                 accessibleName: "Use automatic IPv4 DNS"
                                 checked: root.ipv4AutomaticDns
-                                checkedColor: Config.alpha(Config.md3.primary, 0.26)
                                 enabled: !root.applying
-                                thumbCheckedColor: Config.md3.primary
 
                                 onToggled: checked => root.ipv4AutomaticDns = checked
                             }
@@ -634,61 +552,49 @@ Item {
                 border.color: root.cardOutlineColor
                 border.width: 1
                 color: root.cardColor
-                implicitHeight: ipv6Content.implicitHeight + 36
+                implicitHeight: ipv6Content.implicitHeight + 24
                 radius: 18
 
                 ColumnLayout {
                     id: ipv6Content
 
+                    anchors.bottomMargin: 12
                     anchors.fill: parent
-                    anchors.margins: 18
+                    anchors.leftMargin: 18
+                    anchors.rightMargin: 18
+                    anchors.topMargin: 12
                     spacing: 0
 
                     Item {
                         id: ipv6Header
 
                         Layout.fillWidth: true
-                        implicitHeight: 52
+                        implicitHeight: 44
 
                         RowLayout {
                             anchors.fill: parent
                             spacing: 12
 
                             Rectangle {
-                                Layout.preferredHeight: 38
-                                Layout.preferredWidth: 38
-                                color: Config.alpha(Config.md3.secondary_container, 0.92)
-                                radius: 12
+                                Layout.preferredHeight: 44
+                                Layout.preferredWidth: 44
+                                color: Config.alpha(Config.md3.secondary, 0.14)
+                                radius: Md3.shape.medium
 
                                 Text {
                                     anchors.centerIn: parent
-                                    color: Config.md3.on_secondary_container
+                                    color: Config.md3.secondary
                                     font.family: Config.fontName
-                                    font.pixelSize: 18
-                                    font.weight: Font.Black
+                                    font.pixelSize: 24
+                                    font.weight: Font.Medium
                                     text: "6"
                                 }
                             }
-                            ColumnLayout {
+                            SettingsLabelBlock {
                                 Layout.fillWidth: true
-                                spacing: 2
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: root.titleFontSize
-                                    font.weight: Font.Bold
-                                    text: "IPv6"
-                                }
-                                Text {
-                                    Layout.fillWidth: true
-                                    color: Config.alpha(Config.md3.on_surface, 0.58)
-                                    elide: Text.ElideRight
-                                    font.family: Config.fontName
-                                    font.pixelSize: root.supportingFontSize
-                                    text: root.ipv6Method === "manual" ? "Manual address" : root.ipv6Method === "disabled" ? "Disabled" : "Automatic configuration"
-                                }
+                                emphasized: true
+                                headline: "IPv6"
+                                supportingText: root.ipv6Method === "manual" ? "Manual address" : root.ipv6Method === "disabled" ? "Disabled" : "Automatic configuration"
                             }
                             Rectangle {
                                 Layout.preferredHeight: 38
@@ -703,7 +609,7 @@ Item {
                                     color: Config.md3.on_surface_variant
                                     name: "pan-down-symbolic"
                                     rotation: root.ipv6Expanded ? 180 : 0
-                                    size: 20
+                                    size: 24
 
                                     Behavior on rotation {
                                         NumberAnimation {
@@ -752,19 +658,16 @@ Item {
                                 Layout.fillWidth: true
                                 spacing: 8
 
-                                Text {
-                                    color: Config.md3.on_surface
-                                    font.family: Config.fontName
-                                    font.pixelSize: 15
-                                    font.weight: Font.DemiBold
-                                    text: "IP assignment"
+                                SettingsLabelBlock {
+                                    Layout.fillWidth: true
+                                    headline: "IP assignment"
                                 }
                                 SettingsSegmentedControl {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 44
                                     backgroundColor: Config.alpha(Config.md3.surface_container_highest, Config.lightTheme ? 0.70 : 0.46)
                                     enabled: !root.applying
-                                    fontPixelSize: 15
+                                    fontPixelSize: root.supportingFontSize
                                     options: [
                                         {
                                             "label": "Automatic",
@@ -814,34 +717,16 @@ Item {
                                         anchors.rightMargin: 16
                                         spacing: 16
 
-                                        ColumnLayout {
+                                        SettingsLabelBlock {
                                             Layout.fillWidth: true
-                                            spacing: 2
-
-                                            Text {
-                                                color: Config.md3.on_surface
-                                                font.family: Config.fontName
-                                                font.pixelSize: 15
-                                                font.weight: Font.Bold
-                                                text: "DNS assignment"
-                                            }
-                                            Text {
-                                                color: Config.alpha(Config.md3.on_surface, 0.58)
-                                                font.family: Config.fontName
-                                                font.pixelSize: root.supportingFontSize
-                                                text: root.ipv6AutomaticDns ? "Automatic (from the network)" : "Custom servers below"
-                                            }
+                                            headline: "DNS assignment"
+                                            supportingText: root.ipv6AutomaticDns ? "Automatic (from the network)" : "Custom servers below"
                                         }
                                         ToggleSwitch {
                                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                                            Layout.maximumWidth: 40
-                                            Layout.minimumWidth: 40
-                                            Layout.preferredWidth: 40
                                             accessibleName: "Use automatic IPv6 DNS"
                                             checked: root.ipv6AutomaticDns
-                                            checkedColor: Config.alpha(Config.md3.primary, 0.26)
                                             enabled: !root.applying
-                                            thumbCheckedColor: Config.md3.primary
 
                                             onToggled: checked => root.ipv6AutomaticDns = checked
                                         }
@@ -918,7 +803,7 @@ Item {
                 border.color: root.cardOutlineColor
                 border.width: 1
                 color: root.cardColor
-                implicitHeight: 76
+                implicitHeight: 68
                 radius: 18
 
                 RowLayout {
@@ -928,49 +813,29 @@ Item {
                     spacing: 14
 
                     Rectangle {
-                        Layout.preferredHeight: 42
-                        Layout.preferredWidth: 42
-                        color: Config.alpha(Config.md3.tertiary_container, 0.90)
-                        radius: 13
+                        Layout.preferredHeight: 44
+                        Layout.preferredWidth: 44
+                        color: Config.alpha(Config.md3.tertiary, 0.14)
+                        radius: Md3.shape.medium
 
                         Md3Icon {
                             anchors.centerIn: parent
-                            color: Config.md3.on_tertiary_container
+                            color: Config.md3.tertiary
                             filled: true
                             name: "network-wireless-symbolic"
-                            size: 21
+                            size: 24
                         }
                     }
-                    ColumnLayout {
+                    SettingsLabelBlock {
                         Layout.fillWidth: true
-                        spacing: 2
-
-                        Text {
-                            color: Config.md3.on_surface
-                            font.family: Config.fontName
-                            font.pixelSize: 16
-                            font.weight: Font.Bold
-                            text: "Connect automatically"
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            color: Config.alpha(Config.md3.on_surface, 0.58)
-                            elide: Text.ElideRight
-                            font.family: Config.fontName
-                            font.pixelSize: root.supportingFontSize
-                            text: root.autoConnect ? "Join this network when it is available" : "Connect only when requested"
-                        }
+                        headline: "Connect automatically"
+                        supportingText: root.autoConnect ? "Join this network when it is available" : "Connect only when requested"
                     }
                     ToggleSwitch {
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        Layout.maximumWidth: 40
-                        Layout.minimumWidth: 40
-                        Layout.preferredWidth: 40
                         accessibleName: "Connect automatically"
                         checked: root.autoConnect
-                        checkedColor: Config.alpha(Config.md3.primary, 0.26)
                         enabled: !root.applying
-                        thumbCheckedColor: Config.md3.primary
 
                         onToggled: checked => root.autoConnect = checked
                     }

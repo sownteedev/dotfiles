@@ -957,8 +957,8 @@ PanelWindow {
                 }
                 Behavior on scale {
                     NumberAnimation {
-                        duration: Config.animationDuration(150)
-                        easing.type: Easing.OutBack
+                        duration: Config.animationDuration(Md3.motion.short2)
+                        easing.type: Easing.OutCubic
                     }
                 }
 

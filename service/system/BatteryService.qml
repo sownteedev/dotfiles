@@ -15,13 +15,14 @@ QtObject {
     property alias autoPowerSaverManaged: policy.autoPowerSaverManaged
     property alias autoPowerSaverRestoreProfile: policy.autoPowerSaverRestoreProfile
     property Process availabilityQuery: Process {
-        command: ["sh", "-c", "command -v powerprofilesctl >/dev/null 2>&1 && power=1 || power=0; " + "command -v auto-cpufreq >/dev/null 2>&1 && auto=1 || auto=0; " + "aware=$(powerprofilesctl query-battery-aware 2>/dev/null || true); " + "printf '%s|%s|%s\\n' \"$power\" \"$auto\" \"$aware\""]
+        command: ["sh", "-c", "profiles=$(LC_ALL=C powerprofilesctl list 2>/dev/null | sed -n 's/^[ *]*\\([a-z-]*\\):[[:space:]]*$/\\1/p' | tr '\\n' ','); " + "command -v auto-cpufreq >/dev/null 2>&1 && auto=1 || auto=0; " + "aware=$(powerprofilesctl query-battery-aware 2>/dev/null || true); " + "printf '%s|%s|%s\\n' \"$profiles\" \"$auto\" \"$aware\""]
         running: true
 
         stdout: StdioCollector {
             onStreamFinished: {
                 var parts = text.trim().split("|");
-                root.powerProfilesAvailable = parts.length > 0 && parts[0] === "1";
+                var wasAvailable = root.powerProfilesAvailable;
+                root.availablePowerProfiles = (parts[0] || "").split(",").filter(profile => ["power-saver", "balanced", "performance"].indexOf(profile) >= 0);
                 root.autoCpufreqAvailable = parts.length > 1 && parts[1] === "1";
                 var awareState = parts.length > 2 ? parts[2].trim().toLowerCase() : "";
                 root.batteryAwareAvailable = awareState !== "";
@@ -32,10 +33,12 @@ QtObject {
                     root.refresh();
 
                 root.evaluatePolicy();
-                root.applySourcePowerProfile();
+                if (!wasAvailable && root.powerProfilesAvailable)
+                    root.applySourcePowerProfile();
             }
         }
     }
+    property var availablePowerProfiles: []
     property bool batteryAwareAvailable: false
     property bool batteryAwareBusy: false
     property Process batteryAwareCommand: Process {
@@ -55,7 +58,7 @@ QtObject {
     property bool batteryAwareTarget: false
     readonly property int batteryPercentage: batteryReadingReady ? Math.round(UPower.displayDevice.percentage * 100) : -1
     property alias batteryPowerProfile: policy.batteryPowerProfile
-    readonly property bool batteryReadingReady: UPower.displayDevice && UPower.displayDevice.ready
+    readonly property bool batteryReadingReady: hasBattery
     property Process chargeCommand: Process {
         stderr: StdioCollector {
             onStreamFinished: root.chargeCommandStderr = text.trim()
@@ -113,12 +116,13 @@ QtObject {
     property string fullEnergy: "N/A"
     property string governorOverride: "default"
     property string gpuPower: "N/A"
+    readonly property bool hasBattery: !!UPower.displayDevice && UPower.displayDevice.ready && UPower.displayDevice.isPresent && UPower.displayDevice.isLaptopBattery
     property string health: "N/A"
     property real healthNumeric: -1
     property alias lowBatteryNotificationEnabled: policy.lowBatteryNotificationEnabled
     property alias lowBatteryNotified: policy.lowBatteryNotified
     property alias lowBatteryThreshold: policy.lowBatteryThreshold
-    readonly property bool onBattery: UPower.onBattery
+    readonly property bool onBattery: hasBattery && UPower.onBattery
     property string pendingChargeAction: ""
     property int pendingChargeEnd: 100
     property int pendingChargeStart: 50
@@ -183,7 +187,21 @@ QtObject {
     readonly property string policyPath: Config.cacheRoot + "/battery-policy.json"
     property bool policyReady: false
     property string powerDraw: "N/A"
-    property bool powerProfilesAvailable: false
+    readonly property var powerProfileOptions: [
+        {
+            "label": qsTr("Saver"),
+            "value": "power-saver"
+        },
+        {
+            "label": qsTr("Balanced"),
+            "value": "balanced"
+        },
+        {
+            "label": qsTr("Performance"),
+            "value": "performance"
+        }
+    ].filter(option => availablePowerProfiles.indexOf(option.value) >= 0)
+    readonly property bool powerProfilesAvailable: availablePowerProfiles.length > 0
     property Timer refreshDelay: Timer {
         interval: 700
         repeat: false
@@ -248,13 +266,13 @@ QtObject {
         var critical = Math.max(1, Math.min(low - 1, criticalBatteryThreshold));
         var lowCondition = onBattery && batteryPercentage <= low;
         var criticalCondition = onBattery && batteryPercentage <= critical;
-        if (autoPowerSaverEnabled && powerProfilesAvailable && lowCondition) {
+        if (autoPowerSaverEnabled && availablePowerProfiles.indexOf("power-saver") >= 0 && lowCondition) {
             if (!autoPowerSaverManaged)
                 autoPowerSaverRestoreProfile = profileName(PowerProfiles.profile);
 
             autoPowerSaverManaged = true;
             if (PowerProfiles.profile !== PowerProfile.PowerSaver)
-                PowerProfiles.profile = PowerProfile.PowerSaver;
+                setPowerProfile("power-saver");
         } else if (autoPowerSaverManaged) {
             var sourceProfile = configuredSourceProfile();
             autoPowerSaverManaged = false;
@@ -380,7 +398,7 @@ QtObject {
         Qt.callLater(evaluatePolicy);
     }
     function setBatteryAwareEnabled(enabled) {
-        if (!batteryAwareAvailable || batteryAwareBusy)
+        if (!hasBattery || !batteryAwareAvailable || batteryAwareBusy)
             return;
 
         batteryAwareTarget = enabled;
@@ -409,7 +427,7 @@ QtObject {
         }
     }
     function setChargeThresholds(start, end) {
-        if (chargeCommandBusy || !(start >= 0 && start < end && end <= 100))
+        if (!hasBattery || !chargeThresholdSupported || chargeCommandBusy || !(start >= 0 && start < end && end <= 100))
             return false;
 
         fullChargeOnceActive = false;
@@ -447,6 +465,9 @@ QtObject {
             applySourcePowerProfile();
     }
     function setPowerProfile(profile) {
+        if (availablePowerProfiles.indexOf(profile) < 0)
+            return;
+
         if (profile === "performance")
             PowerProfiles.profile = PowerProfile.Performance;
         else if (profile === "power-saver")
@@ -455,7 +476,7 @@ QtObject {
             PowerProfiles.profile = PowerProfile.Balanced;
     }
     function startFullChargeOnce() {
-        if (onBattery || chargeCommandBusy || !chargeThresholdSupported)
+        if (!hasBattery || onBattery || chargeCommandBusy || !chargeThresholdSupported)
             return false;
 
         restoreChargeStart = chargeStartThreshold >= 0 && chargeStartThreshold < chargeEndThreshold ? chargeStartThreshold : 75;
@@ -476,6 +497,7 @@ QtObject {
     onActiveChanged: {
         CoreService.setBatteryEnabled(active);
         if (active) {
+            restartAvailabilityQuery();
             refresh();
         } else {
             controlRefreshPending = false;

@@ -682,28 +682,20 @@ PanelWindow {
             spacing: 8
             z: 300
 
-            WallpaperSourceButton {
-                fallbackIconName: "preferences-desktop-wallpaper-symbolic"
-                iconName: "image-x-generic-symbolic"
-                label: qsTr("Add image")
-
-                onClicked: wallpaperWindow.wallhavenOpen = true
-            }
             WallpaperModeSwitch {
                 id: modeSwitch
 
                 mode: wallpaperWindow.selectedMode
 
+                onAddRequested: mode => {
+                    if (mode === "video")
+                        wallpaperWindow.workshopOpen = true;
+                    else
+                        wallpaperWindow.wallhavenOpen = true;
+                }
                 onModeRequested: mode => {
                     return wallpaperWindow.switchMode(mode);
                 }
-            }
-            WallpaperSourceButton {
-                fallbackIconName: "media-playback-start-symbolic"
-                iconName: "video-x-generic-symbolic"
-                label: qsTr("Add video")
-
-                onClicked: wallpaperWindow.workshopOpen = true
             }
         }
         Text {

@@ -277,6 +277,8 @@ Item {
         return qsTr("Display off occurs before lock; waking the display may return to an unlocked session.");
     }
     function profileLabel() {
+        if (!BatteryService.hasBattery)
+            return qsTr("Idle policy");
         if (!separatePowerProfiles)
             return qsTr("Shared policy");
         return selectedProfile === "battery" ? qsTr("Battery policy") : qsTr("Plugged-in policy");
@@ -385,6 +387,17 @@ Item {
     }
 
     Connections {
+        function onHasBatteryChanged() {
+            if (!BatteryService.hasBattery) {
+                root.selectedProfile = "ac";
+                root.durationPopupOpen = false;
+                root.sleepPopupOpen = false;
+            }
+        }
+
+        target: BatteryService
+    }
+    Connections {
         function onQuickshellSettingsChanged() {
             root.syncFields();
         }
@@ -399,7 +412,7 @@ Item {
             accentColor: Config.md3.primary
             compact: true
             headerOutside: true
-            iconName: "preferences-system-power-symbolic"
+            iconName: "power-profile-balanced-symbolic"
             note: qsTr("swayidle controls idle timing while Quickshell renders dim and lockscreen actions")
             title: qsTr("Idle policy")
 
@@ -482,6 +495,7 @@ Item {
                     label: qsTr("Separate power profiles")
                     note: qsTr("Use different timers on battery and external power")
                     updateCheckedInternally: false
+                    visible: BatteryService.hasBattery
 
                     onToggled: value => {
                         root.separatePowerProfiles = value;
@@ -524,7 +538,7 @@ Item {
                     }
                 ]
                 selectedValue: root.selectedProfile
-                visible: root.separatePowerProfiles
+                visible: BatteryService.hasBattery && root.separatePowerProfiles
 
                 onSelected: value => {
                     root.durationPopupOpen = false;
@@ -609,7 +623,7 @@ Item {
             SettingsSelectRow {
                 accentColor: Config.md3.secondary
                 label: qsTr("Display off while locked")
-                note: qsTr("Starts whenever the lock screen appears; shared by both profiles")
+                note: BatteryService.hasBattery && root.separatePowerProfiles ? qsTr("Starts whenever the lock screen appears; shared by both profiles") : qsTr("Starts whenever the lock screen appears")
                 valueText: root.durationLabel(root.lockedDisplayTimeout)
 
                 onClicked: sourceItem => root.openDurationPopup(sourceItem, "locked-display")

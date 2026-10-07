@@ -24,6 +24,7 @@ QtObject {
 
     // Dark mode
     property string applyingDarkmodeMode: ""
+    readonly property bool canExtend: outputs.length > 1
     property Timer configApplyDebounce: Timer {
         interval: 70
         repeat: false
@@ -78,7 +79,25 @@ QtObject {
 
         onTriggered: root.refresh()
     }
-    readonly property string displayMode: detectDisplayMode()
+    property string displayConfirmationKind: ""
+    property bool displayConfirmationPending: false
+    property string displayConfirmationPreviousMode: ""
+    property var displayConfirmationPreviousPositions: ({})
+    property string displayConfirmationPreviousTarget: ""
+    property bool displayConfirmationReverting: false
+    property int displayConfirmationSeconds: 0
+    property Timer displayConfirmationTimer: Timer {
+        interval: 1000
+        repeat: true
+        running: root.displayConfirmationPending
+
+        onTriggered: {
+            root.displayConfirmationSeconds = Math.max(0, root.displayConfirmationSeconds - 1);
+            if (root.displayConfirmationSeconds === 0)
+                root.revertDisplayChanges();
+        }
+    }
+    readonly property string displayMode: mirrorRequested ? "duplicate" : detectDisplayMode()
     property bool displayModeApplying: false
     property string displayModeError: ""
     property Process displayModeExecutor: Process {
@@ -96,8 +115,13 @@ QtObject {
                 message = "Invalid response from the display mode helper";
             }
             if (exitCode !== 0) {
+                root.modeConfirmationArmed = false;
+                root.displayConfirmationKind = "";
                 root.displayModeError = message || "Could not change the display mode";
                 console.warn("[DisplayService] Display mode update failed:", root.displayModeError);
+            } else if (root.modeConfirmationArmed && !root.displayConfirmationReverting) {
+                root.modeConfirmationArmed = false;
+                root.beginDisplayConfirmation();
             }
             root.delayedRefresh.restart();
         }
@@ -113,8 +137,72 @@ QtObject {
     }
     readonly property bool hasExternalOutput: externalOutputNames().length > 0
     readonly property bool hasInternalOutput: internalOutputNames().length > 0
+    readonly property bool hasMultipleOutputs: outputs.length > 1
     property string internalHardwareId: ""
     property var kdlOptions: ({})
+    property bool mirrorActive: false
+    property Process mirrorAvailabilityQuery: Process {
+        command: ["sh", "-c", "command -v wl-mirror >/dev/null 2>&1"]
+
+        onExited: (exitCode, exitStatus) => {
+            root.mirrorAvailable = exitCode === 0;
+        }
+    }
+    property bool mirrorAvailable: false
+    property string mirrorPendingMode: ""
+    property string mirrorPendingOutput: ""
+    property Process mirrorProcess: Process {
+        stderr: StdioCollector {
+            id: mirrorErrorOutput
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            var requestedMode = root.mirrorPendingMode;
+            var requestedOutput = root.mirrorPendingOutput;
+            var wasActive = root.mirrorActive;
+            var restartRequested = root.mirrorRestartPending;
+            root.mirrorActive = false;
+            root.mirrorPendingMode = "";
+            root.mirrorPendingOutput = "";
+            root.mirrorRestartPending = false;
+
+            if (restartRequested) {
+                root.startMirror();
+                return;
+            }
+
+            if (requestedMode !== "") {
+                root.applyNiriDisplayMode(requestedMode, requestedOutput);
+                return;
+            }
+
+            root.displayModeApplying = false;
+            if (exitCode !== 0 && root.mirrorRequested) {
+                root.mirrorRequested = false;
+                root.displayModeError = mirrorErrorOutput.text.trim() || "Could not start display mirroring";
+                console.warn("[DisplayService] Display mirror failed:", root.displayModeError);
+            } else if (wasActive) {
+                root.displayModeError = "";
+            }
+            root.delayedRefresh.restart();
+        }
+        onStarted: {
+            root.mirrorActive = true;
+            root.displayModeApplying = false;
+            if (root.modeConfirmationArmed && !root.displayConfirmationReverting) {
+                root.modeConfirmationArmed = false;
+                root.beginDisplayConfirmation();
+            }
+        }
+    }
+    property bool mirrorRequested: false
+    property bool mirrorRestartPending: false
+    readonly property string mirrorRunner: Config.sownteeshellDir + "/scripts/system/display-mirror.sh"
+    property string mirrorScaling: "fit"
+    property bool mirrorSelectionInitialized: false
+    property string mirrorSourceName: ""
+    property var mirrorTargetNames: []
+    property bool modeConfirmationArmed: false
     property int nightlightAppliedTemperature: 4000
     property Timer nightlightApplyDelay: Timer {
         // Keep the visual thumb frame-perfect while capping compositor updates
@@ -207,6 +295,7 @@ QtObject {
 
         onTriggered: root.refreshOutputs()
     }
+    property bool outputInventoryReady: false
     property bool outputReloadPending: false
     property var outputs: []
     property Process outputsQuery: Process {
@@ -227,6 +316,7 @@ QtObject {
                         nextOutputs.push(output);
                     }
                     var identities = root.buildOutputIdentities(nextOutputs);
+                    var previousIdentities = root.outputHardwareIds;
                     var internalId = "";
                     for (var outputIndex = 0; outputIndex < nextOutputs.length; ++outputIndex) {
                         var outputName = String(nextOutputs[outputIndex].name || "");
@@ -234,9 +324,19 @@ QtObject {
                         if (root.isInternalOutput(outputName))
                             internalId = nextOutputs[outputIndex].hardwareId;
                     }
+                    var previousSource = root.mirrorSourceName;
+                    var previousTargets = root.mirrorTargetNames.slice();
                     root.outputHardwareIds = identities;
                     root.internalHardwareId = internalId;
                     root.outputs = nextOutputs;
+                    if (root.outputInventoryReady)
+                        root.ensureNewOutputConfigs(nextOutputs, previousIdentities);
+                    root.outputInventoryReady = true;
+                    root.ensureMirrorSelection();
+                    if (root.mirrorRequested && root.mirrorTargetNames.length === 0)
+                        root.stopMirror();
+                    else if (root.mirrorRequested && (previousSource !== root.mirrorSourceName || previousTargets.join("\n") !== root.mirrorTargetNames.join("\n")))
+                        root.restartMirror();
                 } catch (error) {
                     console.warn("[DisplayService] Failed to parse outputs:", error);
                 }
@@ -255,6 +355,8 @@ QtObject {
     property bool outputsRefreshPending: false
     property var pendingConfigCommands: []
     property string pendingDarkmodeMode: ""
+    readonly property string primaryOutputName: resolvePrimaryOutputName()
+    readonly property string secondaryOutputName: resolveSecondaryOutputName()
     property bool sunshineBusy: sunshineProfileProcess.running
     readonly property string sunshineConfigPath: Config.homeDir + "/.config/sunshine/sunshine.conf"
     property Process sunshineProfileProcess: Process {
@@ -312,25 +414,43 @@ QtObject {
         target: ThemeService
     }
 
+    function allOutputNames() {
+        var result = [];
+        for (var i = 0; i < outputs.length; ++i) {
+            var name = String(outputs[i] && outputs[i].name || "");
+            if (name !== "")
+                result.push(name);
+        }
+        return result;
+    }
     function applyDisplayMode(mode, preferredExternal) {
-        if (displayModeApplying)
+        if (displayModeApplying || displayConfirmationPending)
             return;
+        var previousMode = displayMode;
+        if (previousMode === mode)
+            return;
+        if (!displayConfirmationReverting) {
+            displayConfirmationPreviousMode = previousMode;
+            displayConfirmationPreviousTarget = previousMode === "external" ? (externalOutputNames()[0] || "") : primaryOutputName;
+            displayConfirmationKind = "mode";
+            displayConfirmationSeconds = 15;
+            displayConfirmationPending = false;
+            modeConfirmationArmed = true;
+        }
         if (mode === "duplicate") {
-            displayModeError = "Duplicate is unavailable because Niri has no native output mirroring";
+            mirrorRequested = true;
+            startMirror();
             return;
         }
-        if ((mode === "extend" || mode === "external") && !hasExternalOutput) {
-            displayModeError = "Connect an external display first";
+        if (mirrorProcess.running || mirrorActive) {
+            mirrorRequested = false;
+            mirrorPendingMode = mode;
+            mirrorPendingOutput = String(preferredExternal || "");
+            displayModeApplying = true;
+            mirrorProcess.running = false;
             return;
         }
-        if (mode === "internal" && !hasInternalOutput) {
-            displayModeError = "No internal display is available";
-            return;
-        }
-        displayModeError = "";
-        displayModeApplying = true;
-        displayModeExecutor.command = [coreRunner, "display-niri-mode", mode, String(preferredExternal || "")];
-        displayModeExecutor.running = true;
+        applyNiriDisplayMode(mode, preferredExternal);
     }
     function applyNightlightTemperature() {
         if (!nightlightEnabled || !nightlightAvailable || nightlightSetter.running)
@@ -346,7 +466,44 @@ QtObject {
         }
         nightlightSetter.running = true;
     }
+    function applyNiriDisplayMode(mode, preferredExternal) {
+        if (mode === "extend" && !canExtend) {
+            displayModeError = "Connect at least two displays to enable Extend";
+            return;
+        }
+        if ((mode === "primary" || mode === "secondary") && outputs.length === 0) {
+            displayModeError = "No display is connected";
+            return;
+        }
+        if (mode === "external" && !hasExternalOutput) {
+            displayModeError = "Connect an external display first";
+            return;
+        }
+        if (mode === "internal" && !hasInternalOutput) {
+            displayModeError = "No internal display is available";
+            return;
+        }
+        displayModeError = "";
+        displayModeApplying = true;
+        displayModeExecutor.command = [coreRunner, "display-niri-mode", mode, String(preferredExternal || "")];
+        displayModeExecutor.running = true;
+    }
     function applyPositions(positions) {
+        if (displayConfirmationPending)
+            return;
+        if (!displayConfirmationReverting) {
+            var previousPositions = {};
+            for (var outputIndex = 0; outputIndex < outputs.length; ++outputIndex) {
+                var output = outputs[outputIndex];
+                if (output && output.name && output.logical)
+                    previousPositions[output.name] = {
+                        "x": Number(output.logical.x) || 0,
+                        "y": Number(output.logical.y) || 0
+                    };
+            }
+            displayConfirmationPreviousPositions = previousPositions;
+            displayConfirmationKind = "layout";
+        }
         var commands = [];
         for (var output in positions) {
             if (!positions.hasOwnProperty(output))
@@ -360,6 +517,13 @@ QtObject {
         }
         if (commands.length > 0)
             executeConfigCommand(commands.join("; "));
+        if (!displayConfirmationReverting && commands.length > 0)
+            beginDisplayConfirmation();
+    }
+    function beginDisplayConfirmation() {
+        displayConfirmationSeconds = 15;
+        displayConfirmationPending = true;
+        displayConfirmationTimer.restart();
     }
     function buildOutputIdentities(outputList) {
         var candidates = [];
@@ -408,18 +572,47 @@ QtObject {
         sunshineProfileProcess.command = [coreRunner, "display-sunshine-apply", sunshineConfigPath, connector, String(displayId)];
         sunshineProfileProcess.running = true;
     }
+    function confirmDisplayChanges() {
+        displayConfirmationTimer.stop();
+        displayConfirmationPending = false;
+        displayConfirmationKind = "";
+        displayConfirmationPreviousMode = "";
+        displayConfirmationPreviousTarget = "";
+        displayConfirmationPreviousPositions = ({});
+        displayConfirmationSeconds = 0;
+    }
+    function defaultMirrorSource() {
+        if (outputs.length === 0)
+            return "";
+        if (primaryOutputName !== "")
+            return primaryOutputName;
+        for (var i = 0; i < outputs.length; ++i) {
+            var candidate = outputs[i];
+            if (candidate && candidate.logical && Number(candidate.logical.x) === 0 && Number(candidate.logical.y) === 0)
+                return String(candidate.name || "");
+        }
+        return String(outputs[0].name || "");
+    }
     function detectDisplayMode() {
+        var enabledCount = 0;
         var internalEnabled = false;
+        var enabledOutputName = "";
         var externalEnabled = false;
         for (var i = 0; i < outputs.length; ++i) {
             var output = outputs[i];
             if (!output || !output.logical)
                 continue;
+            enabledCount++;
+            enabledOutputName = String(output.name || "");
             if (isInternalOutput(String(output.name || "")))
                 internalEnabled = true;
             else
                 externalEnabled = true;
         }
+        if (enabledCount > 1)
+            return "extend";
+        if (!hasInternalOutput && enabledCount === 1)
+            return enabledOutputName === primaryOutputName ? "primary" : "secondary";
         if (internalEnabled && externalEnabled)
             return "extend";
         if (internalEnabled)
@@ -427,6 +620,52 @@ QtObject {
         if (externalEnabled)
             return "external";
         return "";
+    }
+    function ensureMirrorSelection() {
+        var names = allOutputNames();
+        if (names.length === 0) {
+            mirrorSourceName = "";
+            mirrorTargetNames = [];
+            return;
+        }
+        if (mirrorSourceName === "" || names.indexOf(mirrorSourceName) < 0)
+            mirrorSourceName = defaultMirrorSource();
+
+        var filteredTargets = [];
+        for (var i = 0; i < mirrorTargetNames.length; ++i) {
+            var target = String(mirrorTargetNames[i] || "");
+            if (target !== "" && target !== mirrorSourceName && names.indexOf(target) >= 0 && filteredTargets.indexOf(target) < 0)
+                filteredTargets.push(target);
+        }
+        if (!mirrorSelectionInitialized && filteredTargets.length === 0 && names.length > 1) {
+            for (var j = 0; j < names.length; ++j) {
+                if (names[j] !== mirrorSourceName)
+                    filteredTargets.push(names[j]);
+            }
+        }
+        mirrorTargetNames = filteredTargets;
+        if (names.length > 1)
+            mirrorSelectionInitialized = true;
+    }
+    function ensureNewOutputConfigs(outputList, previousIdentities) {
+        if (!configPath || outputList.length === 0)
+            return;
+
+        var known = [];
+        for (var previousName in previousIdentities) {
+            if (previousIdentities.hasOwnProperty(previousName))
+                known.push(String(previousIdentities[previousName] || previousName));
+        }
+        var commands = [];
+        for (var i = 0; i < outputList.length; ++i) {
+            var output = outputList[i];
+            var name = String(output && output.name || "");
+            var identity = String(output && output.hardwareId || name);
+            if (name !== "" && identity !== "" && known.indexOf(identity) < 0)
+                commands.push("[ -f \"" + configPath + "\" ] && " + ensureOutputCommand(identity, name));
+        }
+        if (commands.length > 0)
+            executeConfigCommand(commands.join("; "));
     }
     function ensureOutputCommand(output, sourceOutput) {
         var defaults = outputDefaults(sourceOutput || output);
@@ -530,6 +769,8 @@ QtObject {
         refreshOutputs();
         refreshSunshineStatus();
         refreshOptions();
+        mirrorAvailabilityQuery.running = false;
+        mirrorAvailabilityQuery.running = true;
         darkmodeQuery.running = false;
         darkmodeQuery.running = true;
         nightlightQuery.running = false;
@@ -566,11 +807,103 @@ QtObject {
         actionExecutor.command = ["niri", "msg", "action", "load-config-file"];
         actionExecutor.running = true;
     }
+    function resolvePrimaryOutputName() {
+        var configured = String(Config.displayMainOutput || "");
+        if (configured !== "" && allOutputNames().indexOf(configured) >= 0)
+            return configured;
+        for (var i = 0; i < outputs.length; ++i) {
+            var candidate = outputs[i];
+            if (candidate && candidate.logical && Number(candidate.logical.x) === 0 && Number(candidate.logical.y) === 0)
+                return String(candidate.name || "");
+        }
+        return outputs.length > 0 ? String(outputs[0].name || "") : "";
+    }
+    function resolveSecondaryOutputName() {
+        var primary = primaryOutputName;
+        for (var i = 0; i < outputs.length; ++i) {
+            var name = String(outputs[i] && outputs[i].name || "");
+            if (name !== "" && name !== primary)
+                return name;
+        }
+        return "";
+    }
+    function restartMirror() {
+        if (!mirrorRequested)
+            return;
+        if (mirrorProcess.running) {
+            mirrorRestartPending = true;
+            displayModeApplying = true;
+            mirrorProcess.running = false;
+            return;
+        }
+        startMirror();
+    }
+    function revertDisplayChanges() {
+        if (!displayConfirmationPending && displayConfirmationKind === "")
+            return;
+
+        var kind = displayConfirmationKind;
+        var previousMode = displayConfirmationPreviousMode;
+        var previousPositions = displayConfirmationPreviousPositions;
+        displayConfirmationReverting = true;
+        confirmDisplayChanges();
+        if (kind === "layout") {
+            applyPositions(previousPositions);
+        } else if (kind === "mode" && previousMode !== "") {
+            if (previousMode === "duplicate") {
+                mirrorRequested = true;
+                startMirror();
+            } else {
+                mirrorRequested = false;
+                applyNiriDisplayMode(previousMode, displayConfirmationPreviousTarget);
+            }
+        }
+        displayConfirmationReverting = false;
+        delayedRefresh.restart();
+    }
     function setDarkmodeEnabled(enabled) {
         darkmodeEnabled = enabled;
         pendingDarkmodeMode = enabled ? "dark" : "light";
         if (!darkmodeApply.running)
             startPendingDarkmodeApply();
+    }
+    function setMirrorScaling(scaling) {
+        var next = String(scaling || "fit");
+        if (next !== "fit" && next !== "cover")
+            next = "fit";
+        if (mirrorScaling === next)
+            return;
+        mirrorScaling = next;
+        if (mirrorRequested)
+            restartMirror();
+    }
+    function setMirrorSource(source) {
+        var next = String(source || "");
+        if (allOutputNames().indexOf(next) < 0)
+            return;
+        mirrorSourceName = next;
+        var nextTargets = [];
+        for (var i = 0; i < mirrorTargetNames.length; ++i) {
+            if (mirrorTargetNames[i] !== next)
+                nextTargets.push(mirrorTargetNames[i]);
+        }
+        mirrorTargetNames = nextTargets;
+        if (mirrorRequested)
+            restartMirror();
+    }
+    function setMirrorTarget(target, enabled) {
+        var targetName = String(target || "");
+        if (targetName === "" || targetName === mirrorSourceName || allOutputNames().indexOf(targetName) < 0)
+            return;
+        var nextTargets = mirrorTargetNames.slice();
+        var index = nextTargets.indexOf(targetName);
+        if (enabled && index < 0)
+            nextTargets.push(targetName);
+        else if (!enabled && index >= 0)
+            nextTargets.splice(index, 1);
+        mirrorTargetNames = nextTargets;
+        if (mirrorRequested)
+            restartMirror();
     }
     function setNightlightEnabled(enabled) {
         if (enabled && !nightlightAvailable) {
@@ -599,6 +932,12 @@ QtObject {
         if (nightlightEnabled && !nightlightApplyDelay.running)
             nightlightApplyDelay.start();
     }
+    function setPrimaryOutput(outputName) {
+        var next = String(outputName || "");
+        if (allOutputNames().indexOf(next) < 0)
+            return;
+        Config.displayMainOutput = next;
+    }
     function setVrrMode(output, mode) {
         if (output === "")
             return;
@@ -623,6 +962,31 @@ QtObject {
     function shellQuote(value) {
         return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
     }
+    function startMirror() {
+        if (!mirrorAvailable) {
+            modeConfirmationArmed = false;
+            displayModeError = "Install wl-mirror to enable Duplicate";
+            mirrorRequested = false;
+            return;
+        }
+        ensureMirrorSelection();
+        if (mirrorSourceName === "" || mirrorTargetNames.length === 0) {
+            modeConfirmationArmed = false;
+            displayModeError = "Connect at least two displays to enable Duplicate";
+            mirrorRequested = false;
+            return;
+        }
+        displayModeError = "";
+        if (mirrorProcess.running) {
+            mirrorProcess.running = false;
+            mirrorRestartPending = true;
+            displayModeApplying = true;
+            return;
+        }
+        mirrorProcess.command = [mirrorRunner, mirrorSourceName, mirrorScaling].concat(mirrorTargetNames);
+        mirrorProcess.running = true;
+        displayModeApplying = true;
+    }
     function startPendingConfigUpdate() {
         if (configUpdater.running || pendingConfigCommands.length === 0)
             return;
@@ -641,6 +1005,16 @@ QtObject {
         applyingDarkmodeMode = mode;
         darkmodeApply.command = ["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", mode === "dark" ? "prefer-dark" : "prefer-light"];
         darkmodeApply.running = true;
+    }
+    function stopMirror() {
+        mirrorRequested = false;
+        mirrorRestartPending = false;
+        if (mirrorProcess.running) {
+            displayModeApplying = true;
+            mirrorProcess.running = false;
+        } else {
+            mirrorActive = false;
+        }
     }
     function toggleOption(output, option, enabled) {
         if (output === "")
@@ -711,4 +1085,7 @@ QtObject {
     }
 
     Component.onCompleted: refresh()
+    Component.onDestruction: {
+        mirrorProcess.running = false;
+    }
 }

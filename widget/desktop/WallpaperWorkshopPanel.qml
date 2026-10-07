@@ -44,10 +44,17 @@ Rectangle {
     function closePanel() {
         if (!open)
             return;
+        scenePropertiesPopup.close();
         open = false;
         closeTimer.restart();
     }
+    function positionResultViewAtBeginning() {
+        var loader = resultViews.itemAt(installedMode ? 1 : 0);
+        if (loader && loader.status === Loader.Ready)
+            loader.item.positionViewAtBeginning();
+    }
     function selectTab(tab) {
+        scenePropertiesPopup.close();
         if (tab === "installed") {
             workshopFilters.closePopup();
             WallpaperWorkshopService.clearFilters();
@@ -556,7 +563,7 @@ Rectangle {
                     visible: root.installedMode || WallpaperWorkshopService.configured
 
                     onSearchRequested: {
-                        resultGrid.positionViewAtBeginning();
+                        root.positionResultViewAtBeginning();
                         WallpaperWorkshopService.search(searchInput.text, 1, WallpaperWorkshopService.sortMode);
                     }
                 }
@@ -654,54 +661,78 @@ Rectangle {
                     }
                     LoadingIndicator {
                         anchors.centerIn: parent
-                        animated: root.installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching
+                        animated: root.filteredResultCount === 0 && (root.installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching)
                         height: 80
                         visible: animated
                         width: 80
                     }
-                    GridView {
-                        id: resultGrid
+                    Repeater {
+                        id: resultViews
 
-                        anchors.fill: parent
-                        cacheBuffer: cellHeight
-                        cellHeight: cellWidth * 0.67
-                        cellWidth: width / root.gridColumns
-                        clip: true
-                        model: root.installedMode ? WallpaperWorkshopService.filteredInstalledResults : WallpaperWorkshopService.filteredResults
-                        visible: (root.installedMode || WallpaperWorkshopService.configured) && !(root.installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching) && count > 0
+                        model: ["browse", "installed"]
 
-                        ScrollBar.vertical: SlimScrollBar {
-                        }
-                        delegate: WallpaperWorkshopCard {
-                            required property var model
+                        delegate: Loader {
+                            id: tabViewLoader
 
-                            blurNsfw: !Config.wallpaperWorkshopShowNsfw
-                            cancelling: WallpaperWorkshopService.downloadCancelling && WallpaperWorkshopService.downloadingId === String(model.id || "")
-                            deleteArmed: root.deleteArmedId === String(model.id || "")
-                            downloadBlocked: WallpaperWorkshopService.downloading && WallpaperWorkshopService.downloadingId !== String(model.id || "")
-                            downloading: WallpaperWorkshopService.downloadingId === String(model.id || "")
-                            greetdBusy: GreeterBackgroundService.busy
-                            height: resultGrid.cellHeight
-                            inUse: root.installedMode && String(WallpaperService.currentWallpaper || "") === String(model.path || "")
-                            installedMode: root.installedMode
-                            removing: WallpaperWorkshopService.removingId === String(model.id || "")
-                            wallpaper: model
-                            width: resultGrid.cellWidth
+                            required property string modelData
+                            readonly property bool selected: root.activeTab === modelData
+                            property bool visited: false
 
-                            onApplyRequested: (path, modified) => root.applyRequested(path, modified)
-                            onArmDeleteRequested: publishedFileId => {
-                                root.deleteArmedId = publishedFileId;
-                                deleteArmTimer.restart();
+                            active: selected || visited
+                            anchors.fill: parent
+                            visible: selected && (modelData === "installed" || WallpaperWorkshopService.configured)
+
+                            sourceComponent: GridView {
+                                id: resultGrid
+
+                                cacheBuffer: cellHeight
+                                cellHeight: cellWidth * 0.67
+                                cellWidth: width / root.gridColumns
+                                clip: true
+                                model: tabViewLoader.modelData === "installed" ? WallpaperWorkshopService.filteredInstalledResults : WallpaperWorkshopService.filteredResults
+                                reuseItems: false
+
+                                ScrollBar.vertical: SlimScrollBar {
+                                }
+                                delegate: WallpaperWorkshopCard {
+                                    required property var model
+
+                                    blurNsfw: !Config.wallpaperWorkshopShowNsfw
+                                    cancelling: WallpaperWorkshopService.downloadCancelling && WallpaperWorkshopService.downloadingId === String(model.id || "")
+                                    deleteArmed: root.deleteArmedId === String(model.id || "")
+                                    downloadBlocked: WallpaperWorkshopService.downloading && WallpaperWorkshopService.downloadingId !== String(model.id || "")
+                                    downloading: WallpaperWorkshopService.downloadingId === String(model.id || "")
+                                    greetdBusy: GreeterBackgroundService.busy
+                                    height: resultGrid.cellHeight
+                                    inUse: tabViewLoader.modelData === "installed" && String(WallpaperService.currentWallpaper || "") === String(model.path || "")
+                                    installedMode: tabViewLoader.modelData === "installed"
+                                    removing: WallpaperWorkshopService.removingId === String(model.id || "")
+                                    wallpaper: model
+                                    width: resultGrid.cellWidth
+
+                                    onApplyRequested: (path, modified) => root.applyRequested(path, modified)
+                                    onArmDeleteRequested: publishedFileId => {
+                                        root.deleteArmedId = publishedFileId;
+                                        deleteArmTimer.restart();
+                                    }
+                                    onCancelDownloadRequested: WallpaperWorkshopService.cancelDownload()
+                                    onDeleteRequested: item => {
+                                        root.deleteArmedId = "";
+                                        deleteArmTimer.stop();
+                                        WallpaperWorkshopService.removeInstalled(item);
+                                    }
+                                    onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
+                                    onPropertiesRequested: (item, anchorItem) => scenePropertiesPopup.openFor(item, anchorItem)
+                                    onSubscribeRequested: item => WallpaperWorkshopService.openInSteam(item)
+                                }
+
+                                onVisibleChanged: {
+                                    if (!visible)
+                                        cancelFlick();
+                                }
                             }
-                            onCancelDownloadRequested: WallpaperWorkshopService.cancelDownload()
-                            onDeleteRequested: item => {
-                                root.deleteArmedId = "";
-                                deleteArmTimer.stop();
-                                WallpaperWorkshopService.removeInstalled(item);
-                            }
-                            onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
-                            onPropertiesRequested: (item, anchorItem) => scenePropertiesPopup.openFor(item, anchorItem)
-                            onSubscribeRequested: item => WallpaperWorkshopService.openInSteam(item)
+
+                            onLoaded: visited = true
                         }
                     }
                     Column {

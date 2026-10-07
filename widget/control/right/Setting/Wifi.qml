@@ -17,9 +17,10 @@ Item {
     property string connectionError: ""
 
     // ── Existing state ──────────────────────────────────────────────────────
-    readonly property string connectionName: WifiService.connectionName || "Disconnected"
+    readonly property string connectionName: WifiService.connectionName || qsTr("Disconnected")
     readonly property string connectionType: WifiService.connectionType
     property string expandedSsid: ""
+    readonly property bool hasWifiDevice: WifiService.hasWifiDevice
     readonly property bool isScanning: WifiService.scanning
 
     function connectWithPassword(network, password) {
@@ -167,6 +168,7 @@ Item {
                             color: reloadMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.12) : "transparent"
                             height: 35
                             radius: 15
+                            visible: wifiPageRoot.hasWifiDevice
                             width: 35
 
                             AnimatedSpinner {
@@ -182,6 +184,7 @@ Item {
 
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
+                                enabled: wifiPageRoot.hasWifiDevice
                                 hoverEnabled: true
 
                                 onClicked: {
@@ -397,7 +400,8 @@ Item {
                 font.weight: Font.DemiBold
                 lineHeight: Md3.typeScale.titleMedium.lineHeight
                 lineHeightMode: Text.FixedHeight
-                text: "Available Networks"
+                text: qsTr("Available Wi-Fi networks")
+                visible: wifiPageRoot.hasWifiDevice
             }
 
             // 3. Network list
@@ -405,6 +409,7 @@ Item {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.preferredHeight: availableListView.contentHeight
+                visible: wifiPageRoot.hasWifiDevice
 
                 ListView {
                     id: availableListView

@@ -56,6 +56,14 @@ QtObject {
         }
     }
     readonly property var devices: Networking.devices ? Networking.devices.values : []
+    readonly property bool hasWifiDevice: wifiDevice !== null
+    readonly property bool hasWiredDevice: {
+        for (var i = 0; i < devices.length; ++i) {
+            if (devices[i].type === DeviceType.Wired)
+                return true;
+        }
+        return false;
+    }
     readonly property string iconName: {
         if (!connected)
             return "network-offline-symbolic";

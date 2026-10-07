@@ -149,6 +149,7 @@
     "defaultEditor": "neovide",
     "defaultFileManager": "system",
     "defaultImageViewer": "system",
+    "displayMainOutput": "",
     "defaultTerminal": "blackbox-terminal",
     "defaultVideoPlayer": "system",
     "temperatureUnit": "celsius",

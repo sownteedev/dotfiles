@@ -11,6 +11,7 @@ import "../../service"
 PanelWindow {
     id: bar
 
+    readonly property real clockSeparatorSpacing: (compact ? 10 : 12) * densityScale
     readonly property bool compact: width < 1600
     readonly property real densityScale: Config.barDensity === "compact" ? 0.82 : Config.barDensity === "spacious" ? 1.18 : 1
     readonly property real horizontalInset: Responsive.clamp(width * 0.01, 10, 25) * densityScale
@@ -207,14 +208,14 @@ PanelWindow {
                         RowLayout {
                             Layout.alignment: Qt.AlignVCenter
                             spacing: bar.statusClusterSpacing + 7
-                            visible: Config.barShowBattery || Config.barShowWeather || Config.barShowNotifications
+                            visible: (Config.barShowBattery && BatteryService.hasBattery) || Config.barShowWeather || Config.barShowNotifications
 
                             Weather {
                                 compact: bar.compact
                                 visible: Config.barShowWeather
                             }
                             Battery {
-                                visible: Config.barShowBattery
+                                visible: Config.barShowBattery && BatteryService.hasBattery
                             }
                             NotificationIcon {
                                 targetScreen: bar.screen
@@ -223,15 +224,17 @@ PanelWindow {
                         }
                         RowLayout {
                             Layout.alignment: Qt.AlignVCenter
-                            spacing: bar.compact ? 10 : 12
+                            // Replace the outer status gap with the same inset used after the divider.
+                            Layout.leftMargin: bar.clockSeparatorSpacing - rightContent.spacing
+                            spacing: bar.clockSeparatorSpacing
                             visible: Config.barShowClock
 
-                            Text {
-                                color: Config.md3.on_surface
-                                font.family: Config.fontName
-                                font.pixelSize: bar.compact ? 15 : 18
-                                font.weight: Font.DemiBold
-                                text: "│"
+                            Rectangle {
+                                Layout.alignment: Qt.AlignVCenter
+                                color: Config.md3.outline_variant
+                                implicitHeight: bar.compact ? 18 : 20
+                                implicitWidth: 1
+                                radius: 0.5
                             }
                             MouseArea {
                                 id: clockArea

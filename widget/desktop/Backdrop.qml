@@ -14,7 +14,7 @@ Scope {
                 required property var modelData
 
                 allowVideoFade: false
-                decodeAtScreenSize: false
+                decodeAtScreenSize: true
                 overlayColor: ThemeService.themeFileValid ? Config.alpha(Config.md3.background, 0.62) : "transparent"
                 screen: modelData
                 useNativeCache: false

@@ -306,6 +306,7 @@ QtObject {
             "defaultEditor": Config.defaultEditor,
             "defaultFileManager": Config.defaultFileManager,
             "defaultImageViewer": Config.defaultImageViewer,
+            "displayMainOutput": Config.displayMainOutput,
             "defaultTerminal": Config.defaultTerminal,
             "defaultVideoPlayer": Config.defaultVideoPlayer,
             "profileImagePath": Config.profileImagePath,

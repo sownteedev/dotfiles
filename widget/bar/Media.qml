@@ -16,7 +16,6 @@ Item {
     property bool componentReady: false
     readonly property string description: MediaService.artist
     readonly property bool hasMedia: activePlayer !== null && activePlayer.trackTitle && activePlayer.trackTitle !== ""
-    readonly property bool idleAnimating: !hasMedia && onScreen && !Config.shellReducedMotion && !Config.shellLowPowerMode
     property real maximumWidth: 350
     readonly property bool onScreen: visible && (Window.window?.visible ?? false)
     readonly property bool playing: MediaService.playing
@@ -566,45 +565,6 @@ Item {
                 radius: 21
                 scale: Config.shellReducedMotion ? 1 : 0.88
                 width: 42
-
-                SequentialAnimation {
-                    alwaysRunToEnd: false
-                    loops: Animation.Infinite
-                    running: root.idleAnimating
-
-                    ParallelAnimation {
-                        ScaleAnimator {
-                            duration: Config.animationDuration(900)
-                            easing.type: Easing.InOutSine
-                            from: 0.88
-                            target: idleHalo
-                            to: 1.16
-                        }
-                        OpacityAnimator {
-                            duration: Config.animationDuration(900)
-                            easing.type: Easing.InOutSine
-                            from: 0.32
-                            target: idleHalo
-                            to: 0.88
-                        }
-                    }
-                    ParallelAnimation {
-                        ScaleAnimator {
-                            duration: Config.animationDuration(1100)
-                            easing.type: Easing.InOutSine
-                            from: 1.16
-                            target: idleHalo
-                            to: 0.88
-                        }
-                        OpacityAnimator {
-                            duration: Config.animationDuration(1100)
-                            easing.type: Easing.InOutSine
-                            from: 0.88
-                            target: idleHalo
-                            to: 0.32
-                        }
-                    }
-                }
             }
             Rectangle {
                 id: idleDisc
@@ -613,48 +573,8 @@ Item {
                 color: Config.alpha(Config.md3.primary, 0.16)
                 height: 30
                 radius: 15
-                rotation: root.idleAnimating ? -5 : 0
-                scale: root.idleAnimating ? 0.96 : 1
                 width: 30
 
-                SequentialAnimation {
-                    alwaysRunToEnd: false
-                    loops: Animation.Infinite
-                    running: root.idleAnimating
-
-                    ParallelAnimation {
-                        RotationAnimator {
-                            duration: Config.animationDuration(850)
-                            easing.type: Easing.InOutSine
-                            from: -5
-                            target: idleDisc
-                            to: 5
-                        }
-                        ScaleAnimator {
-                            duration: Config.animationDuration(850)
-                            easing.type: Easing.InOutSine
-                            from: 0.96
-                            target: idleDisc
-                            to: 1.07
-                        }
-                    }
-                    ParallelAnimation {
-                        RotationAnimator {
-                            duration: Config.animationDuration(850)
-                            easing.type: Easing.InOutSine
-                            from: 5
-                            target: idleDisc
-                            to: -5
-                        }
-                        ScaleAnimator {
-                            duration: Config.animationDuration(850)
-                            easing.type: Easing.InOutSine
-                            from: 1.07
-                            target: idleDisc
-                            to: 0.96
-                        }
-                    }
-                }
                 IconImage {
                     anchors.centerIn: parent
                     height: 17
