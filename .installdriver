@@ -248,7 +248,8 @@ sleep 3 && clear
 
 # File manager
 red_echo "[*] Installing file manager ..."
-retry sudo pacman -S --needed --noconfirm nautilus nautilus-python nautilus-my-computer sushi nautilus-image-converter nautilus-copy-path nautilus-open-in-ide nautilus-admin-gtk4 git-nautilus-icons ffmpegthumbnailer tumbler eza zip gzip tar unzip unrar mpv dconf xdg-user-dirs gvfs
+retry sudo pacman -S --needed --noconfirm ffmpegthumbnailer tumbler eza zip gzip tar unzip unrar mpv dconf xdg-user-dirs gvfs
+retry yay -S --needed --noconfirm nautilus nautilus-python nautilus-my-computer nautilus-image-converter nautilus-copy-path nautilus-admin-gtk4 git-nautilus-icons  nautilus-open-in-ide sushi
 install_nautilus_taildrop
 green_echo "[*] Done."
 sleep 3 && clear

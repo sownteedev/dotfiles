@@ -111,11 +111,11 @@ has_display_gpu_vendor() {
 # SownteeShell runtime and optional features
 install_shell_runtime() {
     local -a packages=(
-        niri xwayland-satellite quickshell-git qt6-connectivity qt6-multimedia qt6-positioning
+        niri xwayland-satellite quickshell qt6-connectivity qt6-multimedia qt6-positioning
         qt6-avif-image-plugin qt6-5compat qt6-imageformats geoclue
         libnotify inotify-tools libcanberra cava cliphist
-        python-gobject xdg-desktop-portal xdg-desktop-portal-gtk
-        slurp wl-clipboard wtype hyprpicker gpu-screen-recorder ffmpeg imagemagick zbar
+        python-gobject xdg-desktop-portal-gnome xdg-desktop-portal xdg-desktop-portal-gtk
+        slurp wl-clipboard wl-mirror wtype hyprpicker gpu-screen-recorder ffmpeg imagemagick zbar
         mesa libva-utils
         jq pciutils ddcutil matugen-bin rustup
     )
@@ -312,7 +312,7 @@ install_dotfiles() {
 
     # Icon theme & Cursor theme
     red_echo "[*] Copy icons ..."
-    run_yay whitesur-icon-theme-git
+    run_yay whitesur-icon-theme
     safe_link "$DOTFILES_DIR/.icons" "$HOME/.icons"
     green_echo "[*] Done."
     sleep 3 && clear
@@ -381,7 +381,7 @@ install_shell_environment() {
     sudo systemctl enable --now fcitx5-lotus-server@$(whoami).service || (sudo systemd-sysusers && sudo systemctl enable --now fcitx5-lotus-server@$(whoami).service)
     sudo modprobe uinput
     mkdir -p ~/.config/fcitx5/conf
-    printf 'Mode="Uinput (Slow)"\nFixUinputWithAck=True\nDoubleSpaceToPeriod=True\nUseLotusIcons=False' > ~/.config/fcitx5/conf/lotus.conf
+    printf 'Mode="Uinput (Smooth)"\nDoubleSpaceToPeriod=True\nUseLotusIcons=False' > ~/.config/fcitx5/conf/lotus.conf
     safe_link "$DOTFILES_DIR/.config/niri" "$HOME/.config/niri"
     clear
 
@@ -400,7 +400,7 @@ install_shell_environment() {
     sleep 3 && clear
 
     # GNOME applications
-    run_yay evince loupe
+    run_yay loupe
     gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
     gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
@@ -498,7 +498,7 @@ install_greetd() {
     local required_command=""
     # Keep the standalone --greetd path self-contained on a fresh installation.
     local -a packages=(
-        greetd cage quickshell-git qt6-multimedia qt6-5compat qt6-imageformats qt6-avif-image-plugin
+        greetd cage quickshell qt6-multimedia qt6-5compat qt6-imageformats qt6-avif-image-plugin
         ffmpeg matugen-bin gnome-keyring niri python upower rsync rustup inter-font ttf-nerd-fonts-symbols
     )
 
