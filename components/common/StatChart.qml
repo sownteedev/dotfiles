@@ -208,12 +208,14 @@ Item {
 
                             var step = width / (data.length - 1);
                             var maxV = root.maxValue > 0 ? root.maxValue : 100;
+                            var gradientTop = height - 1;
                             ctx.beginPath();
                             ctx.lineWidth = 2.2;
                             ctx.strokeStyle = color;
                             for (var i = 0; i < data.length; ++i) {
                                 var x = i * step;
                                 var y = height - (data[i] / maxV) * (height - 6) - 3;
+                                gradientTop = Math.min(gradientTop, Math.max(0, y));
                                 if (i === 0)
                                     ctx.moveTo(x, y);
                                 else
@@ -228,15 +230,15 @@ Item {
                             ctx.lineTo((data.length - 1) * step, height);
                             ctx.closePath();
 
-                            var gradient = ctx.createLinearGradient(0, 0, 0, height);
+                            var gradient = ctx.createLinearGradient(0, gradientTop, 0, height);
                             gradient.addColorStop(0, Config.alpha(color, fillOpacity));
-                            gradient.addColorStop(1, Config.alpha(color, 0));
+                            gradient.addColorStop(1, Config.alpha(color, fillOpacity * 0.25));
                             ctx.fillStyle = gradient;
                             ctx.fill();
                         }
 
-                        drawDataLine(root.slideHistory2, root.lineColor2, 0.12);
-                        drawDataLine(root.slideHistory, root.lineColor, 0.18);
+                        drawDataLine(root.slideHistory2, root.lineColor2, 0.22);
+                        drawDataLine(root.slideHistory, root.lineColor, 0.32);
                     }
 
                     NumberAnimation {

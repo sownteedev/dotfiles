@@ -14,6 +14,7 @@ backend/
 │   └── bluetooth/          # Small Qt/C++ hardware helpers
 ├── python/
 │   ├── auth/               # Privileged Howdy integration
+│   ├── camera/             # V4L2 controls and device profiles
 │   ├── capture/            # Screenshot composition
 │   ├── launcher/           # Generated Emoji/Unicode catalog data
 │   └── portal/             # XDG desktop portal file picker
@@ -42,6 +43,10 @@ sockets using newline-delimited JSON.
 - Weather, Emoji/Unicode, KLIPY, Wallhaven, Steam Workshop, Wallpaper Engine
   project metadata and Scene property extraction, preview generation, and
   bounded media caches.
+
+Shell-owned preferences include the default tiled/floating layout for new
+workspaces and lunar-date visibility; these stay in persisted shell settings,
+not separate Niri configuration files.
 
 The default socket is:
 
@@ -77,6 +82,10 @@ them as `--set-property` arguments when starting or restarting
 `linux-wallpaperengine`; resetting a Scene removes its overrides without
 modifying the original project.
 
+Wallpaper library removal deletes permanently, with path validation and active
+wallpaper protection. Local images/videos use `wallpaper.local.remove`; Wallhaven
+and Workshop use their existing removal operations. QML owns the drag animation.
+
 Run `sownteeshell ipc methods core` for its IPC methods and parameters.
 
 `capture.qr.scan` accepts an absolute image `path` and uses local `zbarimg`
@@ -96,7 +105,10 @@ action. Images and QR content are not uploaded or persisted by this operation.
 - Google Tasks from all connected Google accounts and task lists, with cached
   snapshots, account-scoped mutations, and live updates in SownteeShell Calendar;
 - account enable/disable and account-level visibility, calendar visibility, provider
-  metadata, writable/read-only detection, and per-account sync status/error state;
+  metadata, writable/read-only detection, and per-account sync status, last-sync
+  timestamps, and errors;
+- Google credential-expiry detection and account-specific reauthentication,
+  with reconnect restricted to the original Google account;
 - event create/update/delete with title, local start/end date-time, all-day spans,
   location, description, recurrence, availability, visibility, and reminder fields;
 - daily, weekly, monthly, and yearly RRULE handling, including intervals, weekly
@@ -118,6 +130,9 @@ Google Tasks API must also be enabled in the OAuth project's Google Cloud consol
 The previous Core Tasks backend and separate Tasks sign-in are no longer used.
 Local tasks stay on this device and are never uploaded automatically.
 
+Calendar search filters loaded events and dated tasks in QML; lunar-date display
+is also a UI feature, not a separate backend service.
+
 `tasks.list` returns per-account cached tasks and lists, including tasks without a
 due date. Calendar renders dated tasks in the all-day lane; tasks without a due
 date remain available through `tasks.list`. `tasks.setVisible` only changes Calendar visibility.
@@ -137,6 +152,7 @@ The Calendar UI consumes these calendar IPC methods:
 ```text
 accounts.list
 accounts.google.add
+accounts.google.reconnect
 accounts.microsoft.add
 accounts.icloud.add
 accounts.remove
@@ -155,6 +171,7 @@ tasks.google.refresh
 tasks.google.create
 tasks.google.update
 tasks.google.delete
+sync.now
 ```
 
 Moving or resizing an event in the Week view is implemented as a normal
@@ -191,6 +208,9 @@ SOWNTEE_CALENDAR_MICROSOFT_TENANT
   right, case, and charging state over Bluetooth.
 - `python/auth/howdy_face_manager.py` is installed as a privileged bridge for
   face-model and camera management.
+- `python/camera/v4l2_controls.py` reads supported V4L2 controls, applies individual
+  values, restores driver defaults, and saves per-device camera profiles for the
+  Settings preview.
 - `python/capture/screenshot_stitcher.py` composes screenshots without loading
   the full operation into the QML scene.
 - `python/portal/file_picker.py` opens the XDG portal picker while preserving
@@ -263,3 +283,25 @@ Inspect daemon logs with:
 ```sh
 journalctl --user -u sownteeshell-core.service -u sownteeshell-calendar.service
 ```
+
+## Default workspace layout
+
+`defaultWorkspaceLayout` is a Quickshell setting (`tiled` or `floating`, default
+`tiled`) declared in `Config.qml` and `core-daemon/src/settings/defaults.json`.
+Settings > Niri > Layout includes it in Apply layout; after Niri accepts the
+layout, the backend saves it through the shared Quickshell settings sanitizer
+and atomic cache writer. It can also be saved with `settings.quickshell.apply`.
+If the cache write fails after Niri applies, the UI reports that partial failure.
+
+The persisted value lives in `$XDG_CACHE_HOME/sownteeshell/settings.json`
+(normally `~/.cache/sownteeshell/settings.json`), not in Niri's config tree.
+`dotf/.config/niri/scripts/niri-floating-daemon.py` and the toggle helper read
+that same cache. New active workspaces (or workspaces receiving their first
+window) use the current default. The bar button and Mod+Shift+V override only
+their workspace and never change the default; returning preserves the override.
+
+Per-workspace true/false choices remain session state in
+`$XDG_RUNTIME_DIR/niri-floating-workspaces.json`. An updated daemon preserves
+them when restarted in the same Niri session and resets them for a new session.
+After upgrading the Python script, restart that daemon or start a new Niri
+session once; later setting changes are read without another restart.

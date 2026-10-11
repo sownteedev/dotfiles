@@ -27,11 +27,12 @@ Popup {
     signal appLaunched
 
     function blockerSummary(blockers) {
-        if (!Array.isArray(blockers) || blockers.length === 0)
+        var blockerList = Config.listOrEmpty(blockers);
+        if (blockerList.length === 0)
             return qsTr("another package");
-        if (blockers.length <= 2)
-            return blockers.join(", ");
-        return qsTr("%1 +%2").arg(blockers.slice(0, 2).join(", ")).arg(blockers.length - 2);
+        if (blockerList.length <= 2)
+            return blockerList.join(", ");
+        return qsTr("%1 +%2").arg(blockerList.slice(0, 2).join(", ")).arg(blockerList.length - 2);
     }
     function openFor(appEntry, name, anchorItem, pointX, pointY) {
         if (!appEntry || !anchorItem || !parent)

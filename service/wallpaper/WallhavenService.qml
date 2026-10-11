@@ -637,7 +637,7 @@ QtObject {
         return true;
     }
     function replaceModel(model, items) {
-        var incoming = Array.isArray(items) ? items : [];
+        var incoming = Config.listOrEmpty(items);
         for (var targetIndex = 0; targetIndex < incoming.length; ++targetIndex) {
             var item = incoming[targetIndex];
             var currentIndex = modelIndexForId(model, item.id);

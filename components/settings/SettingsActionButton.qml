@@ -5,6 +5,7 @@ import QtQuick
 Rectangle {
     id: root
 
+    property bool dimWhenDisabled: true
     property string iconName: ""
     property bool iconOnly: false
     property int iconSize: 20
@@ -16,6 +17,8 @@ Rectangle {
     property string tooltipText: ""
 
     signal clicked
+    signal pressEnded
+    signal pressStarted
 
     Accessible.name: tooltipText !== "" ? tooltipText : text
     Accessible.role: Accessible.Button
@@ -25,7 +28,7 @@ Rectangle {
     color: primary ? Config.md3.primary : Config.md3.surface_container_high
     implicitHeight: 48
     implicitWidth: iconOnly ? implicitHeight : content.implicitWidth + 34
-    opacity: enabled ? 1 : Md3.state.disabledContent
+    opacity: enabled || !dimWhenDisabled ? 1 : Md3.state.disabledContent
     radius: iconOnly ? Md3.shape.full : Md3.shape.large
     z: mouse.containsMouse ? 1 : 0
 
@@ -35,6 +38,8 @@ Rectangle {
         }
     }
     Behavior on opacity {
+        enabled: root.dimWhenDisabled
+
         Md3NumberAnimation {
             role: "state"
         }
@@ -117,6 +122,8 @@ Rectangle {
         hoverEnabled: true
 
         onClicked: root.clicked()
+        onPressed: root.pressStarted()
+        onReleased: root.pressEnded()
     }
     Md3ToolTip {
         id: actionToolTip

@@ -125,6 +125,9 @@ Core methods (80):
     wifi.qr.delete                        [delete] path
     wifi.qr.cleanup                       [delete] Remove stale temporary QR images
 
+  Local wallpapers
+    wallpaper.local.remove               [delete] path, current_path, roots[]
+
   Wallhaven
     wallpaper.wallhaven.search            [read, network] query/filter payload,
                                                            api_key?, wallpaper_dir?

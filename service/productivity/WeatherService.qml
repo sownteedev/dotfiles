@@ -106,8 +106,9 @@ QtObject {
             try {
                 if (locations && locations.ok === false)
                     throw new Error(locations.message || "Location lookup failed");
-                if (Array.isArray(locations) && locations.length > 0) {
-                    var location = locations[0];
+                var locationResults = Config.listOrEmpty(locations);
+                if (locationResults.length > 0) {
+                    var location = locationResults[0];
                     var countryCode = String(location.country || root.country).toUpperCase();
                     var locationName = location.local_names && location.local_names.vi ? location.local_names.vi : location.name;
                     if (locationName)
@@ -202,17 +203,19 @@ QtObject {
         var hourly = [];
         var now = Math.floor(Date.now() / 1000);
         var next24Hours = now + 24 * 3600;
-        var tomorrow = result.daily && result.daily.length > 1 ? result.daily[1] : {};
+        var dailyResults = Config.listOrEmpty(result.daily);
+        var hourlyResults = Config.listOrEmpty(result.hourly);
+        var tomorrow = dailyResults.length > 1 ? dailyResults[1] : {};
         var sunrise = validSunTime(current.sunrise || 0, tomorrow.sunrise || 0, now, next24Hours);
         var sunset = validSunTime(current.sunset || 0, tomorrow.sunset || 0, now, next24Hours);
         var allItems = [];
 
-        if (result.hourly && Array.isArray(result.hourly)) {
-            for (var i = 0; i < Math.min(24, result.hourly.length); i++)
+        if (hourlyResults.length > 0) {
+            for (var i = 0; i < Math.min(24, hourlyResults.length); i++)
                 allItems.push({
-                    dt: result.hourly[i].dt,
+                    dt: hourlyResults[i].dt,
                     type: "hour",
-                    data: result.hourly[i]
+                    data: hourlyResults[i]
                 });
         }
         if (sunrise > 0)
@@ -267,9 +270,9 @@ QtObject {
         hourlyForecast = hourly;
 
         var daily = [];
-        if (result.daily && Array.isArray(result.daily)) {
-            for (var k = 1; k < Math.min(7, result.daily.length); k++) {
-                var forecast = result.daily[k];
+        if (dailyResults.length > 0) {
+            for (var k = 1; k < Math.min(7, dailyResults.length); k++) {
+                var forecast = dailyResults[k];
                 var forecastWeather = forecast.weather && forecast.weather.length > 0 ? forecast.weather[0] : {};
                 daily.push({
                     day: dayName(forecast.dt),

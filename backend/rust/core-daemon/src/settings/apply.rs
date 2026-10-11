@@ -51,7 +51,21 @@ pub async fn layout(
         Ok(update) => update,
         Err(error) => return failure(error),
     };
-    apply_niri_changes(paths, vec![update], "Niri layout applied", cancellation).await
+    let response =
+        apply_niri_changes(paths, vec![update], "Niri layout applied", cancellation).await;
+    if response.get("ok").and_then(Value::as_bool) != Some(true) {
+        return response;
+    }
+    if let Some(layout) = payload.get("defaultWorkspaceLayout") {
+        let saved = sanitize_quickshell(paths, &json!({"defaultWorkspaceLayout": layout}))
+            .and_then(|settings| write_runtime_settings(paths, settings));
+        if let Err(error) = saved {
+            return failure(format!(
+                "Niri layout applied, but saving the workspace default failed: {error}"
+            ));
+        }
+    }
+    response
 }
 
 fn prepare_layout(paths: &SettingsPaths, payload: &Value) -> Result<NiriUpdate> {
@@ -1444,15 +1458,15 @@ pub async fn quickshell(
         }
     }
 
-    let mut encoded = match serde_json::to_string_pretty(&Value::Object(settings)) {
-        Ok(value) => value,
-        Err(error) => return failure(error),
-    };
-    encoded.push('\n');
-    match atomic_write(&paths.runtime_settings, &encoded, Some(0o600)) {
+    match write_runtime_settings(paths, settings) {
         Ok(()) => json!({"ok": true, "message": "SownteeShell Settings applied"}),
         Err(error) => failure(error),
     }
+}
+
+fn write_runtime_settings(paths: &SettingsPaths, settings: Map<String, Value>) -> Result<()> {
+    let encoded = serde_json::to_string_pretty(&Value::Object(settings))? + "\n";
+    atomic_write(&paths.runtime_settings, &encoded, Some(0o600))
 }
 
 pub async fn gtk(
@@ -2167,6 +2181,14 @@ fn sanitize_quickshell(paths: &SettingsPaths, payload: &Value) -> Result<Map<Str
     set_enum(
         &mut settings,
         &merged,
+        "defaultWorkspaceLayout",
+        "tiled",
+        &["tiled", "floating"],
+        false,
+    );
+    set_enum(
+        &mut settings,
+        &merged,
         "launcherCalculatorAngleMode",
         "rad",
         &["deg", "rad"],
@@ -2590,6 +2612,56 @@ fn failure(error: impl std::fmt::Display) -> Value {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn workspace_layout_roundtrips_and_preserves_omitted_settings() {
+        let directory =
+            std::env::temp_dir().join(format!("workspace-layout-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&directory).unwrap();
+        let paths = SettingsPaths {
+            sownteeshell_dir: directory.clone(),
+            niri_dir: directory.clone(),
+            include_dir: directory.clone(),
+            config_qml: directory.join("Config.qml"),
+            runtime_settings: directory.join("settings.json"),
+        };
+        assert_eq!(
+            sanitize_quickshell(&paths, &json!({})).unwrap()["defaultWorkspaceLayout"],
+            "tiled"
+        );
+        for (supplied, expected) in [
+            ("floating", "floating"),
+            ("tiled", "tiled"),
+            ("invalid", "tiled"),
+        ] {
+            let settings =
+                sanitize_quickshell(&paths, &json!({"defaultWorkspaceLayout": supplied})).unwrap();
+            assert_eq!(settings["defaultWorkspaceLayout"], expected);
+            write_runtime_settings(&paths, settings).unwrap();
+            let stored: Value =
+                serde_json::from_str(&fs::read_to_string(&paths.runtime_settings).unwrap())
+                    .unwrap();
+            assert_eq!(stored["defaultWorkspaceLayout"], expected);
+        }
+        let path = &paths.runtime_settings;
+        fs::write(
+            path,
+            r#"{"defaultWorkspaceLayout":"floating","barHeight":60}"#,
+        )
+        .unwrap();
+        let updated = sanitize_quickshell(&paths, &json!({"clock24h": false})).unwrap();
+        assert_eq!(updated["defaultWorkspaceLayout"], "floating");
+        assert_eq!(updated["barHeight"], 60);
+        assert_eq!(updated["clock24h"], false);
+        for invalid in ["not json", "[]", r#"{"defaultWorkspaceLayout":true}"#] {
+            fs::write(path, invalid).unwrap();
+            assert_eq!(
+                sanitize_quickshell(&paths, &json!({})).unwrap()["defaultWorkspaceLayout"],
+                "tiled"
+            );
+        }
+        fs::remove_dir_all(directory).unwrap();
+    }
+
     #[test]
     fn updates_gtk_ini_settings() {
         let sample = "[Settings]\ngtk-theme-name=OldTheme\ngtk-cursor-theme-size=24\n";

@@ -1,5 +1,6 @@
 pragma Singleton
 import ".."
+import "../.."
 import QtQuick
 
 QtObject {
@@ -47,7 +48,7 @@ QtObject {
         if (!accounts.some(account => account.id === accountId))
             return [];
         var snapshot = CalendarService.taskSnapshots.find(item => item.accountId === accountId);
-        return snapshot && Array.isArray(snapshot.lists) ? snapshot.lists : [];
+        return snapshot ? Config.listOrEmpty(snapshot.lists) : [];
     }
     function mutate(operation, params, callback) {
         if (!params.accountId) {

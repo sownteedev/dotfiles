@@ -60,7 +60,7 @@ Item {
             root.forgetRequest(requestId);
             if (generation !== root.requestGeneration)
                 return;
-            root.results = response && Array.isArray(response.results) ? response.results : [];
+            root.results = response ? Config.listOrEmpty(response.results) : [];
             root.loading = false;
         }, function (message) {
             root.forgetRequest(requestId);

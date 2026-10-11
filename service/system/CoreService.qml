@@ -39,7 +39,7 @@ QtObject {
             }
             root.writeSubscriptionRequest(batterySocket, "battery-subscribe", "battery.subscribe", {});
         }
-        onError: error => root.handleBatteryDisconnect()
+        onError: error => Qt.callLater(root.handleBatteryDisconnect)
     }
     property bool batterySubscribed: false
     property var cancelQueue: []
@@ -73,7 +73,7 @@ QtObject {
             if (root.cancelQueue.length > 0 && root.ready)
                 root.cancelRetry.restart();
         }
-        onError: error => root.handleCancelDisconnect()
+        onError: error => Qt.callLater(root.handleCancelDisconnect)
     }
     property Timer connectionRetry: Timer {
         interval: 500
@@ -155,7 +155,7 @@ QtObject {
         }
 
         onConnectionStateChanged: root.handleRequestConnection()
-        onError: error => root.requestReconnect()
+        onError: error => Qt.callLater(root.requestReconnect)
     }
     readonly property int requestTimeoutMs: 30000
     property Timer requestTimeoutSweep: Timer {
@@ -202,7 +202,7 @@ QtObject {
                 "mode": root.statsMode
             });
         }
-        onError: error => root.handleStatsDisconnect()
+        onError: error => Qt.callLater(root.handleStatsDisconnect)
     }
     property bool statsSubscribed: false
     property Process systemdStarter: Process {
@@ -261,7 +261,7 @@ QtObject {
             }
             root.writeSubscriptionRequest(updatesSocket, "updates-subscribe", "updates.subscribe", {});
         }
-        onError: error => root.handleUpdatesDisconnect()
+        onError: error => Qt.callLater(root.handleUpdatesDisconnect)
     }
     property bool updatesSubscribed: false
 

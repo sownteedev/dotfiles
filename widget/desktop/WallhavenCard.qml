@@ -387,21 +387,39 @@ Item {
                 activeFocusOnTab: false
                 border.color: "transparent"
                 border.width: 0
-                color: deleteMouse.pressed ? Config.md3.error : (deleteMouse.containsMouse || root.deleteArmed ? Config.md3.error_container : Config.alpha(Config.md3.on_surface, 0.06))
+                color: Config.alpha(Config.md3.on_surface, 0.06)
                 enabled: !root.removing
                 opacity: enabled ? 1 : 0.5
                 radius: 12
                 visible: root.installedMode && !root.inUse
 
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 120
-                    }
-                }
-
                 Keys.onReturnPressed: root.triggerDeleteAction()
                 Keys.onSpacePressed: root.triggerDeleteAction()
 
+                Rectangle {
+                    anchors.fill: parent
+                    color: Config.md3.error_container
+                    opacity: deleteMouse.containsMouse || root.deleteArmed || deleteMouse.pressed ? 1 : 0
+                    radius: parent.radius
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 120
+                        }
+                    }
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    color: Config.md3.error
+                    opacity: deleteMouse.pressed ? 1 : 0
+                    radius: parent.radius
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 120
+                        }
+                    }
+                }
                 Row {
                     anchors.centerIn: parent
 
@@ -422,6 +440,12 @@ Item {
 
                         layer.effect: ColorOverlay {
                             color: deleteMouse.pressed ? Config.md3.on_error : (root.deleteArmed ? Config.md3.on_error_container : Config.md3.on_surface_variant)
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 120
+                                }
+                            }
                         }
                     }
                 }
@@ -448,7 +472,7 @@ Item {
                 activeFocusOnTab: false
                 border.color: "transparent"
                 border.width: 0
-                color: primaryMouse.pressed ? Config.md3.primary_container : (primaryAction.emphasized ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
+                color: primaryMouse.pressed ? Config.alpha(Config.md3.primary, 0.76) : (primaryAction.emphasized ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
                 enabled: !root.removing && !root.downloadBlocked && (!root.cancelling || root.downloading)
                 opacity: enabled ? 1 : 0.42
                 radius: 12
@@ -481,7 +505,7 @@ Item {
                         width: 18
 
                         layer.effect: ColorOverlay {
-                            color: primaryMouse.pressed ? Config.md3.primary : Config.md3.on_primary
+                            color: Config.md3.on_primary
                         }
                     }
                 }

@@ -18,7 +18,6 @@ PanelWindow {
     readonly property real desiredAppListWidth: appCount > 0 ? appCount * 54 - 6 + (runningAppCount > 0 ? 7 : 0) : 0
     readonly property real desiredSurfaceWidth: 20 + (appCount > 0 ? desiredAppListWidth + 6 : 0) + (showAllAppsSeparator ? 8 : 0) + 50
     readonly property var desktopApplications: DesktopEntries.applications.values || []
-    readonly property int dockBandHeight: 94
     readonly property bool dockObstructed: {
         for (var i = 0; i < activeWindows.length; ++i) {
             if (windowOverlapsDock(activeWindows[i]))
@@ -42,7 +41,8 @@ PanelWindow {
     readonly property bool showAllAppsSeparator: pinnedAppCount > 0 && runningAppCount === 0
     property bool startupDeadlineElapsed: false
     property bool startupReady: false
-    property real surfaceBottomMargin: autoHidden ? -74 : 12
+    property real surfaceBottomMargin: autoHidden ? -74 : surfaceShownBottomMargin
+    readonly property real surfaceShownBottomMargin: 12
     readonly property bool themeReady: ThemeService.hasAppliedTheme || (ThemeService.themeFileResolved && !Config.matugenEnabled)
 
     signal launcherRequested
@@ -386,12 +386,11 @@ PanelWindow {
         var windowTop = Number(position[1]);
         var windowRight = windowLeft + Number(size[0]);
         var windowBottom = windowTop + Number(size[1]);
-        var workAreaHeight = Math.max(0, screen.height - Config.barHeight);
         var dockLeft = (screen.width - dockSurface.width) / 2;
         var dockRight = dockLeft + dockSurface.width;
-        var dockTop = workAreaHeight - dockWindow.dockBandHeight + 12;
-        var dockBottom = workAreaHeight - 8;
-        return windowRight > dockLeft && windowLeft < dockRight && windowBottom > dockTop && windowTop < dockBottom;
+        var dockBottom = screen.height - dockWindow.surfaceShownBottomMargin;
+        var dockTop = dockBottom - dockSurface.height;
+        return windowRight >= dockLeft && windowLeft <= dockRight && windowBottom >= dockTop && windowTop <= dockBottom;
     }
     function windowsForEntry(entryId, appName) {
         var entryKeys = NotificationHistory.appKeys(entryId, appName);

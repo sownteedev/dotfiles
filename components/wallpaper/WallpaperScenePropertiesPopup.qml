@@ -54,9 +54,10 @@ Popup {
             var item = source[name] || {};
             var type = String(item.type || "text").toLowerCase();
             var options = [];
-            if (Array.isArray(item.options)) {
-                for (var optionIndex = 0; optionIndex < item.options.length; ++optionIndex) {
-                    var option = item.options[optionIndex] || {};
+            var itemOptions = Config.listOrEmpty(item.options);
+            if (itemOptions.length > 0) {
+                for (var optionIndex = 0; optionIndex < itemOptions.length; ++optionIndex) {
+                    var option = itemOptions[optionIndex] || {};
                     options.push({
                         "label": String(option.label === undefined ? option.value : option.label),
                         "value": option.value

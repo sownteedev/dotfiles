@@ -65,7 +65,7 @@ QtObject {
         sessionsPending = false;
         sessionsRequestId = CoreService.sendRequest("greeter.sessions.list", {}, function (result) {
             root.sessionsRequestId = "";
-            root.sessions = Array.isArray(result) ? result : [];
+            root.sessions = Config.listOrEmpty(result);
         }, function (message) {
             root.sessionsRequestId = "";
             root.sessions = [];

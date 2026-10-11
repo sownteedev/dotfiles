@@ -13,10 +13,16 @@ PanelWindow {
     readonly property int activeCount: activeModel.count
     readonly property var activeModel: selectedMode === "video" ? videoModel : staticModel
     readonly property bool browserOpen: workshopOpen || wallhavenOpen
+    readonly property bool canTrashDragged: draggedPath !== "" && draggedPath !== WallpaperService.currentWallpaper
     readonly property real cardHeight: cardWidth * 240 / 380
     readonly property real cardWidth: Responsive.fit(380, (width - 24) / 1.15, 240)
     property bool changingMode: false
+    property string deleteMessage: ""
+    property string deletingPath: ""
+    property var dragCard: null
+    property string draggedPath: ""
     property string initialSelectionPath: ""
+    readonly property bool interactionLocked: browserOpen || dragCard !== null || deletingPath !== ""
     property string lastPreviewSource: ""
     property int openGeneration: 0
     readonly property real pathSpan: Math.min(450, Math.max(cardWidth * 0.85, width * 0.34))
@@ -24,6 +30,9 @@ PanelWindow {
     readonly property bool selectedVideoNeedsEngine: selectedMode === "video" && roleAt(pathView.currentIndex, "isEngine", false) && String(roleAt(pathView.currentIndex, "type", "")).toLowerCase() !== "video"
     property bool selectionCommitted: false
     property int staticIndex: 0
+    readonly property bool trashArmed: dragCard !== null && dragCard.armed && canTrashDragged
+    property real trashCenterX: width / 2
+    readonly property real trashCenterY: Math.min(height - 92, height / 2 + cardHeight * 0.575 + 78)
     property int videoIndex: 0
     property bool videoPreviewStarted: false
     property bool wallhavenOpen: false
@@ -32,6 +41,10 @@ PanelWindow {
     signal dismissed
 
     function closeSelector() {
+        if (dragCard)
+            dragCard.cancelDrag();
+        dragCard = null;
+        draggedPath = "";
         openGeneration += 1;
         previewTimer.stop();
         preloadTimer.stop();
@@ -46,6 +59,22 @@ PanelWindow {
         hideTimer.start();
         wallhavenOpen = false;
         workshopOpen = false;
+    }
+    function finishDrag(card, path, accepted) {
+        if (dragCard !== card)
+            return;
+
+        var canDelete = canTrashDragged;
+        dragCard = null;
+        draggedPath = "";
+        if (!accepted || !canDelete)
+            return;
+
+        deletingPath = path;
+        deleteMessage = "";
+        previewTimer.stop();
+        preloadTimer.stop();
+        deleteTimer.start();
     }
     function handleVideoCoverReady(sourcePath, coverPath, engineSource) {
         if (!wallpaperWindow.visible || selectedMode !== "video" || !videoPreviewStarted || pathView.currentIndex < 0)
@@ -84,6 +113,7 @@ PanelWindow {
         initialSelectionPath = String(WallpaperService.currentWallpaper || "");
         lastPreviewSource = "";
         selectionCommitted = false;
+        deleteMessage = "";
         wallhavenOpen = false;
         workshopOpen = false;
         selectedMode = WallpaperService.currentMode;
@@ -134,7 +164,7 @@ PanelWindow {
         }
     }
     function previewCurrent() {
-        if (!wallpaperWindow.visible || changingMode || initialSelectionPath !== "" || browserOpen || pathView.currentIndex < 0)
+        if (!wallpaperWindow.visible || changingMode || initialSelectionPath !== "" || interactionLocked || pathView.currentIndex < 0)
             return;
 
         if (selectedMode === "static") {
@@ -264,7 +294,7 @@ PanelWindow {
         }
     }
     function selectCurrentWallpaper() {
-        if (browserOpen || !pathView.currentItem)
+        if (interactionLocked || !pathView.currentItem)
             return;
 
         selectionCommitted = true;
@@ -285,7 +315,7 @@ PanelWindow {
         return -1;
     }
     function switchMode(mode) {
-        if (mode !== "static" && mode !== "video" || mode === selectedMode)
+        if (interactionLocked || mode !== "static" && mode !== "video" || mode === selectedMode)
             return false;
 
         rememberCurrentIndex();
@@ -494,6 +524,49 @@ PanelWindow {
     }
 
     Timer {
+        id: deleteTimer
+
+        interval: 180
+
+        onTriggered: {
+            WallpaperService.cancelPreview();
+            WallpaperPreviewService.cancel();
+            wallpaperWindow.lastPreviewSource = "";
+            if (!WallpaperService.removeWallpaper(wallpaperWindow.deletingPath)) {
+                wallpaperWindow.deletingPath = "";
+                wallpaperWindow.deleteMessage = qsTr("Cannot delete this wallpaper. Choose another wallpaper if it is in use.");
+                if (wallpaperWindow.visible && !hideTimer.running) {
+                    WallpaperService.beginPreview();
+                    WallpaperPreviewService.begin();
+                    wallpaperWindow.schedulePreview();
+                }
+            }
+        }
+    }
+    Connections {
+        function onRemovalFinished(path, success, message) {
+            if (path !== wallpaperWindow.deletingPath)
+                return;
+
+            if (success) {
+                var model = wallpaperWindow.activeModel;
+                for (var index = model.count - 1; index >= 0; --index) {
+                    if (String(model.get(index).filePath) === path)
+                        model.remove(index);
+                }
+            }
+            wallpaperWindow.deletingPath = "";
+            wallpaperWindow.deleteMessage = success ? "" : message;
+            if (wallpaperWindow.visible && !hideTimer.running) {
+                WallpaperService.beginPreview();
+                WallpaperPreviewService.begin();
+                wallpaperWindow.schedulePreview();
+            }
+        }
+
+        target: WallpaperService
+    }
+    Timer {
         id: hideTimer
 
         interval: 200
@@ -548,7 +621,9 @@ PanelWindow {
         }
 
         Keys.onEscapePressed: {
-            if (wallpaperWindow.wallhavenOpen)
+            if (wallpaperWindow.dragCard)
+                wallpaperWindow.dragCard.cancelDrag();
+            else if (wallpaperWindow.wallhavenOpen)
                 wallpaperWindow.wallhavenOpen = false;
             else if (wallpaperWindow.workshopOpen)
                 wallpaperWindow.workshopOpen = false;
@@ -556,31 +631,31 @@ PanelWindow {
                 closeSelector();
         }
         Keys.onLeftPressed: {
-            if (!wallpaperWindow.browserOpen) {
+            if (!wallpaperWindow.interactionLocked) {
                 wallpaperWindow.startUserNavigation();
                 pathView.decrementCurrentIndex();
             }
         }
         Keys.onReturnPressed: {
-            if (!wallpaperWindow.browserOpen) {
+            if (!wallpaperWindow.interactionLocked) {
                 wallpaperWindow.startUserNavigation();
                 selectCurrentWallpaper();
             }
         }
         Keys.onRightPressed: {
-            if (!wallpaperWindow.browserOpen) {
+            if (!wallpaperWindow.interactionLocked) {
                 wallpaperWindow.startUserNavigation();
                 pathView.incrementCurrentIndex();
             }
         }
         Keys.onSpacePressed: {
-            if (!wallpaperWindow.browserOpen) {
+            if (!wallpaperWindow.interactionLocked) {
                 wallpaperWindow.startUserNavigation();
                 selectCurrentWallpaper();
             }
         }
         Keys.onTabPressed: {
-            if (!wallpaperWindow.browserOpen) {
+            if (!wallpaperWindow.interactionLocked) {
                 wallpaperWindow.startUserNavigation();
                 pathView.incrementCurrentIndex();
             }
@@ -685,6 +760,7 @@ PanelWindow {
             WallpaperModeSwitch {
                 id: modeSwitch
 
+                enabled: !wallpaperWindow.interactionLocked
                 mode: wallpaperWindow.selectedMode
 
                 onAddRequested: mode => {
@@ -731,7 +807,7 @@ PanelWindow {
             delegate: wallpaperDelegate
             height: Math.min(400, parent.height * 0.56)
             highlightRangeMode: PathView.StrictlyEnforceRange
-            interactive: !wallpaperWindow.browserOpen
+            interactive: !wallpaperWindow.interactionLocked
             model: wallpaperWindow.activeModel
             pathItemCount: wallpaperWindow.width < 1000 ? 5 : 7
             preferredHighlightBegin: 0.5
@@ -806,7 +882,7 @@ PanelWindow {
             MouseArea {
                 acceptedButtons: Qt.NoButton
                 anchors.fill: parent
-                enabled: !wallpaperWindow.browserOpen
+                enabled: !wallpaperWindow.interactionLocked
 
                 onWheel: wheel => {
                     wallpaperWindow.startUserNavigation();
@@ -816,6 +892,71 @@ PanelWindow {
                         pathView.incrementCurrentIndex();
                 }
             }
+        }
+        Column {
+            id: trashTarget
+
+            opacity: wallpaperWindow.dragCard !== null && wallpaperWindow.dragCard.pullDistance > 0 || wallpaperWindow.deletingPath !== "" ? 1 : 0
+            scale: wallpaperWindow.trashArmed ? 1.1 : 1
+            spacing: 10
+            width: Math.min(300, contentRoot.width - 24)
+            x: wallpaperWindow.trashCenterX - width / 2
+            y: wallpaperWindow.trashCenterY - 30
+            z: 600
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 140
+                }
+            }
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 140
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                border.color: wallpaperWindow.trashArmed ? Config.md3.error : Config.alpha(Config.md3.on_surface, 0.2)
+                border.width: 1
+                color: wallpaperWindow.trashArmed ? Config.md3.error : Config.md3.surface_container_high
+                height: 60
+                radius: 30
+                width: 60
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 120
+                    }
+                }
+
+                IconImage {
+                    id: trashIcon
+
+                    anchors.centerIn: parent
+                    implicitSize: 26
+                    source: Quickshell.iconPath("user-trash-symbolic")
+                    visible: false
+                }
+                ColorOverlay {
+                    anchors.fill: trashIcon
+                    color: wallpaperWindow.trashArmed ? Config.md3.on_error : Config.md3.on_surface
+                    source: trashIcon
+                }
+            }
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: Config.md3.on_surface
+            font.family: Config.fontName
+            font.pixelSize: 13
+            horizontalAlignment: Text.AlignHCenter
+            text: wallpaperWindow.deleteMessage
+            visible: wallpaperWindow.dragCard === null && wallpaperWindow.deletingPath === "" && text !== ""
+            width: Math.min(520, parent.width - 32)
+            wrapMode: Text.WordWrap
+            y: wallpaperWindow.trashCenterY + 48
         }
         Column {
             anchors.centerIn: parent
@@ -942,13 +1083,7 @@ PanelWindow {
             opacity: PathView.itemOpacity !== undefined ? PathView.itemOpacity : 0
             scale: PathView.itemScale !== undefined ? PathView.itemScale : 0.55
             width: wallpaperWindow.cardWidth
-            z: PathView.itemZ !== undefined ? PathView.itemZ : 1
-
-            transform: Shear {
-                origin.x: delegateRoot.width / 2
-                origin.y: delegateRoot.height / 2
-                xAngle: -12.4
-            }
+            z: cardDrag.dragging || cardDrag.deletePending ? 500 : PathView.itemZ !== undefined ? PathView.itemZ : 1
 
             Component.onCompleted: {
                 delegateRoot.scheduleThumbnailLoad();
@@ -1024,99 +1159,124 @@ PanelWindow {
 
                 target: EngineWallpaperService
             }
-            Rectangle {
+            WallpaperDragCard {
+                id: cardDrag
+
                 anchors.fill: parent
-                color: Config.md3.surface_container_low
+                deletePending: wallpaperWindow.deletingPath === delegateRoot.filePath
+                dropDistance: (wallpaperWindow.trashCenterY - (pathView.y + delegateRoot.y + delegateRoot.height / 2)) / Math.max(0.01, delegateRoot.scale)
+                enabled: !wallpaperWindow.browserOpen && wallpaperWindow.deletingPath === "" && !pathView.moving
 
-                CachingImage {
-                    anchors.fill: parent
-                    cache: false
-                    cacheKey: String(delegateRoot.fileModified) + "-" + String(delegateRoot.thumbnailRevision)
-                    fillMode: Image.PreserveAspectCrop
-                    path: {
-                        if (delegateRoot.live)
-                            return (delegateRoot.permitThumbnailLoad && delegateRoot.thumbnailAvailable) ? delegateRoot.liveThumbnail : "";
-
-                        if (delegateRoot.isEngine) {
-                            if (delegateRoot.convertedEnginePreview)
-                                return (delegateRoot.permitThumbnailLoad && delegateRoot.engineThumbnailAvailable) ? delegateRoot.engineThumbnail : "";
-
-                            return delegateRoot.engineThumbnail;
-                        }
-                        return delegateRoot.filePath;
+                Component.onDestruction: {
+                    if (wallpaperWindow.dragCard === cardDrag) {
+                        wallpaperWindow.dragCard = null;
+                        wallpaperWindow.draggedPath = "";
                     }
                 }
+                onClicked: {
+                    if (wallpaperWindow.interactionLocked)
+                        return;
+                    wallpaperWindow.startUserNavigation();
+                    if (pathView.currentIndex === delegateRoot.index)
+                        wallpaperWindow.selectCurrentWallpaper();
+                    else
+                        pathView.currentIndex = delegateRoot.index;
+                    contentRoot.forceActiveFocus();
+                }
+                onDragFinished: accepted => wallpaperWindow.finishDrag(cardDrag, delegateRoot.filePath, accepted)
+                onDragStarted: {
+                    wallpaperWindow.dragCard = cardDrag;
+                    wallpaperWindow.draggedPath = delegateRoot.filePath;
+                    wallpaperWindow.deleteMessage = "";
+                    wallpaperWindow.trashCenterX = mapToItem(contentRoot, width / 2, height / 2).x;
+                    previewTimer.stop();
+                    preloadTimer.stop();
+                }
+
                 Rectangle {
                     anchors.fill: parent
-                    color: Config.md3.scrim
-                    opacity: delegateRoot.PathView.isCurrentItem ? 0 : 0.6
+                    color: Config.md3.surface_container_low
 
-                    Behavior on opacity {
-                        OpacityAnimator {
-                            duration: 150
+                    transform: Shear {
+                        origin.x: delegateRoot.width / 2
+                        origin.y: delegateRoot.height / 2
+                        xAngle: -12.4
+                    }
+
+                    CachingImage {
+                        anchors.fill: parent
+                        cache: false
+                        cacheKey: String(delegateRoot.fileModified) + "-" + String(delegateRoot.thumbnailRevision)
+                        fillMode: Image.PreserveAspectCrop
+                        path: {
+                            if (delegateRoot.live)
+                                return (delegateRoot.permitThumbnailLoad && delegateRoot.thumbnailAvailable) ? delegateRoot.liveThumbnail : "";
+
+                            if (delegateRoot.isEngine) {
+                                if (delegateRoot.convertedEnginePreview)
+                                    return (delegateRoot.permitThumbnailLoad && delegateRoot.engineThumbnailAvailable) ? delegateRoot.engineThumbnail : "";
+
+                                return delegateRoot.engineThumbnail;
+                            }
+                            return delegateRoot.filePath;
                         }
                     }
-                }
-                Rectangle {
-                    anchors.fill: parent
-                    color: Config.alpha(Config.md3.primary, 0.07)
-                    opacity: cardMouse.containsMouse ? 1 : 0
+                    Rectangle {
+                        anchors.fill: parent
+                        color: Config.md3.scrim
+                        opacity: delegateRoot.PathView.isCurrentItem ? 0 : 0.6
 
-                    Behavior on opacity {
-                        OpacityAnimator {
-                            duration: 140
+                        Behavior on opacity {
+                            OpacityAnimator {
+                                duration: 150
+                            }
                         }
                     }
-                }
-                MouseArea {
-                    id: cardMouse
+                    Rectangle {
+                        anchors.fill: parent
+                        color: Config.alpha(Config.md3.primary, 0.07)
+                        opacity: cardDrag.hovered ? 1 : 0
 
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    hoverEnabled: true
-
-                    onClicked: {
-                        wallpaperWindow.startUserNavigation();
-                        if (pathView.currentIndex === index)
-                            wallpaperWindow.selectCurrentWallpaper();
-                        else
-                            pathView.currentIndex = index;
-                        contentRoot.forceActiveFocus();
-                    }
-                }
-                Rectangle {
-                    anchors.centerIn: parent
-                    color: cardMouse.containsMouse ? Config.alpha(Config.md3.primary_container, 0.94) : Config.alpha(Config.md3.background, 0.78)
-                    enabled: false
-                    height: 50
-                    radius: width / 2
-                    scale: cardMouse.containsMouse ? 1.08 : 1
-                    visible: wallpaperWindow.selectedMode === "video"
-                    width: 50
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 140
+                        Behavior on opacity {
+                            OpacityAnimator {
+                                duration: 140
+                            }
                         }
                     }
-                    Behavior on scale {
-                        ScaleAnimator {
-                            duration: 170
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
-                    Text {
+                    Rectangle {
                         anchors.centerIn: parent
-                        anchors.horizontalCenterOffset: 2
-                        color: cardMouse.containsMouse ? Config.md3.on_primary_container : Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 20
-                        text: "▶"
+                        color: cardDrag.hovered ? Config.alpha(Config.md3.primary_container, 0.94) : Config.alpha(Config.md3.background, 0.78)
+                        enabled: false
+                        height: 50
+                        radius: width / 2
+                        scale: cardDrag.hovered ? 1.08 : 1
+                        visible: wallpaperWindow.selectedMode === "video"
+                        width: 50
 
                         Behavior on color {
                             ColorAnimation {
                                 duration: 140
+                            }
+                        }
+                        Behavior on scale {
+                            ScaleAnimator {
+                                duration: 170
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            anchors.horizontalCenterOffset: 2
+                            color: cardDrag.hovered ? Config.md3.on_primary_container : Config.md3.on_surface
+                            font.family: Config.fontName
+                            font.pixelSize: 20
+                            text: "▶"
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 140
+                                }
                             }
                         }
                     }

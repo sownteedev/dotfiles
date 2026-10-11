@@ -30,7 +30,7 @@ QtObject {
         inspecting = false;
         available = success && response.managed === true;
         backend = available ? String(response.backend || "") : "";
-        blockers = available && Array.isArray(response.blockers) ? response.blockers : [];
+        blockers = available ? Config.listOrEmpty(response.blockers) : [];
         packageName = available ? String(response.package || "") : "";
         removable = available && response.removable === true;
         scope = available ? String(response.scope || "") : "";
@@ -76,7 +76,7 @@ QtObject {
 
         if (completedSuccessfully) {
             var nextCache = Object.assign({}, cache);
-            var relatedAppIds = Array.isArray(response.desktop_ids) ? response.desktop_ids : [completedAppId];
+            var relatedAppIds = Config.isList(response.desktop_ids) ? Config.listOrEmpty(response.desktop_ids) : [completedAppId];
             for (var appIndex = 0; appIndex < relatedAppIds.length; ++appIndex) {
                 var relatedAppId = String(relatedAppIds[appIndex] || "");
                 if (relatedAppId === "")

@@ -892,6 +892,7 @@ fn quickshell_snapshot(paths: &SettingsPaths, config_source: &str) -> Value {
         "displayMainOutput",
         "defaultTerminal",
         "defaultVideoPlayer",
+        "defaultWorkspaceLayout",
     ] {
         let fallback = settings
             .get(name)

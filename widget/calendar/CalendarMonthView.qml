@@ -223,7 +223,7 @@ Rectangle {
                     readonly property int eventSlotCapacity: Math.max(1, Math.min(4, Math.floor((height - 43) / 25)))
                     readonly property int extraEventCount: Math.max(0, dayEvents.length - visibleEvents.length)
                     required property int index
-                    readonly property var lunarDate: Lunar.getLunarDateForDate(modelData.date)
+                    readonly property var lunarDate: Config.calendarShowLunar ? Lunar.getLunarDateForDate(modelData.date) : null
                     readonly property string lunarLabel: lunarDate ? (lunarDate.day === 1 ? `${lunarDate.day}/${lunarDate.month}` : String(lunarDate.day)) : ""
                     readonly property bool lunarSpecial: Boolean(lunarDate && (lunarDate.day === 1 || lunarDate.day === 15))
                     required property var modelData
@@ -232,7 +232,7 @@ Rectangle {
                     readonly property int visibleEventCount: dayEvents.length > eventSlotCapacity ? Math.max(0, eventSlotCapacity - 1) : Math.min(dayEvents.length, eventSlotCapacity)
                     readonly property var visibleEvents: dayEvents.slice(0, visibleEventCount)
 
-                    Accessible.name: qsTr("%1, lunar %2").arg(Qt.formatDate(modelData.date, Qt.DefaultLocaleLongDate)).arg(dayCell.lunarLabel)
+                    Accessible.name: Config.calendarShowLunar ? qsTr("%1, lunar %2").arg(Qt.formatDate(modelData.date, Qt.DefaultLocaleLongDate)).arg(dayCell.lunarLabel) : Qt.formatDate(modelData.date, Qt.DefaultLocaleLongDate)
                     Accessible.role: Accessible.Button
                     color: selected ? Config.alpha(Config.md3.primary, Config.lightTheme ? 0.08 : 0.12) : dayMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.035) : "transparent"
                     height: monthGrid.height / 6
@@ -311,6 +311,7 @@ Rectangle {
                                 font.weight: dayCell.lunarSpecial ? Font.DemiBold : Md3.typeScale.labelSmall.weight
                                 text: dayCell.lunarLabel
                                 verticalAlignment: Text.AlignVCenter
+                                visible: Config.calendarShowLunar
                             }
                         }
                     }

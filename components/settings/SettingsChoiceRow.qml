@@ -6,6 +6,7 @@ ColumnLayout {
     id: root
 
     property bool animationsReady: false
+    property bool dimWhenDisabled: true
     property string label: ""
     property string note: ""
     property var options: []
@@ -206,7 +207,7 @@ ColumnLayout {
                     Layout.preferredWidth: 1
                     activeFocusOnTab: false
                     implicitHeight: 48
-                    opacity: available ? 1 : Md3.state.disabledContent
+                    opacity: available || (!root.dimWhenDisabled && modelData.enabled !== false) ? 1 : Md3.state.disabledContent
 
                     transform: Scale {
                         origin.x: optionButton.index < root.selectedIndex() ? 0 : optionButton.width

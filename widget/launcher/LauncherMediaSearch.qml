@@ -204,7 +204,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: card.border.width
                     asynchronous: true
-                    cache: false
+                    cache: true
                     fillMode: root.mediaKind === "sticker" ? Image.PreserveAspectFit : Image.PreserveAspectCrop
                     layer.enabled: visible
                     playing: visible

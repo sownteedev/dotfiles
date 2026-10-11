@@ -300,6 +300,9 @@ impl IpcServer {
                     .map_err(RpcError::backend)?
             )),
             "accounts.google.add" => self.add_google(parse_params(request.params)?).await,
+            "accounts.google.reconnect" => {
+                self.reconnect_google(parse_params(request.params)?).await
+            }
             "accounts.microsoft.add" => self.add_microsoft(parse_params(request.params)?).await,
             "accounts.icloud.add" => self.add_icloud(parse_params(request.params)?).await,
             "accounts.remove" => self.remove_account(parse_params(request.params)?).await,
@@ -421,6 +424,75 @@ impl IpcServer {
         self.store_oauth_account(&account, &authorized.token, client_secret.as_deref())
             .await?;
         self.finish_account_add(account).await
+    }
+
+    async fn reconnect_google(&self, parameters: AccountIdParams) -> RpcResult<Value> {
+        let account_id = parameters.account_id.trim().to_string();
+        let account = self
+            .database
+            .run_blocking({
+                let account_id = account_id.clone();
+                move |database| database.get_account(&account_id)
+            })
+            .await
+            .map_err(RpcError::backend)?
+            .ok_or_else(|| RpcError::not_found("Google calendar account was not found"))?;
+        if account.provider != ProviderKind::Google {
+            return Err(RpcError::invalid_params("account is not a Google account"));
+        }
+
+        let client_id = account
+            .config
+            .get("clientId")
+            .and_then(Value::as_str)
+            .filter(|value| !value.trim().is_empty())
+            .ok_or_else(|| RpcError::invalid_params("Google account is missing client ID"))?
+            .to_string();
+        let client_secret = self
+            .keyring
+            .get_text(&account.id, OAUTH_CLIENT_SECRET_KEY)
+            .await
+            .map_err(RpcError::backend)?
+            .or_else(|| self.config.google_client_secret.clone())
+            .filter(|value| !value.trim().is_empty());
+        let authorized =
+            google_oauth::authorize(&self.providers.http(), &client_id, client_secret.as_deref())
+                .await
+                .map_err(RpcError::backend)?;
+
+        let expected_remote_id = account
+            .config
+            .get("remoteId")
+            .and_then(Value::as_str)
+            .filter(|value| !value.is_empty())
+            .or_else(|| account.id.strip_prefix("google:"));
+        if expected_remote_id != Some(authorized.remote_id.as_str()) {
+            return Err(RpcError::invalid_params(
+                "The signed-in Google account is different. Remove this account before connecting another one.",
+            ));
+        }
+
+        let mut config = account.config.clone();
+        if let Some(object) = config.as_object_mut() {
+            object.insert("clientId".to_string(), json!(client_id));
+            object.insert("remoteId".to_string(), json!(authorized.remote_id));
+        }
+        let refreshed_account = self
+            .account_for_upsert(
+                &account.id,
+                ProviderKind::Google,
+                authorized.display_name,
+                authorized.email,
+                config,
+            )
+            .await?;
+        self.store_oauth_account(
+            &refreshed_account,
+            &authorized.token,
+            client_secret.as_deref(),
+        )
+        .await?;
+        self.finish_account_add(refreshed_account).await
     }
 
     async fn add_microsoft(&self, parameters: AddMicrosoftParams) -> RpcResult<Value> {

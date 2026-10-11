@@ -33,7 +33,7 @@ The visual layer uses shared MD3 typography, shape, spacing, state, motion, and 
 
 ### Desktop and navigation
 
-- **Niri-native workspace model** with live windows, dynamic workspaces, overview-aware focus, drag reordering, cross-workspace movement without focus stealing, per-workspace tiled/floating state, and multi-monitor support.
+- **Niri-native workspace model** with live windows, dynamic workspaces, overview-aware focus, drag reordering, cross-workspace movement without focus stealing, per-workspace tiled/floating state with a configurable default for new workspaces, and multi-monitor support.
 - **Dynamic Dock** for pinned and running applications, with drag ordering, live window previews, focus-aware unread badges, right-click pinning, and overlap-aware auto-hide.
 - **Launcher and All Apps** with fuzzy application search, a full-screen paged grid, horizontal touchpad navigation, keyboard control, contextual app actions, package-aware Pacman/Flatpak uninstall, and persistent drag-and-drop folders with rename and drag-out ungrouping.
 - **Search providers** for files (`f`), clipboard (`c`), calculator (`=`), a unified emoji/Unicode catalog (`e`), and lazy KLIPY GIF (`g`) or sticker (`s`) grids when an API key is configured. Clipboard history supports pinned text, URLs, colors, file lists, images, and video thumbnails with optional direct paste.
@@ -43,7 +43,8 @@ The visual layer uses shared MD3 typography, shape, spacing, state, motion, and 
 
 - **Left panel** with Weather and Music tabs above Stats and Timer: OpenWeather forecasts with GeoClue location detection, MPRIS media controls with decoded artwork frame retention to eliminate loading blackouts, inline volume slider, expandable synced lyrics with playback position seeking, live CPU/RAM/GPU charts, grouped process management, RSS/PSS memory details, and countdown timers.
 - A standalone, responsive **SownteeShell Calendar** with:
-    - Week and month views, Vietnamese lunar dates, a current-time indicator, and automatic scrolling to the current hour when the week view opens.
+    - Week and month views, optional Vietnamese lunar dates, a current-time indicator, and automatic scrolling to the current hour when the week view opens.
+    - Event and dated-task search with account, calendar, and date filters, plus jump-to-date results.
     - Drag-to-create events across one or multiple days, with 15-minute snapping and local start/end validation.
     - Direct manipulation of existing timed events: drag an editable non-recurring event to another day or time, or drag its top/bottom edge to change the start/end time. All-day, task, read-only, and recurring entries remain editor-only to avoid changing the wrong occurrence or series.
     - Week timeline zoom controls with Zoom in/Zoom out buttons and `Ctrl` + mouse wheel; normal wheel scrolling continues to scroll the timeline.
@@ -51,7 +52,7 @@ The visual layer uses shared MD3 typography, shape, spacing, state, motion, and 
     - Daily, weekly, monthly, and yearly recurrence, weekly weekday selection, interval values, and recurrence termination by date or count. Monthly rules preserve the event's start day with `BYMONTHDAY`.
     - iCalendar (`.ics`/`.ical`) parsing, preview, and import into a selected writable calendar, including supported event details, recurrence, and reminder data.
     - Google Tasks from every connected Google account and task list, with account/list colors, account and list selection when creating a task, inline editing/completion, and dated tasks rendered in the all-day lane. Local Tasks remain device-only and can be shown or hidden independently.
-    - Sidebar account and calendar visibility controls, per-provider status/error feedback, manual sync, and automatic background synchronization.
+    - Sidebar account and calendar visibility controls, per-account sync and last-sync status, error/reconnect actions, and automatic background synchronization.
 - Calendar sync for **Google, Microsoft, and iCloud/CalDAV**, backed by a dedicated Rust daemon with a local SQLite cache, Secret Service credentials, provider-aware event options, live refresh, and one provider-synchronized reminder per event.
 - **Right panel** with Notifications, Network (Wi-Fi/Ethernet), and Bluetooth tabs above Display, Power, and Volume. The Network page shows the active wired connection on LAN-only PCs, hides Wi-Fi scanning when no wireless adapter exists, and retains advanced IPv4/IPv6 profiles, Wi-Fi QR sharing, AirPods L/R/Case battery data, and a PipeWire per-application mixer with peak meters and device routing.
 - **Desktop and laptop power controls** with service-detected power modes and shared idle/sleep settings. Battery telemetry, low-battery automation, and separate battery/AC policies appear only with a system battery; charge limits appear only when supported. PCs retain power-mode selection and a configurable startup mode without empty battery cards.
@@ -74,6 +75,7 @@ The visual layer uses shared MD3 typography, shape, spacing, state, motion, and 
 - Wallpaper Engine support routes video projects through the native renderer and scene projects through `linux-wallpaperengine`, with battery-aware FPS and pause-on-lock/fullscreen policies.
 - Installed Scene projects expose a Material 3 properties panel generated from their `project.json`, with project-defined switches, sliders, option lists, text values, and RGB controls. Overrides are saved per wallpaper and applied by restarting only the active `linux-wallpaperengine` renderer.
 - Integrated Wallhaven and Steam Workshop browsers with search, source-specific filters, favorites, installed-library management, cached previews, and desktop/Greetd/both destinations.
+- Drag-to-delete for static and animated wallpapers in the carousel, with permanent deletion and protection for the active wallpaper.
 - Frame-aware video handoff, cached covers, rollback-safe transitions, and synchronized live theme previews while browsing.
 - Matugen-generated Material You colors with animated shell transitions, soft secondary/tertiary accents for monochrome wallpapers, and optional theme propagation through configured system templates.
 - **Sowntee Horizon greeter for Greetd** with a cinematic, asymmetric layout: left-aligned clock and date typography, Sowntee shell session header, Material 3 Login Card, high-contrast readability gradient veil over custom wallpapers, decorative S-orbit curves, top-right status cluster (network and battery pills), and bottom-right power actions.
@@ -91,7 +93,7 @@ The visual layer uses shared MD3 typography, shape, spacing, state, motion, and 
 ### Session and runtime
 
 - A standalone Quickshell Greetd interface on Cage with installed-session discovery, network status, animated battery state, profile sync, and wallpaper-derived colors.
-- Multi-monitor PAM lock screen with password authentication, optional Howdy face recognition, retry after monitor wake, media, and notifications.
+- Multi-monitor PAM lock screen with password authentication, optional Howdy face recognition, camera preview and device-aware V4L2 controls, retry after monitor wake, media, and notifications.
 - Native Polkit dialogs, session and power menus, idle dim/lock/monitor-off policy, Caffeine inhibition, and position-aware volume, brightness, microphone, and media OSDs.
 - On-demand QML surfaces, event-driven Niri/PipeWire/NetworkManager/UPower integration, a native image-cache provider, and persistent Rust Core and Calendar services with direct IPC, bounded jobs, and systemd-managed lifecycles.
 
@@ -113,7 +115,7 @@ The Niri Settings pages target the include-based configuration used by this setu
 
 ## Dependencies
 
-The main stack includes Niri, `quickshell-git`, Qt 6, Rust/Cargo, PipeWire/WirePlumber, NetworkManager, UPower, Matugen, Material Symbols Rounded, `wl-clipboard`, `cliphist`, FFmpeg, ImageMagick, and the capture utilities.
+The main stack includes Niri, `quickshell` (stable package), Qt 6, Rust/Cargo, PipeWire/WirePlumber, NetworkManager, UPower, Matugen, Material Symbols Rounded, `wl-clipboard`, `cliphist`, FFmpeg, ImageMagick, and the capture utilities.
 
 Optional or hardware-dependent features use Tesseract language data, GeoClue, Cava, `gpu-screen-recorder`, DDC/CI, Steam and `linux-wallpaperengine`, Howdy and V4L2, Tailscale, or Cloudflare WARP. Settings → Advanced → Dependencies reports which integrations are currently available.
 

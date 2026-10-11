@@ -137,7 +137,7 @@ QtObject {
         if (!available)
             packages = [];
         else if (error === "")
-            packages = Array.isArray(result.packages) ? result.packages : [];
+            packages = Array.from(result.packages || []);
     }
     function finishUpgradeTracking() {
         var completedResultPath = activeUpgradeResultPath;

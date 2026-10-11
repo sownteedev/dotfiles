@@ -25,6 +25,8 @@ Item {
             return email.trim() !== "" && icloudPassword !== "";
         return clientId.trim() !== "";
     }
+    property string reconnectAccountId: ""
+    property bool reconnecting: false
     property string tenant: "common"
 
     signal closed
@@ -46,9 +48,23 @@ Item {
             errorMessage = String(message || qsTr("Could not connect this account."));
         }
     }
-    function open() {
+    function open(account) {
         resetForm();
+        if (account) {
+            var config = account.config || {};
+            reconnecting = true;
+            reconnectAccountId = String(account.id || "");
+            provider = account.provider === "caldav" ? "icloud" : String(account.provider || "google");
+            clientId = String(config.clientId || "");
+            tenant = String(config.tenant || "common");
+            email = String(account.email || "");
+            displayName = String(account.displayName || "");
+            icloudUsername = String(config.username || account.email || "");
+            icloudServer = String(config.server || "");
+        }
         opened = true;
+        if (account && account.needsReauth === true && provider === "google")
+            Qt.callLater(root.submit);
     }
     function providerColor(value) {
         if (value === "microsoft")
@@ -114,6 +130,8 @@ Item {
         return "https://console.cloud.google.com/auth/clients";
     }
     function resetForm() {
+        reconnecting = false;
+        reconnectAccountId = "";
         provider = "google";
         clientId = "";
         clientSecret = "";
@@ -133,6 +151,8 @@ Item {
             CalendarService.addMicrosoft(clientId, tenant, (success, message) => root.finishSubmission(success, message));
         } else if (provider === "icloud") {
             CalendarService.addIcloud(email, icloudUsername, icloudPassword, icloudServer, displayName, (success, message) => root.finishSubmission(success, message));
+        } else if (root.reconnecting && root.provider === "google") {
+            CalendarService.reconnectGoogle(root.reconnectAccountId, (success, message) => root.finishSubmission(success, message));
         } else {
             CalendarService.addGoogle(clientId, clientSecret, (success, message) => root.finishSubmission(success, message));
         }
@@ -141,7 +161,7 @@ Item {
     enabled: opened
     opacity: opened ? 1 : 0
     visible: opened || opacity > 0
-    z: 90
+    z: 1000
 
     Behavior on opacity {
         Md3NumberAnimation {
@@ -158,10 +178,16 @@ Item {
         target: null
     }
     MouseArea {
+        acceptedButtons: Qt.AllButtons
         anchors.fill: parent
-        enabled: !CalendarService.accountActionBusy
+        hoverEnabled: true
+        preventStealing: true
+        propagateComposedEvents: false
 
-        onClicked: root.close()
+        onClicked: {
+            if (!CalendarService.accountActionBusy)
+                root.close();
+        }
         onWheel: event => event.accepted = true
     }
     ShellShadow {
@@ -254,7 +280,7 @@ Item {
                         font.weight: 600
                         lineHeight: Md3.typeScale.titleLarge.lineHeight
                         lineHeightMode: Text.FixedHeight
-                        text: qsTr("Add calendar account")
+                        text: root.reconnecting ? qsTr("Reconnect calendar account") : qsTr("Add calendar account")
                     }
                     Text {
                         Layout.fillWidth: true
@@ -266,7 +292,7 @@ Item {
                         font.weight: Font.Normal
                         lineHeight: Md3.typeScale.bodyMedium.lineHeight
                         lineHeightMode: Text.FixedHeight
-                        text: qsTr("All connected calendars appear in the same timeline")
+                        text: CalendarService.accountActionBusy ? qsTr("Finish signing in in the browser; this window will close automatically") : root.reconnecting ? qsTr("Sign in with the same account to restore calendar access") : qsTr("All connected calendars appear in the same timeline")
                     }
                 }
                 SettingsActionButton {

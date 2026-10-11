@@ -309,6 +309,7 @@ QtObject {
             "displayMainOutput": Config.displayMainOutput,
             "defaultTerminal": Config.defaultTerminal,
             "defaultVideoPlayer": Config.defaultVideoPlayer,
+            "defaultWorkspaceLayout": Config.defaultWorkspaceLayout,
             "profileImagePath": Config.profileImagePath,
             "greeterDefaultSession": Config.greeterDefaultSession,
             "greeterRememberLastSession": Config.greeterRememberLastSession,

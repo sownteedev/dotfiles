@@ -88,12 +88,13 @@ QtObject {
         persistState();
     }
     function setPinnedOrder(ids) {
-        if (!Array.isArray(ids))
+        if (!Config.isList(ids))
             return;
 
+        var orderedIds = Config.listOrEmpty(ids);
         var next = [];
-        for (var i = 0; i < ids.length; ++i) {
-            var id = entryId(ids[i]);
+        for (var i = 0; i < orderedIds.length; ++i) {
+            var id = entryId(orderedIds[i]);
             if (id !== "" && pinnedIds.indexOf(id) !== -1 && next.indexOf(id) === -1)
                 next.push(id);
         }

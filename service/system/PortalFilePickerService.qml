@@ -113,7 +113,7 @@ QtObject {
         var args = ["python3", "-u", helperPath, "--title", String(selectedOptions.title || qsTr("Select file"))];
         var currentFolder = String(selectedOptions.currentFolder || "").trim();
         var parentWindow = String(selectedOptions.parentWindow || "").trim();
-        var filters = Array.isArray(selectedOptions.filters) ? selectedOptions.filters : [];
+        var filters = Config.listOrEmpty(selectedOptions.filters);
         if (currentFolder !== "")
             args.push("--current", currentFolder);
         if (parentWindow !== "")

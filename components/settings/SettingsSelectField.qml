@@ -7,6 +7,7 @@ ColumnLayout {
     id: root
 
     property color accentColor: Config.md3.primary
+    property bool dimWhenDisabled: true
     property int fieldHeight: 56
     property string label: ""
     property color labelColor: Config.md3.on_surface
@@ -55,7 +56,7 @@ ColumnLayout {
         border.color: fieldMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.56) : Config.alpha(Config.md3.outline, 0.22)
         border.width: 1
         color: Config.md3.surface_container_low
-        opacity: root.enabled ? 1 : Md3.state.disabledContent
+        opacity: root.enabled || !root.dimWhenDisabled ? 1 : Md3.state.disabledContent
         radius: Md3.shape.medium
 
         Behavior on border.color {

@@ -255,7 +255,7 @@ QtObject {
     property CoreRequest screenshotQrRequest: CoreRequest {
         onSucceeded: result => {
             if (String(params.path || "") === root.screenshotPath)
-                root.screenshotQrCodes = result && result.ok && Array.isArray(result.codes) ? result.codes : [];
+                root.screenshotQrCodes = result && result.ok ? Array.from(result.codes || []) : [];
         }
     }
     property Timer screenshotQrWatchdog: Timer {

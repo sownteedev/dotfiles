@@ -10,7 +10,10 @@ import Quickshell.Widgets
 Item {
     id: root
 
+    property bool accountActionsBusy: false
     property var accounts: []
+    readonly property int attentionCount: accounts.filter(account => account.needsReauth === true || String(account.lastError || "") !== "" || account.enabled === false).length
+    property bool backendConnected: true
     property var calendars: []
     property date displayMonth: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
     property string errorMessage: ""
@@ -20,7 +23,9 @@ Item {
     property var syncingAccounts: ({})
     property date weekStart: new Date()
 
+    signal accountReconnectRequested(var account)
     signal accountRemoveRequested(string accountId)
+    signal accountRetryRequested(string accountId)
     signal accountToggled(string accountId, bool visible)
     signal calendarToggled(string calendarId, bool visible)
     signal connectRequested
@@ -196,13 +201,13 @@ Item {
                                 required property int index
                                 readonly property bool isSelected: root.isSameDay(dayCell.value, root.selectedDate)
                                 readonly property bool isToday: root.isSameDay(dayCell.value, new Date())
-                                readonly property var lunarDate: Lunar.getLunarDateForDate(dayCell.value)
+                                readonly property var lunarDate: Config.calendarShowLunar ? Lunar.getLunarDateForDate(dayCell.value) : null
                                 readonly property string lunarLabel: lunarDate ? (lunarDate.day === 1 ? `${lunarDate.day}/${lunarDate.month}` : String(lunarDate.day)) : ""
                                 readonly property bool lunarSpecial: Boolean(lunarDate && (lunarDate.day === 1 || lunarDate.day === 15))
                                 required property var modelData
                                 readonly property date value: modelData.date
 
-                                Accessible.name: qsTr("%1, lunar %2").arg(Qt.formatDate(dayCell.value, Qt.DefaultLocaleLongDate)).arg(dayCell.lunarLabel)
+                                Accessible.name: Config.calendarShowLunar ? qsTr("%1, lunar %2").arg(Qt.formatDate(dayCell.value, Qt.DefaultLocaleLongDate)).arg(dayCell.lunarLabel) : Qt.formatDate(dayCell.value, Qt.DefaultLocaleLongDate)
                                 Accessible.role: Accessible.Button
                                 height: 31
                                 width: monthGrid.cellWidth
@@ -287,16 +292,18 @@ Item {
                         font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
                         font.pixelSize: Md3.typeScale.bodySmall.size
                         font.weight: Md3.typeScale.bodySmall.weight
-                        text: root.loading ? qsTr("Loading accounts…") : root.accounts.length === 1 ? qsTr("1 connected account") : qsTr("%1 connected accounts").arg(root.accounts.length)
+                        text: !root.backendConnected ? qsTr("Calendar service disconnected") : root.loading ? qsTr("Loading accounts…") : root.attentionCount > 0 ? qsTr("%1 accounts · %2 need attention").arg(root.accounts.length).arg(root.attentionCount) : root.accounts.length === 1 ? qsTr("1 account") : qsTr("%1 accounts").arg(root.accounts.length)
                     }
                 }
                 SettingsActionButton {
-                    Layout.preferredHeight: 38
-                    Layout.preferredWidth: 38
+                    Layout.preferredHeight: 36
+                    Layout.preferredWidth: 36
+                    color: "transparent"
                     enabled: !root.loading
                     iconName: "contact-new-symbolic"
                     iconOnly: true
-                    text: qsTr("Add calendar account")
+                    iconSize: 18
+                    tooltipText: qsTr("Add calendar account")
 
                     onClicked: root.connectRequested()
                 }
@@ -309,10 +316,14 @@ Item {
 
                     Layout.fillWidth: true
                     account: modelData
+                    actionsBusy: root.accountActionsBusy
+                    backendConnected: root.backendConnected
                     calendars: root.calendarsForAccount(modelData.id)
                     loading: Boolean(root.syncingAccounts && root.syncingAccounts[String(modelData.id || "")])
 
+                    onAccountReconnectRequested: account => root.accountReconnectRequested(account)
                     onAccountRemoveRequested: accountId => root.accountRemoveRequested(accountId)
+                    onAccountRetryRequested: accountId => root.accountRetryRequested(accountId)
                     onAccountVisibilityRequested: (accountId, visible) => root.accountToggled(accountId, visible)
                     onCalendarVisibilityRequested: (calendarId, visible) => root.calendarToggled(calendarId, visible)
                 }
@@ -320,9 +331,11 @@ Item {
             Rectangle {
                 Accessible.ignored: true
                 Layout.fillWidth: true
+                border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.38 : 0.22)
+                border.width: 1
                 color: Config.md3.surface_container_low
                 implicitHeight: 88
-                radius: 18
+                radius: Md3.shape.large
                 visible: root.loading && root.accounts.length === 0
 
                 RowLayout {
@@ -356,36 +369,96 @@ Item {
                 }
             }
             Rectangle {
-                Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.32 : 0.2)
-                border.width: 1
-                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.84 : 0.44)
-                implicitHeight: 52
-                radius: 16
+                id: localTasksCard
 
+                Accessible.checked: Config.calendarShowLocalTasks
+                Accessible.name: qsTr("Local tasks")
+                Accessible.role: Accessible.CheckBox
+                Layout.fillWidth: true
+                activeFocusOnTab: true
+                border.color: localTasksCard.activeFocus ? Config.md3.primary : Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.38 : 0.22)
+                border.width: localTasksCard.activeFocus ? 2 : 1
+                color: Config.md3.surface_container_low
+                implicitHeight: 56
+                radius: Md3.shape.large
+
+                Behavior on border.color {
+                    Md3ColorAnimation {
+                        role: "state"
+                    }
+                }
+                Behavior on color {
+                    Md3ColorAnimation {
+                        role: "state"
+                    }
+                }
+
+                Keys.onReturnPressed: event => {
+                    Config.calendarShowLocalTasks = !Config.calendarShowLocalTasks;
+                    event.accepted = true;
+                }
+                Keys.onSpacePressed: event => {
+                    Config.calendarShowLocalTasks = !Config.calendarShowLocalTasks;
+                    event.accepted = true;
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: Config.alpha(Config.md3.on_surface, localTasksMouse.pressed ? Md3.state.pressed : localTasksMouse.containsMouse ? Md3.state.hover : 0)
+                    radius: parent.radius
+
+                    Behavior on color {
+                        Md3ColorAnimation {
+                            role: "state"
+                        }
+                    }
+                }
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 14
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
                     spacing: 12
 
-                    Md3Icon {
-                        Layout.preferredHeight: 20
-                        Layout.preferredWidth: 20
-                        color: Config.md3.primary
-                        filled: true
-                        name: "checkbox-checked-symbolic"
-                        size: 20
+                    Rectangle {
+                        Layout.preferredHeight: 36
+                        Layout.preferredWidth: 36
+                        border.color: Config.alpha(Config.md3.primary, 0.22)
+                        border.width: 1
+                        color: Config.alpha(Config.md3.primary, 0.12)
+                        radius: Md3.shape.medium
+
+                        Md3Icon {
+                            anchors.centerIn: parent
+                            color: Config.md3.primary
+                            filled: true
+                            name: "checkbox-checked-symbolic"
+                            size: 20
+                        }
                     }
-                    Text {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        color: Config.md3.on_surface
-                        elide: Text.ElideRight
-                        font.family: Config.fontName
-                        font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
-                        font.pixelSize: Md3.typeScale.bodyMedium.size
-                        font.weight: 600
-                        text: qsTr("Local tasks")
+                        Layout.minimumWidth: 0
+                        spacing: 1
+
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.md3.on_surface
+                            elide: Text.ElideRight
+                            font.family: Config.fontName
+                            font.letterSpacing: Md3.typeScale.bodyMedium.letterSpacing
+                            font.pixelSize: Md3.typeScale.bodyMedium.size
+                            font.weight: 600
+                            text: qsTr("Local tasks")
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            color: Config.md3.on_surface_variant
+                            elide: Text.ElideRight
+                            font.family: Config.fontName
+                            font.letterSpacing: Md3.typeScale.bodySmall.letterSpacing
+                            font.pixelSize: 12
+                            text: qsTr("Stored on this device")
+                        }
                     }
                     ToggleSwitch {
                         checked: Config.calendarShowLocalTasks
@@ -393,6 +466,8 @@ Item {
                     }
                 }
                 MouseArea {
+                    id: localTasksMouse
+
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
@@ -402,11 +477,11 @@ Item {
             }
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.34 : 0.22)
+                border.color: Config.alpha(Config.md3.outline_variant, Config.lightTheme ? 0.38 : 0.22)
                 border.width: 1
-                color: Config.alpha(Config.md3.surface_container_low, Config.lightTheme ? 0.86 : 0.46)
+                color: Config.md3.surface_container_low
                 implicitHeight: emptyContent.implicitHeight + 28
-                radius: 20
+                radius: Md3.shape.large
                 visible: root.accounts.length === 0 && !root.loading && root.errorMessage === ""
 
                 ColumnLayout {

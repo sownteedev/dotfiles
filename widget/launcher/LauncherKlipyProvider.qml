@@ -60,7 +60,7 @@ QtObject {
             return;
         }
         errorCode = "";
-        results = Array.isArray(response.items) ? response.items : [];
+        results = Config.listOrEmpty(response.items);
     }
     function runSearch() {
         if (apiKey.trim() === "") {

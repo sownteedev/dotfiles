@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
@@ -8,13 +7,14 @@ import "../../"
 import "../../service"
 import "../../components"
 
-RowLayout {
+Row {
     id: root
 
     readonly property var activeWindow: WorkspaceService.activeWindowByOutput[root.outputName] || null
     readonly property string activeWindowId: activeWindow ? String(activeWindow.id || "") : WorkspaceService.activeWindowId
     property bool compact: false
     property int desktopEntriesRevision: 0
+    readonly property int focusAnimationDuration: Config.animationDuration(250)
     readonly property int maxWorkspaceIdx: {
         var max = 0;
         var targetOutput = outputName || WorkspaceService.focusedOutputName;
@@ -25,11 +25,17 @@ RowLayout {
         return max;
     }
     property string outputName: ""
+    property string titleWindowId: ""
+    readonly property int windowCloseDuration: Config.animationDuration(500)
+    readonly property int windowCloseFadeDuration: windowCloseDuration
     readonly property string windowDragMimeType: "application/x-sownteeshell-window"
     readonly property int windowEnterDuration: Config.animationDuration(220)
     readonly property int windowExitDuration: Config.animationDuration(320)
+    readonly property int windowReflowDuration: windowCloseDuration
     readonly property real workspaceGap: compact ? 10 : 18
     readonly property var workspaces: WorkspaceService.workspaces
+
+    signal holdTitleWidths
 
     function acceptWindowDrag(drag) {
         if (!windowDragData(drag)) {
@@ -78,6 +84,10 @@ RowLayout {
             }
         }
     }
+    function syncTitleWindow() {
+        if (!closeTitleDelay.running)
+            titleWindowId = activeWindowId;
+    }
     function syncWorkspaceModel() {
         var allWorkspaces = root.workspaces || [];
         var source = [];
@@ -99,12 +109,15 @@ RowLayout {
                     workspaceModel.setProperty(removeIndex, "workspaceData", closingWorkspace);
                     workspaceModel.setProperty(removeIndex, "pendingRemoval", true);
                 } else if (!removedEntry.pendingRemoval) {
-                    workspaceModel.remove(removeIndex);
+                    workspaceModel.setProperty(removeIndex, "pendingRemoval", true);
                 }
             }
         }
 
+        var insertionIndex = 0;
         for (var targetIndex = 0; targetIndex < source.length; targetIndex++) {
+            while (insertionIndex < workspaceModel.count && workspaceModel.get(insertionIndex).pendingRemoval && !sourceIds[String(workspaceModel.get(insertionIndex).workspaceId)])
+                insertionIndex++;
             var targetWorkspace = source[targetIndex];
             var currentIndex = -1;
             for (var modelIndex = 0; modelIndex < workspaceModel.count; modelIndex++) {
@@ -115,20 +128,21 @@ RowLayout {
             }
 
             if (currentIndex === -1) {
-                workspaceModel.insert(targetIndex, {
+                workspaceModel.insert(insertionIndex, {
                     "pendingRemoval": false,
                     "workspaceId": targetWorkspace.id,
                     "workspaceData": targetWorkspace
                 });
             } else {
-                if (currentIndex !== targetIndex)
-                    workspaceModel.move(currentIndex, targetIndex, 1);
-                var currentEntry = workspaceModel.get(targetIndex);
+                if (currentIndex !== insertionIndex)
+                    workspaceModel.move(currentIndex, insertionIndex, 1);
+                var currentEntry = workspaceModel.get(insertionIndex);
                 if (!workspaceDataMatches(currentEntry.workspaceData, targetWorkspace))
-                    workspaceModel.setProperty(targetIndex, "workspaceData", targetWorkspace);
+                    workspaceModel.setProperty(insertionIndex, "workspaceData", targetWorkspace);
                 if (currentEntry.pendingRemoval)
-                    workspaceModel.setProperty(targetIndex, "pendingRemoval", false);
+                    workspaceModel.setProperty(insertionIndex, "pendingRemoval", false);
             }
+            insertionIndex++;
         }
     }
     function windowDragData(drop) {
@@ -157,6 +171,16 @@ RowLayout {
             "workspaceIdx": Number(source.workspaceIdx),
             "workspaceOutput": String(source.workspaceOutput || "")
         };
+    }
+    function windowStillOpen(windowId) {
+        for (var workspaceIndex = 0; workspaceIndex < workspaces.length; workspaceIndex++) {
+            var windows = workspaces[workspaceIndex].windows || [];
+            for (var windowIndex = 0; windowIndex < windows.length; windowIndex++) {
+                if (String(windows[windowIndex].id) === String(windowId))
+                    return true;
+            }
+        }
+        return false;
     }
     function workspaceDataMatches(previous, current) {
         if (!previous || !current)
@@ -194,9 +218,31 @@ RowLayout {
 
     spacing: 0
 
-    Component.onCompleted: syncWorkspaceModel()
+    Component.onCompleted: {
+        titleWindowId = activeWindowId;
+        syncWorkspaceModel();
+    }
+    onActiveWindowIdChanged: Qt.callLater(root.syncTitleWindow)
     onOutputNameChanged: syncWorkspaceModel()
+    onTitleWindowIdChanged: focusTransitionTimer.restart()
 
+    Timer {
+        id: closeLayoutTimer
+
+        interval: root.windowCloseDuration + 32
+    }
+    Timer {
+        id: closeTitleDelay
+
+        interval: root.windowCloseDuration
+
+        onTriggered: root.syncTitleWindow()
+    }
+    Timer {
+        id: focusTransitionTimer
+
+        interval: root.focusAnimationDuration + 32
+    }
     ListModel {
         id: workspaceModel
 
@@ -222,6 +268,9 @@ RowLayout {
         delegate: Rectangle {
             id: wsButton
 
+            property bool closingInPlace: false
+            property real closingOpacity: 1
+            property real closingProgress: 1
             property real closingWidth: 0
             readonly property var displayWindows: root.workspaceDisplayWindows(workspaceData.windows)
             property bool expanded: false
@@ -239,6 +288,13 @@ RowLayout {
             readonly property int workspaceIdx: workspaceData.idx
             readonly property string workspaceOutput: workspaceData.output
 
+            function finishCollapse() {
+                if (!hasWindows) {
+                    inLayout = false;
+                    if (pendingRemoval)
+                        root.removeWorkspaceModelEntry(workspaceId);
+                }
+            }
             function finishWindowEntry(windowId) {
                 for (var index = 0; index < windowModel.count; index++) {
                     var entry = windowModel.get(index);
@@ -307,18 +363,23 @@ RowLayout {
             border.width: 0
             color: "transparent"
             implicitHeight: 38
-            implicitWidth: (hasWindows ? wsLayout.implicitWidth + 30 + root.workspaceGap : closingWidth) * expansionProgress
-            opacity: expanded ? 1 : 0
-            scale: expanded ? 1 : 0.82
+            implicitWidth: (hasWindows ? wsLayout.implicitWidth + 30 + root.workspaceGap : closingWidth) * (closingInPlace ? closingProgress : expansionProgress)
+            opacity: closingInPlace ? closingOpacity : (expanded ? 1 : 0)
+            scale: closingInPlace ? 1 : (expanded ? 1 : 0.82)
             visible: inLayout
+            y: (root.height - height) / 2
 
             Behavior on expansionProgress {
+                enabled: !wsButton.closingInPlace
+
                 NumberAnimation {
                     duration: expanded ? 260 : root.windowExitDuration
                     easing.type: Easing.OutCubic
                 }
             }
             Behavior on opacity {
+                enabled: !wsButton.closingInPlace
+
                 NumberAnimation {
                     duration: expanded ? 180 : root.windowExitDuration
                 }
@@ -344,6 +405,12 @@ RowLayout {
             onHasWindowsChanged: {
                 if (hasWindows) {
                     collapseTimer.stop();
+                    collapseDelay.stop();
+                    workspaceCloseFade.stop();
+                    workspaceCloseReflow.stop();
+                    closingOpacity = 1;
+                    closingProgress = 1;
+                    closingInPlace = false;
                     inLayout = true;
                     Qt.callLater(function () {
                         if (wsButton.hasWindows)
@@ -351,24 +418,65 @@ RowLayout {
                     });
                 } else {
                     closingWidth = width / Math.max(0.001, expansionProgress);
-                    expanded = false;
-                    collapseTimer.restart();
+                    closingInPlace = false;
+                    for (var index = 0; index < windowModel.count; index++) {
+                        if (!root.windowStillOpen(windowModel.get(index).windowData.id)) {
+                            closingInPlace = true;
+                            break;
+                        }
+                    }
+                    if (closingInPlace) {
+                        workspaceCloseFade.restart();
+                        workspaceCloseReflow.restart();
+                    } else {
+                        expanded = false;
+                        collapseTimer.restart();
+                    }
                 }
+            }
+            onPendingRemovalChanged: {
+                if (pendingRemoval && !hasWindows && !inLayout)
+                    Qt.callLater(root.removeWorkspaceModelEntry, workspaceId);
             }
             onWorkspaceDataChanged: syncWindowModel()
 
+            NumberAnimation {
+                id: workspaceCloseReflow
+
+                duration: root.windowReflowDuration
+                easing.type: Easing.InOutCubic
+                property: "closingProgress"
+                target: wsButton
+                to: 0
+
+                onFinished: Qt.callLater(wsButton.finishCollapse)
+            }
+            NumberAnimation {
+                id: workspaceCloseFade
+
+                duration: root.windowCloseFadeDuration
+                easing.type: Easing.OutCubic
+                property: "closingOpacity"
+                target: wsButton
+                to: 0
+            }
+            Timer {
+                id: collapseDelay
+
+                interval: root.windowCloseFadeDuration
+
+                onTriggered: {
+                    if (!wsButton.hasWindows) {
+                        wsButton.expanded = false;
+                    }
+                }
+            }
             Timer {
                 id: collapseTimer
 
                 interval: root.windowExitDuration + 20
 
-                onTriggered: {
-                    if (!wsButton.hasWindows) {
-                        wsButton.inLayout = false;
-                        if (wsButton.pendingRemoval)
-                            root.removeWorkspaceModelEntry(wsButton.workspaceId);
-                    }
-                }
+                onTriggered: wsButton.finishCollapse()
             }
             Rectangle {
                 id: workspaceSurface
@@ -428,7 +536,7 @@ RowLayout {
                     WorkspaceService.focusWorkspace(wsButton.workspaceData);
                 }
             }
-            RowLayout {
+            Row {
                 id: wsLayout
 
                 anchors.centerIn: workspaceSurface
@@ -438,13 +546,17 @@ RowLayout {
                 Text {
                     color: Config.md3.on_surface
                     font.family: Config.fontName
+                    font.features: {
+                        "tnum": 1
+                    }
                     font.pixelSize: root.compact ? 11 : 14
                     font.weight: Font.Black
                     text: String(wsButton.workspaceIdx)
+                    y: (wsLayout.height - height) / 2
                 }
 
                 // Window list inside workspace (flat, no inner pills)
-                RowLayout {
+                Row {
                     spacing: 0
                     visible: windowModel.count > 0
 
@@ -455,9 +567,13 @@ RowLayout {
                             id: winIconItem
 
                             property real closingIconWidth: 0
+                            property bool closingInPlace: false
+                            property real closingOpacity: 1
+                            property real closingTitleOpacity: 0
+                            property real closingTitleWidth: 0
                             property real enterProgress: 1
                             property real exitProgress: 1
-                            readonly property real iconGap: index === 0 ? (root.compact ? 8 : 12) : (root.compact ? 6 : 10)
+                            property real iconGap: index === 0 || (closeLayoutTimer.running && !closeTitleDelay.running && wsButton.displayWindows.length > 0 && String(wsButton.displayWindows[0].id) === String(modelData.id)) ? (root.compact ? 8 : 12) : (root.compact ? 6 : 10)
                             required property int index
                             readonly property var modelData: windowData
                             readonly property bool shellWindow: shellWindowKind !== ""
@@ -469,18 +585,28 @@ RowLayout {
                             enabled: !windowPendingRemoval
                             implicitHeight: 22
                             implicitWidth: (windowPendingRemoval ? closingIconWidth : winIconLayout.implicitWidth + iconGap) * exitProgress * enterProgress
-                            opacity: exitProgress * enterProgress
-                            scale: 0.82 + 0.18 * (exitProgress * enterProgress)
+                            opacity: (closingInPlace ? closingOpacity : exitProgress) * enterProgress
+                            scale: closingInPlace ? (0.92 + 0.08 * closingOpacity) * (0.82 + 0.18 * enterProgress) : 0.82 + 0.18 * (exitProgress * enterProgress)
                             z: winIconMouseArea.drag.active ? 9999 : 1
 
                             Behavior on exitProgress {
+                                enabled: !winIconItem.closingInPlace
+
                                 NumberAnimation {
                                     duration: root.windowExitDuration
                                     easing.type: Easing.InOutCubic
                                 }
                             }
+                            Behavior on iconGap {
+                                enabled: closeLayoutTimer.running
+
+                                NumberAnimation {
+                                    duration: root.windowReflowDuration
+                                    easing.type: Easing.InOutCubic
+                                }
+                            }
                             Behavior on x {
-                                enabled: wsButton.windowModelReady && !winIconMouseArea.drag.active
+                                enabled: wsButton.windowModelReady && !winIconMouseArea.drag.active && !focusTransitionTimer.running && !closeLayoutTimer.running
 
                                 NumberAnimation {
                                     duration: root.windowEnterDuration
@@ -495,11 +621,53 @@ RowLayout {
                                 }
                             }
                             onWindowPendingRemovalChanged: {
-                                if (windowPendingRemoval)
+                                if (windowPendingRemoval) {
                                     closingIconWidth = winIconLayout.implicitWidth + iconGap;
-                                exitProgress = windowPendingRemoval ? 0 : 1;
+                                    closingTitleWidth = titleReveal.width;
+                                    closingTitleOpacity = titleReveal.opacity;
+                                    closingInPlace = !root.windowStillOpen(modelData.id);
+                                    if (closingInPlace) {
+                                        root.holdTitleWidths();
+                                        closeTitleDelay.restart();
+                                        closeLayoutTimer.restart();
+                                        closeFadeAnimation.restart();
+                                        closeSlotAnimation.restart();
+                                    } else
+                                        exitProgress = 0;
+                                } else {
+                                    closeFadeAnimation.stop();
+                                    closeSlotAnimation.stop();
+                                    closingInPlace = false;
+                                    closingOpacity = 1;
+                                    exitProgress = 1;
+                                }
                             }
 
+                            NumberAnimation {
+                                id: closeSlotAnimation
+
+                                duration: root.windowReflowDuration
+                                easing.type: Easing.InOutCubic
+                                property: "exitProgress"
+                                target: winIconItem
+                                to: 0
+
+                                onFinished: Qt.callLater(function () {
+                                    if (winIconItem.windowPendingRemoval)
+                                        wsButton.removeWindowModelEntry(String(winIconItem.modelData.id || ""));
+                                })
+                            }
+                            NumberAnimation {
+                                id: closeFadeAnimation
+
+                                duration: root.windowCloseFadeDuration
+                                easing.type: Easing.OutCubic
+                                property: "closingOpacity"
+                                target: winIconItem
+                                to: 0
+
+                                onFinished: {}
+                            }
                             NumberAnimation {
                                 id: enterAnimation
 
@@ -514,7 +682,7 @@ RowLayout {
                             Timer {
                                 interval: root.windowExitDuration + 10
                                 repeat: false
-                                running: winIconItem.windowPendingRemoval
+                                running: winIconItem.windowPendingRemoval && !winIconItem.closingInPlace
 
                                 onTriggered: wsButton.removeWindowModelEntry(String(modelData.id || ""))
                             }
@@ -728,14 +896,15 @@ RowLayout {
                                     }
                                 }
                             }
-                            RowLayout {
+                            Item {
                                 id: winIconLayout
 
                                 anchors.verticalCenter: (winIconMouseArea.drag.active || dragProxy.returningToSource) ? undefined : parent.verticalCenter
+                                implicitHeight: windowIcon.height
+                                implicitWidth: windowIcon.width + titleReveal.width
                                 opacity: dragProxy.returningToSource ? dragProxy.returnOpacity : (winIconMouseArea.drag.active ? 0.75 : 1.0)
                                 rotation: winIconMouseArea.drag.active ? 6 : 0
                                 scale: dragProxy.returningToSource ? dragProxy.returnScale : (winIconMouseArea.drag.active ? 1.25 : (iconDropArea.containsDrag ? 0.85 : 1.0))
-                                spacing: 0
                                 visible: !dragProxy.sourceHidden
                                 x: dragProxy.x + winIconItem.iconGap
                                 y: (winIconMouseArea.drag.active || dragProxy.returningToSource) ? dragProxy.y : (winIconMouseArea.containsMouse ? -5 : 0)
@@ -773,14 +942,14 @@ RowLayout {
                                 SownteeAppIcon {
                                     id: windowIcon
 
-                                    Layout.preferredHeight: root.compact ? 22 : 25
-                                    Layout.preferredWidth: root.compact ? 22 : 25
+                                    height: root.compact ? 22 : 25
                                     kind: winIconItem.shellWindowKind
                                     scale: (winIconMouseArea.containsMouse && !winIconMouseArea.drag.active) ? 1.15 : 1.0
                                     source: {
                                         root.desktopEntriesRevision;
                                         return root.getWindowIcon(modelData);
                                     }
+                                    width: root.compact ? 22 : 25
 
                                     Behavior on scale {
                                         NumberAnimation {
@@ -790,23 +959,39 @@ RowLayout {
                                     }
                                 }
                                 Item {
-                                    Layout.fillHeight: true
-                                    Layout.preferredWidth: !winIconMouseArea.drag.active && String(modelData.id) === root.activeWindowId ? Math.min(titleText.implicitWidth, root.compact ? 86 : 150) + 7 : 0
-                                    clip: true
-                                    opacity: !winIconMouseArea.drag.active && String(modelData.id) === root.activeWindowId ? 1 : 0
+                                    id: titleReveal
 
-                                    Behavior on Layout.preferredWidth {
-                                        NumberAnimation {
-                                            duration: 250
-                                            easing.type: Easing.OutCubic
-                                        }
-                                    }
+                                    property real heldWidth: 0
+
+                                    clip: true
+                                    height: windowIcon.height
+                                    opacity: winIconItem.closingInPlace ? winIconItem.closingTitleOpacity : (!winIconMouseArea.drag.active && String(modelData.id) === root.titleWindowId ? 1 : 0)
+                                    width: winIconItem.closingInPlace ? winIconItem.closingTitleWidth : (closeTitleDelay.running ? heldWidth : (!winIconMouseArea.drag.active && String(modelData.id) === root.titleWindowId ? Math.min(titleText.implicitWidth, root.compact ? 86 : 150) + 7 : 0))
+                                    x: windowIcon.width
+
                                     Behavior on opacity {
+                                        enabled: !winIconItem.closingInPlace
+
                                         NumberAnimation {
                                             duration: 150
                                         }
                                     }
+                                    Behavior on width {
+                                        enabled: !winIconItem.closingInPlace && !closeTitleDelay.running
 
+                                        NumberAnimation {
+                                            duration: closeLayoutTimer.running ? root.windowReflowDuration : root.focusAnimationDuration
+                                            easing.type: closeLayoutTimer.running ? Easing.InOutCubic : Easing.OutCubic
+                                        }
+                                    }
+
+                                    Connections {
+                                        function onHoldTitleWidths() {
+                                            titleReveal.heldWidth = titleReveal.width;
+                                        }
+
+                                        target: root
+                                    }
                                     Text {
                                         id: titleText
 
@@ -839,6 +1024,7 @@ RowLayout {
         implicitWidth: newWsRect.implicitWidth
         opacity: WorkspaceService.windowDragActive ? 1.0 : 0.0
         visible: WorkspaceService.windowDragActive
+        y: (root.height - height) / 2
 
         Behavior on opacity {
             NumberAnimation {

@@ -346,6 +346,14 @@ QtObject {
                     previousWindowById[String(cachedWindow.id || "")] = cachedWindow;
                 }
             }
+            var previousActiveWindows = root.activeWindowsByOutput || {};
+            for (var previousOutput in previousActiveWindows) {
+                var outputWindows = previousActiveWindows[previousOutput] || [];
+                for (var outputWindowIndex = 0; outputWindowIndex < outputWindows.length; ++outputWindowIndex) {
+                    var latestWindow = outputWindows[outputWindowIndex];
+                    previousWindowById[String(latestWindow.id || "")] = latestWindow;
+                }
+            }
             var newWorkspaceIdByWindow = {};
             var windowsByWorkspace = {};
             for (var k = 0; k < winList.length; k++) {

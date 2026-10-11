@@ -7,6 +7,9 @@ Rectangle {
     id: root
 
     property color accentColor: Config.md3.primary
+    property bool applyOnRelease: false
+    readonly property real currentValue: slider.value
+    property bool dimWhenDisabled: true
     property real from: 0
     property string label: ""
     property string note: ""
@@ -23,10 +26,12 @@ Rectangle {
     Layout.fillWidth: true
     color: "transparent"
     implicitHeight: Math.max(80, labelBlock.implicitHeight + 31)
-    opacity: enabled ? 1 : Md3.state.disabledContent
+    opacity: enabled || !dimWhenDisabled ? 1 : Md3.state.disabledContent
     radius: Md3.shape.medium
 
     Behavior on opacity {
+        enabled: root.dimWhenDisabled
+
         OpacityAnimator {
             duration: Config.animationDuration(Md3.motion.short2)
         }
@@ -71,6 +76,8 @@ Rectangle {
         Controls.Slider {
             id: slider
 
+            property bool pendingEdit: false
+
             Accessible.name: root.label
             Layout.fillWidth: true
             Layout.preferredHeight: 24
@@ -113,7 +120,20 @@ Rectangle {
                 }
             }
 
-            onMoved: root.edited(value)
+            onMoved: {
+                if (root.applyOnRelease && pressed) {
+                    pendingEdit = true;
+                    return;
+                }
+                pendingEdit = false;
+                root.edited(value);
+            }
+            onPressedChanged: {
+                if (!pressed && pendingEdit) {
+                    pendingEdit = false;
+                    root.edited(value);
+                }
+            }
         }
     }
 }

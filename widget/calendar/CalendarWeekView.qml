@@ -118,14 +118,15 @@ Item {
             if (!eventData || !eventData.allDay || isCalendarHidden(eventData.calendarId))
                 continue;
 
+            var eventStart = parseDateOnly(eventData.start);
+            var eventEnd = parseDateOnly(eventData.end);
+            if (isNaN(eventStart.getTime()))
+                continue;
+            if (isNaN(eventEnd.getTime()) || eventEnd <= eventStart)
+                eventEnd = addDays(eventStart, 1);
+
             var type = CalendarService.eventRecurrenceType(eventData);
             if (type === "none") {
-                var eventStart = parseDateOnly(eventData.start);
-                var eventEnd = parseDateOnly(eventData.end);
-                if (isNaN(eventStart.getTime()))
-                    continue;
-                if (isNaN(eventEnd.getTime()) || eventEnd <= eventStart)
-                    eventEnd = addDays(eventStart, 1);
                 if (eventStart >= rangeEnd || eventEnd <= rangeStart)
                     continue;
 
@@ -263,8 +264,10 @@ Item {
         if (!eventData || eventData.isTask === true)
             return false;
         var recurrence = eventData.recurrence;
-        if (Array.isArray(recurrence))
-            return recurrence.length > 0 && String(recurrence[0] || "").indexOf("FREQ=") >= 0;
+        if (Config.isList(recurrence)) {
+            var recurrenceRules = Config.listOrEmpty(recurrence);
+            return recurrenceRules.length > 0 && String(recurrenceRules[0] || "").indexOf("FREQ=") >= 0;
+        }
         if (recurrence && typeof recurrence === "object")
             return Object.keys(recurrence).length > 0;
         return String(recurrence || "").indexOf("FREQ=") >= 0;
@@ -360,9 +363,10 @@ Item {
         var rule = "";
         var graphObj = null;
 
-        if (Array.isArray(recurrence))
-            rule = String(recurrence[0] || "");
-        else if (recurrence && typeof recurrence === "object") {
+        if (Config.isList(recurrence)) {
+            var recurrenceRules = Config.listOrEmpty(recurrence);
+            rule = String(recurrenceRules[0] || "");
+        } else if (recurrence && typeof recurrence === "object") {
             if (recurrence.pattern) {
                 graphObj = recurrence;
             } else {
@@ -402,8 +406,8 @@ Item {
             if (graphObj.pattern.interval)
                 interval = Math.max(1, Number(graphObj.pattern.interval));
 
-            if (Array.isArray(graphObj.pattern.daysOfWeek)) {
-                byday = graphObj.pattern.daysOfWeek.map(function (d) {
+            if (Config.isList(graphObj.pattern.daysOfWeek)) {
+                byday = Config.listOrEmpty(graphObj.pattern.daysOfWeek).map(function (d) {
                     return String(d || "").slice(0, 2).toUpperCase();
                 });
             }
@@ -614,12 +618,12 @@ Item {
                         id: dayHeader
 
                         required property int index
-                        readonly property var lunarDate: Lunar.getLunarDateForDate(dayHeader.value)
+                        readonly property var lunarDate: Config.calendarShowLunar ? Lunar.getLunarDateForDate(dayHeader.value) : null
                         readonly property string lunarLabel: lunarDate ? (lunarDate.day === 1 ? `${lunarDate.day}/${lunarDate.month}` : String(lunarDate.day)) : ""
                         readonly property bool lunarSpecial: Boolean(lunarDate && (lunarDate.day === 1 || lunarDate.day === 15))
                         readonly property date value: root.addDays(root.weekStart, index)
 
-                        Accessible.name: qsTr("%1, lunar %2").arg(Qt.formatDate(dayHeader.value, Qt.DefaultLocaleLongDate)).arg(dayHeader.lunarLabel)
+                        Accessible.name: Config.calendarShowLunar ? qsTr("%1, lunar %2").arg(Qt.formatDate(dayHeader.value, Qt.DefaultLocaleLongDate)).arg(dayHeader.lunarLabel) : Qt.formatDate(dayHeader.value, Qt.DefaultLocaleLongDate)
                         Accessible.role: Accessible.Button
                         height: dayHeaderRow.height
                         width: Math.max(0, (dayHeaderRow.width - root.timeGutterWidth) / 7)
@@ -663,6 +667,7 @@ Item {
                                 font.pixelSize: Math.max(10, Md3.typeScale.labelSmall.size - 1)
                                 font.weight: dayHeader.lunarSpecial ? Font.DemiBold : Md3.typeScale.labelSmall.weight
                                 text: dayHeader.lunarLabel
+                                visible: Config.calendarShowLunar
                             }
                         }
                         MouseArea {

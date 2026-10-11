@@ -26,6 +26,7 @@ FloatingWindow {
     property int pendingCreateStartMinutes: 10 * 60
     property var pendingEditorAnchor: null
     property var pendingEventMove: null
+    property bool searchOpen: false
     property date selectedDate: new Date()
     property bool serviceAcquired: false
     readonly property real sidebarContentWidth: width < 1160 ? 244 : 280
@@ -118,12 +119,14 @@ FloatingWindow {
         return formatWeekRange();
     }
     function formatSyncStatus() {
+        if (CalendarService.eventActionBusy)
+            return qsTr("Saving changes…");
         if (CalendarService.isLoading)
             return qsTr("Syncing all…");
-        var updated = CalendarService.lastEventsUpdated;
+        var updated = CalendarService.lastSuccessfulSyncAt;
         if (!updated || isNaN(updated.getTime()))
             return CalendarService.authenticated ? qsTr("Sync all") : qsTr("No accounts");
-        return qsTr("Synced %1").arg(Qt.formatTime(updated, "HH:mm"));
+        return qsTr("Last sync %1").arg(Qt.formatDateTime(updated, "d MMM HH:mm"));
     }
     function formatWeekRange() {
         var end = addDays(weekStart, 6);
@@ -187,6 +190,7 @@ FloatingWindow {
         visible = true;
         active = true;
         acquireCalendarService();
+        CalendarService.checkAccountConnections();
         blurAcquireTimer.restart();
         panel.forceActiveFocus();
         Qt.callLater(root.scrollCurrentWeekToWorkingHours);
@@ -280,6 +284,16 @@ FloatingWindow {
     function selectDate(value) {
         selectedDate = new Date(value.getFullYear(), value.getMonth(), value.getDate());
         weekStart = beginningOfWeek(selectedDate);
+    }
+    function selectSearchResult(eventData) {
+        if (!eventData)
+            return;
+        var start = new Date(eventData.start);
+        if (isNaN(start.getTime()))
+            return;
+        selectedDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        weekStart = beginningOfWeek(selectedDate);
+        searchOpen = false;
     }
     function shiftPeriod(amount) {
         if (viewMode === "month") {
@@ -646,8 +660,8 @@ FloatingWindow {
                         enabled: CalendarService.authenticated
                         iconName: "emblem-synchronizing-symbolic"
                         iconOnly: true
-                        primary: CalendarService.isLoading
-                        spinning: CalendarService.isLoading
+                        primary: CalendarService.syncBusy
+                        spinning: CalendarService.syncBusy
                         text: qsTr("Sync all accounts")
                         tooltipText: root.formatSyncStatus()
 
@@ -655,6 +669,31 @@ FloatingWindow {
                             if (!CalendarService.isLoading)
                                 CalendarService.syncNow("");
                         }
+                    }
+                    SettingsActionButton {
+                        Accessible.checkable: true
+                        Accessible.checked: Config.calendarShowLunar
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: root.compactHeader ? 40 : implicitWidth
+                        activeFocusOnTab: true
+                        iconName: "weather-clear-night-symbolic"
+                        iconOnly: root.compactHeader
+                        primary: Config.calendarShowLunar
+                        text: qsTr("Lunar dates")
+
+                        onClicked: Config.calendarShowLunar = !Config.calendarShowLunar
+                    }
+                    SettingsActionButton {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: 40
+                        iconName: "system-search-symbolic"
+                        iconOnly: true
+                        primary: root.searchOpen
+                        text: qsTr("Search events and tasks")
+
+                        onClicked: root.searchOpen = !root.searchOpen
                     }
                     SettingsActionButton {
                         Layout.alignment: Qt.AlignVCenter
@@ -749,10 +788,12 @@ FloatingWindow {
                     visible: root.sidebarExpanded || root.sidebarReveal > 0
 
                     CalendarSidebar {
+                        accountActionsBusy: CalendarService.syncBusy || CalendarService.accountActionBusy
                         accounts: CalendarService.accounts
                         anchors.bottom: parent.bottom
                         anchors.left: parent.left
                         anchors.top: parent.top
+                        backendConnected: CalendarService.backendConnected
                         calendars: CalendarService.calendars
                         errorMessage: CalendarService.lastError
                         loading: root.initialLoading
@@ -761,7 +802,9 @@ FloatingWindow {
                         weekStart: root.weekStart
                         width: root.sidebarContentWidth
 
+                        onAccountReconnectRequested: account => accountDialog.open(account)
                         onAccountRemoveRequested: accountId => CalendarService.removeAccount(accountId)
+                        onAccountRetryRequested: accountId => CalendarService.syncNow(accountId)
                         onAccountToggled: (accountId, visible) => CalendarService.setAccountVisible(accountId, visible)
                         onCalendarToggled: (calendarId, visible) => root.toggleCalendar(calendarId, visible)
                         onConnectRequested: accountDialog.open()
@@ -793,6 +836,25 @@ FloatingWindow {
                     }
                 }
             }
+        }
+        CalendarSearchPanel {
+            id: searchPanel
+
+            accounts: CalendarService.accounts
+            anchorDate: root.selectedDate
+            anchors.right: parent.right
+            anchors.rightMargin: 16
+            anchors.top: parent.top
+            anchors.topMargin: appHeader.height + 8
+            calendars: CalendarService.calendars
+            events: CalendarService.calendarAppEvents
+            height: Math.min(520, Math.max(0, parent.height - appHeader.height - 24))
+            visible: root.searchOpen
+            width: Math.min(720, parent.width - 32)
+            z: 30
+
+            onClosed: root.searchOpen = false
+            onResultSelected: eventData => root.selectSearchResult(eventData)
         }
         Component {
             id: weekViewComponent

@@ -1,4 +1,5 @@
 mod engine;
+mod local;
 mod util;
 mod wallhaven;
 mod workshop;
@@ -36,6 +37,7 @@ impl WallpaperBackend {
         let cancellation = job.cancellation();
 
         let result = match method {
+            "wallpaper.local.remove" => local::remove(params).await?,
             "wallpaper.wallhaven.search" => {
                 let client = self.network.client()?;
                 wallhaven::search(&client, params, cancellation).await?

@@ -1,6 +1,6 @@
 use super::{
     CalendarProvider, OAUTH_CLIENT_SECRET_KEY, OAUTH_TOKEN_KEY, ProviderError, ProviderResult,
-    SyncWindow, is_reauth_status, response_error,
+    SyncWindow, response_error,
 };
 use crate::keyring::Keyring;
 use crate::model::{
@@ -104,11 +104,8 @@ impl CalendarProvider for GoogleProvider {
                 request = request.query(&[("pageToken", page_token.as_str())]);
             }
             let response = request.send().await?;
-            if is_reauth_status(response.status()) {
-                return Err(ProviderError::Reauth(response_error(response).await));
-            }
             if !response.status().is_success() {
-                return Err(anyhow!(response_error(response).await).into());
+                return Err(google_api_error(response).await);
             }
             let page = response.json::<GoogleCalendarPage>().await?;
             calendars.extend(page.items.into_iter().map(|calendar| {
@@ -181,11 +178,8 @@ impl CalendarProvider for GoogleProvider {
                     "Google invalidated the sync token".to_string(),
                 ));
             }
-            if is_reauth_status(response.status()) {
-                return Err(ProviderError::Reauth(response_error(response).await));
-            }
             if !response.status().is_success() {
-                return Err(anyhow!(response_error(response).await).into());
+                return Err(google_api_error(response).await);
             }
             let page = response.json::<GoogleEventPage>().await?;
             for event in page.items {
@@ -229,11 +223,8 @@ impl CalendarProvider for GoogleProvider {
             .json(&GoogleEventPayload::from(draft))
             .send()
             .await?;
-        if is_reauth_status(response.status()) {
-            return Err(ProviderError::Reauth(response_error(response).await));
-        }
         if !response.status().is_success() {
-            return Err(anyhow!(response_error(response).await).into());
+            return Err(google_api_error(response).await);
         }
         response
             .json::<GoogleEvent>()
@@ -263,11 +254,8 @@ impl CalendarProvider for GoogleProvider {
             .json(&GoogleEventPayload::from(draft))
             .send()
             .await?;
-        if is_reauth_status(response.status()) {
-            return Err(ProviderError::Reauth(response_error(response).await));
-        }
         if !response.status().is_success() {
-            return Err(anyhow!(response_error(response).await).into());
+            return Err(google_api_error(response).await);
         }
         let mut updated = response
             .json::<GoogleEvent>()
@@ -294,11 +282,8 @@ impl CalendarProvider for GoogleProvider {
             .bearer_auth(&token)
             .send()
             .await?;
-        if is_reauth_status(response.status()) {
-            return Err(ProviderError::Reauth(response_error(response).await));
-        }
         if !response.status().is_success() {
-            return Err(anyhow!(response_error(response).await).into());
+            return Err(google_api_error(response).await);
         }
         Ok(())
     }
@@ -571,10 +556,42 @@ fn parse_optional_rfc3339(value: Option<&str>) -> Option<DateTime<Utc>> {
 
 fn classify_refresh_error(error: anyhow::Error) -> ProviderError {
     let text = error.to_string();
-    if text.contains("invalid_grant") || text.contains("401") || text.contains("unauthorized") {
+    let normalized = text.to_ascii_lowercase();
+    if [
+        "invalid_grant",
+        "token has been expired or revoked",
+        "invalid refresh token",
+        "refresh token is invalid",
+        "unauthorized",
+    ]
+    .iter()
+    .any(|marker| normalized.contains(marker))
+    {
         ProviderError::Reauth(text)
     } else {
         ProviderError::Other(error)
+    }
+}
+
+async fn google_api_error(response: reqwest::Response) -> ProviderError {
+    let status = response.status();
+    let message = response_error(response).await;
+    let normalized = message.to_ascii_lowercase();
+    let reauth_required = status == StatusCode::UNAUTHORIZED
+        || (status == StatusCode::FORBIDDEN
+            && [
+                "autherror",
+                "insufficientpermissions",
+                "insufficient authentication scopes",
+                "invalid credentials",
+                "unauthenticated",
+            ]
+            .iter()
+            .any(|marker| normalized.contains(marker)));
+    if reauth_required {
+        ProviderError::Reauth(message)
+    } else {
+        anyhow!(message).into()
     }
 }
 
@@ -638,5 +655,13 @@ mod tests {
                 .as_str(),
             "https://www.googleapis.com/calendar/v3/calendars/user@example.com/events"
         );
+    }
+
+    #[test]
+    fn revoked_google_token_requires_reauthentication() {
+        let error = classify_refresh_error(anyhow!(
+            "OAuth request failed (400 Bad Request): Token has been expired or revoked."
+        ));
+        assert!(matches!(error, ProviderError::Reauth(_)));
     }
 }

@@ -19,6 +19,8 @@
     "barShowWorkspaces": true,
     "caffeineAutoDisableMinutes": 0,
     "cavaEnabled": true,
+    "calendarShowLocalTasks": true,
+    "calendarShowLunar": true,
     "idleBatteryDisplayTimeout": 300,
     "idleBatteryLockTimeout": 300,
     "idleBatterySleepAction": "suspend",
@@ -152,6 +154,7 @@
     "displayMainOutput": "",
     "defaultTerminal": "blackbox-terminal",
     "defaultVideoPlayer": "system",
+    "defaultWorkspaceLayout": "tiled",
     "temperatureUnit": "celsius",
     "gtk": {
         "gtkTheme": "adw-gtk3-dark",

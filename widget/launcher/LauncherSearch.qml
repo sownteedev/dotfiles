@@ -894,7 +894,7 @@ Item {
                 color: curItem ? Config.alpha(curItem.accentColor, 0.13) : Config.alpha(Config.md3.primary, 0.13)
                 height: 80
                 radius: 28
-                width: parent.width - searchList.cardInset * 2
+                width: Math.max(0, searchList.width - searchList.cardInset * 2)
                 x: searchList.cardInset
 
                 Behavior on color {

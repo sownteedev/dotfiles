@@ -183,6 +183,7 @@ pub struct AccountSyncReport {
     pub account_id: String,
     pub success: bool,
     pub calendars_synced: usize,
+    pub needs_reauth: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }

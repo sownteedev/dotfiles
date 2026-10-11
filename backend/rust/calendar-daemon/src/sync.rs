@@ -52,6 +52,7 @@ impl SyncService {
                     account_id: account.id,
                     success: false,
                     calendars_synced: 0,
+                    needs_reauth: true,
                     error: Some("reauthentication required".to_string()),
                 });
                 continue;
@@ -96,6 +97,7 @@ impl SyncService {
                     account_id: account.id.clone(),
                     success: true,
                     calendars_synced,
+                    needs_reauth: false,
                     error: None,
                 }
             }
@@ -256,6 +258,7 @@ impl SyncService {
             account_id: account.id.clone(),
             success: false,
             calendars_synced: 0,
+            needs_reauth,
             error: Some(message),
         }
     }

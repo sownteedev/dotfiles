@@ -53,6 +53,7 @@ NightLightControl 1.0 settings/NightLightControl.qml
 NiriConfigEditor 1.0 settings/NiriConfigEditor.qml
 SettingsActionButton 1.0 settings/SettingsActionButton.qml
 SettingsChoiceRow 1.0 settings/SettingsChoiceRow.qml
+CameraControlsPanel 1.0 settings/CameraControlsPanel.qml
 SettingsExpandableCard 1.0 settings/SettingsExpandableCard.qml
 SettingsSectionCard 1.0 settings/SettingsSectionCard.qml
 SettingsNavButton 1.0 settings/SettingsNavButton.qml

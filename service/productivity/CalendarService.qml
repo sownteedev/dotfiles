@@ -10,10 +10,12 @@ QtObject {
     id: root
 
     property bool accountActionBusy: false
+    property bool accountCheckPending: false
     property var accounts: []
     property int activeConsumers: 0
     property var allEvents: []
     readonly property bool authenticated: accounts.length > 0
+    readonly property bool backendConnected: requestSocket.connected
     readonly property var calendarAppEvents: allEvents.concat(taskEvents, Config.calendarShowLocalTasks ? localTaskEvents : [])
     property var calendars: []
     readonly property string connectedAccount: accounts.length > 0 ? String(accounts[0].email || accounts[0].displayName || "") : ""
@@ -88,6 +90,7 @@ QtObject {
     readonly property bool isLoading: fetchInFlight > 0 || syncBusy || accountActionBusy
     property string lastError: ""
     property date lastEventsUpdated
+    property date lastSuccessfulSyncAt
     readonly property var localTaskEvents: buildLocalTaskEvents(LocalTaskService.tasks)
     property int nextRequestId: 1
     property var pendingRequests: ({})
@@ -162,7 +165,8 @@ QtObject {
             root.subscriptionRetry.restart();
         }
     }
-    property bool syncBusy: false
+    readonly property bool syncBusy: syncRequestPending || Object.keys(syncingAccounts).length > 0
+    property bool syncRequestPending: false
     property var syncingAccounts: ({})
     property Process systemdStarter: Process {
         id: systemdStarter
@@ -294,7 +298,7 @@ QtObject {
             if (String(calendars[calendarIndex].accountId || "") !== accountId)
                 nextCalendars.push(calendars[calendarIndex]);
         }
-        var addedCalendars = Array.isArray(result.calendars) ? result.calendars : [];
+        var addedCalendars = Config.listOrEmpty(result.calendars);
         for (var addedIndex = 0; addedIndex < addedCalendars.length; ++addedIndex)
             nextCalendars.push(addedCalendars[addedIndex]);
         calendars = nextCalendars;
@@ -329,7 +333,7 @@ QtObject {
             "start": start.toISOString(),
             "end": end.toISOString(),
             "allDay": allDay === true,
-            "recurrence": Array.isArray(recurrence) ? recurrence : [],
+            "recurrence": Config.listOrEmpty(recurrence),
             "reminderMinutes": reminderMinutes !== null && reminderMinutes !== undefined && Number(reminderMinutes) >= 0 ? Math.floor(Number(reminderMinutes)) : null,
             "useDefaultReminder": useDefaultReminder === true,
             "availability": availability === "free" ? "free" : "busy",
@@ -337,7 +341,7 @@ QtObject {
         };
     }
     function buildLocalTaskEvents(sourceTasks) {
-        var tasks = Array.isArray(sourceTasks) ? sourceTasks : (typeof LocalTaskService !== "undefined" && LocalTaskService ? LocalTaskService.tasks : []);
+        var tasks = Config.isList(sourceTasks) ? Config.listOrEmpty(sourceTasks) : (typeof LocalTaskService !== "undefined" && LocalTaskService ? LocalTaskService.tasks : []);
         if (!tasks)
             return [];
         return tasks.filter(task => task && (task.status === "needsAction" || task.status === "completed") && task.due).map(task => {
@@ -379,6 +383,14 @@ QtObject {
                 result.push(calendars[index]);
         }
         return result;
+    }
+    function checkAccountConnections() {
+        accountCheckPending = true;
+        if (ready) {
+            accountCheckPending = false;
+            if (accounts.length > 0)
+                syncNow();
+        }
     }
     function createEvent(calendarId, title, startDate, endDate, startTime, endTime, allDay, location, description, recurrence, reminderMinutes, callback, availability, visibility, useDefaultReminder) {
         if (eventActionBusy)
@@ -583,7 +595,7 @@ QtObject {
         fetchInFlight = 0;
         accountActionBusy = false;
         eventActionBusy = false;
-        syncBusy = false;
+        syncRequestPending = false;
         syncingAccounts = ({});
     }
     function fetchAll() {
@@ -601,24 +613,25 @@ QtObject {
         lastError = "";
         fetchInFlight = 4;
         sendRequest("tasks.list", {}, result => {
-            taskSnapshots = Array.isArray(result) ? result : [];
+            taskSnapshots = Config.listOrEmpty(result);
             rebuildDecoratedData();
             finishFetch();
         }, message => finishFetch());
         sendRequest("accounts.list", {}, result => {
-            accounts = Array.isArray(result) ? result : [];
+            accounts = Config.listOrEmpty(result);
+            updateLastSuccessfulSync();
             rebuildDecoratedData();
             finishFetch();
         }, message => finishFetch());
         sendRequest("calendars.list", {}, result => {
-            calendars = Array.isArray(result) ? result : [];
+            calendars = Config.listOrEmpty(result);
             rebuildDecoratedData();
             finishFetch();
         }, message => finishFetch());
         sendRequest("events.list", {
             "visibleOnly": false
         }, result => {
-            rawEvents = Array.isArray(result) ? result : [];
+            rawEvents = Config.listOrEmpty(result);
             lastEventsUpdated = new Date();
             rebuildDecoratedData();
             finishFetch();
@@ -638,8 +651,17 @@ QtObject {
             return;
         initialLoaded = true;
         daemonStatus = "ready";
+        if (accountCheckPending)
+            checkAccountConnections();
         if (refreshPending)
             Qt.callLater(fetchAll);
+    }
+    function finishSyncRequest(accountId) {
+        var nextSyncing = Object.assign({}, syncingAccounts);
+        if (accountId)
+            delete nextSyncing[accountId];
+        syncingAccounts = nextSyncing;
+        syncRequestPending = false;
     }
     function getEventsForDate(day, month, year) {
         var targetDay = new Date(year, month, day);
@@ -665,7 +687,6 @@ QtObject {
             else if ((event.kind === "completed" || event.kind === "failed") && accountId !== "")
                 delete nextSyncing[accountId];
             syncingAccounts = nextSyncing;
-            syncBusy = Object.keys(nextSyncing).length > 0;
         }
         refreshDebounce.restart();
     }
@@ -870,6 +891,24 @@ QtObject {
         }
         allEvents = decoratedEvents;
     }
+    function reconnectGoogle(accountId, callback) {
+        if (accountActionBusy)
+            return;
+        accountActionBusy = true;
+        sendRequest("accounts.google.reconnect", {
+            "accountId": String(accountId || "").trim()
+        }, result => {
+            accountActionBusy = false;
+            applyAccountResult(result);
+            fetchAll();
+            if (callback)
+                callback(true, "");
+        }, message => {
+            accountActionBusy = false;
+            if (callback)
+                callback(false, message);
+        });
+    }
     function recurrenceRuleText(value) {
         if (value === null || value === undefined)
             return "";
@@ -912,7 +951,7 @@ QtObject {
         subscribed = false;
         refreshPending = false;
         initialLoaded = false;
-        syncBusy = false;
+        syncRequestPending = false;
         syncingAccounts = ({});
         accounts = [];
         calendars = [];
@@ -1021,16 +1060,28 @@ QtObject {
         return new Date(value.getFullYear(), value.getMonth(), value.getDate());
     }
     function syncNow(accountId) {
-        if (syncBusy)
+        if (syncBusy || accountActionBusy)
             return;
-        syncBusy = true;
+        syncRequestPending = true;
         var params = {};
         if (String(accountId || "") !== "")
             params.accountId = String(accountId);
+        if (params.accountId) {
+            var nextSyncing = Object.assign({}, syncingAccounts);
+            nextSyncing[params.accountId] = true;
+            syncingAccounts = nextSyncing;
+        }
         sendRequest("sync.now", params, result => {
-            syncBusy = false;
+            finishSyncRequest(params.accountId);
+            var reports = result ? Config.listOrEmpty(result.accounts) : [];
+            var report = reports.length === 1 ? reports[0] : null;
+            var account = String(accountId || "") !== "" ? accounts.find(item => String(item.id || "") === String(accountId)) : null;
+            if (report && report.needsReauth === true && account && account.provider === "google") {
+                reconnectGoogle(account.id);
+                return;
+            }
             fetchAll();
-        }, message => syncBusy = false);
+        }, message => finishSyncRequest(params.accountId));
     }
     function taskAccountColor(accountId) {
         var basePalette = ["#4285F4", "#34A853", "#FB8C00", "#A142F4", "#00ACC1", "#E91E63", "#3F51B5", "#00897B", "#D81B60", "#8E24AA", "#1E88E5", "#43A047", "#F4511E", "#00B0FF", "#7CB342", "#00E676"];
@@ -1053,8 +1104,9 @@ QtObject {
     function taskListColor(accountId, listId) {
         var basePalette = ["#4285F4", "#34A853", "#FB8C00", "#A142F4", "#00ACC1", "#E91E63", "#3F51B5", "#00897B", "#D81B60", "#8E24AA", "#1E88E5", "#43A047", "#F4511E", "#00B0FF", "#7CB342", "#00E676"];
         var snapshot = taskSnapshots.find(item => item.accountId === accountId);
-        if (snapshot && Array.isArray(snapshot.lists) && listId) {
-            var listIndex = snapshot.lists.findIndex(list => list.id === listId);
+        var taskLists = snapshot ? Config.listOrEmpty(snapshot.lists) : [];
+        if (snapshot && taskLists.length > 0 && listId) {
+            var listIndex = taskLists.findIndex(list => list.id === listId);
             if (listIndex >= 0) {
                 var googleAccounts = accounts.filter(account => account.provider === "google");
                 var accIndex = Math.max(0, googleAccounts.findIndex(account => account.id === accountId));
@@ -1092,6 +1144,18 @@ QtObject {
             }
             finishEventAction("update", true, "", callback);
         }, message => finishEventAction("update", false, message, callback));
+    }
+    function updateLastSuccessfulSync() {
+        var latest = null;
+        for (var index = 0; index < accounts.length; ++index) {
+            var value = accounts[index] ? new Date(accounts[index].lastSyncAt) : null;
+            if (!value || isNaN(value.getTime()))
+                continue;
+            if (!latest || value > latest)
+                latest = value;
+        }
+        if (latest)
+            lastSuccessfulSyncAt = latest;
     }
 
     Component.onDestruction: {

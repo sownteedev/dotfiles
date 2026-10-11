@@ -198,6 +198,15 @@ QtObject {
     }
     property string previewPath: ""
     readonly property bool ready: StateManager.wallpaperLoaded
+    readonly property bool removalBusy: removalPath !== ""
+    property string removalPath: ""
+    property CoreRequest removalRequest: CoreRequest {
+        cancellable: false
+        timeoutMs: 120000
+
+        onFailed: message => root.finishRemoval(false, message)
+        onSucceeded: response => root.finishRemoval(!!response && response.ok === true, response && response.message ? String(response.message) : qsTr("Could not delete wallpaper"))
+    }
     property Connections screenConnections: Connections {
         function onScreensChanged() {
             root.updateVideoCoverReadiness();
@@ -363,6 +372,8 @@ QtObject {
         }
     }
     property int videoTransitionGeneration: 0
+
+    signal removalFinished(string path, bool success, string message)
 
     function apply(path, mode, modified, backendOverride, preserveRollback, rendererOverride) {
         if (!path)
@@ -603,6 +614,26 @@ QtObject {
         initialThemeChecked = true;
         ThemeService.generate(source, ThemeService.colorMode, true, sourceKey);
     }
+    function finishRemoval(success, message) {
+        var path = removalPath;
+        if (!path)
+            return;
+
+        removalPath = "";
+        if (success) {
+            var folder = libraryRoot(path);
+            var name = path.slice(path.lastIndexOf("/") + 1);
+            if (folder === String(Config.wallhavenCacheFolder).replace(/\/+$/, "")) {
+                var match = /^wallhaven-([a-zA-Z0-9]+)\.[^.]+$/.exec(name);
+                if (match)
+                    WallhavenService.markRemoved(match[1]);
+            } else if (folder === String(Config.wallpaperEngineWorkshopDir).replace(/\/+$/, "") || folder === String(Config.legacyWallpaperEngineWorkshopDir).replace(/\/+$/, "")) {
+                WallpaperWorkshopService.markRemoved(name);
+                EngineWallpaperService.scan();
+            }
+        }
+        removalFinished(path, success, success ? "" : message);
+    }
     function finishStaticTransition() {
         if (!staticTransitionPending)
             return;
@@ -691,6 +722,19 @@ QtObject {
             }
             LiveWallpaperService.play(selectedRendererPath, videoTransitionGeneration);
         }
+    }
+    function libraryRoot(path) {
+        var target = String(path || "");
+        if (!target.startsWith("/") || target.slice(1).split("/").some(part => part === "." || part === ".." || part === ""))
+            return "";
+        var parent = target.slice(0, target.lastIndexOf("/"));
+        var roots = [Config.wallFolder, Config.wallhavenCacheFolder, Config.liveWallFolder, Config.wallpaperEngineWorkshopDir, Config.legacyWallpaperEngineWorkshopDir];
+        for (var index = 0; index < roots.length; ++index) {
+            var folder = String(roots[index] || "").replace(/\/+$/, "");
+            if (folder && parent === folder)
+                return folder;
+        }
+        return "";
     }
     function loadDefaultWallpaper() {
         resetStaticTransition();
@@ -845,6 +889,38 @@ QtObject {
         lastVideoFrame = framePath;
         if (updateTheme && !videoQuickThemeReady && !pendingVideoThemeSource)
             prepareVideoTheme(framePath, selectedModified);
+    }
+    function removeWallpaper(path) {
+        var target = String(path || "");
+        var folder = libraryRoot(target);
+        var name = target.slice(target.lastIndexOf("/") + 1);
+        var engineFolder = folder === String(Config.wallpaperEngineWorkshopDir).replace(/\/+$/, "") || folder === String(Config.legacyWallpaperEngineWorkshopDir).replace(/\/+$/, "");
+        var validName = engineFolder ? /^\d+$/.test(name) : /\.(jpg|jpeg|png|webp|bmp|mp4|webm|mkv|mov|m4v|avi|gif)$/i.test(name);
+        if (removalBusy || target === currentWallpaper || !folder || !validName)
+            return false;
+
+        var method = "wallpaper.local.remove";
+        var params = {
+            "path": target,
+            "current_path": currentWallpaper,
+            "roots": [Config.wallFolder, Config.liveWallFolder]
+        };
+        if (engineFolder) {
+            method = "wallpaper.workshop.remove";
+            params.id = name;
+            params.workshop_root = Config.wallpaperEngineWorkshopDir;
+            params.legacy_workshop_root = Config.legacyWallpaperEngineWorkshopDir;
+        } else if (folder === String(Config.wallhavenCacheFolder).replace(/\/+$/, "")) {
+            var match = /^wallhaven-([a-zA-Z0-9]+)\.[^.]+$/.exec(name);
+            if (!match)
+                return false;
+            method = "wallpaper.wallhaven.remove";
+            params.id = match[1];
+            params.wallpaper_dir = Config.wallhavenCacheFolder;
+        }
+        removalPath = target;
+        removalRequest.start(method, params);
+        return true;
     }
     function resetStaticTransition() {
         staticTransitionPending = false;

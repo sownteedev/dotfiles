@@ -33,6 +33,7 @@ ScrollView {
             "blurSaturation": Number(blurSaturation.text),
             "alwaysCenterSingle": alwaysCenterToggle.checked,
             "emptyWorkspaceAboveFirst": emptyWorkspaceToggle.checked,
+            "defaultWorkspaceLayout": defaultWorkspaceLayoutChoice.value,
             "defaultColumnDisplay": defaultDisplayChoice.value,
             "backgroundColor": layoutBackgroundField.text,
             "defaultColumnWidthMode": defaultWidthMode.value,
@@ -115,6 +116,8 @@ ScrollView {
     }
     function syncLayoutFields() {
         var settings = SettingsHubService.layoutSettings || {};
+        var shellSettings = SettingsHubService.quickshellSettings || {};
+        defaultWorkspaceLayoutChoice.value = (shellSettings.defaultWorkspaceLayout || Config.defaultWorkspaceLayout) === "floating" ? "floating" : "tiled";
         gapsField.text = String(settings.gaps === undefined ? 10 : settings.gaps);
         borderField.text = String(settings.borderWidth === undefined ? 1 : settings.borderWidth);
         shadowCard.checked = settings.shadow !== false;
@@ -233,6 +236,9 @@ ScrollView {
         function onLayoutSettingsChanged() {
             root.syncLayoutFields();
         }
+        function onQuickshellSettingsChanged() {
+            root.syncLayoutFields();
+        }
 
         target: SettingsHubService
     }
@@ -243,6 +249,30 @@ ScrollView {
         width: root.contentWidth
         y: 12
 
+        SettingsSectionCard {
+            Layout.fillWidth: true
+            accentColor: Config.md3.secondary
+            iconName: "preferences-desktop-workspaces-symbolic"
+            title: qsTr("Workspace layout")
+
+            SettingsChoiceRow {
+                id: defaultWorkspaceLayoutChoice
+
+                Layout.fillWidth: true
+                label: qsTr("Default workspace layout")
+                note: qsTr("Used the first time you enter a workspace. The bar button or keyboard shortcut changes only that workspace; returning to it keeps your choice.")
+                options: [
+                    {
+                        "label": qsTr("Tiled"),
+                        "value": "tiled"
+                    },
+                    {
+                        "label": qsTr("Floating"),
+                        "value": "floating"
+                    }
+                ]
+            }
+        }
         SettingsExpandableCard {
             Layout.fillWidth: true
             accentColor: Config.md3.secondary

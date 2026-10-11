@@ -130,6 +130,10 @@ impl LoopbackFlow {
     }
 
     pub async fn open_and_wait(self, authorization_url: Url) -> Result<String> {
+        eprintln!(
+            "OAuth authorization opened; waiting for browser callback at {}",
+            self.redirect_uri
+        );
         open_browser(authorization_url.as_str()).await?;
         timeout(TokioDuration::from_secs(300), self.wait_for_code())
             .await
@@ -185,6 +189,7 @@ impl LoopbackFlow {
                 "SownteeShell Calendar is connected. You can close this tab.",
             )
             .await?;
+            eprintln!("OAuth browser callback received successfully");
             return Ok(code);
         }
     }

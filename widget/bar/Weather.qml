@@ -61,10 +61,6 @@ Item {
             renderType: Text.NativeRendering
             text: root.temperatureText
             verticalAlignment: Text.AlignVCenter
-
-            transform: Translate {
-                y: 3
-            }
         }
     }
 }

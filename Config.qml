@@ -27,6 +27,7 @@ QtObject {
     readonly property string cacheRoot: cacheHome + "/sownteeshell"
     property alias caffeineAutoDisableMinutes: runtimeSettings.caffeineAutoDisableMinutes
     property alias calendarShowLocalTasks: runtimeSettings.calendarShowLocalTasks
+    property alias calendarShowLunar: runtimeSettings.calendarShowLunar
     property alias captureAutoCopyRecording: runtimeSettings.captureAutoCopyRecording
     property alias captureAutoCopyScreenshot: runtimeSettings.captureAutoCopyScreenshot
     property alias captureEditorColor: runtimeSettings.captureEditorColor
@@ -59,6 +60,7 @@ QtObject {
     property alias defaultTerminal: runtimeSettings.defaultTerminal
     property alias defaultVideoPlayer: runtimeSettings.defaultVideoPlayer
     readonly property string defaultWallpaper: dotfilesDir + "/.walls/flower-plant-petal.jpg"
+    property alias defaultWorkspaceLayout: runtimeSettings.defaultWorkspaceLayout
     property alias displayMainOutput: runtimeSettings.displayMainOutput
     readonly property string dotfilesDir: dotfilesRoot + "/dotf"
     readonly property string dotfilesRoot: homeDir + "/Dotfiles"
@@ -212,6 +214,7 @@ QtObject {
             property bool barShowWorkspaces: true
             property int caffeineAutoDisableMinutes: 0
             property bool calendarShowLocalTasks: true
+            property bool calendarShowLunar: true
             property bool captureAutoCopyRecording: true
             property bool captureAutoCopyScreenshot: true
             property string captureEditorColor: "#ff3b30"
@@ -241,6 +244,7 @@ QtObject {
             property string defaultImageViewer: "system"
             property string defaultTerminal: "blackbox-terminal"
             property string defaultVideoPlayer: "system"
+            property string defaultWorkspaceLayout: "tiled"
             property string displayMainOutput: ""
             property string fontName: "Inter Variable"
             property string greeterDefaultSession: "niri"
@@ -430,6 +434,20 @@ QtObject {
             return homeDir + value.substring(1);
 
         return value;
+    }
+    function isList(value) {
+        if (value === null || typeof value !== "object")
+            return false;
+        var length = value.length;
+        return typeof length === "number" && isFinite(length) && length >= 0 && Math.floor(length) === length;
+    }
+    function listOrEmpty(value) {
+        if (!isList(value))
+            return [];
+        var result = [];
+        for (var index = 0; index < value.length; ++index)
+            result.push(value[index]);
+        return result;
     }
     function updateColors(colors) {
     }

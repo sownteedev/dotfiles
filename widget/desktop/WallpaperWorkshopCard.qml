@@ -426,10 +426,22 @@ Item {
 
                 Layout.preferredHeight: 36
                 Layout.preferredWidth: 36
-                color: deleteMouse.pressed ? Config.md3.error_container : (deleteMouse.containsMouse || root.deleteArmed ? Config.alpha(Config.md3.error_container, 0.96) : Config.alpha(Config.md3.on_surface, 0.055))
+                color: Config.alpha(Config.md3.on_surface, 0.055)
                 radius: 12
                 visible: root.installedMode && !root.inUse
 
+                Rectangle {
+                    anchors.fill: parent
+                    color: Config.md3.error_container
+                    opacity: deleteMouse.pressed ? 1 : (deleteMouse.containsMouse || root.deleteArmed ? 0.96 : 0)
+                    radius: parent.radius
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 120
+                        }
+                    }
+                }
                 Row {
                     anchors.centerIn: parent
 
@@ -442,6 +454,12 @@ Item {
 
                         layer.effect: ColorOverlay {
                             color: root.deleteArmed ? Config.md3.on_error_container : Config.md3.on_surface_variant
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 120
+                                }
+                            }
                         }
                     }
                 }
@@ -468,10 +486,16 @@ Item {
                 Layout.preferredHeight: 36
                 Layout.preferredWidth: 36
                 activeFocusOnTab: false
-                color: primaryMouse.pressed ? Config.md3.primary_container : (primaryMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
+                color: primaryMouse.pressed ? Config.alpha(Config.md3.primary, 0.76) : (primaryMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.86) : Config.md3.primary)
                 enabled: root.supported && !root.downloading && !root.removing && !root.downloadBlocked
                 opacity: enabled ? 1 : 0.5
                 radius: 12
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 120
+                    }
+                }
 
                 Keys.onReturnPressed: root.triggerPrimaryAction()
                 Keys.onSpacePressed: root.triggerPrimaryAction()

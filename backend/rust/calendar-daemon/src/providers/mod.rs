@@ -146,7 +146,14 @@ pub(crate) async fn response_error(response: reqwest::Response) -> String {
             .or_else(|| value.pointer("/error/errors/0/message"))
             .and_then(|value| value.as_str())
             .unwrap_or(&body);
-        return format!("HTTP {status}: {message}");
+        let reason = value
+            .pointer("/error/errors/0/reason")
+            .and_then(|value| value.as_str())
+            .filter(|value| !value.is_empty());
+        return match reason {
+            Some(reason) => format!("HTTP {status}: {message} ({reason})"),
+            None => format!("HTTP {status}: {message}"),
+        };
     }
     format!("HTTP {status}: {body}")
 }
