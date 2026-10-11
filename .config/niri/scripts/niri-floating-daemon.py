@@ -11,9 +11,14 @@ import time
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(SCRIPT_DIR, "..", "include", "window-rules.kdl")
+SETTINGS_FILE = os.path.join(
+    os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"),
+    "sownteeshell", "settings.json",
+)
 RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
 STATE_FILE = os.path.join(RUNTIME_DIR, "niri-floating-workspaces.json")
 STATE_LOCK_FILE = f"{STATE_FILE}.lock"
+SESSION_FILE = f"{STATE_FILE}.session"
 LOCK_FILE = os.path.join(RUNTIME_DIR, "niri-floating-daemon.lock")
 AUTO_ARRANGE_SCRIPT = os.path.join(SCRIPT_DIR, "niri-auto-arrange.py")
 
@@ -29,20 +34,67 @@ def acquire_singleton_lock():
     return lock
 
 
-def reset_floating_state():
+def read_workspace_state():
+    try:
+        with open(STATE_FILE, "r", encoding="utf-8") as state_file:
+            data = json.load(state_file)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+def write_workspace_state(data):
     temporary_file = f"{STATE_FILE}.{os.getpid()}.tmp"
     try:
-        with open(STATE_LOCK_FILE, "w", encoding="utf-8") as state_lock:
-            fcntl.flock(state_lock, fcntl.LOCK_EX)
-            with open(temporary_file, "w", encoding="utf-8") as state_file:
-                state_file.write("{}\n")
-            os.replace(temporary_file, STATE_FILE)
-    except OSError as error:
-        print(f"Unable to reset floating workspace state: {error}", flush=True)
-        try:
+        with open(temporary_file, "w", encoding="utf-8") as state_file:
+            json.dump(data, state_file)
+            state_file.write("\n")
+        os.replace(temporary_file, STATE_FILE)
+    finally:
+        if os.path.exists(temporary_file):
             os.unlink(temporary_file)
-        except OSError:
-            pass
+
+def prepare_session_state():
+    session = os.environ.get("NIRI_SOCKET", "")
+    if not session:
+        return
+    with open(STATE_LOCK_FILE, "w", encoding="utf-8") as state_lock:
+        fcntl.flock(state_lock, fcntl.LOCK_EX)
+        try:
+            with open(SESSION_FILE, "r", encoding="utf-8") as session_file:
+                previous_session = session_file.read()
+        except FileNotFoundError:
+            previous_session = session
+        if previous_session != session:
+            write_workspace_state({})
+        with open(SESSION_FILE, "w", encoding="utf-8") as session_file:
+            session_file.write(session)
+
+def get_default_layout():
+    try:
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as config_file:
+            settings = json.load(config_file)
+        if isinstance(settings, dict) and settings.get("defaultWorkspaceLayout") == "floating":
+            return "floating"
+    except (OSError, ValueError):
+        pass
+    return "tiled"
+
+def initialize_workspace(workspace_id):
+    if workspace_id is None:
+        return False
+    with open(STATE_LOCK_FILE, "w", encoding="utf-8") as state_lock:
+        fcntl.flock(state_lock, fcntl.LOCK_EX)
+        state = read_workspace_state()
+        workspace_key = str(workspace_id)
+        if not isinstance(state.get(workspace_key), bool):
+            state[workspace_key] = get_default_layout() == "floating"
+            write_workspace_state(state)
+        return state[workspace_key]
+
+def sync_workspaces(workspaces):
+    for workspace in workspaces:
+        if workspace.get("is_active"):
+            initialize_workspace(workspace["id"])
 
 
 def clean_kdl_str(s):
@@ -139,9 +191,7 @@ def is_protected_window(window, protected_rules):
 
 def get_floating_workspaces():
     try:
-        with open(STATE_FILE, "r", encoding="utf-8") as state_file:
-            data = json.load(state_file)
-        return {int(key) for key, enabled in data.items() if enabled}
+        return {int(key) for key, enabled in read_workspace_state().items() if enabled is True}
     except (OSError, ValueError, TypeError):
         return set()
 
@@ -200,6 +250,7 @@ def handle_window(window, known_windows, protected_rules):
     if window_id is None or workspace_id is None:
         return
 
+    workspace_is_floating = initialize_workspace(workspace_id)
     previous_workspace_id = known_windows.get(window_id)
     known_windows[window_id] = workspace_id
 
@@ -214,13 +265,11 @@ def handle_window(window, known_windows, protected_rules):
         return
 
     floating_workspaces = get_floating_workspaces()
-    workspace_is_floating = workspace_id in floating_workspaces
     previous_workspace_was_floating = (
         previous_workspace_id is not None and previous_workspace_id in floating_workspaces
     )
 
     if workspace_is_floating and not is_floating:
-        time.sleep(0.08)
         if set_window_floating(window_id, True):
             arrange_workspace(workspace_id, window_id)
     elif not workspace_is_floating and is_floating and is_moved_window and previous_workspace_was_floating:
@@ -230,6 +279,14 @@ def handle_window(window, known_windows, protected_rules):
 
 
 def process_event(event, known_windows, protected_rules):
+    if "WorkspacesChanged" in event:
+        sync_workspaces(event["WorkspacesChanged"].get("workspaces", []))
+        return protected_rules
+
+    if "WorkspaceActivated" in event:
+        initialize_workspace(event["WorkspaceActivated"].get("id"))
+        return protected_rules
+
     if "WindowsChanged" in event:
         current_ids = set()
         for window in event["WindowsChanged"].get("windows", []):
@@ -285,13 +342,15 @@ def listen_for_events():
 
         process.wait()
         known_windows.clear()
-        reset_floating_state()
         time.sleep(1)
 
 
 def main():
     if len(sys.argv) > 1:
         arg = sys.argv[1]
+        if arg == "--get-default-layout":
+            print(get_default_layout())
+            return
         if arg in ("--get-protected", "--get-protected-patterns"):
             rules = get_protected_rules()
             patterns = set()
@@ -326,7 +385,7 @@ def main():
     if singleton_lock is None:
         return
 
-    reset_floating_state()
+    prepare_session_state()
     print("Listening for Niri floating workspace events", flush=True)
     listen_for_events()
 

@@ -125,7 +125,7 @@ write_workspace_state() {
     if [ "$floating" = "true" ]; then
         jq --arg workspace_id "$workspace_id" '.[$workspace_id] = true' "$STATE_FILE" > "$temporary_file"
     else
-        jq --arg workspace_id "$workspace_id" 'del(.[$workspace_id])' "$STATE_FILE" > "$temporary_file"
+        jq --arg workspace_id "$workspace_id" '.[$workspace_id] = false' "$STATE_FILE" > "$temporary_file"
     fi
 
     if [ $? -ne 0 ]; then
@@ -161,9 +161,9 @@ toggle_floating_workspace() {
         return 1
     fi
 
-    ensure_state_file || return 1
     exec 9>"$LOCK_FILE" || return 1
     flock -x 9 || return 1
+    ensure_state_file || return 1
 
     local workspace_data
     workspace_data=$(get_workspace_data "$current_workspace_id") || {
@@ -172,7 +172,13 @@ toggle_floating_workspace() {
     }
 
     local is_ws_floating
-    is_ws_floating=$(jq -r --arg workspace_id "$current_workspace_id" '.[$workspace_id] // false' "$STATE_FILE")
+    is_ws_floating=$(jq -r --arg workspace_id "$current_workspace_id" '.[$workspace_id] | if type == "boolean" then tostring else "unset" end' "$STATE_FILE") || return 1
+    if [ "$is_ws_floating" = "unset" ]; then
+        local default_layout
+        default_layout=$(python3 "$SCRIPT_DIR/niri-floating-daemon.py" --get-default-layout) || return 1
+        is_ws_floating=false
+        [ "$default_layout" = "floating" ] && is_ws_floating=true
+    fi
 
     local target_windows_floating
     if [ "$is_ws_floating" = "true" ]; then
