@@ -31,7 +31,7 @@ PanelWindow {
     property bool selectionCommitted: false
     property int staticIndex: 0
     readonly property bool trashArmed: dragCard !== null && dragCard.armed && canTrashDragged
-    property real trashCenterX: width / 2
+    readonly property real trashCenterX: width / 2
     readonly property real trashCenterY: Math.min(height - 92, height / 2 + cardHeight * 0.575 + 78)
     property int videoIndex: 0
     property bool videoPreviewStarted: false
@@ -893,13 +893,13 @@ PanelWindow {
                 }
             }
         }
-        Column {
+        Item {
             id: trashTarget
 
-            opacity: wallpaperWindow.dragCard !== null && wallpaperWindow.dragCard.pullDistance > 0 || wallpaperWindow.deletingPath !== "" ? 1 : 0
-            scale: wallpaperWindow.trashArmed ? 1.1 : 1
-            spacing: 10
-            width: Math.min(300, contentRoot.width - 24)
+            height: 60
+            opacity: (wallpaperWindow.dragCard !== null && wallpaperWindow.dragCard.pullDistance > 0) || wallpaperWindow.deletingPath !== "" ? 1 : 0
+            visible: !wallpaperWindow.browserOpen && wallpaperWindow.activeCount > 0 && opacity > 0
+            width: 60
             x: wallpaperWindow.trashCenterX - width / 2
             y: wallpaperWindow.trashCenterY - 30
             z: 600
@@ -909,25 +909,24 @@ PanelWindow {
                     duration: 140
                 }
             }
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 140
-                    easing.type: Easing.OutCubic
-                }
-            }
 
             Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.fill: parent
                 border.color: wallpaperWindow.trashArmed ? Config.md3.error : Config.alpha(Config.md3.on_surface, 0.2)
                 border.width: 1
                 color: wallpaperWindow.trashArmed ? Config.md3.error : Config.md3.surface_container_high
-                height: 60
                 radius: 30
-                width: 60
+                scale: wallpaperWindow.trashArmed ? 1.1 : 1
 
                 Behavior on color {
                     ColorAnimation {
                         duration: 120
+                    }
+                }
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 140
+                        easing.type: Easing.OutCubic
                     }
                 }
 
@@ -1083,7 +1082,7 @@ PanelWindow {
             opacity: PathView.itemOpacity !== undefined ? PathView.itemOpacity : 0
             scale: PathView.itemScale !== undefined ? PathView.itemScale : 0.55
             width: wallpaperWindow.cardWidth
-            z: cardDrag.dragging || cardDrag.deletePending ? 500 : PathView.itemZ !== undefined ? PathView.itemZ : 1
+            z: PathView.itemZ !== undefined ? PathView.itemZ : 1
 
             Component.onCompleted: {
                 delegateRoot.scheduleThumbnailLoad();
@@ -1165,7 +1164,10 @@ PanelWindow {
                 anchors.fill: parent
                 deletePending: wallpaperWindow.deletingPath === delegateRoot.filePath
                 dropDistance: (wallpaperWindow.trashCenterY - (pathView.y + delegateRoot.y + delegateRoot.height / 2)) / Math.max(0.01, delegateRoot.scale)
+                dropOffsetX: (wallpaperWindow.trashCenterX - (pathView.x + delegateRoot.x + delegateRoot.width / 2)) / Math.max(0.01, delegateRoot.scale)
+                dropTarget: trashTarget
                 enabled: !wallpaperWindow.browserOpen && wallpaperWindow.deletingPath === "" && !pathView.moving
+                hitItem: cardImage
 
                 Component.onDestruction: {
                     if (wallpaperWindow.dragCard === cardDrag) {
@@ -1188,12 +1190,13 @@ PanelWindow {
                     wallpaperWindow.dragCard = cardDrag;
                     wallpaperWindow.draggedPath = delegateRoot.filePath;
                     wallpaperWindow.deleteMessage = "";
-                    wallpaperWindow.trashCenterX = mapToItem(contentRoot, width / 2, height / 2).x;
                     previewTimer.stop();
                     preloadTimer.stop();
                 }
 
                 Rectangle {
+                    id: cardImage
+
                     anchors.fill: parent
                     color: Config.md3.surface_container_low
 

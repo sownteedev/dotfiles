@@ -29,8 +29,11 @@ FloatingWindow {
     property bool searchOpen: false
     property date selectedDate: new Date()
     property bool serviceAcquired: false
-    readonly property real sidebarContentWidth: width < 1160 ? 244 : 280
+    readonly property real sidebarContentWidth: Math.max(sidebarMinimumWidth, Math.min(sidebarMaximumWidth, sidebarPreferredWidth > 0 ? sidebarPreferredWidth : (width < 1160 ? 244 : 280)))
     property bool sidebarExpanded: true
+    readonly property real sidebarMaximumWidth: Math.max(sidebarMinimumWidth, Math.min(440, calendarBody.width - 560 - 13))
+    readonly property real sidebarMinimumWidth: 244
+    property real sidebarPreferredWidth: 0
     property real sidebarReveal: sidebarExpanded ? 1 : 0
     readonly property real sidebarWidth: sidebarContentWidth * sidebarReveal
     property string viewMode: "week"
@@ -274,6 +277,9 @@ FloatingWindow {
             if (!success)
                 CalendarService.lastError = message;
         }, eventData.availability, eventData.visibility, eventData.useDefaultReminder);
+    }
+    function resizeSidebar(value) {
+        sidebarPreferredWidth = Math.max(sidebarMinimumWidth, Math.min(sidebarMaximumWidth, value));
     }
     function scrollCurrentWeekToWorkingHours() {
         if (viewMode !== "week" || calendarViewLoader.status !== Loader.Ready || !calendarViewLoader.item)
@@ -548,11 +554,38 @@ FloatingWindow {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
                         Layout.preferredWidth: 40
-                        iconName: root.sidebarExpanded ? "sidebar-collapse-left" : "sidebar-expand-right"
+                        activeFocusOnTab: true
+                        color: "transparent"
                         iconOnly: true
                         text: root.sidebarExpanded ? qsTr("Hide sidebar") : qsTr("Show sidebar")
 
                         onClicked: root.sidebarExpanded = !root.sidebarExpanded
+
+                        SownteeAppIcon {
+                            anchors.centerIn: parent
+                            height: 40
+                            kind: "calendar"
+                            width: 40
+                        }
+                    }
+                    Text {
+                        Layout.alignment: Qt.AlignVCenter
+                        color: Config.md3.on_surface
+                        font.family: Config.fontName
+                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
+                        font.pixelSize: Md3.typeScale.titleMedium.size
+                        font.weight: 600
+                        text: qsTr("Calendar")
+                        verticalAlignment: Text.AlignVCenter
+                        visible: !root.compactHeader
+                    }
+                    Rectangle {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.leftMargin: root.compactHeader ? 2 : 4
+                        Layout.preferredHeight: 22
+                        Layout.preferredWidth: 1
+                        Layout.rightMargin: root.compactHeader ? 2 : 4
+                        color: Config.alpha(Config.md3.on_surface, 0.10)
                     }
                     Rectangle {
                         Layout.alignment: Qt.AlignVCenter
@@ -589,33 +622,6 @@ FloatingWindow {
                                 width: parent.width
                             }
                         }
-                    }
-                    Text {
-                        Layout.alignment: Qt.AlignVCenter
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.letterSpacing: Md3.typeScale.titleMedium.letterSpacing
-                        font.pixelSize: Md3.typeScale.titleMedium.size
-                        font.weight: 600
-                        text: qsTr("Calendar")
-                        verticalAlignment: Text.AlignVCenter
-                        visible: !root.compactHeader
-                    }
-                    Rectangle {
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.leftMargin: root.compactHeader ? 2 : 4
-                        Layout.preferredHeight: 22
-                        Layout.preferredWidth: 1
-                        Layout.rightMargin: root.compactHeader ? 2 : 4
-                        color: Config.alpha(Config.md3.on_surface, 0.10)
-                    }
-                    SettingsActionButton {
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredHeight: 40
-                        primary: true
-                        text: qsTr("Today")
-
-                        onClicked: root.showToday()
                     }
                     SettingsActionButton {
                         Layout.alignment: Qt.AlignVCenter
@@ -671,20 +677,6 @@ FloatingWindow {
                         }
                     }
                     SettingsActionButton {
-                        Accessible.checkable: true
-                        Accessible.checked: Config.calendarShowLunar
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredHeight: 40
-                        Layout.preferredWidth: root.compactHeader ? 40 : implicitWidth
-                        activeFocusOnTab: true
-                        iconName: "weather-clear-night-symbolic"
-                        iconOnly: root.compactHeader
-                        primary: Config.calendarShowLunar
-                        text: qsTr("Lunar dates")
-
-                        onClicked: Config.calendarShowLunar = !Config.calendarShowLunar
-                    }
-                    SettingsActionButton {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: 40
                         Layout.preferredWidth: 40
@@ -707,32 +699,6 @@ FloatingWindow {
                         tooltipText: qsTr("Import events from an iCalendar (.ics) file")
 
                         onClicked: root.openIcsFilePicker()
-                    }
-                    SettingsActionButton {
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredHeight: 40
-                        Layout.preferredWidth: 40
-                        enabled: root.weekHourHeight > 36
-                        iconName: "zoom-out-symbolic"
-                        iconOnly: true
-                        text: qsTr("Zoom out")
-                        tooltipText: qsTr("Smaller timeline hour height")
-                        visible: root.viewMode === "week"
-
-                        onClicked: root.zoomWeekTimeline(-1)
-                    }
-                    SettingsActionButton {
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredHeight: 40
-                        Layout.preferredWidth: 40
-                        enabled: root.weekHourHeight < 112
-                        iconName: "zoom-in-symbolic"
-                        iconOnly: true
-                        text: qsTr("Zoom in")
-                        tooltipText: qsTr("Larger timeline hour height")
-                        visible: root.viewMode === "week"
-
-                        onClicked: root.zoomWeekTimeline(1)
                     }
                     SettingsActionButton {
                         Layout.alignment: Qt.AlignVCenter
@@ -773,6 +739,8 @@ FloatingWindow {
                 }
             }
             RowLayout {
+                id: calendarBody
+
                 Layout.bottomMargin: 10
                 Layout.fillHeight: true
                 Layout.fillWidth: true
@@ -783,6 +751,8 @@ FloatingWindow {
 
                 Item {
                     Layout.fillHeight: true
+                    Layout.maximumWidth: root.sidebarWidth
+                    Layout.minimumWidth: root.sidebarWidth
                     Layout.preferredWidth: root.sidebarWidth
                     clip: true
                     visible: root.sidebarExpanded || root.sidebarReveal > 0
@@ -811,14 +781,101 @@ FloatingWindow {
                         onCreateRequested: root.createAtSelectedTime()
                         onCreateTaskRequested: root.openNewTaskEditor()
                         onDateSelected: value => root.selectDate(value)
+                        onTodayRequested: root.showToday()
                     }
                 }
-                Rectangle {
+                Item {
+                    id: sidebarDivider
+
+                    readonly property bool highlighted: sidebarResizeMouse.containsMouse || sidebarResizeMouse.pressed || (activeFocus && keyboardFocus)
+                    property bool keyboardFocus: false
+
+                    Accessible.name: qsTr("Resize sidebar")
+                    Accessible.role: Accessible.Separator
                     Layout.fillHeight: true
+                    Layout.maximumWidth: root.sidebarReveal
+                    Layout.minimumWidth: root.sidebarReveal
                     Layout.preferredWidth: root.sidebarReveal
-                    color: Config.alpha(Config.md3.on_surface, 0.07)
+                    activeFocusOnTab: enabled
+                    enabled: root.sidebarExpanded && root.sidebarReveal >= 0.999
                     opacity: root.sidebarReveal
                     visible: root.sidebarExpanded || root.sidebarReveal > 0
+                    z: 1
+
+                    Keys.onEscapePressed: event => {
+                        if (sidebarResizeMouse.pressed) {
+                            sidebarResizeMouse.cancelResize();
+                            event.accepted = true;
+                        } else {
+                            event.accepted = false;
+                        }
+                    }
+                    Keys.onLeftPressed: {
+                        keyboardFocus = true;
+                        root.resizeSidebar(root.sidebarContentWidth - 16);
+                    }
+                    Keys.onPressed: event => {
+                        if (event.key === Qt.Key_Home) {
+                            keyboardFocus = true;
+                            root.sidebarPreferredWidth = 0;
+                            event.accepted = true;
+                        }
+                    }
+                    Keys.onRightPressed: {
+                        keyboardFocus = true;
+                        root.resizeSidebar(root.sidebarContentWidth + 16);
+                    }
+                    onActiveFocusChanged: keyboardFocus = activeFocus && !sidebarResizeMouse.pressed
+
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        color: sidebarDivider.highlighted ? Config.md3.primary : Config.alpha(Config.md3.on_surface, 0.07)
+                        height: parent.height
+                        radius: width / 2
+                        width: sidebarDivider.highlighted ? 3 : 1
+                    }
+                    MouseArea {
+                        id: sidebarResizeMouse
+
+                        property bool canceled: false
+                        property real pressWidth: 0
+                        property real pressX: 0
+                        property real previousPreference: 0
+
+                        function cancelResize() {
+                            if (canceled)
+                                return;
+                            canceled = true;
+                            root.sidebarPreferredWidth = previousPreference;
+                        }
+
+                        acceptedButtons: Qt.LeftButton
+                        anchors.bottom: parent.bottom
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: parent.top
+                        cursorShape: Qt.SplitHCursor
+                        hoverEnabled: true
+                        preventStealing: true
+                        width: 13
+
+                        onCanceled: cancelResize()
+                        onDoubleClicked: {
+                            canceled = true;
+                            root.sidebarPreferredWidth = 0;
+                        }
+                        onPositionChanged: mouse => {
+                            if (pressed && !canceled)
+                                root.resizeSidebar(pressWidth + mapToItem(calendarBody, mouse.x, mouse.y).x - pressX);
+                        }
+                        onPressed: mouse => {
+                            pressX = mapToItem(calendarBody, mouse.x, mouse.y).x;
+                            pressWidth = root.sidebarContentWidth;
+                            previousPreference = root.sidebarPreferredWidth;
+                            canceled = false;
+                            sidebarDivider.keyboardFocus = false;
+                            sidebarDivider.forceActiveFocus(Qt.MouseFocusReason);
+                        }
+                    }
                 }
                 Loader {
                     id: calendarViewLoader
@@ -848,7 +905,7 @@ FloatingWindow {
             anchors.topMargin: appHeader.height + 8
             calendars: CalendarService.calendars
             events: CalendarService.calendarAppEvents
-            height: Math.min(520, Math.max(0, parent.height - appHeader.height - 24))
+            height: Math.min(600, Math.max(0, parent.height - appHeader.height - 24))
             visible: root.searchOpen
             width: Math.min(720, parent.width - 32)
             z: 30

@@ -1,5 +1,3 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Effects
@@ -10,14 +8,45 @@ Item {
 
     property bool capsLockActive: false
     required property string defaultUser
+    readonly property bool isActualError: {
+        var msg = GreeterSession.message.trim().toLowerCase();
+        if (msg === "" || msg.indexOf("preview mode") >= 0 || msg.indexOf("opening") >= 0 || msg.indexOf("starting") >= 0 || msg.indexOf("checking") >= 0)
+            return false;
+        return msg.indexOf("fail") >= 0 || msg.indexOf("error") >= 0 || msg.indexOf("lost") >= 0 || msg.indexOf("denied") >= 0;
+    }
+    readonly property bool sessionPickerOpen: sessionMenu.visible
+
+    signal inputActivity
 
     function clearSecret() {
         secretField.clear();
-        secretField.forceActiveFocus();
+        root.focusInput();
+    }
+    function focusInput() {
+        if (!enabled || !visible)
+            return;
+        if (userField.text === "")
+            userField.forceActiveFocus();
+        else
+            secretField.forceActiveFocus();
+    }
+    function openSessionPicker(sourceItem) {
+        if (GreeterSession.sessions.length <= 1)
+            return;
+        sessionMenu.parent = sourceItem;
+        sessionMenu.x = Math.round((sourceItem.width - sessionMenu.width) / 2);
+        sessionMenu.y = -sessionMenu.height - 6;
+        sessionMenu.open();
     }
     function submit() {
         if (GreeterSession.working || secretField.text.length === 0)
             return;
+        if (!GreeterSession.greetdAvailable) {
+            // In preview mode: simulate smooth login animation without error text
+            GreeterSession.launching = true;
+            simulatedUnlock.restart();
+            return;
+        }
         if (GreeterSession.waitingForResponse)
             GreeterSession.respond(secretField.text);
         else
@@ -29,16 +58,25 @@ Item {
             capsLockActive = !capsLockActive;
     }
 
-    implicitHeight: root.defaultUser === "" ? 452 : 390
-    implicitWidth: 496
+    implicitHeight: cardContent.implicitHeight + 56
+    implicitWidth: 400
 
-    Component.onCompleted: {
-        if (root.defaultUser === "")
-            userField.forceActiveFocus();
-        else
-            secretField.forceActiveFocus();
+    Component.onCompleted: root.focusInput()
+    onIsActualErrorChanged: {
+        if (isActualError)
+            shakeAnimation.restart();
     }
 
+    Timer {
+        id: simulatedUnlock
+
+        interval: 1000
+
+        onTriggered: {
+            GreeterSession.launching = false;
+            secretField.clear();
+        }
+    }
     Connections {
         function onInputResetRequested() {
             root.clearSecret();
@@ -46,191 +84,277 @@ Item {
 
         target: GreeterSession
     }
+    SequentialAnimation {
+        id: shakeAnimation
+
+        NumberAnimation {
+            duration: 45
+            easing.type: Easing.InOutQuad
+            from: 0
+            property: "x"
+            target: cardTranslate
+            to: -10
+        }
+        NumberAnimation {
+            duration: 50
+            easing.type: Easing.InOutQuad
+            from: -10
+            property: "x"
+            target: cardTranslate
+            to: 10
+        }
+        NumberAnimation {
+            duration: 45
+            easing.type: Easing.InOutQuad
+            from: 10
+            property: "x"
+            target: cardTranslate
+            to: -7
+        }
+        NumberAnimation {
+            duration: 45
+            easing.type: Easing.InOutQuad
+            from: -7
+            property: "x"
+            target: cardTranslate
+            to: 7
+        }
+        NumberAnimation {
+            duration: 40
+            easing.type: Easing.InOutQuad
+            from: 7
+            property: "x"
+            target: cardTranslate
+            to: 0
+        }
+    }
     RectangularShadow {
         anchors.fill: card
-        blur: 40
-        color: GreeterTheme.withAlpha(GreeterTheme.shadow, GreeterTheme.isDark ? 0.46 : 0.22)
-        offset.y: 18
+        blur: 32
+        color: GreeterTheme.withAlpha(GreeterTheme.shadow, GreeterTheme.isDark ? 0.2 : 0.1)
+        offset.y: 8
         radius: card.radius
-        spread: -4
+        spread: -2
     }
     Rectangle {
         id: card
 
         anchors.fill: parent
-        border.color: GreeterTheme.withAlpha(GreeterTheme.outlineVariant, 0.42)
-        border.width: 1.5
-        color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainer, GreeterTheme.isDark ? 0.94 : 0.98)
+        border.color: root.isActualError ? GreeterTheme.withAlpha(GreeterTheme.error, 0.6) : GreeterTheme.withAlpha(GreeterTheme.outlineVariant, GreeterTheme.isDark ? 0.22 : 0.35)
+        border.width: 1
+        color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainer, 0.96)
         opacity: 0
-        radius: 30
+        radius: 28
         scale: 0.96
+
+        gradient: Gradient {
+            GradientStop {
+                color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerHigh, 0.98)
+                position: 0
+            }
+            GradientStop {
+                color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainer, 0.98)
+                position: 1
+            }
+        }
+        transform: Translate {
+            id: cardTranslate
+        }
 
         ParallelAnimation {
             running: true
 
             OpacityAnimator {
-                duration: 240
+                duration: 260
                 easing.type: Easing.OutCubic
                 from: 0
                 target: card
                 to: 1
             }
             ScaleAnimator {
-                duration: 280
+                duration: 300
                 easing.type: Easing.OutCubic
                 from: 0.96
                 target: card
                 to: 1
             }
         }
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: 12
-            color: GreeterTheme.withAlpha(GreeterTheme.primary, 0.72)
-            height: 3.5
-            radius: 2
-            width: parent.width - 48
-        }
         ColumnLayout {
-            anchors.bottomMargin: 26
-            anchors.fill: parent
-            anchors.leftMargin: 26
-            anchors.rightMargin: 26
-            anchors.topMargin: 28
-            spacing: 15
+            id: cardContent
 
+            anchors.fill: parent
+            anchors.margins: 28
+            spacing: 24
+
+            // Avatar & Identity Header Block
             RowLayout {
                 Layout.fillWidth: true
+                Layout.preferredHeight: 56
                 spacing: 16
 
                 GreeterAvatar {
-                    Layout.preferredHeight: 80
-                    Layout.preferredWidth: 80
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredHeight: 52
+                    Layout.preferredWidth: 52
                 }
                 ColumnLayout {
+                    Layout.alignment: Qt.AlignVCenter
                     Layout.fillWidth: true
-                    spacing: 3
+                    Layout.minimumWidth: 0
+                    spacing: 4
 
                     Text {
                         Layout.fillWidth: true
-                        color: GreeterTheme.surfaceVariantText
-                        font.family: "Inter Variable"
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
-                        text: qsTr("Welcome back")
-                    }
-                    Text {
-                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         color: GreeterTheme.surfaceText
                         elide: Text.ElideRight
                         font.family: "Inter Variable"
-                        font.pixelSize: 25
-                        font.weight: Font.Bold
-                        text: root.defaultUser !== "" ? root.defaultUser : userField.text !== "" ? userField.text : qsTr("Sign in")
+                        font.pixelSize: 20
+                        font.weight: Font.DemiBold
+                        text: root.defaultUser !== "" ? root.defaultUser : userField.text !== "" ? userField.text : qsTr("User")
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        color: GreeterTheme.surfaceVariantText
+                        elide: Text.ElideRight
+                        font.family: "Inter Variable"
+                        font.letterSpacing: 0.2
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                        text: "@" + GreeterSession.hostName
+                        visible: GreeterSession.hostName !== ""
                     }
                 }
             }
+
+            // Username input (only shown if no default user configured)
             TextField {
                 id: userField
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: visible ? 50 : 0
+                Layout.preferredHeight: visible ? 48 : 0
                 color: GreeterTheme.surfaceText
                 font.family: "Inter Variable"
-                font.pixelSize: 15
-                leftPadding: 18
+                font.pixelSize: 14
+                leftPadding: 16
                 placeholderText: qsTr("User name")
                 placeholderTextColor: GreeterTheme.surfaceVariantText
-                rightPadding: 18
+                rightPadding: 16
                 text: root.defaultUser
                 visible: root.defaultUser === ""
 
                 background: Rectangle {
-                    border.color: userField.activeFocus ? GreeterTheme.primary : GreeterTheme.withAlpha(GreeterTheme.outline, 0.45)
+                    border.color: userField.activeFocus ? GreeterTheme.primary : GreeterTheme.withAlpha(GreeterTheme.outlineVariant, 0.45)
                     border.width: userField.activeFocus ? 2 : 1
-                    color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerHighest, 0.65)
-                    radius: 16
-
-                    Behavior on border.color {
-                        ColorAnimation {
-                            duration: 140
-                        }
-                    }
+                    color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerHighest, 0.55)
+                    radius: 14
                 }
 
                 onAccepted: secretField.forceActiveFocus()
+                onTextEdited: root.inputActivity()
             }
-            ColumnLayout {
+            RowLayout {
                 Layout.fillWidth: true
-                spacing: 6
+                spacing: 12
 
-                Text {
-                    Layout.fillWidth: true
-                    color: GreeterTheme.surfaceVariantText
-                    font.family: "Inter Variable"
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
-                    text: GreeterSession.prompt || qsTr("Password")
-                }
-                TextField {
-                    id: secretField
+                Rectangle {
+                    id: passwordCapsule
 
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 54
-                    color: "transparent"
-                    echoMode: TextInput.Password
-                    enabled: !GreeterSession.working
-                    font.family: "Inter Variable"
-                    font.pixelSize: 16
-                    leftPadding: 48
-                    placeholderText: activeFocus ? "" : qsTr("Enter your password")
-                    placeholderTextColor: GreeterTheme.withAlpha(GreeterTheme.surfaceVariantText, 0.72)
-                    rightPadding: trailingBadges.width + 24
-                    selectByMouse: true
-                    selectedTextColor: "transparent"
-                    selectionColor: "transparent"
+                    Layout.preferredHeight: 56
+                    border.color: root.isActualError ? GreeterTheme.error : secretField.activeFocus ? GreeterTheme.withAlpha(GreeterTheme.primary, 0.55) : GreeterTheme.withAlpha(GreeterTheme.outlineVariant, 0.25)
+                    border.width: 1
+                    color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerLowest, 0.65)
+                    radius: 18
 
-                    background: Rectangle {
-                        border.color: secretField.activeFocus ? GreeterTheme.primary : GreeterTheme.withAlpha(GreeterTheme.outline, 0.45)
-                        border.width: secretField.activeFocus ? 2 : 1
-                        color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerHighest, 0.65)
-                        radius: 18
-
-                        Behavior on border.color {
-                            ColorAnimation {
-                                duration: 140
-                            }
+                    Behavior on border.color {
+                        ColorAnimation {
+                            duration: 150
                         }
                     }
-                    cursorDelegate: Item {
-                        height: 0
-                        width: 0
-                    }
 
-                    Keys.onEscapePressed: {
-                        secretField.clear();
-                        GreeterSession.cancel();
-                    }
-                    Keys.onPressed: event => root.updateCapsLock(event, true)
-                    Keys.onReleased: event => root.updateCapsLock(event, false)
-                    onAccepted: root.submit()
-
-                    Row {
-                        id: trailingBadges
-
-                        anchors.right: parent.right
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 14
                         anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 6
+                        spacing: 12
 
+                        // Leading Lock Icon
+                        Text {
+                            color: GreeterTheme.surfaceVariantText
+                            font.family: "Symbols Nerd Font"
+                            font.pixelSize: 16
+                            text: "󰌾"
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 140
+                                }
+                            }
+                        }
+
+                        // Main Password Field
+                        Item {
+                            Layout.fillHeight: true
+                            Layout.fillWidth: true
+
+                            TextField {
+                                id: secretField
+
+                                anchors.fill: parent
+                                color: "transparent"
+                                echoMode: TextInput.Password
+                                enabled: !GreeterSession.working
+                                font.family: "Inter Variable"
+                                font.pixelSize: 16
+                                leftPadding: 4
+                                placeholderText: activeFocus ? "" : qsTr("Enter password…")
+                                placeholderTextColor: GreeterTheme.withAlpha(GreeterTheme.surfaceVariantText, 0.6)
+                                rightPadding: 6
+                                selectByMouse: true
+                                selectedTextColor: "transparent"
+                                selectionColor: "transparent"
+
+                                background: Item {
+                                }
+                                cursorDelegate: Item {
+                                    height: 0
+                                    width: 0
+                                }
+
+                                Keys.onEscapePressed: {
+                                    secretField.clear();
+                                    GreeterSession.cancel();
+                                }
+                                Keys.onPressed: event => {
+                                    root.inputActivity();
+                                    root.updateCapsLock(event, true);
+                                }
+                                Keys.onReleased: event => root.updateCapsLock(event, false)
+                                onAccepted: root.submit()
+                                onTextEdited: root.inputActivity()
+                            }
+                            GreeterPasswordDots {
+                                active: secretField.activeFocus
+                                anchors.bottom: parent.bottom
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                characterCount: secretField.text.length
+                                cursorColor: GreeterTheme.primary
+                                dotColor: root.isActualError ? GreeterTheme.error : GreeterTheme.surfaceText
+                                error: root.isActualError
+                            }
+                        }
+
+                        // Caps Lock Warning Pill
                         Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: GreeterTheme.withAlpha(GreeterTheme.error, 0.18)
-                            height: 22
-                            radius: 7
+                            Layout.preferredHeight: 24
+                            Layout.preferredWidth: capsText.implicitWidth + 14
+                            color: GreeterTheme.withAlpha(GreeterTheme.error, 0.22)
+                            radius: 8
                             visible: root.capsLockActive
-                            width: capsText.implicitWidth + 12
 
                             Text {
                                 id: capsText
@@ -238,25 +362,20 @@ Item {
                                 anchors.centerIn: parent
                                 color: GreeterTheme.error
                                 font.family: "Inter Variable"
-                                font.pixelSize: 10
+                                font.pixelSize: 11
                                 font.weight: Font.Bold
                                 text: qsTr("CAPS")
                             }
                         }
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            border.color: GreeterTheme.withAlpha(GreeterTheme.primary, 0.28)
-                            border.width: 1
-                            color: GreeterTheme.withAlpha(GreeterTheme.primary, 0.14)
-                            height: 22
-                            radius: 7
-                            width: layoutText.implicitWidth + 14
+                        Item {
+                            Layout.preferredHeight: 26
+                            Layout.preferredWidth: layoutText.implicitWidth + 4
 
                             Text {
                                 id: layoutText
 
                                 anchors.centerIn: parent
-                                color: GreeterTheme.primary
+                                color: GreeterTheme.surfaceVariantText
                                 font.family: "Inter Variable"
                                 font.pixelSize: 11
                                 font.weight: Font.Bold
@@ -264,189 +383,220 @@ Item {
                             }
                         }
                     }
-                    GreeterPasswordDots {
-                        active: secretField.activeFocus
-                        anchors.bottom: parent.bottom
-                        anchors.left: parent.left
-                        anchors.leftMargin: secretField.leftPadding
-                        anchors.right: parent.right
-                        anchors.rightMargin: secretField.rightPadding
-                        anchors.top: parent.top
-                        characterCount: secretField.text.length
-                        cursorColor: GreeterTheme.primary
-                        dotColor: GreeterTheme.surfaceText
-                        error: GreeterSession.message.toLowerCase().indexOf("fail") >= 0
-                    }
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 16
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: secretField.activeFocus ? GreeterTheme.primary : GreeterTheme.surfaceVariantText
-                        font.family: "Symbols Nerd Font"
-                        font.pixelSize: 18
-                        text: "󰌾"
-                    }
                 }
-            }
-            Text {
-                Layout.fillWidth: true
-                color: GreeterSession.message.toLowerCase().indexOf("fail") >= 0 ? GreeterTheme.error : GreeterTheme.surfaceVariantText
-                font.family: "Inter Variable"
-                font.pixelSize: 13
-                text: GreeterSession.message
-                visible: text !== ""
-                wrapMode: Text.Wrap
-            }
-            Button {
-                id: submitButton
+                Rectangle {
+                    id: submitCircle
 
-                Accessible.name: qsTr("Sign in")
-                Layout.fillWidth: true
-                Layout.preferredHeight: 50
-                activeFocusOnTab: false
-                enabled: !GreeterSession.working && secretField.text.length > 0
+                    readonly property bool ready: secretField.text.length > 0 && !GreeterSession.working
 
-                background: Rectangle {
-                    color: submitButton.down ? Qt.darker(GreeterTheme.primary, 1.08) : submitButton.hovered ? Qt.lighter(GreeterTheme.primary, 1.06) : GreeterTheme.primary
-                    opacity: submitButton.enabled ? 1 : 0.45
-                    radius: height / 2
+                    Layout.preferredHeight: 56
+                    Layout.preferredWidth: 56
+                    color: ready ? (submitMouse.pressed ? Qt.darker(GreeterTheme.primary, 1.15) : submitMouse.containsMouse ? Qt.lighter(GreeterTheme.primary, 1.08) : GreeterTheme.primary) : GreeterTheme.withAlpha(GreeterTheme.surfaceText, 0.08)
+                    radius: 18
+                    scale: submitMouse.pressed && ready ? 0.96 : 1.0
 
                     Behavior on color {
                         ColorAnimation {
                             duration: 130
                         }
                     }
-                }
-                contentItem: RowLayout {
-                    spacing: 10
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: 120
+                            easing.type: Easing.OutBack
+                        }
+                    }
 
-                    Item {
-                        Layout.fillWidth: true
-                    }
                     Text {
-                        color: GreeterTheme.primaryText
-                        font.family: "Inter Variable"
-                        font.pixelSize: 15
-                        font.weight: Font.Bold
-                        text: GreeterSession.working ? qsTr("Signing in…") : qsTr("Sign in")
-                    }
-                    Text {
-                        color: GreeterTheme.primaryText
+                        anchors.centerIn: parent
+                        color: submitCircle.ready ? GreeterTheme.primaryText : GreeterTheme.withAlpha(GreeterTheme.surfaceVariantText, 0.4)
                         font.family: "Symbols Nerd Font"
-                        font.pixelSize: 18
+                        font.pixelSize: 22
                         text: GreeterSession.working ? "󰔟" : "󰁔"
+
+                        RotationAnimation on rotation {
+                            duration: 800
+                            from: 0
+                            loops: Animation.Infinite
+                            running: GreeterSession.working
+                            to: 360
+                        }
                     }
-                    Item {
-                        Layout.fillWidth: true
-                    }
-                }
+                    MouseArea {
+                        id: submitMouse
 
-                onClicked: root.submit()
-            }
-            ComboBox {
-                id: sessionPicker
+                        anchors.fill: parent
+                        cursorShape: submitCircle.ready ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        hoverEnabled: true
 
-                Accessible.name: qsTr("Desktop session")
-                Layout.fillWidth: true
-                Layout.preferredHeight: 44
-                activeFocusOnTab: false
-                currentIndex: GreeterSession.selectedSessionIndex
-                enabled: !GreeterSession.working && count > 1
-                model: GreeterSession.sessions
-                opacity: GreeterSession.working ? 0.55 : 1
-                textRole: "name"
-
-                background: Rectangle {
-                    border.color: sessionPicker.hovered ? GreeterTheme.withAlpha(GreeterTheme.primary, 0.48) : GreeterTheme.withAlpha(GreeterTheme.outlineVariant, 0.4)
-                    border.width: 1
-                    color: sessionPicker.pressed ? GreeterTheme.surfaceContainerHighest : sessionPicker.hovered ? GreeterTheme.surfaceContainerHigh : GreeterTheme.surfaceContainerLow
-                    radius: 16
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 130
+                        onClicked: {
+                            if (submitCircle.ready)
+                                root.submit();
                         }
                     }
                 }
-                contentItem: RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 15
-                    anchors.rightMargin: sessionPicker.count > 1 ? 38 : 15
-                    spacing: 10
+            }
+
+            // Real Error Message Badge
+            Rectangle {
+                Layout.fillWidth: true
+                border.color: GreeterTheme.withAlpha(GreeterTheme.error, 0.45)
+                border.width: 1
+                color: GreeterTheme.withAlpha(GreeterTheme.error, 0.16)
+                implicitHeight: errorContent.implicitHeight + 20
+                radius: 12
+                visible: root.isActualError
+
+                RowLayout {
+                    id: errorContent
+
+                    anchors.left: parent.left
+                    anchors.margins: 12
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
+
+                    Text {
+                        color: GreeterTheme.error
+                        font.family: "Symbols Nerd Font"
+                        font.pixelSize: 14
+                        text: "󰅚"
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        color: GreeterTheme.error
+                        font.family: "Inter Variable"
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                        text: GreeterSession.message
+                        wrapMode: Text.Wrap
+                    }
+                }
+            }
+
+            // MD3 Assist Chip for Session Selection
+            Rectangle {
+                id: sessionChip
+
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredHeight: 40
+                Layout.preferredWidth: 40
+                border.color: sessionMouse.containsMouse ? GreeterTheme.withAlpha(GreeterTheme.primary, 0.5) : GreeterTheme.withAlpha(GreeterTheme.outlineVariant, 0.35)
+                border.width: 1
+                color: sessionMouse.containsMouse ? GreeterTheme.withAlpha(GreeterTheme.surfaceContainerHighest, 0.75) : GreeterTheme.withAlpha(GreeterTheme.surfaceContainerLow, 0.6)
+                radius: 19
+                visible: GreeterSession.sessions.length > 1
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 130
+                    }
+                }
+
+                RowLayout {
+                    id: sessionRow
+
+                    anchors.centerIn: parent
+                    spacing: 8
 
                     Text {
                         color: GreeterTheme.primary
                         font.family: "Symbols Nerd Font"
-                        font.pixelSize: 17
+                        font.pixelSize: 15
                         text: "󰍹"
                     }
                     Text {
-                        Layout.fillWidth: true
-                        color: GreeterTheme.surfaceText
-                        elide: Text.ElideRight
-                        font.family: "Inter Variable"
+                        color: GreeterTheme.surfaceVariantText
+                        font.family: "Symbols Nerd Font"
                         font.pixelSize: 13
-                        font.weight: Font.DemiBold
-                        text: sessionPicker.displayText
+                        text: "󰅀"
+                        visible: GreeterSession.sessions.length > 1
                     }
                 }
-                delegate: ItemDelegate {
-                    id: sessionDelegate
+                MouseArea {
+                    id: sessionMouse
 
-                    required property int index
-                    required property var modelData
+                    anchors.fill: parent
+                    cursorShape: GreeterSession.sessions.length > 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    hoverEnabled: true
 
-                    height: 44
-                    highlighted: sessionPicker.highlightedIndex === index
-                    width: ListView.view ? ListView.view.width : sessionPicker.width
-
-                    background: Rectangle {
-                        color: sessionDelegate.highlighted ? GreeterTheme.withAlpha(GreeterTheme.primary, 0.16) : "transparent"
-                        radius: 10
-                    }
-                    contentItem: Text {
-                        color: GreeterTheme.surfaceText
-                        elide: Text.ElideRight
-                        font.family: "Inter Variable"
-                        font.pixelSize: 13
-                        text: sessionDelegate.modelData.name
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    onClicked: root.openSessionPicker(sessionChip)
                 }
-                indicator: Text {
-                    anchors.right: parent.right
-                    anchors.rightMargin: 14
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: GreeterTheme.surfaceVariantText
-                    font.family: "Symbols Nerd Font"
-                    font.pixelSize: 14
-                    text: "󰅀"
-                    visible: sessionPicker.count > 1
-                }
-                popup: Popup {
-                    height: Math.min(sessionPicker.count * 44, 220) + topPadding + bottomPadding
-                    padding: 6
-                    width: sessionPicker.width
-                    y: -height - 8
-                    z: 100
+            }
+        }
+        Popup {
+            id: sessionMenu
 
-                    background: Rectangle {
-                        border.color: GreeterTheme.withAlpha(GreeterTheme.outlineVariant, 0.54)
-                        border.width: 1
-                        color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerHigh, 0.98)
-                        radius: 16
-                    }
-                    contentItem: ListView {
-                        clip: true
-                        currentIndex: sessionPicker.highlightedIndex
-                        model: sessionPicker.popup.visible ? sessionPicker.delegateModel : null
+            padding: 6
+            width: 180
 
-                        ScrollIndicator.vertical: ScrollIndicator {
+            background: Rectangle {
+                border.color: GreeterTheme.withAlpha(GreeterTheme.outlineVariant, 0.5)
+                border.width: 1
+                color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerHigh, 0.96)
+                radius: 14
+            }
+            contentItem: Column {
+                spacing: 2
+
+                Repeater {
+                    model: GreeterSession.sessions
+
+                    Rectangle {
+                        id: sessionItem
+
+                        required property int index
+                        required property var modelData
+                        readonly property bool selected: index === GreeterSession.selectedSessionIndex
+
+                        color: selected ? GreeterTheme.withAlpha(GreeterTheme.primary, 0.18) : itemMouse.containsMouse ? GreeterTheme.withAlpha(GreeterTheme.onSurface, 0.08) : "transparent"
+                        height: 34
+                        radius: 8
+                        width: parent.width
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 8
+
+                            Text {
+                                color: sessionItem.selected ? GreeterTheme.primary : GreeterTheme.surfaceVariantText
+                                font.family: "Symbols Nerd Font"
+                                font.pixelSize: 14
+                                text: "󰍹"
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                color: sessionItem.selected ? GreeterTheme.primary : GreeterTheme.surfaceText
+                                elide: Text.ElideRight
+                                font.family: "Inter Variable"
+                                font.pixelSize: 12
+                                font.weight: sessionItem.selected ? Font.Bold : Font.Medium
+                                text: sessionItem.modelData.name
+                            }
+                            Text {
+                                color: GreeterTheme.primary
+                                font.family: "Symbols Nerd Font"
+                                font.pixelSize: 13
+                                text: "󰄬"
+                                visible: sessionItem.selected
+                            }
+                        }
+                        MouseArea {
+                            id: itemMouse
+
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+
+                            onClicked: {
+                                GreeterSession.selectSession(sessionItem.index);
+                                sessionMenu.close();
+                            }
                         }
                     }
                 }
-
-                onActivated: index => GreeterSession.selectSession(index)
             }
         }
     }

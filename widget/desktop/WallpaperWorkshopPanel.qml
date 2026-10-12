@@ -66,6 +66,8 @@ Rectangle {
         }
         contentTransition.stop();
         contentTransitionDirection = tab === "installed" ? 1 : -1;
+        animatedContent.opacity = 0;
+        contentOffset.x = contentTransitionDirection * 14;
         activeTab = tab;
         deleteArmedId = "";
         if (installedMode)
@@ -621,6 +623,10 @@ Rectangle {
 
                     anchors.fill: parent
 
+                    transform: Translate {
+                        id: contentOffset
+                    }
+
                     Column {
                         anchors.centerIn: parent
                         spacing: 10
@@ -773,18 +779,18 @@ Rectangle {
             ParallelAnimation {
                 id: contentTransition
 
-                OpacityAnimator {
+                NumberAnimation {
                     duration: 180
                     easing.type: Easing.OutCubic
-                    from: 0
+                    property: "opacity"
                     target: animatedContent
                     to: 1
                 }
-                XAnimator {
+                NumberAnimation {
                     duration: 210
                     easing.type: Easing.OutCubic
-                    from: root.contentTransitionDirection * 14
-                    target: animatedContent
+                    property: "x"
+                    target: contentOffset
                     to: 0
                 }
             }

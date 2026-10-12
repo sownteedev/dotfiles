@@ -59,6 +59,7 @@ ColumnLayout {
     }
     property int selectedIndex: 0
 
+    signal profileClicked
     signal selected(int page, int section)
 
     function activateResult(index) {
@@ -110,7 +111,7 @@ ColumnLayout {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.leftMargin: 52
-            anchors.right: clearButton.visible ? clearButton.left : parent.right
+            anchors.right: clearButton.visible ? clearButton.left : profileButton.left
             anchors.rightMargin: 10
             anchors.top: parent.top
             clip: true
@@ -139,6 +140,7 @@ ColumnLayout {
         Text {
             anchors.fill: searchInput
             color: Config.alpha(Config.md3.on_surface, 0.4)
+            elide: Text.ElideRight
             font: searchInput.font
             text: qsTr("Search settings")
             verticalAlignment: Text.AlignVCenter
@@ -147,7 +149,7 @@ ColumnLayout {
         Md3Icon {
             id: clearButton
 
-            anchors.right: parent.right
+            anchors.right: profileButton.left
             anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             color: Config.alpha(Config.md3.on_surface, clearMouse.containsMouse ? 0.92 : 0.62)
@@ -164,6 +166,35 @@ ColumnLayout {
                 hoverEnabled: true
 
                 onClicked: searchInput.text = ""
+            }
+        }
+        ProfileAvatar {
+            id: profileButton
+
+            accentColor: Config.md3.primary
+            anchors.right: parent.right
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            height: 40
+            scale: profileMouse.pressed ? 0.94 : profileMouse.containsMouse ? 1.04 : 1
+            sourcePath: Config.profileImagePath
+            width: 40
+
+            Behavior on scale {
+                ScaleAnimator {
+                    duration: Config.animationDuration(140)
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            MouseArea {
+                id: profileMouse
+
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+
+                onClicked: root.profileClicked()
             }
         }
     }

@@ -105,6 +105,8 @@ Rectangle {
         var newIndex = tab === "browse" ? 0 : (tab === "collections" ? 1 : 2);
         contentTransitionDirection = newIndex > oldIndex ? 1 : -1;
         resultViewResetTimer.stop();
+        animatedContent.opacity = 0;
+        contentOffset.x = contentTransitionDirection * 16;
         activeTab = tab;
         deleteArmedId = "";
         if (collectionsMode) {
@@ -630,295 +632,320 @@ Rectangle {
                     }
                 }
             }
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.maximumHeight: 34
-                Layout.minimumHeight: 34
-                Layout.preferredHeight: 34
-                spacing: 10
-                visible: root.collectionsMode && WallhavenService.accountConfigured && WallhavenService.collections.count > 1
-
-                Flickable {
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.fillWidth: true
-                    Layout.maximumHeight: 32
-                    Layout.minimumHeight: 32
-                    Layout.preferredHeight: 32
-                    clip: true
-                    contentHeight: height
-                    contentWidth: collectionRow.implicitWidth
-                    interactive: contentWidth > width
-
-                    Row {
-                        id: collectionRow
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 6
-
-                        Repeater {
-                            model: WallhavenService.collections
-
-                            delegate: Rectangle {
-                                id: collectionChip
-
-                                required property var model
-                                readonly property bool selected: WallhavenService.selectedCollectionId === String(model.id || "")
-
-                                Accessible.name: qsTr("Open collection %1").arg(String(model.label || qsTr("Collection")))
-                                Accessible.role: Accessible.Button
-                                activeFocusOnTab: false
-                                border.color: selected ? Config.alpha(Config.md3.secondary, 0.34) : collectionMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.34) : Config.alpha(Config.md3.outline, 0.12)
-                                border.width: 1
-                                color: selected ? Config.md3.secondary_container : (collectionMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.045))
-                                height: 30
-                                radius: Md3.shape.full
-                                width: collectionChipContent.implicitWidth + 20
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 120
-                                    }
-                                }
-
-                                Keys.onReturnPressed: root.selectCollection(collectionChip.model)
-                                Keys.onSpacePressed: root.selectCollection(collectionChip.model)
-
-                                Row {
-                                    id: collectionChipContent
-
-                                    anchors.centerIn: parent
-                                    spacing: 8
-
-                                    IconImage {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        height: 15
-                                        layer.enabled: true
-                                        source: Quickshell.iconPath(collectionChip.selected ? "folder-open-symbolic" : "folder-symbolic")
-                                        width: 15
-
-                                        layer.effect: ColorOverlay {
-                                            color: collectionChip.selected ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
-                                        }
-                                    }
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: collectionChip.selected ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
-                                        font.family: Config.fontName
-                                        font.pixelSize: 12
-                                        font.weight: Font.DemiBold
-                                        text: String(collectionChip.model.label || qsTr("Collection"))
-                                    }
-                                }
-                                MouseArea {
-                                    id: collectionMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    onClicked: root.selectCollection(collectionChip.model)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            Item {
-                id: animatedContent
-
+            ColumnLayout {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                spacing: 0
 
-                Column {
-                    anchors.centerIn: parent
+                RowLayout {
+                    id: collectionsToolbar
+
+                    readonly property bool expanded: root.collectionsMode && WallhavenService.accountConfigured && WallhavenService.collections.count > 1
+                    property real reveal: expanded ? 1 : 0
+
+                    Layout.fillWidth: true
+                    Layout.maximumHeight: (34 + Md3.spacing.md) * reveal
+                    Layout.minimumHeight: (34 + Md3.spacing.md) * reveal
+                    Layout.preferredHeight: (34 + Md3.spacing.md) * reveal
+                    clip: true
+                    enabled: expanded
+                    opacity: reveal
                     spacing: 10
-                    visible: root.collectionsMode && !WallhavenService.accountConfigured
-                    width: Math.min(parent.width - 40, 540)
 
-                    IconImage {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        height: 50
-                        layer.enabled: true
-                        source: Quickshell.iconPath("dialog-password-symbolic")
-                        width: 50
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.primary
+                    Behavior on reveal {
+                        NumberAnimation {
+                            duration: 210
+                            easing.type: Easing.OutCubic
                         }
                     }
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 19
-                        font.weight: Font.Bold
-                        horizontalAlignment: Text.AlignHCenter
-                        text: qsTr("Connect your Wallhaven account")
-                        width: parent.width
+
+                    Flickable {
+                        Layout.alignment: Qt.AlignTop
+                        Layout.fillWidth: true
+                        Layout.maximumHeight: 32
+                        Layout.minimumHeight: 32
+                        Layout.preferredHeight: 32
+                        Layout.topMargin: 1
+                        clip: true
+                        contentHeight: height
+                        contentWidth: collectionRow.implicitWidth
+                        interactive: contentWidth > width
+
+                        Row {
+                            id: collectionRow
+
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 6
+
+                            Repeater {
+                                model: WallhavenService.collections
+
+                                delegate: Rectangle {
+                                    id: collectionChip
+
+                                    required property var model
+                                    readonly property bool selected: WallhavenService.selectedCollectionId === String(model.id || "")
+
+                                    Accessible.name: qsTr("Open collection %1").arg(String(model.label || qsTr("Collection")))
+                                    Accessible.role: Accessible.Button
+                                    activeFocusOnTab: false
+                                    border.color: selected ? Config.alpha(Config.md3.secondary, 0.34) : collectionMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.34) : Config.alpha(Config.md3.outline, 0.12)
+                                    border.width: 1
+                                    color: selected ? Config.md3.secondary_container : (collectionMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : Config.alpha(Config.md3.on_surface, 0.045))
+                                    height: 30
+                                    radius: Md3.shape.full
+                                    width: collectionChipContent.implicitWidth + 20
+
+                                    Behavior on color {
+                                        ColorAnimation {
+                                            duration: 120
+                                        }
+                                    }
+
+                                    Keys.onReturnPressed: root.selectCollection(collectionChip.model)
+                                    Keys.onSpacePressed: root.selectCollection(collectionChip.model)
+
+                                    Row {
+                                        id: collectionChipContent
+
+                                        anchors.centerIn: parent
+                                        spacing: 8
+
+                                        IconImage {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            height: 15
+                                            layer.enabled: true
+                                            source: Quickshell.iconPath(collectionChip.selected ? "folder-open-symbolic" : "folder-symbolic")
+                                            width: 15
+
+                                            layer.effect: ColorOverlay {
+                                                color: collectionChip.selected ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
+                                            }
+                                        }
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            color: collectionChip.selected ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
+                                            font.family: Config.fontName
+                                            font.pixelSize: 12
+                                            font.weight: Font.DemiBold
+                                            text: String(collectionChip.model.label || qsTr("Collection"))
+                                        }
+                                    }
+                                    MouseArea {
+                                        id: collectionMouse
+
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        hoverEnabled: true
+
+                                        onClicked: root.selectCollection(collectionChip.model)
+                                    }
+                                }
+                            }
+                        }
                     }
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: Config.md3.on_surface_variant
-                        font.family: Config.fontName
-                        font.pixelSize: 13
-                        horizontalAlignment: Text.AlignHCenter
-                        text: qsTr("Add your username and API key in Settings → Integrations → Wallhaven")
-                        width: parent.width
-                        wrapMode: Text.Wrap
+                }
+                Item {
+                    id: animatedContent
+
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+
+                    transform: Translate {
+                        id: contentOffset
                     }
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: settingsMouse.containsMouse ? Config.md3.primary : Config.md3.primary_container
-                        height: 40
-                        radius: Md3.shape.full
-                        width: settingsLabel.implicitWidth + 26
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 10
+                        visible: root.collectionsMode && !WallhavenService.accountConfigured
+                        width: Math.min(parent.width - 40, 540)
+
+                        IconImage {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            height: 50
+                            layer.enabled: true
+                            source: Quickshell.iconPath("dialog-password-symbolic")
+                            width: 50
+
+                            layer.effect: ColorOverlay {
+                                color: Config.md3.primary
+                            }
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Config.md3.on_surface
+                            font.family: Config.fontName
+                            font.pixelSize: 19
+                            font.weight: Font.Bold
+                            horizontalAlignment: Text.AlignHCenter
+                            text: qsTr("Connect your Wallhaven account")
+                            width: parent.width
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Config.md3.on_surface_variant
+                            font.family: Config.fontName
+                            font.pixelSize: 13
+                            horizontalAlignment: Text.AlignHCenter
+                            text: qsTr("Add your username and API key in Settings → Integrations → Wallhaven")
+                            width: parent.width
+                            wrapMode: Text.Wrap
+                        }
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: settingsMouse.containsMouse ? Config.md3.primary : Config.md3.primary_container
+                            height: 40
+                            radius: Md3.shape.full
+                            width: settingsLabel.implicitWidth + 26
+
+                            Text {
+                                id: settingsLabel
+
+                                anchors.centerIn: parent
+                                color: settingsMouse.containsMouse ? Config.md3.on_primary : Config.md3.on_primary_container
+                                font.family: Config.fontName
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                text: qsTr("Open Settings")
+                            }
+                            MouseArea {
+                                id: settingsMouse
+
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
+
+                                onClicked: {
+                                    root.closePanel();
+                                    StateManager.showSettingsHub();
+                                }
+                            }
+                        }
+                    }
+                    LoadingIndicator {
+                        anchors.centerIn: parent
+                        animated: root.resultInitialLoading
+                        height: 80
+                        visible: animated
+                        width: 80
+                    }
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 8
+                        visible: !root.resultInitialLoading && !root.resultHasItems && root.resultError !== "" && !(root.collectionsMode && !WallhavenService.accountConfigured)
+                        width: Math.min(parent.width - 40, 620)
 
                         Text {
-                            id: settingsLabel
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Config.md3.error
+                            font.family: Config.fontName
+                            font.pixelSize: 16
+                            font.weight: Font.DemiBold
+                            horizontalAlignment: Text.AlignHCenter
+                            text: root.resultError
+                            width: parent.width
+                            wrapMode: Text.Wrap
+                        }
+                    }
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 6
+                        visible: !root.resultInitialLoading && !root.resultHasItems && root.resultError === "" && !(root.collectionsMode && !WallhavenService.accountConfigured) && (root.installedMode || root.collectionsMode || WallhavenService.query !== "")
 
-                            anchors.centerIn: parent
-                            color: settingsMouse.containsMouse ? Config.md3.on_primary : Config.md3.on_primary_container
+                        IconImage {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            height: 42
+                            layer.enabled: true
+                            source: Quickshell.iconPath(root.installedMode ? "folder-download-symbolic" : (root.collectionsMode ? "folder-symbolic" : "system-search-symbolic"))
+                            width: 42
+
+                            layer.effect: ColorOverlay {
+                                color: Config.md3.primary
+                            }
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Config.md3.on_surface
+                            font.family: Config.fontName
+                            font.pixelSize: 17
+                            font.weight: Font.DemiBold
+                            text: root.installedMode ? qsTr("No installed Wallhaven wallpapers") : (root.collectionsMode ? qsTr("This collection is empty") : qsTr("No wallpapers found"))
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Config.md3.on_surface_variant
                             font.family: Config.fontName
                             font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            text: qsTr("Open Settings")
+                            text: root.installedMode ? qsTr("Downloaded wallpapers will appear here") : (root.collectionsMode ? qsTr("Choose another collection or refresh") : qsTr("Try another query or resolution filter"))
                         }
-                        MouseArea {
-                            id: settingsMouse
+                    }
+                    Repeater {
+                        id: resultViews
 
+                        model: ["browse", "collections", "installed"]
+
+                        delegate: Loader {
+                            id: tabViewLoader
+
+                            required property string modelData
+                            readonly property bool selected: root.activeTab === modelData
+                            property bool visited: false
+
+                            // Retain only visited grids until the owning panel is destroyed.
+                            active: selected || visited
                             anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
+                            visible: selected
 
-                            onClicked: {
-                                root.closePanel();
-                                StateManager.showSettingsHub();
-                            }
-                        }
-                    }
-                }
-                LoadingIndicator {
-                    anchors.centerIn: parent
-                    animated: root.resultInitialLoading
-                    height: 80
-                    visible: animated
-                    width: 80
-                }
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 8
-                    visible: !root.resultInitialLoading && !root.resultHasItems && root.resultError !== "" && !(root.collectionsMode && !WallhavenService.accountConfigured)
-                    width: Math.min(parent.width - 40, 620)
+                            sourceComponent: GridView {
+                                id: resultGrid
 
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: Config.md3.error
-                        font.family: Config.fontName
-                        font.pixelSize: 16
-                        font.weight: Font.DemiBold
-                        horizontalAlignment: Text.AlignHCenter
-                        text: root.resultError
-                        width: parent.width
-                        wrapMode: Text.Wrap
-                    }
-                }
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 6
-                    visible: !root.resultInitialLoading && !root.resultHasItems && root.resultError === "" && !(root.collectionsMode && !WallhavenService.accountConfigured) && (root.installedMode || root.collectionsMode || WallhavenService.query !== "")
+                                cacheBuffer: cellHeight
+                                cellHeight: cellWidth * 0.67
+                                cellWidth: width / root.gridColumns
+                                clip: true
+                                model: tabViewLoader.modelData === "installed" ? WallhavenService.installedResults : (tabViewLoader.modelData === "collections" ? WallhavenService.collectionResults : WallhavenService.results)
+                                reuseItems: false
 
-                    IconImage {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        height: 42
-                        layer.enabled: true
-                        source: Quickshell.iconPath(root.installedMode ? "folder-download-symbolic" : (root.collectionsMode ? "folder-symbolic" : "system-search-symbolic"))
-                        width: 42
+                                delegate: WallhavenCard {
+                                    required property var model
 
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.primary
-                        }
-                    }
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 17
-                        font.weight: Font.DemiBold
-                        text: root.installedMode ? qsTr("No installed Wallhaven wallpapers") : (root.collectionsMode ? qsTr("This collection is empty") : qsTr("No wallpapers found"))
-                    }
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: Config.md3.on_surface_variant
-                        font.family: Config.fontName
-                        font.pixelSize: 12
-                        text: root.installedMode ? qsTr("Downloaded wallpapers will appear here") : (root.collectionsMode ? qsTr("Choose another collection or refresh") : qsTr("Try another query or resolution filter"))
-                    }
-                }
-                Repeater {
-                    id: resultViews
+                                    blurNsfw: !root.nsfwVisible
+                                    cancelling: WallhavenService.downloadCancelRequested && WallhavenService.downloadingId === String(model.id || "")
+                                    deleteArmed: root.deleteArmedId === String(model.id || "")
+                                    downloadBlocked: WallhavenService.downloading && WallhavenService.downloadingId !== String(model.id || "")
+                                    downloading: WallhavenService.downloadingId === String(model.id || "")
+                                    greetdBusy: GreeterBackgroundService.busy
+                                    height: resultGrid.cellHeight
+                                    inUse: String(WallpaperService.currentWallpaper || "") === String(model.path || "")
+                                    installedMode: tabViewLoader.modelData === "installed"
+                                    removing: WallhavenService.removingId === String(model.id || "")
+                                    wallpaper: model
+                                    width: resultGrid.cellWidth
 
-                    model: ["browse", "collections", "installed"]
-
-                    delegate: Loader {
-                        id: tabViewLoader
-
-                        required property string modelData
-                        readonly property bool selected: root.activeTab === modelData
-                        property bool visited: false
-
-                        // Retain only visited grids until the owning panel is destroyed.
-                        active: selected || visited
-                        anchors.fill: parent
-                        visible: selected
-
-                        sourceComponent: GridView {
-                            id: resultGrid
-
-                            cacheBuffer: cellHeight
-                            cellHeight: cellWidth * 0.67
-                            cellWidth: width / root.gridColumns
-                            clip: true
-                            model: tabViewLoader.modelData === "installed" ? WallhavenService.installedResults : (tabViewLoader.modelData === "collections" ? WallhavenService.collectionResults : WallhavenService.results)
-                            reuseItems: false
-
-                            delegate: WallhavenCard {
-                                required property var model
-
-                                blurNsfw: !root.nsfwVisible
-                                cancelling: WallhavenService.downloadCancelRequested && WallhavenService.downloadingId === String(model.id || "")
-                                deleteArmed: root.deleteArmedId === String(model.id || "")
-                                downloadBlocked: WallhavenService.downloading && WallhavenService.downloadingId !== String(model.id || "")
-                                downloading: WallhavenService.downloadingId === String(model.id || "")
-                                greetdBusy: GreeterBackgroundService.busy
-                                height: resultGrid.cellHeight
-                                inUse: String(WallpaperService.currentWallpaper || "") === String(model.path || "")
-                                installedMode: tabViewLoader.modelData === "installed"
-                                removing: WallhavenService.removingId === String(model.id || "")
-                                wallpaper: model
-                                width: resultGrid.cellWidth
-
-                                onApplyRequested: (path, modified) => root.applyRequested(path, modified)
-                                onArmDeleteRequested: wallpaperId => {
-                                    root.deleteArmedId = wallpaperId;
-                                    deleteArmTimer.restart();
+                                    onApplyRequested: (path, modified) => root.applyRequested(path, modified)
+                                    onArmDeleteRequested: wallpaperId => {
+                                        root.deleteArmedId = wallpaperId;
+                                        deleteArmTimer.restart();
+                                    }
+                                    onCancelDownloadRequested: WallhavenService.cancelDownload()
+                                    onDeleteRequested: item => {
+                                        root.deleteArmedId = "";
+                                        deleteArmTimer.stop();
+                                        WallhavenService.removeInstalled(item);
+                                    }
+                                    onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
+                                    onOpenRequested: url => WallhavenService.openPage(url)
                                 }
-                                onCancelDownloadRequested: WallhavenService.cancelDownload()
-                                onDeleteRequested: item => {
-                                    root.deleteArmedId = "";
-                                    deleteArmTimer.stop();
-                                    WallhavenService.removeInstalled(item);
+
+                                onVisibleChanged: {
+                                    if (!visible)
+                                        cancelFlick();
                                 }
-                                onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
-                                onOpenRequested: url => WallhavenService.openPage(url)
                             }
 
-                            onVisibleChanged: {
-                                if (!visible)
-                                    cancelFlick();
-                            }
+                            onLoaded: visited = true
                         }
-
-                        onLoaded: visited = true
                     }
                 }
             }
@@ -940,18 +967,18 @@ Rectangle {
             ParallelAnimation {
                 id: contentTransition
 
-                OpacityAnimator {
+                NumberAnimation {
                     duration: 170
                     easing.type: Easing.OutCubic
-                    from: 0
+                    property: "opacity"
                     target: animatedContent
                     to: 1
                 }
-                XAnimator {
+                NumberAnimation {
                     duration: 210
                     easing.type: Easing.OutCubic
-                    from: root.contentTransitionDirection * 16
-                    target: animatedContent
+                    property: "x"
+                    target: contentOffset
                     to: 0
                 }
             }

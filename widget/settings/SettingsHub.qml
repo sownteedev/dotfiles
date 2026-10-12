@@ -595,7 +595,9 @@ FloatingWindow {
                         Column {
                             id: sidebarHeaderTitle
 
-                            anchors.left: parent.left
+                            anchors.left: settingsAppIcon.right
+                            anchors.leftMargin: 10
+                            anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             opacity: root.sidebarExpanded ? Math.max(0, Math.min(1, (root.sidebarProgress - 0.55) / 0.45)) : Math.max(0, Math.min(1, (root.sidebarProgress - 0.78) / 0.22))
                             spacing: 2
@@ -615,16 +617,15 @@ FloatingWindow {
                                 text: "Niri & Quickshell"
                             }
                         }
-                        ProfileAvatar {
-                            id: profileButton
+                        SownteeAppIcon {
+                            id: settingsAppIcon
 
-                            accentColor: Config.md3.primary
                             anchors.verticalCenter: parent.verticalCenter
                             height: 40
-                            scale: profileMouse.pressed ? 0.94 : profileMouse.containsMouse ? 1.04 : 1
-                            sourcePath: Config.profileImagePath
+                            kind: "settings"
+                            scale: settingsIconMouse.pressed ? 0.94 : settingsIconMouse.containsMouse ? 1.04 : 1
                             width: 40
-                            x: Math.round((1 - root.sidebarProgress) * ((parent.width - width) / 2) + root.sidebarProgress * (parent.width - width))
+                            x: Math.round((1 - root.sidebarProgress) * ((parent.width - width) / 2))
 
                             Behavior on scale {
                                 ScaleAnimator {
@@ -634,7 +635,7 @@ FloatingWindow {
                             }
 
                             MouseArea {
-                                id: profileMouse
+                                id: settingsIconMouse
 
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
@@ -737,6 +738,7 @@ FloatingWindow {
                                     Layout.fillWidth: true
                                     items: root.searchItems
 
+                                    onProfileClicked: root.sidebarExpanded = !root.sidebarExpanded
                                     onSelected: (page, section) => root.switchSection(page, section)
                                 }
                                 SettingsNavButton {
@@ -1121,12 +1123,10 @@ FloatingWindow {
                         source: root.pageSource()
 
                         onLoaded: {
-                            if (root.activePage === 0 && item)
+                            if (source.toString() === "NiriSettingsPage.qml" && item)
                                 item.activeSection = Qt.binding(() => root.activeNiriSection);
-                            else if (root.activePage === 1 && item)
+                            else if (source.toString() === "QuickshellSettingsPage.qml" && item)
                                 item.activeSection = Qt.binding(() => root.legacyQuickshellSection());
-                            else if (root.activePage === 2 && item)
-                                item.activeSection = Qt.binding(() => root.activeSecuritySection);
                         }
                     }
                     Column {

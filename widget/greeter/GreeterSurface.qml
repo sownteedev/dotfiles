@@ -1,8 +1,6 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Shapes
+import Quickshell
 import Quickshell.Networking
 import Quickshell.Services.UPower
 
@@ -21,15 +19,20 @@ Item {
     readonly property var batteryDevice: UPower.displayDevice
     readonly property bool batteryExternalPower: batteryDevice && (!UPower.onBattery || batteryCharging || batteryDevice.state === UPowerDeviceState.FullyCharged)
     readonly property int batteryPercentage: batteryDevice ? Math.round(batteryDevice.percentage * 100) : 0
+    readonly property bool canIdle: interactive && visible && !GreeterSession.working && !GreeterSession.launching && !GreeterSession.waitingForResponse && !loginCard.sessionPickerOpen && !loginCard.isActualError
+    readonly property real controlScale: Math.max(1, Math.min(1.1, scaleFactor))
+    readonly property int controlSize: Math.round(48 * controlScale)
     readonly property var devices: Networking.devices ? Networking.devices.values : []
     readonly property bool hasBattery: batteryDevice && batteryDevice.ready && batteryDevice.isLaptopBattery
+    property bool idleMode: false
+    property real idleProgress: idleMode ? 1 : 0
     property bool interactive: true
-    readonly property real leftMargin: Math.max(48, Math.min(112, root.width * 0.055))
     readonly property bool networkConnected: wiredDevice || activeNetwork !== null
     readonly property string networkIcon: wiredDevice ? "󰈀" : activeNetwork ? (activeNetwork.signalStrength > 0.7 ? "󰤨" : activeNetwork.signalStrength > 0.4 ? "󰤥" : "󰤟") : "󰤭"
     readonly property string networkLabel: wiredDevice ? qsTr("Wired") : activeNetwork ? (activeNetwork.name || qsTr("Connected")) : qsTr("Offline")
     property date now: new Date()
     readonly property real scaleFactor: Math.max(0.8, Math.min(1.4, Math.min(width / 1600, height / 900)))
+    property int wakeKey: 0
     readonly property var wifiDevice: {
         for (var i = 0; i < devices.length; ++i) {
             if (devices[i].type === DeviceType.Wifi)
@@ -45,6 +48,55 @@ Item {
         return null;
     }
 
+    function restartIdleCountdown() {
+        if (root.canIdle && !root.idleMode)
+            idleTimer.restart();
+    }
+
+    Behavior on idleProgress {
+        NumberAnimation {
+            duration: 360
+            easing.type: Easing.InOutCubic
+        }
+    }
+
+    Keys.onPressed: event => {
+        if (!root.interactive || (!root.idleMode && root.wakeKey === 0))
+            return;
+        event.accepted = true;
+        if (root.idleMode && !event.isAutoRepeat && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)) {
+            root.wakeKey = event.key;
+            root.idleMode = false;
+        }
+    }
+    Keys.onReleased: event => {
+        if (root.wakeKey !== 0 && event.key === root.wakeKey) {
+            event.accepted = true;
+            if (!event.isAutoRepeat) {
+                root.wakeKey = 0;
+                loginCard.focusInput();
+                root.restartIdleCountdown();
+            }
+        }
+    }
+    onIdleProgressChanged: {
+        if (idleProgress === 0 && wakeKey === 0 && !loginCard.sessionPickerOpen)
+            loginCard.focusInput();
+    }
+
+    Timer {
+        id: idleTimer
+
+        interval: 10000
+        running: root.canIdle && !root.idleMode && root.wakeKey === 0
+
+        onTriggered: {
+            if (root.canIdle) {
+                root.idleMode = true;
+                root.forceActiveFocus();
+            }
+        }
+    }
     Timer {
         interval: 1000
         repeat: true
@@ -52,6 +104,8 @@ Item {
 
         onTriggered: root.now = new Date()
     }
+
+    // 1. Wallpaper & Dynamic Background
     Rectangle {
         anchors.fill: parent
         color: GreeterTheme.background
@@ -63,7 +117,7 @@ Item {
             }
             GradientStop {
                 color: GreeterTheme.background
-                position: 0.52
+                position: 0.5
             }
             GradientStop {
                 color: GreeterTheme.surfaceContainerLow
@@ -78,261 +132,317 @@ Item {
     }
     Rectangle {
         anchors.fill: parent
-        color: GreeterTheme.withAlpha(GreeterTheme.scrim, GreeterTheme.isDark ? 0.22 : 0.14)
+        color: GreeterTheme.withAlpha(GreeterTheme.scrim, GreeterTheme.isDark ? 0.35 : 0.22)
         visible: greeterBackground.hasBackground
     }
-    Rectangle {
-        id: leftVeil
 
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.top: parent.top
-        width: Math.min(root.width, Math.max(680, root.width * 0.52))
-
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-
-            GradientStop {
-                color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerLowest, GreeterTheme.isDark ? 0.94 : 0.88)
-                position: 0.0
-            }
-            GradientStop {
-                color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerLowest, GreeterTheme.isDark ? 0.76 : 0.62)
-                position: 0.62
-            }
-            GradientStop {
-                color: "transparent"
-                position: 1.0
-            }
-        }
-    }
-    Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: Math.min(root.height * 0.45, 520)
-
-        gradient: Gradient {
-            GradientStop {
-                color: "transparent"
-                position: 0.0
-            }
-            GradientStop {
-                color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerLowest, GreeterTheme.isDark ? 0.42 : 0.28)
-                position: 0.65
-            }
-            GradientStop {
-                color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerLowest, GreeterTheme.isDark ? 0.88 : 0.68)
-                position: 1.0
-            }
-        }
-    }
+    // 3. Top Navigation & Status Bar
     Item {
-        id: decorativeRight
+        id: topBar
 
-        anchors.bottom: parent.bottom
-        anchors.left: parent.horizontalCenter
+        anchors.left: parent.left
+        anchors.leftMargin: Math.max(32, 40 * root.scaleFactor)
         anchors.right: parent.right
+        anchors.rightMargin: Math.max(32, 40 * root.scaleFactor)
         anchors.top: parent.top
-        clip: true
+        anchors.topMargin: Math.max(24, 36 * root.scaleFactor)
+        height: Math.round(42 * root.scaleFactor)
+        z: 60
 
-        Rectangle {
+        // Left: Branding Capsule
+        Item {
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            height: root.controlSize
+            width: height
+
+            RowLayout {
+                id: brandRow
+
+                anchors.centerIn: parent
+                spacing: 0
+
+                Rectangle {
+                    Layout.preferredHeight: Math.round(32 * root.controlScale)
+                    Layout.preferredWidth: Layout.preferredHeight
+                    border.color: GreeterTheme.primary
+                    border.width: 1
+                    color: "transparent"
+                    radius: height / 2
+
+                    Text {
+                        anchors.centerIn: parent
+                        color: GreeterTheme.primary
+                        font.family: "Inter Variable"
+                        font.pixelSize: Math.round(16 * root.controlScale)
+                        font.weight: Font.Black
+                        text: "S"
+                    }
+                }
+            }
+        }
+
+        // Right: Status Pills (Network & Battery)
+        RowLayout {
             anchors.right: parent.right
-            anchors.rightMargin: -width * 0.15
-            anchors.top: parent.top
-            anchors.topMargin: -height * 0.1
-            color: GreeterTheme.withAlpha(GreeterTheme.primary, GreeterTheme.isDark ? 0.08 : 0.12)
-            height: Math.min(600, root.height * 0.6)
-            radius: width / 2
-            width: height
-        }
-        Shape {
-            anchors.fill: parent
-            asynchronous: true
-            layer.enabled: true
-            layer.samples: 4
-            scale: Math.min(1.2, Math.max(0.6, root.scaleFactor))
-            transformOrigin: Item.TopRight
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Math.round(10 * root.controlScale)
 
-            ShapePath {
-                capStyle: ShapePath.RoundCap
-                fillColor: "transparent"
-                strokeColor: GreeterTheme.withAlpha(GreeterTheme.primary, GreeterTheme.isDark ? 0.16 : 0.22)
-                strokeWidth: 3.5
-
-                PathSvg {
-                    path: "M200 240 C520 60 1000 160 1055 480 C1104 770 790 990 520 890 C250 790 262 520 525 458 C804 392 1078 568 1220 840"
-                }
+            StatusPill {
+                Layout.preferredHeight: root.controlSize
+                Layout.preferredWidth: root.controlSize
+                accentColor: root.networkConnected ? GreeterTheme.primary : GreeterTheme.surfaceVariantText
+                border.width: 0
+                color: "transparent"
+                icon: root.networkIcon
+                scaleFactor: root.controlScale * 2
             }
-            ShapePath {
-                capStyle: ShapePath.RoundCap
-                fillColor: "transparent"
-                strokeColor: GreeterTheme.withAlpha(GreeterTheme.tertiary, GreeterTheme.isDark ? 0.12 : 0.16)
-                strokeWidth: 2
+            Item {
+                Layout.preferredHeight: root.controlSize
+                Layout.preferredWidth: batteryRow.implicitWidth + Math.round(24 * root.controlScale)
+                visible: root.hasBattery
 
-                PathSvg {
-                    path: "M290 270 C560 130 930 205 982 480 C1020 690 800 840 590 785"
+                Row {
+                    id: batteryRow
+
+                    anchors.centerIn: parent
+                    spacing: 0
+
+                    GreeterBatteryIcon {
+                        accentColor: root.batteryExternalPower ? GreeterTheme.secondary : root.batteryPercentage <= 20 ? GreeterTheme.error : root.batteryPercentage <= 50 ? GreeterTheme.tertiary : GreeterTheme.primary
+                        anchors.verticalCenter: parent.verticalCenter
+                        charging: root.batteryCharging
+                        externalPower: root.batteryExternalPower
+                        percentage: root.batteryPercentage
+                        scaleFactor: root.controlScale
+                    }
                 }
             }
         }
     }
-    Row {
-        id: identityHeader
 
+    // 4. Main Presentation Area
+    Item {
+        id: mainViewport
+
+        anchors.bottom: bottomBar.top
         anchors.left: parent.left
-        anchors.leftMargin: root.leftMargin
-        anchors.top: parent.top
-        anchors.topMargin: Math.max(42, Math.min(88, root.height * 0.06))
-        spacing: Math.round(14 * root.scaleFactor)
-
-        Rectangle {
-            anchors.verticalCenter: parent.verticalCenter
-            border.color: GreeterTheme.withAlpha(GreeterTheme.primary, 0.45)
-            border.width: 1.5
-            color: GreeterTheme.withAlpha(GreeterTheme.primary, 0.14)
-            height: Math.round(42 * root.scaleFactor)
-            radius: height / 2
-            width: height
-
-            Text {
-                anchors.centerIn: parent
-                color: GreeterTheme.primary
-                font.family: "Inter Variable"
-                font.pixelSize: Math.round(20 * root.scaleFactor)
-                font.weight: Font.Black
-                text: "S"
-            }
-        }
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            color: GreeterTheme.backgroundText
-            font.family: "Inter Variable"
-            font.letterSpacing: 2
-            font.pixelSize: Math.round(17 * root.scaleFactor)
-            font.weight: Font.Bold
-            text: "Sowntee Shell"
-        }
-    }
-    Column {
-        id: clockBlock
-
-        anchors.left: parent.left
-        anchors.leftMargin: root.leftMargin
-        anchors.top: identityHeader.bottom
-        anchors.topMargin: Math.max(30, Math.min(64, root.height * 0.045))
-        spacing: Math.round(8 * root.scaleFactor)
-
-        Text {
-            color: GreeterTheme.backgroundText
-            font.family: "Inter Variable"
-            font.letterSpacing: -4
-            font.pixelSize: Math.round(Math.min(180, Math.max(108, root.height * 0.125)))
-            font.weight: Font.Black
-            style: Text.Raised
-            styleColor: GreeterTheme.withAlpha(GreeterTheme.shadow, 0.35)
-            text: root.now.toLocaleTimeString(Qt.locale(), Locale.ShortFormat)
-        }
-        Text {
-            color: GreeterTheme.surfaceVariantText
-            font.capitalization: Font.Capitalize
-            font.family: "Inter Variable"
-            font.pixelSize: Math.round(Math.min(32, Math.max(20, root.height * 0.024)))
-            font.weight: Font.DemiBold
-            style: Text.Raised
-            styleColor: GreeterTheme.withAlpha(GreeterTheme.shadow, 0.25)
-            text: root.now.toLocaleDateString(Qt.locale(), Locale.LongFormat)
-        }
-        Rectangle {
-            color: GreeterTheme.primary
-            height: 4
-            radius: 2
-            width: Math.round(Math.min(140, Math.max(90, root.width * 0.06)))
-        }
-    }
-    LoginCard {
-        id: loginCard
-
-        anchors.left: parent.left
-        anchors.leftMargin: root.leftMargin
-        anchors.top: clockBlock.bottom
-        anchors.topMargin: Math.max(28, Math.min(56, root.height * 0.04))
-        defaultUser: GreeterSession.configuredUser
-        visible: root.interactive
-        width: Math.min(520, Math.max(420, root.width * 0.32))
-    }
-    RowLayout {
         anchors.right: parent.right
-        anchors.rightMargin: Math.max(28, 40 * root.scaleFactor)
-        anchors.top: parent.top
-        anchors.topMargin: Math.max(28, 40 * root.scaleFactor)
-        spacing: Math.round(12 * root.scaleFactor)
+        anchors.top: topBar.bottom
 
-        StatusPill {
-            accentColor: root.networkConnected ? GreeterTheme.primary : GreeterTheme.surfaceVariantText
-            icon: root.networkIcon
-            scaleFactor: root.scaleFactor
-            text: root.networkLabel
-        }
-        Rectangle {
-            border.color: GreeterTheme.withAlpha(GreeterTheme.outlineVariant, 0.4)
-            border.width: 1
-            color: GreeterTheme.withAlpha(GreeterTheme.surfaceContainerHigh, 0.78)
-            implicitHeight: Math.round(36 * root.scaleFactor)
-            implicitWidth: batteryRow.implicitWidth + Math.round(20 * root.scaleFactor)
-            radius: implicitHeight / 2
-            visible: root.hasBattery
+        // ═══════════════════════════════════════════════════════════════
+        // Split Minimal Layout: Architectural Vertical Clock (Left) + MD3 Card (Right)
+        // ═══════════════════════════════════════════════════════════════
 
-            Row {
-                id: batteryRow
+        // Left Half: Architectural Vertical Clock
+        Item {
+            id: splitClock
 
-                anchors.centerIn: parent
-                spacing: Math.round(8 * root.scaleFactor)
+            readonly property real restingX: parent.width < 960 ? Math.round((parent.width - width) / 2) : Math.round(Math.max(48, (parent.width * 0.5 - width) / 2))
 
-                GreeterBatteryIcon {
-                    accentColor: root.batteryExternalPower ? GreeterTheme.secondary : root.batteryPercentage <= 20 ? GreeterTheme.error : root.batteryPercentage <= 50 ? GreeterTheme.tertiary : GreeterTheme.primary
-                    anchors.verticalCenter: parent.verticalCenter
-                    charging: root.batteryCharging
-                    externalPower: root.batteryExternalPower
-                    percentage: root.batteryPercentage
-                    scaleFactor: root.scaleFactor * 0.88
+            height: splitClockContent.implicitHeight
+            scale: 1 + root.idleProgress * Math.max(0, Math.min(0.25, (parent.height - 48) / height - 1))
+            width: Math.max(clockMetrics.advanceWidth, dateRow.implicitWidth)
+            x: restingX + (Math.round((parent.width - width) / 2) - restingX) * root.idleProgress
+            y: {
+                var centerY = Math.round((parent.height - height) / 2);
+                var restingY = parent.width < 960 ? Math.max(16, loginCard.y - height - 42) : centerY;
+                return restingY + (centerY - restingY) * root.idleProgress;
+            }
+
+            TextMetrics {
+                id: clockMetrics
+
+                font: hourText.font
+                text: "00"
+            }
+            ColumnLayout {
+                id: splitClockContent
+
+                spacing: 18
+                width: parent.width
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 12
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: GreeterTheme.primary
+                        height: 3
+                        radius: 1.5
+                        width: 40
+                    }
+                    Row {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 8
+
+                        Repeater {
+                            model: 5
+
+                            Rectangle {
+                                required property int index
+
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: GreeterTheme.withAlpha(GreeterTheme.primary, index === 4 ? 0.85 : 0.3)
+                                height: index === 4 ? 12 : 6
+                                radius: 1
+                                width: 2
+                            }
+                        }
+                    }
                 }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: GreeterTheme.surfaceText
-                    font.family: "Inter Variable"
-                    font.pixelSize: Math.round(12 * root.scaleFactor)
-                    font.weight: Font.Medium
-                    text: root.batteryPercentage + "%"
+                Column {
+                    id: timeDigits
+
+                    Layout.fillWidth: true
+                    spacing: -28
+
+                    Text {
+                        id: hourText
+
+                        color: GreeterTheme.primary
+                        font.family: "Inter Variable"
+                        font.letterSpacing: -8
+                        font.pixelSize: Math.round(Math.min(240, Math.max(158, root.height * 0.21)))
+                        font.weight: Font.Black
+                        horizontalAlignment: Text.AlignHCenter
+                        text: Qt.formatTime(root.now, "HH")
+                        width: parent.width
+                    }
+                    Text {
+                        id: minuteText
+
+                        color: GreeterTheme.backgroundText
+                        font.family: "Inter Variable"
+                        font.letterSpacing: -8
+                        font.pixelSize: Math.round(Math.min(240, Math.max(158, root.height * 0.21)))
+                        font.weight: Font.Black
+                        horizontalAlignment: Text.AlignHCenter
+                        text: Qt.formatTime(root.now, "mm")
+                        width: parent.width
+                    }
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                    color: GreeterTheme.withAlpha(GreeterTheme.primary, 0.25)
+
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: GreeterTheme.primary
+                        height: 5
+                        radius: 2.5
+                        width: 5
+                    }
+                }
+                RowLayout {
+                    id: dateRow
+
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: 10
+
+                    Rectangle {
+                        Layout.preferredHeight: 2
+                        Layout.preferredWidth: 16
+                        color: GreeterTheme.primary
+                        radius: 1
+                    }
+                    Text {
+                        color: GreeterTheme.surfaceVariantText
+                        font.capitalization: Font.AllUppercase
+                        font.family: "Inter Variable"
+                        font.letterSpacing: 1.5
+                        font.pixelSize: Math.round(18 * root.scaleFactor)
+                        font.weight: Font.DemiBold
+                        text: root.now.toLocaleDateString(Qt.locale(), "ddd d MMM")
+                    }
                 }
             }
         }
+
+        // Right Half: MD3 Login Card
+        LoginCard {
+            id: loginCard
+
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: parent.width < 960 ? 80 : 0
+            defaultUser: GreeterSession.configuredUser
+            enabled: root.interactive && !root.idleMode && root.wakeKey === 0
+            opacity: 1 - root.idleProgress
+            visible: root.interactive && opacity > 0
+            width: Math.min(implicitWidth, Math.max(0, parent.width - 48))
+            x: parent.width < 960 ? Math.round((parent.width - width) / 2) : Math.round(parent.width * 0.5 + Math.max(20, (parent.width * 0.5 - width) / 2))
+            z: 20
+
+            transform: Translate {
+                y: 48 * root.idleProgress
+            }
+
+            onInputActivity: root.restartIdleCountdown()
+        }
     }
-    Row {
+
+    // 5. Bottom Controls (Power & Reboot Actions)
+    Item {
+        id: bottomBar
+
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Math.max(28, 40 * root.scaleFactor)
+        anchors.bottomMargin: Math.max(24, 36 * root.scaleFactor)
+        anchors.left: parent.left
+        anchors.leftMargin: Math.max(32, 40 * root.scaleFactor)
         anchors.right: parent.right
-        anchors.rightMargin: Math.max(28, 40 * root.scaleFactor)
-        spacing: Math.round(14 * root.scaleFactor)
-        visible: root.interactive
+        anchors.rightMargin: Math.max(32, 40 * root.scaleFactor)
+        height: Math.round(48 * root.scaleFactor)
+        z: 60
 
-        MdIconButton {
-            accessibleName: qsTr("Restart")
-            iconGlyph: "󰜉"
-            pill: true
-            scaleFactor: root.scaleFactor
+        HoverHandler {
+            id: bottomHover
 
-            onClicked: GreeterSession.reboot()
+            enabled: root.interactive
+            margin: Math.max(32, 40 * root.scaleFactor)
         }
-        MdIconButton {
-            accessibleName: qsTr("Power off")
-            destructive: true
-            iconGlyph: "󰐥"
-            pill: true
-            scaleFactor: root.scaleFactor
+        Row {
+            id: powerActions
 
-            onClicked: GreeterSession.powerOff()
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            enabled: root.interactive && bottomHover.hovered && !GreeterSession.working && !GreeterSession.launching
+            opacity: root.interactive && bottomHover.hovered ? 1 : 0
+            spacing: Math.round(12 * root.controlScale)
+            visible: opacity > 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 160
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            MdIconButton {
+                accessibleName: qsTr("Restart")
+                iconGlyph: "󰜉"
+                pill: false
+                scaleFactor: root.controlScale
+
+                onClicked: GreeterSession.reboot()
+            }
+            MdIconButton {
+                accessibleName: qsTr("Power off")
+                destructive: true
+                iconGlyph: "󰐥"
+                pill: false
+                scaleFactor: root.controlScale
+
+                onClicked: GreeterSession.powerOff()
+            }
         }
     }
+
+    // 6. Launch Dimming Overlay
     Rectangle {
         anchors.fill: parent
         color: GreeterTheme.scrim
@@ -342,7 +452,7 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: 240
+                duration: 260
                 easing.type: Easing.InOutCubic
             }
         }

@@ -81,6 +81,11 @@ QtObject {
 
         onFileChanged: reload()
     }
+    readonly property string hostName: hostNameFile.loaded ? hostNameFile.text().trim() : ""
+    property FileView hostNameFile: FileView {
+        path: "/proc/sys/kernel/hostname"
+        printErrors: false
+    }
     property string keyboardLayoutLabel: "US"
     property Process keyboardLayoutScanner: Process {
         command: [root.sessionHelper, "greeter-keyboard-layout"]

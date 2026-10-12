@@ -17,7 +17,7 @@ Rectangle {
     }
 
     Accessible.description: root.accessibleDescription
-    Accessible.name: qsTr("%1, %2 lunar").arg(root.formatDate()).arg(Lunar.getLunarFullString(root.value))
+    Accessible.name: Config.calendarShowLunar ? qsTr("%1, %2 lunar").arg(root.formatDate()).arg(Lunar.getLunarFullString(root.value)) : root.formatDate()
     Accessible.role: Accessible.Button
     Layout.fillWidth: true
     Layout.minimumWidth: 0
@@ -94,7 +94,8 @@ Rectangle {
                 font.pixelSize: 12
                 font.weight: Font.Medium
                 renderType: Text.NativeRendering
-                text: qsTr("%1 lunar").arg(Lunar.getLunarFullString(root.value))
+                text: Config.calendarShowLunar ? qsTr("%1 lunar").arg(Lunar.getLunarFullString(root.value)) : ""
+                visible: Config.calendarShowLunar
             }
         }
         Md3Icon {

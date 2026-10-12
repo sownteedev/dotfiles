@@ -531,7 +531,7 @@ Rectangle {
                     activeFocusOnTab: true
                     border.color: calendarRow.activeFocus ? Config.md3.primary : "transparent"
                     border.width: calendarRow.activeFocus ? 1.5 : 0
-                    color: calMouse.pressed ? Config.alpha(Config.md3.on_surface, Md3.state.pressed) : calMouse.containsMouse ? Config.alpha(Config.md3.on_surface, Md3.state.hover) : "transparent"
+                    color: calendarTap.pressed ? Config.alpha(Config.md3.on_surface, Md3.state.pressed) : calendarHover.hovered ? Config.alpha(Config.md3.on_surface, Md3.state.hover) : "transparent"
                     implicitHeight: 34
                     radius: Md3.shape.small
 
@@ -611,13 +611,10 @@ Rectangle {
 
                             Md3ToolTip {
                                 text: qsTr("Read-only")
-                                visible: lockMouse.containsMouse
+                                visible: lockHover.hovered
                             }
-                            MouseArea {
-                                id: lockMouse
-
-                                anchors.fill: parent
-                                hoverEnabled: true
+                            HoverHandler {
+                                id: lockHover
                             }
                         }
                         Md3Icon {
@@ -630,24 +627,22 @@ Rectangle {
 
                             Md3ToolTip {
                                 text: qsTr("Task list")
-                                visible: taskMouse.containsMouse
+                                visible: taskHover.hovered
                             }
-                            MouseArea {
-                                id: taskMouse
-
-                                anchors.fill: parent
-                                hoverEnabled: true
+                            HoverHandler {
+                                id: taskHover
                             }
                         }
                     }
-                    MouseArea {
-                        id: calMouse
+                    HoverHandler {
+                        id: calendarHover
 
-                        anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
+                    }
+                    TapHandler {
+                        id: calendarTap
 
-                        onClicked: root.calendarVisibilityRequested(String(calendarRow.modelData.id || ""), !calendarRow.checked)
+                        onTapped: root.calendarVisibilityRequested(String(calendarRow.modelData.id || ""), !calendarRow.checked)
                     }
                 }
             }

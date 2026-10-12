@@ -31,7 +31,7 @@ Item {
 
                 height: 24
                 opacity: index < root.characterCount ? 1 : 0
-                width: index < root.characterCount ? 19 : 0
+                width: index < root.characterCount ? 14 : 0
 
                 Behavior on opacity {
                     NumberAnimation {
@@ -49,9 +49,9 @@ Item {
                 Rectangle {
                     anchors.centerIn: parent
                     color: root.error ? GreeterTheme.error : root.dotColor
-                    height: 14
-                    radius: 7
-                    width: 14
+                    height: 8
+                    radius: 4
+                    width: 8
 
                     Behavior on color {
                         ColorAnimation {
@@ -64,7 +64,7 @@ Item {
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             color: root.error ? GreeterTheme.error : root.cursorColor
-            height: 21
+            height: 18
             opacity: root.active ? 1 : 0
             radius: 1
             visible: root.active
