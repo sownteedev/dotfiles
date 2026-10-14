@@ -9,7 +9,8 @@ Item {
     required property string appIcon
     required property string appName
     required property string body
-    readonly property string descriptionText: body !== "" ? body : (summary !== "" ? appName : "")
+    property bool contentVisible: true
+    readonly property string descriptionText: (body !== "" ? body : (summary !== "" ? appName : "")).replace(/\s+/g, " ").trim()
     property bool dismissing: false
     property int groupCount: 1
     readonly property bool iconsOnly: Config.notificationLockscreenPrivacyMode === "icons"
@@ -25,7 +26,7 @@ Item {
     property real swipeOffset: 0
     property bool tapEnabled: false
     readonly property real textScale: scaleFactor * (2 / 3)
-    readonly property string titleText: summary !== "" ? summary : appName
+    readonly property string titleText: (summary !== "" ? summary : appName).replace(/\s+/g, " ").trim()
 
     signal tapped
 
@@ -82,6 +83,7 @@ Item {
     }
     Rectangle {
         anchors.fill: parent
+        clip: true
         color: Config.alpha(Config.md3.surface_container_high, 0.88)
         opacity: root.revealOpacity * (1 - Math.min(0.78, Math.abs(root.swipeOffset) / Math.max(1, width) * 0.82))
         radius: 10 * root.scaleFactor
@@ -96,7 +98,15 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: 9 * root.scaleFactor
             anchors.verticalCenter: parent.verticalCenter
+            opacity: root.contentVisible ? 1 : 0
             spacing: 7 * root.scaleFactor
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Config.animationDuration(120)
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             Item {
                 id: iconContainer
@@ -177,9 +187,11 @@ Item {
                     font.weight: Font.DemiBold
                     lineHeight: Md3.typeScale.titleMedium.lineHeight * root.textScale
                     lineHeightMode: Text.FixedHeight
+                    maximumLineCount: 1
                     text: root.titleText
                     textFormat: Text.PlainText
                     width: parent.width
+                    wrapMode: Text.NoWrap
                 }
                 Text {
                     color: Config.md3.on_surface_variant
@@ -190,10 +202,12 @@ Item {
                     font.weight: Md3.typeScale.bodyMedium.weight
                     lineHeight: Md3.typeScale.bodyMedium.lineHeight * root.textScale
                     lineHeightMode: Text.FixedHeight
+                    maximumLineCount: 1
                     text: root.descriptionText
                     textFormat: Text.PlainText
                     visible: text !== ""
                     width: parent.width
+                    wrapMode: Text.NoWrap
                 }
             }
         }

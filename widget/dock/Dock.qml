@@ -743,7 +743,19 @@ PanelWindow {
                             anchors.centerIn: parent
                             height: 40
                             kind: appButton.shellWindowEntry ? (appButton.settingsWindowEntry ? "settings" : "calendar") : ""
-                            source: Quickshell.iconPath(appButton.iconName || "application-x-executable", "application-x-executable")
+                            visible: appButton.shellWindowEntry
+                            width: height
+                        }
+                        Image {
+                            anchors.centerIn: parent
+                            cache: true
+                            fillMode: Image.PreserveAspectFit
+                            height: 40
+                            mipmap: true
+                            smooth: true
+                            source: !appButton.shellWindowEntry ? Quickshell.iconPath(appButton.iconName || "application-x-executable", "application-x-executable") : ""
+                            sourceSize: Qt.size(96, 96)
+                            visible: !appButton.shellWindowEntry
                             width: height
                         }
                     }

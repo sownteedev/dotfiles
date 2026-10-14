@@ -216,13 +216,12 @@ Item {
                                     radius: 10
                                 }
                                 Rectangle {
-                                    anchors.centerIn: parent
+                                    anchors.fill: parent
+                                    anchors.margins: 1
                                     border.color: dayCell.isToday && !dayCell.isSelected ? Config.md3.primary : "transparent"
                                     border.width: dayCell.isToday && !dayCell.isSelected ? 1.5 : 0
                                     color: dayCell.isSelected ? Config.md3.primary : dayCell.isToday ? (dayMouse.containsMouse ? Config.alpha(Config.md3.primary, 0.32) : Config.alpha(Config.md3.primary, 0.20)) : dayMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.09) : "transparent"
-                                    height: width
-                                    radius: width / 2
-                                    width: Math.max(0, Math.min(29, dayCell.width - 2, dayCell.height - 2))
+                                    radius: 10
 
                                     Behavior on color {
                                         ColorAnimation {

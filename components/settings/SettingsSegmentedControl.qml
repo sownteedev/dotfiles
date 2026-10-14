@@ -10,6 +10,7 @@ Rectangle {
     property bool animationsReady: false
     property color backgroundColor: Config.md3.surface_container_high
     property real fontPixelSize: Md3.typography.labelLarge
+    property bool geometryStable: true
     property int iconSize: 20
     property real minimumSegmentWidth: 64
     property var options: []
@@ -72,6 +73,11 @@ Rectangle {
         if (index >= 0)
             segmentView.positionViewAtIndex(index, ListView.Contain);
     }
+    function scheduleGeometrySync() {
+        root.geometryStable = false;
+        geometrySettleTimer.restart();
+        root.syncSelectionIndicator();
+    }
     function selectedIndex() {
         for (var i = 0; i < options.length; ++i) {
             if (String(options[i].value) === selectedValue)
@@ -122,6 +128,7 @@ Rectangle {
         moveSelection(1);
         event.accepted = true;
     }
+    onHeightChanged: scheduleGeometrySync()
     onOptionsChanged: Qt.callLater(function () {
         root.revealSelection();
         root.syncSelectionIndicator();
@@ -140,7 +147,18 @@ Rectangle {
             });
         }
     }
+    onWidthChanged: scheduleGeometrySync()
 
+    Timer {
+        id: geometrySettleTimer
+
+        interval: 90
+
+        onTriggered: {
+            root.geometryStable = true;
+            root.syncSelectionIndicator();
+        }
+    }
     ListView {
         id: segmentView
 
@@ -366,28 +384,28 @@ Rectangle {
         z: 3
 
         Behavior on height {
-            enabled: root.animationsReady && selectionIndicator.ready
+            enabled: root.animationsReady && root.geometryStable && selectionIndicator.ready
 
             Md3NumberAnimation {
                 role: "spatial"
             }
         }
         Behavior on width {
-            enabled: root.animationsReady && selectionIndicator.ready
+            enabled: root.animationsReady && root.geometryStable && selectionIndicator.ready
 
             Md3NumberAnimation {
                 role: "spatial"
             }
         }
         Behavior on x {
-            enabled: root.animationsReady && selectionIndicator.ready
+            enabled: root.animationsReady && root.geometryStable && selectionIndicator.ready
 
             Md3NumberAnimation {
                 role: "spatial"
             }
         }
         Behavior on y {
-            enabled: root.animationsReady && selectionIndicator.ready
+            enabled: root.animationsReady && root.geometryStable && selectionIndicator.ready
 
             Md3NumberAnimation {
                 role: "spatial"

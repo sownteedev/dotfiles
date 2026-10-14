@@ -259,7 +259,7 @@ Item {
             ColumnLayout {
                 id: splitClockContent
 
-                spacing: 18
+                spacing: 9
                 width: parent.width
 
                 Item {
@@ -304,9 +304,9 @@ Item {
                         id: hourText
 
                         color: GreeterTheme.primary
-                        font.family: "Inter Variable"
+                        font.family: "Inter Display"
                         font.letterSpacing: -8
-                        font.pixelSize: Math.round(Math.min(240, Math.max(158, root.height * 0.21)))
+                        font.pixelSize: Math.round(Math.min(280, Math.max(180, root.height * 0.245)))
                         font.weight: Font.Black
                         horizontalAlignment: Text.AlignHCenter
                         text: Qt.formatTime(root.now, "HH")
@@ -316,9 +316,9 @@ Item {
                         id: minuteText
 
                         color: GreeterTheme.backgroundText
-                        font.family: "Inter Variable"
+                        font.family: "Inter Display"
                         font.letterSpacing: -8
-                        font.pixelSize: Math.round(Math.min(240, Math.max(158, root.height * 0.21)))
+                        font.pixelSize: hourText.font.pixelSize
                         font.weight: Font.Black
                         horizontalAlignment: Text.AlignHCenter
                         text: Qt.formatTime(root.now, "mm")
@@ -354,8 +354,8 @@ Item {
                     Text {
                         color: GreeterTheme.surfaceVariantText
                         font.capitalization: Font.AllUppercase
-                        font.family: "Inter Variable"
-                        font.letterSpacing: 1.5
+                        font.family: "Inter Display"
+                        font.letterSpacing: 1.8
                         font.pixelSize: Math.round(18 * root.scaleFactor)
                         font.weight: Font.DemiBold
                         text: root.now.toLocaleDateString(Qt.locale(), "ddd d MMM")

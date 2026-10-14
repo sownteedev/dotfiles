@@ -222,6 +222,7 @@ Item {
                         appIcon: notificationItem.appIcon
                         appName: notificationItem.appName
                         body: notificationItem.body
+                        contentVisible: notificationDelegate.expanded || notificationItem.index === 0
                         groupCount: notificationDelegate.groupCount
                         image: notificationItem.image
                         isCritical: notificationItem.isCritical

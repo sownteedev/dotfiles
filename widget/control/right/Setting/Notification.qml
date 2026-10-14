@@ -601,8 +601,10 @@ Item {
                                                 font.weight: Font.DemiBold
                                                 lineHeight: Md3.typeScale.titleMedium.lineHeight
                                                 lineHeightMode: Text.FixedHeight
-                                                text: notifItem.modelData.summary || ""
+                                                maximumLineCount: 1
+                                                text: String(notifItem.modelData.summary || "").replace(/\s+/g, " ").trim()
                                                 textFormat: Text.PlainText
+                                                wrapMode: Text.NoWrap
                                             }
                                             Text {
                                                 Layout.fillWidth: true
@@ -614,9 +616,11 @@ Item {
                                                 font.weight: Md3.typeScale.bodyLarge.weight
                                                 lineHeight: Md3.typeScale.bodyLarge.lineHeight
                                                 lineHeightMode: Text.FixedHeight
-                                                text: notifItem.modelData.body || ""
+                                                maximumLineCount: 1
+                                                text: String(notifItem.modelData.body || "").replace(/\s+/g, " ").trim()
                                                 textFormat: Text.PlainText
                                                 visible: text !== ""
+                                                wrapMode: Text.NoWrap
                                             }
                                         }
                                     }

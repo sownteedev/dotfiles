@@ -7,6 +7,7 @@ ColumnLayout {
 
     property bool animationsReady: false
     property bool dimWhenDisabled: true
+    property bool geometryStable: true
     property string label: ""
     property string note: ""
     property var options: []
@@ -87,6 +88,11 @@ ColumnLayout {
             return options.length;
         return Responsive.columnsFor(width, 148, options.length, 1, Md3.spacing.xs);
     }
+    function scheduleGeometrySync() {
+        root.geometryStable = false;
+        geometrySettleTimer.restart();
+        root.syncSelectionIndicator();
+    }
     function selectedIndex() {
         for (var i = 0; i < options.length; ++i) {
             if (String(options[i].value) === value)
@@ -138,11 +144,23 @@ ColumnLayout {
         moveSelection(1);
         event.accepted = true;
     }
+    onHeightChanged: scheduleGeometrySync()
     onOptionsChanged: Qt.callLater(function () {
         root.syncSelectionIndicator();
     })
     onValueChanged: syncSelectionIndicator()
+    onWidthChanged: scheduleGeometrySync()
 
+    Timer {
+        id: geometrySettleTimer
+
+        interval: 90
+
+        onTriggered: {
+            root.geometryStable = true;
+            root.syncSelectionIndicator();
+        }
+    }
     SettingsLabelBlock {
         Layout.fillWidth: true
         headline: root.label
@@ -419,28 +437,28 @@ ColumnLayout {
             z: 3
 
             Behavior on height {
-                enabled: root.animationsReady && selectionIndicator.ready
+                enabled: root.animationsReady && root.geometryStable && selectionIndicator.ready
 
                 Md3NumberAnimation {
                     role: "spatial"
                 }
             }
             Behavior on width {
-                enabled: root.animationsReady && selectionIndicator.ready
+                enabled: root.animationsReady && root.geometryStable && selectionIndicator.ready
 
                 Md3NumberAnimation {
                     role: "spatial"
                 }
             }
             Behavior on x {
-                enabled: root.animationsReady && selectionIndicator.ready
+                enabled: root.animationsReady && root.geometryStable && selectionIndicator.ready
 
                 Md3NumberAnimation {
                     role: "spatial"
                 }
             }
             Behavior on y {
-                enabled: root.animationsReady && selectionIndicator.ready
+                enabled: root.animationsReady && root.geometryStable && selectionIndicator.ready
 
                 Md3NumberAnimation {
                     role: "spatial"

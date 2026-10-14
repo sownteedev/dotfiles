@@ -21,11 +21,16 @@ PanelWindow {
     property string deletingPath: ""
     property var dragCard: null
     property string draggedPath: ""
+    readonly property bool fanExpanded: visible && !hideTimer.running && !resettingFan && (!changingMode || pendingMode !== "") && activeCount > 0
+    property real fanProgress: fanExpanded ? 1 : 0
     property string initialSelectionPath: ""
-    readonly property bool interactionLocked: browserOpen || dragCard !== null || deletingPath !== ""
+    readonly property bool interactionLocked: browserOpen || changingMode || dragCard !== null || deletingPath !== ""
     property string lastPreviewSource: ""
+    property real modeOpacity: 1
     property int openGeneration: 0
     readonly property real pathSpan: Math.min(450, Math.max(cardWidth * 0.85, width * 0.34))
+    property string pendingMode: ""
+    property bool resettingFan: false
     property string selectedMode: "static"
     readonly property bool selectedVideoNeedsEngine: selectedMode === "video" && roleAt(pathView.currentIndex, "isEngine", false) && String(roleAt(pathView.currentIndex, "type", "")).toLowerCase() !== "video"
     property bool selectionCommitted: false
@@ -33,6 +38,7 @@ PanelWindow {
     readonly property bool trashArmed: dragCard !== null && dragCard.armed && canTrashDragged
     readonly property real trashCenterX: width / 2
     readonly property real trashCenterY: Math.min(height - 92, height / 2 + cardHeight * 0.575 + 78)
+    readonly property bool videoCatalogLoading: selectedMode === "video" && (EngineWallpaperService.scanning || liveModel.status === FolderListModel.Loading)
     property int videoIndex: 0
     property bool videoPreviewStarted: false
     property bool wallhavenOpen: false
@@ -40,12 +46,48 @@ PanelWindow {
 
     signal dismissed
 
+    function applyPendingMode() {
+        if (!wallpaperWindow.visible || hideTimer.running || pendingMode === "")
+            return;
+
+        fanBehavior.enabled = false;
+        resettingFan = true;
+        initialSelectionPath = "";
+        lastPreviewSource = "";
+        var mode = pendingMode;
+        selectedMode = mode;
+        if (mode === "video") {
+            videoPreviewStarted = true;
+            previewTimer.stop();
+            preloadTimer.stop();
+            EngineWallpaperService.beginBrowsing();
+            LiveWallpaperService.beginBrowsing();
+            LiveWallpaperService.checkAvailability();
+            syncVideoModel();
+        } else {
+            EngineWallpaperService.endBrowsing();
+            LiveWallpaperService.endBrowsing();
+        }
+        var generation = openGeneration;
+        Qt.callLater(() => {
+            if (generation !== openGeneration || !wallpaperWindow.visible || hideTimer.running)
+                return;
+
+            restoreModeIndex();
+            contentRoot.forceActiveFocus();
+            fanBehavior.enabled = true;
+            resettingFan = false;
+            modeFadeIn.start();
+        });
+    }
     function closeSelector() {
         if (dragCard)
             dragCard.cancelDrag();
         dragCard = null;
         draggedPath = "";
         openGeneration += 1;
+        modeFadeOut.stop();
+        modeFadeIn.stop();
         previewTimer.stop();
         preloadTimer.stop();
         rememberCurrentIndex();
@@ -109,7 +151,13 @@ PanelWindow {
             screen = targetScreen;
 
         hideTimer.stop();
+        modeFadeOut.stop();
+        modeFadeIn.stop();
+        pendingMode = "";
+        modeOpacity = 1;
         changingMode = true;
+        fanBehavior.enabled = true;
+        resettingFan = false;
         initialSelectionPath = String(WallpaperService.currentWallpaper || "");
         lastPreviewSource = "";
         selectionCommitted = false;
@@ -319,44 +367,25 @@ PanelWindow {
             return false;
 
         rememberCurrentIndex();
+        pendingMode = mode;
         changingMode = true;
-        initialSelectionPath = "";
-        lastPreviewSource = "";
-        selectedMode = mode;
-        if (mode === "video") {
-            videoPreviewStarted = false;
-            previewTimer.stop();
-            preloadTimer.stop();
-            WallpaperService.beginPreview();
-            WallpaperPreviewService.cancel();
-            WallpaperPreviewService.begin();
-            EngineWallpaperService.beginBrowsing();
-            LiveWallpaperService.beginBrowsing();
-            LiveWallpaperService.checkAvailability();
-            syncVideoModel();
-        } else {
-            EngineWallpaperService.endBrowsing();
-            LiveWallpaperService.endBrowsing();
-            WallpaperPreviewService.cancel();
-            WallpaperService.beginPreview();
-            WallpaperPreviewService.begin();
-        }
-        var generation = openGeneration;
-        Qt.callLater(() => {
-            if (generation !== openGeneration || !wallpaperWindow.visible || hideTimer.running)
-                return;
-
-            restoreModeIndex();
-            changingMode = false;
-            contentRoot.forceActiveFocus();
-            schedulePreview();
-        });
+        previewTimer.stop();
+        preloadTimer.stop();
+        WallpaperPreviewService.resetPreloads();
+        modeFadeOut.start();
+        return true;
     }
     function syncCurrentWallpaper(preferredPath) {
+        if (!wallpaperWindow.visible || hideTimer.running || pendingMode !== "")
+            return;
+
         var currentWall = String(initialSelectionPath || preferredPath || WallpaperService.currentWallpaper || "");
         for (var i = 0; i < activeCount; ++i) {
             if (pathAt(i) === currentWall) {
-                pathView.currentIndex = i;
+                if (initialSelectionPath !== "")
+                    pathView.positionViewAtIndex(i, PathView.SnapPosition);
+                else
+                    pathView.currentIndex = i;
                 if (selectedMode === "video")
                     videoIndex = i;
                 else
@@ -507,6 +536,15 @@ PanelWindow {
     focusable: true
     visible: false
 
+    Behavior on fanProgress {
+        id: fanBehavior
+
+        NumberAnimation {
+            duration: Config.animationDuration(fanBehavior.targetValue > 0 ? 320 : 180)
+            easing.type: Easing.Linear
+        }
+    }
+
     Component.onDestruction: {
         EngineWallpaperService.endBrowsing();
         LiveWallpaperService.endBrowsing();
@@ -523,6 +561,32 @@ PanelWindow {
         }
     }
 
+    NumberAnimation {
+        id: modeFadeOut
+
+        duration: Config.animationDuration(90)
+        easing.type: Easing.InQuad
+        property: "modeOpacity"
+        target: wallpaperWindow
+        to: 0
+
+        onFinished: wallpaperWindow.applyPendingMode()
+    }
+    NumberAnimation {
+        id: modeFadeIn
+
+        duration: Config.animationDuration(170)
+        easing.type: Easing.OutCubic
+        property: "modeOpacity"
+        target: wallpaperWindow
+        to: 1
+
+        onFinished: {
+            wallpaperWindow.changingMode = false;
+            wallpaperWindow.pendingMode = "";
+            wallpaperWindow.schedulePreview();
+        }
+    }
     Timer {
         id: deleteTimer
 
@@ -569,7 +633,7 @@ PanelWindow {
     Timer {
         id: hideTimer
 
-        interval: 200
+        interval: Config.animationDuration(200) + 16
         repeat: false
 
         onTriggered: {
@@ -616,7 +680,7 @@ PanelWindow {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: 200
+                duration: Config.animationDuration(200)
             }
         }
 
@@ -760,10 +824,13 @@ PanelWindow {
             WallpaperModeSwitch {
                 id: modeSwitch
 
-                enabled: !wallpaperWindow.interactionLocked
+                enabled: !wallpaperWindow.browserOpen && wallpaperWindow.dragCard === null && wallpaperWindow.deletingPath === ""
                 mode: wallpaperWindow.selectedMode
 
                 onAddRequested: mode => {
+                    if (wallpaperWindow.interactionLocked)
+                        return;
+
                     if (mode === "video")
                         wallpaperWindow.workshopOpen = true;
                     else
@@ -806,9 +873,11 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             delegate: wallpaperDelegate
             height: Math.min(400, parent.height * 0.56)
+            highlightMoveDuration: wallpaperWindow.initialSelectionPath !== "" || wallpaperWindow.changingMode ? 0 : Config.animationDuration(300)
             highlightRangeMode: PathView.StrictlyEnforceRange
             interactive: !wallpaperWindow.interactionLocked
             model: wallpaperWindow.activeModel
+            opacity: wallpaperWindow.modeOpacity
             pathItemCount: wallpaperWindow.width < 1000 ? 5 : 7
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
@@ -957,10 +1026,21 @@ PanelWindow {
             wrapMode: Text.WordWrap
             y: wallpaperWindow.trashCenterY + 48
         }
+        AnimatedSpinner {
+            anchors.centerIn: parent
+            color: Config.md3.primary
+            height: 42
+            lineWidth: 3
+            opacity: wallpaperWindow.modeOpacity
+            running: visible
+            visible: wallpaperWindow.videoCatalogLoading && wallpaperWindow.activeCount === 0
+            width: height
+        }
         Column {
             anchors.centerIn: parent
+            opacity: wallpaperWindow.modeOpacity
             spacing: 8
-            visible: wallpaperWindow.activeCount === 0
+            visible: wallpaperWindow.activeCount === 0 && !wallpaperWindow.videoCatalogLoading
             width: Math.max(0, parent.width - 24)
 
             Text {
@@ -971,7 +1051,7 @@ PanelWindow {
                 font.pixelSize: 18
                 font.weight: Font.DemiBold
                 horizontalAlignment: Text.AlignHCenter
-                text: wallpaperWindow.selectedMode === "video" ? (EngineWallpaperService.scanning ? "Scanning Steam Workshop…" : "No videos") : "No static wallpapers"
+                text: wallpaperWindow.selectedMode === "video" ? "No videos" : "No static wallpapers"
                 width: parent.width
             }
             Text {
@@ -1030,9 +1110,13 @@ PanelWindow {
         Item {
             id: delegateRoot
 
+            readonly property real centerOffset: x + width / 2 - pathView.width / 2
             readonly property bool convertedEnginePreview: isEngine && EngineWallpaperService.previewNeedsConversion(previewPath)
             readonly property string engineThumbnail: convertedEnginePreview ? EngineWallpaperService.previewThumbnailPath(previewPath, fileModified) : previewPath
             property bool engineThumbnailAvailable: !convertedEnginePreview || EngineWallpaperService.previewThumbnailKnown(previewPath, fileModified)
+            readonly property real fanDelay: Math.min(0.22, Math.abs(centerOffset) / Math.max(1, wallpaperWindow.pathSpan) * 0.22)
+            readonly property real fanReveal: 1 - Math.pow(1 - fanStage, 3)
+            readonly property real fanStage: Math.max(0, Math.min(1, (wallpaperWindow.fanProgress - fanDelay) / (1 - fanDelay)))
             readonly property var fileModified: wallpaperWindow.roleAt(index, "fileModified", 0)
             readonly property string filePath: wallpaperWindow.roleAt(index, "filePath", "")
             readonly property string fileUrl: wallpaperWindow.roleAt(index, "fileUrl", "")
@@ -1079,10 +1163,14 @@ PanelWindow {
             }
 
             height: wallpaperWindow.cardHeight
-            opacity: PathView.itemOpacity !== undefined ? PathView.itemOpacity : 0
-            scale: PathView.itemScale !== undefined ? PathView.itemScale : 0.55
+            opacity: (PathView.itemOpacity !== undefined ? PathView.itemOpacity : 0) * (PathView.isCurrentItem ? 0.65 + 0.35 * fanReveal : fanReveal)
+            scale: (PathView.itemScale !== undefined ? PathView.itemScale : 0.55) * (0.96 + 0.04 * fanReveal)
             width: wallpaperWindow.cardWidth
             z: PathView.itemZ !== undefined ? PathView.itemZ : 1
+
+            transform: Translate {
+                x: -delegateRoot.centerOffset * (1 - delegateRoot.fanReveal)
+            }
 
             Component.onCompleted: {
                 delegateRoot.scheduleThumbnailLoad();
@@ -1166,7 +1254,7 @@ PanelWindow {
                 dropDistance: (wallpaperWindow.trashCenterY - (pathView.y + delegateRoot.y + delegateRoot.height / 2)) / Math.max(0.01, delegateRoot.scale)
                 dropOffsetX: (wallpaperWindow.trashCenterX - (pathView.x + delegateRoot.x + delegateRoot.width / 2)) / Math.max(0.01, delegateRoot.scale)
                 dropTarget: trashTarget
-                enabled: !wallpaperWindow.browserOpen && wallpaperWindow.deletingPath === "" && !pathView.moving
+                enabled: !wallpaperWindow.browserOpen && wallpaperWindow.deletingPath === "" && !pathView.moving && wallpaperWindow.fanProgress === 1
                 hitItem: cardImage
 
                 Component.onDestruction: {

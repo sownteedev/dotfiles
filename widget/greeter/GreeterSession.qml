@@ -86,22 +86,6 @@ QtObject {
         path: "/proc/sys/kernel/hostname"
         printErrors: false
     }
-    property string keyboardLayoutLabel: "US"
-    property Process keyboardLayoutScanner: Process {
-        command: [root.sessionHelper, "greeter-keyboard-layout"]
-        running: true
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    var result = JSON.parse(String(text || "{}"));
-                    root.keyboardLayoutLabel = String(result.label || "US");
-                } catch (error) {
-                    root.keyboardLayoutLabel = "US";
-                }
-            }
-        }
-    }
     property FileView lastSessionFile: FileView {
         atomicWrites: true
         path: (Quickshell.env("XDG_CACHE_HOME") || "/tmp") + "/last-session.json"
