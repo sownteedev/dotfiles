@@ -4,6 +4,8 @@ singleton GreeterBackgroundService 1.0 wallpaper/GreeterBackgroundService.qml
 singleton LiveWallpaperService 1.0 wallpaper/LiveWallpaperService.qml
 singleton WallpaperWorkshopService 1.0 wallpaper/WallpaperWorkshopService.qml
 singleton WallhavenService 1.0 wallpaper/WallhavenService.qml
+WebAccountConnection 1.0 wallpaper/WebAccountConnection.qml
+singleton WebAccountService 1.0 wallpaper/WebAccountService.qml
 singleton ThemeService 1.0 wallpaper/ThemeService.qml
 singleton WallpaperPlaybackPolicy 1.0 wallpaper/WallpaperPlaybackPolicy.qml
 singleton WallpaperPreviewService 1.0 wallpaper/WallpaperPreviewService.qml

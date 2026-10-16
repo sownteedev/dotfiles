@@ -11,6 +11,7 @@ ClippingRectangle {
     property string appName: notificationData && notificationData.appName ? notificationData.appName.toString() : ""
     property bool asynchronous: false
     property color backgroundColor: Config.md3.surface
+    readonly property bool batteryWarningIcon: directImageReady ? isBatteryWarningIcon(directImageSource) : isBatteryWarningIcon(notificationImage !== "" ? notificationImage : appIcon) || isBatteryWarningIcon(namedIcon.source.toString())
     property bool cacheImage: true
     readonly property bool directImageReady: hasDirectImage && directImage.status === Image.Ready
     readonly property string directImageSource: resolveDirectImage()
@@ -24,6 +25,9 @@ ClippingRectangle {
     property bool tintAllIcons: false
     property color tintColor: Config.alpha(Config.md3.on_surface, 0.45)
 
+    function isBatteryWarningIcon(source) {
+        return /(^|\/)battery-(low|caution)(-symbolic)?(\.(svg|png|svgz|xpm))?$/.test(source);
+    }
     function isDirectPath(value) {
         return value.startsWith("/") || value.startsWith("file://") || value.startsWith("image://");
     }
@@ -67,20 +71,27 @@ ClippingRectangle {
         asynchronous: root.asynchronous
         cache: root.cacheImage
         fillMode: Image.PreserveAspectCrop
+        layer.enabled: root.directImageReady && root.batteryWarningIcon
         source: root.directImageSource
         sourceSize: Qt.size(root.width * root.sourceSizeScale, root.height * root.sourceSizeScale)
         visible: root.directImageReady
+
+        layer.effect: ColorOverlay {
+            color: Config.md3.error
+        }
     }
     IconImage {
+        id: namedIcon
+
         anchors.centerIn: parent
         height: root.iconSize
-        layer.enabled: root.tintAllIcons || source.toString().includes("symbolic")
+        layer.enabled: root.batteryWarningIcon || root.tintAllIcons || source.toString().includes("symbolic")
         source: root.resolveNamedIcon()
         visible: !root.directImageReady
         width: root.iconSize
 
         layer.effect: ColorOverlay {
-            color: root.tintColor
+            color: root.batteryWarningIcon ? Config.md3.error : root.tintColor
         }
     }
 }

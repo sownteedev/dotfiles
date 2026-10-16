@@ -14,14 +14,18 @@ Rectangle {
     property string activeTab: "browse"
     property int contentTransitionDirection: 1
     property string deleteArmedId: ""
-    readonly property int filteredResultCount: installedMode ? WallpaperWorkshopService.filteredInstalledResults.count : WallpaperWorkshopService.filteredResults.count
+    readonly property int filteredResultCount: subscribedMode ? WallpaperWorkshopService.subscribedResults.count : installedMode ? WallpaperWorkshopService.filteredInstalledResults.count : WallpaperWorkshopService.filteredResults.count
     readonly property int gridColumns: Math.max(1, Math.min(4, Math.floor((browser.width - 56) / 250)))
     readonly property bool installedMode: activeTab === "installed"
     property bool open: false
-    readonly property string panelErrorMessage: installedMode ? WallpaperWorkshopService.manageErrorMessage : WallpaperWorkshopService.browseErrorMessage
-    readonly property string panelStatusMessage: GreeterBackgroundService.statusMessage || (installedMode ? WallpaperWorkshopService.manageStatusMessage : WallpaperWorkshopService.browseStatusMessage)
+    readonly property string panelErrorMessage: subscribedMode ? WebAccountService.steam.errorMessage || WallpaperWorkshopService.downloadErrorMessage : installedMode ? WallpaperWorkshopService.manageErrorMessage : WallpaperWorkshopService.browseErrorMessage
+    readonly property string panelStatusMessage: GreeterBackgroundService.statusMessage || (subscribedMode ? WallpaperWorkshopService.loadingSubscribed ? qsTr("Loading your Steam subscriptions...") : WallpaperWorkshopService.actionStatusMessage : installedMode ? WallpaperWorkshopService.manageStatusMessage : WallpaperWorkshopService.browseStatusMessage)
     readonly property string panelStatusText: GreeterBackgroundService.errorMessage || panelStatusMessage
-    readonly property int sourceResultCount: installedMode ? WallpaperWorkshopService.installedResults.count : WallpaperWorkshopService.results.count
+    readonly property bool resultLoading: tabLoadPending || (subscribedMode ? WallpaperWorkshopService.loadingSubscribed : installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching)
+    readonly property int sourceResultCount: subscribedMode ? WallpaperWorkshopService.subscribedResults.count : installedMode ? WallpaperWorkshopService.installedResults.count : WallpaperWorkshopService.results.count
+    readonly property bool subscribedMode: activeTab === "subscribed"
+    property bool tabLoadPending: false
+    property bool tabRevealPending: false
 
     signal applyRequested(string path, var modified)
     signal closeRequested
@@ -45,39 +49,68 @@ Rectangle {
         if (!open)
             return;
         scenePropertiesPopup.close();
+        tabRevealPending = false;
+        tabLoadPending = false;
+        contentTransition.stop();
         open = false;
         closeTimer.restart();
     }
-    function positionResultViewAtBeginning() {
-        var loader = resultViews.itemAt(installedMode ? 1 : 0);
-        if (loader && loader.status === Loader.Ready)
-            loader.item.positionViewAtBeginning();
-    }
-    function selectTab(tab) {
-        scenePropertiesPopup.close();
-        if (tab === "installed") {
-            workshopFilters.closePopup();
-            WallpaperWorkshopService.clearFilters();
-        }
-        if (activeTab === tab) {
-            if (tab === "installed")
-                WallpaperWorkshopService.loadInstalled(true);
+    function loadActiveTab() {
+        if (!open) {
+            tabLoadPending = false;
             return;
         }
-        contentTransition.stop();
-        contentTransitionDirection = tab === "installed" ? 1 : -1;
-        animatedContent.opacity = 0;
-        contentOffset.x = contentTransitionDirection * 14;
-        activeTab = tab;
-        deleteArmedId = "";
-        if (installedMode)
-            WallpaperWorkshopService.loadInstalled(true);
-        else {
+        if (installedMode) {
+            WallpaperWorkshopService.clearFilters();
+            WallpaperWorkshopService.loadInstalled(false);
+        } else if (subscribedMode) {
+            WallpaperWorkshopService.loadSubscribed(WallpaperWorkshopService.subscribedPage);
+            WallpaperWorkshopService.loadInstalled(false);
+        } else {
             searchInput.forceActiveFocus();
             if (WallpaperWorkshopService.configured && (WallpaperWorkshopService.results.count === 0 || WallpaperWorkshopService.browseFiltersDirty) && !WallpaperWorkshopService.searching)
                 WallpaperWorkshopService.search(searchInput.text, 1, WallpaperWorkshopService.sortMode);
         }
+        tabLoadPending = false;
+    }
+    function positionResultViewAtBeginning() {
+        var loader = resultViews.itemAt(installedMode ? 2 : (subscribedMode ? 1 : 0));
+        if (loader && loader.status === Loader.Ready)
+            loader.item.positionViewAtBeginning();
+    }
+    function revealTabContent() {
+        if (!open || !tabRevealPending)
+            return;
+        var loader = resultViews.itemAt(installedMode ? 2 : (subscribedMode ? 1 : 0));
+        if (!loader || loader.status !== Loader.Ready)
+            return;
+        tabRevealPending = false;
         contentTransition.restart();
+    }
+    function selectTab(tab) {
+        scenePropertiesPopup.close();
+        workshopFilters.closePopup();
+        if (activeTab === tab) {
+            if (tabRevealPending || contentTransition.running)
+                return;
+            if (tab === "installed") {
+                WallpaperWorkshopService.clearFilters();
+                WallpaperWorkshopService.loadInstalled(true);
+            } else if (tab === "subscribed")
+                WallpaperWorkshopService.loadSubscribed(WallpaperWorkshopService.subscribedPage);
+            return;
+        }
+        contentTransition.stop();
+        var oldIndex = activeTab === "browse" ? 0 : (activeTab === "subscribed" ? 1 : 2);
+        var newIndex = tab === "browse" ? 0 : (tab === "subscribed" ? 1 : 2);
+        contentTransitionDirection = newIndex >= oldIndex ? 1 : -1;
+        tabRevealPending = true;
+        tabLoadPending = true;
+        animatedContent.opacity = 0;
+        contentOffset.x = contentTransitionDirection * 16;
+        activeTab = tab;
+        deleteArmedId = "";
+        Qt.callLater(root.revealTabContent);
     }
     function setNsfwVisible(enabled) {
         if (Config.wallpaperWorkshopShowNsfw === enabled)
@@ -93,7 +126,7 @@ Rectangle {
     z: 700
 
     Behavior on opacity {
-        NumberAnimation {
+        OpacityAnimator {
             duration: 180
             easing.type: Easing.OutCubic
         }
@@ -111,10 +144,12 @@ Rectangle {
         if (installedMode)
             WallpaperWorkshopService.loadInstalled(true);
         WallpaperWorkshopService.refreshSubscriptions(false);
-        if (!installedMode)
+        if (!installedMode && !subscribedMode)
             searchInput.forceActiveFocus();
 
-        if (WallpaperWorkshopService.configured && (WallpaperWorkshopService.results.count === 0 || WallpaperWorkshopService.browseFiltersDirty) && !WallpaperWorkshopService.searching)
+        if (subscribedMode)
+            WallpaperWorkshopService.loadSubscribed(WallpaperWorkshopService.subscribedPage);
+        else if (WallpaperWorkshopService.configured && !installedMode && (WallpaperWorkshopService.results.count === 0 || WallpaperWorkshopService.browseFiltersDirty) && !WallpaperWorkshopService.searching)
             WallpaperWorkshopService.search(searchInput.text, 1, WallpaperWorkshopService.sortMode);
     }
 
@@ -135,10 +170,25 @@ Rectangle {
         onTriggered: root.deleteArmedId = ""
     }
     Connections {
+        function onSucceeded(action, response) {
+            if (root.open && root.subscribedMode && response.connected && ["restore", "connect", "status"].indexOf(action) >= 0)
+                Qt.callLater(() => {
+                    if (root.open && root.subscribedMode)
+                        WallpaperWorkshopService.loadSubscribed(WallpaperWorkshopService.subscribedPage);
+                });
+        }
+
+        target: WebAccountService.steam
+    }
+    Connections {
         function onDownloadCompleted(publishedFileId, path, modified, purpose) {
             if (purpose === "greetd")
                 return;
             root.applyRequested(path, modified);
+        }
+        function onSubscribedPageChanged() {
+            if (root.subscribedMode)
+                root.positionResultViewAtBeginning();
         }
 
         target: WallpaperWorkshopService
@@ -216,7 +266,7 @@ Rectangle {
                         elide: Text.ElideRight
                         font.family: Config.fontName
                         font.pixelSize: 14
-                        text: root.panelStatusText !== "" ? root.panelStatusText : qsTr("Browse and manage Steam Workshop wallpapers")
+                        text: root.panelStatusText !== "" ? root.panelStatusText : root.subscribedMode ? qsTr("Subscriptions from %1").arg(WebAccountService.steam.accountLabel || qsTr("your Steam account")) : qsTr("Browse and manage Steam Workshop wallpapers")
                     }
                 }
                 Rectangle {
@@ -353,13 +403,16 @@ Rectangle {
             }
             RowLayout {
                 Layout.fillWidth: true
+                Layout.maximumHeight: 40
+                Layout.minimumHeight: 40
+                Layout.preferredHeight: 40
                 spacing: 8
 
                 Rectangle {
                     id: primaryTabs
 
                     Layout.preferredHeight: 40
-                    Layout.preferredWidth: 240
+                    Layout.preferredWidth: 396
                     border.color: Config.alpha(Config.md3.outline, 0.08)
                     border.width: 1
                     color: Config.alpha(Config.md3.on_surface, 0.03)
@@ -371,8 +424,8 @@ Rectangle {
                         color: Config.md3.primary_container
                         height: parent.height - 8
                         radius: Md3.shape.full
-                        width: (parent.width - 8 - 6) / 2
-                        x: 4 + (root.installedMode ? width + 6 : 0)
+                        width: (parent.width - 8 - 12) / 3
+                        x: 4 + (root.installedMode ? 2 * (width + 6) : (root.subscribedMode ? width + 6 : 0))
                         y: 4
 
                         Behavior on x {
@@ -395,6 +448,11 @@ Rectangle {
                                     "value": "browse"
                                 },
                                 {
+                                    "icon": "starred-symbolic",
+                                    "label": qsTr("Subscribed"),
+                                    "value": "subscribed"
+                                },
+                                {
                                     "icon": "folder-symbolic",
                                     "label": qsTr("Installed"),
                                     "value": "installed"
@@ -407,8 +465,13 @@ Rectangle {
                                 required property var modelData
                                 readonly property bool selected: root.activeTab === modelData.value
 
+                                Accessible.name: modelData.label
+                                Accessible.role: Accessible.PageTab
                                 Layout.fillHeight: true
                                 Layout.fillWidth: true
+                                activeFocusOnTab: true
+                                border.color: Config.md3.primary
+                                border.width: activeFocus ? 2 : 0
                                 color: !selected && tabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : "transparent"
                                 radius: Md3.shape.full
 
@@ -417,6 +480,10 @@ Rectangle {
                                         duration: 120
                                     }
                                 }
+
+                                Accessible.onPressAction: root.selectTab(modelData.value)
+                                Keys.onReturnPressed: root.selectTab(modelData.value)
+                                Keys.onSpacePressed: root.selectTab(modelData.value)
 
                                 Row {
                                     anchors.centerIn: parent
@@ -475,7 +542,7 @@ Rectangle {
                     border.width: 1
                     color: searchInput.activeFocus ? Config.alpha(Config.md3.primary_container, 0.18) : Config.alpha(Config.md3.on_surface, 0.025)
                     radius: Md3.shape.full
-                    visible: !root.installedMode && WallpaperWorkshopService.configured
+                    visible: !root.installedMode && !root.subscribedMode && WallpaperWorkshopService.configured
 
                     IconImage {
                         anchors.left: parent.left
@@ -553,7 +620,54 @@ Rectangle {
                 }
                 Item {
                     Layout.fillWidth: true
-                    visible: root.installedMode || !WallpaperWorkshopService.configured
+                    visible: root.installedMode || root.subscribedMode || !WallpaperWorkshopService.configured
+                }
+                RowLayout {
+                    spacing: Md3.spacing.xs
+                    visible: root.subscribedMode
+
+                    SettingsActionButton {
+                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: 40
+                        activeFocusOnTab: true
+                        enabled: !WebAccountService.steam.busy && WallpaperWorkshopService.subscribedPage > 1
+                        iconName: "go-previous-symbolic"
+                        iconOnly: true
+                        text: qsTr("Previous page")
+
+                        onClicked: WallpaperWorkshopService.loadSubscribed(WallpaperWorkshopService.subscribedPage - 1)
+                    }
+                    Text {
+                        color: Config.md3.on_surface_variant
+                        font.family: Config.fontName
+                        font.pixelSize: Md3.typeScale.labelLarge.size
+                        text: String(WallpaperWorkshopService.subscribedPage)
+                    }
+                    SettingsActionButton {
+                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: 40
+                        activeFocusOnTab: true
+                        enabled: !WebAccountService.steam.busy && WallpaperWorkshopService.subscribedHasNext
+                        iconName: "go-next-symbolic"
+                        iconOnly: true
+                        text: qsTr("Next page")
+
+                        onClicked: WallpaperWorkshopService.loadSubscribed(WallpaperWorkshopService.subscribedPage + 1)
+                    }
+                    SettingsActionButton {
+                        Layout.preferredHeight: 40
+                        activeFocusOnTab: true
+                        enabled: !WebAccountService.steam.busy
+                        iconName: WebAccountService.steam.connected ? "view-refresh-symbolic" : "avatar-default-symbolic"
+                        text: WebAccountService.steam.connected ? qsTr("Reload") : qsTr("Connect Steam")
+
+                        onClicked: {
+                            if (WebAccountService.steam.connected)
+                                WallpaperWorkshopService.loadSubscribed(WallpaperWorkshopService.subscribedPage, true);
+                            else
+                                WebAccountService.steam.connectAccount();
+                        }
+                    }
                 }
                 WallpaperWorkshopFilters {
                     id: workshopFilters
@@ -562,7 +676,7 @@ Rectangle {
                     Layout.preferredWidth: 320
                     installedMode: root.installedMode
                     popupParent: browser
-                    visible: root.installedMode || WallpaperWorkshopService.configured
+                    visible: !root.subscribedMode && (root.installedMode || WallpaperWorkshopService.configured)
 
                     onSearchRequested: {
                         root.positionResultViewAtBeginning();
@@ -579,7 +693,7 @@ Rectangle {
                     border.width: 1
                     color: Config.wallpaperWorkshopShowNsfw ? Config.md3.error_container : (nsfwMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.035))
                     radius: Md3.shape.full
-                    visible: !root.installedMode && WallpaperWorkshopService.configured
+                    visible: root.subscribedMode || (!root.installedMode && WallpaperWorkshopService.configured)
 
                     Behavior on border.color {
                         ColorAnimation {
@@ -622,6 +736,7 @@ Rectangle {
                     id: animatedContent
 
                     anchors.fill: parent
+                    enabled: !root.tabRevealPending
 
                     transform: Translate {
                         id: contentOffset
@@ -630,7 +745,7 @@ Rectangle {
                     Column {
                         anchors.centerIn: parent
                         spacing: 10
-                        visible: !root.installedMode && !WallpaperWorkshopService.configured
+                        visible: !root.resultLoading && !root.installedMode && !root.subscribedMode && !WallpaperWorkshopService.configured
                         width: Math.min(parent.width - 40, 520)
 
                         IconImage {
@@ -667,7 +782,7 @@ Rectangle {
                     }
                     LoadingIndicator {
                         anchors.centerIn: parent
-                        animated: root.filteredResultCount === 0 && (root.installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching)
+                        animated: root.filteredResultCount === 0 && root.resultLoading
                         height: 80
                         visible: animated
                         width: 80
@@ -675,7 +790,7 @@ Rectangle {
                     Repeater {
                         id: resultViews
 
-                        model: ["browse", "installed"]
+                        model: ["browse", "subscribed", "installed"]
 
                         delegate: Loader {
                             id: tabViewLoader
@@ -686,7 +801,8 @@ Rectangle {
 
                             active: selected || visited
                             anchors.fill: parent
-                            visible: selected && (modelData === "installed" || WallpaperWorkshopService.configured)
+                            asynchronous: true
+                            visible: status === Loader.Ready && selected && (modelData !== "browse" || WallpaperWorkshopService.configured)
 
                             sourceComponent: GridView {
                                 id: resultGrid
@@ -695,7 +811,7 @@ Rectangle {
                                 cellHeight: cellWidth * 0.67
                                 cellWidth: width / root.gridColumns
                                 clip: true
-                                model: tabViewLoader.modelData === "installed" ? WallpaperWorkshopService.filteredInstalledResults : WallpaperWorkshopService.filteredResults
+                                model: tabViewLoader.modelData === "subscribed" ? WallpaperWorkshopService.subscribedResults : tabViewLoader.modelData === "installed" ? WallpaperWorkshopService.filteredInstalledResults : WallpaperWorkshopService.filteredResults
                                 reuseItems: false
 
                                 ScrollBar.vertical: SlimScrollBar {
@@ -710,9 +826,10 @@ Rectangle {
                                     downloading: WallpaperWorkshopService.downloadingId === String(model.id || "")
                                     greetdBusy: GreeterBackgroundService.busy
                                     height: resultGrid.cellHeight
-                                    inUse: tabViewLoader.modelData === "installed" && String(WallpaperService.currentWallpaper || "") === String(model.path || "")
+                                    inUse: String(model.path || "") !== "" && String(WallpaperService.currentWallpaper || "") === String(model.path || "")
                                     installedMode: tabViewLoader.modelData === "installed"
                                     removing: WallpaperWorkshopService.removingId === String(model.id || "")
+                                    subscribing: WallpaperWorkshopService.subscriptionPending(String(model.id || ""))
                                     wallpaper: model
                                     width: resultGrid.cellWidth
 
@@ -728,8 +845,9 @@ Rectangle {
                                         WallpaperWorkshopService.removeInstalled(item);
                                     }
                                     onDestinationRequested: (item, destination) => root.applyDestination(item, destination)
+                                    onOpenRequested: item => WallpaperWorkshopService.openInSteam(item)
                                     onPropertiesRequested: (item, anchorItem) => scenePropertiesPopup.openFor(item, anchorItem)
-                                    onSubscribeRequested: item => WallpaperWorkshopService.openInSteam(item)
+                                    onSubscribeRequested: item => WallpaperWorkshopService.toggleSubscription(item)
                                 }
 
                                 onVisibleChanged: {
@@ -738,13 +856,17 @@ Rectangle {
                                 }
                             }
 
-                            onLoaded: visited = true
+                            onLoaded: {
+                                visited = true;
+                                if (selected)
+                                    Qt.callLater(root.revealTabContent);
+                            }
                         }
                     }
                     Column {
                         anchors.centerIn: parent
                         spacing: 8
-                        visible: (root.installedMode || WallpaperWorkshopService.configured) && !(root.installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching) && root.filteredResultCount === 0
+                        visible: (root.subscribedMode || root.installedMode || WallpaperWorkshopService.configured) && !root.resultLoading && root.filteredResultCount === 0
                         width: Math.max(0, parent.width - 48)
 
                         Text {
@@ -754,7 +876,7 @@ Rectangle {
                             font.pixelSize: 17
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignHCenter
-                            text: root.panelErrorMessage !== "" ? (root.installedMode ? qsTr("Installed wallpapers unavailable") : qsTr("Search unavailable")) : (root.sourceResultCount > 0 ? qsTr("No wallpapers match this filter") : (root.installedMode ? qsTr("No installed Workshop wallpapers") : qsTr("No wallpapers found")))
+                            text: root.subscribedMode ? (!WebAccountService.steam.connected ? qsTr("Connect your Steam account") : root.panelErrorMessage !== "" ? qsTr("Subscriptions unavailable") : qsTr("No subscribed wallpapers")) : root.panelErrorMessage !== "" ? (root.installedMode ? qsTr("Installed wallpapers unavailable") : qsTr("Search unavailable")) : (root.sourceResultCount > 0 ? qsTr("No wallpapers match this filter") : (root.installedMode ? qsTr("No installed Workshop wallpapers") : qsTr("No wallpapers found")))
                             width: parent.width
                             wrapMode: Text.Wrap
                         }
@@ -763,7 +885,7 @@ Rectangle {
                             font.family: Config.fontName
                             font.pixelSize: 13
                             horizontalAlignment: Text.AlignHCenter
-                            text: root.panelErrorMessage !== "" ? root.panelErrorMessage : (root.sourceResultCount > 0 ? qsTr("Choose another filter") : (root.installedMode ? qsTr("Downloaded Workshop wallpapers will appear here") : qsTr("Try another search or filter")))
+                            text: root.panelErrorMessage || (root.subscribedMode ? qsTr("Subscriptions from your connected Steam account appear here. Use Reload to refresh.") : (root.sourceResultCount > 0 ? qsTr("Choose another filter") : (root.installedMode ? qsTr("Downloaded Workshop wallpapers will appear here") : qsTr("Try another search or filter"))))
                             width: parent.width
                             wrapMode: Text.Wrap
                         }
@@ -779,8 +901,10 @@ Rectangle {
             ParallelAnimation {
                 id: contentTransition
 
+                onFinished: root.loadActiveTab()
+
                 NumberAnimation {
-                    duration: 180
+                    duration: 170
                     easing.type: Easing.OutCubic
                     property: "opacity"
                     target: animatedContent

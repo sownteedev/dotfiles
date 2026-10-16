@@ -13,21 +13,8 @@
 > [!IMPORTANT]
 > SownteeShell is my personal Arch Linux and Niri setup. It is tuned around my workflow, hardware, and services, so treat it as a showcase and reference implementation rather than a supported drop-in desktop.
 
-## Showcase
-
-<!--
-Upload the finished demo video to GitHub, then replace the note below with the
-GitHub-generated video attachment.
--->
-
 > [!NOTE]
 > Video showcase coming soon.
-
-SownteeShell is the desktop UI and runtime layer of my Niri session: bar, Dock, launcher, control panels, notifications, wallpapers, capture tools, Settings, lock screen, greeter, OSDs, and system integration.
-
-Every surface shares one Material Design 3 language, wallpaper-derived colors, compositor-backed blur, typography, motion, and state. Large interfaces are loaded only when opened, while system services follow their actual consumers instead of polling permanently.
-
-The visual layer uses shared MD3 typography, shape, spacing, state, motion, and elevation tokens. Material Symbols Rounded provides consistent shell action icons while application, provider, and brand icons retain their native artwork; freedesktop symbolic icons remain the runtime fallback.
 
 ## Highlights
 
@@ -41,44 +28,39 @@ The visual layer uses shared MD3 typography, shape, spacing, state, motion, and 
 
 ### Panels, productivity, and system control
 
-- **Left panel** with Weather and Music tabs above Stats and Timer: OpenWeather forecasts with GeoClue location detection, MPRIS media controls with decoded artwork frame retention to eliminate loading blackouts, inline volume slider, expandable synced lyrics with playback position seeking, live CPU/RAM/GPU charts, grouped process management, RSS/PSS memory details, and countdown timers.
+- **Left panel** with Weather, Music, Stats, and Timer: OpenWeather/GeoClue forecasts, MPRIS playback and volume controls, stable artwork, synced lyrics with seeking, system charts, process management, and countdown timers.
 - A standalone, responsive **SownteeShell Calendar** with:
-    - Week and month views, optional Vietnamese lunar dates, a current-time indicator, and automatic scrolling to the current hour when the week view opens.
-    - Event and dated-task search with account, calendar, and date filters, plus jump-to-date results.
-    - Drag-to-create events across one or multiple days, with 15-minute snapping and local start/end validation.
-    - Direct manipulation of existing timed events: drag an editable non-recurring event to another day or time, or drag its top/bottom edge to change the start/end time. All-day, task, read-only, and recurring entries remain editor-only to avoid changing the wrong occurrence or series.
-    - Week timeline zoom controls with Zoom in/Zoom out buttons and `Ctrl` + mouse wheel; normal wheel scrolling continues to scroll the timeline.
-    - Event editing for title, start/end dates and times, all-day mode, destination calendar, location, description, recurrence, one provider-synchronized reminder, availability (`Busy`/`Free`), and visibility (`Default`/`Public`/`Private`).
-    - Daily, weekly, monthly, and yearly recurrence, weekly weekday selection, interval values, and recurrence termination by date or count. Monthly rules preserve the event's start day with `BYMONTHDAY`.
-    - iCalendar (`.ics`/`.ical`) parsing, preview, and import into a selected writable calendar, including supported event details, recurrence, and reminder data.
-    - Google Tasks from every connected Google account and task list, with account/list colors, account and list selection when creating a task, inline editing/completion, and dated tasks rendered in the all-day lane. Local Tasks remain device-only and can be shown or hidden independently.
-    - Sidebar account and calendar visibility controls, per-account sync and last-sync status, error/reconnect actions, and automatic background synchronization.
-- Calendar sync for **Google, Microsoft, and iCloud/CalDAV**, backed by a dedicated Rust daemon with a local SQLite cache, Secret Service credentials, provider-aware event options, live refresh, and one provider-synchronized reminder per event.
-- **Right panel** with Notifications, Network (Wi-Fi/Ethernet), and Bluetooth tabs above Display, Power, and Volume. The Network page shows the active wired connection on LAN-only PCs, hides Wi-Fi scanning when no wireless adapter exists, and retains advanced IPv4/IPv6 profiles, Wi-Fi QR sharing, AirPods L/R/Case battery data, and a PipeWire per-application mixer with peak meters and device routing.
-- **Desktop and laptop power controls** with service-detected power modes and shared idle/sleep settings. Battery telemetry, low-battery automation, and separate battery/AC policies appear only with a system battery; charge limits appear only when supported. PCs retain power-mode selection and a configurable startup mode without empty battery cards.
-- **Display control** with Windows-style display modes (`PC screen only`/`Internal only`, `Duplicate`, `Extend`, and `Second screen only`/`External only`), a separate persisted main-display choice, independent Niri startup-focus control, drag-and-drop arrangement with a 15-second Keep changes/Revert safety window, orientation, resolution, refresh rate, scale, VRR (`Off`, `On`, `On Demand`), multi-output software Duplicate via `wl-mirror` (selectable source, multiple targets, `Fit`/`Fill` scaling), DDC/CI brightness, and Sunshine output selection. On laptops, the modes are described as Internal/External; on PCs with only external monitors, they use the clearer PC screen/Second screen names. Both screens remain enabled in Extend and Duplicate; Main display only chooses the preferred screen and does not replace Niri's separate startup-focus setting.
+    - Week/month views, Vietnamese lunar dates, a current-time indicator with auto-scroll, timeline zoom, and filtered event/task search with jump-to-date results.
+    - Multi-day drag-to-create with 15-minute snapping and time validation; drag-to-move/resize for editable, non-recurring timed events. Other entry types use their editors.
+    - Event details, all-day mode, calendar selection, location, description, daily/weekly/monthly/yearly recurrence with intervals and end rules, one synced reminder, availability, privacy, and iCalendar preview/import.
+    - Multi-account Google Tasks with list selection, colors, inline editing/completion, dated tasks, and independently visible device-local tasks.
+    - Account/calendar visibility, background sync, last-sync status, and reconnect controls for **Google, Microsoft, and iCloud/CalDAV**, backed by Rust, SQLite, and Secret Service.
+- **Right panel** with Notifications, Wi-Fi/Ethernet, Bluetooth, Display, Power, and Volume: hardware-aware network controls, IPv4/IPv6 profiles, Wi-Fi QR sharing, AirPods battery levels, and per-app PipeWire mixing with peak meters and device routing.
+- **Desktop and laptop power controls** with detected power modes, startup defaults, idle/sleep settings, and supported battery features: health, charge limits, low-battery automation, and separate battery/AC policies.
+- **Display control** with single-screen, Duplicate, and Extend modes, independent main-display and Niri startup-focus choices, and drag arrangement with a 15-second revert safeguard. Includes orientation, resolution, refresh rate, scale, VRR, multi-output `wl-mirror` mirroring with source/target and Fit/Fill choices, DDC/CI brightness, and Sunshine output selection.
 - **System telemetry** with battery health and supported charge thresholds, power profiles, `auto-cpufreq`, Arch/AUR/Flatpak updates, live CPU/RAM/GPU charts, grouped process management, and RSS/PSS memory details.
 - **Quick controls** for Airplane Mode, Caffeine, DND, night light, power profiles, Tailscale, and Cloudflare WARP, with edge-drag access to both panels.
 
 ### Settings
 
-- A searchable, responsive, resizable **SownteeShell Settings** window featuring an MD3 **Home** dashboard with quick-jump category cards, color palette preview, and seamless tab transitions.
-- **Desktop applications (GTK & Qt)** appearance and default application choices: browser, file manager, terminal, text editor, image and video viewer, synchronized across GSettings, GTK 3/4 `settings.ini`, `qt5ct`/`qt6ct`, and XWayland XSettings: GTK themes, one shared icon theme for applications and SownteeShell, cursor theme and size (px), interface typography, Qt widget styles, Qt color schemes, and Qt standard dialogs.
+- Searchable, responsive, resizable **SownteeShell Settings** with an MD3 Home dashboard, category shortcuts, palette preview, and animated tab transitions.
+- **GTK & Qt appearance** and default applications: themes, shared icons, cursors, fonts, Qt styles/colors/dialogs, and preferred browser, file manager, terminal, editor, and image/video viewers. Settings synchronize across GTK, Qt, GSettings, and XWayland.
 - GUI editors for Niri keybindings, layout, input, animations, behavior, window and layer rules, and raw configuration files.
 - Shell controls for typography, bar modules, launcher providers, notifications, wallpapers, capture, integrations, audio, OSDs, idle behavior, and performance.
 - Per-surface blur, light/dark surface opacity, separate panel/component shadows, reduced motion, low-power mode, dependency diagnostics, and scoped cache cleanup.
 - A shared profile image for Settings, Polkit, and Greetd, plus Howdy face-model management when supported.
+- **SownteeShell Connect** for Wallhaven and Steam Community in Settings > Integrations, with themed sign-in windows and private, persistent website sessions. Expired sessions still require sign-in.
 
 ### Wallpapers and Material You
 
-- Static images, GIFs, and local videos, with video playback isolated in a separate Quickshell renderer process so its multimedia memory is reclaimed when playback stops.
+- Static images, GIFs, and local videos, with isolated video rendering and memory reclaimed when playback stops.
 - Wallpaper Engine support routes video projects through the native renderer and scene projects through `linux-wallpaperengine`, with battery-aware FPS and pause-on-lock/fullscreen policies.
-- Installed Scene projects expose a Material 3 properties panel generated from their `project.json`, with project-defined switches, sliders, option lists, text values, and RGB controls. Overrides are saved per wallpaper and applied by restarting only the active `linux-wallpaperengine` renderer.
-- Integrated Wallhaven and Steam Workshop browsers with search, source-specific filters, favorites, installed-library management, cached previews, and desktop/Greetd/both destinations.
-- Drag-to-delete for static and animated wallpapers in the carousel, with permanent deletion and protection for the active wallpaper.
+- Scene properties from `project.json`: switches, sliders, lists, text, and RGB controls, with per-wallpaper overrides and renderer-only restarts.
+- Wallhaven and Steam Workshop browsers with search, filters, cached previews, source links, installed-library management, and desktop/Greetd/both destinations.
+- **Wallhaven Collection** save/remove stars and favorite counts; **Workshop Browse / Subscribed / Installed** tabs with Subscribe/Unsubscribe actions. Remote subscriptions remain separate from local downloads.
+- Permanent drag-to-delete for static and animated wallpapers, with active-wallpaper protection and a replacement-before-delete flow.
 - Frame-aware video handoff, cached covers, rollback-safe transitions, and synchronized live theme previews while browsing.
 - Matugen-generated Material You colors with animated shell transitions, soft secondary/tertiary accents for monochrome wallpapers, and optional theme propagation through configured system templates.
-- **Sowntee Horizon greeter for Greetd** with a cinematic, asymmetric layout: left-aligned clock and date typography, Sowntee shell session header, Material 3 Login Card, high-contrast readability gradient veil over custom wallpapers, decorative S-orbit curves, top-right status cluster (network and battery pills), and bottom-right power actions.
 - Greetd keeps its own background and palette, generated independently from its selected image or Wallpaper Engine video.
 
 ### Capture and notifications
@@ -86,13 +68,15 @@ The visual layer uses shared MD3 typography, shape, spacing, state, motion, and 
 - A layered screenshot editor with pen, highlighter, lines, arrows, shapes, text, numbered markers, blur, pixelation, crop, eraser, zoom callouts, and a magnifier loupe.
 - Transformable annotations and inserted image layers with move, crop, resize, rotate, opacity, visibility, z-order, edge snapping, automatic stitching, color picking, undo, and redo.
 - English/Vietnamese OCR, Google Lens reverse image search, automatic clipboard export, and screenshot actions directly from the notification popup.
-- Local QR detection in screenshot notifications: preview detected content, copy text, or explicitly open HTTP/HTTPS links. Multiple codes are listed separately; scanning never opens links or changes the clipboard automatically. Requires `zbar`.
+- Local QR detection via `zbar`, with multi-code previews and explicit copy/open actions; scanning never opens links or changes the clipboard automatically.
 - GPU screen recording with region selection, configurable FPS/codec/quality, optional microphone capture, and CPU-encoding fallback.
 - Grouped notification popups with application actions, priority-aware timeouts, configurable placement, direction-aware stacking, swipe dismissal, persistent history, scheduled DND, lock-screen delivery, exclusions, and retention controls.
 
 ### Session and runtime
 
-- A standalone Quickshell Greetd interface on Cage with installed-session discovery, network status, animated battery state, profile sync, and wallpaper-derived colors.
+- **Sowntee Horizon greeter for Greetd**, a standalone Quickshell interface on Cage with installed-session discovery, network and battery status, profile sync, power actions, and wallpaper-derived colors.
+- A responsive login card with an avatar that morphs on password-length edits and a centered, enlarged clock after ten seconds of eligible inactivity, without interrupting authentication.
+- PAM error and lockout feedback, with a live countdown when timing is available. During a known lock, submits check status without sending another password or restarting the timer.
 - Multi-monitor PAM lock screen with password authentication, optional Howdy face recognition, camera preview and device-aware V4L2 controls, retry after monitor wake, media, and notifications.
 - Native Polkit dialogs, session and power menus, idle dim/lock/monitor-off policy, Caffeine inhibition, and position-aware volume, brightness, microphone, and media OSDs.
 - On-demand QML surfaces, event-driven Niri/PipeWire/NetworkManager/UPower integration, a native image-cache provider, and persistent Rust Core and Calendar services with direct IPC, bounded jobs, and systemd-managed lifecycles.
@@ -117,7 +101,7 @@ The Niri Settings pages target the include-based configuration used by this setu
 
 The main stack includes Niri, `quickshell` (stable package), Qt 6, Rust/Cargo, PipeWire/WirePlumber, NetworkManager, UPower, Matugen, Material Symbols Rounded, `wl-clipboard`, `cliphist`, FFmpeg, ImageMagick, and the capture utilities.
 
-Optional or hardware-dependent features use Tesseract language data, GeoClue, Cava, `gpu-screen-recorder`, DDC/CI, Steam and `linux-wallpaperengine`, Howdy and V4L2, Tailscale, or Cloudflare WARP. Settings → Advanced → Dependencies reports which integrations are currently available.
+Optional or hardware-dependent features use Tesseract language data, GeoClue, Cava, `gpu-screen-recorder`, DDC/CI, Steam and `linux-wallpaperengine`, Howdy and V4L2, Tailscale, or Cloudflare WARP. Wallpaper website accounts additionally require `pyside6` and `qt6-webengine`, with compatible Qt versions. The system greeter uses Greetd and Cage. Settings → Advanced → Dependencies reports which integrations are currently available.
 
 Charge thresholds, external brightness, hardware video acceleration, face authentication, and device-specific battery telemetry depend on the machine and its drivers.
 

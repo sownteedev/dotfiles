@@ -110,7 +110,7 @@ PanelWindow {
     }
     function isShellWindowEntryId(entryId) {
         var normalized = normalizedAppId(entryId);
-        return normalized === "sownteeshell-settings" || normalized === "sownteeshell-calendar";
+        return normalized === "sownteeshell-settings" || normalized === "sownteeshell-calendar" || normalized === "sownteeshell-connect";
     }
     function modelIndexForId(entryId) {
         var id = String(entryId || "");
@@ -662,7 +662,7 @@ PanelWindow {
                     required property bool launchable
                     required property string modelKey
                     required property bool pinned
-                    readonly property bool settingsWindowEntry: dockWindow.normalizedAppId(entryId) === "sownteeshell-settings"
+                    readonly property string shellIconKind: shellWindowEntry ? dockWindow.normalizedAppId(entryId).slice("sownteeshell-".length) : ""
                     readonly property bool shellWindowEntry: dockWindow.isShellWindowEntryId(entryId)
                     readonly property int unreadCount: isSeparator ? 0 : NotificationHistory.unreadCountForEntry(entryId, appName)
                     readonly property int windowCount: appWindows.length
@@ -742,7 +742,7 @@ PanelWindow {
                         SownteeAppIcon {
                             anchors.centerIn: parent
                             height: 40
-                            kind: appButton.shellWindowEntry ? (appButton.settingsWindowEntry ? "settings" : "calendar") : ""
+                            kind: appButton.shellIconKind
                             visible: appButton.shellWindowEntry
                             width: height
                         }
@@ -1018,7 +1018,7 @@ PanelWindow {
         anchors.bottomMargin: 12
         height: implicitHeight
         iconName: dockWindow.previewIconName
-        shellKind: dockWindow.isShellWindowEntryId(dockWindow.previewEntryId) ? (dockWindow.normalizedAppId(dockWindow.previewEntryId) === "sownteeshell-settings" ? "settings" : "calendar") : ""
+        shellKind: dockWindow.isShellWindowEntryId(dockWindow.previewEntryId) ? dockWindow.normalizedAppId(dockWindow.previewEntryId).slice("sownteeshell-".length) : ""
         shown: dockWindow.previewShown && dockWindow.previewWindows.length > 0
         width: Math.min(implicitWidth, Math.max(0, dockWindow.width - 32))
         windows: dockWindow.previewWindows

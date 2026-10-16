@@ -180,6 +180,10 @@ PanelWindow {
         transitionStarted = true;
         transitionAnimation.restart();
     }
+    function reportDisplayedStaticCover() {
+        if (!candidateImage && !transitionAnimation.running && !initialRevealAnimation.running && displayedImage && displayedImage.opacity === 1)
+            reportStaticCoverReady(displayedImage);
+    }
     function reportStaticCoverReady(image) {
         if (!isPendingStaticCover(image))
             return;
@@ -297,6 +301,10 @@ PanelWindow {
             return;
         commitRippleAnimation.stop();
         requestWallpaper();
+    }
+    onPendingStaticTransitionChanged: {
+        if (pendingStaticTransition)
+            Qt.callLater(reportDisplayedStaticCover);
     }
     onRevealVideoChanged: requestWallpaper()
     onWallpaperPathChanged: requestWallpaper()

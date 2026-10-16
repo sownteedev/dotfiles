@@ -111,7 +111,7 @@ Item {
                     }
                 }
                 contentItem: Item {
-                    SownteeAppIcon {
+                    Item {
                         id: previewIcon
 
                         anchors.left: parent.left
@@ -119,9 +119,25 @@ Item {
                         anchors.top: parent.top
                         anchors.topMargin: 12
                         height: 40
-                        kind: root.shellKind
-                        source: Quickshell.iconPath(root.iconName || "application-x-executable")
                         width: 40
+
+                        SownteeAppIcon {
+                            id: shellIcon
+
+                            anchors.fill: parent
+                            kind: root.shellKind
+                            visible: branded
+                        }
+                        Image {
+                            anchors.fill: parent
+                            cache: true
+                            fillMode: Image.PreserveAspectFit
+                            mipmap: true
+                            smooth: true
+                            source: !shellIcon.branded ? Quickshell.iconPath(root.iconName || "application-x-executable", "application-x-executable") : ""
+                            sourceSize: Qt.size(96, 96)
+                            visible: !shellIcon.branded
+                        }
                     }
                     Column {
                         anchors.bottom: parent.bottom

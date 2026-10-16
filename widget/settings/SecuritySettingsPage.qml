@@ -180,10 +180,7 @@ Item {
         baselineState = JSON.stringify(currentState());
     }
     function testGreeter() {
-        var dotfilesDir = Config.dotfilesDir;
-        var greeterWidget = Config.sownteeshellDir + "/widget/greeter";
-        var script = 'cd "$1" && ' + 'GREETD_DEFAULT_USER="$USER" ' + 'GREETD_SESSION_NAME="Niri" ' + 'GREETD_THEME_PATH="/var/lib/sownteeshell/greeter/colors.json" ' + 'GREETD_BACKGROUND_PATH="/var/lib/sownteeshell/greeter/background.json" ' + 'GREETD_PROFILE_PATH="/var/lib/sownteeshell/greeter/profile.json" ' + 'exec quickshell --path "$2"';
-        Quickshell.execDetached(["sh", "-c", script, "test-greeter", dotfilesDir, greeterWidget]);
+        Quickshell.execDetached([Config.sownteeshellDir + "/scripts/system/test-greeter.sh"]);
     }
     function triggerHeaderAction() {
         cameraPopupOpen = false;
@@ -547,7 +544,7 @@ Item {
                     font.weight: Md3.typeScale.bodyMedium.weight
                     lineHeight: Md3.typeScale.bodyMedium.lineHeight
                     lineHeightMode: Text.FixedHeight
-                    text: root.greeterDeployMessage !== "" ? root.greeterDeployMessage : qsTr("Test greeter in a window or deploy files to /usr/share/sownteeshell/greeter")
+                    text: root.greeterDeployMessage !== "" ? root.greeterDeployMessage : qsTr("Test with real PAM authentication. Wrong passwords may count toward account lockout. No desktop session is started.")
                     wrapMode: Text.Wrap
                 }
                 SettingsActionButton {

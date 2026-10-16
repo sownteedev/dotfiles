@@ -11,7 +11,7 @@ QtObject {
     property string actionStatusMessage: ""
     readonly property int activeFilterCount: (ageRatingFilter === "" ? 0 : 1) + (resolutionFilter === "" ? 0 : 1) + (sortMode === "trending" ? 0 : 1) + (trendingDays === 7 ? 0 : 1) + (matchAllTags ? 0 : 1) + (includeRecentVotesOnly ? 1 : 0) + (includeNsfw ? 1 : 0) + genreFilters.length + featureFilters.length
     property string ageRatingFilter: ""
-    readonly property string browseErrorMessage: loginErrorMessage || downloadErrorMessage || searchErrorMessage
+    readonly property string browseErrorMessage: WebAccountService.steam.errorMessage || loginErrorMessage || downloadErrorMessage || searchErrorMessage
     property bool browseFiltersDirty: false
     readonly property string browseStatusMessage: actionStatusMessage || searchStatusMessage
     readonly property bool busy: downloading || listingInstalled || loginRunning || removing || searching || subscriptionProcess.running
@@ -167,6 +167,7 @@ QtObject {
     }
     property string installedStatusMessage: ""
     readonly property bool listingInstalled: installedProcess.running
+    readonly property bool loadingSubscribed: pendingSubscribedPage > 0 || (WebAccountService.steam.busy && WebAccountService.steam.operation === "subscriptions")
     property string loginErrorCode: ""
     property string loginErrorMessage: ""
     readonly property bool loginRequired: downloadErrorCode === "steamcmd_login_required" || loginErrorCode === "steamcmd_login_required"
@@ -195,12 +196,14 @@ QtObject {
         }
         onStarted: launchPending = false
     }
-    readonly property string manageErrorMessage: loginErrorMessage || downloadErrorMessage || removeErrorMessage || installedLoadErrorMessage
+    readonly property string manageErrorMessage: WebAccountService.steam.errorMessage || loginErrorMessage || downloadErrorMessage || removeErrorMessage || installedLoadErrorMessage
     readonly property string manageStatusMessage: actionStatusMessage || installedStatusMessage
     property bool matchAllTags: true
     property int page: 1
     property int panelConsumers: 0
     property var pendingSearchRequest: null
+    property int pendingSubscribedPage: 0
+    property var pendingSubscriptionRequests: []
     property string query: ""
     property string removeErrorMessage: ""
     property Process removeProcess: Process {
@@ -313,6 +316,13 @@ QtObject {
     property string steamItemId: ""
     property bool steamItemSubscribed: false
     property string steamItemTitle: ""
+    property bool subscribedHasNext: false
+    property bool subscribedLoaded: false
+    property double subscribedLoadedAt: 0
+    property int subscribedPage: 1
+    property ListModel subscribedResults: ListModel {
+        dynamicRoles: true
+    }
     property FileView subscriptionManifest: FileView {
         path: Config.steamDir + "/steamapps/workshop/appworkshop_431960.acf"
         printErrors: false
@@ -390,6 +400,72 @@ QtObject {
     property int totalResults: 0
     property int trendingDays: 7
     property string typeFilter: "all"
+    property var verifiedSubscriptions: ({})
+    property Connections webAccountConnection: Connections {
+        function onAccountIdChanged() {
+            root.pendingSubscriptionRequests = [];
+            root.pendingSubscribedPage = 0;
+            root.verifiedSubscriptions = {};
+            root.subscribedResults.clear();
+            root.subscribedLoaded = false;
+            root.subscribedPage = 1;
+            root.subscribedHasNext = false;
+            for (var model of [root.results, root.installedResults]) {
+                for (var index = 0; index < model.count; ++index) {
+                    model.setProperty(index, "accountSubscribed", false);
+                    model.setProperty(index, "accountSubscriptionKnown", false);
+                }
+            }
+            root.rebuildFilteredModels();
+        }
+        function onBusyChanged() {
+            if (!WebAccountService.steam.busy)
+                Qt.callLater(root.processSubscriptionQueue);
+        }
+        function onSucceeded(action, response) {
+            if (action === "subscriptions") {
+                if (root.panelConsumers <= 0)
+                    return;
+                var items = response.items || [];
+                var states = Object.assign({}, root.verifiedSubscriptions);
+                for (var item of items)
+                    states[String(item.id)] = true;
+                root.verifiedSubscriptions = states;
+                root.replaceModel(root.subscribedResults, items);
+                root.subscribedPage = Number(response.page || 1);
+                root.subscribedHasNext = response.has_next === true;
+                root.subscribedLoaded = true;
+                root.subscribedLoadedAt = Date.now();
+                root.syncVerifiedSubscriptions();
+                root.rebuildFilteredModels();
+                return;
+            }
+            if (action !== "subscribe" && action !== "unsubscribe")
+                return;
+            var subscribed = action === "subscribe" && response.subscribed !== false;
+            var confirmed = Object.assign({}, root.verifiedSubscriptions);
+            confirmed[String(response.item_id)] = subscribed;
+            root.verifiedSubscriptions = confirmed;
+            if (subscribed || root.subscribedHasNext)
+                root.subscribedLoaded = false;
+            if (!subscribed) {
+                var subscribedIndex = root.modelIndexForId(root.subscribedResults, String(response.item_id));
+                if (subscribedIndex >= 0)
+                    root.subscribedResults.remove(subscribedIndex);
+            }
+            for (var model of [root.results, root.installedResults]) {
+                var index = root.modelIndexForId(model, String(response.item_id));
+                if (index >= 0) {
+                    model.setProperty(index, "accountSubscribed", subscribed);
+                    model.setProperty(index, "accountSubscriptionKnown", true);
+                }
+            }
+            root.rebuildFilteredModels();
+            root.actionStatusMessage = subscribed ? qsTr("Subscribed on Steam (%1)").arg(WebAccountService.steam.accountLabel) : qsTr("Unsubscribed from Steam (%1)").arg(WebAccountService.steam.accountLabel);
+        }
+
+        target: WebAccountService.steam
+    }
 
     signal downloadCompleted(string publishedFileId, string path, var modified, string purpose)
     signal removeCompleted(string publishedFileId, string path)
@@ -460,6 +536,7 @@ QtObject {
         return true;
     }
     function clearPanelModels() {
+        pendingSubscribedPage = 0;
         results.clear();
         filteredResults.clear();
         installedResults.clear();
@@ -567,6 +644,20 @@ QtObject {
         installedProcess.running = true;
         return true;
     }
+    function loadSubscribed(requestedPage, force) {
+        if (panelConsumers <= 0)
+            return false;
+        var targetPage = Math.max(1, Number(requestedPage || 1));
+        if (force !== true && subscribedLoaded && subscribedPage === targetPage && Date.now() - subscribedLoadedAt < 120000)
+            return true;
+        if (pendingSubscriptionRequests.length > 0 || (WebAccountService.steam.busy && WebAccountService.steam.operation !== "subscriptions")) {
+            pendingSubscribedPage = targetPage;
+            return true;
+        }
+        return WebAccountService.steam.start("subscriptions", {
+            page: targetPage
+        });
+    }
     function loginSteamCmd() {
         if (loginTerminal.running)
             return false;
@@ -593,6 +684,13 @@ QtObject {
         return true;
     }
     function markDownloaded(publishedFileId, path, modified, fileSize) {
+        var subscribedIndex = modelIndexForId(subscribedResults, publishedFileId);
+        if (subscribedIndex >= 0) {
+            subscribedResults.setProperty(subscribedIndex, "downloaded", true);
+            subscribedResults.setProperty(subscribedIndex, "path", path);
+            subscribedResults.setProperty(subscribedIndex, "file_size", Number(fileSize || 0));
+            subscribedResults.setProperty(subscribedIndex, "modified", modified);
+        }
         var index = modelIndexForId(results, publishedFileId);
         if (index >= 0) {
             results.setProperty(index, "downloaded", true);
@@ -607,6 +705,12 @@ QtObject {
         rebuildFilteredModels();
     }
     function markRemoved(publishedFileId) {
+        var subscribedIndex = modelIndexForId(subscribedResults, publishedFileId);
+        if (subscribedIndex >= 0) {
+            subscribedResults.setProperty(subscribedIndex, "downloaded", false);
+            subscribedResults.setProperty(subscribedIndex, "path", "");
+            subscribedResults.setProperty(subscribedIndex, "modified", 0);
+        }
         var resultIndex = modelIndexForId(results, publishedFileId);
         if (resultIndex >= 0) {
             results.setProperty(resultIndex, "downloaded", false);
@@ -618,6 +722,19 @@ QtObject {
             installedResults.remove(installedIndex, 1);
 
         rebuildFilteredModels();
+    }
+    function mergeSubscribedMetadata() {
+        for (var index = 0; index < subscribedResults.count; ++index) {
+            var item = Object.assign({}, subscribedResults.get(index));
+            for (var model of [results, installedResults]) {
+                var sourceIndex = modelIndexForId(model, String(item.id));
+                if (sourceIndex >= 0)
+                    item = Object.assign(item, model.get(sourceIndex));
+            }
+            item.accountSubscribed = true;
+            item.accountSubscriptionKnown = true;
+            subscribedResults.set(index, item);
+        }
     }
     function modelIndexForId(model, publishedFileId) {
         var expectedId = String(publishedFileId || "");
@@ -632,6 +749,9 @@ QtObject {
     }
     function normalizedTag(value) {
         return String(value || "").trim().toLowerCase();
+    }
+    function openAccountLogin() {
+        return WebAccountService.steam.connectAccount();
     }
     function openInSteam(item) {
         var publishedFileId = String(item && item.id || "");
@@ -655,8 +775,30 @@ QtObject {
             "message": String(errorOutput || "").trim() || fallbackMessage
         };
     }
+    function processSubscriptionQueue() {
+        if (WebAccountService.steam.busy)
+            return;
+        if (pendingSubscriptionRequests.length === 0) {
+            if (pendingSubscribedPage > 0) {
+                var requestedPage = pendingSubscribedPage;
+                pendingSubscribedPage = 0;
+                loadSubscribed(requestedPage);
+            }
+            return;
+        }
+        var request = pendingSubscriptionRequests[0];
+        if (!WebAccountService.steam.connected || request.accountId !== WebAccountService.steam.accountId) {
+            pendingSubscriptionRequests = [];
+            return;
+        }
+        if (WebAccountService.steam.start(request.action, {
+            item_id: request.itemId
+        }))
+            pendingSubscriptionRequests = pendingSubscriptionRequests.slice(1);
+    }
     function rebuildFilteredInstalledResults() {
         rebuildFilteredModel(filteredInstalledResults, installedResults);
+        Qt.callLater(root.mergeSubscribedMetadata);
     }
     function rebuildFilteredModel(targetModel, sourceModel) {
         var items = [];
@@ -677,6 +819,7 @@ QtObject {
             items.push(results.get(i));
 
         replaceModel(filteredResults, items);
+        Qt.callLater(root.mergeSubscribedMetadata);
     }
     function refreshSubscriptions(force) {
         if (panelConsumers <= 0)
@@ -749,6 +892,10 @@ QtObject {
         for (var targetIndex = 0; targetIndex < incoming.length; ++targetIndex) {
             var item = incoming[targetIndex];
             var publishedFileId = String(item.id || "");
+            item = Object.assign({}, item, {
+                accountSubscribed: verifiedSubscriptions[publishedFileId] === true,
+                accountSubscriptionKnown: verifiedSubscriptions[publishedFileId] !== undefined
+            });
             var currentIndex = modelIndexForId(model, publishedFileId);
             if (currentIndex < 0) {
                 model.insert(targetIndex, item);
@@ -953,6 +1100,25 @@ QtObject {
     function shellQuote(value) {
         return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
     }
+    function subscribe(item) {
+        return WebAccountService.steam.start("subscribe", {
+            item_id: String(item && item.id || "")
+        });
+    }
+    function subscriptionPending(itemId) {
+        return (WebAccountService.steam.busy && ["subscribe", "unsubscribe"].indexOf(WebAccountService.steam.operation) >= 0 && WebAccountService.steam.itemId === itemId) || pendingSubscriptionRequests.some(request => request.itemId === itemId);
+    }
+    function syncVerifiedSubscriptions() {
+        for (var model of [results, installedResults]) {
+            for (var index = 0; index < model.count; ++index) {
+                var confirmed = verifiedSubscriptions[String(model.get(index).id)];
+                if (confirmed !== undefined) {
+                    model.setProperty(index, "accountSubscribed", confirmed);
+                    model.setProperty(index, "accountSubscriptionKnown", true);
+                }
+            }
+        }
+    }
     function toggleFeatureFilter(filter) {
         featureFilters = toggledFilters(featureFilters, String(filter || ""));
         markFiltersChanged();
@@ -960,6 +1126,27 @@ QtObject {
     function toggleGenreFilter(filter) {
         genreFilters = toggledFilters(genreFilters, String(filter || ""));
         markFiltersChanged();
+    }
+    function toggleSubscription(item) {
+        var itemId = String(item && item.id || "");
+        var subscribed = Boolean(item && (item.accountSubscriptionKnown ? item.accountSubscribed : item.subscribed));
+        if (!/^[1-9]\d*$/.test(itemId) || subscriptionPending(itemId))
+            return false;
+        if (!WebAccountService.steam.connected)
+            return WebAccountService.steam.start(subscribed ? "unsubscribe" : "subscribe", {
+                item_id: itemId
+            });
+        pendingSubscriptionRequests = pendingSubscriptionRequests.concat([
+            {
+                itemId: itemId,
+                action: subscribed ? "unsubscribe" : "subscribe",
+                accountId: WebAccountService.steam.accountId
+            }
+        ]);
+        if (!subscribed)
+            subscribedLoaded = false;
+        processSubscriptionQueue();
+        return true;
     }
     function toggledFilters(filters, value) {
         var next = [];

@@ -19,7 +19,7 @@ Item {
     readonly property var batteryDevice: UPower.displayDevice
     readonly property bool batteryExternalPower: batteryDevice && (!UPower.onBattery || batteryCharging || batteryDevice.state === UPowerDeviceState.FullyCharged)
     readonly property int batteryPercentage: batteryDevice ? Math.round(batteryDevice.percentage * 100) : 0
-    readonly property bool canIdle: interactive && visible && !GreeterSession.working && !GreeterSession.launching && !GreeterSession.waitingForResponse && !loginCard.sessionPickerOpen && !loginCard.isActualError
+    readonly property bool canIdle: interactive && visible && !GreeterSession.working && !GreeterSession.checkingLockout && !GreeterSession.launching && !GreeterSession.waitingForResponse && !loginCard.sessionPickerOpen
     readonly property real controlScale: Math.max(1, Math.min(1.1, scaleFactor))
     readonly property int controlSize: Math.round(48 * controlScale)
     readonly property var devices: Networking.devices ? Networking.devices.values : []
@@ -93,6 +93,7 @@ Item {
         onTriggered: {
             if (root.canIdle) {
                 root.idleMode = true;
+                loginCard.clearSecret();
                 root.forceActiveFocus();
             }
         }

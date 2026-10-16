@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../../"
 
 QtObject {
     id: root
@@ -520,6 +521,8 @@ QtObject {
         root.applyFocusedWindow(windowId, true);
     }
     function shellWindowDisplayName(windowData) {
+        if (String(windowData && windowData.app_id || "").trim().toLowerCase() === "sownteeshell-connect")
+            return "SownteeShell Connect";
         var kind = shellWindowKind(windowData);
         if (kind === "settings")
             return qsTr("SownteeShell Settings");
@@ -532,6 +535,8 @@ QtObject {
         return kind === "" ? "" : "sownteeshell-" + kind;
     }
     function shellWindowIconName(windowData) {
+        if (String(windowData && windowData.app_id || "").trim().toLowerCase() === "sownteeshell-connect")
+            return Config.sownteeshellDir + "/assets/icons/sownteeshell-connect.svg";
         var kind = shellWindowKind(windowData);
         if (kind === "settings")
             return "preferences-system-symbolic";
@@ -540,6 +545,8 @@ QtObject {
         return "";
     }
     function shellWindowKind(windowData) {
+        if (String(windowData && windowData.app_id || "").trim().toLowerCase() === "sownteeshell-connect")
+            return "connect";
         var title = String(windowData && windowData.title || "").trim().toLowerCase();
         if (title === "sownteeshell settings")
             return "settings";

@@ -6,7 +6,7 @@ import "../../"
 Item {
     id: root
 
-    readonly property bool branded: kind === "settings" || kind === "calendar"
+    readonly property bool branded: kind === "settings" || kind === "calendar" || kind === "connect"
     property string kind: ""
     property url source: ""
 
@@ -43,7 +43,7 @@ Item {
                 y: 8
             }
             Loader {
-                active: !artwork.calendar
+                active: root.kind === "settings"
                 anchors.fill: parent
 
                 sourceComponent: Item {
@@ -90,6 +90,50 @@ Item {
                         width: 16
                         x: 52
                         y: 50
+                    }
+                }
+            }
+            Loader {
+                active: root.kind === "connect"
+                anchors.fill: parent
+
+                sourceComponent: Shape {
+                    preferredRendererType: Shape.CurveRenderer
+
+                    transform: Rotation {
+                        angle: -40
+                        origin.x: 60
+                        origin.y: 58
+                    }
+
+                    ShapePath {
+                        fillColor: "transparent"
+                        strokeColor: Config.md3.on_primary_container
+                        strokeWidth: 10
+
+                        PathSvg {
+                            path: "M41 40 H53 A18 18 0 0 1 53 76 H41 A18 18 0 0 1 41 40 Z M67 40 H79 A18 18 0 0 1 79 76 H67 A18 18 0 0 1 67 40 Z"
+                        }
+                    }
+                    ShapePath {
+                        capStyle: ShapePath.FlatCap
+                        fillColor: "transparent"
+                        strokeColor: Config.md3.primary_container
+                        strokeWidth: 18
+
+                        PathSvg {
+                            path: "M49 58 H71"
+                        }
+                    }
+                    ShapePath {
+                        capStyle: ShapePath.RoundCap
+                        fillColor: "transparent"
+                        strokeColor: Config.md3.on_primary_container
+                        strokeWidth: 10
+
+                        PathSvg {
+                            path: "M49 58 H71"
+                        }
                     }
                 }
             }

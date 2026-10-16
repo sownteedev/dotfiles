@@ -6,22 +6,18 @@ Item {
     id: root
 
     required property string defaultUser
-    readonly property bool isActualError: {
-        var msg = GreeterSession.message.trim().toLowerCase();
-        if (msg === "" || msg.indexOf("preview mode") >= 0 || msg.indexOf("opening") >= 0 || msg.indexOf("starting") >= 0 || msg.indexOf("checking") >= 0)
-            return false;
-        return msg.indexOf("fail") >= 0 || msg.indexOf("error") >= 0 || msg.indexOf("lost") >= 0 || msg.indexOf("denied") >= 0;
-    }
+    readonly property bool isActualError: GreeterSession.hasError
     readonly property bool sessionPickerOpen: sessionMenu.visible
 
     signal inputActivity
 
     function clearSecret() {
+        secretField.previousLength = 0;
         secretField.clear();
         root.focusInput();
     }
     function focusInput() {
-        if (!enabled || !visible || GreeterSession.working || sessionPickerOpen)
+        if (!enabled || !visible || GreeterSession.working || GreeterSession.checkingLockout || sessionPickerOpen)
             return;
         if (userField.text === "")
             userField.forceActiveFocus();
@@ -37,19 +33,13 @@ Item {
         sessionMenu.open();
     }
     function submit() {
-        if (GreeterSession.working || secretField.text.length === 0)
+        if (GreeterSession.working || GreeterSession.checkingLockout || secretField.text.length === 0)
             return;
-        if (!GreeterSession.greetdAvailable) {
-            // In preview mode: simulate smooth login animation without error text
-            GreeterSession.launching = true;
-            simulatedUnlock.restart();
-            return;
-        }
         if (GreeterSession.waitingForResponse)
             GreeterSession.respond(secretField.text);
         else
             GreeterSession.start(userField.text, secretField.text);
-        secretField.clear();
+        root.clearSecret();
     }
 
     implicitHeight: cardContent.implicitHeight + 56
@@ -66,9 +56,11 @@ Item {
     TextInput {
         id: secretField
 
+        property int previousLength: 0
+
         Accessible.name: qsTr("Password")
         echoMode: TextInput.Password
-        enabled: !GreeterSession.working && !GreeterSession.launching
+        enabled: !GreeterSession.working && !GreeterSession.checkingLockout && !GreeterSession.launching
         height: 1
         inputMethodHints: Qt.ImhHiddenText | Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
         opacity: 0
@@ -76,9 +68,8 @@ Item {
 
         Keys.onPressed: event => {
             root.inputActivity();
-            profileAvatar.pulse();
             if (event.key === Qt.Key_Escape) {
-                secretField.clear();
+                root.clearSecret();
                 GreeterSession.cancel();
                 event.accepted = true;
             } else if (event.key === Qt.Key_Menu) {
@@ -89,19 +80,19 @@ Item {
             }
         }
         onAccepted: root.submit()
+        onLengthChanged: {
+            if (length !== previousLength) {
+                previousLength = length;
+                profileAvatar.pulse();
+            }
+        }
         onTextEdited: root.inputActivity()
     }
-    Timer {
-        id: simulatedUnlock
-
-        interval: 1000
-
-        onTriggered: {
-            GreeterSession.launching = false;
-            root.clearSecret();
-        }
-    }
     Connections {
+        function onCheckingLockoutChanged() {
+            if (!GreeterSession.checkingLockout)
+                Qt.callLater(root.focusInput);
+        }
         function onInputResetRequested() {
             root.clearSecret();
         }
@@ -306,7 +297,7 @@ Item {
                         font.family: "Inter Variable"
                         font.pixelSize: 13
                         font.weight: Font.Medium
-                        text: GreeterSession.message
+                        text: GreeterSession.displayMessage
                         wrapMode: Text.Wrap
                     }
                 }

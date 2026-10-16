@@ -88,6 +88,17 @@ and Workshop use their existing removal operations. QML owns the drag animation.
 
 Run `sownteeshell ipc methods core` for its IPC methods and parameters.
 
+`greeter-auth-status <user>` is a standalone, read-only lockout query. It resolves
+the local greetd PAM stack and faillock policy, then reads Linux-PAM's native
+64-byte tally records to report the current lock and its absolute expiry. It
+does not authenticate, reset failures, start a daemon, or require new privileges.
+Unreadable tallies, non-local users, conflicting policies, or unsupported data
+return `known: false`; the greeter then keeps the PAM-provided notice instead of
+guessing. In particular, the system greeter user may lack permission to read
+another user's tally. Test Greeter runs as the desktop user and can read their
+own tally. Repeated submits during a known lock only refresh this read-only
+status; they do not send another password or restart the countdown.
+
 `capture.qr.scan` accepts an absolute image `path` and uses local `zbarimg`
 (`zbar`) with cancellation, an 8-second timeout, bounded output, and a 64 MiB
 input-file limit. It returns deduplicated `codes` with `text`, `url`, and `host`;
@@ -283,6 +294,123 @@ Inspect daemon logs with:
 ```sh
 journalctl --user -u sownteeshell-core.service -u sownteeshell-calendar.service
 ```
+
+## Wallpaper website accounts
+
+Settings > Integrations connects Wallhaven and Steam Community through
+`python/wallpaper/web_account.py`, a dedicated PySide6/Qt WebEngine window.
+The optional wallpaper package group in `install/.installconfigtheme` includes
+`pyside6` and `qt6-webengine`; their Qt versions must match the installed Qt stack.
+Opening the normal browser is not sufficient: complete login in this window,
+press **Check sign-in** if needed, and then **Use this account**. The user must
+complete Steam Guard and any CAPTCHA themselves. No browser profile is imported.
+
+The connection window uses the shell's Matugen `colors.json` (`md3` tokens),
+including live updates when the file is rewritten or replaced. It keeps the last
+valid palette during incomplete writes and uses a built-in fallback if no theme
+is available. The header, website address, progress indicator, and actions are
+themed; the official website is not restyled or replaced. The browser receives
+the remaining vertical space instead of stretching the instructions. The window
+uses the shell's configured `fontName` at launch and provides Reload and Cancel.
+
+The helper identifies its window as **SownteeShell Connect**, with app ID
+`sownteeshell-connect` and a bundled link icon with the circular S signature.
+The workspace bar, dock, and dock preview use the same Matugen-colored
+`SownteeAppIcon` tile, outline, and S badge as Settings. Identity resolution
+recognizes this ID without installing a desktop launcher or changing Python's
+identity for unrelated applications. Reopen the connection window after updating;
+the shell also needs to load the updated workspace service for bar/dock branding.
+The dotfiles Niri rule matches this app ID and opens a 1040 x 800 floating window
+with the same 26px corner radius and background-effect policy as Settings.
+
+The shell keeps a separate profile for each provider under
+`$XDG_DATA_HOME/sownteeshell/web-accounts/` (by default
+`~/.local/share/sownteeshell/web-accounts/`). Directories use mode 700, account
+metadata uses mode 600, and the helper runs with umask 077. Website cookies and
+storage grant access to the account: treat this directory as sensitive and do
+not sync it to dotfiles or share it. This is filesystem access protection, not
+an application-level encrypted vault. Disconnect removes only the shell's local
+profile, not remote collections/subscriptions or the browser/SteamCMD login.
+
+On shell startup or reload, each account connection restores its saved identity
+from local metadata without opening WebEngine or requiring network access.
+This restores the linked-account UI, not proof that the website session is still
+valid: status checks and every remote operation continue to verify the website
+identity. Authentication failures mark the connection unavailable but retain its
+saved identity and profile so a later check can recover. Only an explicit
+Disconnect removes the stored account; genuinely expired sessions still require
+sign-in again.
+
+Shell-launched account helpers use `--watch-stdin` to tie their lifetime to the
+owning process's input pipe. Closing that pipe during shell reload or exit
+disposes the WebEngine page and profile and releases the provider lock without
+deleting account storage. SIGTERM also follows this cleanup path, and a closed
+output pipe cannot skip cleanup. Direct CLI
+requests without this flag still support piped JSON followed by EOF. Do not
+delete a provider lock while its helper is running or automatically retry a
+save/subscription mutation interrupted by a reload; check the website first.
+
+Wallhaven's card action posts an unsaved wallpaper directly to the first
+available collection of the connected website account; it no longer opens a
+collection chooser for every save. Its API username/key remain separate;
+API collection views refresh after a save or removal only when
+the configured username matches the website account. The saved-state star is
+an action: click it to remove the wallpaper from Collection using Wallhaven's
+own wallpaper-page `/favorites/delete/<id>` control, not the collection-list
+`quickDelete` control. An unrecognized control is an integration error, not proof
+that the wallpaper is absent from Collections. Unsaved items use the first
+available collection automatically.
+Loaded collection pages and confirmed saves also mark matching Browse/Installed
+cards for the same account during the shell session. This is not a complete
+background sync of all collections; unknown membership keeps the save action.
+Membership learned in-session is cleared when the account configuration changes.
+
+Workshop's Subscribe action uses the connected Steam Community session, checks
+the item belongs to Wallpaper Engine (431960), submits a subscription, then
+reloads its page to verify it. The same button offers Unsubscribe for subscribed
+items and Subscribe otherwise; each request explicitly sets the desired state.
+SteamCMD downloads and linux-wallpaperengine playback
+remain independent. A local Steam manifest is not proof of a new remote write.
+Confirmed remote states, including unsubscribed, take precedence over a stale
+local manifest during the session and reset when the connected account changes.
+Downloaded and In Use remain separate; these actions do not delete local files.
+
+The Workshop tabs are Browse, Subscribed, and Installed, in that order.
+Subscribed reads the connected account's Wallpaper Engine subscriptions from
+Steam Community, with independent pagination and Reload/Connect controls.
+The last subscription page is cached for two minutes across tab switches and
+panel reopenings; Reload always requests fresh data. Confirmed Unsub actions
+remove only that item locally without reloading the full subscription list.
+Sub/Unsub clicks are serialized per connected account, with a single spinner
+on each pending card; changing accounts discards queued actions.
+Background Steam requests skip images, fonts, and media, reuse the private
+HTTP cache, and read the subscription page directly instead of loading a
+profile page first. Interactive sign-in remains unchanged.
+It does not use the public "Most subscribed" ranking or require a Web API key.
+Browse results and their sort/filter state remain independent. Unsubscribe
+removes the item from the subscription view without deleting local files.
+Local/Browse metadata enriches matching cards. The subscription list does not
+provide content ratings; missing ratings do not mark a wallpaper as NSFW.
+Cards are labeled and blurred as NSFW only when matching metadata flags them.
+
+These are unofficial website integrations, not new permissions on API keys.
+Expired sessions, changed accounts, unexpected website markup, missing
+dependencies, and rejected writes are errors; the UI must not claim success.
+The helper serializes requests per provider and does not automatically retry
+mutations after timeouts. Check the website before retrying an uncertain write.
+
+Safe syntax check (no account login or mutation):
+
+```sh
+node --check backend/python/wallpaper/web_account.js
+```
+
+Manual validation after installing matching Qt dependencies and reloading the
+shell: connect each account, confirm its displayed identity, save one wallpaper
+to a selected Wallhaven collection, remove it again, subscribe/unsubscribe one
+Workshop item, and verify both on the corresponding websites. Also check
+disconnect/reconnect and expired
+sessions. Do not claim live completion based only on offline tests.
 
 ## Default workspace layout
 

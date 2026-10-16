@@ -12,7 +12,7 @@ MouseArea {
     id: root
 
     readonly property var activeWindow: WorkspaceService.activeWindowByOutput[root.outputName] || null
-    readonly property string appId: activeWindow ? (activeWindow.app_id || "desktop").toLowerCase() : "desktop"
+    readonly property string appId: activeWindow ? (activeWindow.app_id || "sowntee.shell").toLowerCase() : "sowntee.shell"
     property real maximumTextWidth: -1
     required property string outputName
     readonly property string title: activeWindow ? (activeWindow.title || "niri") : "niri"

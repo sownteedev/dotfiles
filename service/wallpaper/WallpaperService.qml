@@ -149,6 +149,7 @@ QtObject {
 
         onTriggered: {
             root.liveRevealActive = false;
+            root.completeReplacementRemoval();
             var renderedFrame = root.lastVideoFrame;
             if (root.selectedMode === "video" && renderedFrame) {
                 Qt.callLater(() => {
@@ -198,7 +199,7 @@ QtObject {
     }
     property string previewPath: ""
     readonly property bool ready: StateManager.wallpaperLoaded
-    readonly property bool removalBusy: removalPath !== ""
+    readonly property bool removalBusy: removalPath !== "" || replacementRemoval !== null
     property string removalPath: ""
     property CoreRequest removalRequest: CoreRequest {
         cancellable: false
@@ -206,6 +207,12 @@ QtObject {
 
         onFailed: message => root.finishRemoval(false, message)
         onSucceeded: response => root.finishRemoval(!!response && response.ok === true, response && response.message ? String(response.message) : qsTr("Could not delete wallpaper"))
+    }
+    property var replacementRemoval: null
+    property Timer replacementRemovalDeadline: Timer {
+        interval: 20000
+
+        onTriggered: root.failReplacementRemoval(qsTr("The replacement wallpaper did not become ready. The original file was kept."))
     }
     property Connections screenConnections: Connections {
         function onScreensChanged() {
@@ -255,6 +262,7 @@ QtObject {
                 return;
             }
             root.liveRevealActive = false;
+            root.completeReplacementRemoval();
         }
     }
     property Timer staticTransitionFallback: Timer {
@@ -265,6 +273,7 @@ QtObject {
             if (!root.staticTransitionPending)
                 return;
             console.warn("[WallpaperService] Static wallpaper transition timed out, stopping the previous renderer");
+            root.failReplacementRemoval(qsTr("The replacement image did not become ready. The original file was kept."));
             root.finishStaticTransition();
         }
     }
@@ -378,6 +387,9 @@ QtObject {
     function apply(path, mode, modified, backendOverride, preserveRollback, rendererOverride) {
         if (!path)
             return;
+
+        if (replacementRemoval && (String(path) !== replacementRemoval.replacement || mode !== replacementRemoval.mode))
+            failReplacementRemoval(qsTr("Wallpaper selection changed. The original file was kept."));
 
         startupVideoRestore = false;
         var nextMode = mode === "video" ? "video" : "static";
@@ -534,7 +546,7 @@ QtObject {
         videoTransitionDeadline.stop();
         resetVideoCoverReadiness();
         liveRevealFinish.stop();
-        if (LiveWallpaperService.active || LiveWallpaperService.desiredPath !== "" || EngineWallpaperService.active || EngineWallpaperService.desiredPath !== "") {
+        if (replacementRemoval || LiveWallpaperService.active || LiveWallpaperService.desiredPath !== "" || EngineWallpaperService.active || EngineWallpaperService.desiredPath !== "") {
             // Keep the old renderer visible underneath the new static image.
             // Wallpaper.qml fades the image in, then reports every screen ready
             // before the renderer is stopped.
@@ -575,6 +587,19 @@ QtObject {
         LiveWallpaperService.stop();
         EngineWallpaperService.stop();
     }
+    function completeReplacementRemoval() {
+        if (!replacementRemoval || isTransitionPending || staticTransitionPending || liveRevealActive || pendingProjectResolution)
+            return;
+        var pending = replacementRemoval;
+        if (currentWallpaper !== pending.replacement || currentMode !== pending.mode) {
+            failReplacementRemoval(qsTr("Wallpaper selection changed. The original file was kept."));
+            return;
+        }
+        replacementRemoval = null;
+        replacementRemovalDeadline.stop();
+        if (!removeWallpaper(pending.path))
+            removalFinished(pending.path, false, qsTr("Could not delete wallpaper. The original file was kept."));
+    }
     function currentScreenNames() {
         var names = [];
         for (var i = 0; i < Quickshell.screens.length; ++i)
@@ -614,6 +639,14 @@ QtObject {
         initialThemeChecked = true;
         ThemeService.generate(source, ThemeService.colorMode, true, sourceKey);
     }
+    function failReplacementRemoval(message) {
+        if (!replacementRemoval)
+            return;
+        var path = replacementRemoval.path;
+        replacementRemoval = null;
+        replacementRemovalDeadline.stop();
+        removalFinished(path, false, message);
+    }
     function finishRemoval(success, message) {
         var path = removalPath;
         if (!path)
@@ -646,6 +679,8 @@ QtObject {
     function handleVideoFailure(sourcePath, message) {
         if (selectedMode !== "video" || sourcePath !== selectedPath)
             return;
+
+        failReplacementRemoval(message || qsTr("The replacement video failed. The original file was kept."));
 
         var previous = isTransitionPending ? cloneState(transitionRollbackState) : null;
         var restorePreviousVideo = previous && previous.mode === "video" && previous.path && previous.path !== sourcePath;
@@ -700,6 +735,7 @@ QtObject {
         }
         if (selectedMode !== "static" || path !== String(selectedPath || "").replace(/^file:\/\//, ""))
             return;
+        failReplacementRemoval(qsTr("Could not load the replacement image. The original file was kept."));
         if (selectedPath === Config.defaultWallpaper) {
             console.warn("[WallpaperService] Default wallpaper could not be loaded:", selectedPath);
             return;
@@ -895,8 +931,7 @@ QtObject {
         var folder = libraryRoot(target);
         var name = target.slice(target.lastIndexOf("/") + 1);
         var engineFolder = folder === String(Config.wallpaperEngineWorkshopDir).replace(/\/+$/, "") || folder === String(Config.legacyWallpaperEngineWorkshopDir).replace(/\/+$/, "");
-        var validName = engineFolder ? /^\d+$/.test(name) : /\.(jpg|jpeg|png|webp|bmp|mp4|webm|mkv|mov|m4v|avi|gif)$/i.test(name);
-        if (removalBusy || target === currentWallpaper || !folder || !validName)
+        if (removalBusy || isTransitionPending || staticTransitionPending || liveRevealActive || pendingProjectResolution || target === currentWallpaper || !validRemovalTarget(target))
             return false;
 
         var method = "wallpaper.local.remove";
@@ -920,6 +955,21 @@ QtObject {
         }
         removalPath = target;
         removalRequest.start(method, params);
+        return true;
+    }
+    function removeWithReplacement(path, replacement, mode, modified) {
+        if (removalBusy || isTransitionPending || staticTransitionPending || liveRevealActive || pendingProjectResolution || !validRemovalTarget(path) || !replacement || path === replacement)
+            return false;
+        if (path !== currentWallpaper)
+            return removeWallpaper(path);
+
+        replacementRemoval = {
+            "path": String(path),
+            "replacement": String(replacement),
+            "mode": mode === "video" ? "video" : "static"
+        };
+        replacementRemovalDeadline.restart();
+        apply(replacement, replacementRemoval.mode, modified);
         return true;
     }
     function resetStaticTransition() {
@@ -1176,5 +1226,12 @@ QtObject {
             startDeferredVideoRenderer();
             tryFinishVideoTransition();
         }
+    }
+    function validRemovalTarget(path) {
+        var target = String(path || "");
+        var folder = libraryRoot(target);
+        var name = target.slice(target.lastIndexOf("/") + 1);
+        var engineFolder = folder === String(Config.wallpaperEngineWorkshopDir).replace(/\/+$/, "") || folder === String(Config.legacyWallpaperEngineWorkshopDir).replace(/\/+$/, "");
+        return folder !== "" && (engineFolder ? /^\d+$/.test(name) : /\.(jpg|jpeg|png|webp|bmp|mp4|webm|mkv|mov|m4v|avi|gif)$/i.test(name));
     }
 }

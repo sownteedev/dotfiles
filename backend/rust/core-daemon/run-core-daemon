@@ -18,7 +18,7 @@ fi
 
 if [ "$#" -ge 1 ]; then
     case "$1" in
-        theme-xsettings-apply)
+        theme-xsettings-apply|greeter-auth-status)
             standalone_mode=1
             ;;
         request|request-stdin|clipboard-restore|display-ddc-get|display-ddc-set|display-niri-mode|display-niri-options|display-niri-persist|display-niri-set-vrr|display-sunshine-status|display-sunshine-apply|launcher-klipy-copy|wallpaper-engine-scan|wallpaper-engine-project|wallpaper-frame-probe|wallpaper-engine-preview|wallpaper-engine-cache-preview|wallpaper-backdrop)

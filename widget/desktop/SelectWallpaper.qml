@@ -13,12 +13,13 @@ PanelWindow {
     readonly property int activeCount: activeModel.count
     readonly property var activeModel: selectedMode === "video" ? videoModel : staticModel
     readonly property bool browserOpen: workshopOpen || wallhavenOpen
-    readonly property bool canTrashDragged: draggedPath !== "" && draggedPath !== WallpaperService.currentWallpaper
+    readonly property bool canTrashDragged: draggedPath !== "" && !WallpaperService.removalBusy && !WallpaperService.isTransitionPending && !WallpaperService.staticTransitionPending && !WallpaperService.liveRevealActive && !WallpaperService.pendingProjectResolution && (draggedPath !== WallpaperService.currentWallpaper || activeCount > 1)
     readonly property real cardHeight: cardWidth * 240 / 380
     readonly property real cardWidth: Responsive.fit(380, (width - 24) / 1.15, 240)
     property bool changingMode: false
     property string deleteMessage: ""
     property string deletingPath: ""
+    property string deletionFocusPath: ""
     property var dragCard: null
     property string draggedPath: ""
     readonly property bool fanExpanded: visible && !hideTimer.running && !resettingFan && (!changingMode || pendingMode !== "") && activeCount > 0
@@ -81,6 +82,8 @@ PanelWindow {
         });
     }
     function closeSelector() {
+        if (deletingPath !== "")
+            return;
         if (dragCard)
             dragCard.cancelDrag();
         dragCard = null;
@@ -113,9 +116,21 @@ PanelWindow {
             return;
 
         deletingPath = path;
+        var nextIndex = pathView.currentIndex;
+        if (pathAt(nextIndex) === path)
+            nextIndex = activeCount > 1 ? (nextIndex + 1) % activeCount : -1;
+        deletionFocusPath = nextIndex >= 0 ? pathAt(nextIndex) : "";
+        initialSelectionPath = "";
+        if (nextIndex >= 0)
+            pathView.currentIndex = nextIndex;
         deleteMessage = "";
         previewTimer.stop();
         preloadTimer.stop();
+        if (path !== WallpaperService.currentWallpaper && nextIndex >= 0) {
+            var preview = selectedMode === "video" ? videoPreviewImageAt(nextIndex) : deletionFocusPath;
+            if (preview)
+                previewSource(preview, roleAt(nextIndex, "fileModified", 0));
+        }
         deleteTimer.start();
     }
     function handleVideoCoverReady(sourcePath, coverPath, engineSource) {
@@ -379,7 +394,7 @@ PanelWindow {
         if (!wallpaperWindow.visible || hideTimer.running || pendingMode !== "")
             return;
 
-        var currentWall = String(initialSelectionPath || preferredPath || WallpaperService.currentWallpaper || "");
+        var currentWall = String(deletionFocusPath || initialSelectionPath || preferredPath || WallpaperService.currentWallpaper || "");
         for (var i = 0; i < activeCount; ++i) {
             if (pathAt(i) === currentWall) {
                 if (initialSelectionPath !== "")
@@ -593,15 +608,22 @@ PanelWindow {
         interval: 180
 
         onTriggered: {
-            WallpaperService.cancelPreview();
-            WallpaperPreviewService.cancel();
-            wallpaperWindow.lastPreviewSource = "";
-            if (!WallpaperService.removeWallpaper(wallpaperWindow.deletingPath)) {
+            var removingCurrent = wallpaperWindow.deletingPath === WallpaperService.currentWallpaper;
+            if (wallpaperWindow.deletionFocusPath === "") {
+                WallpaperService.cancelPreview();
+                WallpaperPreviewService.cancel();
+                wallpaperWindow.lastPreviewSource = "";
+            }
+            var started = removingCurrent ? WallpaperService.removeWithReplacement(wallpaperWindow.deletingPath, wallpaperWindow.deletionFocusPath, wallpaperWindow.selectedMode, wallpaperWindow.roleAt(pathView.currentIndex, "fileModified", 0)) : WallpaperService.removeWallpaper(wallpaperWindow.deletingPath);
+            if (!started) {
                 wallpaperWindow.deletingPath = "";
+                wallpaperWindow.deletionFocusPath = "";
                 wallpaperWindow.deleteMessage = qsTr("Cannot delete this wallpaper. Choose another wallpaper if it is in use.");
                 if (wallpaperWindow.visible && !hideTimer.running) {
-                    WallpaperService.beginPreview();
-                    WallpaperPreviewService.begin();
+                    if (!WallpaperService.previewActive)
+                        WallpaperService.beginPreview();
+                    if (!WallpaperPreviewService.active)
+                        WallpaperPreviewService.begin();
                     wallpaperWindow.schedulePreview();
                 }
             }
@@ -620,10 +642,16 @@ PanelWindow {
                 }
             }
             wallpaperWindow.deletingPath = "";
+            if (wallpaperWindow.deletionFocusPath !== "")
+                wallpaperWindow.syncCurrentWallpaper(wallpaperWindow.deletionFocusPath);
+            wallpaperWindow.deletionFocusPath = "";
+            wallpaperWindow.lastPreviewSource = "";
             wallpaperWindow.deleteMessage = success ? "" : message;
             if (wallpaperWindow.visible && !hideTimer.running) {
-                WallpaperService.beginPreview();
-                WallpaperPreviewService.begin();
+                if (!WallpaperService.previewActive)
+                    WallpaperService.beginPreview();
+                if (!WallpaperPreviewService.active)
+                    WallpaperPreviewService.begin();
                 wallpaperWindow.schedulePreview();
             }
         }

@@ -243,8 +243,9 @@ PanelWindow {
                             anchors.centerIn: parent
                             color: Config.md3.on_primary_container
                             filled: true
-                            name: root.flow && root.flow.iconName ? root.flow.iconName : "dialog-password-symbolic"
-                            size: 27
+                            name: "changes-prevent-symbolic"
+                            size: 36
+                            weight: 400
                         }
                     }
                     ColumnLayout {
@@ -256,8 +257,9 @@ PanelWindow {
                             color: Config.md3.on_surface
                             font.family: Config.fontName
                             font.pixelSize: 22
-                            font.weight: Font.Bold
+                            font.weight: Font.Normal
                             text: qsTr("Authentication required")
+                            wrapMode: Text.Wrap
                         }
                         Text {
                             Layout.fillWidth: true
@@ -384,7 +386,8 @@ PanelWindow {
                                     color: root.passwordHasError ? Config.md3.error : passwordInput.activeFocus || root.submitPending ? Config.md3.primary : Config.md3.on_surface_variant
                                     filled: root.passwordHasError || passwordInput.activeFocus
                                     name: root.passwordHasError ? "dialog-error-symbolic" : "changes-prevent-symbolic"
-                                    size: 20
+                                    size: 26
+                                    weight: 400
                                 }
                                 Item {
                                     Layout.fillHeight: true
@@ -548,25 +551,26 @@ PanelWindow {
                             spacing: 8
 
                             AnimatedSpinner {
+                                Layout.preferredHeight: 18
+                                Layout.preferredWidth: 18
                                 color: Config.md3.background
-                                height: 18
                                 lineWidth: 2.2
                                 running: root.submitPending
                                 visible: root.submitPending
-                                width: 18
                             }
                             Md3Icon {
                                 color: Config.md3.background
                                 filled: true
                                 name: "object-locked-symbolic"
-                                size: 17
+                                size: 22
                                 visible: !root.submitPending
+                                weight: 400
                             }
                             Text {
                                 color: Config.md3.background
                                 font.family: Config.fontName
                                 font.pixelSize: 14
-                                font.weight: Font.Bold
+                                font.weight: Font.Medium
                                 text: root.submitPending ? qsTr("Verifying…") : root.flow && root.flow.isResponseRequired ? qsTr("Authenticate") : qsTr("Waiting…")
                             }
                         }

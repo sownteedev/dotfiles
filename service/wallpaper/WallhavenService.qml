@@ -20,6 +20,7 @@ QtObject {
     property int collectionPendingPage: 1
     property bool collectionRefreshPending: false
     property CoreRequest collectionRequest: CoreRequest {
+        property string accountUsername: ""
         property string activeRequestKey: ""
         property int panelGeneration: -1
 
@@ -49,6 +50,8 @@ QtObject {
             if (response && response.ok) {
                 root.collectionErrorMessage = "";
                 root.replaceModel(root.collectionResults, response.items || []);
+                if (accountUsername === Config.wallhavenUsername.trim())
+                    root.rememberCollected(accountUsername, (response.items || []).map(item => String(item.id || "")));
                 root.collectionPage = Number(response.current_page || 1);
                 root.collectionLastPage = Number(response.last_page || 1);
                 root.collectionTotalResults = Number(response.total || root.collectionResults.count);
@@ -82,6 +85,7 @@ QtObject {
                 root.restartCollectionsLoadIfPending();
                 return;
             }
+            root.pendingCollectItemId = "";
             root.collectionErrorMessage = String(message || qsTr("Could not load Wallhaven collections"));
             root.restartCollectionsLoadIfPending();
         }
@@ -95,6 +99,7 @@ QtObject {
                 return;
             }
             if (!response || !response.ok) {
+                root.pendingCollectItemId = "";
                 root.collectionErrorMessage = response && response.message ? String(response.message) : qsTr("Could not load Wallhaven collections");
                 root.restartCollectionsLoadIfPending();
                 return;
@@ -103,6 +108,7 @@ QtObject {
             root.collectionsLoaded = true;
             root.replaceModel(root.collections, response.items || []);
             if (root.collections.count === 0) {
+                root.pendingCollectItemId = "";
                 root.selectedCollectionId = "";
                 root.selectedCollectionLabel = "";
                 root.collectionTotalResults = 0;
@@ -114,18 +120,21 @@ QtObject {
                 root.selectedCollectionId = String(first.id || "");
                 root.selectedCollectionLabel = String(first.label || "");
             }
+            Qt.callLater(root.startPendingCollect);
             root.loadCollection(root.selectedCollectionId, root.selectedCollectionLabel, 1);
         }
     }
     property string colors: ""
     property Connections configConnections: Connections {
         function onWallhavenApiKeyChanged() {
+            root.knownCollections = {};
             root.collectionsLoaded = false;
             root.collections.clear();
             root.collectionResults.clear();
             root.collectionTotalResults = 0;
         }
         function onWallhavenUsernameChanged() {
+            root.knownCollections = {};
             root.collectionsLoaded = false;
             root.collections.clear();
             root.collectionResults.clear();
@@ -264,6 +273,7 @@ QtObject {
         dynamicRoles: true
     }
     property string installedStatusMessage: ""
+    property var knownCollections: ({})
     property int lastPage: 1
     readonly property bool listingInstalled: installedProcess.running || installedReloadPending
     readonly property bool loadingCollection: collectionRequest.active || collectionRefreshPending
@@ -271,6 +281,7 @@ QtObject {
     property string order: "desc"
     property int page: 1
     property int panelConsumers: 0
+    property string pendingCollectItemId: ""
     property string purity: "110"
     property string query: ""
     property string ratios: ""
@@ -382,6 +393,35 @@ QtObject {
     property string statusMessage: ""
     property string topRange: "1M"
     property int totalResults: 0
+    property Connections webAccountConnection: Connections {
+        function onAccountIdChanged() {
+            root.knownCollections = {};
+        }
+        function onSucceeded(action, response) {
+            if (action !== "collect" && action !== "uncollect")
+                return;
+            if (action === "collect") {
+                root.setCollected(WebAccountService.wallhaven.accountId, response.item_id, true);
+                root.statusMessage = qsTr("Saved to %1 (%2)").arg(String(response.collection_label || "")).arg(WebAccountService.wallhaven.accountLabel);
+            } else {
+                root.setCollected(WebAccountService.wallhaven.accountId, response.item_id, false);
+                root.statusMessage = qsTr("Removed from Collection (%1)").arg(WebAccountService.wallhaven.accountLabel);
+                if (WebAccountService.wallhaven.accountId === Config.wallhavenUsername.trim()) {
+                    var index = root.modelIndexForId(root.collectionResults, String(response.item_id));
+                    if (index >= 0) {
+                        root.collectionResults.remove(index);
+                        root.collectionTotalResults = Math.max(0, root.collectionTotalResults - 1);
+                    }
+                }
+            }
+            if (WebAccountService.wallhaven.accountId === Config.wallhavenUsername.trim()) {
+                root.collectionsLoaded = false;
+                root.loadCollections(true);
+            }
+        }
+
+        target: WebAccountService.wallhaven
+    }
 
     signal downloadCompleted(string wallpaperId, string path, var modified, string purpose)
     signal removeCompleted(string wallpaperId, string path)
@@ -424,6 +464,40 @@ QtObject {
         installedErrorMessage = "";
         installedStatusMessage = "";
     }
+    function collect(item) {
+        var itemId = String(item && item.id || "");
+        if (!/^[a-z0-9]{6}$/.test(itemId) || pendingCollectItemId !== "" || WebAccountService.wallhaven.busy)
+            return false;
+
+        var collection = defaultCollection();
+        if (collection)
+            return WebAccountService.wallhaven.start("collect", {
+                item_id: itemId,
+                collection_id: String(collection.id || "")
+            });
+
+        if (collectionsLoaded) {
+            collectionErrorMessage = qsTr("Create a Wallhaven collection before saving wallpapers");
+            return false;
+        }
+        pendingCollectItemId = itemId;
+        if (loadCollections(false))
+            return true;
+
+        pendingCollectItemId = "";
+        return false;
+    }
+    function defaultCollection() {
+        if (collections.count <= 0)
+            return null;
+
+        for (var index = 0; index < collections.count; ++index) {
+            var candidate = collections.get(index);
+            if (Boolean(candidate.default) || Boolean(candidate.is_default))
+                return candidate;
+        }
+        return collections.get(0);
+    }
     function download(item, purpose) {
         if (!item || downloadProcess.running)
             return false;
@@ -450,6 +524,13 @@ QtObject {
     }
     function generationIsCurrent(generation) {
         return panelConsumers > 0 && generation === requestGeneration;
+    }
+    function isCollected(itemId, collectionView) {
+        var username = WebAccountService.wallhaven.accountId || Config.wallhavenUsername.trim();
+        var items = knownCollections[username];
+        if (items && items[String(itemId)] !== undefined)
+            return items[String(itemId)] === true;
+        return collectionView === true && username === Config.wallhavenUsername.trim();
     }
     function loadCollection(collectionId, label, requestedPage) {
         if (panelConsumers <= 0 || !accountConfigured || String(collectionId || "") === "")
@@ -482,6 +563,7 @@ QtObject {
         }
         collectionErrorMessage = "";
         collectionRequest.activeRequestKey = targetRequestKey;
+        collectionRequest.accountUsername = username;
         collectionRequest.panelGeneration = requestGeneration;
         collectionRequest.start("wallpaper.wallhaven.collection", {
             "api_key": apiKey,
@@ -503,7 +585,7 @@ QtObject {
         }
         var apiKey = Config.wallhavenApiKey.trim();
         if (collectionsRequest.active) {
-            collectionsRefreshPending = collectionsRequest.activeApiKey !== apiKey;
+            collectionsRefreshPending = collectionsRefreshPending || force === true || collectionsRequest.activeApiKey !== apiKey;
             return true;
         }
 
@@ -571,6 +653,9 @@ QtObject {
         }
         return -1;
     }
+    function openAccountLogin() {
+        return WebAccountService.wallhaven.connectAccount();
+    }
     function openPage(url) {
         var target = String(url || "");
         if (target.indexOf("https://wallhaven.cc/") !== 0)
@@ -611,6 +696,18 @@ QtObject {
         collectionsRequest.cancel();
         cancelBrowseProcess(installedProcess);
         clearPanelModels();
+    }
+    function rememberCollected(username, itemIds) {
+        if (!username)
+            return;
+        var accounts = Object.assign({}, knownCollections);
+        var items = Object.assign({}, accounts[username] || {});
+        for (var itemId of itemIds) {
+            if (itemId && items[String(itemId)] !== false)
+                items[String(itemId)] = true;
+        }
+        accounts[username] = items;
+        knownCollections = accounts;
     }
     function removeInstalled(item) {
         if (!item || removeProcess.running)
@@ -775,6 +872,37 @@ QtObject {
             "wallpaper_dir": Config.wallhavenCacheFolder
         });
         return true;
+    }
+    function setCollected(username, itemId, collected) {
+        if (!username || !itemId)
+            return;
+        var accounts = Object.assign({}, knownCollections);
+        var items = Object.assign({}, accounts[username] || {});
+        items[String(itemId)] = collected;
+        accounts[username] = items;
+        knownCollections = accounts;
+    }
+    function startPendingCollect() {
+        if (pendingCollectItemId === "" || WebAccountService.wallhaven.busy)
+            return false;
+
+        var collection = defaultCollection();
+        if (!collection) {
+            pendingCollectItemId = "";
+            collectionErrorMessage = qsTr("Create a Wallhaven collection before saving wallpapers");
+            return false;
+        }
+        var itemId = pendingCollectItemId;
+        pendingCollectItemId = "";
+        return WebAccountService.wallhaven.start("collect", {
+            item_id: itemId,
+            collection_id: String(collection.id || "")
+        });
+    }
+    function uncollect(item) {
+        return WebAccountService.wallhaven.start("uncollect", {
+            item_id: String(item && item.id || "")
+        });
     }
     function updateDownloaded(model, wallpaperId, path, modified, fileSize) {
         var index = modelIndexForId(model, wallpaperId);

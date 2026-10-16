@@ -3,7 +3,7 @@ import Quickshell
 
 ShellRoot {
     Variants {
-        model: Quickshell.screens
+        model: GreeterSession.pamTestMode ? Quickshell.screens.slice(0, 1) : Quickshell.screens
 
         delegate: Component {
             GreeterWindow {

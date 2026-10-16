@@ -11,7 +11,7 @@ import Quickshell.Widgets
 Rectangle {
     id: root
 
-    readonly property string actionError: GreeterBackgroundService.errorMessage || (installedMode ? WallhavenService.removeErrorMessage : WallhavenService.downloadErrorMessage)
+    readonly property string actionError: WebAccountService.wallhaven.errorMessage || GreeterBackgroundService.errorMessage || (installedMode ? WallhavenService.removeErrorMessage : WallhavenService.downloadErrorMessage)
     property string activeTab: "browse"
     readonly property bool collectionsMode: activeTab === "collections"
     property int contentTransitionDirection: 1
@@ -152,8 +152,9 @@ Rectangle {
             root.closePanel();
     }
     onOpenChanged: {
-        if (!open)
+        if (!open) {
             return;
+        }
 
         if (collectionsMode) {
             WallhavenService.loadCollections(false);
@@ -912,6 +913,9 @@ Rectangle {
 
                                     blurNsfw: !root.nsfwVisible
                                     cancelling: WallhavenService.downloadCancelRequested && WallhavenService.downloadingId === String(model.id || "")
+                                    collected: WallhavenService.isCollected(String(model.id || ""), tabViewLoader.modelData === "collections")
+                                    collecting: WallhavenService.pendingCollectItemId === String(model.id || "") || (WebAccountService.wallhaven.busy && ["collect", "uncollect"].indexOf(WebAccountService.wallhaven.operation) >= 0 && WebAccountService.wallhaven.itemId === String(model.id || ""))
+                                    collectionBlocked: WallhavenService.pendingCollectItemId === String(model.id || "") || (WebAccountService.wallhaven.busy && ["collect", "uncollect"].indexOf(WebAccountService.wallhaven.operation) >= 0 && WebAccountService.wallhaven.itemId === String(model.id || ""))
                                     deleteArmed: root.deleteArmedId === String(model.id || "")
                                     downloadBlocked: WallhavenService.downloading && WallhavenService.downloadingId !== String(model.id || "")
                                     downloading: WallhavenService.downloadingId === String(model.id || "")
@@ -929,6 +933,13 @@ Rectangle {
                                         deleteArmTimer.restart();
                                     }
                                     onCancelDownloadRequested: WallhavenService.cancelDownload()
+                                    onCollectionRequested: (item, anchorItem, remove) => {
+                                        if (remove) {
+                                            WallhavenService.uncollect(item);
+                                            return;
+                                        }
+                                        WallhavenService.collect(item);
+                                    }
                                     onDeleteRequested: item => {
                                         root.deleteArmedId = "";
                                         deleteArmTimer.stop();

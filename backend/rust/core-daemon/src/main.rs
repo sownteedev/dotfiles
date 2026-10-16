@@ -54,6 +54,13 @@ async fn run() -> Result<()> {
             ensure_no_more_arguments(arguments)?;
             print_json(&greeter::discover_sessions())
         }
+        Some("greeter-auth-status") => {
+            let user = arguments
+                .next()
+                .context("greeter-auth-status requires a user name")?;
+            ensure_no_more_arguments(arguments)?;
+            print_json(&sownteeshell_core::greeter_auth::lockout_status(&user))
+        }
         Some("greeter-keyboard-layout") => {
             ensure_no_more_arguments(arguments)?;
             print_json(&greeter::keyboard_layout().await)
@@ -573,6 +580,7 @@ fn print_help() {
            sownteeshell-core request <method> [params-json]\n  \
            sownteeshell-core request-stdin <method>\n  \
            sownteeshell-core greeter-sessions\n  \
+           sownteeshell-core greeter-auth-status <user>\n  \
            sownteeshell-core greeter-keyboard-layout\n  \
            sownteeshell-core clipboard-restore <entry-id> [true|false]\n  \
            sownteeshell-core display-ddc-get <output>\n  \

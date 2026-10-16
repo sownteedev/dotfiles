@@ -17,6 +17,8 @@ pub mod display;
 #[cfg(feature = "daemon")]
 pub mod greeter;
 #[cfg(feature = "daemon")]
+pub mod greeter_auth;
+#[cfg(feature = "daemon")]
 pub mod job;
 #[cfg(feature = "daemon")]
 pub mod launcher;

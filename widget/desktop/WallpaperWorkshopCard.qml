@@ -9,6 +9,7 @@ import Quickshell.Widgets
 Item {
     id: root
 
+    readonly property bool accountSubscribed: Boolean(wallpaper.accountSubscribed)
     property bool blurNsfw: false
     property bool cancelling: false
     property bool deleteArmed: false
@@ -28,7 +29,9 @@ Item {
     property bool removing: false
     readonly property string resolutionLabel: String(wallpaper.resolution || "")
     readonly property bool sceneConfigurable: installedMode && String(wallpaper.type || "").toLowerCase() === "scene" && wallpaper.properties && Object.keys(wallpaper.properties).some(name => String(name).toLowerCase() !== "schemecolor")
-    readonly property bool subscribed: Boolean(wallpaper.subscribed)
+    readonly property bool subscribed: wallpaper.accountSubscriptionKnown ? accountSubscribed : Boolean(wallpaper.subscribed)
+    property bool subscribing: false
+    property bool subscriptionBlocked: false
     readonly property bool supported: installedMode ? !["web", "application"].includes(String(wallpaper.type || "").toLowerCase()) : wallpaper.supported !== false
     required property var wallpaper
 
@@ -37,6 +40,7 @@ Item {
     signal cancelDownloadRequested
     signal deleteRequested(var item)
     signal destinationRequested(var item, string destination)
+    signal openRequested(var item)
     signal propertiesRequested(var item, var anchorItem)
     signal subscribeRequested(var item)
 
@@ -93,7 +97,7 @@ Item {
 
                 anchors.fill: parent
                 asynchronous: true
-                cache: false
+                cache: true
                 fillMode: Image.PreserveAspectCrop
                 layer.enabled: root.nsfwBlurred
                 source: root.wallpaper.preview || ""
@@ -145,6 +149,20 @@ Item {
                         color: Config.alpha(Config.md3.surface_container_low, 0.92)
                         position: 1
                     }
+                }
+            }
+            MouseArea {
+                id: previewMouse
+
+                anchors.fill: parent
+                cursorShape: /^\d+$/.test(root.itemId) ? Qt.PointingHandCursor : Qt.ArrowCursor
+                enabled: /^\d+$/.test(root.itemId)
+                hoverEnabled: true
+                z: 1
+
+                onClicked: mouse => {
+                    if (!steamAction.contains(steamAction.mapFromItem(previewMouse, mouse.x, mouse.y)))
+                        root.openRequested(root.wallpaper);
                 }
             }
             Rectangle {
@@ -219,7 +237,7 @@ Item {
                     color: root.inUse ? Config.md3.primary_container : Config.md3.secondary_container
                     height: 27
                     radius: 10
-                    visible: root.inUse || root.subscribed || (!root.installedMode && root.downloaded)
+                    visible: root.inUse || (!root.installedMode && root.downloaded)
                     width: stateLabel.implicitWidth + 18
 
                     Text {
@@ -230,58 +248,30 @@ Item {
                         font.family: Config.fontName
                         font.pixelSize: 10
                         font.weight: Font.Bold
-                        text: root.inUse ? qsTr("IN USE") : root.subscribed ? qsTr("SUBSCRIBED") : qsTr("DOWNLOADED")
+                        text: root.inUse ? qsTr("IN USE") : qsTr("DOWNLOADED")
                     }
                 }
             }
-            Rectangle {
+            SettingsActionButton {
                 id: steamAction
 
+                activeFocusOnTab: true
                 anchors.right: parent.right
                 anchors.rightMargin: 10
                 anchors.top: parent.top
                 anchors.topMargin: 10
-                color: steamMouse.pressed ? Config.md3.primary_container : (steamMouse.containsMouse ? Config.alpha(Config.md3.surface, 0.96) : Config.alpha(Config.md3.surface, 0.86))
-                height: 32
-                radius: 11
-                width: steamActionRow.implicitWidth + 20
+                dimWhenDisabled: false
+                enabled: !root.subscribing && !root.subscriptionBlocked
+                height: 36
+                iconName: "starred-symbolic"
+                iconOnly: true
+                primary: root.subscribed
+                spinning: root.subscribing
+                text: root.subscribing ? qsTr("Updating Steam subscription") : root.subscribed ? qsTr("Unsubscribe from Steam") : qsTr("Subscribe on Steam")
+                width: 36
                 z: 4
 
-                Row {
-                    id: steamActionRow
-
-                    anchors.centerIn: parent
-                    spacing: 7
-
-                    IconImage {
-                        anchors.verticalCenter: parent.verticalCenter
-                        height: 16
-                        layer.enabled: true
-                        source: Quickshell.iconPath("steam-symbolic")
-                        width: 16
-
-                        layer.effect: ColorOverlay {
-                            color: Config.md3.on_surface
-                        }
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        text: root.subscribed ? qsTr("Manage") : qsTr("Subscribe")
-                    }
-                }
-                MouseArea {
-                    id: steamMouse
-
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    hoverEnabled: true
-
-                    onClicked: root.subscribeRequested(root.wallpaper)
-                }
+                onClicked: root.subscribeRequested(root.wallpaper)
             }
             Rectangle {
                 id: resolutionBadge

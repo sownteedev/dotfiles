@@ -8,7 +8,7 @@ FloatingWindow {
 
     color: GreeterTheme.background
     fullscreen: true
-    title: qsTr("Login")
+    title: GreeterSession.pamTestMode ? qsTr("Login test - PAM") : qsTr("Login")
     visible: true
 
     Shortcut {

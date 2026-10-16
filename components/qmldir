@@ -32,6 +32,7 @@ SettingsTextField 1.0 common/SettingsTextField.qml
 SettingsFontPicker 1.0 settings/SettingsFontPicker.qml
 IdlePolicyTimeline 1.0 settings/IdlePolicyTimeline.qml
 SettingsIntegrationCard 1.0 settings/SettingsIntegrationCard.qml
+WebAccountConnectRow 1.0 settings/WebAccountConnectRow.qml
 SettingsLabelBlock 1.0 settings/SettingsLabelBlock.qml
 StatChart 1.0 common/StatChart.qml
 ToggleSwitch 1.0 common/ToggleSwitch.qml

@@ -34,9 +34,10 @@ Item {
         };
     }
     function refreshIntegrations() {
-        CalendarService.ensureRunning();
         EngineWallpaperService.checkAvailability();
         SettingsHubService.refresh();
+        WebAccountService.steam.refresh();
+        WebAccountService.wallhaven.refresh();
     }
     function resetPage() {
         syncFields();
@@ -59,11 +60,9 @@ Item {
     }
 
     Component.onCompleted: {
-        CalendarService.acquire();
         syncFields();
         Qt.callLater(root.refreshIntegrations);
     }
-    Component.onDestruction: CalendarService.release()
 
     Connections {
         function onQuickshellSettingsChanged() {
@@ -168,20 +167,6 @@ Item {
                 }
             }
             SettingsIntegrationCard {
-                accentColor: Config.md3.secondary
-                actionIcon: "go-next-symbolic"
-                actionText: qsTr("Manage in Calendar")
-                actionVisible: true
-                iconName: "checkbox-checked-symbolic"
-                note: qsTr("Tasks use all Google accounts connected in SownteeShell Calendar.")
-                statusColor: Config.md3.secondary
-                statusIcon: "x-office-calendar-symbolic"
-                statusText: qsTr("%1 accounts").arg(GoogleService.accounts.length)
-                title: qsTr("Google Tasks")
-
-                onActionClicked: StateManager.showCalendarApp()
-            }
-            SettingsIntegrationCard {
                 id: klipyIntegration
 
                 accentColor: Config.md3.primary
@@ -273,6 +258,10 @@ Item {
                         onActionClicked: root.revealSteamApiKey = !root.revealSteamApiKey
                     }
                 }
+                WebAccountConnectRow {
+                    connection: WebAccountService.steam
+                    providerName: qsTr("Steam")
+                }
             }
             SettingsIntegrationCard {
                 id: wallhavenIntegration
@@ -282,7 +271,7 @@ Item {
                 note: qsTr("Optional account access for collections and NSFW results")
                 statusColor: wallhavenApiKeyField.text !== "" ? Config.md3.secondary : Config.md3.tertiary
                 statusIcon: wallhavenApiKeyField.text !== "" ? "emblem-ok-symbolic" : "dialog-information-symbolic"
-                statusText: wallhavenApiKeyField.text !== "" ? qsTr("Configured") : qsTr("Optional")
+                statusText: wallhavenApiKeyField.text !== "" ? qsTr("API key configured") : qsTr("Optional")
                 title: qsTr("Wallhaven")
 
                 GridLayout {
@@ -312,6 +301,10 @@ Item {
 
                         onActionClicked: root.revealWallhavenApiKey = !root.revealWallhavenApiKey
                     }
+                }
+                WebAccountConnectRow {
+                    connection: WebAccountService.wallhaven
+                    providerName: qsTr("Wallhaven")
                 }
             }
         }

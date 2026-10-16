@@ -11,6 +11,9 @@ Item {
 
     property bool blurNsfw: false
     property bool cancelling: false
+    property bool collected: false
+    property bool collecting: false
+    property bool collectionBlocked: false
     property bool deleteArmed: false
     property bool downloadBlocked: false
     readonly property bool downloaded: installedMode || (Boolean(wallpaper.downloaded) && String(wallpaper.path || "") !== "")
@@ -28,6 +31,7 @@ Item {
     signal applyRequested(string path, var modified)
     signal armDeleteRequested(string wallpaperId)
     signal cancelDownloadRequested
+    signal collectionRequested(var item, var anchorItem, bool remove)
     signal deleteRequested(var item)
     signal destinationRequested(var item, string destination)
     signal openRequested(string url)
@@ -128,6 +132,20 @@ Item {
                     }
                 }
             }
+            MouseArea {
+                id: previewMouse
+
+                anchors.fill: parent
+                cursorShape: String(root.wallpaper.url || "") !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor
+                enabled: String(root.wallpaper.url || "") !== ""
+                hoverEnabled: true
+                z: 0
+
+                onClicked: mouse => {
+                    if (!collectionAction.contains(collectionAction.mapFromItem(previewMouse, mouse.x, mouse.y)))
+                        root.openRequested(String(root.wallpaper.url || ""));
+                }
+            }
             LoadingIndicator {
                 anchors.centerIn: parent
                 animated: previewImage.status === Image.Loading
@@ -180,7 +198,7 @@ Item {
                     }
                 }
             }
-            Row {
+            Column {
                 anchors.left: parent.left
                 anchors.leftMargin: 10
                 anchors.top: parent.top
@@ -189,26 +207,8 @@ Item {
 
                 Rectangle {
                     color: Config.alpha(Config.md3.surface, 0.88)
-                    height: 26
-                    radius: 9
-                    visible: String(root.wallpaper.resolution || "") !== ""
-                    width: resolutionText.implicitWidth + 18
-
-                    Text {
-                        id: resolutionText
-
-                        anchors.centerIn: parent
-                        color: Config.md3.on_surface
-                        font.family: Config.fontName
-                        font.pixelSize: 11
-                        font.weight: Font.Bold
-                        text: String(root.wallpaper.resolution || "")
-                    }
-                }
-                Rectangle {
-                    color: Config.alpha(Config.md3.surface, 0.88)
-                    height: 26
-                    radius: 9
+                    height: 28
+                    radius: 10
                     visible: String(root.wallpaper.category || "") !== "" && String(root.wallpaper.category || "") !== "local"
                     width: categoryText.implicitWidth + 18
 
@@ -216,24 +216,17 @@ Item {
                         id: categoryText
 
                         anchors.centerIn: parent
-                        color: Config.md3.on_surface_variant
+                        color: Config.md3.on_surface
                         font.family: Config.fontName
                         font.pixelSize: 11
                         font.weight: Font.Bold
                         text: String(root.wallpaper.category || "").toUpperCase()
                     }
                 }
-            }
-            Row {
-                anchors.right: parent.right
-                anchors.rightMargin: 10
-                anchors.top: parent.top
-                anchors.topMargin: 10
-
                 Rectangle {
-                    color: root.inUse ? Config.md3.primary_container : Config.alpha(Config.md3.surface, 0.88)
-                    height: 26
-                    radius: 9
+                    color: root.inUse ? Config.md3.primary_container : Config.md3.secondary_container
+                    height: 27
+                    radius: 10
                     visible: root.inUse || root.downloaded
                     width: stateText.implicitWidth + 18
 
@@ -241,22 +234,79 @@ Item {
                         id: stateText
 
                         anchors.centerIn: parent
-                        color: root.inUse ? Config.md3.on_primary_container : Config.md3.on_surface
+                        color: root.inUse ? Config.md3.on_primary_container : Config.md3.on_secondary_container
                         font.family: Config.fontName
-                        font.pixelSize: 11
+                        font.pixelSize: 10
                         font.weight: Font.Bold
                         text: root.inUse ? qsTr("IN USE") : qsTr("INSTALLED")
                     }
                 }
             }
+            SettingsActionButton {
+                id: collectionAction
+
+                activeFocusOnTab: true
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                anchors.top: parent.top
+                anchors.topMargin: 10
+                enabled: !root.collectionBlocked && !root.collecting
+                height: 36
+                iconName: "starred-symbolic"
+                iconOnly: true
+                primary: root.collected
+                spinning: root.collecting
+                text: root.collected ? qsTr("Remove from Collection") : qsTr("Save to Collection")
+                width: 36
+                z: 4
+
+                onClicked: root.collectionRequested(root.wallpaper, collectionAction, root.collected)
+            }
             Rectangle {
+                id: resolutionBadge
+
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: 10
+                anchors.bottomMargin: 9
                 anchors.left: parent.left
                 anchors.leftMargin: 10
                 color: Config.alpha(Config.md3.surface, 0.88)
-                height: 26
-                radius: 9
+                height: 28
+                radius: 10
+                visible: String(root.wallpaper.resolution || "") !== ""
+                width: resolutionRow.implicitWidth + 18
+
+                Row {
+                    id: resolutionRow
+
+                    anchors.centerIn: parent
+                    spacing: 6
+
+                    Md3Icon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Config.md3.on_surface_variant
+                        name: "video-display-symbolic"
+                        size: 15
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Config.md3.on_surface
+                        font.family: Config.fontName
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        text: String(root.wallpaper.resolution || "")
+                    }
+                }
+            }
+            Rectangle {
+                id: fileSizeBadge
+
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 9
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                color: Config.alpha(Config.md3.surface, 0.88)
+                height: 28
+                radius: 10
                 visible: root.fileSizeLabel !== ""
                 width: sizeRow.implicitWidth + 18
 
@@ -268,10 +318,10 @@ Item {
 
                     IconImage {
                         anchors.verticalCenter: parent.verticalCenter
-                        height: 14
+                        height: 15
                         layer.enabled: true
                         source: Quickshell.iconPath("drive-harddisk-symbolic")
-                        width: 14
+                        width: 15
 
                         layer.effect: ColorOverlay {
                             color: Config.md3.on_surface_variant
@@ -296,6 +346,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: 8
             spacing: 6
+            z: 2
 
             ColumnLayout {
                 Layout.fillWidth: true
@@ -310,71 +361,25 @@ Item {
                     font.weight: Font.DemiBold
                     text: qsTr("wallhaven-%1").arg(root.itemId)
                 }
-                Text {
+                RowLayout {
                     Layout.fillWidth: true
-                    color: Config.md3.on_surface_variant
-                    elide: Text.ElideRight
-                    font.family: Config.fontName
-                    font.pixelSize: 11
-                    text: root.installedMode ? qsTr("Saved locally") : qsTr("%1 favorites").arg(Number(root.wallpaper.favorites || 0).toLocaleString(Qt.locale(), "f", 0))
-                }
-            }
-            Rectangle {
-                id: openAction
+                    spacing: 4
+                    visible: !root.installedMode
 
-                Accessible.name: qsTr("Open on Wallhaven")
-                Accessible.role: Accessible.Button
-                Layout.preferredHeight: 36
-                Layout.preferredWidth: 36
-                activeFocusOnTab: false
-                border.color: "transparent"
-                border.width: 0
-                color: Config.alpha(Config.md3.on_surface, 0.06)
-                radius: 12
-                visible: String(root.wallpaper.url || "") !== ""
-
-                Keys.onReturnPressed: root.openRequested(String(root.wallpaper.url || ""))
-                Keys.onSpacePressed: root.openRequested(String(root.wallpaper.url || ""))
-
-                Rectangle {
-                    anchors.fill: parent
-                    color: Config.md3.secondary_container
-                    opacity: openMouse.pressed ? 1 : (openMouse.containsMouse ? 0.72 : 0)
-                    radius: openAction.radius
-
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: Config.animationDuration(120)
-                            easing.type: Easing.OutCubic
-                        }
+                    Md3Icon {
+                        color: "#ef5350"
+                        name: "emblem-favorite-symbolic"
+                        size: 14
                     }
-                }
-                IconImage {
-                    anchors.centerIn: parent
-                    height: 18
-                    layer.enabled: true
-                    source: Quickshell.iconPath("internet-web-browser-symbolic")
-                    width: 18
-
-                    layer.effect: ColorOverlay {
-                        color: openMouse.containsMouse ? Config.md3.on_secondary_container : Config.md3.on_surface_variant
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: Config.animationDuration(120)
-                                easing.type: Easing.OutCubic
-                            }
-                        }
+                    Text {
+                        Accessible.name: qsTr("%1 favorites").arg(text)
+                        Layout.fillWidth: true
+                        color: Config.md3.on_surface_variant
+                        elide: Text.ElideRight
+                        font.family: Config.fontName
+                        font.pixelSize: 11
+                        text: Number(root.wallpaper.favorites || 0).toLocaleString(Qt.locale(), "f", 0)
                     }
-                }
-                MouseArea {
-                    id: openMouse
-
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    hoverEnabled: true
-
-                    onClicked: root.openRequested(String(root.wallpaper.url || ""))
                 }
             }
             Rectangle {
