@@ -65,3 +65,18 @@ output_path = '~/.config/Kvantum/matugen/matugen.svg'
 input_path = '~/Dotfiles/dotf/.config/matugen/templates/steam/steam.css'
 output_path = '~/.config/AdwSteamGtk/custom.css'
 post_hook =  'adwaita-steam-gtk -i'
+
+[templates.sownteeshell_settings_icon]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/sownteeshell/sownteeshell-settings.svg'
+output_path = '~/Dotfiles/sownteeshell/assets/icons/sownteeshell-settings.svg'
+post_hook = 'install -Dm644 ~/Dotfiles/sownteeshell/assets/icons/sownteeshell-settings.svg ~/.local/share/icons/hicolor/scalable/apps/sownteeshell-settings.svg 2>/dev/null || true'
+
+[templates.sownteeshell_calendar_icon]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/sownteeshell/sownteeshell-calendar.svg'
+output_path = '~/Dotfiles/sownteeshell/assets/icons/sownteeshell-calendar.svg'
+post_hook = 'install -Dm644 ~/Dotfiles/sownteeshell/assets/icons/sownteeshell-calendar.svg ~/.local/share/icons/hicolor/scalable/apps/sownteeshell-calendar.svg 2>/dev/null || true'
+
+[templates.sownteeshell_connect_icon]
+input_path = '~/Dotfiles/dotf/.config/matugen/templates/sownteeshell/sownteeshell-connect.svg'
+output_path = '~/Dotfiles/sownteeshell/assets/icons/sownteeshell-connect.svg'
+post_hook = 'install -Dm644 ~/Dotfiles/sownteeshell/assets/icons/sownteeshell-connect.svg ~/.local/share/icons/hicolor/scalable/apps/sownteeshell-connect.svg 2>/dev/null || true'

@@ -37,6 +37,18 @@ window-rule {
     }
 }
 
+window-rule {
+    match app-id="^sownteeshell-connect$"
+    open-floating true
+    default-column-width { fixed 1040; }
+    default-window-height { fixed 800; }
+    geometry-corner-radius 26
+    clip-to-geometry true
+    background-effect {
+        xray false
+    }
+}
+
 // Fill the target output's working area on open while remaining a regular
 // movable and resizable floating window. The working area excludes the bar.
 window-rule {
