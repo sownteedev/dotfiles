@@ -11,6 +11,7 @@ PanelWindow {
 
     property bool allowVideoFade: true
     property Item candidateImage: null
+    property bool candidateReady: false
     readonly property real commitRippleDiameter: Math.max(120, Math.min(width, height) * 0.18)
     property int commitRippleGeneration: -1
     readonly property real commitRippleTargetScale: Math.max(1, Math.sqrt(width * width + height * height) * 1.08 / commitRippleDiameter)
@@ -25,6 +26,11 @@ PanelWindow {
     readonly property bool pendingStaticTransition: allowVideoFade && WallpaperService.staticTransitionPending && WallpaperService.currentMode === "static"
     readonly property int previewCoverDuration: Math.max(220, Math.min(300, Config.wallpaperTransitionDuration))
     property bool previewCoverTransition: false
+    readonly property int previewEffectCount: 16
+    property int previewEffectIndex: -1
+    readonly property int previewShaderDuration: Math.max(320, Math.min(420, Config.wallpaperTransitionDuration + 100))
+    property bool previewTransitionActive: false
+    property bool previewTransitionLoaded: false
     readonly property bool revealVideo: isVideoWallpaper && !isTransitionPending && !waitingForPolicyRestart && videoRendererReady && transitionStarted && !WallpaperService.previewActive
     property int sourceGeneration: 0
     property bool transitionStarted: false
@@ -36,12 +42,27 @@ PanelWindow {
     property string wallpaperPath: ""
     property string windowNamespace: "wallpaper"
 
+    function completeTransition() {
+        previewTransitionActive = false;
+        finishTransition();
+        reportVideoCoverReady(displayedImage);
+        reportStaticCoverReady(displayedImage);
+        Qt.callLater(promoteReadyCandidate);
+    }
     function effectiveSource() {
         if (revealVideo)
             return "";
 
         var path = String(wallpaperPath || "");
         return path.startsWith("/") ? "file://" + path : path;
+    }
+    function fallbackPreviewTransition() {
+        if (!previewTransitionActive)
+            return;
+        previewTransitionActive = false;
+        if (displayedImage)
+            displayedImage.opacity = 0;
+        transitionAnimation.restart();
     }
     function finishStartupVideoRestore(image) {
         if (!WallpaperService.startupVideoRestore || !isVideoWallpaper || image.sourceKey !== "")
@@ -89,6 +110,7 @@ PanelWindow {
             console.warn("[Wallpaper] Could not load", image.sourceKey);
             var failedSource = image.sourceKey;
             candidateImage = null;
+            candidateReady = false;
             image.destroy();
             Qt.callLater(() => WallpaperService.handleWallpaperLoadError(failedSource));
         }
@@ -106,6 +128,11 @@ PanelWindow {
     function isPreviewCover(image) {
         return image && image.previewCover;
     }
+    function nextPreviewEffect() {
+        if (previewEffectIndex < 0)
+            return Math.floor(Math.random() * previewEffectCount);
+        return (previewEffectIndex + 1 + Math.floor(Math.random() * (previewEffectCount - 1))) % previewEffectCount;
+    }
     function normalizedPath(path) {
         return String(path || "").replace(/^file:\/\//, "");
     }
@@ -113,6 +140,12 @@ PanelWindow {
         if (!image || image !== candidateImage || generation !== sourceGeneration)
             return;
 
+        if (previewTransitionActive || transitionAnimation.running || initialRevealAnimation.running) {
+            candidateReady = true;
+            return;
+        }
+
+        candidateReady = false;
         candidateImage = null;
         image.visible = true;
         image.z = 0;
@@ -178,10 +211,23 @@ PanelWindow {
         displayedImage.z = 1;
         previewCoverTransition = isPreviewCover(image);
         transitionStarted = true;
+        if (WallpaperService.previewActive && normalizedPath(image.sourceKey) === normalizedPath(WallpaperService.previewPath) && image.sourceKey !== "" && outgoingImage.sourceKey !== "" && imageHost.GraphicsInfo.api !== GraphicsInfo.Software) {
+            outgoingImage.scale = 1;
+            displayedImage.scale = 1;
+            displayedImage.opacity = 1;
+            previewEffectIndex = nextPreviewEffect();
+            previewTransitionLoaded = true;
+            previewTransitionActive = true;
+            return;
+        }
         transitionAnimation.restart();
     }
+    function promoteReadyCandidate() {
+        if (candidateImage && candidateReady)
+            promoteCandidate(candidateImage, candidateImage.requestId);
+    }
     function reportDisplayedStaticCover() {
-        if (!candidateImage && !transitionAnimation.running && !initialRevealAnimation.running && displayedImage && displayedImage.opacity === 1)
+        if (!candidateImage && !previewTransitionActive && !transitionAnimation.running && !initialRevealAnimation.running && displayedImage && displayedImage.opacity === 1)
             reportStaticCoverReady(displayedImage);
     }
     function reportStaticCoverReady(image) {
@@ -198,25 +244,14 @@ PanelWindow {
         var source = effectiveSource();
         if (candidateImage && candidateImage.sourceKey === source)
             return;
-        if (!candidateImage && displayedImage && displayedImage.sourceKey === source)
-            return;
-
-        if (transitionAnimation.running) {
-            transitionAnimation.stop();
-            finishTransition();
-        }
-        if (initialRevealAnimation.running) {
-            initialRevealAnimation.stop();
-            if (displayedImage) {
-                displayedImage.opacity = 1;
-                displayedImage.scale = 1;
-            }
-        }
         if (candidateImage) {
             var stale = candidateImage;
             candidateImage = null;
             stale.destroy();
         }
+        candidateReady = false;
+        if (displayedImage && displayedImage.sourceKey === source)
+            return;
 
         ++sourceGeneration;
         // Video-mode previews are only temporary covers. Decode a single
@@ -311,7 +346,7 @@ PanelWindow {
 
     Connections {
         function onPendingVideoThumbnailChanged() {
-            if (wallpaperWindow.startVideoCommitPulse(wallpaperWindow.displayedImage))
+            if (!wallpaperWindow.previewTransitionActive && wallpaperWindow.startVideoCommitPulse(wallpaperWindow.displayedImage))
                 wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
         }
         function onStartupVideoRestoreChanged() {
@@ -325,6 +360,22 @@ PanelWindow {
         id: imageHost
 
         anchors.fill: parent
+    }
+    Loader {
+        active: wallpaperWindow.previewTransitionLoaded
+        anchors.fill: parent
+        z: 1
+
+        sourceComponent: WallpaperPreviewTransition {
+            active: wallpaperWindow.previewTransitionActive
+            duration: wallpaperWindow.previewShaderDuration
+            effectIndex: wallpaperWindow.previewEffectIndex
+            incomingItem: wallpaperWindow.displayedImage
+            outgoingItem: wallpaperWindow.outgoingImage
+
+            onFailed: wallpaperWindow.fallbackPreviewTransition()
+            onFinished: Qt.callLater(wallpaperWindow.completeTransition)
+        }
     }
     Rectangle {
         anchors.fill: parent
@@ -407,7 +458,7 @@ PanelWindow {
             cache: false
             fillMode: wallpaperWindow.imageFillMode
             opacity: 0
-            playing: wallpaperWindow.displayedImage === animatedImage && !transitionAnimation.running && !WallpaperPlaybackPolicy.shouldPause
+            playing: wallpaperWindow.displayedImage === animatedImage && !wallpaperWindow.previewTransitionActive && !transitionAnimation.running && !WallpaperPlaybackPolicy.shouldPause
             source: sourceKey
             sourceSize: Qt.size(Math.ceil(wallpaperWindow.width), Math.ceil(wallpaperWindow.height))
 
@@ -439,6 +490,7 @@ PanelWindow {
             }
             wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
             wallpaperWindow.reportStaticCoverReady(wallpaperWindow.displayedImage);
+            Qt.callLater(wallpaperWindow.promoteReadyCandidate);
         }
 
         OpacityAnimator {
@@ -482,11 +534,7 @@ PanelWindow {
     ParallelAnimation {
         id: transitionAnimation
 
-        onFinished: {
-            wallpaperWindow.finishTransition();
-            wallpaperWindow.reportVideoCoverReady(wallpaperWindow.displayedImage);
-            wallpaperWindow.reportStaticCoverReady(wallpaperWindow.displayedImage);
-        }
+        onFinished: wallpaperWindow.completeTransition()
 
         OpacityAnimator {
             duration: wallpaperWindow.previewCoverTransition ? wallpaperWindow.previewCoverDuration : (wallpaperWindow.isVideoWallpaper ? wallpaperWindow.videoRevealDuration : Math.max(280, Config.wallpaperTransitionDuration))

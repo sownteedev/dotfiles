@@ -7,6 +7,7 @@ print_usage() {
 SownteeShell command-line interface
 
 Usage:
+  sownteeshell open <settings|calendar>
   sownteeshell ipc call <core|calendar> <method> [params-json]
   sownteeshell ipc methods [core|calendar]
   sownteeshell ipc help [core|calendar]
@@ -68,6 +69,9 @@ Core methods (80):
     clipboard.restore                     [write] entryId (history or favorite:<hash>), autoPaste?
     clipboard.copyText                    [write] text; copy plain text without pasting
     diagnostics.snapshot                  [read] Dependencies, services and cache sizes
+    diagnostics.serviceAction             [write] name, action = start|stop|restart|enable|disable,
+                                                   scope? = user (default)|system; system uses Polkit
+    diagnostics.startupAction             [write] path, enabled; user entries or system entries via user override
     diagnostics.clear                     [delete] scope = wallpaper-previews|
                                                    engine-previews|backdrops
 
@@ -132,6 +136,7 @@ Core methods (80):
     wallpaper.wallhaven.search            [read, network] query/filter payload,
                                                            api_key?, wallpaper_dir?
     wallpaper.wallhaven.collections       [read, network] api_key?
+    wallpaper.wallhaven.stats             [read, network] ids[1], api_key?
     wallpaper.wallhaven.collection        [read, network] api_key?, collection_id,
                                                            username?, page?, wallpaper_dir?
     wallpaper.wallhaven.download          [write, network] id, url, wallpaper_dir?
@@ -141,6 +146,7 @@ Core methods (80):
 
   Steam Workshop and Wallpaper Engine
     wallpaper.workshop.search             [read, network] api_key, query/filter/root payload
+    wallpaper.workshop.stats              [read, network] ids[1..50], no API key needed
     wallpaper.workshop.list               [read] steam_root?, workshop_root?,
                                                   legacy_workshop_root?
     wallpaper.workshop.subscriptions      [read] steam_root?
@@ -262,6 +268,7 @@ EOF
 
 Environment:
   SOWNTEESHELL_BACKEND_DIR   Override ~/.local/lib/sownteeshell
+  SOWNTEE_SHELL_CONFIG        Override the running Quickshell config path
   SOWNTEE_CORE_SOCKET        Override the Core Unix socket
   SOWNTEE_CALENDAR_SOCKET    Override the Calendar Unix socket
 
@@ -299,6 +306,27 @@ print_full_help() {
     print_examples all
 }
 
+open_shell_surface() {
+    case "${1:-}" in
+        settings|calendar)
+            ;;
+        *)
+            printf '%s\n' "unknown shell surface '$1'; expected settings or calendar" >&2
+            return 2
+            ;;
+    esac
+
+    local config_path="${SOWNTEE_SHELL_CONFIG:-}"
+    if [ -z "$config_path" ] && command -v quickshell >/dev/null 2>&1; then
+        config_path=$(quickshell list --all --json 2>/dev/null | jq -r 'sort_by(.launch_time) | last.config_path // empty' 2>/dev/null || true)
+    fi
+    if [ -z "$config_path" ]; then
+        printf '%s\n' 'SownteeShell is not running or its config path is unavailable.' >&2
+        return 1
+    fi
+    exec quickshell ipc -p "$config_path" call "$1" toggle
+}
+
 case "${1:-}" in
     "")
         print_full_help
@@ -316,6 +344,15 @@ case "${1:-}" in
         exit 0
         ;;
 esac
+
+if [ "$1" = "open" ]; then
+    if [ "$#" -ne 2 ]; then
+        print_usage >&2
+        exit 2
+    fi
+    open_shell_surface "$2"
+    exit $?
+fi
 
 if [ "$1" = "ipc" ]; then
     case "${2:-}" in

@@ -12,10 +12,10 @@ MouseArea {
     id: root
 
     readonly property var activeWindow: WorkspaceService.activeWindowByOutput[root.outputName] || null
-    readonly property string appId: activeWindow ? (activeWindow.app_id || "sowntee.shell").toLowerCase() : "sowntee.shell"
+    readonly property string appId: activeWindow ? (activeWindow.app_id || "niri-wm").toLowerCase() : "niri-wm"
     property real maximumTextWidth: -1
     required property string outputName
-    readonly property string title: activeWindow ? (activeWindow.title || "niri") : "niri"
+    readonly property string title: activeWindow ? (activeWindow.title || "SownteeShell") : "SownteeShell"
     property bool toggleFailed: false
     readonly property bool workspaceFloating: WorkspaceService.floatingByOutput[root.outputName] === true
 

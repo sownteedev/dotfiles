@@ -1469,11 +1469,7 @@ fn write_runtime_settings(paths: &SettingsPaths, settings: Map<String, Value>) -
     atomic_write(&paths.runtime_settings, &encoded, Some(0o600))
 }
 
-pub async fn gtk(
-    paths: &SettingsPaths,
-    payload: &Value,
-    cancellation: CancellationToken,
-) -> Value {
+pub async fn gtk(paths: &SettingsPaths, payload: &Value, cancellation: CancellationToken) -> Value {
     let gtk_fb = snapshot::gtk_defaults();
     let qt_fb = snapshot::qt_defaults();
     let fb_str = |map: &serde_json::Map<String, Value>, key: &str, default: &str| {
@@ -1502,7 +1498,8 @@ pub async fn gtk(
         Ok(val) => val,
         Err(_) => fb_str(&gtk_fb, "fontName", "SF Pro Text 10.5"),
     };
-    let cursor_size = value_i64(payload, "cursorSize", fb_i64(&gtk_fb, "cursorSize", 24)).clamp(12, 128);
+    let cursor_size =
+        value_i64(payload, "cursorSize", fb_i64(&gtk_fb, "cursorSize", 24)).clamp(12, 128);
     let cursor_size_str = cursor_size.to_string();
 
     let values = [
@@ -1558,7 +1555,11 @@ pub async fn gtk(
     }
 
     let qt_style = non_empty_string(payload, "qtStyle", &fb_str(&qt_fb, "qtStyle", "kvantum"));
-    let qt_color_scheme = non_empty_string(payload, "qtColorScheme", &fb_str(&qt_fb, "qtColorScheme", "matugen"));
+    let qt_color_scheme = non_empty_string(
+        payload,
+        "qtColorScheme",
+        &fb_str(&qt_fb, "qtColorScheme", "matugen"),
+    );
     let qt_dialogs = allowed_string(
         payload,
         "qtDialogs",
@@ -1567,17 +1568,30 @@ pub async fn gtk(
     );
 
     // Synchronize Qt5 and Qt6 configuration (qt5ct / qt6ct)
-    if let Err(error) = sync_qt_settings(&icon_theme, &font_name, &qt_style, &qt_color_scheme, &qt_dialogs) {
+    if let Err(error) = sync_qt_settings(
+        &icon_theme,
+        &font_name,
+        &qt_style,
+        &qt_color_scheme,
+        &qt_dialogs,
+    ) {
         eprintln!("Warning: failed to synchronize Qt settings: {error}");
     }
 
     // Synchronize GTK 3 and GTK 4 settings.ini
-    if let Err(error) = sync_gtk_ini_settings(&gtk_theme, &icon_theme, &cursor_theme, cursor_size, &font_name) {
+    if let Err(error) = sync_gtk_ini_settings(
+        &gtk_theme,
+        &icon_theme,
+        &cursor_theme,
+        cursor_size,
+        &font_name,
+    ) {
         eprintln!("Warning: failed to synchronize GTK settings.ini: {error}");
     }
 
     // Broadcast XSettings for XWayland applications
-    let _ = crate::theme::xsettings::apply(&gtk_theme, &icon_theme, &cursor_theme, cursor_size as i32);
+    let _ =
+        crate::theme::xsettings::apply(&gtk_theme, &icon_theme, &cursor_theme, cursor_size as i32);
 
     json!({"ok": true, "message": "GTK and Qt appearance applied"})
 }
@@ -1624,8 +1638,26 @@ fn sync_qt_settings(
     let qt5_path = config_dir.join("qt5ct/qt5ct.conf");
     let qt6_path = config_dir.join("qt6ct/qt6ct.conf");
 
-    sync_single_qt_conf(&qt5_path, "qt5ct", &config_dir, icon_theme, &qt5_font, style, color_scheme, dialogs)?;
-    sync_single_qt_conf(&qt6_path, "qt6ct", &config_dir, icon_theme, &qt6_font, style, color_scheme, dialogs)?;
+    sync_single_qt_conf(
+        &qt5_path,
+        "qt5ct",
+        &config_dir,
+        icon_theme,
+        &qt5_font,
+        style,
+        color_scheme,
+        dialogs,
+    )?;
+    sync_single_qt_conf(
+        &qt6_path,
+        "qt6ct",
+        &config_dir,
+        icon_theme,
+        &qt6_font,
+        style,
+        color_scheme,
+        dialogs,
+    )?;
 
     Ok(())
 }
@@ -1663,7 +1695,10 @@ fn sync_single_qt_conf(
 
     let (custom_palette_val, resolved_color_path) = match color_scheme {
         "system" => (false, String::new()),
-        "style" => (true, format!("~/.config/{ct_name}/colors/style-colors.conf")),
+        "style" => (
+            true,
+            format!("~/.config/{ct_name}/colors/style-colors.conf"),
+        ),
         val => {
             let kcolor_path = format!("/usr/share/color-schemes/{val}.colors");
             let local_kcolor = config_dir
@@ -1739,14 +1774,28 @@ fn update_qt_conf_content(
         let trimmed = line.trim();
         if trimmed.starts_with('[') && trimmed.ends_with(']') {
             if in_appearance {
-                if !found_color { lines.push(format!("color_scheme_path={color_scheme_path}")); }
-                if !found_palette { lines.push(format!("custom_palette={custom_palette}")); }
-                if !found_icon { lines.push(format!("icon_theme={icon_theme}")); }
-                if !found_dialogs { lines.push(format!("standard_dialogs={dialogs}")); }
-                if !found_style { lines.push(format!("style={style}")); }
+                if !found_color {
+                    lines.push(format!("color_scheme_path={color_scheme_path}"));
+                }
+                if !found_palette {
+                    lines.push(format!("custom_palette={custom_palette}"));
+                }
+                if !found_icon {
+                    lines.push(format!("icon_theme={icon_theme}"));
+                }
+                if !found_dialogs {
+                    lines.push(format!("standard_dialogs={dialogs}"));
+                }
+                if !found_style {
+                    lines.push(format!("style={style}"));
+                }
             } else if in_fonts {
-                if !found_fixed { lines.push(format!("fixed={font_value}")); }
-                if !found_general { lines.push(format!("general={font_value}")); }
+                if !found_fixed {
+                    lines.push(format!("fixed={font_value}"));
+                }
+                if !found_general {
+                    lines.push(format!("general={font_value}"));
+                }
             }
 
             if trimmed == "[Appearance]" {
@@ -1776,7 +1825,9 @@ fn update_qt_conf_content(
                 found_palette = true;
                 continue;
             }
-            if trimmed.starts_with("color_scheme_path=") || trimmed.starts_with("color_scheme_path =") {
+            if trimmed.starts_with("color_scheme_path=")
+                || trimmed.starts_with("color_scheme_path =")
+            {
                 lines.push(format!("color_scheme_path={color_scheme_path}"));
                 found_color = true;
                 continue;
@@ -1786,7 +1837,8 @@ fn update_qt_conf_content(
                 found_icon = true;
                 continue;
             }
-            if trimmed.starts_with("standard_dialogs=") || trimmed.starts_with("standard_dialogs =") {
+            if trimmed.starts_with("standard_dialogs=") || trimmed.starts_with("standard_dialogs =")
+            {
                 lines.push(format!("standard_dialogs={dialogs}"));
                 found_dialogs = true;
                 continue;
@@ -1810,14 +1862,28 @@ fn update_qt_conf_content(
     }
 
     if in_appearance {
-        if !found_color { lines.push(format!("color_scheme_path={color_scheme_path}")); }
-        if !found_palette { lines.push(format!("custom_palette={custom_palette}")); }
-        if !found_icon { lines.push(format!("icon_theme={icon_theme}")); }
-        if !found_dialogs { lines.push(format!("standard_dialogs={dialogs}")); }
-        if !found_style { lines.push(format!("style={style}")); }
+        if !found_color {
+            lines.push(format!("color_scheme_path={color_scheme_path}"));
+        }
+        if !found_palette {
+            lines.push(format!("custom_palette={custom_palette}"));
+        }
+        if !found_icon {
+            lines.push(format!("icon_theme={icon_theme}"));
+        }
+        if !found_dialogs {
+            lines.push(format!("standard_dialogs={dialogs}"));
+        }
+        if !found_style {
+            lines.push(format!("style={style}"));
+        }
     } else if in_fonts {
-        if !found_fixed { lines.push(format!("fixed={font_value}")); }
-        if !found_general { lines.push(format!("general={font_value}")); }
+        if !found_fixed {
+            lines.push(format!("fixed={font_value}"));
+        }
+        if !found_general {
+            lines.push(format!("general={font_value}"));
+        }
     }
 
     if !has_appearance_header {
@@ -1858,7 +1924,14 @@ fn sync_gtk_ini_settings(
     for version in &["gtk-3.0", "gtk-4.0"] {
         let ini_path = config_dir.join(version).join("settings.ini");
         if ini_path.is_file() {
-            let _ = update_gtk_ini_file(&ini_path, gtk_theme, icon_theme, cursor_theme, cursor_size, font_name);
+            let _ = update_gtk_ini_file(
+                &ini_path,
+                gtk_theme,
+                icon_theme,
+                cursor_theme,
+                cursor_size,
+                font_name,
+            );
         }
     }
     Ok(())
@@ -1874,7 +1947,14 @@ fn update_gtk_ini_file(
 ) -> Result<()> {
     let target = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
     let original = fs::read_to_string(&target)?;
-    let updated = update_gtk_ini_content(&original, gtk_theme, icon_theme, cursor_theme, cursor_size, font_name);
+    let updated = update_gtk_ini_content(
+        &original,
+        gtk_theme,
+        icon_theme,
+        cursor_theme,
+        cursor_size,
+        font_name,
+    );
     atomic_write(&target, &updated, Some(0o644))?;
     Ok(())
 }
@@ -1899,13 +1979,19 @@ fn update_gtk_ini_content(
         if trimmed.starts_with("gtk-theme-name=") || trimmed.starts_with("gtk-theme-name =") {
             *line = format!("gtk-theme-name={gtk_theme}");
             found_theme = true;
-        } else if trimmed.starts_with("gtk-icon-theme-name=") || trimmed.starts_with("gtk-icon-theme-name =") {
+        } else if trimmed.starts_with("gtk-icon-theme-name=")
+            || trimmed.starts_with("gtk-icon-theme-name =")
+        {
             *line = format!("gtk-icon-theme-name={icon_theme}");
             found_icon = true;
-        } else if trimmed.starts_with("gtk-cursor-theme-name=") || trimmed.starts_with("gtk-cursor-theme-name =") {
+        } else if trimmed.starts_with("gtk-cursor-theme-name=")
+            || trimmed.starts_with("gtk-cursor-theme-name =")
+        {
             *line = format!("gtk-cursor-theme-name={cursor_theme}");
             found_cursor_theme = true;
-        } else if trimmed.starts_with("gtk-cursor-theme-size=") || trimmed.starts_with("gtk-cursor-theme-size =") {
+        } else if trimmed.starts_with("gtk-cursor-theme-size=")
+            || trimmed.starts_with("gtk-cursor-theme-size =")
+        {
             *line = format!("gtk-cursor-theme-size={cursor_size}");
             found_cursor_size = true;
         } else if trimmed.starts_with("gtk-font-name=") || trimmed.starts_with("gtk-font-name =") {
@@ -2665,7 +2751,8 @@ mod tests {
     #[test]
     fn updates_gtk_ini_settings() {
         let sample = "[Settings]\ngtk-theme-name=OldTheme\ngtk-cursor-theme-size=24\n";
-        let updated = update_gtk_ini_content(sample, "NewTheme", "NewIcons", "NewCursor", 32, "Inter 11");
+        let updated =
+            update_gtk_ini_content(sample, "NewTheme", "NewIcons", "NewCursor", 32, "Inter 11");
         assert!(updated.contains("gtk-theme-name=NewTheme"));
         assert!(updated.contains("gtk-icon-theme-name=NewIcons"));
         assert!(updated.contains("gtk-cursor-theme-name=NewCursor"));

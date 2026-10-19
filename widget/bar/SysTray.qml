@@ -23,8 +23,6 @@ RowLayout {
             id: itemArea
 
             readonly property string entryKey: trayItem ? String(trayItem.id || trayItem.title || index) : String(index)
-            readonly property bool hasCompactArtwork: itemIdentity.indexOf("chrome_status_icon") !== -1
-            readonly property real iconExtent: hasCompactArtwork ? 30 : 24
             readonly property bool isSpotify: itemIdentity.indexOf("spotify") !== -1
             readonly property string itemIdentity: [trayItem ? trayItem.id : "", trayItem ? trayItem.title : "", trayItem ? trayItem.tooltipTitle : ""].join(" ").toLowerCase()
             readonly property var trayItem: modelData
@@ -51,7 +49,7 @@ RowLayout {
             cursorShape: Qt.PointingHandCursor
             hoverEnabled: true
             implicitHeight: 30
-            implicitWidth: 24
+            implicitWidth: Md3.barIconSize
 
             onClicked: mouse => {
                 if (!itemArea.trayItem)
@@ -381,11 +379,11 @@ RowLayout {
             }
             IconImage {
                 anchors.centerIn: parent
-                height: itemArea.iconExtent
+                height: Md3.barIconSize
                 layer.enabled: itemArea.isSpotify
                 opacity: itemArea.containsMouse ? 1 : (itemArea.isSpotify ? 0.95 : 0.75)
                 source: itemArea.trayItem.icon && itemArea.trayItem.icon.toString() !== "" ? itemArea.trayItem.icon : Quickshell.iconPath("application-x-executable")
-                width: itemArea.iconExtent
+                width: Md3.barIconSize
 
                 layer.effect: ColorOverlay {
                     color: "#1db954"

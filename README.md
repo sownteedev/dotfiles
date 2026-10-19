@@ -13,8 +13,15 @@
 > [!IMPORTANT]
 > SownteeShell is my personal Arch Linux and Niri setup. It is tuned around my workflow, hardware, and services, so treat it as a showcase and reference implementation rather than a supported drop-in desktop.
 
-> [!NOTE]
-> Video showcase coming soon.
+<div align="center">
+  <video
+    src="https://github.com/user-attachments/assets/c62603ad-9f2a-4080-a122-3ab245c9b39e"
+    controls
+    playsinline
+    preload="metadata"
+    width="900">
+  </video>
+</div>
 
 ## Highlights
 
@@ -47,6 +54,7 @@
 - **GTK & Qt appearance** and default applications: themes, shared icons, cursors, fonts, Qt styles/colors/dialogs, and preferred browser, file manager, terminal, editor, and image/video viewers. Settings synchronize across GTK, Qt, GSettings, and XWayland.
 - GUI editors for Niri keybindings, layout, input, animations, behavior, window and layer rules, and raw configuration files.
 - Shell controls for typography, bar modules, launcher providers, notifications, wallpapers, capture, integrations, audio, OSDs, idle behavior, and performance.
+- **Startup & Services** with searchable Startup Apps, User Services, and System Services, live status filters, start/stop/restart controls, boot or login toggles, and Polkit-backed system actions. All three virtualized lists scroll independently on one fixed page, with search always visible.
 - Per-surface blur, light/dark surface opacity, separate panel/component shadows, reduced motion, low-power mode, dependency diagnostics, and scoped cache cleanup.
 - A shared profile image for Settings, Polkit, and Greetd, plus Howdy face-model management when supported.
 - **SownteeShell Connect** for Wallhaven and Steam Community in Settings > Integrations, with themed sign-in windows and private, persistent website sessions. Expired sessions still require sign-in.

@@ -7,7 +7,10 @@ SettingsSearch 1.0 SettingsSearch.qml
 SettingsSelectRow 1.0 SettingsSelectRow.qml
 SettingsControlRow 1.0 SettingsControlRow.qml
 SettingsPageContent 1.0 SettingsPageContent.qml
+SettingsEmptyState 1.0 SettingsEmptyState.qml
 SettingsToggleTile 1.0 SettingsToggleTile.qml
 SettingsToggleRow 1.0 SettingsToggleRow.qml
+StartupServiceRow 1.0 StartupServiceRow.qml
+StartupServiceList 1.0 StartupServiceList.qml
 WifiQrPopup 1.0 WifiQrPopup.qml
 SettingsSelectField 1.0 SettingsSelectField.qml

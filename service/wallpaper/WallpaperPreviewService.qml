@@ -122,6 +122,7 @@ QtObject {
         active = false;
         pendingJob = null;
         preloadQueue = [];
+        worker.running = false;
     }
     function finishCommit(job, palette, fallbackPath) {
         if (palette && commitApplyColors)
@@ -285,5 +286,12 @@ QtObject {
         }
         paletteCache = nextCache;
         paletteCacheOrder = nextOrder;
+    }
+
+    Component.onDestruction: {
+        worker.running = false;
+        activeJob = null;
+        pendingJob = null;
+        preloadQueue = [];
     }
 }

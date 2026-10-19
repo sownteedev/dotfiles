@@ -390,6 +390,12 @@ QtObject {
     property string selectedCollectionId: ""
     property string selectedCollectionLabel: ""
     property string sorting: "relevance"
+    property WallpaperStats statistics: WallpaperStats {
+        apiKey: Config.wallhavenApiKey
+        enabled: root.panelConsumers > 0
+        field: "favorites"
+        provider: "wallhaven"
+    }
     property string statusMessage: ""
     property string topRange: "1M"
     property int totalResults: 0
@@ -735,6 +741,8 @@ QtObject {
     }
     function replaceModel(model, items) {
         var incoming = Config.listOrEmpty(items);
+        if (model === results || model === collectionResults || model === installedResults)
+            statistics.observe(incoming, model === installedResults);
         for (var targetIndex = 0; targetIndex < incoming.length; ++targetIndex) {
             var item = incoming[targetIndex];
             var currentIndex = modelIndexForId(model, item.id);

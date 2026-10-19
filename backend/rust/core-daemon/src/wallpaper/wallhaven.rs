@@ -413,7 +413,7 @@ fn prepare_download(
     Ok(DownloadPreparation::Ready { partial, target })
 }
 
-async fn api_get(
+pub(super) async fn api_get(
     client: &Client,
     endpoint: &str,
     parameters: &[(String, String)],
@@ -575,7 +575,7 @@ fn normalize_wallpaper(item: &Map<String, Value>, wallpaper_dir: &Path) -> Value
         "file_size": integer(item.get("file_size")),
         "file_type": text(item.get("file_type"), ""),
         "views": integer(item.get("views")),
-        "favorites": integer(item.get("favorites")),
+        "favorites": item.get("favorites").and_then(super::stats::count).map(Value::from).unwrap_or(json!(-1)),
         "source": text(item.get("source"), ""),
         "created_at": text(item.get("created_at"), ""),
         "downloaded": local_path.is_some(),
@@ -697,7 +697,7 @@ fn local_item(path: &Path, wallpaper_dir: &Path) -> Option<Value> {
         "file_size": metadata.len(),
         "file_type": resolved.extension().and_then(|value| value.to_str()).unwrap_or_default().to_ascii_lowercase(),
         "views": 0,
-        "favorites": 0,
+        "favorites": -1,
         "source": "",
         "created_at": "",
         "downloaded": true,

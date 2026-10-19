@@ -362,6 +362,23 @@ Item {
                         readonly property bool isGroup: modelData.kind === "group"
                         readonly property bool isSelected: modelData.globalIndex === appsGrid.currentIndex
                         required property var modelData
+                        readonly property string shellIconKind: {
+                            if (isGroup || !modelData || !modelData.entry)
+                                return "";
+                            var entry = modelData.entry;
+                            var id = typeof entry === "string" ? entry : String(entry.id || "").trim();
+                            id = id.toLowerCase();
+                            if (id.endsWith(".desktop"))
+                                id = id.slice(0, -8);
+                            if (id === "sownteeshell-settings" || id === "sownteeshell-calendar" || id === "sownteeshell-connect")
+                                return id.slice("sownteeshell-".length);
+                            var icon = typeof entry === "object" ? String(entry.icon || "").trim().toLowerCase() : "";
+                            if (icon.endsWith(".svg") || icon.endsWith(".png"))
+                                icon = icon.replace(/\.(svg|png)$/, "");
+                            if (icon === "sownteeshell-settings" || icon === "sownteeshell-calendar" || icon === "sownteeshell-connect")
+                                return icon.slice("sownteeshell-".length);
+                            return "";
+                        }
 
                         function activateItem() {
                             appsGrid.currentIndex = modelData.globalIndex;
@@ -369,7 +386,7 @@ Item {
                                 appActionPopup.close();
                                 appsGrid.groupOpenRequested(modelData.groupId, false);
                             } else {
-                                modelData.entry.execute();
+                                DockService.launch(modelData.entry);
                                 appsGrid.appLaunched();
                             }
                         }
@@ -543,12 +560,17 @@ Item {
                                     Layout.preferredHeight: appsGrid.iconSize
                                     Layout.preferredWidth: appsGrid.iconSize
 
+                                    SownteeAppIcon {
+                                        anchors.fill: parent
+                                        kind: delegateRoot.shellIconKind
+                                        visible: !delegateRoot.isGroup && delegateRoot.shellIconKind !== ""
+                                    }
                                     IconImage {
                                         anchors.fill: parent
                                         mipmap: true
                                         smooth: true
                                         source: visible ? Quickshell.iconPath(delegateRoot.modelData.entry.icon || "application-x-executable") : ""
-                                        visible: !delegateRoot.isGroup
+                                        visible: !delegateRoot.isGroup && delegateRoot.shellIconKind === ""
                                     }
                                     LauncherGroupIcon {
                                         anchors.fill: parent

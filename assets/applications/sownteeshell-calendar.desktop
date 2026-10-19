@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=SownteeShell Calendar
+Comment=View and manage calendars, events, and tasks
+Exec=sownteeshell open calendar
+Icon=sownteeshell-calendar
+Terminal=false
+Categories=Office;
+StartupNotify=false
+StartupWMClass=sownteeshell-calendar

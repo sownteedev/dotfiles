@@ -21,6 +21,22 @@ Popup {
     readonly property bool packageMatches: ApplicationPackageService.inspectedAppId === entryId
     readonly property bool pinned: DockService.isPinned(entry)
     readonly property Item regionItem: popupBackground
+    readonly property string shellIconKind: {
+        if (!entry)
+            return "";
+        var id = typeof entry === "string" ? entry : String(entry.id || "").trim();
+        id = id.toLowerCase();
+        if (id.endsWith(".desktop"))
+            id = id.slice(0, -8);
+        if (id === "sownteeshell-settings" || id === "sownteeshell-calendar" || id === "sownteeshell-connect")
+            return id.slice("sownteeshell-".length);
+        var icon = typeof entry === "object" ? String(entry.icon || "").trim().toLowerCase() : "";
+        if (icon.endsWith(".svg") || icon.endsWith(".png"))
+            icon = icon.replace(/\.(svg|png)$/, "");
+        if (icon === "sownteeshell-settings" || icon === "sownteeshell-calendar" || icon === "sownteeshell-connect")
+            return icon.slice("sownteeshell-".length);
+        return "";
+    }
     property string uninstallErrorMessage: ""
     property bool uninstallFailed: false
 
@@ -117,12 +133,19 @@ Popup {
             Layout.rightMargin: 8
             spacing: 11
 
+            SownteeAppIcon {
+                Layout.preferredHeight: 30
+                Layout.preferredWidth: 30
+                kind: root.shellIconKind
+                visible: root.shellIconKind !== ""
+            }
             IconImage {
                 Layout.preferredHeight: 30
                 Layout.preferredWidth: 30
                 mipmap: true
                 smooth: true
-                source: root.entry ? Quickshell.iconPath(root.entry.icon || "application-x-executable") : ""
+                source: visible && root.entry ? Quickshell.iconPath(root.entry.icon || "application-x-executable") : ""
+                visible: root.shellIconKind === ""
             }
             Text {
                 Layout.fillWidth: true
@@ -222,14 +245,23 @@ Popup {
                     anchors.rightMargin: 12
                     spacing: 12
 
+                    Md3Icon {
+                        Layout.preferredHeight: 18
+                        Layout.preferredWidth: 18
+                        color: Config.md3.primary
+                        name: "star"
+                        size: 18
+                        visible: actionButton.modelData.action === "pin"
+                    }
                     IconImage {
                         Layout.preferredHeight: 18
                         Layout.preferredWidth: 18
                         layer.enabled: true
                         source: Quickshell.iconPath(actionButton.modelData.icon)
+                        visible: actionButton.modelData.action !== "pin"
 
                         layer.effect: ColorOverlay {
-                            color: actionButton.dangerAction ? (actionButton.dangerHighlighted ? Config.md3.on_error_container : Config.md3.error) : actionButton.modelData.action === "pin" && !root.pinned ? Config.md3.primary : Config.md3.on_surface_variant
+                            color: actionButton.dangerAction ? (actionButton.dangerHighlighted ? Config.md3.on_error_container : Config.md3.error) : Config.md3.on_surface_variant
                         }
                     }
                     ColumnLayout {

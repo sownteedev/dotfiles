@@ -32,6 +32,7 @@ Item {
     readonly property bool subscribed: wallpaper.accountSubscriptionKnown ? accountSubscribed : Boolean(wallpaper.subscribed)
     property bool subscribing: false
     property bool subscriptionBlocked: false
+    property real subscriptionCount: -1
     readonly property bool supported: installedMode ? !["web", "application"].includes(String(wallpaper.type || "").toLowerCase()) : wallpaper.supported !== false
     required property var wallpaper
 
@@ -115,13 +116,6 @@ Item {
                         }
                     }
                 }
-            }
-            LoadingIndicator {
-                anchors.centerIn: parent
-                animated: previewImage.status === Image.Loading
-                color: Config.md3.primary
-                visible: animated && !root.nsfwBlurred
-                z: 3
             }
             IconImage {
                 anchors.centerIn: parent
@@ -366,14 +360,39 @@ Item {
             spacing: 6
             z: 5
 
-            Text {
+            ColumnLayout {
                 Layout.fillWidth: true
-                color: Config.md3.on_surface
-                elide: Text.ElideRight
-                font.family: Config.fontName
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
-                text: root.wallpaper.title || root.itemId
+                spacing: Md3.spacing.xxs
+
+                Text {
+                    Layout.fillWidth: true
+                    color: Config.md3.on_surface
+                    elide: Text.ElideRight
+                    font.family: Config.fontName
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
+                    text: root.wallpaper.title || root.itemId
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    Md3Icon {
+                        color: "#ef5350"
+                        filled: true
+                        name: "emblem-favorite-symbolic"
+                        size: 16
+                    }
+                    Text {
+                        Accessible.name: qsTr("%1 subscribers").arg(text)
+                        Layout.fillWidth: true
+                        color: Config.md3.on_surface_variant
+                        elide: Text.ElideRight
+                        font.family: Config.fontName
+                        font.pixelSize: 11
+                        text: root.subscriptionCount >= 0 ? root.subscriptionCount.toLocaleString(Qt.locale(), "f", 0) : "\u2014"
+                    }
+                }
             }
             Rectangle {
                 id: propertiesAction

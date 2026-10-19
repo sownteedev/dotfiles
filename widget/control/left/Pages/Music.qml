@@ -23,7 +23,7 @@ Item {
     readonly property real contentSpacing: Math.max(8, Math.min(15, playerArea.height / 40))
     readonly property real expandedLyricsHeight: Math.max(88, Math.min(115, playerArea.height * 0.2))
     property bool isSwipingOut: false
-    readonly property bool lyricsAvailable: lyrics.hasLyrics && !lyrics.loading && !lyrics.lookupFailed
+    readonly property bool lyricsAvailable: lyrics.hasLyrics
     property bool lyricsExpanded: false
     readonly property color lyricsStateColor: lyrics.lookupFailed ? Config.md3.error : lyrics.hasSyncedLyrics ? Config.md3.primary : lyrics.hasLyrics ? Config.md3.tertiary : Config.md3.on_surface_variant
     readonly property bool mediaMuted: !mediaStream || !mediaStream.audio || mediaStream.audio.muted
@@ -493,7 +493,7 @@ Item {
 
                         Accessible.checkable: true
                         Accessible.checked: root.lyricsExpanded
-                        Accessible.description: lyrics.loading ? qsTr("Loading lyrics") : lyrics.lookupFailed ? qsTr("Lyrics lookup failed") : lyrics.hasSyncedLyrics ? qsTr("Synced lyrics") : root.lyricsAvailable ? qsTr("Lyrics available") : qsTr("Lyrics unavailable")
+                        Accessible.description: lyrics.loading && !lyrics.hasLyrics ? qsTr("Loading lyrics") : lyrics.lookupFailed ? qsTr("Lyrics lookup failed") : lyrics.hasWordLyrics ? qsTr("Karaoke lyrics") : lyrics.hasSyncedLyrics ? qsTr("Synced lyrics") : root.lyricsAvailable ? qsTr("Lyrics available") : qsTr("Lyrics unavailable")
                         Accessible.name: root.lyricsExpanded ? qsTr("Hide lyrics") : qsTr("Show lyrics")
                         Accessible.role: Accessible.Button
                         anchors.right: parent.right
@@ -521,14 +521,14 @@ Item {
                             filled: root.lyricsExpanded
                             name: "media-view-subtitles-symbolic"
                             size: 22
-                            visible: !lyrics.loading
+                            visible: !lyrics.loading || lyrics.hasLyrics
                         }
                         LoadingIndicator {
                             anchors.centerIn: parent
-                            animated: lyrics.loading
+                            animated: lyrics.loading && !lyrics.hasLyrics
                             color: root.lyricsExpanded ? Config.md3.on_secondary_container : Config.md3.primary
                             height: 22
-                            visible: lyrics.loading
+                            visible: lyrics.loading && !lyrics.hasLyrics
                             width: 22
                         }
                         Rectangle {
@@ -541,7 +541,7 @@ Item {
                             color: root.lyricsStateColor
                             height: 7
                             radius: 4
-                            visible: !lyrics.loading
+                            visible: !lyrics.loading || lyrics.hasLyrics
                             width: 7
                         }
                         MouseArea {

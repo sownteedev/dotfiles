@@ -24,7 +24,7 @@ Item {
     }
 
     Accessible.name: WeatherService.hasData ? qsTr("%1, %2 degrees %3").arg(WeatherService.condition).arg(WeatherService.toDisplayTemperature(WeatherService.temperature).toFixed(0)).arg(WeatherService.temperatureUnitName) : qsTr("Weather unavailable")
-    implicitHeight: Math.max(22, weatherLayout.implicitHeight)
+    implicitHeight: Math.max(Md3.barIconSize, weatherLayout.implicitHeight)
     implicitWidth: weatherLayout.implicitWidth
 
     Component.onCompleted: syncService()
@@ -42,7 +42,7 @@ Item {
 
         IconImage {
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredHeight: root.compact ? 21 : 24
+            Layout.preferredHeight: Md3.barIconSize
             Layout.preferredWidth: Layout.preferredHeight
             layer.enabled: true
             source: Quickshell.iconPath(WeatherService.icon || "weather-none-available-symbolic")

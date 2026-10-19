@@ -118,6 +118,14 @@ QtObject {
         onConnectionStateChanged: root.handleRequestConnection()
         onError: error => root.requestReconnect()
     }
+    readonly property int requestTimeoutMs: 300000
+    property Timer requestTimeoutSweep: Timer {
+        interval: 1000
+        repeat: true
+        running: Object.keys(root.pendingRequests).length > 0
+
+        onTriggered: root.expirePendingRequests()
+    }
     readonly property string runtimeBase: Quickshell.env("XDG_RUNTIME_DIR") || ""
     readonly property string socketOverride: Quickshell.env("SOWNTEE_CALENDAR_SOCKET") || ""
     readonly property string socketPath: socketOverride !== "" ? socketOverride : (runtimeBase !== "" ? runtimeBase + "/sownteeshell/calendar/calendar.sock" : (Quickshell.env("XDG_DATA_HOME") || Config.homeDir + "/.local/share") + "/sownteeshell/calendar/runtime/calendar.sock")
@@ -581,6 +589,26 @@ QtObject {
             return "yearly";
         return "none";
     }
+    function expirePendingRequests() {
+        var now = Date.now();
+        var nextPending = Object.assign({}, pendingRequests);
+        var expired = [];
+        for (var requestId in pendingRequests) {
+            var entry = pendingRequests[requestId];
+            if (!entry || Number(entry.deadline || 0) > now)
+                continue;
+            expired.push(entry);
+            delete nextPending[requestId];
+        }
+        if (expired.length === 0)
+            return;
+
+        pendingRequests = nextPending;
+        for (var index = 0; index < expired.length; ++index) {
+            if (expired[index].failure)
+                expired[index].failure(qsTr("Calendar request timed out."));
+        }
+    }
     function failPendingRequests(message) {
         var pending = pendingRequests;
         var identifiers = Object.keys(pending);
@@ -1005,7 +1033,8 @@ QtObject {
         nextPending[id] = {
             "method": method,
             "success": success,
-            "failure": failure
+            "failure": failure,
+            "deadline": Date.now() + root.requestTimeoutMs
         };
         pendingRequests = nextPending;
         requestSocket.write(JSON.stringify({
@@ -1160,6 +1189,8 @@ QtObject {
 
     Component.onDestruction: {
         idleReleaseTimer.stop();
+        requestTimeoutSweep.stop();
+        pendingRequests = ({});
         requestSocket.connected = false;
         subscriptionSocket.connected = false;
         systemdStarter.running = false;

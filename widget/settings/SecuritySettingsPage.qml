@@ -232,10 +232,30 @@ Item {
 
         target: SettingsHubService
     }
+    Column {
+        anchors.centerIn: parent
+        spacing: Md3.spacing.sm
+        visible: !FaceAuthService.initialized
+
+        AnimatedSpinner {
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: Config.md3.primary
+            height: 28
+            running: visible
+            width: 28
+        }
+        Text {
+            color: Config.md3.on_surface_variant
+            font.family: Config.fontName
+            font.pixelSize: Md3.typeScale.bodyMedium.size
+            text: qsTr("Loading face authentication…")
+        }
+    }
     SettingsPageContent {
         id: pageContent
 
         anchors.fill: parent
+        visible: FaceAuthService.initialized
 
         SettingsSectionCard {
             Layout.fillWidth: true

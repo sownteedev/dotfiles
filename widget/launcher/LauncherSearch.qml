@@ -182,7 +182,7 @@ Item {
             else if (item.type === "emoji")
                 emojiLoader.copyEntry(item.data);
             else if (item.type === "app")
-                item.data.execute();
+                DockService.launch(item.data);
             else if (item.type === "folder")
                 openFolder(item.data.path);
             else if (item.type === "file")
@@ -457,6 +457,22 @@ Item {
             readonly property bool isSelected: index === searchRoot.selectedIndex
             readonly property bool isUnicode: isEmoji && modelData.characterKind === "unicode"
             readonly property var itemData: !isClipboard ? modelData.data : null
+            readonly property string shellIconKind: {
+                if (!isApp || !itemData)
+                    return "";
+                var id = typeof itemData === "string" ? itemData : String(itemData.id || "").trim();
+                id = id.toLowerCase();
+                if (id.endsWith(".desktop"))
+                    id = id.slice(0, -8);
+                if (id === "sownteeshell-settings" || id === "sownteeshell-calendar" || id === "sownteeshell-connect")
+                    return id.slice("sownteeshell-".length);
+                var icon = typeof itemData === "object" ? String(itemData.icon || "").trim().toLowerCase() : "";
+                if (icon.endsWith(".svg") || icon.endsWith(".png"))
+                    icon = icon.replace(/\.(svg|png)$/, "");
+                if (icon === "sownteeshell-settings" || icon === "sownteeshell-calendar" || icon === "sownteeshell-connect")
+                    return icon.slice("sownteeshell-".length);
+                return "";
+            }
             readonly property real totalHeight: 92
 
             function characterSubtitle() {
@@ -676,6 +692,13 @@ Item {
                                         }
                                     }
                                 }
+                            }
+                            SownteeAppIcon {
+                                anchors.centerIn: parent
+                                height: 38
+                                kind: delegateRoot.shellIconKind
+                                visible: delegateRoot.shellIconKind !== ""
+                                width: height
                             }
 
                             // Show standard IconImage for apps, non-image files, and text clipboard items

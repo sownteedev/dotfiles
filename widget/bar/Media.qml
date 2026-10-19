@@ -14,12 +14,25 @@ Item {
     property bool cavaConsumerAcquired: false
     readonly property bool cavaConsumerActive: hasMedia && onScreen
     property bool componentReady: false
-    readonly property string description: MediaService.artist
+    readonly property real contentWidth: Math.max(90, Math.min(350, maximumWidth))
+    readonly property string description: displayedMedia?.description ?? ""
+    property bool displayEnabled: true
+    property var displayedMedia: null
     readonly property bool hasMedia: activePlayer !== null && activePlayer.trackTitle && activePlayer.trackTitle !== ""
+    property real leadingSpacing: 0
+    readonly property var liveMedia: hasMedia ? {
+        "title": activePlayer.trackTitle,
+        "description": MediaService.artist,
+        "artwork": activePlayer.trackArtUrl || "",
+        "playing": MediaService.playing,
+        "canControl": activePlayer.canControl,
+        "isLive": !activePlayer.lengthSupported || Number(activePlayer.length || 0) <= 0 || Number(activePlayer.length || 0) > 86400
+    } : null
     property real maximumWidth: 350
     readonly property bool onScreen: visible && (Window.window?.visible ?? false)
-    readonly property bool playing: MediaService.playing
-    readonly property string title: MediaService.title
+    readonly property bool playing: displayedMedia?.playing ?? false
+    property real revealProgress: componentReady && displayEnabled && hasMedia ? 1 : 0
+    readonly property string title: displayedMedia?.title ?? ""
     property real trackArtworkOpacity: 1
     property real trackArtworkScale: 1
     property real trackMetadataOffset: 0
@@ -39,20 +52,21 @@ Item {
             visualizerCanvas.requestPaint();
     }
 
+    clip: true
     implicitHeight: 46
-    implicitWidth: hasMedia ? Math.max(90, Math.min(350, maximumWidth)) : Math.max(90, Math.min(220, maximumWidth))
+    implicitWidth: (contentWidth + leadingSpacing) * revealProgress
     visible: implicitWidth > 0
 
-    Behavior on implicitWidth {
+    Behavior on revealProgress {
         NumberAnimation {
-            id: mediaWidthAnim
-
             duration: Config.shellReducedMotion ? 0 : 280
             easing.type: Easing.OutCubic
         }
     }
 
     Component.onCompleted: {
+        if (liveMedia)
+            displayedMedia = liveMedia;
         componentReady = true;
         syncCavaConsumer();
     }
@@ -64,6 +78,10 @@ Item {
         }
     }
     onCavaConsumerActiveChanged: syncCavaConsumer()
+    onLiveMediaChanged: {
+        if (liveMedia)
+            displayedMedia = liveMedia;
+    }
 
     Connections {
         function onPostTrackChanged() {
@@ -155,28 +173,12 @@ Item {
     RowLayout {
         id: playerContent
 
-        anchors.fill: parent
-        enabled: root.hasMedia
-        opacity: root.hasMedia ? 1 : 0
+        enabled: root.hasMedia && root.displayEnabled
+        height: root.height
         spacing: 10
-        visible: opacity > 0
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Config.shellReducedMotion ? 0 : 180
-                easing.type: Easing.OutCubic
-            }
-        }
-        transform: Translate {
-            x: root.hasMedia ? 0 : 8
-
-            Behavior on x {
-                NumberAnimation {
-                    duration: Config.shellReducedMotion ? 0 : 220
-                    easing.type: Easing.OutCubic
-                }
-            }
-        }
+        visible: root.revealProgress > 0
+        width: root.contentWidth
+        x: root.implicitWidth - width
 
         Item {
             id: artwork
@@ -300,7 +302,7 @@ Item {
                     asynchronous: true
                     cache: false
                     fillMode: Image.PreserveAspectCrop
-                    source: root.activePlayer && root.activePlayer.trackArtUrl ? root.activePlayer.trackArtUrl : ""
+                    source: root.displayedMedia?.artwork ?? ""
                     sourceSize: Qt.size(60, 60)
                 }
             }
@@ -322,7 +324,7 @@ Item {
                 color: Config.alpha(Config.md3.background, 0.88)
                 opacity: artworkMouse.containsMouse ? 1 : 0
                 radius: width / 2
-                visible: root.activePlayer && root.activePlayer.canControl
+                visible: root.displayedMedia?.canControl ?? false
 
                 Behavior on opacity {
                     NumberAnimation {
@@ -475,7 +477,7 @@ Item {
                         color: Config.md3.error
                         height: 14
                         radius: 4
-                        visible: root.activePlayer && (!root.activePlayer.lengthSupported || Number(root.activePlayer.length || 0) <= 0 || Number(root.activePlayer.length || 0) > 86400)
+                        visible: root.displayedMedia?.isLive ?? false
                         width: liveBadgeText.implicitWidth + 8
 
                         Text {
@@ -520,95 +522,6 @@ Item {
                         root.activePlayer.previous();
                     metadataReturnAnimation.restart();
                 }
-            }
-        }
-    }
-    RowLayout {
-        id: idleContent
-
-        anchors.fill: parent
-        opacity: root.hasMedia ? 0 : 1
-        spacing: 10
-        visible: opacity > 0
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Config.shellReducedMotion ? 0 : 160
-                easing.type: Easing.OutCubic
-            }
-        }
-        transform: Translate {
-            x: root.hasMedia ? -8 : 0
-
-            Behavior on x {
-                NumberAnimation {
-                    duration: Config.shellReducedMotion ? 0 : 200
-                    easing.type: Easing.OutCubic
-                }
-            }
-        }
-
-        Item {
-            Layout.alignment: Qt.AlignVCenter
-            Layout.preferredHeight: 46
-            Layout.preferredWidth: 46
-
-            Rectangle {
-                id: idleHalo
-
-                anchors.centerIn: parent
-                border.color: Config.alpha(Config.md3.primary, 0.3)
-                border.width: 1
-                color: Config.alpha(Config.md3.primary, 0.075)
-                height: 42
-                opacity: Config.shellReducedMotion ? 0.55 : 0.32
-                radius: 21
-                scale: Config.shellReducedMotion ? 1 : 0.88
-                width: 42
-            }
-            Rectangle {
-                id: idleDisc
-
-                anchors.centerIn: parent
-                color: Config.alpha(Config.md3.primary, 0.16)
-                height: 30
-                radius: 15
-                width: 30
-
-                IconImage {
-                    anchors.centerIn: parent
-                    height: 17
-                    layer.enabled: true
-                    source: Quickshell.iconPath("audio-x-generic-symbolic")
-                    width: 17
-
-                    layer.effect: ColorOverlay {
-                        color: Config.alpha(Config.md3.primary, 0.78)
-                    }
-                }
-            }
-        }
-        ColumnLayout {
-            Layout.alignment: Qt.AlignVCenter
-            Layout.fillWidth: true
-            spacing: 1
-
-            Text {
-                Layout.fillWidth: true
-                color: Config.md3.on_surface
-                elide: Text.ElideRight
-                font.family: Config.fontName
-                font.pixelSize: 16
-                font.weight: Font.DemiBold
-                text: qsTr("Nothing playing")
-            }
-            Text {
-                Layout.fillWidth: true
-                color: Config.md3.on_surface_variant
-                elide: Text.ElideRight
-                font.family: Config.fontName
-                font.pixelSize: 14
-                text: qsTr("Waiting for media")
             }
         }
     }

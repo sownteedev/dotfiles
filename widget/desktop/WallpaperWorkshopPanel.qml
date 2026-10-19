@@ -21,11 +21,9 @@ Rectangle {
     readonly property string panelErrorMessage: subscribedMode ? WebAccountService.steam.errorMessage || WallpaperWorkshopService.downloadErrorMessage : installedMode ? WallpaperWorkshopService.manageErrorMessage : WallpaperWorkshopService.browseErrorMessage
     readonly property string panelStatusMessage: GreeterBackgroundService.statusMessage || (subscribedMode ? WallpaperWorkshopService.loadingSubscribed ? qsTr("Loading your Steam subscriptions...") : WallpaperWorkshopService.actionStatusMessage : installedMode ? WallpaperWorkshopService.manageStatusMessage : WallpaperWorkshopService.browseStatusMessage)
     readonly property string panelStatusText: GreeterBackgroundService.errorMessage || panelStatusMessage
-    readonly property bool resultLoading: tabLoadPending || (subscribedMode ? WallpaperWorkshopService.loadingSubscribed : installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching)
+    readonly property bool resultLoading: subscribedMode ? WallpaperWorkshopService.loadingSubscribed : installedMode ? WallpaperWorkshopService.listingInstalled : WallpaperWorkshopService.searching
     readonly property int sourceResultCount: subscribedMode ? WallpaperWorkshopService.subscribedResults.count : installedMode ? WallpaperWorkshopService.installedResults.count : WallpaperWorkshopService.results.count
     readonly property bool subscribedMode: activeTab === "subscribed"
-    property bool tabLoadPending: false
-    property bool tabRevealPending: false
 
     signal applyRequested(string path, var modified)
     signal closeRequested
@@ -49,17 +47,18 @@ Rectangle {
         if (!open)
             return;
         scenePropertiesPopup.close();
-        tabRevealPending = false;
-        tabLoadPending = false;
         contentTransition.stop();
         open = false;
         closeTimer.restart();
     }
-    function loadActiveTab() {
-        if (!open) {
-            tabLoadPending = false;
+    function goToBrowsePage(requestedPage) {
+        if (activeTab !== "browse" || resultLoading || requestedPage < 1 || requestedPage > WallpaperWorkshopService.lastPage || requestedPage === WallpaperWorkshopService.page)
             return;
-        }
+        WallpaperWorkshopService.search(WallpaperWorkshopService.query, requestedPage, WallpaperWorkshopService.sortMode);
+    }
+    function loadActiveTab() {
+        if (!open)
+            return;
         if (installedMode) {
             WallpaperWorkshopService.clearFilters();
             WallpaperWorkshopService.loadInstalled(false);
@@ -71,27 +70,24 @@ Rectangle {
             if (WallpaperWorkshopService.configured && (WallpaperWorkshopService.results.count === 0 || WallpaperWorkshopService.browseFiltersDirty) && !WallpaperWorkshopService.searching)
                 WallpaperWorkshopService.search(searchInput.text, 1, WallpaperWorkshopService.sortMode);
         }
-        tabLoadPending = false;
     }
     function positionResultViewAtBeginning() {
         var loader = resultViews.itemAt(installedMode ? 2 : (subscribedMode ? 1 : 0));
-        if (loader && loader.status === Loader.Ready)
-            loader.item.positionViewAtBeginning();
-    }
-    function revealTabContent() {
-        if (!open || !tabRevealPending)
-            return;
-        var loader = resultViews.itemAt(installedMode ? 2 : (subscribedMode ? 1 : 0));
         if (!loader || loader.status !== Loader.Ready)
             return;
-        tabRevealPending = false;
-        contentTransition.restart();
+        var view = loader.item;
+        view.cancelFlick();
+        view.currentIndex = -1;
+        view.forceLayout();
+        view.positionViewAtBeginning();
+        view.contentY = view.originY;
     }
     function selectTab(tab) {
+        pageNavigation.cancelEdit();
         scenePropertiesPopup.close();
         workshopFilters.closePopup();
         if (activeTab === tab) {
-            if (tabRevealPending || contentTransition.running)
+            if (contentTransition.running)
                 return;
             if (tab === "installed") {
                 WallpaperWorkshopService.clearFilters();
@@ -104,13 +100,12 @@ Rectangle {
         var oldIndex = activeTab === "browse" ? 0 : (activeTab === "subscribed" ? 1 : 2);
         var newIndex = tab === "browse" ? 0 : (tab === "subscribed" ? 1 : 2);
         contentTransitionDirection = newIndex >= oldIndex ? 1 : -1;
-        tabRevealPending = true;
-        tabLoadPending = true;
         animatedContent.opacity = 0;
         contentOffset.x = contentTransitionDirection * 16;
         activeTab = tab;
         deleteArmedId = "";
-        Qt.callLater(root.revealTabContent);
+        loadActiveTab();
+        contentTransition.restart();
     }
     function setNsfwVisible(enabled) {
         if (Config.wallpaperWorkshopShowNsfw === enabled)
@@ -185,6 +180,10 @@ Rectangle {
             if (purpose === "greetd")
                 return;
             root.applyRequested(path, modified);
+        }
+        function onPageChanged() {
+            if (root.activeTab === "browse")
+                root.positionResultViewAtBeginning();
         }
         function onSubscribedPageChanged() {
             if (root.subscribedMode)
@@ -408,135 +407,34 @@ Rectangle {
                 Layout.preferredHeight: 40
                 spacing: 8
 
-                Rectangle {
-                    id: primaryTabs
-
+                WallpaperBrowserTabs {
                     Layout.preferredHeight: 40
                     Layout.preferredWidth: 396
-                    border.color: Config.alpha(Config.md3.outline, 0.08)
-                    border.width: 1
-                    color: Config.alpha(Config.md3.on_surface, 0.03)
-                    radius: Md3.shape.full
-
-                    Rectangle {
-                        id: primaryTabIndicator
-
-                        color: Config.md3.primary_container
-                        height: parent.height - 8
-                        radius: Md3.shape.full
-                        width: (parent.width - 8 - 12) / 3
-                        x: 4 + (root.installedMode ? 2 * (width + 6) : (root.subscribedMode ? width + 6 : 0))
-                        y: 4
-
-                        Behavior on x {
-                            XAnimator {
-                                duration: 190
-                                easing.type: Easing.OutCubic
-                            }
+                    currentValue: root.activeTab
+                    iconSize: 16
+                    tabs: [
+                        {
+                            "icon": "system-search-symbolic",
+                            "label": qsTr("Browse"),
+                            "value": "browse"
+                        },
+                        {
+                            "icon": "starred-symbolic",
+                            "label": qsTr("Subscribed"),
+                            "value": "subscribed"
+                        },
+                        {
+                            "icon": "folder-symbolic",
+                            "label": qsTr("Installed"),
+                            "value": "installed"
                         }
-                    }
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 4
-                        spacing: 6
+                    ]
 
-                        Repeater {
-                            model: [
-                                {
-                                    "icon": "system-search-symbolic",
-                                    "label": qsTr("Browse"),
-                                    "value": "browse"
-                                },
-                                {
-                                    "icon": "starred-symbolic",
-                                    "label": qsTr("Subscribed"),
-                                    "value": "subscribed"
-                                },
-                                {
-                                    "icon": "folder-symbolic",
-                                    "label": qsTr("Installed"),
-                                    "value": "installed"
-                                }
-                            ]
-
-                            delegate: Rectangle {
-                                id: tabChip
-
-                                required property var modelData
-                                readonly property bool selected: root.activeTab === modelData.value
-
-                                Accessible.name: modelData.label
-                                Accessible.role: Accessible.PageTab
-                                Layout.fillHeight: true
-                                Layout.fillWidth: true
-                                activeFocusOnTab: true
-                                border.color: Config.md3.primary
-                                border.width: activeFocus ? 2 : 0
-                                color: !selected && tabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : "transparent"
-                                radius: Md3.shape.full
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 120
-                                    }
-                                }
-
-                                Accessible.onPressAction: root.selectTab(modelData.value)
-                                Keys.onReturnPressed: root.selectTab(modelData.value)
-                                Keys.onSpacePressed: root.selectTab(modelData.value)
-
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: 8
-
-                                    IconImage {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        height: 16
-                                        layer.enabled: true
-                                        source: Quickshell.iconPath(tabChip.modelData.icon)
-                                        width: 16
-
-                                        layer.effect: ColorOverlay {
-                                            color: tabChip.selected ? Config.md3.on_primary_container : Config.md3.on_surface_variant
-
-                                            Behavior on color {
-                                                ColorAnimation {
-                                                    duration: 140
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: tabChip.selected ? Config.md3.on_primary_container : Config.md3.on_surface_variant
-                                        font.family: Config.fontName
-                                        font.pixelSize: 13
-                                        font.weight: Font.DemiBold
-                                        text: tabChip.modelData.label
-
-                                        Behavior on color {
-                                            ColorAnimation {
-                                                duration: 140
-                                            }
-                                        }
-                                    }
-                                }
-                                MouseArea {
-                                    id: tabMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    onClicked: root.selectTab(tabChip.modelData.value)
-                                }
-                            }
-                        }
-                    }
+                    onSelected: value => root.selectTab(value)
                 }
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.minimumWidth: 260
+                    Layout.minimumWidth: 180
                     Layout.preferredHeight: 40
                     border.color: searchInput.activeFocus ? Config.alpha(Config.md3.primary, 0.52) : Config.alpha(Config.md3.outline, 0.1)
                     border.width: 1
@@ -725,6 +623,19 @@ Rectangle {
                         onClicked: root.setNsfwVisible(!Config.wallpaperWorkshopShowNsfw)
                     }
                 }
+                WallpaperPagination {
+                    id: pageNavigation
+
+                    Layout.alignment: Qt.AlignVCenter
+                    currentPage: WallpaperWorkshopService.page
+                    lastPage: WallpaperWorkshopService.lastPage
+                    loading: root.resultLoading
+                    visible: root.activeTab === "browse" && WallpaperWorkshopService.configured && root.sourceResultCount > 0
+
+                    onNextRequested: root.goToBrowsePage(WallpaperWorkshopService.page + 1)
+                    onPageRequested: page => root.goToBrowsePage(page)
+                    onPreviousRequested: root.goToBrowsePage(WallpaperWorkshopService.page - 1)
+                }
             }
             Item {
                 id: contentHost
@@ -736,7 +647,6 @@ Rectangle {
                     id: animatedContent
 
                     anchors.fill: parent
-                    enabled: !root.tabRevealPending
 
                     transform: Translate {
                         id: contentOffset
@@ -801,13 +711,12 @@ Rectangle {
 
                             active: selected || visited
                             anchors.fill: parent
-                            asynchronous: true
                             visible: status === Loader.Ready && selected && (modelData !== "browse" || WallpaperWorkshopService.configured)
 
                             sourceComponent: GridView {
                                 id: resultGrid
 
-                                cacheBuffer: cellHeight
+                                cacheBuffer: count <= 60 ? Math.ceil(count / root.gridColumns) * cellHeight : Math.max(height, cellHeight)
                                 cellHeight: cellWidth * 0.67
                                 cellWidth: width / root.gridColumns
                                 clip: true
@@ -830,6 +739,7 @@ Rectangle {
                                     installedMode: tabViewLoader.modelData === "installed"
                                     removing: WallpaperWorkshopService.removingId === String(model.id || "")
                                     subscribing: WallpaperWorkshopService.subscriptionPending(String(model.id || ""))
+                                    subscriptionCount: WallpaperWorkshopService.statistics.countFor(String(model.id || ""))
                                     wallpaper: model
                                     width: resultGrid.cellWidth
 
@@ -856,11 +766,7 @@ Rectangle {
                                 }
                             }
 
-                            onLoaded: {
-                                visited = true;
-                                if (selected)
-                                    Qt.callLater(root.revealTabContent);
-                            }
+                            onLoaded: visited = true
                         }
                     }
                     Column {
@@ -900,8 +806,6 @@ Rectangle {
             }
             ParallelAnimation {
                 id: contentTransition
-
-                onFinished: root.loadActiveTab()
 
                 NumberAnimation {
                     duration: 170

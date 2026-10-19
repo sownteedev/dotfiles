@@ -14,6 +14,8 @@ QtObject {
     property string backend: ""
     property var blockers: []
     property var cache: ({})
+    readonly property int cacheLimit: 128
+    property var cacheOrder: []
     property string errorMessage: ""
     property string inspectedAppId: ""
     property bool inspecting: false
@@ -51,9 +53,7 @@ QtObject {
         if (!response.app_id)
             response.app_id = completedAppId;
         if (success && response.ok === true) {
-            var nextCache = Object.assign({}, cache);
-            nextCache[completedAppId] = response;
-            cache = nextCache;
+            storeCache(completedAppId, response);
         }
         if (inspectedAppId === completedAppId)
             applyInspection(response, success && response.ok === true);
@@ -82,6 +82,7 @@ QtObject {
                 if (relatedAppId === "")
                     continue;
                 delete nextCache[relatedAppId];
+                cacheOrder = cacheOrder.filter(item => item !== relatedAppId);
                 DockService.unpin(relatedAppId);
                 var group = LauncherGroupService.groupForApp(relatedAppId);
                 if (group)
@@ -105,6 +106,7 @@ QtObject {
 
         var cached = cache[normalizedAppId];
         if (cached !== undefined) {
+            touchCache(normalizedAppId);
             applyInspection(cached, true);
             return;
         }
@@ -125,6 +127,24 @@ QtObject {
                 "message": message,
                 "ok": false
             }, false), 20000);
+    }
+    function storeCache(appId, response) {
+        var nextCache = Object.assign({}, cache);
+        nextCache[appId] = response;
+        cache = nextCache;
+        touchCache(appId);
+        while (cacheOrder.length > cacheLimit) {
+            var evictedId = cacheOrder[0];
+            cacheOrder = cacheOrder.slice(1);
+            var trimmed = Object.assign({}, cache);
+            delete trimmed[evictedId];
+            cache = trimmed;
+        }
+    }
+    function touchCache(appId) {
+        var nextOrder = cacheOrder.filter(item => item !== appId);
+        nextOrder.push(appId);
+        cacheOrder = nextOrder;
     }
     function uninstall(appId) {
         var normalizedAppId = String(appId || "");

@@ -18,6 +18,7 @@ Item {
     property bool downloadBlocked: false
     readonly property bool downloaded: installedMode || (Boolean(wallpaper.downloaded) && String(wallpaper.path || "") !== "")
     property bool downloading: false
+    property real favoriteCount: -1
     readonly property string fileSizeLabel: formatFileSize(Number(wallpaper.file_size || 0))
     property bool greetdBusy: false
     property bool inUse: false
@@ -350,7 +351,7 @@ Item {
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 0
+                spacing: Md3.spacing.xxs
 
                 Text {
                     Layout.fillWidth: true
@@ -364,12 +365,12 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 4
-                    visible: !root.installedMode
 
                     Md3Icon {
                         color: "#ef5350"
+                        filled: true
                         name: "emblem-favorite-symbolic"
-                        size: 14
+                        size: 16
                     }
                     Text {
                         Accessible.name: qsTr("%1 favorites").arg(text)
@@ -378,7 +379,7 @@ Item {
                         elide: Text.ElideRight
                         font.family: Config.fontName
                         font.pixelSize: 11
-                        text: Number(root.wallpaper.favorites || 0).toLocaleString(Qt.locale(), "f", 0)
+                        text: root.favoriteCount >= 0 ? root.favoriteCount.toLocaleString(Qt.locale(), "f", 0) : "\u2014"
                     }
                 }
             }

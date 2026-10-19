@@ -205,7 +205,7 @@ Item {
         border.color: Config.md3.surface_container_lowest
         border.width: Math.max(1, Math.round(root.width / 32))
         color: Config.md3.primary
-        height: Math.max(11, Math.min(18, root.width * 0.42))
+        height: Math.max(12, Math.round(root.width * 0.34))
         radius: width / 2
         visible: root.branded
         width: height

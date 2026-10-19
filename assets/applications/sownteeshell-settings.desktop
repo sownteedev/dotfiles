@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=SownteeShell Settings
+Comment=Configure SownteeShell and the Niri desktop
+Exec=sownteeshell open settings
+Icon=sownteeshell-settings
+Terminal=false
+Categories=Settings;
+StartupNotify=false
+StartupWMClass=sownteeshell-settings

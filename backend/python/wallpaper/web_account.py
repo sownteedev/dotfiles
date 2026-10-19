@@ -69,6 +69,37 @@ def private_directory(path):
     return path
 
 
+def prepare_account_cache(directory, provider):
+    cache_home = Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache")))
+    cache_path = cache_home / "sownteeshell" / "web-accounts"
+    if not cache_home.is_absolute() or cache_path.resolve().is_relative_to(Path(__file__).resolve().parents[3]):
+        raise RequestError("unsafe_storage", "Account caches must use an absolute XDG cache directory outside the shell repository.")
+    cache_directory = private_directory(cache_path / provider)
+    legacy_connect_cache = cache_home / "sownteeshell" / "connect"
+    if legacy_connect_cache.exists():
+        shutil.rmtree(legacy_connect_cache, ignore_errors=True)
+    legacy_cache = directory / "cache"
+    if legacy_cache.is_symlink():
+        raise RequestError("unsafe_storage", "Account cache must not be a symbolic link.")
+    if legacy_cache.is_dir():
+        if cache_directory.exists() and any(cache_directory.iterdir()):
+            shutil.rmtree(legacy_cache, ignore_errors=True)
+        else:
+            if cache_directory.exists():
+                shutil.rmtree(cache_directory, ignore_errors=True)
+            shutil.move(str(legacy_cache), str(cache_directory))
+    return private_directory(cache_directory)
+
+def create_application():
+    from PySide6.QtCore import QCoreApplication
+    from PySide6.QtWidgets import QApplication
+
+    QCoreApplication.setOrganizationName("")
+    QCoreApplication.setApplicationName("sownteeshell")
+    app = QApplication([sys.argv[0]])
+    app.setQuitOnLastWindowClosed(False)
+    return app
+
 def read_account(directory):
     path = directory / "account.json"
     if path.is_symlink():
@@ -127,16 +158,18 @@ def run(request, watch_stdin=False):
     lock.setStaleLockTime(0)
     if not lock.tryLock(0):
         raise RequestError("busy", "This account is already in use. Finish the current action first.")
+    cache_directory = prepare_account_cache(directory, provider)
     account = read_account(directory)
     if action == "disconnect":
-        shutil.rmtree(directory)
+        shutil.rmtree(directory, ignore_errors=True)
+        shutil.rmtree(cache_directory, ignore_errors=True)
+        shutil.rmtree(data_home / "sownteeshell" / "QtWebEngine" / ("sowntee-" + provider), ignore_errors=True)
         emit({"ok": True, "connected": False, "message": "Disconnected from this shell."})
         return 0
     if action != "connect" and not account:
         emit({"ok": action == "status", "connected": False, "code": "authentication_required", "message": "Connect your account in Settings > Integrations first."})
         return 0
 
-    from PySide6.QtWidgets import QApplication
     from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile, QWebEngineSettings, QWebEngineUrlRequestInfo, QWebEngineUrlRequestInterceptor
     from PySide6.QtWebEngineWidgets import QWebEngineView
 
@@ -169,7 +202,7 @@ def run(request, watch_stdin=False):
             self.result_key = "__sowntee_" + secrets.token_hex(16)
             self.profile = QWebEngineProfile("sowntee-" + provider, app)
             self.profile.setPersistentStoragePath(str(private_directory(directory / "profile")))
-            self.profile.setCachePath(str(private_directory(directory / "cache")))
+            self.profile.setCachePath(str(cache_directory))
             self.profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.MemoryHttpCache)
             if provider == "steam" and action in {"subscriptions", "subscribe", "unsubscribe"}:
                 self.profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
@@ -337,8 +370,7 @@ def run(request, watch_stdin=False):
             self.profile.deleteLater()
             QTimer.singleShot(100, app.quit)
 
-    app = QApplication([sys.argv[0]])
-    app.setQuitOnLastWindowClosed(False)
+    app = create_application()
     if action == "connect":
         from web_account_ui import configure_application
 

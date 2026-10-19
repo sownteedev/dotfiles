@@ -166,7 +166,7 @@ Item {
         anchors.fill: parent
         border.color: filterMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.38) : Config.alpha(Config.md3.outline, 0.14)
         border.width: 1
-        color: filterPopup.open || root.activeFilterCount > 0 ? Config.md3.secondary_container : (filterMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.08) : Config.alpha(Config.md3.on_surface, 0.035))
+        color: Config.alpha(Config.md3.on_surface, filterMouse.containsMouse ? 0.08 : 0.035)
         radius: Md3.shape.full
 
         Behavior on color {
@@ -179,6 +179,19 @@ Item {
         Keys.onReturnPressed: root.togglePopup()
         Keys.onSpacePressed: root.togglePopup()
 
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: filterButton.border.width
+            color: Config.md3.secondary_container
+            opacity: filterPopup.open || root.activeFilterCount > 0 ? 1 : 0
+            radius: filterButton.radius - filterButton.border.width
+
+            Behavior on opacity {
+                OpacityAnimator {
+                    duration: Config.animationDuration(Md3.motion.short2)
+                }
+            }
+        }
         IconImage {
             anchors.centerIn: parent
             height: 17

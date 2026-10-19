@@ -42,15 +42,15 @@ MouseArea {
         }
 
         Item {
-            implicitHeight: 22
-            implicitWidth: 22
+            implicitHeight: Md3.barIconSize
+            implicitWidth: Md3.barIconSize
 
             IconImage {
                 id: tailscaleIcon
 
                 anchors.centerIn: parent
-                implicitHeight: 22
-                implicitWidth: 22
+                implicitHeight: Md3.barIconSize
+                implicitWidth: Md3.barIconSize
                 source: "file://" + Config.sownteeshellDir + "/assets/icons/tailscale.svg"
                 visible: false
             }

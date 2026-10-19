@@ -3,6 +3,24 @@
 set -eu
 
 root="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+
+applications_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+icons_dir="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps"
+if [ -d "$root/assets/applications" ]; then
+    install -Dm755 "$root/backend/cli/sownteeshell" "$HOME/.local/bin/sownteeshell"
+    for desktop_entry in "$root/assets/applications"/*.desktop; do
+        [ -f "$desktop_entry" ] || continue
+        install -Dm644 "$desktop_entry" "$applications_dir/$(basename "$desktop_entry")"
+    done
+fi
+
+if [ -d "$root/assets/icons" ]; then
+    for app_icon in "$root/assets/icons"/sownteeshell-*.svg; do
+        [ -f "$app_icon" ] || continue
+        install -Dm644 "$app_icon" "$icons_dir/$(basename "$app_icon")"
+    done
+fi
+
 "$root/plugin/imagecache/build-imagecache"
 
 import_path="$root/plugin/imagecache/qml"

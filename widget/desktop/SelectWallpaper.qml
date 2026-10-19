@@ -906,7 +906,7 @@ PanelWindow {
             interactive: !wallpaperWindow.interactionLocked
             model: wallpaperWindow.activeModel
             opacity: wallpaperWindow.modeOpacity
-            pathItemCount: wallpaperWindow.width < 1000 ? 5 : 7
+            pathItemCount: wallpaperWindow.width < 1000 ? 7 : 9
             preferredHighlightBegin: 0.5
             preferredHighlightEnd: 0.5
 
@@ -1315,6 +1315,8 @@ PanelWindow {
 
                     anchors.fill: parent
                     color: Config.md3.surface_container_low
+                    layer.enabled: true
+                    layer.smooth: true
 
                     transform: Shear {
                         origin.x: delegateRoot.width / 2

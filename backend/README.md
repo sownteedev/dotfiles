@@ -17,7 +17,9 @@ backend/
 │   ├── camera/             # V4L2 controls and device profiles
 │   ├── capture/            # Screenshot composition
 │   ├── launcher/           # Generated Emoji/Unicode catalog data
-│   └── portal/             # XDG desktop portal file picker
+│   ├── media/              # Automatic multi-provider lyric lookup
+│   ├── portal/             # XDG desktop portal file picker
+│   └── workspace/          # Focus-preserving Niri window moves
 ├── rust/
 │   ├── core-daemon/        # Shared shell and system backend
 │   └── calendar-daemon/    # Calendar accounts, events, and synchronization
@@ -27,6 +29,60 @@ backend/
 Python and native helpers are invoked on demand. The two Rust backends are
 long-running user services and communicate with QML through private Unix
 sockets using newline-delimited JSON.
+
+## Lyrics lookup
+
+`python/media/lyrics.py` queries LRCLIB, NetEase, and QQ Music concurrently
+using Python's standard library for HTTP and PyYAML (`python-yaml`) for LRCLIB
+Lyricsfile documents. YAML is parsed with a safe loader and aliases/custom tags
+are rejected. Without PyYAML, line/plain lyric lookup still works. The Music panel passes the MPRIS title, artist,
+album, and duration in seconds; no Spotify credentials, audio upload, or manual
+LRC import is needed. These track details are sent to the lyric providers.
+
+The helper emits newline-delimited JSON (`record`, `done`, `failed`) as better
+matches arrive. It checks normalized titles, the primary artist, and duration
+before accepting lyrics. If a title search has no word timing, LRCLIB also
+searches the artist and album. Censored titles containing `*` can match their
+uncensored spelling only with the same album, primary artist, and duration
+within one second; masks never span spaces or version suffixes. The v3 disk
+cache avoids reusing line-only results from the older exact-title lookup.
+The first matching word-synchronized result is final
+and is cached immediately; later providers cannot replace it. QML buffers
+line/plain results (including embedded MPRIS lyrics) while showing loading and
+reveals the best fallback only when the search finishes or reaches its timeout.
+Each lookup reveals lyrics once. Late responses from a previous track and
+metadata refreshes for an already settled track do not replace the display.
+
+`python/media/word_lyrics.py` normalizes LRCLIB Lyricsfile YAML, NetEase YRC,
+and plaintext QQ QRC/XML into `wordLines` with second-based line/word times.
+Missing word ends use the next supplied start or supplied line end; if neither
+exists the word highlights at its start without an invented sweep duration.
+Malformed segments fall back to line timing. A record can contain a mixture of
+word-timed and line-only lyrics; missing word timestamps are never fabricated.
+`KaraokeLine.qml` stays loaded for word-timed ListView delegates, with only the
+active line sweeping the accent color. This avoids replacing text renderers
+when a line is selected. It follows MPRIS position at 33 ms while visible and
+playing. Clicking a line updates its position and selection together; an 800 ms
+seek guard ignores stale player positions and tolerates timestamp rounding.
+After that bound, the player's position wins even if the seek was rejected.
+Provider lines using `original^translation` keep only the original lyric; the
+translation is not rendered or used for word matching.
+
+NetEase's public v1 endpoint may omit YRC. QQ's public lyric endpoint may return
+only LRC; encrypted QRC from its separate endpoint is not decrypted by this
+helper. These cases remain line-synced rather than pretending to support
+karaoke. Word data availability is song- and endpoint-dependent.
+
+Successful lookups are cached in `$XDG_CACHE_HOME/sownteeshell/lyrics-v4.json`
+(default `~/.cache/sownteeshell/lyrics-v4.json`), with at most 48 entries. The new
+cache version avoids reusing old records that were never checked for words. Synced
+lyrics expire after seven days; plain lyrics after one hour. Provider errors are
+not cached as empty results. Requests have individual timeouts and the QML
+consumer stops a lookup after 14 seconds. NetEase and QQ Music use public web
+endpoints, not a guaranteed API contract: regional restrictions or upstream
+changes may make them unavailable. Other providers and plain-text fallback
+continue to work independently; no timing is fabricated when timestamps are
+missing.
 
 ## Core daemon
 
@@ -47,6 +103,21 @@ sockets using newline-delimited JSON.
 Shell-owned preferences include the default tiled/floating layout for new
 workspaces and lunar-date visibility; these stay in persisted shell settings,
 not separate Niri configuration files.
+
+Startup & Services uses `diagnostics.serviceAction` with `name`, `action`
+(`start`, `stop`, `restart`, `enable`, or `disable`), and `scope` (`user` by
+default, or `system`). System actions use `systemctl --system` and its native
+Polkit authorization; neither the shell nor the daemon runs as root. Enable
+and disable only change startup configuration, not the running state. Shell
+services remain protected. The action timeout allows two minutes for
+authorization and completion. Failed or cancelled actions remain visible in
+the page instead of being overwritten by background refreshes.
+
+Startup Apps shows both user and system desktop entries but exposes one toggle
+per app. User entries are edited in `~/.config/autostart`; disabling a system
+entry creates a per-user override in that same directory rather than editing
+`/etc/xdg/autostart` or requiring root. Enabling it removes only an override
+created by SownteeShell.
 
 The default socket is:
 
@@ -226,6 +297,13 @@ SOWNTEE_CALENDAR_MICROSOFT_TENANT
   the full operation into the QML scene.
 - `python/portal/file_picker.py` opens the XDG portal picker while preserving
   the owning SownteeShell window lifecycle.
+- `python/workspace/move_window.py` moves windows through Niri IPC by stable ID.
+  Active windows follow their destination; background windows retain focus.
+  Reordering moves the focused column directly, or shifts it past an adjacent
+  dragged window, so its windows are never temporarily split in height. Other
+  background columns use ID-based consume/expel actions with width restoration,
+  without changing focus history. Floating windows are not forced into the
+  scrolling layout for reordering.
 - `python/launcher/generate_unicode_catalog.py` regenerates the Unicode catalog;
   the generated Emoji and Unicode catalogs are searched by the Core daemon.
 
@@ -246,6 +324,17 @@ Both services use `Restart=on-failure`. In a normal installed session, systemd
 owns their lifecycle, logs, and cgroups, so reloading or closing Quickshell does
 not destroy backend state. The repository runners rebuild stale development
 binaries when Cargo is available and expose one-shot compatibility commands.
+
+Building inside the repository does not update the installed service binary.
+After changing Core, deploy the release build before restarting its user service:
+
+```sh
+install -m755 backend/rust/core-daemon/target/release/sownteeshell-core ~/.local/lib/sownteeshell/sownteeshell-core.new
+mv ~/.local/lib/sownteeshell/sownteeshell-core.new ~/.local/lib/sownteeshell/sownteeshell-core
+systemctl --user restart sownteeshell-core.service
+```
+
+These commands run from `sownteeshell/` after a successful release build.
 
 The installer also provides a unified IPC client at
 `~/.local/bin/sownteeshell`:
@@ -332,6 +421,18 @@ not sync it to dotfiles or share it. This is filesystem access protection, not
 an application-level encrypted vault. Disconnect removes only the shell's local
 profile, not remote collections/subscriptions or the browser/SteamCMD login.
 
+Connect's Qt shader/pipeline cache is grouped under
+`$XDG_CACHE_HOME/sownteeshell/connect/` (by default
+`~/.cache/sownteeshell/connect/`) for both the login window and background
+requests. Provider HTTP caches live in its `web-accounts/<provider>/`
+subdirectories. Existing HTTP caches next to the saved profiles are moved there
+under the provider lock on the next account action; profiles, cookies, and account
+metadata stay in the data directory. If a new cache already exists, the old HTTP
+cache is discarded instead. Disconnect also removes that provider's HTTP cache.
+The desktop app ID remains `sownteeshell-connect`, so Niri and shell icon rules
+are unchanged. Temporary test runs must override `XDG_CACHE_HOME` with a directory
+under `/tmp` rather than writing to the user's cache.
+
 On shell startup or reload, each account connection restores its saved identity
 from local metadata without opening WebEngine or requiring network access.
 This restores the linked-account UI, not proof that the website session is still
@@ -376,6 +477,13 @@ local manifest during the session and reset when the connected account changes.
 Downloaded and In Use remain separate; these actions do not delete local files.
 
 The Workshop tabs are Browse, Subscribed, and Installed, in that order.
+All wallpaper tabs show a heart with Wallhaven favorites or Workshop subscriber
+counts. Missing counts load in the background and display a dash until known.
+`wallpaper.workshop.stats` batches up to 50 IDs without an API key;
+`wallpaper.wallhaven.stats` accepts one ID and an optional API key.
+Counts share a five-minute in-memory cache across tabs. Installed Wallhaven
+lookups are sent in one bounded batch (up to 12 parallel requests); requests
+stop when the panel closes.
 Subscribed reads the connected account's Wallpaper Engine subscriptions from
 Steam Community, with independent pagination and Reload/Connect controls.
 The last subscription page is cached for two minutes across tab switches and

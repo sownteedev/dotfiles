@@ -97,7 +97,7 @@ QtObject {
         dynamicRoles: true
     }
     property var genreFilters: []
-    readonly property bool hasMore: results.count < totalResults
+    readonly property bool hasMore: page < lastPage
     readonly property string helperPath: Config.sownteeshellDir + "/backend/rust/core-daemon/run-core-daemon"
     property bool includeNsfw: false
     property bool includeRecentVotesOnly: false
@@ -166,6 +166,7 @@ QtObject {
         dynamicRoles: true
     }
     property string installedStatusMessage: ""
+    readonly property int lastPage: Math.max(page, Math.min(maxSearchPage, Math.ceil(totalResults / searchPageSize)))
     readonly property bool listingInstalled: installedProcess.running
     readonly property bool loadingSubscribed: pendingSubscribedPage > 0 || (WebAccountService.steam.busy && WebAccountService.steam.operation === "subscriptions")
     property string loginErrorCode: ""
@@ -199,6 +200,7 @@ QtObject {
     readonly property string manageErrorMessage: WebAccountService.steam.errorMessage || loginErrorMessage || downloadErrorMessage || removeErrorMessage || installedLoadErrorMessage
     readonly property string manageStatusMessage: actionStatusMessage || installedStatusMessage
     property bool matchAllTags: true
+    readonly property int maxSearchPage: 10000
     property int page: 1
     property int panelConsumers: 0
     property var pendingSearchRequest: null
@@ -264,8 +266,10 @@ QtObject {
         dynamicRoles: true
     }
     property string searchErrorMessage: ""
+    readonly property int searchPageSize: 28
     property CoreRequest searchRequest: CoreRequest {
         property int panelGeneration: -1
+        property int requestedPage: 1
 
         timeoutMs: 40000
 
@@ -278,9 +282,6 @@ QtObject {
                 root.restartSearchIfPending();
                 return;
             }
-            root.results.clear();
-            root.rebuildFilteredResults();
-            root.totalResults = 0;
             root.searchErrorMessage = String(message || qsTr("Could not search Steam Workshop"));
             root.searchStatusMessage = "";
             root.restartSearchIfPending();
@@ -295,15 +296,13 @@ QtObject {
                 return;
             }
             if (!response || !response.ok) {
-                root.results.clear();
-                root.rebuildFilteredResults();
-                root.totalResults = 0;
                 root.searchErrorMessage = response && response.message ? String(response.message) : qsTr("Could not search Steam Workshop");
                 root.searchStatusMessage = "";
             } else {
                 root.searchErrorMessage = "";
                 root.replaceModel(root.results, response.items || []);
                 root.rebuildFilteredResults();
+                root.page = requestedPage;
                 root.totalResults = Number(response.total || root.results.count);
                 root.searchStatusMessage = root.results.count > 0 ? qsTr("%1 wallpapers").arg(root.totalResults) : "";
             }
@@ -313,6 +312,11 @@ QtObject {
     property string searchStatusMessage: ""
     readonly property bool searching: searchRequest.active || pendingSearchRequest !== null
     property string sortMode: "trending"
+    property WallpaperStats statistics: WallpaperStats {
+        enabled: root.panelConsumers > 0
+        field: "subscriptions"
+        provider: "workshop"
+    }
     property string steamItemId: ""
     property bool steamItemSubscribed: false
     property string steamItemTitle: ""
@@ -726,11 +730,17 @@ QtObject {
     function mergeSubscribedMetadata() {
         for (var index = 0; index < subscribedResults.count; ++index) {
             var item = Object.assign({}, subscribedResults.get(index));
+            var subscriptions = item.subscriptions;
             for (var model of [results, installedResults]) {
                 var sourceIndex = modelIndexForId(model, String(item.id));
-                if (sourceIndex >= 0)
-                    item = Object.assign(item, model.get(sourceIndex));
+                if (sourceIndex >= 0) {
+                    var source = model.get(sourceIndex);
+                    if (model === results)
+                        subscriptions = source.subscriptions;
+                    item = Object.assign(item, source);
+                }
             }
+            item.subscriptions = subscriptions === undefined || subscriptions === null ? -1 : Number(subscriptions);
             item.accountSubscribed = true;
             item.accountSubscriptionKnown = true;
             subscribedResults.set(index, item);
@@ -889,6 +899,8 @@ QtObject {
     }
     function replaceModel(model, items) {
         var incoming = Config.listOrEmpty(items);
+        if (model === results || model === subscribedResults || model === installedResults)
+            statistics.observe(incoming, model === installedResults);
         for (var targetIndex = 0; targetIndex < incoming.length; ++targetIndex) {
             var item = incoming[targetIndex];
             var publishedFileId = String(item.id || "");
@@ -985,7 +997,7 @@ QtObject {
             return false;
         }
         var request = {
-            "page": Math.max(1, Number(requestedPage || 1)),
+            "page": Math.min(maxSearchPage, Math.max(1, Math.floor(Number(requestedPage || 1)))),
             "query": String(searchText || "").trim(),
             "sort": String(requestedSort || "trending")
         };
@@ -994,12 +1006,12 @@ QtObject {
             return true;
         }
         query = request.query;
-        page = request.page;
         sortMode = request.sort;
         browseFiltersDirty = false;
         searchErrorMessage = "";
         searchStatusMessage = qsTr("Searching Steam Workshop…");
         searchRequest.panelGeneration = requestGeneration;
+        searchRequest.requestedPage = request.page;
         searchRequest.start("wallpaper.workshop.search", {
             "api_key": Config.steamWebApiKey.trim(),
             "excluded_tags": ["Application", "Web"],
@@ -1007,7 +1019,7 @@ QtObject {
             "include_recent_votes_only": includeRecentVotesOnly,
             "legacy_workshop_root": Config.legacyWallpaperEngineWorkshopDir,
             "match_all_tags": matchAllTags,
-            "page": page,
+            "page": request.page,
             "query": query,
             "required_tags": requiredTags(),
             "sort": sortMode,

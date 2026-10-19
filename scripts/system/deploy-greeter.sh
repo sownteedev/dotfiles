@@ -82,7 +82,9 @@ EOF
 fi
 
 # Non-privileged entry point:
-if [ ! -f "$greeter_source/shell.qml" ] || [ ! -f "$greeter_source/qmldir" ]; then
+if [ ! -f "$greeter_source/shell.qml" ] || \
+   [ ! -f "$greeter_source/qmldir" ] || \
+   [ ! -f "$greeter_source/greeter-exit.frag.qsb" ]; then
     echo "[!] Greeter source is incomplete: $greeter_source" >&2
     exit 1
 fi

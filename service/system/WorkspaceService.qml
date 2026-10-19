@@ -84,17 +84,21 @@ QtObject {
             });
         }
     }
-    property bool transientMoveFocusGuard: false
-    property Timer transientMoveFocusTimer: Timer {
-        interval: 450
-        repeat: false
+    property bool windowDragActive: false
+    property Process windowMoveProcess: Process {
+        stderr: StdioCollector {
+            onStreamFinished: {
+                if (text.trim() !== "")
+                    console.warn("[Workspaces]", text.trim());
+            }
+        }
 
-        onTriggered: {
-            root.transientMoveFocusGuard = false;
+        onExited: {
             root.refresh();
+            Qt.callLater(root.startNextWindowMove);
         }
     }
-    property bool windowDragActive: false
+    property var windowMoveQueue: []
     property var workspaceIdByWindow: ({})
     property var workspaces: []
 
@@ -129,10 +133,6 @@ QtObject {
             }
         }
         return false;
-    }
-    function beginTransientMoveFocusGuard() {
-        transientMoveFocusGuard = true;
-        transientMoveFocusTimer.restart();
     }
     function compareWindowsByLayout(a, b, workspaceIsFloating) {
         var aFloating = Boolean(a && (a.is_floating === true || workspaceIsFloating));
@@ -192,7 +192,7 @@ QtObject {
                 root.overviewOpen = event.OverviewOpenedOrClosed.is_open === true;
                 if (!root.overviewOpen)
                     root.overviewWindowId = "";
-            } else if (event.WorkspaceActivated && !root.transientMoveFocusGuard) {
+            } else if (event.WorkspaceActivated) {
                 var activatedId = Number(event.WorkspaceActivated.id);
                 var activatedOutput = root.workspaceOutputForId(activatedId);
                 if (!isNaN(activatedId) && activatedOutput !== "") {
@@ -204,7 +204,7 @@ QtObject {
                         root.focusedOutputName = activatedOutput;
                     }
                 }
-            } else if (event.WindowFocusChanged && event.WindowFocusChanged.id !== null && event.WindowFocusChanged.id !== undefined && !root.transientMoveFocusGuard) {
+            } else if (event.WindowFocusChanged && event.WindowFocusChanged.id !== null && event.WindowFocusChanged.id !== undefined) {
                 root.applyFocusedWindow(event.WindowFocusChanged.id, root.overviewOpen);
             } else if (root.overviewOpen && event.WindowOpenedOrChanged && event.WindowOpenedOrChanged.window) {
                 var changedWindow = event.WindowOpenedOrChanged.window;
@@ -241,48 +241,30 @@ QtObject {
             return false;
         return !isNaN(Number(position[0])) && !isNaN(Number(position[1]));
     }
-    function moveWindowToColumn(windowId, columnIndex, restoreFocus) {
+    function moveWindowToColumn(windowId, targetWindowId) {
         var id = String(windowId || "");
-        var targetColumn = Math.round(Number(columnIndex));
-        if (id === "" || isNaN(targetColumn) || targetColumn < 1)
+        var targetId = String(targetWindowId || "");
+        if (id === "" || targetId === "" || id === targetId)
             return;
-
-        if (restoreFocus) {
-            beginTransientMoveFocusGuard();
-            Quickshell.execDetached(["sh", "-c", "niri msg action do-screen-transition --delay-ms 120; if niri msg action focus-window --id \"$1\"; then niri msg action move-column-to-index \"$2\"; niri msg action focus-window-previous; fi", "workspace-reorder", id, String(targetColumn)]);
-            return;
-        }
-        Quickshell.execDetached(["sh", "-c", "niri msg action focus-window --id \"$1\" && niri msg action move-column-to-index \"$2\"", "workspace-reorder-focused", id, String(targetColumn)]);
+        queueWindowMove({
+            "window_id": id,
+            "target_window_id": targetId
+        });
     }
-    function moveWindowToWorkspace(windowId, sourceOutput, workspace, columnIndex) {
+    function moveWindowToWorkspace(windowId, workspace, targetWindowId) {
         var id = String(windowId || "");
-        var fromOutput = String(sourceOutput || "");
-        var targetOutput = String(workspace && workspace.output || "");
-        var reference = workspaceReference(workspace);
-        var targetColumn = Number(columnIndex);
-        if (isNaN(targetColumn) || targetColumn < 1)
-            targetColumn = 0;
-        else
-            targetColumn = Math.round(targetColumn);
-        if (id === "" || reference === "")
+        if (id === "" || !workspace)
             return;
-
-        if (fromOutput !== "" && targetOutput !== "" && fromOutput !== targetOutput) {
-            if (targetColumn > 0) {
-                beginTransientMoveFocusGuard();
-                Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-monitor --id \"$1\" \"$2\" && niri msg action move-window-to-workspace --window-id \"$1\" --focus false \"$3\" || exit 1; niri msg action do-screen-transition --delay-ms 120; if niri msg action focus-window --id \"$1\"; then niri msg action move-column-to-index \"$4\"; niri msg action focus-window-previous; fi", "workspace-cross-output-positioned", id, targetOutput, reference, String(targetColumn)]);
-                return;
+        queueWindowMove({
+            "window_id": id,
+            "target_window_id": String(targetWindowId || ""),
+            "workspace": {
+                "id": workspace.id,
+                "idx": workspace.idx,
+                "name": String(workspace.name || ""),
+                "output": String(workspace.output || "")
             }
-            Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-monitor --id \"$1\" \"$2\" && niri msg action move-window-to-workspace --window-id \"$1\" --focus false \"$3\"", "workspace-cross-output", id, targetOutput, reference]);
-            return;
-        }
-
-        if (targetColumn > 0) {
-            beginTransientMoveFocusGuard();
-            Quickshell.execDetached(["sh", "-c", "niri msg action move-window-to-workspace --window-id \"$1\" --focus false \"$2\" || exit 1; niri msg action do-screen-transition --delay-ms 120; if niri msg action focus-window --id \"$1\"; then niri msg action move-column-to-index \"$3\"; niri msg action focus-window-previous; fi", "workspace-positioned", id, reference, String(targetColumn)]);
-            return;
-        }
-        Quickshell.execDetached(["niri", "msg", "action", "move-window-to-workspace", "--window-id", id, "--focus", "false", reference]);
+        });
     }
     function parseNiriData(text) {
         try {
@@ -420,19 +402,6 @@ QtObject {
                     return a.idx - b.idx;
                 return a.output < b.output ? -1 : 1;
             });
-            if (root.transientMoveFocusGuard) {
-                var previousWorkspaceById = {};
-                for (var previousWorkspaceIndex = 0; previousWorkspaceIndex < root.workspaces.length; previousWorkspaceIndex++)
-                    previousWorkspaceById[String(root.workspaces[previousWorkspaceIndex].id)] = root.workspaces[previousWorkspaceIndex];
-                for (var guardedWorkspaceIndex = 0; guardedWorkspaceIndex < processed.length; guardedWorkspaceIndex++) {
-                    var previousWorkspaceState = previousWorkspaceById[String(processed[guardedWorkspaceIndex].id)];
-                    if (!previousWorkspaceState)
-                        continue;
-                    processed[guardedWorkspaceIndex].active_window_id = previousWorkspaceState.active_window_id;
-                    processed[guardedWorkspaceIndex].is_active = previousWorkspaceState.is_active;
-                    processed[guardedWorkspaceIndex].is_focused = previousWorkspaceState.is_focused;
-                }
-            }
             var previousActiveWindowByOutput = root.activeWindowByOutput || {};
             var newActiveWindowByOutput = {};
             var newActiveWindowsByOutput = {};
@@ -487,19 +456,17 @@ QtObject {
                     }
                 }
             }
-            if (!root.transientMoveFocusGuard) {
-                root.activeWindowId = newActiveWindowId;
-                root.activeWorkspaceId = newActiveWorkspaceId;
-                if (JSON.stringify(root.activeWorkspaceIdByOutput) !== JSON.stringify(newActiveWorkspaceIdByOutput))
-                    root.activeWorkspaceIdByOutput = newActiveWorkspaceIdByOutput;
-                if (JSON.stringify(root.activeWindowByOutput) !== JSON.stringify(newActiveWindowByOutput))
-                    root.activeWindowByOutput = newActiveWindowByOutput;
-                if (JSON.stringify(root.activeWindowsByOutput) !== JSON.stringify(newActiveWindowsByOutput))
-                    root.activeWindowsByOutput = newActiveWindowsByOutput;
-                root.focusedOutputName = newFocusedOutputName;
-                if (root.isWorkspaceFloating !== floating)
-                    root.isWorkspaceFloating = floating;
-            }
+            root.activeWindowId = newActiveWindowId;
+            root.activeWorkspaceId = newActiveWorkspaceId;
+            if (JSON.stringify(root.activeWorkspaceIdByOutput) !== JSON.stringify(newActiveWorkspaceIdByOutput))
+                root.activeWorkspaceIdByOutput = newActiveWorkspaceIdByOutput;
+            if (JSON.stringify(root.activeWindowByOutput) !== JSON.stringify(newActiveWindowByOutput))
+                root.activeWindowByOutput = newActiveWindowByOutput;
+            if (JSON.stringify(root.activeWindowsByOutput) !== JSON.stringify(newActiveWindowsByOutput))
+                root.activeWindowsByOutput = newActiveWindowsByOutput;
+            root.focusedOutputName = newFocusedOutputName;
+            if (root.isWorkspaceFloating !== floating)
+                root.isWorkspaceFloating = floating;
             root.outputNames = newOutputNames;
             if (JSON.stringify(root.floatingByOutput) !== JSON.stringify(newFloatingByOutput))
                 root.floatingByOutput = newFloatingByOutput;
@@ -509,6 +476,10 @@ QtObject {
         } catch (error) {
             console.error("Failed to parse workspaces data:", error);
         }
+    }
+    function queueWindowMove(request) {
+        root.windowMoveQueue = root.windowMoveQueue.concat([request]);
+        root.startNextWindowMove();
     }
     function refresh() {
         if (queryData.running) {
@@ -539,9 +510,9 @@ QtObject {
             return Config.sownteeshellDir + "/assets/icons/sownteeshell-connect.svg";
         var kind = shellWindowKind(windowData);
         if (kind === "settings")
-            return "preferences-system-symbolic";
+            return "sownteeshell-settings";
         if (kind === "calendar")
-            return "x-office-calendar-symbolic";
+            return "sownteeshell-calendar";
         return "";
     }
     function shellWindowKind(windowData) {
@@ -556,6 +527,14 @@ QtObject {
     }
     function showInWorkspaceAndDock(windowData) {
         return !isQuickshellWindow(windowData) || shellWindowKind(windowData) !== "";
+    }
+    function startNextWindowMove() {
+        if (root.windowMoveProcess.running || root.windowMoveQueue.length === 0)
+            return;
+        var request = root.windowMoveQueue[0];
+        root.windowMoveQueue = root.windowMoveQueue.slice(1);
+        root.windowMoveProcess.command = ["python3", Config.sownteeshellDir + "/backend/python/workspace/move_window.py", JSON.stringify(request)];
+        root.windowMoveProcess.running = true;
     }
     function windowLayoutCoordinate(window, field, index) {
         var layout = window && window.layout;

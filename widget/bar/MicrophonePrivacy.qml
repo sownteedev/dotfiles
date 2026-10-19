@@ -38,9 +38,9 @@ MouseArea {
 
     Item {
         anchors.centerIn: parent
-        height: 24
+        height: Md3.barIconSize
         scale: root.containsMouse ? 1.08 : 1
-        width: 24
+        width: Md3.barIconSize
 
         Behavior on scale {
             NumberAnimation {
@@ -53,10 +53,10 @@ MouseArea {
             id: microphoneIcon
 
             anchors.centerIn: parent
-            height: 20
+            height: Md3.barIconSize
             source: Quickshell.iconPath("audio-input-microphone-symbolic")
             visible: false
-            width: 20
+            width: Md3.barIconSize
         }
         ColorOverlay {
             anchors.fill: microphoneIcon

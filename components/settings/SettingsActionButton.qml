@@ -5,6 +5,7 @@ import QtQuick
 Rectangle {
     id: root
 
+    property bool destructive: false
     property bool dimWhenDisabled: true
     property string iconName: ""
     property bool iconOnly: false
@@ -25,7 +26,7 @@ Rectangle {
     activeFocusOnTab: false
     border.color: "transparent"
     border.width: 1
-    color: primary ? Config.md3.primary : Config.md3.surface_container_high
+    color: primary ? Config.md3.primary : destructive ? Config.md3.error_container : Config.md3.surface_container_high
     implicitHeight: 48
     implicitWidth: iconOnly ? implicitHeight : content.implicitWidth + 34
     opacity: enabled || !dimWhenDisabled ? 1 : Md3.state.disabledContent
@@ -38,7 +39,7 @@ Rectangle {
         }
     }
     Behavior on opacity {
-        enabled: root.dimWhenDisabled
+        enabled: root.visible && root.dimWhenDisabled
 
         Md3NumberAnimation {
             role: "state"
@@ -60,7 +61,7 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent
-        color: Config.alpha(root.primary ? Config.md3.on_primary : Config.md3.on_surface, mouse.pressed ? Md3.state.pressed : mouse.containsMouse ? Md3.state.hover : 0)
+        color: Config.alpha(root.primary ? Config.md3.on_primary : root.destructive ? Config.md3.on_error_container : Config.md3.on_surface, mouse.pressed ? Md3.state.pressed : mouse.containsMouse ? Md3.state.hover : 0)
         radius: root.radius
 
         Behavior on color {
@@ -85,7 +86,7 @@ Rectangle {
 
             Md3Icon {
                 anchors.centerIn: parent
-                color: root.primary ? Config.md3.on_primary : Config.md3.on_surface_variant
+                color: root.primary ? Config.md3.on_primary : root.destructive ? Config.md3.on_error_container : Config.md3.on_surface_variant
                 name: root.iconName
                 size: root.iconSize
                 visible: !root.spinning && root.iconName !== ""
@@ -94,7 +95,7 @@ Rectangle {
                 id: actionSpinner
 
                 anchors.centerIn: parent
-                color: root.primary ? Config.md3.on_primary : Config.md3.primary
+                color: root.primary ? Config.md3.on_primary : root.destructive ? Config.md3.on_error_container : Config.md3.primary
                 height: Math.max(18, root.iconSize - 2)
                 lineWidth: 2.2
                 running: root.spinning && root.visible
@@ -104,7 +105,7 @@ Rectangle {
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            color: root.primary ? Config.md3.on_primary : Config.md3.on_surface_variant
+            color: root.primary ? Config.md3.on_primary : root.destructive ? Config.md3.on_error_container : Config.md3.on_surface_variant
             font.family: Config.fontName
             font.letterSpacing: Md3.typeScale.labelLarge.letterSpacing
             font.pixelSize: root.textPixelSize

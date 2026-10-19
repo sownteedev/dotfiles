@@ -126,7 +126,7 @@ FocusScope {
         if (!entry)
             return;
         closeGroup();
-        entry.execute();
+        DockService.launch(entry);
         appLaunched();
     }
     function launchSelected() {

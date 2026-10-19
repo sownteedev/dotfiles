@@ -209,11 +209,13 @@ PanelWindow {
                     continue;
 
                 var windowKeys = NotificationHistory.windowKeys(windowData);
-                var pinnedMatch = false;
-                for (var pinnedKeyIndex = 0; pinnedKeyIndex < pinnedKeys.length; ++pinnedKeyIndex) {
-                    if (NotificationHistory.keysIntersect(windowKeys, pinnedKeys[pinnedKeyIndex])) {
-                        pinnedMatch = true;
-                        break;
+                var pinnedMatch = shellEntryId !== "" ? DockService.isPinned(shellEntryId) : false;
+                if (shellEntryId === "") {
+                    for (var pinnedKeyIndex = 0; pinnedKeyIndex < pinnedKeys.length; ++pinnedKeyIndex) {
+                        if (NotificationHistory.keysIntersect(windowKeys, pinnedKeys[pinnedKeyIndex])) {
+                            pinnedMatch = true;
+                            break;
+                        }
                     }
                 }
                 if (pinnedMatch)
@@ -239,7 +241,7 @@ PanelWindow {
                     "entryId": entryId,
                     "iconName": iconName !== "" ? iconName : "application-x-executable",
                     "kind": "app",
-                    "launchable": shellEntryId === "" && !!entry,
+                    "launchable": shellEntryId === "sownteeshell-settings" || shellEntryId === "sownteeshell-calendar" || (shellEntryId === "" && !!entry),
                     "modelKey": modelKey,
                     "pinned": false
                 });

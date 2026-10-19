@@ -41,17 +41,19 @@ MouseArea {
         }
 
         Item {
-            implicitHeight: 25
-            implicitWidth: 25
+            implicitHeight: Md3.barIconSize
+            implicitWidth: Md3.barIconSize
             opacity: root.connected ? 1 : 0.4
 
             WifiSignalIcon {
-                anchors.fill: parent
+                anchors.centerIn: parent
                 color: root.iconColor
                 connected: WifiService.connected
                 connectivityIssue: WifiService.connectivityIssue
+                height: Md3.barIconSize + 4
                 signalStrength: WifiService.activeSignal
                 visible: root.showingWifi
+                width: height
             }
             IconImage {
                 id: icon

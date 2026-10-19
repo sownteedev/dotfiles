@@ -1,11 +1,13 @@
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
+use nix::sys::signal::{Signal, killpg};
+use nix::unistd::Pid;
 use std::env;
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Stdio};
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
-use tokio::task::JoinHandle;
 use tokio::time::timeout;
 use tokio_util::sync::CancellationToken;
 
@@ -15,6 +17,22 @@ pub struct BoundedOutput {
     pub stderr: Vec<u8>,
     pub stdout_truncated: bool,
     pub stderr_truncated: bool,
+}
+
+struct CommandGroup(Option<Pid>);
+
+impl CommandGroup {
+    fn terminate(&mut self) {
+        if let Some(group) = self.0.take() {
+            let _ = killpg(group, Signal::SIGKILL);
+        }
+    }
+}
+
+impl Drop for CommandGroup {
+    fn drop(&mut self) {
+        self.terminate();
+    }
 }
 
 pub fn command_path(name: &str) -> Option<PathBuf> {
@@ -143,45 +161,39 @@ async fn run_bounded_inner(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .kill_on_drop(true);
+    command.as_std_mut().process_group(0);
     let mut child = command
         .spawn()
         .with_context(|| format!("start {}", program.display()))?;
-    let input_writer = input.map(|bytes| {
-        let mut stdin = child.stdin.take().expect("piped command stdin");
-        let bytes = bytes.to_vec();
-        tokio::spawn(async move {
-            stdin.write_all(&bytes).await?;
-            stdin.shutdown().await?;
-            Ok::<(), std::io::Error>(())
-        })
-    });
+    let mut group = CommandGroup(child.id().map(|pid| Pid::from_raw(pid as i32)));
+    let stdin = child.stdin.take();
     let stdout = child.stdout.take().context("capture command stdout")?;
     let stderr = child.stderr.take().context("capture command stderr")?;
-    let stdout_reader = tokio::spawn(read_bounded(stdout, output_limit));
-    let stderr_reader = tokio::spawn(read_bounded(stderr, output_limit));
-
-    let status = tokio::select! {
-        _ = cancellation.cancelled() => {
-            stop_child(&mut child).await;
-            drain_readers(stdout_reader, stderr_reader).await;
-            drain_writer(input_writer).await;
-            bail!("command was cancelled")
-        }
-        result = timeout(deadline, child.wait()) => match result {
-            Ok(status) => status.with_context(|| format!("wait for {}", program.display()))?,
-            Err(_) => {
-                stop_child(&mut child).await;
-                drain_readers(stdout_reader, stderr_reader).await;
-                drain_writer(input_writer).await;
-                bail!("command timed out")
-            }
-        },
+    let result = tokio::select! {
+        biased;
+        _ = cancellation.cancelled() => Err(anyhow::anyhow!("command was cancelled")),
+        result = timeout(deadline, async {
+            tokio::try_join!(
+                async { child.wait().await.context("wait for command") },
+                async {
+                    if let (Some(mut stdin), Some(bytes)) = (stdin, input) {
+                        stdin.write_all(bytes).await.context("write command stdin")?;
+                        stdin.shutdown().await.context("close command stdin")?;
+                    }
+                    Ok::<(), anyhow::Error>(())
+                },
+                read_bounded(stdout, output_limit),
+                read_bounded(stderr, output_limit),
+            )
+        }) => result.context("command timed out").and_then(|result| result),
     };
-    if let Some(writer) = input_writer {
-        writer.await.context("join stdin writer")??;
+    if result.is_err() {
+        group.terminate();
+        stop_child(&mut child).await;
+    } else {
+        group.0 = None;
     }
-    let (stdout, stdout_truncated) = stdout_reader.await.context("join stdout reader")??;
-    let (stderr, stderr_truncated) = stderr_reader.await.context("join stderr reader")??;
+    let (status, (), (stdout, stdout_truncated), (stderr, stderr_truncated)) = result?;
     Ok(BoundedOutput {
         status,
         stdout,
@@ -189,12 +201,6 @@ async fn run_bounded_inner(
         stdout_truncated,
         stderr_truncated,
     })
-}
-
-async fn drain_writer(writer: Option<JoinHandle<std::io::Result<()>>>) {
-    if let Some(writer) = writer {
-        let _ = writer.await;
-    }
 }
 
 async fn read_bounded<R>(mut reader: R, limit: usize) -> Result<(Vec<u8>, bool)>
@@ -222,14 +228,6 @@ async fn stop_child(child: &mut tokio::process::Child) {
     let _ = child.wait().await;
 }
 
-async fn drain_readers(
-    stdout: JoinHandle<Result<(Vec<u8>, bool)>>,
-    stderr: JoinHandle<Result<(Vec<u8>, bool)>>,
-) {
-    let _ = stdout.await;
-    let _ = stderr.await;
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -248,6 +246,103 @@ mod tests {
         assert!(output.status.success());
         assert_eq!(output.stdout, b"1234");
         assert!(output.stdout_truncated);
+    }
+
+    #[tokio::test]
+    async fn timeout_covers_descendants_holding_output_pipes() {
+        for script in ["sleep 5 & wait", "sleep 5 & exit 0"] {
+            let result = timeout(
+                Duration::from_secs(2),
+                run_bounded(
+                    Path::new("/bin/sh"),
+                    &["-c", script],
+                    Duration::from_millis(100),
+                    CancellationToken::new(),
+                    1024,
+                ),
+            )
+            .await
+            .expect("descendant pipes must not extend the deadline");
+            let error = result.err().expect("command must time out");
+            assert!(error.to_string().contains("timed out"));
+        }
+    }
+
+    #[tokio::test]
+    async fn cancellation_covers_descendants_holding_output_pipes() {
+        let cancellation = CancellationToken::new();
+        let cancel = async {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            cancellation.cancel();
+        };
+        let command = run_bounded(
+            Path::new("/bin/sh"),
+            &["-c", "sleep 5 & wait"],
+            Duration::from_secs(5),
+            cancellation.clone(),
+            1024,
+        );
+        let (result, ()) = timeout(Duration::from_secs(2), async {
+            tokio::join!(command, cancel)
+        })
+        .await
+        .expect("cancellation must not wait for descendant pipes");
+        let error = result.err().expect("command must be cancelled");
+        assert!(error.to_string().contains("cancelled"));
+    }
+
+    #[tokio::test]
+    async fn dropping_command_future_kills_descendants() {
+        let pid_path =
+            env::temp_dir().join(format!("sownteeshell-command-{}", uuid::Uuid::new_v4()));
+        let command_path = pid_path.clone();
+        let command = tokio::spawn(async move {
+            run_bounded(
+                Path::new("/bin/sh"),
+                &[
+                    "-c",
+                    "sleep 5 & echo $! > \"$1\"; wait",
+                    "test",
+                    command_path.to_str().unwrap(),
+                ],
+                Duration::from_secs(5),
+                CancellationToken::new(),
+                1024,
+            )
+            .await
+        });
+        let descendant = timeout(Duration::from_secs(2), async {
+            loop {
+                if let Ok(text) = std::fs::read_to_string(&pid_path)
+                    && let Ok(pid) = text.trim().parse::<u32>()
+                {
+                    break pid;
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await;
+        command.abort();
+        let _ = command.await;
+        let _ = std::fs::remove_file(pid_path);
+        let descendant = descendant.expect("test child must start");
+        timeout(Duration::from_secs(2), async {
+            loop {
+                let status = std::fs::read_to_string(format!("/proc/{descendant}/stat"));
+                let exited = match status {
+                    Err(_) => true,
+                    Ok(text) => text
+                        .rsplit_once(") ")
+                        .is_some_and(|(_, fields)| fields.starts_with('Z')),
+                };
+                if exited {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .expect("dropping a command must not orphan a running descendant");
     }
 
     #[tokio::test]

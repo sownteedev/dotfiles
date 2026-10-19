@@ -78,7 +78,7 @@ PanelWindow {
 
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: bar.compact ? Responsive.spacingL : Responsive.spacingXL
+                        spacing: 0
 
                         ActiveClient {
                             id: activeClient
@@ -90,8 +90,9 @@ PanelWindow {
                         Media {
                             id: mediaItem
 
-                            maximumWidth: Math.min(350, Math.max(90, leftZone.width - activeClient.implicitWidth - leftContent.spacing))
-                            visible: Config.barShowMedia && implicitWidth > 0
+                            displayEnabled: Config.barShowMedia
+                            leadingSpacing: activeClient.visible ? (bar.compact ? Responsive.spacingL : Responsive.spacingXL) : 0
+                            maximumWidth: Math.min(350, Math.max(90, leftZone.width - (activeClient.visible ? activeClient.implicitWidth : 0) - leadingSpacing))
                         }
                     }
                 }
@@ -181,8 +182,8 @@ PanelWindow {
                         }
                         MouseArea {
                             cursorShape: Qt.PointingHandCursor
-                            implicitHeight: 22
-                            implicitWidth: 22
+                            implicitHeight: Md3.barIconSize
+                            implicitWidth: Md3.barIconSize
                             visible: QuickSettingsService.caffeineEnabled
 
                             onClicked: QuickSettingsService.setCaffeineEnabled(false)
@@ -192,7 +193,7 @@ PanelWindow {
                                 color: Config.md3.primary
                                 filled: true
                                 name: "caffeine-cup-full-symbolic"
-                                size: 22
+                                size: Md3.barIconSize
                             }
                         }
                         Wifi {

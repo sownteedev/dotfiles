@@ -25,6 +25,7 @@ Item {
         }
     }
     readonly property string manifestPath: Quickshell.env("GREETD_BACKGROUND_PATH") || "/var/lib/sownteeshell/greeter/background.json"
+    readonly property bool ready: !hasBackground || (kind === "image" ? (backgroundImage.status === Image.Ready || backgroundImage.status === Image.Error) : (mediaPlayer.mediaStatus === MediaPlayer.BufferedMedia || mediaPlayer.error !== MediaPlayer.NoError))
     property string sourcePath: ""
 
     function applyManifest(rawText) {
@@ -46,6 +47,8 @@ Item {
     }
 
     Image {
+        id: backgroundImage
+
         anchors.fill: parent
         asynchronous: true
         fillMode: Image.PreserveAspectCrop
@@ -66,6 +69,8 @@ Item {
         volume: 0
     }
     MediaPlayer {
+        id: mediaPlayer
+
         audioOutput: audioOutput
         autoPlay: true
         loops: MediaPlayer.Infinite

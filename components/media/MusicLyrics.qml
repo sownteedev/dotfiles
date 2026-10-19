@@ -13,12 +13,15 @@ Rectangle {
     id: root
 
     property int activeLineIndex: -1
+    property var fallbackRecord: null
     property bool followLyrics: true
     readonly property bool hasLyrics: plainLyrics.trim() !== "" || syncedLines.length > 0
     readonly property bool hasSyncedLyrics: syncedLines.length > 0
+    readonly property bool hasWordLyrics: syncedLines.some(line => line.words && line.words.length > 0)
     property bool instrumental: false
     property bool loading: false
     property bool lookupFailed: false
+    property bool lookupSettled: false
     property bool lyricScrollAnimating: false
     property var lyricsCache: ({})
     readonly property int lyricsCacheLimit: 24
@@ -27,18 +30,24 @@ Rectangle {
     property string lyricsSource: ""
     property var pendingCommand: []
     property string pendingRequestKey: ""
+    property real pendingSeekPosition: -1
+    property real pendingSeekStartedAt: 0
+    readonly property var plainLines: hasSyncedLyrics ? [] : plainLyrics.trim().split(/\r?\n/)
     property string plainLyrics: ""
+    property real playbackPosition: 0
     property var player: null
     property bool previewPositioned: false
     property int previewPrepareAttempts: 0
     readonly property bool previewReady: !hasSyncedLyrics || previewPositioned
     property string processRequestKey: ""
+    property int processRevision: -1
     property string requestKey: ""
+    property int requestRevision: 0
     property var syncedLines: []
 
-    function applyLyrics(plainValue, syncedValue, isInstrumental, sourceName) {
+    function applyLyrics(plainValue, syncedValue, isInstrumental, sourceName, wordLines) {
         instrumental = !!isInstrumental;
-        syncedLines = parseSyncedLyrics(syncedValue);
+        syncedLines = wordLines && wordLines.length > 0 ? wordLines : parseSyncedLyrics(syncedValue);
         plainLyrics = String(plainValue || "").trim();
         if (plainLyrics === "" && syncedLines.length > 0)
             plainLyrics = stripSyncedLyrics(syncedValue);
@@ -48,18 +57,6 @@ Rectangle {
         activeLineIndex = -1;
         previewPositioned = false;
         preparePreview();
-    }
-    function bestRecord(records) {
-        var best = null;
-        var bestScore = -1;
-        for (var index = 0; index < records.length; ++index) {
-            var score = recordScore(records[index]);
-            if (score > bestScore) {
-                best = records[index];
-                bestScore = score;
-            }
-        }
-        return best;
     }
     function cachedLyrics(key) {
         var entry = lyricsCache[key];
@@ -77,7 +74,7 @@ Rectangle {
         if (!player)
             return "";
 
-        return [player.dbusName || "", player.uniqueId || 0, player.trackTitle || "", player.trackArtist || ""].join("|");
+        return [player.dbusName || "", player.uniqueId || 0, player.trackTitle || "", player.trackArtist || "", player.trackAlbum || "", player.length || 0].join("|");
     }
     function embeddedLyrics() {
         if (!player || !player.metadata)
@@ -92,51 +89,17 @@ Rectangle {
         }
         return "";
     }
-    function finishLookup(output, exitCode, completedKey) {
-        if (completedKey === "")
-            return;
-
-        if (exitCode !== 0) {
-            if (completedKey === currentKey() && pendingRequestKey === "") {
-                loading = false;
-                lookupFailed = true;
-            }
-            return;
-        }
-
-        var result = null;
-        if (output.trim() !== "") {
-            try {
-                var records = JSON.parse(output);
-                if (Array.isArray(records))
-                    result = bestRecord(records);
-            } catch (error) {
-                console.warn("[MusicLyrics] Invalid LRCLIB response:", error);
-            }
-        }
-        var cacheEntry = result ? {
-            "plainLyrics": result.plainLyrics || "",
-            "syncedLyrics": result.syncedLyrics || "",
-            "instrumental": !!result.instrumental,
-            "source": "LRCLIB"
-        } : {
-            "plainLyrics": "",
-            "syncedLyrics": "",
-            "instrumental": false,
-            "source": ""
-        };
-        storeCachedLyrics(completedKey, cacheEntry);
-        if (completedKey === currentKey())
-            applyLyrics(cacheEntry.plainLyrics, cacheEntry.syncedLyrics, cacheEntry.instrumental, cacheEntry.source);
-    }
     function lineTargetY(lineIndex) {
-        var lineHeight = 32;
+        var lineHeight = 44;
         var minimumY = syncedList.originY;
         var maximumY = Math.max(minimumY, minimumY + syncedList.contentHeight - syncedList.height);
         var centeredY = minimumY + lineIndex * (lineHeight + syncedList.spacing) - (syncedList.height - lineHeight) / 2;
         return Math.max(minimumY, Math.min(maximumY, centeredY));
     }
     function lookup() {
+        seekGuard.stop();
+        pendingSeekPosition = -1;
+        requestRevision++;
         requestKey = currentKey();
         pendingRequestKey = "";
         pendingCommand = [];
@@ -144,9 +107,12 @@ Rectangle {
             lyricsProcess.running = false;
         loading = false;
         lookupFailed = false;
+        lookupSettled = false;
+        fallbackRecord = null;
         instrumental = false;
         plainLyrics = "";
         syncedLines = [];
+        playbackPosition = 0;
         activeLineIndex = -1;
         previewPositioned = false;
         lyricsSource = "";
@@ -155,21 +121,24 @@ Rectangle {
 
         var embedded = embeddedLyrics();
         if (embedded !== "") {
-            applyLyrics(embedded, embedded, false, "MPRIS");
-            return;
+            fallbackRecord = {
+                "plainLyrics": embedded,
+                "syncedLyrics": "",
+                "instrumental": false,
+                "source": "MPRIS"
+            };
+            if (parseSyncedLyrics(embedded).length > 0)
+                fallbackRecord.syncedLyrics = embedded;
         }
         var cached = cachedLyrics(requestKey);
         if (cached !== null) {
-            applyLyrics(cached.plainLyrics, cached.syncedLyrics, cached.instrumental, cached.source);
+            settleLookup(cached, false);
             return;
         }
         loading = true;
         pendingRequestKey = requestKey;
-        pendingCommand = ["curl", "-fsSL", "--max-time", "8", "--user-agent", "SownteeShell-Music/1.0", "--get", "https://lrclib.net/api/search", "--data-urlencode", "track_name=" + (player.trackTitle || ""), "--data-urlencode", "artist_name=" + (player.trackArtist || "")];
+        pendingCommand = ["python3", Config.sownteeshellDir + "/backend/python/media/lyrics.py", "--title=" + (player.trackTitle || ""), "--artist=" + (player.trackArtist || ""), "--album=" + (player.trackAlbum || ""), "--duration=" + Math.max(0, Number(player.length || 0))];
         Qt.callLater(startPendingLookup);
-    }
-    function normalized(value) {
-        return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
     }
     function parseSyncedLyrics(value) {
         var result = [];
@@ -220,39 +189,20 @@ Rectangle {
         updateActiveLine();
         previewPositionTimer.restart();
     }
-    function recordScore(record) {
-        if (!record || (!record.plainLyrics && !record.syncedLyrics && !record.instrumental))
-            return -1;
+    function receiveLookup(line) {
+        if (lookupSettled || processRevision !== requestRevision || processRequestKey !== currentKey() || pendingRequestKey !== "")
+            return;
 
-        var wantedTitle = normalized(player ? player.trackTitle : "");
-        var wantedArtist = normalized(player ? player.trackArtist : "");
-        var recordTitle = normalized(record.trackName);
-        var recordArtist = normalized(record.artistName);
-        var score = 0;
-
-        if (recordTitle === wantedTitle)
-            score += 100;
-        else if (recordTitle.indexOf(wantedTitle) !== -1 || wantedTitle.indexOf(recordTitle) !== -1)
-            score += 45;
-
-        if (wantedArtist !== "" && recordArtist === wantedArtist)
-            score += 60;
-        else if (wantedArtist !== "" && (recordArtist.indexOf(wantedArtist) !== -1 || wantedArtist.indexOf(recordArtist) !== -1))
-            score += 25;
-
-        // Prefer synced lyrics heavily over plain text
-        if (record.syncedLyrics)
-            score += 50;
-
-        var rawDuration = player ? Number(player.length || 0) : 0;
-        // Quickshell uses microseconds for MPRIS length. Convert to seconds if it's large.
-        if (rawDuration > 86400)
-            rawDuration = rawDuration / 1000000;
-
-        if (rawDuration > 0 && rawDuration < 86400 && record.duration)
-            score += Math.max(0, 25 - Math.abs(Number(record.duration) - rawDuration) * 5);
-
-        return score;
+        try {
+            var message = JSON.parse(line);
+            var record = message.record;
+            if (record && (!fallbackRecord || !fallbackRecord.syncedLyrics || record.syncedLyrics))
+                fallbackRecord = record;
+            if ((record && record.wordLines && record.wordLines.length > 0) || message.done)
+                settleLookup(fallbackRecord, !!message.failed);
+        } catch (error) {
+            console.warn("[MusicLyrics] Invalid lookup response:", error);
+        }
     }
     function returnToCurrentLine() {
         updateActiveLine();
@@ -260,6 +210,9 @@ Rectangle {
             scrollToLine(activeLineIndex, false);
     }
     function scheduleLookup() {
+        if (lookupSettled && requestKey === currentKey())
+            return;
+        requestRevision++;
         lookupDelay.restart();
     }
     function scrollToLine(lineIndex, selectLine) {
@@ -282,7 +235,7 @@ Rectangle {
 
         lyricScrollAnimation.from = syncedList.contentY;
         lyricScrollAnimation.to = targetY;
-        lyricScrollAnimation.duration = Config.animationDuration(Math.min(260, 150 + distance * 0.35));
+        lyricScrollAnimation.duration = Config.animationDuration(Math.min(320, 180 + distance * 0.45));
         lyricScrollAnimation.start();
     }
     function seekToLine(lineIndex) {
@@ -290,8 +243,26 @@ Rectangle {
             return;
 
         var targetPosition = Math.max(0, Number(syncedLines[lineIndex].time || 0));
+        pendingSeekPosition = targetPosition;
+        pendingSeekStartedAt = Date.now();
+        seekGuard.restart();
+        playbackPosition = targetPosition;
+        syncedList.cancelFlick();
         scrollToLine(lineIndex, true);
         player.position = targetPosition;
+        updateActiveLine();
+    }
+    function settleLookup(record, failed) {
+        if (lookupSettled)
+            return;
+        lookupSettled = true;
+        if (record) {
+            applyLyrics(record.plainLyrics, record.syncedLyrics, record.instrumental, record.source, record.wordLines);
+            if (record.syncedLyrics)
+                storeCachedLyrics(requestKey, record);
+        }
+        loading = false;
+        lookupFailed = failed && !hasLyrics;
     }
     function smoothPlainScroll(delta) {
         var minimumY = plainFlick.originY;
@@ -326,10 +297,12 @@ Rectangle {
             return;
 
         processRequestKey = pendingRequestKey;
+        processRevision = requestRevision;
         pendingRequestKey = "";
         lyricsProcess.command = pendingCommand;
         pendingCommand = [];
         lyricsProcess.running = true;
+        lookupTimeout.restart();
     }
     function storeCachedLyrics(key, entry) {
         var updatedCache = Object.assign({}, lyricsCache);
@@ -353,15 +326,24 @@ Rectangle {
         }).join("\n");
     }
     function updateActiveLine() {
+        var reportedPosition = player && player.positionSupported ? Math.max(0, Number(player.position || 0)) : 0;
+        if (pendingSeekPosition >= 0 && seekGuard.running) {
+            var elapsed = Math.max(0, Date.now() - pendingSeekStartedAt) / 1000;
+            var maximumAdvance = elapsed * Math.max(1, Number(player.rate || 1)) + 0.25;
+            if (reportedPosition < pendingSeekPosition - 0.025 || reportedPosition > pendingSeekPosition + maximumAdvance)
+                return;
+            reportedPosition = Math.max(pendingSeekPosition, reportedPosition);
+        }
+        playbackPosition = reportedPosition;
         if (!hasSyncedLyrics || !player || !player.positionSupported) {
             activeLineIndex = -1;
             return;
         }
-        var position = Math.max(0, Number(player.position || 0));
+        var position = playbackPosition;
         var nextIndex = -1;
         var start = (activeLineIndex >= 0 && activeLineIndex < syncedLines.length && position >= syncedLines[activeLineIndex].time) ? activeLineIndex : 0;
         for (var index = start; index < syncedLines.length; ++index) {
-            if (syncedLines[index].time <= position + 0.1)
+            if (syncedLines[index].time <= position + (hasWordLyrics ? 0 : 0.1))
                 nextIndex = index;
             else
                 break;
@@ -373,7 +355,8 @@ Rectangle {
                     previewPositionTimer.restart();
                 } else {
                     Qt.callLater(function () {
-                        root.scrollToLine(nextIndex, false);
+                        if (root.followLyrics && root.activeLineIndex === nextIndex)
+                            root.scrollToLine(nextIndex, false);
                     });
                 }
             }
@@ -385,6 +368,10 @@ Rectangle {
     radius: 14
 
     Component.onCompleted: scheduleLookup()
+    onPlainLyricsChanged: {
+        plainScrollAnimation.stop();
+        plainFlick.contentY = plainFlick.originY;
+    }
     onPlayerChanged: scheduleLookup()
     onVisibleChanged: {
         if (visible)
@@ -397,6 +384,9 @@ Rectangle {
         function onMetadataChanged() {
             root.scheduleLookup();
         }
+        function onPlaybackStateChanged() {
+            root.updateActiveLine();
+        }
         function onPositionChanged() {
             root.updateActiveLine();
         }
@@ -406,6 +396,16 @@ Rectangle {
 
         enabled: !!root.player
         target: root.player
+    }
+    Timer {
+        id: seekGuard
+
+        interval: 800
+
+        onTriggered: {
+            root.pendingSeekPosition = -1;
+            root.updateActiveLine();
+        }
     }
     Timer {
         id: lookupDelay
@@ -424,7 +424,7 @@ Rectangle {
         onTriggered: root.positionPreview()
     }
     Timer {
-        interval: 150
+        interval: root.hasWordLyrics ? 33 : 150
         repeat: true
         running: root.visible && root.hasSyncedLyrics && !!root.player && MediaService.playing
 
@@ -433,22 +433,36 @@ Rectangle {
     Process {
         id: lyricsProcess
 
-        stdout: StdioCollector {
-            id: lyricsCollector
+        stdout: SplitParser {
+            onRead: line => root.receiveLookup(line)
         }
 
         onExited: (exitCode, exitStatus) => {
-            var completedKey = root.processRequestKey;
+            lookupTimeout.stop();
+            if (root.processRevision === root.requestRevision && root.processRequestKey === root.currentKey())
+                root.settleLookup(root.fallbackRecord, exitCode !== 0 || root.loading);
             root.processRequestKey = "";
-            root.finishLookup(lyricsCollector.text, exitCode, completedKey);
             if (root.pendingRequestKey !== "")
                 Qt.callLater(root.startPendingLookup);
+        }
+    }
+    Timer {
+        id: lookupTimeout
+
+        interval: 14000
+
+        onTriggered: {
+            if (root.processRevision === root.requestRevision)
+                root.settleLookup(root.fallbackRecord, true);
+            lyricsProcess.running = false;
         }
     }
     ListView {
         id: syncedList
 
         anchors.fill: parent
+        anchors.leftMargin: Math.min(20, root.width * 0.05)
+        anchors.rightMargin: anchors.leftMargin
         boundsBehavior: Flickable.StopAtBounds
         cacheBuffer: 64
         clip: true
@@ -460,43 +474,85 @@ Rectangle {
         visible: root.hasSyncedLyrics
 
         delegate: Item {
+            id: lineDelegate
+
             readonly property int distance: Math.abs(index - root.activeLineIndex)
             required property int index
+            readonly property bool karaokeActive: index === root.activeLineIndex && wordTimed
             required property var modelData
+            readonly property bool wordTimed: !!modelData.words && modelData.words.length > 0
 
-            height: 32
+            height: 44
             width: syncedList.width
 
             Text {
+                id: smallLineText
+
                 anchors.centerIn: parent
-                color: index === root.activeLineIndex ? Config.md3.primary : Config.md3.on_surface
-                elide: Text.ElideRight
+                color: Config.md3.on_surface
                 font.family: Config.fontName
                 font.pixelSize: 14
-                font.weight: index === root.activeLineIndex ? Font.Bold : Font.Medium
+                font.weight: Font.Medium
                 horizontalAlignment: Text.AlignHCenter
-                maximumLineCount: 1
-                opacity: index === root.activeLineIndex ? 1 : (distance === 1 ? 0.58 : 0.24)
-                scale: index === root.activeLineIndex ? (18.0 / 14.0) : 1
+                lineHeight: 1.05
+                maximumLineCount: 2
+                opacity: distance === 1 ? 0.58 : 0.24
                 text: modelData.text
+                textFormat: Text.PlainText
+                verticalAlignment: Text.AlignVCenter
+                visible: lineDelegate.wordTimed ? !lineDelegate.karaokeActive : index !== root.activeLineIndex
                 width: parent.width
+                wrapMode: Text.Wrap
 
-                Behavior on color {
-                    ColorAnimation {
-                        duration: Config.animationDuration(160)
-                    }
-                }
                 Behavior on opacity {
                     NumberAnimation {
                         duration: Config.animationDuration(160)
                         easing.type: Easing.OutCubic
                     }
                 }
-                Behavior on scale {
+            }
+            Text {
+                id: activeLineText
+
+                anchors.centerIn: parent
+                color: Config.md3.primary
+                font.family: Config.fontName
+                font.pixelSize: 18
+                font.weight: Font.Bold
+                horizontalAlignment: Text.AlignHCenter
+                lineHeight: 1.05
+                maximumLineCount: 2
+                opacity: index === root.activeLineIndex ? 1 : 0
+                text: modelData.text
+                textFormat: Text.PlainText
+                verticalAlignment: Text.AlignVCenter
+                visible: !lineDelegate.wordTimed
+                width: parent.width
+                wrapMode: Text.Wrap
+
+                Behavior on opacity {
                     NumberAnimation {
-                        duration: Config.animationDuration(180)
+                        duration: Config.animationDuration(160)
                         easing.type: Easing.OutCubic
                     }
+                }
+            }
+            Loader {
+                active: lineDelegate.karaokeActive
+                anchors.fill: parent
+                opacity: 1
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Config.animationDuration(160)
+                        easing.type: Easing.OutCubic
+                    }
+                }
+                sourceComponent: KaraokeLine {
+                    fontSize: lineDelegate.karaokeActive ? 18 : 14
+                    highlighted: lineDelegate.karaokeActive
+                    position: root.playbackPosition
+                    words: lineDelegate.modelData.words
                 }
             }
             TapHandler {
@@ -553,7 +609,7 @@ Rectangle {
     NumberAnimation {
         id: lyricScrollAnimation
 
-        easing.type: Easing.OutCubic
+        easing.type: Easing.InOutCubic
         property: "contentY"
         target: syncedList
 
@@ -562,24 +618,92 @@ Rectangle {
     Flickable {
         id: plainFlick
 
+        activeFocusOnTab: visible
         anchors.fill: parent
+        anchors.leftMargin: 20
+        anchors.margins: 12
+        anchors.rightMargin: 20
         boundsBehavior: Flickable.StopAtBounds
         clip: true
-        contentHeight: plainText.implicitHeight
+        contentHeight: plainColumn.implicitHeight
         contentWidth: width
+        flickableDirection: Flickable.VerticalFlick
+        layer.enabled: visible && contentHeight > height && GraphicsInfo.api !== GraphicsInfo.Software
         visible: !root.hasSyncedLyrics && root.plainLyrics !== ""
 
-        Text {
-            id: plainText
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                height: plainFlick.height
+                width: plainFlick.width
 
-            color: Config.alpha(Config.md3.on_surface, 0.8)
-            font.family: Config.fontName
-            font.pixelSize: 14
-            font.weight: Font.Medium
-            lineHeight: 1.25
-            text: root.plainLyrics
+                gradient: Gradient {
+                    GradientStop {
+                        color: plainFlick.atYBeginning ? "black" : "transparent"
+                        position: 0
+                    }
+                    GradientStop {
+                        color: "black"
+                        position: Math.min(0.5, 12 / Math.max(1, plainFlick.height))
+                    }
+                    GradientStop {
+                        color: "black"
+                        position: 1 - Math.min(0.5, 16 / Math.max(1, plainFlick.height))
+                    }
+                    GradientStop {
+                        color: plainFlick.atYEnd ? "black" : "transparent"
+                        position: 1
+                    }
+                }
+            }
+        }
+
+        Keys.onDownPressed: root.smoothPlainScroll(-32)
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_PageDown)
+                root.smoothPlainScroll(-plainFlick.height);
+            else if (event.key === Qt.Key_PageUp)
+                root.smoothPlainScroll(plainFlick.height);
+            else
+                return;
+            event.accepted = true;
+        }
+        Keys.onUpPressed: root.smoothPlainScroll(32)
+        onDraggingChanged: {
+            if (dragging)
+                plainScrollAnimation.stop();
+        }
+
+        Column {
+            id: plainColumn
+
+            spacing: 4
             width: plainFlick.width
-            wrapMode: Text.Wrap
+
+            Repeater {
+                model: root.plainLines
+
+                Text {
+                    readonly property string line: modelData.trim()
+                    required property string modelData
+                    readonly property bool sectionHeading: /^(\[[^\]]+\]|\([^\)]+\))$/.test(line)
+
+                    bottomPadding: sectionHeading ? 4 : 0
+                    color: sectionHeading ? Config.alpha(Config.md3.on_surface, 0.58) : Config.md3.primary
+                    font.capitalization: sectionHeading ? Font.AllUppercase : Font.MixedCase
+                    font.family: Config.fontName
+                    font.letterSpacing: sectionHeading ? 1.1 : 0
+                    font.pixelSize: sectionHeading ? 11 : 17
+                    font.weight: sectionHeading ? Font.DemiBold : Font.Medium
+                    height: line === "" ? 10 : implicitHeight
+                    horizontalAlignment: Text.AlignHCenter
+                    lineHeight: 1.35
+                    text: sectionHeading ? line.slice(1, -1) : line
+                    textFormat: Text.PlainText
+                    topPadding: sectionHeading ? 8 : 0
+                    width: plainColumn.width
+                    wrapMode: Text.Wrap
+                }
+            }
         }
         WheelHandler {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad

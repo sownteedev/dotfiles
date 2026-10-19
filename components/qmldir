@@ -29,6 +29,7 @@ TabSwipeNavigation 1.0 common/TabSwipeNavigation.qml
 WifiSignalIcon 1.0 common/WifiSignalIcon.qml
 SettingsPageTransition 1.0 common/SettingsPageTransition.qml
 SettingsTextField 1.0 common/SettingsTextField.qml
+SettingsEmptyState 1.0 settings/SettingsEmptyState.qml
 SettingsFontPicker 1.0 settings/SettingsFontPicker.qml
 IdlePolicyTimeline 1.0 settings/IdlePolicyTimeline.qml
 SettingsIntegrationCard 1.0 settings/SettingsIntegrationCard.qml
@@ -68,11 +69,16 @@ SettingsSegmentedControl 1.0 settings/SettingsSegmentedControl.qml
 SettingsSliderRow 1.0 settings/SettingsSliderRow.qml
 SettingsToggleTile 1.0 settings/SettingsToggleTile.qml
 SettingsToggleRow 1.0 settings/SettingsToggleRow.qml
+StartupServiceRow 1.0 settings/StartupServiceRow.qml
+StartupServiceList 1.0 settings/StartupServiceList.qml
 WallpaperModeSwitch 1.0 settings/WallpaperModeSwitch.qml
 WifiNetworkRow 1.0 settings/WifiNetworkRow.qml
 WifiQrPopup 1.0 settings/WifiQrPopup.qml
 WifiSettingsPanel 1.0 settings/WifiSettingsPanel.qml
 
+WallpaperBrowserTabs 1.0 wallpaper/WallpaperBrowserTabs.qml
+WallpaperPagination 1.0 wallpaper/WallpaperPagination.qml
+WallpaperPreviewTransition 1.0 wallpaper/WallpaperPreviewTransition.qml
 WallhavenBrowseControls 1.0 wallpaper/WallhavenBrowseControls.qml
 WallhavenChoiceButton 1.0 wallpaper/WallhavenChoiceButton.qml
 WallhavenColorPopup 1.0 wallpaper/WallhavenColorPopup.qml
@@ -94,6 +100,7 @@ WallpaperWorkshopFilters 1.0 wallpaper/WallpaperWorkshopFilters.qml
 MusicArtwork 1.0 media/MusicArtwork.qml
 MusicEmptyState 1.0 media/MusicEmptyState.qml
 MusicLyrics 1.0 media/MusicLyrics.qml
+KaraokeLine 1.0 media/KaraokeLine.qml
 MusicProgress 1.0 media/MusicProgress.qml
 MusicVolumeControl 1.0 media/MusicVolumeControl.qml
 

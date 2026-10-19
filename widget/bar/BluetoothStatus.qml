@@ -91,8 +91,8 @@ MouseArea {
         Item {
             property real pulseOpacity: 1
 
-            implicitHeight: 24
-            implicitWidth: 24
+            implicitHeight: Md3.barIconSize
+            implicitWidth: Md3.barIconSize
             opacity: root.transitioning ? pulseOpacity : 1
 
             SequentialAnimation on pulseOpacity {
@@ -116,7 +116,7 @@ MouseArea {
                 color: root.iconColor
                 filled: root.connected
                 name: root.iconName
-                size: 22
+                size: Md3.barIconSize - 2
 
                 Behavior on color {
                     ColorAnimation {

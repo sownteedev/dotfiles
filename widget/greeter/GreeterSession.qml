@@ -26,6 +26,7 @@ QtObject {
         var seconds = String(lockoutRemainingSeconds % 60).padStart(2, "0");
         return lockoutReason + "\n" + (lockoutExact ? qsTr("Try again in %1") : qsTr("Try again in about %1")).arg(minutes + ":" + seconds);
     }
+    readonly property int exitTransitionDuration: 400
     readonly property var fallbackSession: ({
             "id": "niri",
             "name": "Niri",
@@ -119,7 +120,7 @@ QtObject {
     }
     readonly property string lastSessionId: String(lastSessionState.sessionId || "")
     property Timer launchTimer: Timer {
-        interval: root.pamTestMode ? 1000 : 280
+        interval: root.exitTransitionDuration + 80
 
         onTriggered: {
             if (root.pamTestMode) {

@@ -89,6 +89,7 @@ Rectangle {
         WallhavenService.loadCollection(String(item.id || ""), String(item.label || ""), 1);
     }
     function selectTab(tab) {
+        pageNavigation.cancelEdit();
         if (tab === "installed" && wallhavenFilters.activeFilterCount > 0)
             wallhavenFilters.resetFilters();
         if (activeTab === tab) {
@@ -327,112 +328,29 @@ Rectangle {
                 Layout.preferredHeight: 40
                 spacing: 8
 
-                Rectangle {
-                    id: primaryTabs
-
-                    readonly property int selectedIndex: root.activeTab === "browse" ? 0 : (root.activeTab === "collections" ? 1 : 2)
-
+                WallpaperBrowserTabs {
                     Layout.preferredHeight: 40
                     Layout.preferredWidth: 390
-                    border.color: Config.alpha(Config.md3.outline, 0.08)
-                    border.width: 1
-                    color: Config.alpha(Config.md3.on_surface, 0.03)
-                    radius: Md3.shape.full
-
-                    Rectangle {
-                        id: primaryTabIndicator
-
-                        color: Config.md3.primary_container
-                        height: parent.height - 8
-                        radius: Md3.shape.full
-                        width: (parent.width - 8 - 12) / 3
-                        x: 4 + primaryTabs.selectedIndex * (width + 6)
-                        y: 4
-
-                        Behavior on x {
-                            XAnimator {
-                                duration: 190
-                                easing.type: Easing.OutCubic
-                            }
+                    currentValue: root.activeTab
+                    tabs: [
+                        {
+                            "icon": "system-search-symbolic",
+                            "label": qsTr("Browse"),
+                            "value": "browse"
+                        },
+                        {
+                            "icon": "folder-symbolic",
+                            "label": qsTr("Collections"),
+                            "value": "collections"
+                        },
+                        {
+                            "icon": "folder-download-symbolic",
+                            "label": qsTr("Installed"),
+                            "value": "installed"
                         }
-                    }
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 4
-                        spacing: 6
+                    ]
 
-                        Repeater {
-                            model: [
-                                {
-                                    "icon": "system-search-symbolic",
-                                    "label": qsTr("Browse"),
-                                    "value": "browse"
-                                },
-                                {
-                                    "icon": "folder-symbolic",
-                                    "label": qsTr("Collections"),
-                                    "value": "collections"
-                                },
-                                {
-                                    "icon": "folder-download-symbolic",
-                                    "label": qsTr("Installed"),
-                                    "value": "installed"
-                                }
-                            ]
-
-                            delegate: Rectangle {
-                                id: tabChip
-
-                                required property var modelData
-                                readonly property bool selected: root.activeTab === modelData.value
-
-                                Layout.fillHeight: true
-                                Layout.fillWidth: true
-                                color: !selected && tabMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.07) : "transparent"
-                                radius: Md3.shape.full
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 120
-                                    }
-                                }
-
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: 8
-
-                                    IconImage {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        height: 15
-                                        layer.enabled: true
-                                        source: Quickshell.iconPath(tabChip.modelData.icon)
-                                        width: 15
-
-                                        layer.effect: ColorOverlay {
-                                            color: tabChip.selected ? Config.md3.on_primary_container : Config.md3.on_surface_variant
-                                        }
-                                    }
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: tabChip.selected ? Config.md3.on_primary_container : Config.md3.on_surface_variant
-                                        font.family: Config.fontName
-                                        font.pixelSize: 13
-                                        font.weight: Font.DemiBold
-                                        text: tabChip.modelData.label
-                                    }
-                                }
-                                MouseArea {
-                                    id: tabMouse
-
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    onClicked: root.selectTab(tabChip.modelData.value)
-                                }
-                            }
-                        }
-                    }
+                    onSelected: value => root.selectTab(value)
                 }
                 WallhavenSearchBar {
                     id: wallhavenSearch
@@ -505,106 +423,23 @@ Rectangle {
                         onClicked: root.setNsfwVisible(!Config.wallhavenShowNsfw)
                     }
                 }
-                RowLayout {
+                WallpaperPagination {
+                    id: pageNavigation
+
                     Layout.alignment: Qt.AlignVCenter
-                    spacing: 6
+                    currentPage: root.collectionsMode ? WallhavenService.collectionPage : WallhavenService.page
+                    lastPage: root.collectionsMode ? WallhavenService.collectionLastPage : WallhavenService.lastPage
+                    loading: root.resultLoading
                     visible: !root.installedMode && root.resultHasItems
 
-                    Rectangle {
-                        Accessible.name: qsTr("Previous page")
-                        Accessible.role: Accessible.Button
-                        Layout.preferredHeight: 36
-                        Layout.preferredWidth: 36
-                        activeFocusOnTab: false
-                        border.color: "transparent"
-                        border.width: 0
-                        color: previousMouse.containsMouse ? Config.alpha(Config.md3.on_surface, Md3.state.hover) : Config.alpha(Config.md3.on_surface, 0.05)
-                        enabled: !root.resultLoading && (root.collectionsMode ? WallhavenService.collectionPage > 1 : WallhavenService.page > 1)
-                        opacity: enabled ? 1 : 0.35
-                        radius: Md3.shape.full
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: Config.animationDuration(Md3.motion.short2)
-                            }
-                        }
-
-                        Keys.onReturnPressed: root.goToPreviousPage()
-                        Keys.onSpacePressed: root.goToPreviousPage()
-
-                        Md3Icon {
-                            anchors.centerIn: parent
-                            color: Config.md3.on_surface_variant
-                            name: "go-previous-symbolic"
-                            size: 18
-                        }
-                        MouseArea {
-                            id: previousMouse
-
-                            anchors.fill: parent
-                            cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            enabled: parent.enabled
-                            hoverEnabled: true
-
-                            onClicked: root.goToPreviousPage()
-                        }
+                    onNextRequested: root.goToNextPage()
+                    onPageRequested: page => {
+                        if (root.collectionsMode)
+                            WallhavenService.loadCollection(WallhavenService.selectedCollectionId, WallhavenService.selectedCollectionLabel, page);
+                        else
+                            root.performSearch(page, true);
                     }
-                    Rectangle {
-                        Layout.preferredHeight: 36
-                        Layout.preferredWidth: pageLabel.implicitWidth + 24
-                        color: Config.alpha(Config.md3.on_surface, 0.05)
-                        radius: Md3.shape.full
-
-                        Text {
-                            id: pageLabel
-
-                            anchors.centerIn: parent
-                            color: Config.md3.on_surface_variant
-                            font.family: Config.fontName
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                            text: root.collectionsMode ? qsTr("%1 / %2").arg(WallhavenService.collectionPage).arg(WallhavenService.collectionLastPage) : qsTr("%1 / %2").arg(WallhavenService.page).arg(WallhavenService.lastPage)
-                        }
-                    }
-                    Rectangle {
-                        Accessible.name: qsTr("Next page")
-                        Accessible.role: Accessible.Button
-                        Layout.preferredHeight: 36
-                        Layout.preferredWidth: 36
-                        activeFocusOnTab: false
-                        border.color: "transparent"
-                        border.width: 0
-                        color: nextMouse.containsMouse ? Config.alpha(Config.md3.on_surface, Md3.state.hover) : Config.alpha(Config.md3.on_surface, 0.05)
-                        enabled: !root.resultLoading && (root.collectionsMode ? WallhavenService.collectionPage < WallhavenService.collectionLastPage : WallhavenService.page < WallhavenService.lastPage)
-                        opacity: enabled ? 1 : 0.35
-                        radius: Md3.shape.full
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: Config.animationDuration(Md3.motion.short2)
-                            }
-                        }
-
-                        Keys.onReturnPressed: root.goToNextPage()
-                        Keys.onSpacePressed: root.goToNextPage()
-
-                        Md3Icon {
-                            anchors.centerIn: parent
-                            color: Config.md3.on_surface_variant
-                            name: "go-next-symbolic"
-                            size: 18
-                        }
-                        MouseArea {
-                            id: nextMouse
-
-                            anchors.fill: parent
-                            cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            enabled: parent.enabled
-                            hoverEnabled: true
-
-                            onClicked: root.goToNextPage()
-                        }
-                    }
+                    onPreviousRequested: root.goToPreviousPage()
                 }
                 Item {
                     Layout.fillWidth: true
@@ -919,6 +754,7 @@ Rectangle {
                                     deleteArmed: root.deleteArmedId === String(model.id || "")
                                     downloadBlocked: WallhavenService.downloading && WallhavenService.downloadingId !== String(model.id || "")
                                     downloading: WallhavenService.downloadingId === String(model.id || "")
+                                    favoriteCount: WallhavenService.statistics.countFor(String(model.id || ""))
                                     greetdBusy: GreeterBackgroundService.busy
                                     height: resultGrid.cellHeight
                                     inUse: String(WallpaperService.currentWallpaper || "") === String(model.path || "")

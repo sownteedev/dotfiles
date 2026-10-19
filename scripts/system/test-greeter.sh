@@ -8,8 +8,7 @@ fi
 
 script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 shell_dir="$(CDPATH= cd -- "$script_dir/../.." && pwd)"
-test_cache="${XDG_CACHE_HOME:-$HOME/.cache}/sownteeshell/greeter-test"
-mkdir -p -m 0700 "$test_cache"
+test_cache="$(mktemp -d /tmp/sownteeshell-greeter-test.XXXXXX)"
 
 exec env -u GREETD_SOCK \
     SOWNTEE_GREETER_PAM_TEST=1 \

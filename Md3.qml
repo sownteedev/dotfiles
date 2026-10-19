@@ -4,6 +4,7 @@ import QtQuick
 QtObject {
     id: root
 
+    readonly property int barIconSize: 24
     readonly property QtObject elevation: QtObject {
         function blur(level) {
             return [0, 3, 6, 12, 16, 24][Math.max(0, Math.min(5, level))];
@@ -84,6 +85,7 @@ QtObject {
             "edit-paste-symbolic": "content_paste",
             "edit-redo-symbolic": "redo",
             "edit-undo-symbolic": "undo",
+            "emblem-favorite-symbolic": "favorite",
             "emblem-ok-symbolic": "check_circle",
             "emblem-synchronizing-symbolic": "sync",
             "emblem-system-symbolic": "tune",
@@ -280,6 +282,7 @@ QtObject {
             "event_available": 0xe614,
             "event_note": 0xe616,
             "expand_more": 0xe5cf,
+            "favorite": 0xe87e,
             "fiber_manual_record": 0xe061,
             "file_open": 0xeaf3,
             "filter_alt": 0xef4f,

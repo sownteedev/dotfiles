@@ -6,6 +6,8 @@ GreeterAvatar 1.0 GreeterAvatar.qml
 singleton GreeterProfile 1.0 GreeterProfile.qml
 GreeterSurface 1.0 GreeterSurface.qml
 GreeterWindow 1.0 GreeterWindow.qml
+GreeterEntrance 1.0 GreeterEntrance.qml
+GreeterExitTransition 1.0 GreeterExitTransition.qml
 LoginCard 1.0 LoginCard.qml
 GreeterPasswordDots 1.0 GreeterPasswordDots.qml
 MdIconButton 1.0 MdIconButton.qml

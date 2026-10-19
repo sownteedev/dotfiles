@@ -207,14 +207,6 @@ Row {
         }
         return visibleWindows;
     }
-    function workspaceWindowPosition(windows, windowId) {
-        var source = windows || [];
-        for (var index = 0; index < source.length; index++) {
-            if (String(source[index].id) === String(windowId))
-                return index + 1;
-        }
-        return 1;
-    }
 
     spacing: 0
 
@@ -519,7 +511,7 @@ Row {
                         return;
                     }
                     console.log("Dropped window:", payload.windowId, "to workspace:", wsButton.workspaceIdx, "on", wsButton.workspaceOutput);
-                    WorkspaceService.moveWindowToWorkspace(payload.windowId, payload.workspaceOutput, wsButton.workspaceData);
+                    WorkspaceService.moveWindowToWorkspace(payload.windowId, wsButton.workspaceData);
                     drop.accept(Qt.MoveAction);
                 }
                 onEntered: drag => root.acceptWindowDrag(drag)
@@ -699,9 +691,7 @@ Row {
                                     }
                                     var draggedWinId = payload.windowId;
                                     var draggedFromWorkspaceId = payload.workspaceId;
-                                    var draggedFromOutput = payload.workspaceOutput;
                                     var targetWinId = modelData.id;
-                                    var targetPos = root.workspaceWindowPosition(wsButton.workspaceData.windows, targetWinId);
 
                                     if (String(draggedWinId) === String(targetWinId)) {
                                         drop.accepted = false;
@@ -710,9 +700,9 @@ Row {
 
                                     if (draggedFromWorkspaceId === wsButton.workspaceId) {
                                         // Moving within the same workspace: re-order column position
-                                        WorkspaceService.moveWindowToColumn(draggedWinId, targetPos, String(draggedWinId) !== root.activeWindowId);
+                                        WorkspaceService.moveWindowToColumn(draggedWinId, targetWinId);
                                     } else {
-                                        WorkspaceService.moveWindowToWorkspace(draggedWinId, draggedFromOutput, wsButton.workspaceData, targetPos);
+                                        WorkspaceService.moveWindowToWorkspace(draggedWinId, wsButton.workspaceData, targetWinId);
                                     }
                                     drop.accept(Qt.MoveAction);
                                 }
@@ -1075,7 +1065,7 @@ Row {
                     var newIdx = root.maxWorkspaceIdx + 1;
                     var targetOutput = root.outputName || WorkspaceService.focusedOutputName;
                     console.log("[Workspaces] Moving window", payload.windowId, "to new workspace", newIdx, "on", targetOutput);
-                    WorkspaceService.moveWindowToWorkspace(payload.windowId, payload.workspaceOutput, {
+                    WorkspaceService.moveWindowToWorkspace(payload.windowId, {
                         "idx": newIdx,
                         "name": "",
                         "output": targetOutput

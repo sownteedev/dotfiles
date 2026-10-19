@@ -43,6 +43,8 @@ Rectangle {
         }
     }
     Behavior on opacity {
+        enabled: root.visible
+
         NumberAnimation {
             duration: Config.animationDuration(Md3.motion.short2)
         }

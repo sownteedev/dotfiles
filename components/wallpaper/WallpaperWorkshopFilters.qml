@@ -330,15 +330,10 @@ Item {
             activeFocusOnTab: false
             border.color: filterMouse.containsMouse ? Config.alpha(Config.md3.on_surface, 0.38) : (active ? Config.alpha(Config.md3.secondary, 0.24) : Config.alpha(Config.md3.outline, 0.18))
             border.width: 1
-            color: active ? Config.md3.secondary_container : Config.alpha(Config.md3.on_surface, 0.035)
+            color: Config.alpha(Config.md3.on_surface, 0.035)
             radius: Md3.shape.full
 
             Behavior on border.color {
-                ColorAnimation {
-                    duration: Config.animationDuration(Md3.motion.short2)
-                }
-            }
-            Behavior on color {
                 ColorAnimation {
                     duration: Config.animationDuration(Md3.motion.short2)
                 }
@@ -348,6 +343,19 @@ Item {
             Keys.onReturnPressed: root.togglePopup()
             Keys.onSpacePressed: root.togglePopup()
 
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: filterButton.border.width
+                color: Config.md3.secondary_container
+                opacity: filterButton.active ? 1 : 0
+                radius: filterButton.radius - filterButton.border.width
+
+                Behavior on opacity {
+                    OpacityAnimator {
+                        duration: Config.animationDuration(Md3.motion.short2)
+                    }
+                }
+            }
             Rectangle {
                 anchors.fill: parent
                 color: filterMouse.pressed ? Config.alpha(filterButton.active ? Config.md3.on_secondary_container : Config.md3.on_surface, 0.12) : (filterMouse.containsMouse ? Config.alpha(filterButton.active ? Config.md3.on_secondary_container : Config.md3.on_surface, 0.08) : "transparent")
@@ -420,12 +428,11 @@ Item {
                         text: WallpaperWorkshopService.activeFilterCount
                     }
                 }
-                Text {
+                Md3Icon {
                     Layout.alignment: Qt.AlignVCenter
                     color: filterButton.contentColor
-                    font.family: Config.fontName
-                    font.pixelSize: 13
-                    text: filterPopup.open ? "⌃" : "⌄"
+                    name: filterPopup.open ? "go-up-symbolic" : "go-down-symbolic"
+                    size: 16
 
                     Behavior on color {
                         ColorAnimation {
