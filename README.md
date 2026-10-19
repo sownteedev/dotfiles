@@ -4,9 +4,9 @@
 
 **A wallpaper-driven Material You desktop shell for Niri, built with Quickshell and Qt 6.**
 
-[![Arch Linux](https://img.shields.io/badge/Arch_Linux-personal_setup-1793D1?style=flat-square&logo=archlinux&logoColor=white)](https://archlinux.org/)
-[![Niri](https://img.shields.io/badge/Niri-scrollable_compositor-7C3AED?style=flat-square)](https://github.com/YaLTeR/niri)
-[![Quickshell](https://img.shields.io/badge/Quickshell-Qt_6_%2F_QML-41CD52?style=flat-square&logo=qt&logoColor=white)](https://quickshell.org/)
+[![Arch Linux](https://img.shields.io/badge/ARCH%20LINUX-PERSONAL%20SETUP-6d92bf?style=for-the-badge&labelColor=111418&logo=archlinux&logoColor=D9E0EE)](https://archlinux.org/)
+[![Niri](https://img.shields.io/badge/NIRI-SCROLLABLE%20COMPOSITOR-da696f?style=for-the-badge&labelColor=111418)](https://github.com/YaLTeR/niri)
+[![Quickshell](https://img.shields.io/badge/QUICKSHELL-QT%206%20%2F%20QML-74be88?style=for-the-badge&labelColor=111418&logo=qt&logoColor=D9E0EE)](https://quickshell.org/)
 
 </div>
 
@@ -15,7 +15,7 @@
 
 <div align="center">
   <video
-    src="https://github.com/user-attachments/assets/fb7b58a2-778b-4742-857a-2e17ad8a7fa9"
+    src="https://github.com/user-attachments/assets/b20c4242-4d8a-43b5-8cf5-5725194ba8b2"
     controls
     playsinline
     preload="metadata"
