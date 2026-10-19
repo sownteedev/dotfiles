@@ -114,7 +114,7 @@ install_shell_runtime() {
         niri xwayland-satellite quickshell qt6-connectivity qt6-multimedia qt6-positioning
         qt6-avif-image-plugin qt6-5compat qt6-imageformats geoclue
         libnotify inotify-tools libcanberra cava cliphist
-        python-gobject xdg-desktop-portal-gnome xdg-desktop-portal xdg-desktop-portal-gtk
+        python-gobject python-yaml xdg-desktop-portal-gnome xdg-desktop-portal xdg-desktop-portal-gtk
         slurp wl-clipboard wl-mirror wtype hyprpicker gpu-screen-recorder ffmpeg imagemagick zbar
         mesa libva-utils
         jq pciutils ddcutil matugen-bin rustup
@@ -141,13 +141,19 @@ install_shell_daemons() {
     local binary_dir="$HOME/.local/lib/sownteeshell"
     local cli_source="$backend_root/cli/sownteeshell"
     local cli_target="$HOME/.local/bin/sownteeshell"
+    local applications_source="$SOWNTEESHELL_DIR/assets/applications"
+    local applications_target="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+    local icons_source="$SOWNTEESHELL_DIR/assets/icons"
+    local icons_target="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps"
     local source=""
     local unit_source="$backend_root/systemd/user"
     local unit_dir="$HOME/.config/systemd/user"
     local -a units=(sownteeshell-core.service sownteeshell-calendar.service)
 
     for source in "$core_manifest" "$calendar_manifest" "$cli_source" \
-        "$unit_source/${units[0]}" "$unit_source/${units[1]}"; do
+        "$unit_source/${units[0]}" "$unit_source/${units[1]}" \
+        "$applications_source/sownteeshell-settings.desktop" \
+        "$applications_source/sownteeshell-calendar.desktop"; do
         if [ ! -f "$source" ]; then
             red_echo "[!] SownteeShell daemon source is missing: $source"
             return 1
@@ -158,6 +164,7 @@ install_shell_daemons() {
         printf '[dry-run] build SownteeShell core and calendar daemons with Cargo\n'
         printf '[dry-run] install daemon binaries under %q\n' "$binary_dir"
         printf '[dry-run] install SownteeShell CLI at %q\n' "$cli_target"
+        printf '[dry-run] install SownteeShell desktop entries under %q\n' "$applications_target"
         printf '[dry-run] install and enable user units under %q\n' "$unit_dir"
         return 0
     fi
@@ -175,6 +182,13 @@ install_shell_daemons() {
     install -Dm755 "$core_binary" "$binary_dir/sownteeshell-core"
     install -Dm755 "$calendar_binary" "$binary_dir/sownteeshell-calendar-daemon"
     install -Dm755 "$cli_source" "$cli_target"
+    install -Dm644 "$applications_source/sownteeshell-settings.desktop" "$applications_target/sownteeshell-settings.desktop"
+    install -Dm644 "$applications_source/sownteeshell-calendar.desktop" "$applications_target/sownteeshell-calendar.desktop"
+    for icon_name in sownteeshell-settings.svg sownteeshell-calendar.svg sownteeshell-connect.svg; do
+        if [ -f "$icons_source/$icon_name" ]; then
+            install -Dm644 "$icons_source/$icon_name" "$icons_target/$icon_name"
+        fi
+    done
     safe_copy "$unit_source/${units[0]}" "$unit_dir/${units[0]}"
     safe_copy "$unit_source/${units[1]}" "$unit_dir/${units[1]}"
 
@@ -231,6 +245,7 @@ install_shell_features() {
     local -a packages=(
         tesseract tesseract-data-eng tesseract-data-vie
         linux-wallpaperengine-git steam steamcmd xdg-utils
+        pyside6 qt6-webengine
         tailscale cloudflare-warp-bin
         howdy-git v4l-utils
     )
