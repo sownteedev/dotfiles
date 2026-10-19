@@ -15,7 +15,7 @@
 
 <div align="center">
   <video
-    src="https://github.com/user-attachments/assets/c62603ad-9f2a-4080-a122-3ab245c9b39e"
+    src="https://github.com/user-attachments/assets/fb7b58a2-778b-4742-857a-2e17ad8a7fa9"
     controls
     playsinline
     preload="metadata"
