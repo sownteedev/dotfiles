@@ -2,7 +2,7 @@ local wibox = require("wibox")
 local gears = require("gears")
 local awful = require("awful")
 local beautiful = require("beautiful")
-local pam = require("liblua_pam")
+local pam = require("utils.pam")
 local animation = require("modules.animation")
 
 local os_getenv = os.getenv
@@ -16,10 +16,12 @@ local auth = function(password)
 end
 
 return function(s)
+	local start_input
 	local lock = wibox({
 		screen = s,
-		width = beautiful.width,
-		height = beautiful.height,
+		x = s.geometry.x,
+		width = s.geometry.width,
+		height = s.geometry.height,
 		ontop = true,
 		visible = false,
 	})
@@ -35,7 +37,7 @@ return function(s)
 		},
 		{
 			markup = cache.user .. "@" .. cache.hostname,
-			font = "azuki_font Bold 18",
+			font = beautiful.sans .. " Bold 18",
 			halign = "center",
 			widget = wibox.widget.textbox,
 		},
@@ -48,7 +50,7 @@ return function(s)
 		pos = -lock.height,
 		easing = animation.easing.inOutExpo,
 		update = function(_, poss)
-			lock.y = poss
+			lock.y = s.geometry.y + poss
 		end,
 	})
 	local slide_end = gears.timer({
@@ -89,7 +91,7 @@ return function(s)
 	})
 
 	local grabber = awful.keygrabber({
-		auto_start = true,
+		auto_start = false,
 		stop_event = "release",
 		mask_event_callback = true,
 		keypressed_callback = function(self, _, key, _)
@@ -136,14 +138,7 @@ return function(s)
 			elseif key == "Return" then
 				if input ~= "" then
 					if auth(input) then
-						self:stop()
-						slide_end:start()
-						slide:set(-lock.height)
-						start_input:stop()
-						table.remove(bottom.children, 2)
-						input = ""
-						star = ""
-						swiped = false
+						awesome.emit_signal("lock::authenticated")
 					else
 						input = ""
 						star = ""
@@ -165,7 +160,7 @@ return function(s)
 	})
 
 	start_input = awful.keygrabber({
-		auto_start = true,
+		auto_start = false,
 		stop_event = "release",
 		keypressed_callback = function(self, _, key, _)
 			if key == "Return" or key == " " then
@@ -251,11 +246,22 @@ return function(s)
 		layout = wibox.layout.stack,
 	})
 
+	awesome.connect_signal("lock::authenticated", function()
+		grabber:stop()
+		start_input:stop()
+		slide_end:start()
+		slide:set(-lock.height)
+		bottom:reset()
+		bottom:add(profilepic)
+		input, star, swiped = "", "", false
+	end)
+
 	awesome.connect_signal("toggle::lock", function()
 		if not lock.visible then
+			slide_end:stop()
 			lock.visible = true
 			slide:set(0)
-			start_input:start()
+			if s == awful.screen.focused() then start_input:start() end
 			_Utils.widget.gc(prompt, "txt"):set_markup("Enter Password")
 			_Utils.widget.gc(prompt, "txt"):set_font(beautiful.sans .. " 12")
 		end

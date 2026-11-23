@@ -24,8 +24,6 @@ local function battery_status()
 		function(stdout)
 			local status = not stdout:match("Discharging")
 			charging = status
-			awful.spawn.with_shell(status and "pkill xss-lock" or
-				[[xss-lock -l awesome-client "awesome.emit_signal('toggle::lock')"]])
 			if status ~= last_status then
 				awesome.emit_signal("signal::batterystatus", status)
 				last_status = status

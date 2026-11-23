@@ -1,10 +1,10 @@
 local awful          = require("awful")
 local beautiful      = require("beautiful")
 
-awful.layout.layouts = {
+awful.layout.append_default_layouts({
 	awful.layout.suit.floating,
 	awful.layout.suit.tile,
-}
+})
 
 client.connect_signal("request::titlebars", function(c)
 	if c.requests_no_titlebar then return end

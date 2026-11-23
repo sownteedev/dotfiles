@@ -1,10 +1,13 @@
 local gears = require("gears")
 local lgi = require("lgi")
 local Gtk = lgi.require("Gtk", "3.0")
+local icon_theme = Gtk.IconTheme.new()
+icon_theme:set_custom_theme(_User.IconName)
 
 local path_icon = os.getenv("HOME") .. "/.icons/" .. _User.IconName .. "/"
 local icon_cache = {}
-local DEFAULT_ICON = path_icon .. "/apps/scalable/default-application.svg"
+local fallback_icon = icon_theme:lookup_icon("application-x-executable", 128, 0)
+local DEFAULT_ICON = fallback_icon and fallback_icon:get_filename()
 local ICON_DIR = path_icon .. "/apps/scalable/"
 local desktop_cache = {}
 
@@ -81,6 +84,8 @@ end
 
 local function checkIcon(name)
 	if not name then return nil end
+	local icon_info = icon_theme:lookup_icon(name:gsub("%.svg$", ""):gsub("%.png$", ""), 128, 0)
+	if icon_info then return icon_info:get_filename() end
 
 	local fullPath = ICON_DIR .. name
 	local file = io.open(fullPath, "r")
@@ -173,7 +178,7 @@ icons.lookup_icon = function(args)
 
 	args = gears.table.crush({ icon_name = "", size = 128, path = true, recolor = nil, }, args, false)
 
-	local theme = Gtk.IconTheme.get_default()
+	local theme = icon_theme
 	local icon_info, path
 
 	for _, name in ipairs({

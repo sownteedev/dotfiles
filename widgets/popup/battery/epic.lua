@@ -77,7 +77,7 @@ return function(icon_name)
 
 	local battery
 
-	if icon_name == "laptop-symbolic" then
+	if icon_name == "computer-laptop-symbolic" or icon_name == "laptop-symbolic" then
 		battery = _Utils.upower.gobject_to_gearsobject(_Utils.upower.upower:get_display_device())
 		local update = function(self)
 			chart.colors = self.percentage <= 20 and { beautiful.red } or { beautiful.green }

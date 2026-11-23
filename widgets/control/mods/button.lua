@@ -35,7 +35,7 @@ local function do_notify(which, tmp_path)
 
 		open:connect_signal("invoked", function()
 			awful.spawn.with_shell('xclip -sel clip -target image/png "' ..
-				tmp_path .. '" && viewnior "' .. tmp_path .. '"')
+					tmp_path .. '" && xdg-open "' .. tmp_path .. '"')
 			naughty.notify({
 				app_name = "photo",
 				icon = tmp_path,
@@ -58,7 +58,7 @@ local function do_notify(which, tmp_path)
 			app_name = "photo",
 			icon = tmp_path,
 			title = "Screenshot",
-			text = "Screenshot saved successfully",
+			text = "Screenshot saved and copied to clipboard",
 			actions = {
 				open,
 				delete,
@@ -96,8 +96,19 @@ end
 function area()
 	checkFolder("screenshot")
 	local tmp_path = getName("screenshot")
-	awful.spawn.easy_async_with_shell('sleep 1.5 && maim --select "' .. tmp_path .. '"', function()
-		do_notify("screenshot", tmp_path)
+	awful.spawn.easy_async_with_shell('sleep 1.5 && maim --select "' .. tmp_path .. '"', function(stdout, stderr, reason, code)
+		if code ~= 0 then return end
+		awful.spawn.easy_async_with_shell('xclip -selection clipboard -target image/png -i "' .. tmp_path .. '" >/dev/null 2>&1', function(copy_stdout, copy_stderr, copy_reason, copy_code)
+			if copy_code ~= 0 then
+				naughty.notify({
+					app_name = "photo",
+					title = "Screenshot",
+					text = "Screenshot saved, but copying to clipboard failed.",
+				})
+				return
+			end
+			do_notify("screenshot", tmp_path)
+		end)
 	end)
 end
 

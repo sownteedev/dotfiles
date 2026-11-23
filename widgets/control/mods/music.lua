@@ -12,9 +12,9 @@ local blur = wibox.widget({
 	widget = wibox.widget.imagebox,
 })
 local function convertBlur(image)
-	local cmd = "convert " .. image .. " -filter Gaussian -blur 0x5 ~/.cache/awesome/blurdefault.jpg"
-	awful.spawn.easy_async_with_shell(cmd, function()
-		local blurwall = gears.filesystem.get_cache_dir() .. "blurdefault.jpg"
+	local blurwall = gears.filesystem.get_cache_dir() .. "blurdefault.jpg"
+	awful.spawn.easy_async({ "magick", image, "-filter", "Gaussian", "-blur", "0x5", blurwall }, function(_, _, _, code)
+		if code ~= 0 then return end
 		blur.image = _Utils.image.cropSurface(6.6, gears.surface.load_uncached(blurwall))
 	end)
 end
@@ -75,10 +75,10 @@ local player = wibox.widget({
 })
 
 playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _, player_name)
-	local album = not album_path or album_path == "" and _User.SongDefPicture or album_path
-	awful.spawn.easy_async_with_shell(
-		"convert " .. album .. " -filter Gaussian -blur 0x5 ~/.cache/awesome/songdefpictures.jpg", function()
-			local blurwall = gears.filesystem.get_cache_dir() .. "songdefpictures.jpg"
+	local album = (not album_path or album_path == "") and _User.SongDefPicture or album_path
+	local blurwall = gears.filesystem.get_cache_dir() .. "songdefpictures.jpg"
+	awful.spawn.easy_async({ "magick", album, "-filter", "Gaussian", "-blur", "0x5", blurwall }, function(_, _, _, code)
+			if code ~= 0 then return end
 			blur.image = _Utils.image.cropSurface(6.6, gears.surface.load_uncached(blurwall))
 		end)
 	art.image = _Utils.image.cropSurface(1, gears.surface.load_uncached(album))

@@ -6,6 +6,51 @@ local beautiful = require("beautiful")
 local scale = 0.18
 opened_preview = false
 
+local snapshots = setmetatable({}, { __mode = "k" })
+
+local function get_snapshot(c)
+	if not c.valid or c.hidden or c.minimized or not c:isvisible() then
+		return snapshots[c]
+	end
+
+	local success, image = pcall(function()
+		local content = gears.surface(c.content)
+		local source_context = cairo.Context(content)
+		local left, top, right, bottom = source_context:clip_extents()
+		local width, height = right - left, bottom - top
+		if width <= 0 or height <= 0 then return end
+
+		local thumbnail_width = math.max(1, math.floor(width * scale))
+		local thumbnail_height = math.max(1, math.floor(height * scale))
+		local thumbnail = cairo.ImageSurface.create(cairo.Format.ARGB32, thumbnail_width, thumbnail_height)
+		local context = cairo.Context(thumbnail)
+		context:scale(thumbnail_width / width, thumbnail_height / height)
+		context:set_source_surface(content, -left, -top)
+		context.operator = cairo.Operator.SOURCE
+		context:paint()
+		return thumbnail
+	end)
+	if success and image then
+		snapshots[c] = image
+	end
+	return snapshots[c]
+end
+
+gears.timer {
+	timeout = 1,
+	autostart = true,
+	call_now = true,
+	callback = function()
+		for _, c in ipairs(client.get()) do
+			get_snapshot(c)
+		end
+	end,
+}
+
+client.connect_signal("unmanage", function(c)
+	snapshots[c] = nil
+end)
+
 local function create_empty_tag_widget(s)
 	return wibox.widget {
 		{
@@ -19,8 +64,9 @@ local function create_empty_tag_widget(s)
 			{
 				{
 					widget = wibox.widget.textbox,
-					markup = _Utils.widget.colorizeText(" ", beautiful.red),
+					markup = _Utils.widget.colorizeText("󰅚", beautiful.red),
 					align = "center",
+					valign = "center",
 					font = beautiful.icon .. " 30",
 				},
 				bg = beautiful.background .. "AA",
@@ -54,18 +100,10 @@ local function draw_widget(t, s, geo)
 				widget = wibox.widget.imagebox,
 			})
 
-			if s and (c.prev_content or t.selected) then
-				local content = t.selected and gears.surface(c.content)
-				local cr = cairo.Context(content)
-				local x, y, w, h = cr:clip_extents()
-				local img = cairo.ImageSurface.create(cairo.Format.ARGB32, w - x, h - y)
-				cr = cairo.Context(img)
-				cr:set_source_surface(content, 0, 0)
-				cr.operator = cairo.Operator.SOURCE
-				cr:paint()
-
+			local snapshot = get_snapshot(c)
+			if snapshot then
 				img_box = wibox.widget({
-					image = gears.surface.load(img),
+					image = snapshot,
 					resize = true,
 					opacity = 1,
 					forced_height = math.floor(c.height * scale),

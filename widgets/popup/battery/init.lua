@@ -5,8 +5,8 @@ local charge = require(... .. ".epic")
 
 local mouse_bat = charge("input-mouse-symbolic")
 local keyboard_bat = charge("keyboards")
-local headphone_bat = charge("headphones-symbolic")
-local laptop_bat = charge("laptop-symbolic")
+local headphone_bat = charge("audio-headphones-symbolic")
+local laptop_bat = charge("computer-laptop-symbolic")
 
 return function(s)
 	local battery = wibox({

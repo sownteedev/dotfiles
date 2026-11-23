@@ -14,9 +14,9 @@ local art = wibox.widget({
 })
 
 local function convertDefault(image)
-	local cmd = "convert " .. image .. " -resize 16:9! ~/.cache/awesome/songdefpicture.jpg"
-	awful.spawn.easy_async_with_shell(cmd, function()
-		local wall = gears.filesystem.get_cache_dir() .. "songdefpicture.jpg"
+	local wall = gears.filesystem.get_cache_dir() .. "songdefpicture.jpg"
+	awful.spawn.easy_async({ "magick", image, "-resize", "640x360!", wall }, function(_, _, _, code)
+		if code ~= 0 then return end
 		art.image = gears.surface.load_uncached(wall)
 	end)
 end
@@ -167,12 +167,8 @@ return function(s)
 		layout = wibox.layout.stack,
 	})
 	playerctl:connect_signal("metadata", function(_, title, artist, album_path, _, _, _)
-		local album = not album_path or album_path == "" and _User.SongDefPicture or album_path
-		awful.spawn.easy_async_with_shell(
-			"convert " .. album .. " -resize 16:9! ~/.cache/awesome/songdefpicture.jpg", function()
-				local artt = gears.filesystem.get_cache_dir() .. "songdefpicture.jpg"
-				art.image = gears.surface.load_uncached(artt)
-			end)
+		local album = (not album_path or album_path == "") and _User.SongDefPicture or album_path
+		convertDefault(album)
 
 		if string.len(title) >= 60 then
 			title = string.sub(title, 0, 60) .. "..."

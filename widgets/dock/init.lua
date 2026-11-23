@@ -4,64 +4,39 @@ local wibox = require("wibox")
 local gears = require("gears")
 local Gio = require("lgi").Gio
 local animation = require("modules.animation")
-local HOME = os.getenv("HOME")
-
-local base_apps = {
-	{ name = "nemo",        class = "Nemo",        exec = "nemo" },
-	{ name = "shotwell",    class = "Shotwell",    exec = "shotwell" },
-	{ name = "thunderbird", class = "thunderbird", exec = "thunderbird" },
-	{ name = "zen",         class = "zen",         exec = "zen-browser" },
-}
-
-local dev_apps = {
-	{ name = "Alacritty",          class = "Alacritty",          exec = "alacritty" },
-	{ name = "visual-studio-code", class = "Code",               exec = "code" },
-	{ name = "cursor",             class = "Cursor",             exec = "cursor" },
-	{ name = "jetbrains-idea",     class = "jetbrains-idea",     exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/intellij-idea-ultimate/bin/idea" },
-	-- { name = "jetbrains-studio",   class = "jetbrains-studio",   exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/android-studio/bin/studio.sh" },
-	{ name = "jetbrains-webstorm", class = "jetbrains-webstorm", exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/webstorm/bin/webstorm" },
-	{ name = "jetbrains-pycharm",  class = "jetbrains-pycharm",  exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/pycharm-professional/bin/pycharm" },
-	{ name = "jetbrains-datagrip", class = "jetbrains-datagrip", exec = HOME .. "/.local/share/JetBrains/Toolbox/apps/datagrip/bin/datagrip" },
-}
-
-local dev_tools = {
-	-- { name = "MongoDB Compass",     class = "MongoDB Compass",     exec = "mongodb-compass" },
-	-- { name = "Mysql-workbench-bin", class = "Mysql-workbench-bin", exec = "mysql-workbench" },
-	{ name = "Docker Desktop", class = "Docker Desktop", exec = "/opt/docker-desktop/bin/docker-desktop" },
-	{ name = "postman",        class = "Postman",        exec = "postman" },
-	{ name = "GitHub Desktop", class = "GitHub Desktop", exec = "github-desktop" },
-}
-
-local utility_apps = {
-	{ name = "anydesk", class = "Anydesk", exec = "anydesk" },
-	{ name = "vmware",  class = "Vmware",  exec = "vmware" },
-	{ name = "notion",  class = "Notion",  exec = "notion-app" },
-}
-
-local social_apps = {
-	{ name = "telegram",                       class = "TelegramDesktop",                exec = "telegram-desktop" },
-	-- { name = "caprine",                        class = "Caprine",                        exec = "caprine" },
-	{ name = "vesktop",                        class = "vesktop",                        exec = "vesktop" },
-	{ name = "Spotify",                        class = "Spotify",                        exec = "spotify" },
-	{ name = "com.github.th_ch.youtube_music", class = "com.github.th_ch.youtube_music", exec = "youtube-music" }
-}
-
-local custom_apps = {
-	{
-		name = _User.Custom_Icon[1].name,
-		class = _User.Custom_Icon[1].name,
-		exec = "/usr/bin/firefoxpwa site launch " .. string.sub(_User.Custom_Icon[1].name, 7) .. " --protocol"
-	},
+local pinned_apps = {
+	{ id = "com.raggesilver.BlackBox", name = "com.raggesilver.BlackBox", class = "com.raggesilver.BlackBox" },
+	{ id = "sownteeshell-calendar", name = "sownteeshell-calendar", class = "sownteeshell-calendar" },
+	{ id = "org.gnome.Nautilus", name = "org.gnome.Nautilus", class = "org.gnome.Nautilus" },
+	{ id = "brave-browser", name = "brave-desktop", class = "brave-browser" },
+	{ id = "com.spotify.Client", name = "com.spotify.Client", class = "spotify" },
+	{ id = "meiro", name = os.getenv("HOME") .. "/.local/share/icons/meiro.png", class = "meiro" },
+	{ id = "vesktop", name = "vesktop", class = "vesktop" },
+	{ id = "zalo", name = "/opt/zalo/icon.png", class = "zalo-for-linux" },
+	{ id = "com.microsoft.VSCode", name = "vscode", class = "com.microsoft.VSCode" },
+	{ id = "chatgpt", name = "chatgpt", class = "Chatgpt" },
+	{ id = "com.anthropic.Claude", name = "claude-desktop", class = "com.anthropic.Claude" },
+	{ id = "jetbrains-idea-1c8b1798-70e0-4768-ac8e-f5a6c3eddb0f", name = "jetbrains-idea-1c8b1798-70e0-4768-ac8e-f5a6c3eddb0f", class = "jetbrains-idea" },
+	{ id = "jetbrains-datagrip-c1f28b6e-a125-4833-9ac3-9b23def55bdc", name = "jetbrains-datagrip-c1f28b6e-a125-4833-9ac3-9b23def55bdc", class = "jetbrains-datagrip" },
+	{ id = "postman", name = "postman", class = "postman" },
+	{ id = "ai.storyteller.wordcraft", name = "ai.storyteller.wordcraft", class = "ai.storyteller.wordcraft" },
+	{ id = "ai.storyteller.gridcraft", name = "ai.storyteller.gridcraft", class = "ai.storyteller.gridcraft" },
+	{ id = "ai.storyteller.deckcraft", name = "ai.storyteller.deckcraft", class = "ai.storyteller.deckcraft" },
+	{ id = "ai.storyteller.photocraft", name = "ai.storyteller.photocraft", class = "ai.storyteller.photocraft" },
+	{ id = "steam", name = "steam", class = "Steam" },
+	{ id = "org.telegram.desktop", name = "telegram", class = "org.telegram.desktop.desktop" },
+	{ id = "awcc", name = "awcc", class = "awcc" },
+	{ id = "vmware-workstation", name = "vmware-workstation", class = "vmware" },
 }
 
 local function create_metadata_entry(app)
 	return {
 		count = 0,
 		pinned = true,
-		icon = _Utils.icon.getIcon(nil, app.name, app.name),
+		icon = app.name:sub(1, 1) == "/" and app.name or _Utils.icon.getIcon(nil, app.name, app.name),
 		clients = {},
 		class = app.class,
-		exec = app.exec
+		exec = 'env PATH="$HOME/.local/bin:$PATH" gtk-launch ' .. string.format("%q", app.id .. ".desktop")
 	}
 end
 
@@ -78,12 +53,7 @@ local function populate_data(apps)
 	end
 end
 
-populate_data(base_apps)
-populate_data(dev_apps)
-populate_data(dev_tools)
-populate_data(utility_apps)
-populate_data(social_apps)
-populate_data(custom_apps)
+populate_data(pinned_apps)
 
 local widget = wibox.widget({
 	layout = wibox.layout.fixed.horizontal,

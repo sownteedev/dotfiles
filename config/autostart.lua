@@ -1,17 +1,10 @@
 local awful = require("awful")
 local gears = require("gears")
 
+gears.filesystem.make_directories(gears.filesystem.get_cache_dir())
+
 for _, cmd in ipairs(_User.AutoStart) do
 	awful.spawn.with_shell(cmd)
 end
-awful.spawn.easy_async_with_shell("cat ~/.cache/awesome/blur", function(stdout)
-	local status = stdout:match("true")
-	awful.spawn.with_shell(
-		not status and "picom --config ~/.config/awesome/scripts/picom/picom_no_opacity -b" or
-		"picom --config ~/.config/awesome/scripts/picom/picom.conf -b"
-	)
-end)
 
-gears.timer.start_new(2, function()
-	awful.spawn.with_shell("ibus engine Bamboo")
-end)
+awful.spawn({ gears.filesystem.get_configuration_dir() .. "scripts/picom.sh", "start" })

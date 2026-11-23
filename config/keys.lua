@@ -14,10 +14,10 @@ awful.keyboard.append_global_keybindings({
 		awesome.emit_signal("toggle::launcher")
 	end),
 	awful.key({ mod }, "e", function()
-		awful.spawn.with_shell("nemo")
+		awful.spawn.with_shell("nautilus")
 	end),
 	awful.key({ mod }, "Return", function()
-		awful.spawn.with_shell("alacritty")
+		awful.spawn.with_shell("blackbox-terminal")
 	end),
 	awful.key({ ctrl, shift }, "Escape", function()
 		awful.spawn.with_shell("xfce4-taskmanager")

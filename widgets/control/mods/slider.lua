@@ -15,11 +15,16 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 		bar_color = beautiful.foreground .. "11",
 		bar_active_color = beautiful.foreground,
 		bar_shape = _Utils.widget.rrect(20),
-		handle_shape = function(cr)
-			gears.shape.rounded_rect(cr, 28, 28, 100)
+		handle_width = 29,
+		handle_shape = function(cr, width, height)
+			local diameter = math.min(width, height) - 1
+			cr:save()
+			cr:translate((width - diameter) / 2, (height - diameter) / 2)
+			gears.shape.rounded_rect(cr, diameter, diameter, diameter / 2)
+			cr:restore()
 		end,
 		handle_color = _Utils.color.change_hex_lightness(beautiful.foreground, -10),
-		handle_margins = { top = 8 },
+		handle_margins = 0,
 		handle_border_color = beautiful.background .. "22",
 		handle_border_width = 1,
 		forced_height = 0,
@@ -79,8 +84,11 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 	_Utils.widget.hoverCursor(slidSlider)
 	_Utils.widget.hoverCursor(slidScale, "margin")
 
+	local updating = false
 	awesome.connect_signal("signal::" .. signal, function(value)
+		updating = true
 		slidSlider.value = value
+		updating = false
 	end)
 	awesome.connect_signal("signal::" .. signal2, function(status)
 		if status then
@@ -98,6 +106,7 @@ local createSlider = function(name, icon, signal, signal2, cmd, cmd2, command)
 		end
 	end)
 	slidSlider:connect_signal("property::value", function(_, new_value)
+		if updating then return end
 		awful.spawn.with_shell(string.format(command, new_value))
 		awesome.emit_signal("signal::" .. signal, new_value)
 	end)

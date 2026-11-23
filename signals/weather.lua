@@ -1,6 +1,8 @@
 local awful = require("awful")
 local beautiful = require("beautiful")
 
+if not _User.API_KEY_WEATHER or _User.API_KEY_WEATHER == "" then return end
+
 local PATHS = {
 	icons = beautiful.icon_path .. "weather/icons/",
 	thumbs = beautiful.icon_path .. "weather/images/"
@@ -76,7 +78,9 @@ awful.widget.watch(
 		if stdout:find("Could not resolve host") then
 			return
 		end
-		local result = _Utils.json.decode(stdout)
+		local ok, result = pcall(_Utils.json.decode, stdout)
+		if not ok or type(result) ~= "table" or not result.current or not result.current.weather
+			or not result.current.weather[1] or not result.daily then return end
 		local weather = result.current.weather[1]
 		local daily_data = {}
 		for i = 2, math.min(#result.daily, 7) do
@@ -101,7 +105,8 @@ awful.widget.watch(
 		if stdout:find("Could not resolve host") then
 			return
 		end
-		local result = _Utils.json.decode(stdout)
+		local ok, result = pcall(_Utils.json.decode, stdout)
+		if not ok or type(result) ~= "table" or not result[1] then return end
 		awesome.emit_signal("signal::weather1", {
 			city = result[1].name,
 			country = string.lower(result[1].country)

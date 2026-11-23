@@ -24,12 +24,11 @@ local todo_list = wibox.widget {
 }
 
 local writeData = function(d)
-	os.execute('truncate -s 0 ' .. DATA)
-	local f = assert(io.open(DATA, "wb"))
 	local write = _Utils.json.encode(d)
-	f:write(write)
-	f:flush()
-	f:close()
+	local f = assert(io.open(DATA .. ".tmp", "wb"))
+	assert(f:write(write))
+	assert(f:close())
+	assert(os.rename(DATA .. ".tmp", DATA))
 end
 
 local grabber = {}
@@ -202,6 +201,7 @@ local makeData = function(d)
 	local data = _Utils.json.readJson(DATA)
 	table.insert(data, d)
 	writeData(data)
+	return #data
 end
 
 function refresh()
@@ -216,11 +216,12 @@ function refresh()
 end
 
 local function addTodoItem()
+	if grabber.main then grabber.main:stop() end
 	local new = {
 		completed = false,
 		name = ""
 	}
-	makeData(new)
+	local new_index = makeData(new)
 	refresh()
 
 	local lastWidget = todo_list.children[#todo_list.children]
@@ -232,7 +233,7 @@ local function addTodoItem()
 		lastWidget.bg = beautiful.lighter
 
 		grabber.main = awful.keygrabber({
-			auto_start = true,
+			auto_start = false,
 			stop_event = "release",
 			keypressed_callback = function(_, _, key, _)
 				if key == "Return" then
@@ -242,16 +243,23 @@ local function addTodoItem()
 					if #input.text == 0 then
 						-- Remove if empty
 						local data = _Utils.json.readJson(DATA)
-						table.remove(data)
+						if data[new_index] and data[new_index].name == "" then
+							table.remove(data, new_index)
+						end
 						writeData(data)
 						refresh()
 					else
 						-- Save the changes
 						local data = _Utils.json.readJson(DATA)
-						data[#data] = {
+						local item = {
 							completed = false,
 							name = input.text
 						}
+						if data[new_index] and data[new_index].name == "" then
+							data[new_index] = item
+						else
+							table.insert(data, item)
+						end
 						writeData(data)
 						refresh()
 					end
@@ -261,7 +269,9 @@ local function addTodoItem()
 					grabber.main:stop()
 					-- Remove the empty todo if cancelled
 					local data = _Utils.json.readJson(DATA)
-					table.remove(data)
+					if data[new_index] and data[new_index].name == "" then
+						table.remove(data, new_index)
+					end
 					writeData(data)
 					refresh()
 				elseif key == "BackSpace" then

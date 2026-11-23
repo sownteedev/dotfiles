@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Awesome (mAWMcos X11)
+Comment=Awesome LuaJIT with the existing Fcitx5/Lotus and GTK settings
+Exec=/home/nguyenthanhson/Dotfiles/mAWMcos/scripts/start-session.sh
+TryExec=/home/nguyenthanhson/Dotfiles/mAWMcos/scripts/start-session.sh
+Type=Application

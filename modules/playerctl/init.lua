@@ -6,7 +6,7 @@ local naughty = require("naughty")
 -- Use CLI backend as default as it is supported on most if not all systems
 local backend_config = beautiful.playerctl_backend or "playerctl_cli"
 local backends = {
-	playerctl_cli = require(... .. ".playerctl_cli"),
+	playerctl_cli = function(args) return require("modules.playerctl.playerctl_cli")(args) end,
 	playerctl_lib = require(... .. ".playerctl_lib"),
 }
 

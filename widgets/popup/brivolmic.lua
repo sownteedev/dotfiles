@@ -12,14 +12,14 @@ local ICONS = {
 		[10] = "󰃞 ",
 	},
 	volume = {
-		high = " ",
-		medium = "󰕾 ",
-		low = " ",
-		muted = "󰖁 "
+		high = "󰕾",
+		medium = "󰖀",
+		low = "󰕿",
+		muted = "󰖁"
 	},
 	mic = {
-		on = " ",
-		off = " "
+		on = "󰍬",
+		off = "󰍭"
 	}
 }
 
@@ -61,7 +61,7 @@ return function(s)
 					bar_shape = beautiful.radius,
 					widget = wibox.widget.progressbar,
 				},
-				forced_width = 5,
+				forced_width = 40,
 				forced_height = 200,
 				direction = 'east',
 				layout = wibox.container.rotate,
@@ -70,11 +70,14 @@ return function(s)
 				{
 					id = "icon",
 					align = "center",
+					valign = "center",
+					forced_width = 40,
+					forced_height = 32,
 					font = beautiful.icon .. " 18",
 					markup = "",
 					widget = wibox.widget.textbox,
 				},
-				left = 10,
+				left = 0,
 				widget = wibox.container.margin,
 			},
 			spacing = 20,
